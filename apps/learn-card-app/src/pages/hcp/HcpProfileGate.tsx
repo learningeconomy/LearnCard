@@ -3,13 +3,13 @@ import { shouldPromptProfileOnboarding, useAuthStatus, useGetProfile } from 'lea
 
 import * as m from '../../paraglide/messages.js';
 import useJoinLCNetworkModal from '../../components/network-prompts/hooks/useJoinLCNetworkModal';
-import { HcpLoading } from './HcpStates';
+import { HcpError, HcpLoading } from './HcpStates';
 
 /**
  * HCP data belongs to a LearnCard Network profile. A signed-in person without one
  * gets the app's own profile setup (OnboardingFlow) instead of an error. "No profile"
  * is the auth gate's confirmed `absent`, never a failed request, so real failures
- * still reach the screens' error states.
+ * still show the error state (and never offer Allow).
  */
 export const HcpProfileGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const status = useAuthStatus();
@@ -34,10 +34,13 @@ export const HcpProfileGate: React.FC<{ children: React.ReactNode }> = ({ childr
             </div>
         );
     }
+    if (status.tag === 'ready') {
+        if (status.profile.tag === 'present') return <>{children}</>;
+        if (status.profile.tag === 'error' || status.profile.tag === 'unconfirmed')
+            return <HcpError onRetry={() => void profile.refetch()} />;
+    }
     // Wait for the answer so a missing profile never flashes an error first.
-    if (status.tag === 'resolving' || (status.tag === 'ready' && status.profile.tag === 'loading'))
-        return <HcpLoading />;
-    return <>{children}</>;
+    return <HcpLoading />;
 };
 
 export default HcpProfileGate;

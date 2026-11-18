@@ -276,6 +276,17 @@ describe('HCP without a LearnCard profile', () => {
         expect(screen.queryByText('Set up your profile first')).toBeNull();
     });
 
+    it.each(['/hcp', consentUrl])(
+        'does not turn a profile fetch failure into onboarding on %s',
+        url => {
+            state.auth = { tag: 'ready', profile: { tag: 'error' } };
+            renderRoute(url);
+            expect(screen.getByText('Something went wrong')).toBeTruthy();
+            expect(screen.queryByText('Set up your profile first')).toBeNull();
+            expect(screen.queryByRole('button', { name: 'Allow' })).toBeNull();
+        }
+    );
+
     it('waits while the profile is loading', () => {
         state.auth = { tag: 'ready', profile: { tag: 'loading' } };
         renderRoute(consentUrl);
