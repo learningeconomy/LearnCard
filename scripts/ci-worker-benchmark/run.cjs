@@ -15,6 +15,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { performance } = require('node:perf_hooks');
 const { summarize } = require('../ci-test-retries/summary.cjs');
+const { preloadCargo, resetCargoTargets, verifyCargoTargetsBuilt } = require('./cargo.cjs');
 const {
     validateGraph,
     validateProfile,
@@ -88,8 +89,11 @@ async function main() {
     ) {
         fail('The checkout does not match the dispatched commit.');
     }
-    if (git('rev-parse', 'HEAD^') !== HEAD)
+    try {
+        git('merge-base', '--is-ancestor', HEAD, 'HEAD');
+    } catch {
         fail('The checkout is not based on the pinned queue revision.');
+    }
     const changed = git('diff', '--name-only', `${HEAD}..HEAD`).split('\n').filter(Boolean);
     if (
         !changed.length ||
@@ -97,6 +101,7 @@ async function main() {
             file =>
                 file !== '.github/workflows/test.yml' &&
                 file !== 'apps/learn-card-app/vitest.config.ts' &&
+                file !== 'apps/learn-card-app/src/i18n/paraglideLazyLocales.test.ts' &&
                 !file.startsWith('scripts/ci-worker-benchmark/')
         )
     )
@@ -126,7 +131,7 @@ async function main() {
     const save = () => writeFileSync(resultPath, `${JSON.stringify(results, null, 2)}\n`);
     save();
     appendSummary(
-        '## Nx / app worker benchmark\n\nOne GitHub-hosted runner; 3 Nx task slots; app workers in ABBA order 3 / 4 / 4 / 3. Nx caching is disabled for every iteration.'
+        '## Nx / app worker benchmark\n\nOne GitHub-hosted runner; 3 Nx task slots; app workers in ABBA order 3 / 4 / 4 / 3. Nx caching is disabled, and each Cargo target directory is cleaned before every iteration after an untimed dependency preload.'
     );
 
     try {
@@ -150,10 +155,22 @@ async function main() {
         copyFileSync(graphFile, path.join(output, 'graph.json'));
         results.projectCount = expectedProjects.length;
         results.taskCount = expectedTasks.length;
+        const preloadStart = performance.now();
+        const cargoProjects = preloadCargo(process.cwd(), process.env);
+        results.cargo = {
+            mode: 'cold-target-warm-registry',
+            projects: cargoProjects,
+            preloadSeconds: (performance.now() - preloadStart) / 1000,
+        };
         save();
         let reference;
 
         for (const setting of matrix) {
+            const cleanStart = performance.now();
+            const cleanedCargoProjects = resetCargoTargets(process.cwd(), process.env);
+            const cargoCleanSeconds = (performance.now() - cleanStart) / 1000;
+            if (JSON.stringify(cleanedCargoProjects) !== JSON.stringify(cargoProjects))
+                fail(`${setting.id} Cargo target selection changed.`);
             const runOutput = path.join(output, setting.id);
             const runWorking = path.join(working, setting.id);
             const reports = path.join(runOutput, 'retry-reports');
@@ -169,6 +186,7 @@ async function main() {
                 LC_BENCH_APP_WORKERS: String(setting.workers),
                 LC_WORKER_BENCHMARK_REPORT: appReportPath,
                 LC_CI_TEST_REPORT_DIR: reports,
+                CARGO_NET_OFFLINE: 'true',
                 SEED: process.env.SEED || FALLBACK_SEED,
                 LEARN_CLOUD_SEED: process.env.LEARN_CLOUD_SEED || FALLBACK_SEED,
             };
@@ -210,6 +228,7 @@ async function main() {
             );
             if (outcome !== 'success' || retrySummary.incomplete)
                 fail(`${setting.id} failed or has incomplete retry reports.`);
+            verifyCargoTargetsBuilt(process.cwd(), process.env);
             if (git('status', '--porcelain', '--untracked-files=no'))
                 fail(`${setting.id} modified tracked source files.`);
 
@@ -240,6 +259,8 @@ async function main() {
                 id: setting.id,
                 nxParallel: 3,
                 appWorkers: setting.workers,
+                cargoMode: 'cold-target-warm-registry',
+                cargoCleanSeconds,
                 elapsedSeconds,
                 appTaskDurationMs: appTask.durationMs,
                 peakMemoryUsedBytes,
