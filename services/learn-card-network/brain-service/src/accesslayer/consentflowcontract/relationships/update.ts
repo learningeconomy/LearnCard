@@ -172,7 +172,9 @@ export const reconsentTerms = async (
                         expectedRequestId: expectedRequestId ?? null,
                         consenterProfileId: relationship.consenter.profileId,
                         termsMutationVersion: Number(relationship.terms.mutationVersion ?? 0),
-                        nextShareUntil: computeNextShareUntil(terms),
+                        // One-time terms are consumed at once and never report a date.
+                        nextShareUntil: effectiveOneTime ? null : computeNextShareUntil(terms),
+                        keepDueNextShareUntil: !effectiveOneTime,
                         nextShareUntilNow: new Date().toISOString(),
                         params: {
                             ...newFlat,
@@ -217,7 +219,7 @@ export const reconsentTerms = async (
                 // A date that is already due but not yet reported by the deadline job is kept,
                 // so a terms write landing before the job runs cannot drop that event.
                 .set(
-                    'terms.nextShareUntil = CASE WHEN terms.nextShareUntil IS NOT NULL AND terms.nextShareUntil <= $nextShareUntilNow THEN terms.nextShareUntil ELSE $nextShareUntil END'
+                    'terms.nextShareUntil = CASE WHEN $keepDueNextShareUntil AND terms.nextShareUntil IS NOT NULL AND terms.nextShareUntil <= $nextShareUntilNow THEN terms.nextShareUntil ELSE $nextShareUntil END'
                 )
                 .set('terms.mutationVersion = coalesce(terms.mutationVersion, 0) + 1')
                 .with('terms, contract')
@@ -483,7 +485,9 @@ export const updateTerms = async (
                 new QueryBuilder(
                     new BindParam({
                         params: paramsForSet,
-                        nextShareUntil: computeNextShareUntil(terms),
+                        // One-time terms are consumed at once and never report a date.
+                        nextShareUntil: effectiveOneTime ? null : computeNextShareUntil(terms),
+                        keepDueNextShareUntil: !effectiveOneTime,
                         nextShareUntilNow: new Date().toISOString(),
                         expectedContractVersion: Number(relationship.contract.currentVersion ?? 1),
                         audienceVersion: audienceVersion ?? null,
@@ -507,7 +511,7 @@ export const updateTerms = async (
                 // A date that is already due but not yet reported by the deadline job is kept,
                 // so a terms write landing before the job runs cannot drop that event.
                 .set(
-                    'terms.nextShareUntil = CASE WHEN terms.nextShareUntil IS NOT NULL AND terms.nextShareUntil <= $nextShareUntilNow THEN terms.nextShareUntil ELSE $nextShareUntil END'
+                    'terms.nextShareUntil = CASE WHEN $keepDueNextShareUntil AND terms.nextShareUntil IS NOT NULL AND terms.nextShareUntil <= $nextShareUntilNow THEN terms.nextShareUntil ELSE $nextShareUntil END'
                 )
                 .set('terms.mutationVersion = coalesce(terms.mutationVersion, 0) + 1')
                 .with('terms, contract')

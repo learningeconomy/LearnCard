@@ -433,6 +433,20 @@ describe('share-until events', () => {
         expect(await nextShareUntilOf(termsUri)).toBeNull();
     });
 
+    it('clears nextShareUntil when an update makes the terms one-time, also when a date is due', async () => {
+        const termsUri = await consent(termsWith({ Achievement: hoursFromNow(5) }));
+        const passed = new Date(Date.now() - 60_000).toISOString();
+
+        await setStoredDate(termsUri, 'Achievement', passed, passed);
+        await learner.clients.fullAuth.contracts.updateConsentedContractTerms({
+            uri: termsUri,
+            terms: termsWith({ Achievement: passed, ID: hoursFromNow(9) }),
+            oneTime: true,
+        });
+
+        expect(await nextShareUntilOf(termsUri)).toBeNull();
+    });
+
     it('still advances the backfill when the share-until scan fails', async () => {
         await run("MATCH (state:ConsentFlowJobState {id: 'share-until-backfill-v1'}) DELETE state");
 

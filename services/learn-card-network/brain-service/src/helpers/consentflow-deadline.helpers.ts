@@ -616,7 +616,7 @@ const SHARE_UNTIL_RESERVED_BUDGET = { fraction: 0.25, maxMs: 4_000 };
  * One pass of the consentFlowDeadline job: suspend overdue re-consents, record expiry events, then
  * record share-until events and advance the one-off `nextShareUntil` backfill. Each of the last
  * three steps fails on its own: a failing scan is retried by the next pass and never hides the
- * earlier work or stops a later step. The expiry scan leaves part of the time for the
+ * earlier work or stops a later step. The suspension step and the expiry scan leave part of the time for the
  * share-until steps, and a step is skipped when no time is left.
  */
 export const runConsentFlowDeadlinePass = async ({
@@ -629,7 +629,12 @@ export const runConsentFlowDeadlinePass = async ({
         SHARE_UNTIL_RESERVED_BUDGET.maxMs,
         budgetMs * SHARE_UNTIL_RESERVED_BUDGET.fraction
     );
-    const { suspended } = await suspendExpiredConsentFlowTerms(undefined, { limit, budgetMs });
+    // The reserve is held back from the suspension step too: it runs first and could otherwise
+    // use the whole pass.
+    const { suspended } = await suspendExpiredConsentFlowTerms(undefined, {
+        limit,
+        budgetMs: Math.max(0, budgetMs - reservedMs),
+    });
     let expired = 0;
     let shareUntilPassed = 0;
 
