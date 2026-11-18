@@ -105,6 +105,7 @@ import {
     updateTerms,
     pruneDeletedUrisFromConsentTerms,
     upsertRequestedForRelationship,
+    markLegacyContractRequestSeen,
     withdrawTerms,
 } from '@accesslayer/consentflowcontract/relationships/update';
 import { consentToContract } from '@accesslayer/consentflowcontract/relationships/create';
@@ -2745,13 +2746,10 @@ export const contractsRouter = t.router({
                 });
             }
 
+            // A writer only updates a legacy request that already exists. Creating one here would
+            // let a writer tell an unrequested profile apart from one holding a hidden email request.
             try {
-                await upsertRequestedForRelationship(
-                    contractByUri.id,
-                    resolvedTargetProfileId,
-                    undefined,
-                    'seen'
-                );
+                await markLegacyContractRequestSeen(contractByUri.id, resolvedTargetProfileId);
             } catch (error) {
                 throw new TRPCError({
                     code: 'BAD_REQUEST',

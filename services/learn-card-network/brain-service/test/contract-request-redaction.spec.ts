@@ -183,4 +183,54 @@ describe('redaction of email-addressed contract requests', () => {
             )?.readStatus
         ).toBe('unseen');
     });
+
+    it('gives a writer the same answer for a hidden email request and for no request', async () => {
+        const contractUri = await create();
+        const { requestId } = await send(contractUri);
+        await markAddressedByEmail(
+            contractUri,
+            requestId,
+            `${randomBytes(5).toString('hex')}@example.com`
+        );
+        const [writer, unrequested, legacy] = await Promise.all([
+            actor('writer'),
+            actor('unrequested'),
+            actor('legacy'),
+        ]);
+        await neogma.queryRunner.run(
+            `MATCH (c:ConsentFlowContract {id: $contractId}),
+                   (w:Profile {profileId: $writer}), (l:Profile {profileId: $legacy})
+             MERGE (c)-[:CAN_WRITE]->(w)
+             MERGE (c)-[:REQUESTED_FOR {status: 'pending', readStatus: 'unseen'}]->(l)`,
+            {
+                contractId: id(contractUri),
+                writer: writer.profileId,
+                legacy: legacy.profileId,
+            }
+        );
+        const seen = (target: Actor) =>
+            writer.clients.fullAuth.contracts.markContractRequestAsSeen({
+                contractUri,
+                targetProfileId: target.profileId,
+            });
+        const status = (target: Actor) =>
+            writer.clients.fullAuth.contracts.getRequestStatusForProfile({
+                contractUri,
+                targetProfileId: target.profileId,
+            });
+
+        expect(await seen(learner)).toBe(true);
+        expect(await seen(unrequested)).toBe(true);
+        expect(await status(learner)).toBeNull();
+        expect(await status(unrequested)).toBeNull();
+        const created = await neogma.queryRunner.run(
+            `MATCH (:ConsentFlowContract {id: $contractId})-[r:REQUESTED_FOR]->(:Profile {profileId: $profileId})
+             RETURN count(r) AS n`,
+            { contractId: id(contractUri), profileId: unrequested.profileId }
+        );
+        expect(Number(created.records[0]?.get('n'))).toBe(0);
+
+        expect(await seen(legacy)).toBe(true);
+        expect(await status(legacy)).toMatchObject({ readStatus: 'seen' });
+    });
 });
