@@ -349,9 +349,13 @@ export const emitExpiredConsentEvents = async (
 
 const SHARE_UNTIL_BACKFILL_STATE_ID = 'share-until-backfill-v1';
 
+/** Passes in a row in which no terms could be updated before the share-until scan gives up. */
+const SHARE_UNTIL_MAX_STALLED_READS = 3;
+
 type ShareUntilWrite = {
     termsId: string;
     expectedNext: string;
+    mutationVersion: ReturnType<typeof int>;
     next: string | null;
     contractId: string | null;
     emits: { id: string; category: string }[];
@@ -367,8 +371,11 @@ type ShareUntilWrite = {
  * consent-share-until.helpers). Terms with `nextShareUntil <= now` are read in bounded batches
  * and the comparison is repeated exactly in JS. Each terms is handled in one statement that
  * creates the events and moves `nextShareUntil` to the next future date (or removes it), so a
- * crash cannot repeat a date forever. The statement only applies while `nextShareUntil` still
- * has the value that was read, so a concurrent terms write wins. The event id
+ * crash cannot repeat a date forever. The statement only applies while the terms still have the
+ * `nextShareUntil` and the `mutationVersion` that were read. A terms edit keeps a due
+ * `nextShareUntil` unchanged, so the value alone would not show that the categories changed in
+ * between; the version does. Terms that changed are read again and handled from the fresh read,
+ * so a date added by that edit is never overwritten. The event id
  * `${termsId}:share_until:${category}:${shareUntilIso}` is merged, so a retry creates nothing.
  *
  * Only categories dated at or after the stored `nextShareUntil` are reported: that value was the
@@ -385,6 +392,7 @@ export const emitShareUntilPassedEvents = async (
     const batchSize = batchSizeOf(limit);
     const nowMs = Date.parse(now);
     let shareUntilPassed = 0;
+    let stalledReads = 0;
 
     await ensureContractEventMaintenance();
 
@@ -436,6 +444,7 @@ export const emitShareUntilPassedEvents = async (
             writes.push({
                 termsId,
                 expectedNext,
+                mutationVersion: int(toNumber(props.mutationVersion)),
                 // An expired consent keeps its later dates: a contract update can make it live
                 // again (expiry_extended) without a terms write to recompute them.
                 next: active ? computeNextShareUntilFromProperties(props, nowMs) : null,
@@ -450,6 +459,7 @@ export const emitShareUntilPassedEvents = async (
             `UNWIND $writes AS write
              MATCH (terms:ConsentFlowTerms {id: write.termsId})
              WHERE terms.nextShareUntil = write.expectedNext
+                 AND coalesce(terms.mutationVersion, 0) = write.mutationVersion
              SET terms.nextShareUntil = write.next
              FOREACH (emit IN write.emits |
                  MERGE (event:ConsentFlowEvent {id: emit.id})
@@ -467,9 +477,15 @@ export const emitShareUntilPassedEvents = async (
 
         shareUntilPassed += result.summary.counters.updates().nodesCreated;
 
-        // A terms that could not be updated (a concurrent write changed it) is read again next pass.
-        if (toNumber(result.records[0]?.get('handled')) === 0) break;
-        if (found.records.length < batchSize) break;
+        const handled = toNumber(result.records[0]?.get('handled'));
+
+        // Terms that could not be updated were changed by a concurrent write: they are still due,
+        // so the next read returns them again with their new content. A few reads without any
+        // progress end the pass; the next pass continues.
+        stalledReads = handled === 0 ? stalledReads + 1 : 0;
+
+        if (stalledReads >= SHARE_UNTIL_MAX_STALLED_READS) break;
+        if (handled === found.records.length && found.records.length < batchSize) break;
     } while (Date.now() < deadline);
 
     return { shareUntilPassed };
@@ -478,10 +494,17 @@ export const emitShareUntilPassedEvents = async (
 /**
  * One-off backfill of `nextShareUntil` for consents written before the field existed. A
  * `ConsentFlowJobState` cursor walks the terms in id order, a bounded batch at a time; once the
- * end is reached the state records `completedAt` and later calls read only that node. Dates that
- * have already passed yield no value, so no events are emitted for them. A value is only written
- * for terms that have none yet, and only while the terms still have the `mutationVersion` that was read, so a concurrent terms write
- * (which sets the field itself) is never overwritten. Safe to repeat and to run concurrently.
+ * end is reached the state records `completedAt` and later calls read only that node.
+ *
+ * The first call stores its time as `startedAt`, and every later call computes against that same
+ * cutoff: a terms gets the earliest date after the cutoff. Dates before the cutoff had passed
+ * before the feature ran, so they yield no value and no event. A date that passes while the
+ * backfill is still walking is after the cutoff, so it is written even though it is already due;
+ * the share-until scan then finds it and reports it like any other passed date.
+ *
+ * A value is only written for terms that have none yet, and only while the terms still have the
+ * `mutationVersion` that was read, so a concurrent terms write (which sets the field itself) is
+ * never overwritten. Safe to repeat and to run concurrently.
  */
 export const backfillNextShareUntil = async (
     now = new Date().toISOString(),
@@ -489,18 +512,24 @@ export const backfillNextShareUntil = async (
 ): Promise<{ backfilled: number; done: boolean }> => {
     const deadline = Date.now() + budgetMs;
     const batchSize = batchSizeOf(limit);
-    const nowMs = Date.parse(now);
     let backfilled = 0;
 
     await ensureContractEventMaintenance();
 
     const state = await neogma.queryRunner.run(
         `MERGE (state:ConsentFlowJobState {id: $id})
-         RETURN state.completedAt AS completedAt, state.cursor AS cursor`,
-        { id: SHARE_UNTIL_BACKFILL_STATE_ID }
+         SET state.startedAt = coalesce(state.startedAt, $now)
+         RETURN state.completedAt AS completedAt, state.cursor AS cursor,
+             state.startedAt AS startedAt`,
+        { id: SHARE_UNTIL_BACKFILL_STATE_ID, now }
     );
 
     if (state.records[0]?.get('completedAt')) return { backfilled, done: true };
+
+    const startedAt: unknown = state.records[0]?.get('startedAt');
+    const startedMs = typeof startedAt === 'string' ? Date.parse(startedAt) : Number.NaN;
+    // The same cutoff for every pass of the walk, not the time of this pass.
+    const cutoffMs = Number.isNaN(startedMs) ? Date.parse(now) : startedMs;
 
     const storedCursor: unknown = state.records[0]?.get('cursor');
     let cursor = typeof storedCursor === 'string' ? storedCursor : '';
@@ -517,7 +546,7 @@ export const backfillNextShareUntil = async (
             const props: Record<string, unknown> = row.get('props');
             const active =
                 typeof props.status === 'string' && ACTIVE_STATUSES.includes(props.status);
-            const next = active ? computeNextShareUntilFromProperties(props, nowMs) : null;
+            const next = active ? computeNextShareUntilFromProperties(props, cutoffMs) : null;
 
             if (typeof props.id !== 'string') return [];
             // A value that is already there was written by a terms write; keep it, even when due.

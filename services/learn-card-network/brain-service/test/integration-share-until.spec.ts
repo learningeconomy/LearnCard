@@ -359,6 +359,65 @@ describe('share-until events', () => {
         expect(await process()).toBe(0);
     });
 
+    it('keeps a date added by a terms edit that lands between the scan read and its write', async () => {
+        const termsUri = await consent(termsWith({ Achievement: hoursFromNow(5) }));
+        const passed = new Date(Date.now() - 60_000).toISOString();
+        const added = hoursFromNow(2);
+
+        await setStoredDate(termsUri, 'Achievement', passed, passed);
+
+        const runner = neogma.queryRunner;
+        const original = runner.run.bind(runner);
+        let edited = false;
+
+        // Right after the scan has read the due terms, the learner adds a category date. The edit
+        // keeps the due nextShareUntil, so only the mutation version shows that anything changed.
+        vi.spyOn(runner, 'run').mockImplementation(async (...args) => {
+            const result = await original(...args);
+
+            if (!edited && String(args[0]).includes('ConsentFlowTerms(nextShareUntil)')) {
+                edited = true;
+                await learner.clients.fullAuth.contracts.updateConsentedContractTerms({
+                    uri: termsUri,
+                    terms: termsWith({ Achievement: passed, ID: added }),
+                });
+            }
+
+            return result;
+        });
+
+        expect(await process()).toBe(1);
+        expect(edited).toBe(true);
+        expect(await shareUntilEvents()).toHaveLength(1);
+        // The scan worked from a fresh read, so the added date is the one being tracked now.
+        expect(await nextShareUntilOf(termsUri)).toBe(added);
+    });
+
+    it('backfills a date that passes while the backfill is still walking, and reports it', async () => {
+        const termsUri = await consent(termsWith({ Achievement: hoursFromNow(4) }));
+        const startedAt = new Date(Date.now() - 2 * 3_600_000).toISOString();
+        const passed = new Date(Date.now() - 3_600_000).toISOString();
+
+        // The backfill started two hours ago and has not reached this consent; its date passed
+        // one hour ago, after the start.
+        await setStoredDate(termsUri, 'Achievement', passed, null);
+        await run(
+            `MERGE (state:ConsentFlowJobState {id: 'share-until-backfill-v1'})
+             REMOVE state.completedAt, state.cursor
+             SET state.startedAt = $startedAt`,
+            { startedAt }
+        );
+
+        for (let step = 0; step < 500; step++) {
+            if ((await backfillNextShareUntil(undefined, { limit: 2, budgetMs: 0 })).done) break;
+        }
+
+        expect(await nextShareUntilOf(termsUri)).toBe(passed);
+        expect(await process()).toBeGreaterThanOrEqual(1);
+        expect(await shareUntilEvents()).toHaveLength(1);
+        expect(await nextShareUntilOf(termsUri)).toBeNull();
+    });
+
     it('backfills existing terms in bounded batches and stops once done', async () => {
         const termsUri = await consent(termsWith({ Achievement: hoursFromNow(4) }));
         const expected = await nextShareUntilOf(termsUri);
