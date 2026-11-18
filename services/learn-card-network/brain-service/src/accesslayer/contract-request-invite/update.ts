@@ -22,11 +22,13 @@ import type { ContractRequestInviteType } from './read';
  * The caller sends the email only when true, then finishes delivery or releases the claim.
  * A claim the worker never finished or released (it stopped mid-send) can be taken again once
  * the lease has passed, so an interrupted send is retried rather than lost.
+ * `leased`: another worker holds a live lease; leave the invite queued so it can be retaken.
+ * `refused`: the email was sent, the invite is no longer pending, or the address hit its limit.
  */
 export const claimContractRequestInviteEmail = async (
     contractId: string,
     inviteId: string
-): Promise<boolean> => {
+): Promise<'claimed' | 'leased' | 'refused'> => {
     const now = new Date();
     const query = lockContractAudience(
         new QueryBuilder(
@@ -48,16 +50,21 @@ export const claimContractRequestInviteEmail = async (
         contractId
     ).raw(`
         MATCH (contract)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite {id: $inviteId})
-        WHERE invite.status = 'pending' AND (invite.emailSentAt IS NULL OR
-            (invite.deliveryPending = true AND invite.emailSentAt <= $staleBefore))
+        WHERE invite.status = 'pending'
+        WITH contract, invite,
+            (invite.emailSentAt IS NULL OR
+                (invite.deliveryPending = true AND invite.emailSentAt <= $staleBefore)) AS free
         OPTIONAL MATCH (contract)-[:HAS_REQUEST_INVITE]->(sent:ContractRequestInvite)
             WHERE sent <> invite AND sent.email = invite.email AND sent.emailSentAt > $since
-        WITH invite, count(sent) AS recent
-        WHERE recent < $limit
-        SET invite.emailSentAt = $now, invite.deliveryNextAt = $leaseUntil
-        RETURN invite.id AS id
+        WITH invite, free, count(sent) AS recent
+        WITH invite, free AND recent < $limit AS claim,
+            NOT free AND coalesce(invite.deliveryPending, false) = true AS leased
+        FOREACH (_ IN CASE WHEN claim THEN [1] ELSE [] END |
+            SET invite.emailSentAt = $now, invite.deliveryNextAt = $leaseUntil)
+        RETURN CASE WHEN claim THEN 'claimed' WHEN leased THEN 'leased' ELSE 'refused' END AS outcome
     `);
-    return (await runAudienceMutation(query)).records.length > 0;
+    const record = (await runAudienceMutation(query)).records[0];
+    return record?.get('outcome') ?? 'refused';
 };
 
 /** What cancelling an invite did. */

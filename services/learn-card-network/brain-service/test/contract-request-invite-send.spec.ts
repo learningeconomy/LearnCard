@@ -15,7 +15,11 @@ import * as notifications from '@helpers/notifications.helpers';
 import * as inviteReads from '@accesslayer/contract-request-invite/read';
 import * as requestReads from '@accesslayer/consentflowcontract/read';
 import * as requestHelpers from '@helpers/contract-requests.helpers';
-import { deliverContractRequestInvites } from '@helpers/contract-request-invites.helpers';
+import {
+    attachContractRequestInvitesForProfile,
+    deliverContractRequestInvites,
+} from '@helpers/contract-request-invites.helpers';
+import { defaultDomain } from '@helpers/integration-events.helpers';
 
 const actor = async (role: string) => {
     const user = await getUser(randomBytes(32).toString('hex'));
@@ -377,5 +381,66 @@ describe('sendContractRequest with targetEmail', () => {
                 requestId: oldId,
             })
         ).toMatchObject({ status: 'cancelled' });
+    });
+
+    it('leaves an invite queued while another worker holds its email lease', async () => {
+        const { requestId } = await recipient.clients.fullAuth.contracts.sendContractRequest({
+            contractUri,
+            targetEmail: randomEmail(),
+        });
+        // Another worker has just claimed the email; this worker read the invite as due before that.
+        await neogma.queryRunner.run(
+            `MATCH (i:ContractRequestInvite {id: $requestId})
+             SET i.emailSentAt = $claimedAt, i.deliveryNextAt = $past`,
+            { requestId, claimedAt: new Date().toISOString(), past: '2000-01-01T00:00:00.000Z' }
+        );
+        await deliverContractRequestInvites();
+        expect(mocks.send).not.toHaveBeenCalled();
+        expect((await getContractRequestInvite(id(contractUri), requestId))?.deliveryPending).toBe(
+            true
+        );
+
+        // That worker stopped before sending; once its lease has passed the email still goes out.
+        await neogma.queryRunner.run(
+            'MATCH (i:ContractRequestInvite {id: $requestId}) SET i.emailSentAt = $claimedAt',
+            { requestId, claimedAt: new Date(Date.now() - 10 * 60_000).toISOString() }
+        );
+        await deliverContractRequestInvites();
+        expect(mocks.send).toHaveBeenCalledTimes(1);
+    });
+
+    it('attaches a repeat invite when the person verifies the email again', async () => {
+        const email = randomEmail();
+        await addEmail(learner.profileId, email);
+        const first = await send(email);
+        await recipient.clients.fullAuth.contracts.cancelContractRequest({
+            contractUri,
+            requestId: first.requestId,
+        });
+
+        // The address is removed from the profile, so the repeat invite is emailed instead.
+        await neogma.queryRunner.run(
+            `MATCH (:Profile {profileId: $profileId})-[:HAS_CONTACT_METHOD]->(cm:ContactMethod)
+             WHERE cm.value = $email DETACH DELETE cm`,
+            { profileId: learner.profileId, email }
+        );
+        const repeat = await send(email);
+        expect(repeat.requestId).not.toBe(first.requestId);
+        expect(mocks.send).toHaveBeenCalledTimes(1);
+        expect(await learnerRequest()).toMatchObject({
+            requestId: first.requestId,
+            status: 'cancelled',
+        });
+
+        // Verifying the address again runs the same attach the verification routes call.
+        await addEmail(learner.profileId, email);
+        await attachContractRequestInvitesForProfile(
+            { profileId: learner.profileId },
+            defaultDomain()
+        );
+        expect(await learnerRequest()).toMatchObject({
+            requestId: repeat.requestId,
+            status: 'pending',
+        });
     });
 });

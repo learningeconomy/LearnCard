@@ -259,7 +259,11 @@ export const deliverContractRequestInvites = async ({
             const referrerName = (await getProfileByProfileId(invite.requestedBy))?.displayName;
             const contractOwnerName = await getContractOwnerDisplayName(contractId);
             const branding = invite.emailBranding ? JSON.parse(invite.emailBranding) : undefined;
-            if (!(await claimContractRequestInviteEmail(contractId, invite.id))) {
+            const claim = await claimContractRequestInviteEmail(contractId, invite.id);
+            // Another worker holds the lease: leave the invite queued, so it is retaken if that
+            // worker stops before sending.
+            if (claim === 'leased') continue;
+            if (claim === 'refused') {
                 // Already emailed, or the address reached its limit: nothing more to send.
                 await finish();
                 continue;

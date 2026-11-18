@@ -83,7 +83,9 @@ export const getProfileIdsWithVerifiedEmail = async (email: string): Promise<str
 /**
  * Pending, unexpired invites addressed to any verified email of the profile, oldest first.
  * Invites that can never attach are left out, so callers do not retry them on every call:
- * the profile's own invites, and invites for a contract that already has a request for the profile.
+ * the profile's own invites, and invites for a contract that already has a request for the profile,
+ * unless that request is one the invite may replace: the same sender's email-addressed request
+ * that is cancelled, expired or past its expiry date (see `createRequestForProfile`).
  */
 export const getPendingContractRequestInvitesForProfile = async (
     profileId: string,
@@ -96,7 +98,13 @@ export const getPendingContractRequestInvitesForProfile = async (
          MATCH (contract:ConsentFlowContract)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite)
          WHERE invite.email IN emails AND invite.status = 'pending' AND invite.expiresAt > $now
              AND invite.requestedBy <> $profileId
-             AND NOT EXISTS { MATCH (contract)-[:REQUESTED_FOR]->(profile) }
+             AND NOT EXISTS {
+                MATCH (contract)-[existing:REQUESTED_FOR]->(profile)
+                WHERE NOT (coalesce(existing.addressedByEmail, false) = true AND
+                    existing.requestedBy = invite.requestedBy AND
+                    (existing.status IN ['expired', 'cancelled'] OR
+                     (existing.status = 'pending' AND existing.expiresAt <= $now)))
+             }
              AND (contract.expiresAt IS NULL OR trim(contract.expiresAt) = '' OR datetime(contract.expiresAt) > datetime($now))
              AND EXISTS {
                 MATCH (contract)-[:CREATED_BY|CAN_WRITE|SHARES_DATA_WITH]->(:Profile {profileId: invite.requestedBy})
