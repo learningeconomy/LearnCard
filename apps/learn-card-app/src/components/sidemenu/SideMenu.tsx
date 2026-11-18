@@ -22,6 +22,7 @@ import ThemeSelector, { themeSelectorViewMode } from '../../theme/components/The
 import LanguagePicker from './LanguagePicker';
 import CheckListButton from '../learncard/checklist/CheckListButton';
 import useOpenMyLearnCard from '../learncard/useOpenMyLearnCard';
+import { myLearnCardIntentHandlers } from '../learncard/MyLearnCardModal';
 import GenericErrorBoundary from '../generic/GenericErrorBoundary';
 
 import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
@@ -197,6 +198,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                                 <button
                                     type="button"
                                     onClick={openMyLearnCard}
+                                    {...myLearnCardIntentHandlers}
                                     className="w-full flex items-center gap-[10px] px-[10px] py-[5px] rounded-[10px] text-grayscale-900 font-poppins text-[17px]"
                                 >
                                     <Settings className="h-[35px] w-[35px] text-grayscale-400" />
