@@ -10,6 +10,7 @@ import {
     renderSmokeSummary,
     runSmoke,
     smokeReportFailed,
+    videoUrlFromSessionDetails,
     type BrowserStackClient,
     type SmokeDeviceRun,
 } from './maestroSmoke';
@@ -61,6 +62,17 @@ describe('interpretBuild', () => {
 
         expect(run?.status).toBe('failed');
         expect(run?.sessionUrl).toContain('session-2');
+    });
+
+    it('reads a session video url from either BrowserStack payload', () => {
+        expect(videoUrlFromSessionDetails({ video_url: 'https://example.test/a.mp4' })).toBe(
+            'https://example.test/a.mp4'
+        );
+        expect(
+            videoUrlFromSessionDetails({
+                automation_session: { video_url: 'https://example.test/b.mp4' },
+            })
+        ).toBe('https://example.test/b.mp4');
     });
 
     it('treats a BrowserStack timeout as a timed-out run', () => {
@@ -202,6 +214,15 @@ describe('renderSmokeSummary', () => {
         expect(summary).toContain(
             'https://app-automate.browserstack.com/dashboard/v2/sessions/session-ok'
         );
+        expect(
+            renderSmokeSummary([
+                {
+                    platform: 'android',
+                    device: passed.device,
+                    runs: [{ ...passed, videoUrl: 'https://example.test/pass.mp4' }],
+                },
+            ])
+        ).toContain('[video](https://example.test/pass.mp4)');
         expect(summary).toContain('android: 1/1 passed.');
         const hostile = renderSmokeSummary([
             {

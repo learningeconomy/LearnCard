@@ -12,6 +12,7 @@ export type SmokeDeviceRun = {
     buildId: string | null;
     sessionId: string | null;
     sessionUrl: string | null;
+    videoUrl?: string | null;
     detail: string | null;
 };
 
@@ -25,6 +26,7 @@ export type BrowserStackSession = {
     id?: string;
     status?: string;
     duration?: number | string | null;
+    video_url?: string;
     testcases?: {
         status?: {
             passed?: number;
@@ -49,6 +51,7 @@ export type BrowserStackClient = {
     uploadSuite: (bytes: Uint8Array, filename: string) => Promise<string>;
     startBuild: (platform: SmokePlatform, body: Record<string, unknown>) => Promise<string>;
     getBuild: (buildId: string) => Promise<BrowserStackBuild>;
+    getSession?: (buildId: string, sessionId: string) => Promise<unknown>;
     stopBuild: (buildId: string) => Promise<void>;
 };
 
@@ -169,8 +172,20 @@ export const interpretBuild = (
         buildId: context.buildId,
         sessionId: chosen?.id ?? null,
         sessionUrl: browserStackSessionUrl(context.buildId, chosen?.id ?? null),
+        videoUrl: chosen?.video_url ?? null,
         detail: status === 'passed' ? null : `BrowserStack status: ${build.status ?? 'unknown'}`,
     };
+};
+
+export const videoUrlFromSessionDetails = (body: unknown): string | null => {
+    if (!body || typeof body !== 'object') return null;
+    const record = body as {
+        video_url?: unknown;
+        automation_session?: { video_url?: unknown };
+    };
+    if (typeof record.video_url === 'string' && record.video_url) return record.video_url;
+    const nested = record.automation_session?.video_url;
+    return typeof nested === 'string' && nested ? nested : null;
 };
 
 export const maestroBuildRequest = (input: {
@@ -278,6 +293,13 @@ export const runSmoke = async (
                     durationSeconds: Math.max(0, Math.round((now() - started) / 1000)),
                 };
             }
+            if (client.getSession && interpreted.buildId && interpreted.sessionId) {
+                const details = await client
+                    .getSession(interpreted.buildId, interpreted.sessionId)
+                    .catch(() => null);
+                const videoUrl = videoUrlFromSessionDetails(details);
+                if (videoUrl) interpreted = { ...interpreted, videoUrl };
+            }
             runs.push(interpreted);
         } catch (error) {
             const detail = error instanceof Error ? error.message : String(error);
@@ -331,7 +353,8 @@ export const renderSmokeSummary = (
 
     for (const run of sorted) {
         const duration = run.durationSeconds === null ? 'n/a' : `${run.durationSeconds}s`;
-        const link = run.sessionUrl ? `[session](${run.sessionUrl})` : 'n/a';
+        const video = run.videoUrl ? ` [video](${run.videoUrl})` : '';
+        const link = run.sessionUrl ? `[session](${run.sessionUrl})${video}` : 'n/a';
         const result =
             run.detail && run.status !== 'passed' ? `${run.status} (${run.detail})` : run.status;
         lines.push(

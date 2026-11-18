@@ -14,6 +14,7 @@ import {
     renderSmokeSummary,
     runSmoke,
     smokeReportFailed,
+    videoUrlFromSessionDetails,
     type BrowserStackBuild,
     type BrowserStackClient,
     type SmokePlatform,
@@ -113,6 +114,24 @@ const createClient = (
             throw new Error('BrowserStack build status was not an object');
         }
         return body as BrowserStackBuild;
+    },
+    getSession: async (buildId, sessionId) => {
+        const paths = [
+            `/app-automate/maestro/v2/builds/${buildId}/sessions/${sessionId}`,
+            `/app-automate/sessions/${sessionId}.json`,
+        ];
+        let last: unknown = null;
+        for (const path of paths) {
+            try {
+                last = await browserStackRequest(username, accessKey, path, { method: 'GET' });
+                if (videoUrlFromSessionDetails(last)) return last;
+            } catch (error) {
+                if (!(error instanceof BrowserStackRequestError) || error.status !== 404) {
+                    if (path === paths[paths.length - 1]) throw error;
+                }
+            }
+        }
+        return last;
     },
     stopBuild: async buildId => {
         await browserStackRequest(
@@ -288,9 +307,64 @@ const patchNativeConfigs = async (): Promise<void> => {
     }
 };
 
+const downloadVideo = async (
+    videoUrl: string,
+    destination: string,
+    username: string,
+    accessKey: string
+): Promise<void> => {
+    const authed = await fetch(videoUrl, {
+        headers: { Authorization: authHeader(username, accessKey) },
+    });
+    const response = authed.ok ? authed : await fetch(videoUrl);
+    if (!response.ok) {
+        throw new Error(`video download failed (HTTP ${response.status})`);
+    }
+    await writeFile(destination, Buffer.from(await response.arrayBuffer()));
+};
+
+const saveSampleVideos = async (): Promise<void> => {
+    const outPath = process.env.SMOKE_OUT;
+    const directory = process.env.SMOKE_VIDEO_DIR;
+    if (!outPath || !directory) throw new Error('SMOKE_OUT and SMOKE_VIDEO_DIR are required');
+    const { existsSync } = await import('node:fs');
+    if (!existsSync(outPath)) {
+        console.log(`no smoke results at ${outPath}`);
+        return;
+    }
+    const username = requireEnv('BROWSERSTACK_USERNAME');
+    const accessKey = requireEnv('BROWSERSTACK_ACCESS_KEY');
+    const result = JSON.parse(await readFile(outPath, 'utf8')) as SmokeResultFile;
+    await mkdir(directory, { recursive: true });
+    const prefix = result.platform === 'ios' ? 'iphone-16' : 'android-galaxy-s25';
+    const samples = [
+        ['pass', result.runs.find(sample => sample.status === 'passed')],
+        ['fail', result.runs.find(sample => sample.status !== 'passed')],
+    ] as const;
+    const client = createClient(username, accessKey, 'videos');
+    for (const [label, sample] of samples) {
+        if (!sample) continue;
+        let videoUrl = sample.videoUrl ?? null;
+        if (!videoUrl && sample.buildId && sample.sessionId) {
+            videoUrl = videoUrlFromSessionDetails(
+                await client.getSession?.(sample.buildId, sample.sessionId).catch(() => null)
+            );
+        }
+        if (!videoUrl) {
+            console.log(`no video for ${prefix} ${label} session ${sample.sessionId ?? 'none'}`);
+            continue;
+        }
+        const destination = join(directory, `${prefix}-${label}.mp4`);
+        await downloadVideo(videoUrl, destination, username, accessKey);
+        console.log(`saved ${destination}`);
+    }
+};
+
 const command = process.argv[2];
 if (command === 'summarize') {
     await summarize(process.argv[3] ?? 'smoke-results');
+} else if (command === 'videos') {
+    await saveSampleVideos();
 } else if (command === 'patch-native-config') {
     await patchNativeConfigs();
 } else if (command === 'run' || command === undefined) {
