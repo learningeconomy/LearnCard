@@ -2,15 +2,23 @@ import React from 'react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-// The modal body chunk. `requested` counts how often the app asks for it.
-const chunk = { requested: 0 };
+// `warmed` counts HTTP-cache prefetches; `imported` counts imports of the modal module.
+const calls = { warmed: 0, imported: 0 };
 
 /** A fresh copy of the modal module and the first-screen signal it waits on. */
 const loadModal = async () => {
     vi.resetModules();
-    chunk.requested = 0;
+    calls.warmed = 0;
+    calls.imported = 0;
+    vi.doMock('../../helpers/prefetchChunk', () => ({
+        prefetchChunk: (key: string) => {
+            expect(key).toBe('my-learncard');
+            calls.warmed += 1;
+            return Promise.resolve(true);
+        },
+    }));
     vi.doMock('./MyLearnCardModalContent', () => {
-        chunk.requested += 1;
+        calls.imported += 1;
         return { default: () => <p>My LearnCard body</p> };
     });
     const modal = await import('./MyLearnCardModal');
@@ -24,7 +32,6 @@ const originalRic = window.requestIdleCallback;
 
 afterEach(() => {
     cleanup();
-    vi.useRealTimers();
     window.requestIdleCallback = originalRic;
 });
 
@@ -39,7 +46,7 @@ describe('My LearnCard modal prefetch', () => {
             }) as typeof window.requestIdleCallback;
         });
 
-        it('fetches the chunk after the first screen paints and the browser goes idle, before any open', async () => {
+        it('warms the chunk after the first screen paints and the browser goes idle, without importing it', async () => {
             const {
                 prefetchMyLearnCardWhenIdle,
                 markFirstScreenPainted,
@@ -48,19 +55,21 @@ describe('My LearnCard modal prefetch', () => {
 
             prefetchMyLearnCardWhenIdle();
             await settle();
-            expect(chunk.requested).toBe(0);
+            expect(calls.warmed).toBe(0);
 
             markFirstScreenPainted();
             await settle();
-            expect(chunk.requested).toBe(0);
+            expect(calls.warmed).toBe(0);
 
             idle.forEach(run => run());
             await settle();
-            expect(chunk.requested).toBe(1);
+            expect(calls.warmed).toBe(1);
+            // A speculative import() that fails is remembered by the browser; only the open imports.
+            expect(calls.imported).toBe(0);
 
             render(<Modal branding={'learncard' as never} />);
             expect(await screen.findByText('My LearnCard body')).toBeTruthy();
-            expect(chunk.requested).toBe(1);
+            expect(calls.imported).toBe(1);
         });
 
         it('does nothing if cancelled before the browser goes idle', async () => {
@@ -73,7 +82,7 @@ describe('My LearnCard modal prefetch', () => {
             idle.forEach(run => run());
             await settle();
 
-            expect(chunk.requested).toBe(0);
+            expect(calls.warmed).toBe(0);
         });
     });
 
@@ -87,11 +96,11 @@ describe('My LearnCard modal prefetch', () => {
         await settle();
         await new Promise(resolve => setTimeout(resolve, 250));
 
-        expect(chunk.requested).toBe(1);
+        expect(calls.warmed).toBe(1);
     });
 
     it.each(['pointerEnter', 'focus', 'pointerDown', 'touchStart'] as const)(
-        'fetches the chunk on %s of a trigger, before the click',
+        'warms the chunk on %s of a trigger, before the click',
         async event => {
             const { myLearnCardIntentHandlers } = await loadModal();
             render(
@@ -103,7 +112,8 @@ describe('My LearnCard modal prefetch', () => {
             fireEvent[event](screen.getByRole('button', { name: 'Open profile' }));
             await settle();
 
-            expect(chunk.requested).toBe(1);
+            expect(calls.warmed).toBe(1);
+            expect(calls.imported).toBe(0);
         }
     );
 });
