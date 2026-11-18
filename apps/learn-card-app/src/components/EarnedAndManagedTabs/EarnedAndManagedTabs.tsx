@@ -56,7 +56,6 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
     showListViewToggle = false,
     viewModeToggleIconOverride,
     isManagedAvailable = false,
-    showManaged,
     hideSearch = false,
     showEarnedAndManaged,
     category,
@@ -96,10 +95,10 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
         <IonRow
             className={`relative pt-[50px] px-[5px] flex gap-[10px] w-full items-center justify-center max-w-[600px] mx-auto ${containerClassName}`}
         >
-            <IonCol className="flex items-center justify-between w-full p-0 min-w-0">
+            <IonCol className="flex flex-wrap items-center justify-between gap-y-2 w-full p-0 min-w-0">
                 {!isSearchActive && (
                     <div
-                        className="flex pl-6"
+                        className="flex shrink-0 sm:pl-6"
                         role="tablist"
                         aria-label={`${m['boost.earnedTab']()} / ${m['boost.managedTab']()}`}
                     >
@@ -108,7 +107,7 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                             role="tab"
                             aria-selected={activeTab === CredentialListTabEnum.Earned}
                             onClick={() => handleOnChange(CredentialListTabEnum.Earned)}
-                            className={`py-[8px] px-[16px] rounded-[5px] text-base focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                            className={`py-[8px] px-2 sm:px-[16px] rounded-[5px] text-sm sm:text-base focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                                 activeTab === CredentialListTabEnum.Earned
                                     ? `${activeLabelClassName} ${tabColor}`
                                     : inactiveLabelClassName
@@ -122,7 +121,7 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                                 role="tab"
                                 aria-selected={activeTab === CredentialListTabEnum.Managed}
                                 onClick={() => handleOnChange(CredentialListTabEnum.Managed)}
-                                className={`py-[8px] px-[16px] rounded-[5px] text-base focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                                className={`py-[8px] px-2 sm:px-[16px] rounded-[5px] text-sm sm:text-base focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                                     activeTab === CredentialListTabEnum.Managed
                                         ? `${activeLabelClassName} ${tabColor}`
                                         : inactiveLabelClassName
@@ -134,36 +133,31 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                     </div>
                 )}
 
-                <div className={`flex items-center ${isSearchActive ? 'flex-1 px-2 min-w-0' : ''}`}>
-                    {!hideSearch && (
-                        <div
-                            className={`flex shrink-0 min-h-[40px] relative ${
-                                isSearchActive
-                                    ? 'flex-1 transition-[width] duration-300 ease-in-out min-w-0'
-                                    : 'w-[40px]'
-                            } ${!showManaged && !isSearchActive ? 'top-[3px] left-0' : ''} ${
-                                showEarnedAndManaged === false && !isSearchActive ? 'w-full' : ''
-                            }`}
-                        >
-                            {isSearchActive && (
-                                <div className="flex-1 relative min-w-0">
-                                    <input
-                                        ref={searchInputRef}
-                                        type="text"
-                                        aria-label={m['wallet.search']()}
-                                        value={searchString}
-                                        onChange={e =>
-                                            credentialSearchStore.set.searchString(e.target.value)
-                                        }
-                                        placeholder={
-                                            activeTab === CredentialListTabEnum.Earned
-                                                ? m['boost.browseEarnedPlaceholder']()
-                                                : m['boost.browseManagedPlaceholder']()
-                                        }
-                                        className={`rounded-[10px] px-4 w-full h-[44px] font-notoSans text-[14px] text-grayscale-900 outline-hidden placeholder:text-grayscale-800 placeholder:italic placeholder:opacity-100 focus-visible:ring-2 focus-visible:ring-emerald-500 ${tabColor}`}
-                                    />
-                                </div>
-                            )}
+                <div
+                    className={`flex items-center ${isSearchActive ? 'flex-1 px-2 min-w-0' : 'shrink-0 ml-auto'}`}
+                >
+                    {!hideSearch && isSearchActive && (
+                        <div className="flex flex-1 shrink-0 min-h-[40px] min-w-0 relative transition-[width] duration-300 ease-in-out">
+                            <div className="flex-1 relative min-w-0">
+                                <input
+                                    ref={searchInputRef}
+                                    type="text"
+                                    aria-label={m['wallet.search']()}
+                                    value={searchString}
+                                    onChange={e =>
+                                        credentialSearchStore.set.searchString(e.target.value)
+                                    }
+                                    placeholder={
+                                        activeTab === CredentialListTabEnum.Earned
+                                            ? m['boost.browseEarnedPlaceholder']()
+                                            : m['boost.browseManagedPlaceholder']()
+                                    }
+                                    className="rounded-[10px] px-4 w-full h-[44px] bg-white font-notoSans text-[14px] text-grayscale-900 outline-hidden placeholder:text-grayscale-700 placeholder:opacity-100 focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                    style={{
+                                        backgroundColor: `color-mix(in srgb, ${tailwindColorWithOpacity(tabColor, 100) ?? 'white'} 50%, white)`,
+                                    }}
+                                />
+                            </div>
                         </div>
                     )}
 

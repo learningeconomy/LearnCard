@@ -5,6 +5,7 @@ import { TEST_USER_PROFILE_ID, TEST_USER_SEED } from './constants';
 import { waitForAuthenticatedState } from './test.helpers';
 
 test('closing search and changing wallet categories clear the search @mocked', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 800 });
     const trpc = await installNetwork(page);
     const wallet = await initLearnCard({ seed: TEST_USER_SEED, allowRemoteContexts: false });
     const emptyIndex = await wallet.invoke.createDagJwe({ records: [], hasMore: false });
@@ -21,12 +22,27 @@ test('closing search and changing wallet categories clear the search @mocked', a
         country: 'US',
     }));
     trpc.on('profile.updateProfile', () => true);
-    trpc.on('boost.countBoosts', () => 0);
+    trpc.on('boost.countBoosts', () => 2);
     trpc.on('boost.getPaginatedBoosts', () => ({ records: [], hasMore: false }));
 
     await waitForAuthenticatedState(page, { path: '/wallet', profileId: TEST_USER_PROFILE_ID });
     await page.getByRole('button', { name: /Badges/i }).click();
     await expect(page).toHaveURL(/\/socialBadges/);
+
+    const controls = [
+        page.getByRole('tab', { name: 'Earned' }),
+        page.getByRole('tab', { name: 'Managed' }),
+        page.getByRole('button', { name: 'Grid', exact: true }),
+        page.getByRole('button', { name: 'List', exact: true }),
+        page.getByRole('button', { name: 'Search', exact: true }),
+    ];
+    for (const control of controls) {
+        await expect(control).toBeVisible();
+        const bounds = await control.boundingBox();
+        expect(bounds).not.toBeNull();
+        expect(bounds!.x).toBeGreaterThanOrEqual(0);
+        expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(320);
+    }
 
     const openSearch = page.getByRole('button', { name: 'Search', exact: true });
     const search = page.getByRole('textbox', { name: 'Search' });
