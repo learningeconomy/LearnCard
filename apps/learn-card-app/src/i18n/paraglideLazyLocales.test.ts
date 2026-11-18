@@ -72,6 +72,9 @@ afterAll(() => rmSync(dir, { recursive: true, force: true }));
 // Present in en/es/fr; missing from es (es.js re-exports it from en.js).
 const TRANSLATED = 'classlinkPersonalEmail.title';
 const MISSING_IN_ES = 'transcriptOptIn.finishingUp';
+// These checks cover every generated message across four locales and can exceed
+// Vitest's default five-second timeout when other CI tasks share the runner.
+const FULL_CATALOG_TEST_TIMEOUT_MS = 30_000;
 
 describe('paraglide lazy locales (real generated catalog)', () => {
     it('renders base-locale text for a locale that has not loaded, then its own after loading', async () => {
@@ -109,48 +112,60 @@ describe('paraglide lazy locales (real generated catalog)', () => {
         runtime.setLocale('en', { reload: false });
     });
 
-    it('builds complete tables: every message resolves in the base and every lazy locale', async () => {
-        expect([...lazyLocales].sort()).toEqual(['ar', 'es', 'fr']);
-        expect(keys.length).toBeGreaterThan(8000);
-        const en = await import(/* @vite-ignore */ join(dir, 'messages/en.js'));
-        expect(keys.filter(key => typeof en[key] !== 'function')).toEqual([]);
-        for (const locale of lazyLocales) {
-            const { default: table } = (await import(
-                /* @vite-ignore */ join(dir, 'messages', `__table_${locale}.js`)
-            )) as { default: unknown[] };
-            const module = await import(/* @vite-ignore */ join(dir, 'messages', `${locale}.js`));
-            expect(table).toHaveLength(keys.length);
-            // Same function objects, in table order (keeps `.parts` on markup messages too).
-            expect(keys.filter((key, index) => table[index] !== module[key])).toEqual([]);
-            expect(table.filter(entry => typeof entry !== 'function')).toEqual([]);
-        }
-    });
-
-    it('compacts plain dispatchers and renders every message exactly like Paraglide in every locale', async () => {
-        // About 7.9k of the ~8.7k messages are plain dispatchers; markup (`.parts`) messages keep their shape.
-        expect(compactedCount).toBeGreaterThan(7500);
-        const original = (await import(
-            /* @vite-ignore */ join(dir, 'messages/_orig_index.js')
-        )) as Record<string, unknown>;
-        for (const locale of lazyLocales) await messages.$loadLocaleMessages(locale);
-        const names = Object.keys(original).filter(name => typeof original[name] === 'function');
-        expect(names.length).toBeGreaterThan(8000);
-        const render = (fn: unknown) => {
-            try {
-                return String((fn as (inputs: Record<string, unknown>) => unknown)({}));
-            } catch (error) {
-                return `threw ${String(error)}`;
+    it(
+        'builds complete tables: every message resolves in the base and every lazy locale',
+        async () => {
+            expect([...lazyLocales].sort()).toEqual(['ar', 'es', 'fr']);
+            expect(keys.length).toBeGreaterThan(8000);
+            const en = await import(/* @vite-ignore */ join(dir, 'messages/en.js'));
+            expect(keys.filter(key => typeof en[key] !== 'function')).toEqual([]);
+            for (const locale of lazyLocales) {
+                const { default: table } = (await import(
+                    /* @vite-ignore */ join(dir, 'messages', `__table_${locale}.js`)
+                )) as { default: unknown[] };
+                const module = await import(
+                    /* @vite-ignore */ join(dir, 'messages', `${locale}.js`)
+                );
+                expect(table).toHaveLength(keys.length);
+                // Same function objects, in table order (keeps `.parts` on markup messages too).
+                expect(keys.filter((key, index) => table[index] !== module[key])).toEqual([]);
+                expect(table.filter(entry => typeof entry !== 'function')).toEqual([]);
             }
-        };
-        for (const locale of ['en', ...lazyLocales]) {
-            runtime.setLocale(locale, { reload: false });
-            const differing = names.filter(
-                name => render(messages[name]) !== render(original[name])
+        },
+        FULL_CATALOG_TEST_TIMEOUT_MS
+    );
+
+    it(
+        'compacts plain dispatchers and renders every message exactly like Paraglide in every locale',
+        async () => {
+            // About 7.9k of the ~8.7k messages are plain dispatchers; markup (`.parts`) messages keep their shape.
+            expect(compactedCount).toBeGreaterThan(7500);
+            const original = (await import(
+                /* @vite-ignore */ join(dir, 'messages/_orig_index.js')
+            )) as Record<string, unknown>;
+            for (const locale of lazyLocales) await messages.$loadLocaleMessages(locale);
+            const names = Object.keys(original).filter(
+                name => typeof original[name] === 'function'
             );
-            expect(differing).toEqual([]);
-        }
-        runtime.setLocale('en', { reload: false });
-    });
+            expect(names.length).toBeGreaterThan(8000);
+            const render = (fn: unknown) => {
+                try {
+                    return String((fn as (inputs: Record<string, unknown>) => unknown)({}));
+                } catch (error) {
+                    return `threw ${String(error)}`;
+                }
+            };
+            for (const locale of ['en', ...lazyLocales]) {
+                runtime.setLocale(locale, { reload: false });
+                const differing = names.filter(
+                    name => render(messages[name]) !== render(original[name])
+                );
+                expect(differing).toEqual([]);
+            }
+            runtime.setLocale('en', { reload: false });
+        },
+        FULL_CATALOG_TEST_TIMEOUT_MS
+    );
 
     it('ignores locales it does not know', async () => {
         expect(messages.$isLocaleMessagesLoaded('xx')).toBe(true);
