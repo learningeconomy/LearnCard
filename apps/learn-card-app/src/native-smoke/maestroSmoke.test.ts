@@ -203,6 +203,14 @@ describe('renderSmokeSummary', () => {
             'https://app-automate.browserstack.com/dashboard/v2/sessions/session-ok'
         );
         expect(summary).toContain('android: 1/1 passed.');
+        const hostile = renderSmokeSummary([
+            {
+                platform: 'android',
+                device: 'Galaxy|S25\\15',
+                runs: [{ ...passed, device: 'Galaxy|S25\\15' }],
+            },
+        ]);
+        expect(hostile).toContain('Galaxy\\|S25\\\\15');
         expect(summary).toContain('ios: no result.');
         expect(
             smokeReportFailed([{ platform: 'android', device: passed.device, runs: [passed] }])

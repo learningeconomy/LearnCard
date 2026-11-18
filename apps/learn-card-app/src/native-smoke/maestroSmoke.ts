@@ -303,7 +303,8 @@ export const readSmokeResultFiles = (files: unknown[]): SmokeResultFile[] =>
         return [{ platform: record.platform, device: record.device, runs: record.runs }];
     });
 
-const escapeCell = (value: string): string => value.replace(/\|/g, '\\|');
+const escapeCell = (value: string): string =>
+    value.replace(/[\\|]/g, character => `\\${character}`);
 
 export const renderSmokeSummary = (
     files: SmokeResultFile[],
