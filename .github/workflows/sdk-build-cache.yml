@@ -68,22 +68,24 @@ jobs:
                   test "$(node "$script" key "$next")" = "$original"
                   echo >> packages/learn-card-registries/trusted/registry.json
                   test "$(node "$script" key "$next")" = "$original"
-                  node --input-type=module - "$next" <<'JS'
+                  cat > "$RUNNER_TEMP/remove-sdk-outputs.mjs" <<'JS'
                   import fs from 'node:fs';
-                  import {safeOutput} from './scripts/e2e-hosted/sdk-build-cache.mjs';
+                  const {safeOutput}=await import(process.cwd() + '/scripts/e2e-hosted/sdk-build-cache.mjs');
                   for (const root of JSON.parse(fs.readFileSync(process.argv[2])).roots) {
                       fs.rmSync(safeOutput(root), {recursive:true});
                   }
                   JS
+                  node "$RUNNER_TEMP/remove-sdk-outputs.mjs" "$next"
                   node "$script" restore "$next" "$cache"
-                  node --input-type=module - "$spec" "$cache" <<'JS'
+                  cat > "$RUNNER_TEMP/compare-sdk-outputs.mjs" <<'JS'
                   import assert from 'node:assert/strict';
                   import fs from 'node:fs';
-                  import {inventory} from './scripts/e2e-hosted/sdk-build-cache.mjs';
+                  const {inventory}=await import(process.cwd() + '/scripts/e2e-hosted/sdk-build-cache.mjs');
                   const roots=JSON.parse(fs.readFileSync(process.argv[2])).roots;
                   for (const root of roots) assert.deepEqual(inventory(root), inventory(process.argv[3] + '/payload/' + root));
                   console.log(roots.length + ' restored roots match producer bytes and modes');
                   JS
+                  node "$RUNNER_TEMP/compare-sdk-outputs.mjs" "$spec" "$cache"
                   echo >> packages/learn-card-types/package.json
                   test "$(node "$script" key "$next")" != "$original"
 
