@@ -617,6 +617,39 @@ describe('enqueueBatchedCredentialResolve (LC-2382)', () => {
         expect(read).toHaveBeenCalledExactlyOnceWith(cloudUri('cross'));
     });
 
+    it('settles a recovered null slot without waiting for another slow fallback', async () => {
+        const slowUri = cloudUri('slow-null');
+        const fastUri = cloudUri('fast-null');
+        let releaseSlow!: (vc: VC) => void;
+        const heldRead = new Promise<VC>(resolve => {
+            releaseSlow = resolve;
+        });
+        const batch = vi.fn(async () => [null, null]);
+        const read = vi.fn((uri: string) =>
+            uri === slowUri ? heldRead : Promise.resolve(credential)
+        );
+        const wallet = {
+            id: { did: () => 'account-a' },
+            read: { get: read },
+            invoke: { learnCloudBatchResolve: batch },
+            plugins: [],
+        } as unknown as BespokeLearnCard;
+
+        const slow = enqueueBatchedCredentialResolve(wallet, slowUri);
+        const fast = enqueueBatchedCredentialResolve(wallet, fastUri);
+        let fastResult: VC | undefined;
+        void fast.then(result => {
+            fastResult = result;
+        });
+        try {
+            await vi.waitFor(() => expect(read).toHaveBeenCalledWith(slowUri));
+            await vi.waitFor(() => expect(fastResult).toEqual(credential));
+        } finally {
+            releaseSlow(credential);
+            await Promise.allSettled([slow, fast]);
+        }
+    });
+
     it('falls back to read.get for the whole set when a native VC cache plugin is present', async () => {
         const batch = vi.fn();
         const read = vi.fn(async () => credential);
@@ -708,6 +741,101 @@ describe('enqueueBatchedCredentialResolve (LC-2382)', () => {
             CREDENTIAL_RESOLVE_BATCH_SIZE
         );
         expect(read).toHaveBeenCalledExactlyOnceWith(slowUri);
+    });
+
+    it.each(['throw', 'short'] as const)(
+        'starts later chunks while a whole-chunk %s fallback is slow',
+        async failure => {
+            const uris = Array.from({ length: CREDENTIAL_RESOLVE_BATCH_SIZE + 1 }, (_, index) =>
+                cloudUri(`whole-chunk-${index}`)
+            );
+            const slowUri = uris[0]!;
+            const lastUri = uris[CREDENTIAL_RESOLVE_BATCH_SIZE]!;
+            let releaseSlow!: (vc: VC) => void;
+            const heldRead = new Promise<VC>(resolve => {
+                releaseSlow = resolve;
+            });
+            const batch = vi.fn(async (chunk: string[]) => {
+                if (chunk.includes(slowUri)) {
+                    if (failure === 'throw') throw new Error('Batch unavailable');
+                    return [];
+                }
+                return chunk.map(() => credential);
+            });
+            const read = vi.fn((uri: string) =>
+                uri === slowUri ? heldRead : Promise.resolve(credential)
+            );
+            const wallet = {
+                id: { did: () => 'account-a' },
+                read: { get: read },
+                invoke: { learnCloudBatchResolve: batch },
+                plugins: [],
+            } as unknown as BespokeLearnCard;
+
+            const pending = uris.map(uri => enqueueBatchedCredentialResolve(wallet, uri));
+            let lastResult: VC | undefined;
+            void pending[CREDENTIAL_RESOLVE_BATCH_SIZE]!.then(result => {
+                lastResult = result;
+            });
+            try {
+                await vi.waitFor(() => expect(read).toHaveBeenCalledWith(slowUri));
+                await vi.waitFor(() => expect(batch).toHaveBeenCalledTimes(2));
+                expect(batch).toHaveBeenLastCalledWith([lastUri]);
+                await vi.waitFor(() => expect(lastResult).toEqual(credential));
+            } finally {
+                releaseSlow(credential);
+                await Promise.allSettled(pending);
+            }
+        }
+    );
+
+    it('shares the fallback concurrency limit across failed chunks', async () => {
+        const uris = Array.from({ length: CREDENTIAL_RESOLVE_BATCH_SIZE * 2 + 1 }, (_, index) =>
+            cloudUri(`fallback-limit-${index}`)
+        );
+        const lastUri = uris[uris.length - 1]!;
+        let releaseReads!: () => void;
+        const heldReads = new Promise<void>(resolve => {
+            releaseReads = resolve;
+        });
+        let activeReads = 0;
+        let maxActiveReads = 0;
+        const read = vi.fn(async () => {
+            activeReads += 1;
+            maxActiveReads = Math.max(maxActiveReads, activeReads);
+            try {
+                await heldReads;
+                return credential;
+            } finally {
+                activeReads -= 1;
+            }
+        });
+        const batch = vi.fn(async (chunk: string[]) => {
+            if (chunk.includes(lastUri)) return [credential];
+            throw new Error('Batch unavailable');
+        });
+        const wallet = {
+            id: { did: () => 'account-a' },
+            read: { get: read },
+            invoke: { learnCloudBatchResolve: batch },
+            plugins: [],
+        } as unknown as BespokeLearnCard;
+
+        const pending = uris.map(uri => enqueueBatchedCredentialResolve(wallet, uri));
+        let lastResult: VC | undefined;
+        void pending[pending.length - 1]!.then(result => {
+            lastResult = result;
+        });
+        try {
+            await vi.waitFor(() => expect(batch).toHaveBeenCalledTimes(3));
+            await vi.waitFor(() => expect(lastResult).toEqual(credential));
+            expect(read).toHaveBeenCalledTimes(CREDENTIAL_RESOLVE_FALLBACK_CONCURRENCY);
+            expect(maxActiveReads).toBe(CREDENTIAL_RESOLVE_FALLBACK_CONCURRENCY);
+        } finally {
+            releaseReads();
+            await Promise.allSettled(pending);
+        }
+        expect(maxActiveReads).toBe(CREDENTIAL_RESOLVE_FALLBACK_CONCURRENCY);
     });
 });
 

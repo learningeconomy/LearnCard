@@ -117,34 +117,6 @@ export const processWithConcurrency = async <T>(
     await Promise.all(runners);
 };
 
-const resolveViaReadGet = async (
-    wallet: BespokeLearnCard,
-    uri: string
-): Promise<VC | undefined> => {
-    try {
-        return (await wallet.read.get(uri)) as VC | undefined;
-    } catch {
-        return undefined;
-    }
-};
-
-/**
- * batchResolve only talks to the current LearnCloud host and maps some envelopes to null. Retry
- * those slots via wallet.read.get before treating them as unresolvable.
- */
-const resolveNullSlotsViaRead = async (
-    wallet: BespokeLearnCard,
-    uris: readonly string[]
-): Promise<Map<string, VC>> => {
-    const recovered = new Map<string, VC>();
-    if (uris.length === 0) return recovered;
-    await processWithConcurrency(uris, CREDENTIAL_RESOLVE_FALLBACK_CONCURRENCY, async uri => {
-        const credential = await resolveViaReadGet(wallet, uri);
-        if (credential) recovered.set(uri, credential);
-    });
-    return recovered;
-};
-
 const flushCoalescedResolves = async (
     wallet: BespokeLearnCard,
     waiters: ResolveWaiter[]
@@ -203,10 +175,34 @@ const flushCoalescedResolves = async (
         }
     );
 
+    // Share the fallback concurrency limit across chunks, even when several batches fail.
+    // Settle each URI as soon as its own read completes so unrelated reads cannot hold it up.
+    let activeFallbacks = 0;
+    const fallbackQueue: (() => void)[] = [];
+    const scheduleFallback = (uri: string, preserveError: boolean): Promise<void> =>
+        new Promise(resolve => {
+            const start = () => {
+                activeFallbacks += 1;
+                void (async () => {
+                    try {
+                        const credential = (await wallet.read.get(uri)) as VC | undefined;
+                        settleUri(uri, credential);
+                    } catch (error) {
+                        settleUri(uri, undefined, preserveError ? error : undefined);
+                    } finally {
+                        activeFallbacks -= 1;
+                        fallbackQueue.shift()?.();
+                        resolve();
+                    }
+                })();
+            };
+            if (activeFallbacks < CREDENTIAL_RESOLVE_FALLBACK_CONCURRENCY) start();
+            else fallbackQueue.push(start);
+        });
+
     const batchableWork = (async () => {
-        // Null-slot retries run beside later chunks so one slow read.get cannot stall them
-        // (goblincore r4589016504). Each URI still settles only when its own fallback finishes.
-        const nullSlotWork: Promise<void>[] = [];
+        // Fallbacks run beside later batches, including when a whole batch fails.
+        const fallbackWork: Promise<void>[] = [];
         for (let offset = 0; offset < batchable.length; offset += CREDENTIAL_RESOLVE_BATCH_SIZE) {
             const chunk = batchable.slice(offset, offset + CREDENTIAL_RESOLVE_BATCH_SIZE);
             let results: (VC | null | undefined)[] | undefined;
@@ -217,18 +213,7 @@ const flushCoalescedResolves = async (
             }
 
             if (!results || results.length < chunk.length) {
-                await processWithConcurrency(
-                    chunk,
-                    CREDENTIAL_RESOLVE_FALLBACK_CONCURRENCY,
-                    async uri => {
-                        try {
-                            const credential = (await wallet.read.get(uri)) as VC | undefined;
-                            settleUri(uri, credential);
-                        } catch (readError) {
-                            settleUri(uri, undefined, readError);
-                        }
-                    }
-                );
+                fallbackWork.push(...chunk.map(uri => scheduleFallback(uri, true)));
                 continue;
             }
 
@@ -241,18 +226,9 @@ const flushCoalescedResolves = async (
             });
             for (const { uri, credential } of hits) settleUri(uri, credential);
             if (misses.length === 0) continue;
-            nullSlotWork.push(
-                resolveNullSlotsViaRead(wallet, misses).then(
-                    recovered => {
-                        for (const uri of misses) settleUri(uri, recovered.get(uri));
-                    },
-                    error => {
-                        for (const uri of misses) settleUri(uri, undefined, error);
-                    }
-                )
-            );
+            fallbackWork.push(...misses.map(uri => scheduleFallback(uri, false)));
         }
-        await Promise.all(nullSlotWork);
+        await Promise.all(fallbackWork);
     })();
 
     await Promise.all([nonBatchableWork, batchableWork]);
