@@ -22,6 +22,33 @@ import { requestEventCypher, tryDispatchContractEvent } from './contract-events.
 import type { ProfileType } from 'types/profile';
 import type { DbContractType } from 'types/consentflowcontract';
 
+/** The contract exists and the profile may manage its requests. Throws otherwise. */
+const authorizeContractRequestManager = async (
+    contractUri: string,
+    profile: ProfileType,
+    allowRecipients: boolean
+): Promise<DbContractType> => {
+    const contract = await getContractByUri(contractUri);
+    if (!contract) throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
+    if (!(await canManageContractRequests(contract, profile.profileId, allowRecipients)))
+        throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'You do not have permission to send requests for this contract.',
+        });
+    return contract;
+};
+
+/** Resolves a profile ID or network DID to an existing profile. Throws NOT_FOUND otherwise. */
+const resolveContractRequestTarget = async (
+    targetIdentifier: string,
+    domain: string
+): Promise<ProfileType> => {
+    const targetId = await getProfileIdFromString(targetIdentifier, domain);
+    const target = targetId ? await getProfileByProfileId(targetId) : null;
+    if (!target) throw new TRPCError({ code: 'NOT_FOUND', message: 'Target profile not found' });
+    return target;
+};
+
 /** Resolve shared request inputs without granting writers access to consented data. */
 export const resolveContractRequest = async (
     contractUri: string,
@@ -30,17 +57,28 @@ export const resolveContractRequest = async (
     domain: string,
     allowRecipients = true
 ): Promise<{ contract: DbContractType; target: ProfileType }> => {
-    const contract = await getContractByUri(contractUri);
-    if (!contract) throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
-    if (!(await canManageContractRequests(contract, profile.profileId, allowRecipients)))
-        throw new TRPCError({
-            code: 'UNAUTHORIZED',
-            message: 'You do not have permission to send requests for this contract.',
-        });
-    const targetId = await getProfileIdFromString(targetIdentifier, domain);
-    const target = targetId ? await getProfileByProfileId(targetId) : null;
-    if (!target) throw new TRPCError({ code: 'NOT_FOUND', message: 'Target profile not found' });
-    return { contract, target };
+    const contract = await authorizeContractRequestManager(contractUri, profile, allowRecipients);
+    return { contract, target: await resolveContractRequestTarget(targetIdentifier, domain) };
+};
+
+/**
+ * Checks shared by every send: the contract exists, the sender may send, and the rate limit.
+ * The limit is counted before anything about the target is looked up, so it reveals nothing.
+ */
+export const authorizeContractRequestSend = async (
+    contractUri: string,
+    profile: ProfileType
+): Promise<DbContractType> => {
+    const contract = await authorizeContractRequestManager(contractUri, profile, true);
+    await enforceRateLimits([
+        {
+            key: `contract-request-rate:${contract.id}:${profile.profileId}`,
+            limit: 500,
+            windowSeconds: 3600,
+            description: '500 contract requests per hour',
+        },
+    ]);
+    return contract;
 };
 
 export const canManageContractRequests = async (
@@ -134,25 +172,8 @@ export const sendGenericContractRequest = async (
     profile: ProfileType,
     domain: string
 ): Promise<SendContractRequestResult> => {
-    const contract = await getContractByUri(input.contractUri);
-    if (!contract) throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
-    if (!(await canManageContractRequests(contract, profile.profileId, true)))
-        throw new TRPCError({
-            code: 'UNAUTHORIZED',
-            message: 'You do not have permission to send requests for this contract.',
-        });
-    // Counted before the target is resolved, so the limit does not reveal whether a target exists.
-    await enforceRateLimits([
-        {
-            key: `contract-request-rate:${contract.id}:${profile.profileId}`,
-            limit: 500,
-            windowSeconds: 3600,
-            description: '500 contract requests per hour',
-        },
-    ]);
-    const targetId = await getProfileIdFromString(input.targetProfileId, domain);
-    const target = targetId ? await getProfileByProfileId(targetId) : null;
-    if (!target) throw new TRPCError({ code: 'NOT_FOUND', message: 'Target profile not found' });
+    const contract = await authorizeContractRequestSend(input.contractUri, profile);
+    const target = await resolveContractRequestTarget(input.targetProfileId, domain);
     if (target.profileId === profile.profileId)
         throw new TRPCError({
             code: 'BAD_REQUEST',

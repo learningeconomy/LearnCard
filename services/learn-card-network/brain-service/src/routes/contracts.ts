@@ -2702,9 +2702,21 @@ export const contractsRouter = t.router({
                 contractByUri.id,
                 resolvedTargetProfileId
             );
+            const isTarget = profile.profileId === resolvedTargetProfileId;
+            // To anyone but the target, an email-addressed request does not exist until it is
+            // accepted: answer exactly as the no-request branch below would, and change nothing.
+            if (!isTarget && request?.addressedByEmail === true && request.status !== 'accepted') {
+                const writers = await getWritersForContract(contractByUri);
+                if (!writers.some(w => w.profileId === profile.profileId))
+                    throw new TRPCError({
+                        code: 'UNAUTHORIZED',
+                        message: 'You do not have permissions to update this contract',
+                    });
+                return true;
+            }
             if (request?.requestId) {
                 assertGenericRequestWriteScope(ctx.user.scope);
-                if (profile.profileId !== resolvedTargetProfileId)
+                if (!isTarget)
                     throw new TRPCError({
                         code: 'UNAUTHORIZED',
                         message: 'Only the target can mark this request seen',

@@ -143,4 +143,44 @@ describe('redaction of email-addressed contract requests', () => {
             profile: { profileId: learner.profileId },
         });
     });
+
+    it('answers mark-as-seen for an email-addressed request as if there were none', async () => {
+        const contractUri = await create();
+        const { requestId } = await send(contractUri);
+        await markAddressedByEmail(
+            contractUri,
+            requestId,
+            `${randomBytes(5).toString('hex')}@example.com`
+        );
+        const outsider = await actor('outsider');
+        const writer = await actor('writer');
+        await neogma.queryRunner.run(
+            `MATCH (c:ConsentFlowContract {id: $contractId}), (p:Profile {profileId: $profileId})
+             MERGE (c)-[:CAN_WRITE]->(p)`,
+            { contractId: id(contractUri), profileId: writer.profileId }
+        );
+        const seen = (viewer: Actor) =>
+            viewer.clients.fullAuth.contracts.markContractRequestAsSeen({
+                contractUri,
+                targetProfileId: learner.profileId,
+            });
+        const outcome = (promise: Promise<unknown>) =>
+            promise.then(
+                value => ({ value }),
+                (error: { message?: string }) => ({ message: error.message })
+            );
+
+        expect(await outcome(seen(writer))).toEqual({ value: true });
+        expect(await outcome(seen(outsider))).toEqual({
+            message: 'You do not have permissions to update this contract',
+        });
+        expect(
+            (
+                await learner.clients.fullAuth.contracts.getRequestStatusForProfile({
+                    contractUri,
+                    targetProfileId: learner.profileId,
+                })
+            )?.readStatus
+        ).toBe('unseen');
+    });
 });
