@@ -4,7 +4,7 @@ description: Send attributed contract requests and consume correlated consent ev
 
 # Contract Requests and Events
 
-A contract request invites an existing network profile to review a ConsentFlow contract. Sending a request grants no permission to read or write the user's data. The user chooses consent terms through the existing consent flow, including guardian approval when required.
+A contract request invites a person to review a ConsentFlow contract. Address it to an existing network profile, or to an email address when you do not know the profile. Sending a request grants no permission to read or write the user's data. The user chooses consent terms through the existing consent flow, including guardian approval when required.
 
 The Salesforce Data Mediator, or any other external integration, is a client of these APIs and webhooks.
 
@@ -42,25 +42,59 @@ Being a data recipient does not grant access to other organizations' invitations
 Use an initialized network-enabled LearnCard instance with an existing profile. Generic send, deny, seen and cancel actions require `contracts:write` scope when using an auth grant.
 
 ```typescript
-await referrer.invoke.sendContractRequest({
+const { requestId, status } = await referrer.invoke.sendContractRequest({
     contractUri,
     targetProfileId: learnerProfileId,
     externalReferenceId: 'referral-123',
     message: 'Career support is available through this partner.',
 });
+// status is 'pending'. Store requestId next to your own referral record.
 
-const status = await referrer.invoke.getRequestStatusForProfile(
-    learnerProfileId,
-    undefined,
-    contractUri
-);
-// status includes requestId, requestedBy, externalReferenceId, requestedAt,
-// message, status and readStatus. Legacy requests may omit attribution fields.
+const request = await referrer.invoke.getContractRequest(contractUri, requestId);
+// { requestId, status, externalReferenceId, requestedAt, expiresAt?, target }
+// target is { profile } for a request sent to a profile.
+
+// Cancel by request ID, or by the target profile ID.
+await referrer.invoke.cancelContractRequest(contractUri, { requestId });
 ```
 
-`externalReferenceId` is an opaque integration reference, limited to 256 characters; `message` is limited to 500. Avoid putting sensitive data in either field. Targets may also be addressed by a resolvable network DID. Sending a request to yourself returns `BAD_REQUEST`, including when addressed by DID. Missing targets return `NOT_FOUND`; email-only invitations are not supported by this endpoint. Requests are limited to 500 per hour per contract and sender.
+{% hint style="warning" %}
+**Breaking change.** `sendContractRequest` used to return `true`. It now returns `{ requestId, status }`. Code that compared the result with `true` must read `status` instead.
+{% endhint %}
+
+`getRequestStatusForProfile(learnerProfileId, undefined, contractUri)` still returns the request for a known profile, with `requestId`, `requestedBy`, `externalReferenceId`, `requestedAt`, `message`, `status` and `readStatus`. Legacy requests may omit attribution fields.
+
+`externalReferenceId` is an opaque integration reference, limited to 256 characters; `message` is limited to 500. Avoid putting sensitive data in either field. Targets may also be addressed by a resolvable network DID. Sending a request to yourself returns `BAD_REQUEST`, including when addressed by DID. A missing profile target returns `NOT_FOUND`. To invite someone whose profile you do not know, see [Invite by email](#invite-by-email). Requests are limited to 500 per hour per contract and sender.
 
 There is one request per contract/target pair in this version. An identical pending retry keeps the same request and event IDs. Conflicting sender, reference or message returns `CONFLICT`. Terminal requests and existing legacy requests are not replaced. Sending to a target with an unexpired active consent, including a one-time snapshot, also returns `CONFLICT`.
+
+## Invite by email
+
+Pass `targetEmail` instead of `targetProfileId`. Pass exactly one of the two.
+
+```typescript
+const { requestId } = await referrer.invoke.sendContractRequest({
+    contractUri,
+    targetEmail: 'learner@example.com',
+    externalReferenceId: 'referral-123',
+});
+
+const request = await referrer.invoke.getContractRequest(contractUri, requestId);
+// request.target is { email: 'learner@example.com' } until the person accepts.
+```
+
+- The answer is always `{ requestId, status: 'pending' }`. It is the same whether or not the email belongs to an account, and whatever that account has already consented to. You cannot use this call to find out who has an account.
+- If no account has verified that email, LearnCard sends one invitation email with the branding of the tenant that made the call. At most 3 invitation emails go to one address per contract in 24 hours. The email does not contain your `message`.
+- When a profile verifies that email (at sign-up or later), the invitation becomes an ordinary request with the same `requestId`, and the person gets the usual in-app `request_sent` notification. If the normal request rules do not pass (for example the person already has a request or active consent for this contract), the invitation stays `pending` and expires. You cannot tell this apart from no response.
+- An identical retry (same contract, email, sender, reference and message) while the first is pending returns the same `requestId` and sends nothing.
+- An invitation expires 30 days after it was sent if it has not become a request. Its status is then `expired`. A request that reached a profile does not expire.
+- Emails are compared without regard to letter case.
+
+**What you can see.** Until the status is `accepted`, an email-addressed request shows `target: { email }` and no profile, DID or read state in `getContractRequest` and `getContractSentRequests`. `getRequestStatusForProfile` returns `null` for it, and `cancelContractRequest` with a profile ID answers as if no request existed; use the `requestId`. A `request_denied` or `request_cancelled` notification caused by the invited person names the contract owner as sender, not the person. The person's DID reaches you through the consent event on acceptance, together with your `externalReferenceId`.
+
+Integration webhooks report an email-addressed request too: `request_sent` once when you make it, `request_denied`, `request_cancelled` and `request_expired` without a subject, and `request_accepted` with the subject. See [Integration Webhooks and Change Feed](integration-webhooks.md) for the event reference.
+
+Sending the same email to several contracts, or timing your calls, does not change these answers, but a send that also delivers an email can take longer than one that does not.
 
 ## Target actions
 
@@ -71,7 +105,8 @@ await learner.invoke.markContractRequestAsSeen(contractUri, learnerProfileId);
 // Explicitly decline; merely dismissing a card is not denial.
 await learner.invoke.denyContractRequest(contractUri);
 
-// Or cancel a pending request; authorized senders use this method too.
+// Or cancel a pending request; authorized senders use this method too,
+// with the target profile ID or with { requestId }.
 await learner.invoke.cancelContractRequest(contractUri, learnerProfileId);
 ```
 
@@ -84,13 +119,14 @@ stateDiagram-v2
     pending --> accepted: Consent committed
     pending --> denied: Target declines
     pending --> cancelled: Authorized cancellation
+    pending --> expired: Email invitation not attached to a profile within 30 days
 ```
 
 Denied and cancelled generic requests retain their correlation fields. Withdrawing consent retains an accepted generic request and the referral captured on consent history. It revokes current data access; it does not reset a terminal request to pending. If the learner later consents again, the original referral remains attached to the consent and subsequent transactions. This does not reopen the request or send another acceptance decision to a requester outside the audience. A legacy AI request cannot replace an attributed request; it returns `CONFLICT`.
 
 ## Polling fallback
 
-Use `getContractSentRequests(contractUri)` to reconcile visible invitation statuses. The brain route `getConsentedDataForDid` is exposed by the SDK as `getConsentFlowDataForDid(did, { limit, cursor })`; follow pagination and filter records by `contractUri`. An accepted request can outlive consent, so always read current permitted data before relying on the decision. Polling does not claim credentials or run client synchronization. See the [integrator example](../../how-to-guides/consent-flow/brokered-referrals.md#poll-when-webhooks-are-unavailable).
+Use `getContractSentRequests(contractUri)` to reconcile visible invitation statuses, or `getContractRequest(contractUri, requestId)` for one request. Each row has `target`; a row for an email-addressed request has no `profile` until it is accepted, and email invitations that have not reached a profile are listed too. The brain route `getConsentedDataForDid` is exposed by the SDK as `getConsentFlowDataForDid(did, { limit, cursor })`; follow pagination and filter records by `contractUri`. An accepted request can outlive consent, so always read current permitted data before relying on the decision. Polling does not claim credentials or run client synchronization. See the [integrator example](../../how-to-guides/consent-flow/brokered-referrals.md#poll-when-webhooks-are-unavailable).
 
 ## Webhook events
 
