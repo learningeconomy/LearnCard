@@ -31,7 +31,7 @@ jobs:
                   git checkout --quiet --detach 13dff3c7d32e9499944aa7c7e31c8db8a2bd40f7
                   test "$(git rev-parse HEAD)" = "$NX_HEAD"
             - name: Runner identity
-              run: echo "Image=$ImageOS $ImageVersion"; lscpu | rg "Model name|^CPU\(s\)"
+              run: lscpu
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
               with:
@@ -127,7 +127,7 @@ jobs:
                   git checkout --quiet --detach 13dff3c7d32e9499944aa7c7e31c8db8a2bd40f7
                   test "$(git rev-parse HEAD)" = "$NX_HEAD"
             - name: Runner identity
-              run: echo "Image=$ImageOS $ImageVersion"; lscpu | rg "Model name|^CPU\(s\)"
+              run: lscpu
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
               with:
@@ -224,7 +224,7 @@ jobs:
                   git checkout --quiet --detach 13dff3c7d32e9499944aa7c7e31c8db8a2bd40f7
                   test "$(git rev-parse HEAD)" = "$NX_HEAD"
             - name: Runner identity
-              run: echo "Image=$ImageOS $ImageVersion"; lscpu | rg "Model name|^CPU\(s\)"
+              run: lscpu
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
               with:
