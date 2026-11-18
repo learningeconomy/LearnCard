@@ -53,7 +53,7 @@ export const localUsersProfileId = (did: string): string | null => {
     };
     const localDomains = new Set(
         [environment.DOMAIN_NAME, `localhost%3A${environment.PORT}`]
-            .filter(Boolean)
+            .filter((domain): domain is string => Boolean(domain))
             .map(canonicalDomain)
     );
 
