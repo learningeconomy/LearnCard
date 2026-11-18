@@ -127,6 +127,34 @@ describe('RecoveryPinStep', () => {
         expect(screen.queryByRole('button', { name: 'Learn more' })).not.toBeInTheDocument();
     });
 
+    it('leaves focus alone on mount unless asked, and reports each step', () => {
+        const onStepChange = vi.fn();
+        const { unmount } = render(
+            <RecoveryPinStep
+                onComplete={mockOnComplete}
+                onSkip={mockOnSkip}
+                setPin={mockSetPin}
+                onStepChange={onStepChange}
+            />
+        );
+        expect(document.activeElement).toBe(document.body);
+        expect(onStepChange).toHaveBeenLastCalledWith('enter');
+        enterPin('147258');
+        expect(onStepChange).toHaveBeenLastCalledWith('confirm');
+        unmount();
+
+        render(
+            <RecoveryPinStep
+                embedded
+                autoFocus
+                onComplete={mockOnComplete}
+                onSkip={mockOnSkip}
+                setPin={mockSetPin}
+            />
+        );
+        expect(document.activeElement).toBe(screen.getByLabelText('PIN digit 1'));
+    });
+
     it('does not offer a skip for typing mistakes', () => {
         renderComponent();
         enterPin('123456');

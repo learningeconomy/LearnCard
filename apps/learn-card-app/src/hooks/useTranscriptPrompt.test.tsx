@@ -2,10 +2,22 @@
 import React from 'react';
 import { act, cleanup, render, renderHook, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { TranscriptPromptSheet, useTranscriptPrompt } from './useTranscriptPrompt';
+import {
+    TranscriptPromptSheet,
+    getTranscriptPromptKey,
+    markTranscriptPromptOffered,
+    useTranscriptPrompt,
+} from './useTranscriptPrompt';
+import {
+    keepAccountAskedThisSession,
+    resetKeepAccountSessionForTests,
+} from '../components/classlink/keepAccountSession';
 
 type FlowProps = { onDone: (result: { requested: boolean; arrived: boolean }) => void };
-type StepProps = Record<'onComplete' | 'onDismiss' | 'onBeforeMethod', () => void> & {
+type StepProps = Record<
+    'onComplete' | 'onDismiss' | 'onBeforeOverlay' | 'onOverlayComplete',
+    () => void
+> & {
     variant: string;
     source: string;
 };
@@ -30,6 +42,8 @@ const mocks = vi.hoisted(() => ({
         id: { did: () => 'did:test:123' },
     }),
     keepAccountOffer: false,
+    keepAccountStep: 'email',
+    providerOverlayOpen: false,
     flow: undefined as FlowProps | undefined,
     step: undefined as StepProps | undefined,
 }));
@@ -46,7 +60,10 @@ vi.mock('learn-card-base', () => ({
     getLogger: () => ({ error: vi.fn(), info: vi.fn(), warn: vi.fn() }),
 }));
 vi.mock('../providers/AuthCoordinatorProvider', () => ({
-    useAppAuth: () => ({ state: { status: mocks.status } }),
+    useAppAuth: () => ({
+        state: { status: mocks.status },
+        providerOverlayOpen: mocks.providerOverlayOpen,
+    }),
 }));
 vi.mock('../components/classlink/TranscriptRequestFlow', () => ({
     TranscriptRequestFlow: (props: FlowProps) => {
@@ -61,7 +78,10 @@ vi.mock('../components/classlink/KeepAccountStep', () => ({
     },
 }));
 vi.mock('../components/classlink/useKeepAccountOffer', () => ({
-    useKeepAccountOffer: () => ({ offer: mocks.keepAccountOffer }),
+    useKeepAccountOffer: () => ({
+        offer: mocks.keepAccountOffer,
+        continuity: { nextStep: mocks.keepAccountStep },
+    }),
 }));
 
 const memoryStorage = (() => {
@@ -87,6 +107,8 @@ beforeEach(() => {
     mocks.status = 'ready';
     mocks.classlinkTranscriptOptIn = true;
     mocks.keepAccountOffer = false;
+    mocks.keepAccountStep = 'email';
+    mocks.providerOverlayOpen = false;
     mocks.flow = undefined;
     mocks.step = undefined;
     mocks.transcriptStatus = {
@@ -165,6 +187,28 @@ describe('useTranscriptPrompt', () => {
         expect(mocks.newModal).not.toHaveBeenCalled();
     });
 
+    it('waits for a provider overlay (e.g. the first-time PIN prompt) instead of stacking', async () => {
+        mocks.providerOverlayOpen = true;
+        const { rerender } = renderHook(() => useTranscriptPrompt());
+        await new Promise(resolve => setTimeout(resolve, 0));
+        expect(mocks.newModal).not.toHaveBeenCalled();
+
+        mocks.providerOverlayOpen = false;
+        rerender();
+        await new Promise(resolve => setTimeout(resolve, 0));
+        expect(mocks.newModal).toHaveBeenCalledTimes(1);
+    });
+
+    it('waits 14 days after the onboarding transcript step was skipped', async () => {
+        markTranscriptPromptOffered('did:test:123');
+        expect(localStorage.getItem(getTranscriptPromptKey('did:test:123'))).not.toBeNull();
+        expect(getTranscriptPromptKey('did:test:123')).not.toContain('did:test');
+
+        renderHook(() => useTranscriptPrompt());
+        await new Promise(resolve => setTimeout(resolve, 0));
+        expect(mocks.newModal).not.toHaveBeenCalled();
+    });
+
     it('shows again after 14 days', async () => {
         const did = 'did:test:123';
         const hash = Array.from(did).reduce((s, c) => (Math.imul(31, s) + c.charCodeAt(0)) | 0, 0);
@@ -185,7 +229,10 @@ describe('TranscriptPromptSheet', () => {
         act(() => mocks.flow?.onDone(result));
     };
 
-    beforeEach(cleanup);
+    beforeEach(() => {
+        cleanup();
+        resetKeepAccountSessionForTests();
+    });
 
     it('chains into keeping the account once the server reports the transcript arrived', () => {
         mocks.keepAccountOffer = true;
@@ -197,22 +244,42 @@ describe('TranscriptPromptSheet', () => {
         expect(screen.queryByTestId('mock-transcript-flow')).toBeNull();
         expect(screen.getByTestId('mock-keep-account')).toBeTruthy();
         expect(mocks.step).toMatchObject({ variant: 'sheet', source: 'transcript_modal' });
+        // Asked here: the dashboard banner waits for a later session, however it closes.
+        expect(keepAccountAskedThisSession()).toBe(true);
 
-        // The method overlay sits below the modal stack, so the sheet closes first.
-        mocks.step?.onBeforeMethod();
+        // A provider overlay sits below the modal stack, so the sheet closes first...
+        mocks.step?.onBeforeOverlay();
         expect(onClose).toHaveBeenCalledTimes(1);
     });
 
+    it('reopens the keep-account step after the overlay so it can confirm in place', () => {
+        mocks.keepAccountOffer = true;
+        const onReopen = vi.fn();
+        render(
+            <TranscriptPromptSheet
+                stateDisplayName="Example"
+                onClose={vi.fn()}
+                onReopenKeepAccount={onReopen}
+            />
+        );
+        finish({ requested: true, arrived: true });
+        mocks.step?.onOverlayComplete();
+        expect(onReopen).toHaveBeenCalledTimes(1);
+    });
+
     it.each([
-        ['the transcript has not arrived', true, false],
-        ['the server offers nothing', false, true],
-    ])('closes when %s', (_label, offer, arrived) => {
+        ['the transcript has not arrived', true, false, 'email'],
+        ['the server offers nothing', false, true, 'email'],
+        ['only a PIN is left (asked elsewhere)', true, true, 'pin'],
+    ])('closes when %s', (_label, offer, arrived, nextStep) => {
         mocks.keepAccountOffer = offer;
+        mocks.keepAccountStep = nextStep;
         const onClose = vi.fn();
         render(<TranscriptPromptSheet stateDisplayName="Example" onClose={onClose} />);
         finish({ requested: true, arrived });
 
         expect(onClose).toHaveBeenCalledTimes(1);
         expect(screen.queryByTestId('mock-keep-account')).toBeNull();
+        expect(keepAccountAskedThisSession()).toBe(false);
     });
 });

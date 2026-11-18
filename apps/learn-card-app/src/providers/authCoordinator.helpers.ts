@@ -183,3 +183,17 @@ export const pinChangePromptOpens = ({
     changeRequired: boolean;
     pinSignInPending: boolean;
 }): boolean => !!did && changeRequired && !pinSignInPending;
+
+/**
+ * Whether a provider-owned overlay is on screen, so other prompts (e.g. the transcript
+ * sheet) wait for it instead of stacking on top.
+ */
+export const isProviderOverlayOpen = (overlays: {
+    recoverySetup: boolean;
+    secureAccount: boolean;
+    pinChange: boolean;
+    pinSetupReason: string | null;
+    deviceLink: boolean;
+    emailLinkGate: boolean;
+    pinSignInReview: boolean;
+}): boolean => Object.values(overlays).some(open => open !== false && open !== null);

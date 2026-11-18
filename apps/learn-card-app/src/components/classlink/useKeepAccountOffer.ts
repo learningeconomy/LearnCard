@@ -2,23 +2,17 @@ import type { ClassLinkAccountContinuity } from '@learncard/lca-api-plugin';
 import { useClassLinkAccountContinuity, useFeatureConfig } from 'learn-card-base';
 
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
+import { isKeepAccountEnabled } from './keepAccountFlags';
 import { useClassLinkSession } from './useClassLinkSession';
 
-/** Tenant flags for the "keep your account" entry points (inside the personal-email switch). */
-export const isKeepAccountEnabled = (features: {
-    classlinkSso?: boolean;
-    classlinkPersonalEmail?: boolean;
-    classlinkKeepAccount?: boolean;
-}): boolean =>
-    features.classlinkSso === true &&
-    features.classlinkPersonalEmail === true &&
-    features.classlinkKeepAccount === true;
-
 /**
- * Whether the account has something to do that it is allowed to do: add a recovery method
- * after verifying an email, or add an email when the server allows it.
+ * Whether an entry point should invite the user: add a personal email (when the server
+ * allows one), then, once it is in, create a PIN (escrow accounts) or add a passkey or
+ * recovery phrase (`method`: only accounts that cannot have escrow, e.g. a placeholder
+ * school email). Each host decides which of these it asks for.
  */
 export const needsKeepAccount = (continuity: ClassLinkAccountContinuity | undefined): boolean =>
+    continuity?.nextStep === 'pin' ||
     continuity?.nextStep === 'method' ||
     (continuity?.nextStep === 'email' && continuity.personalEmail.allowed);
 

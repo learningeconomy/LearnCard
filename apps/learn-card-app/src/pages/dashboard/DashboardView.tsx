@@ -120,6 +120,9 @@ const DashboardView: React.FC<DashboardViewProps> = ({ vm }) => {
                     ) : keepAccount ? (
                         <ClassLinkKeepAccountBanner
                             step={keepAccount.step}
+                            pinLocked={keepAccount.pinLocked}
+                            phrase={keepAccount.phrase}
+                            title={keepAccount.title}
                             onStart={keepAccount.onStart}
                             onSnooze={keepAccount.onSnooze}
                         />

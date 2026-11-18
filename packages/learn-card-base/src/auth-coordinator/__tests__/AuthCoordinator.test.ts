@@ -732,6 +732,54 @@ describe('AuthCoordinator', () => {
             expect(coordinator.getState()).not.toHaveProperty('escrowPinResetRequired', true);
         });
 
+        describe('no contact email (no-contact)', () => {
+            const run = async (email?: string) => {
+                const ensureEscrowEnrollment = vi
+                    .fn()
+                    .mockResolvedValue({ enrolled: false, reason: 'no-contact' });
+                const getEscrowEnrollmentState = vi.fn().mockResolvedValue({
+                    state: 'not-enrolled',
+                    escrowPin: { state: 'none', enabled: false, attemptsRemaining: 0 },
+                });
+                const user = { ...mockUser, email };
+                const { coordinator } = setup({
+                    authProvider: { getCurrentUser: vi.fn().mockResolvedValue(user) },
+                    keyDerivation: { ensureEscrowEnrollment, getEscrowEnrollmentState },
+                    config: { signDidAuthVp: vi.fn() },
+                });
+                await coordinator.initialize();
+                await vi.waitFor(() =>
+                    expect(coordinator.getState()).toMatchObject({
+                        escrowEnrollment: 'not-enrolled',
+                    })
+                );
+                const refresh = () =>
+                    (
+                        coordinator as unknown as { refreshEscrow: (s: unknown) => Promise<void> }
+                    ).refreshEscrow(coordinator.getState());
+                return { coordinator, ensureEscrowEnrollment, getEscrowEnrollmentState, refresh };
+            };
+
+            it('asks once, then stops retrying enrollment for an account with no email', async () => {
+                const { coordinator, ensureEscrowEnrollment, getEscrowEnrollmentState, refresh } =
+                    await run(undefined);
+                expect(ensureEscrowEnrollment).toHaveBeenCalledTimes(1);
+                await refresh();
+                await refresh();
+                expect(ensureEscrowEnrollment).toHaveBeenCalledTimes(1);
+                // The enrollment state is still published, with no error and no PIN prompt.
+                expect(getEscrowEnrollmentState).toHaveBeenCalledTimes(3);
+                expect(coordinator.getState()).toMatchObject({ escrowEnrollment: 'not-enrolled' });
+                expect(coordinator.getState()).not.toHaveProperty('escrowPinResetRequired', true);
+            });
+
+            it('keeps asking while the account has an email', async () => {
+                const { ensureEscrowEnrollment, refresh } = await run('student@example.com');
+                await refresh();
+                expect(ensureEscrowEnrollment).toHaveBeenCalledTimes(2);
+            });
+        });
+
         describe('staged rollout gate (isEscrowEnrollmentAllowed)', () => {
             describe('post-recovery repair after reload (no in-memory marker)', () => {
                 const run = async (enrollmentState: unknown) => {

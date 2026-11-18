@@ -44,6 +44,11 @@ interface RecoverySetupModalProps extends Partial<AutomaticRecoveryProps> {
     maskedRecoveryEmail?: string | null;
     isActivationPending?: boolean;
     initialMethod?: RecoverySetupType;
+    /**
+     * Start `initialMethod` on open (passkey: the OS prompt; phrase: generate the words)
+     * because the caller's own button already asked for it. Other methods ignore it.
+     */
+    autoStart?: boolean;
     /** False when emailed recovery keys cannot be sent (no relay key configured). */
     emailAvailable?: boolean;
     onCompleted?: (method: RecoverySetupType) => void;
@@ -83,6 +88,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     maskedRecoveryEmail,
     isActivationPending = false,
     initialMethod,
+    autoStart = false,
     emailAvailable = true,
     onCompleted,
     onClose,
@@ -256,6 +262,19 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             setLoading(false);
         }
     };
+
+    // Once per open: a caller's own "Add a passkey" / "Save a recovery phrase" button
+    // already asked, so skip this modal's identical button.
+    const autoStartedRef = React.useRef(false);
+    React.useEffect(() => {
+        if (!autoStart || autoStartedRef.current || activeTab !== initialMethod) return;
+        if (isConfigured(activeTab)) return;
+        autoStartedRef.current = true;
+        if (activeTab === 'passkey' && !isNative && webAuthnSupported) void handlePasskeySetup();
+        else if (activeTab === 'phrase') void handleGeneratePhrase();
+        // Mount only: later tab switches are the user's own choice.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleGeneratePhrase = async () => {
         setLoading(true);

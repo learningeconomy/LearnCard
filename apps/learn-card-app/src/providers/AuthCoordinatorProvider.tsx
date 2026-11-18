@@ -131,6 +131,7 @@ import {
     settleEscrowRecoveryMarker,
     secureFlowOffersPin,
     pinChangePromptOpens,
+    isProviderOverlayOpen,
     type EscrowRecoveryKind,
 } from './authCoordinator.helpers';
 import { getTenantHeaders, getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
@@ -177,9 +178,40 @@ const log = getLogger('auth-coordinator');
 
 export interface RecoverySetupOptions {
     initialMethod?: RecoverySetupType;
+    /**
+     * Start `initialMethod` right away (the passkey OS prompt, or generating the recovery
+     * phrase) for a caller whose own button already asked for it. The modal stays open
+     * on its usual screen if that fails, so the user can retry there.
+     */
+    autoStart?: boolean;
     onCompleted?: (method: RecoverySetupType) => void;
     onClosed?: () => void;
 }
+
+/** Options for `openPinSetup`. */
+export interface PinSetupOptions {
+    /**
+     * `first-time` for a missing or stale PIN; `pin-locked` for one locked after too many
+     * wrong entries; `pin-reset-required` for one retired by a recovery.
+     */
+    reason?: Extract<RecoveryPinSetupReason, 'first-time' | 'pin-locked' | 'pin-reset-required'>;
+    /** The new PIN is saved. */
+    onComplete?: () => void;
+    /** The overlay closed without a new PIN. */
+    onSkip?: () => void;
+}
+
+/**
+ * Whether this tenant signs people in with a school login (ClassLink), so the lost-login
+ * screens can say what to do when a school account gets no code.
+ */
+const isSchoolLoginTenant = (): boolean => {
+    try {
+        return getResolvedTenantConfig().features.classlinkSso === true;
+    } catch {
+        return false;
+    }
+};
 
 // ---------------------------------------------------------------------------
 // DeviceLinkOverlay — fetches the device share then renders the approver modal
@@ -413,6 +445,19 @@ export interface AppAuthContextValue extends AuthCoordinatorContextValue {
 
     /** Open the recovery setup modal */
     openRecoverySetup: (options?: RecoverySetupOptions) => void;
+
+    /**
+     * Open the PIN setup overlay. It sits below the app's modal stack, so a host sheet
+     * must close itself first. Never replaces a PIN prompt already on screen.
+     */
+    openPinSetup: (options?: PinSetupOptions) => void;
+
+    /**
+     * True while a provider-owned overlay is on screen (PIN setup or change, the PIN
+     * sign-in review, recovery setup, "Secure my account", device link, email link
+     * gate). Other prompts should wait for it rather than stack on top.
+     */
+    providerOverlayOpen: boolean;
 
     /**
      * Open "Secure my account" (also "Sign out of all other devices"): signs out every
@@ -661,6 +706,17 @@ const AuthSessionManager: React.FC<{
 
     const [recoveryPinSetupReason, setRecoveryPinSetupReason] =
         useState<RecoveryPinSetupReason | null>(null);
+    // Callbacks of the caller that opened the PIN overlay through `openPinSetup`, if any.
+    const pinSetupCallbacksRef = useRef<Pick<PinSetupOptions, 'onComplete' | 'onSkip'>>({});
+    const recoveryPinSetupReasonRef = useRef(recoveryPinSetupReason);
+    recoveryPinSetupReasonRef.current = recoveryPinSetupReason;
+    const openPinSetup = useCallback((options: PinSetupOptions = {}) => {
+        if (recoveryPinSetupReasonRef.current) return;
+        const { reason = 'first-time', onComplete, onSkip } = options;
+        pinSetupCallbacksRef.current = { onComplete, onSkip };
+        recoveryPinSetupReasonRef.current = reason;
+        setRecoveryPinSetupReason(reason);
+    }, []);
     const [showRecoveryPinReset, setShowRecoveryPinReset] = useState(false);
     const readyDid = coordinator.state.status === 'ready' ? coordinator.state.did : undefined;
     const readyPinEnabled =
@@ -1481,6 +1537,16 @@ const AuthSessionManager: React.FC<{
         ]
     );
 
+    const providerOverlayOpen = isProviderOverlayOpen({
+        recoverySetup: showRecoverySetup,
+        secureAccount: secureAccountOpen,
+        pinChange: pinChangeOpen,
+        pinSetupReason: recoveryPinSetupReason,
+        deviceLink: deviceLinkVisible,
+        emailLinkGate: showEmailLinkGate,
+        pinSignInReview: coordinator.state.status === 'ready' && !!coordinator.state.pinSignIn,
+    });
+
     const enrichedValue: AppAuthContextValue = useMemo(
         () => ({
             // Spread all base coordinator fields
@@ -1505,6 +1571,8 @@ const AuthSessionManager: React.FC<{
             recoveryMethodCount,
             recoveryActivationPending: coordinator.needsActivation,
             openRecoverySetup,
+            openPinSetup,
+            providerOverlayOpen,
             openSecureAccount,
             setEscrowPin,
             clearEscrowPin,
@@ -1526,6 +1594,8 @@ const AuthSessionManager: React.FC<{
             deviceLinkVisible,
             recoveryMethodCount,
             openRecoverySetup,
+            openPinSetup,
+            providerOverlayOpen,
             openSecureAccount,
             setEscrowPin,
             clearEscrowPin,
@@ -1649,6 +1719,7 @@ const AuthSessionManager: React.FC<{
                     onFinishIdentityRecovery={() => {
                         coordinator.finishIdentityRecovery();
                     }}
+                    schoolLoginRecovery={isSchoolLoginTenant()}
                     identityKeptAccount={
                         coordinator.state.status === 'identity_recovery_success' &&
                         !!coordinator.state.pinSignIn
@@ -2003,11 +2074,17 @@ const AuthSessionManager: React.FC<{
                             if (!readyDid) return;
                             writeRecoveryPinPromptFlag(readyDid, 'set');
                             setRecoveryPinSetupReason(null);
+                            const { onComplete } = pinSetupCallbacksRef.current;
+                            pinSetupCallbacksRef.current = {};
+                            onComplete?.();
                         }}
                         onSkip={() => {
                             if (!readyDid) return;
                             writeRecoveryPinPromptFlag(readyDid, 'skipped');
                             setRecoveryPinSetupReason(null);
+                            const { onSkip } = pinSetupCallbacksRef.current;
+                            pinSetupCallbacksRef.current = {};
+                            onSkip?.();
                         }}
                     />
                 )}
@@ -2219,6 +2296,7 @@ const AuthSessionManager: React.FC<{
                                 existingMethods={[]}
                                 maskedRecoveryEmail={null}
                                 initialMethod={recoverySetupOptionsRef.current.initialMethod}
+                                autoStart={recoverySetupOptionsRef.current.autoStart}
                                 onCompleted={completeRecoverySetup}
                                 onSetupPasskey={async () => {
                                     const authUser = await authProvider.getCurrentUser();

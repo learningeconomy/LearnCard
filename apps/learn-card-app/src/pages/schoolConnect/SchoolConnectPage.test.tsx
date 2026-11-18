@@ -48,9 +48,25 @@ vi.mock('../../components/classlink/useKeepAccountOffer', () => ({
         return { offer: false, continuity: enabled ? keepAccount.continuity : undefined };
     },
 }));
+const openBirthDateSettings = vi.hoisted(() => vi.fn());
+vi.mock('../../components/classlink/useOpenBirthDateSettings', () => ({
+    useOpenBirthDateSettings: () => openBirthDateSettings,
+}));
 vi.mock('../../components/classlink/KeepAccountStep', () => ({
-    KeepAccountStep: ({ variant, source }: { variant: string; source: string }) => (
-        <section data-testid="mock-keep-account" data-variant={variant} data-source={source} />
+    KeepAccountStep: ({
+        variant,
+        source,
+        onAddBirthDate,
+    }: {
+        variant: string;
+        source: string;
+        onAddBirthDate?: () => void;
+    }) => (
+        <section data-testid="mock-keep-account" data-variant={variant} data-source={source}>
+            <button type="button" onClick={onAddBirthDate}>
+                add-birth-date
+            </button>
+        </section>
     ),
 }));
 
@@ -228,6 +244,23 @@ describe('SchoolConnectPage', () => {
         };
         rerender(<SchoolConnectPage />);
         expect(screen.getByTestId('mock-keep-account')).toBeTruthy();
+    });
+
+    it('shows a missing date of birth, which the user can add from here', () => {
+        keepAccount.continuity = {
+            nextStep: 'email',
+            emailVerified: false,
+            personalEmail: { allowed: false, reason: 'age_unknown' },
+        };
+        stub(useSchoolConnection, {
+            data: { available: true, canConnect: true, connected: true, schoolName: 'Test High' },
+            isLoading: false,
+            isError: false,
+        });
+        render(<SchoolConnectPage />);
+        expect(screen.getByTestId('mock-keep-account')).toBeTruthy();
+        fireEvent.click(screen.getByText('add-birth-date'));
+        expect(openBirthDateSettings).toHaveBeenCalledTimes(1);
     });
 
     it('leaves the keep-account slot out without server state', () => {

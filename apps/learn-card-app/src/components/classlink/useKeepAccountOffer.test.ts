@@ -29,7 +29,8 @@ vi.mock('../../auth/classlink/classlinkProfileDefaults', () => ({
     getClassLinkSession: mocks.getSession,
 }));
 
-import { isKeepAccountEnabled, needsKeepAccount, useKeepAccountOffer } from './useKeepAccountOffer';
+import { isKeepAccountEnabled } from './keepAccountFlags';
+import { needsKeepAccount, useKeepAccountOffer } from './useKeepAccountOffer';
 
 const ALL_ON = { classlinkSso: true, classlinkPersonalEmail: true, classlinkKeepAccount: true };
 
@@ -40,8 +41,10 @@ const continuity = (
     personalEmail: allowed ? { allowed } : { allowed, reason: 'district_off' },
     emailVerified: nextStep !== 'email',
     recoveryEmailVerified: nextStep !== 'email',
-    hasServerConfirmedMethod: nextStep === 'done',
-    hasUserRecoveryMethod: nextStep === 'done',
+    hasServerConfirmedMethod: nextStep === 'done' || nextStep === 'pin',
+    hasUserRecoveryMethod: false,
+    pinState: nextStep === 'done' ? 'enabled' : 'none',
+    pinRecoverable: nextStep === 'done',
     nextStep,
 });
 
@@ -87,9 +90,14 @@ describe('needsKeepAccount', () => {
         expect(needsKeepAccount(continuity('email', false))).toBe(false);
     });
 
-    it('offers the method step whatever the email policy says', () => {
+    it('offers the PIN step whatever the email policy says', () => {
+        expect(needsKeepAccount(continuity('pin'))).toBe(true);
+        expect(needsKeepAccount(continuity('pin', false))).toBe(true);
+    });
+
+    it('offers the passkey / phrase step an account without escrow still needs', () => {
+        // The server only answers `method` once the email is in and there is no escrow.
         expect(needsKeepAccount(continuity('method'))).toBe(true);
-        expect(needsKeepAccount(continuity('method', false))).toBe(true);
     });
 
     it('offers nothing once done or without an answer', () => {

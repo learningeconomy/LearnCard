@@ -68,7 +68,8 @@ const WalletPage: React.FC = () => {
 
     const { isAiEnabled, reason } = useAiFeatureGate();
     // ClassLink cards mount only for tenants that enable them, so other tenants never
-    // run their queries (each is a DID-authenticated lca-api call).
+    // run their queries (each is a DID-authenticated lca-api call). With "keep your
+    // account" on, the email card stays off: that flow asks for the email elsewhere.
     const features = useFeatureConfig();
     const showPersonalEmailPrompt = isPersonalEmailPromptEnabled(features);
     const showTranscriptOptIn = features.classlinkSso && features.classlinkTranscriptOptIn;

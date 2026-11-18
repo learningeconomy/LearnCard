@@ -1,16 +1,29 @@
-import React, { useState } from 'react';
-import { IonIcon } from '@ionic/react';
-import { alertCircleOutline } from 'ionicons/icons';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { useStartPersonalEmail, useVerifyPersonalEmail } from 'learn-card-base';
 import type { LCAPluginMethods } from '@learncard/lca-api-plugin';
 import * as m from '../../paraglide/messages.js';
+import { RecoveryPinInput } from '../recovery/RecoveryPinInput';
+import { LINK_BUTTON_CLASS, PRIMARY_BUTTON_CLASS } from './keepAccountStyles';
 
 export type PersonalEmailVerifyResult = Awaited<
     ReturnType<LCAPluginMethods['classlinkVerifyPersonalEmail']>
 >;
 
+/** Seconds before "Resend code" comes back; lca-api allows 3 sends per 10 minutes. */
+export const RESEND_COOLDOWN_SECONDS = 60;
+
+const CODE_LENGTH = 6;
+// Only gates the button; the server is the real check.
+const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const inputClass =
-    'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white';
+    'w-full min-h-[48px] py-3 px-4 border rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:border-transparent bg-white disabled:opacity-50';
+
+/**
+ * Wrap an address in Unicode directional isolates, so it reads left to right inside a
+ * right-to-left sentence (Arabic) without moving the punctuation around it.
+ */
+export const isolateLtr = (text: string): string => `\u2068${text}\u2069`;
 
 /** The tRPC error code from an lca-api call, if any. */
 export const getTrpcCode = (error: unknown): string | undefined =>
@@ -38,137 +51,340 @@ export const personalEmailErrorMessage = (error: unknown, step: 'email' | 'code'
     }
 };
 
+/** Where `PersonalEmailForm` hands its parts to a host that lays them out itself. */
+export type PersonalEmailFormLayout = (parts: {
+    /** The fields, wrapped in the `<form>`. */
+    form: React.ReactNode;
+    /** The submit button (it targets the form by id, so it can sit anywhere) and extras. */
+    actions: React.ReactNode;
+    step: 'email' | 'code';
+    /** "We sent a code to …": on the code step, the host shows it (e.g. as its body). */
+    sentTo: string;
+}) => React.ReactNode;
+
 export type PersonalEmailFormProps = {
-    /** Called after the code is accepted, with the server's result. */
-    onVerified: (result: PersonalEmailVerifyResult) => void;
-    /** Called once a code has been sent to the address. */
+    /** Called after the code is accepted, with the server's result and the address. */
+    onVerified: (result: PersonalEmailVerifyResult, email: string) => void;
+    /**
+     * A verified address the host still cannot use (e.g. it already recovers another
+     * account): return the message, and the form goes back to the email field with the
+     * address kept and the message under it, like any other email error.
+     */
+    verifiedEmailError?: (result: PersonalEmailVerifyResult) => string | undefined;
+    /** Shown right under the email field (e.g. what the address is used for). */
+    emailNote?: React.ReactNode;
+    /** Called once a code has been sent to a newly entered address (not on resend). */
     onCodeSent?: () => void;
     /** The server refused this account (policy); the parent should re-read why. */
     onForbidden?: () => void;
-    /** Extra actions beside the submit button (for example "Skip for now"). */
+    /** Extra actions below the submit button (for example "Not now"). */
     secondaryAction?: (busy: boolean) => React.ReactNode;
+    /**
+     * Lays out the fields and the actions, e.g. with the actions in an onboarding step's
+     * sticky bottom bar. By default they stack.
+     */
+    layout?: PersonalEmailFormLayout;
+    /** Class for the submit button; defaults to the full-width primary style. */
+    submitClassName?: string;
+    /** Focus the email field on mount (the user just asked for this form). */
+    autoFocus?: boolean;
+    /** Keep the email field's label for screen readers only, when the host already shows it. */
+    hideEmailLabel?: boolean;
 };
 
+const FieldError: React.FC<{ id: string; message?: string }> = ({ id, message }) => (
+    // Always mounted so assistive tech announces each new error.
+    <div id={id} role="alert" className="min-h-5 mt-1.5 text-sm text-red-600 leading-snug">
+        {message}
+    </div>
+);
+
+const Spinner: React.FC<{ light?: boolean }> = ({ light = false }) => (
+    <span
+        aria-hidden="true"
+        className={`w-4 h-4 border-2 rounded-full animate-spin ${
+            light ? 'border-white/30 border-t-white' : 'border-grayscale-200 border-t-grayscale-600'
+        }`}
+    />
+);
+
 /**
- * Personal email + 6-digit code form for a ClassLink account. Owns only the two-step
- * entry and its errors; whether to show it at all is the parent's decision.
+ * Personal email + emailed code for a ClassLink account. The email step sends a code;
+ * the code step names the address (with "Use a different email"), takes the 6-digit
+ * code in boxes that accept the OS one-time-code autofill and checks it as soon as the
+ * last digit is in, and offers "Resend code" after a short countdown. Each error shows
+ * under the field it is about. Whether to show the form at all is the parent's call.
  */
 export const PersonalEmailForm: React.FC<PersonalEmailFormProps> = ({
     onVerified,
+    verifiedEmailError,
+    emailNote,
     onCodeSent,
     onForbidden,
     secondaryAction,
+    layout,
+    submitClassName = PRIMARY_BUTTON_CLASS,
+    autoFocus = false,
+    hideEmailLabel = false,
 }) => {
     const start = useStartPersonalEmail();
     const verify = useVerifyPersonalEmail();
+    const formId = useId();
+    const emailId = `${formId}-email`;
+    const emailErrorId = `${formId}-email-error`;
+    const codeErrorId = `${formId}-code-error`;
     const [email, setEmail] = useState('');
+    // The address the current code went to; the email field may be edited after it.
+    const [sentTo, setSentTo] = useState('');
     const [code, setCode] = useState('');
-    const [codeStep, setCodeStep] = useState(false);
-    const [error, setError] = useState('');
+    const [step, setStep] = useState<'email' | 'code'>('email');
+    const [error, setError] = useState<{ field: 'email' | 'code'; message: string } | null>(null);
+    const [resendAt, setResendAt] = useState(0);
+    const [now, setNow] = useState(() => Date.now());
     const busy = start.isPending || verify.isPending;
+    const emailRef = useRef<HTMLInputElement>(null);
+    const codeRef = useRef<HTMLDivElement>(null);
+    // Where focus goes once the fields are enabled again.
+    const focusNextRef = useRef<'email' | 'code' | null>(autoFocus ? 'email' : null);
 
-    const submit = async (event: React.FormEvent): Promise<void> => {
-        event.preventDefault();
+    const resendSeconds = Math.max(0, Math.ceil((resendAt - now) / 1000));
+    // Ticks once a second until the countdown ends, then stops.
+    useEffect(() => {
+        if (step !== 'code' || resendAt <= Date.now()) return;
+        const timer = setInterval(() => {
+            const current = Date.now();
+            setNow(current);
+            if (current >= resendAt) clearInterval(timer);
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [step, resendAt]);
+
+    useEffect(() => {
+        if (busy || !focusNextRef.current || focusNextRef.current !== step) return;
+        if (step === 'email') emailRef.current?.focus();
+        else codeRef.current?.querySelector<HTMLInputElement>('input')?.focus();
+        focusNextRef.current = null;
+    }, [busy, step]);
+
+    const fail = (err: unknown, during: 'send' | 'verify'): void => {
+        const message = personalEmailErrorMessage(err, during === 'verify' ? 'code' : 'email');
+        // A taken address is about the email, wherever it surfaced.
+        const field = getTrpcCode(err) === 'CONFLICT' ? 'email' : step;
+        setError({ field, message });
+        if (field !== step) {
+            setStep(field);
+            setCode('');
+        }
+        focusNextRef.current = field;
+        if (getTrpcCode(err) === 'FORBIDDEN') onForbidden?.();
+    };
+
+    const sendCode = async (): Promise<void> => {
         if (busy) return;
-        setError('');
+        const address = email.trim();
+        const resending = step === 'code';
+        setError(null);
         try {
-            if (codeStep) {
-                const result = await verify.mutateAsync({ email: email.trim(), code });
-                if (!result.success) throw new Error();
-                onVerified(result);
-            } else {
-                const result = await start.mutateAsync({ email: email.trim() });
-                if (!result.success) throw new Error();
-                setCodeStep(true);
-                onCodeSent?.();
-            }
+            const result = await start.mutateAsync({ email: address });
+            if (!result.success) throw new Error();
+            setSentTo(address);
+            setCode('');
+            setStep('code');
+            setNow(Date.now());
+            setResendAt(Date.now() + RESEND_COOLDOWN_SECONDS * 1000);
+            focusNextRef.current = 'code';
+            if (!resending) onCodeSent?.();
         } catch (err) {
-            setError(personalEmailErrorMessage(err, codeStep ? 'code' : 'email'));
-            if (getTrpcCode(err) === 'FORBIDDEN') onForbidden?.();
+            fail(err, 'send');
         }
     };
 
-    return (
-        <form onSubmit={submit} className="space-y-4">
-            {error && (
-                <div
-                    role="alert"
-                    className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5"
-                >
-                    <IonIcon
-                        icon={alertCircleOutline}
-                        className="text-red-400 text-lg mt-0.5 shrink-0"
-                    />
-                    <span className="text-sm text-red-700 leading-relaxed">{error}</span>
-                </div>
-            )}
-            <div>
-                <label
-                    htmlFor="classlink-personal-email"
-                    className="block text-xs font-medium text-grayscale-700 mb-1.5"
-                >
-                    {m['classlinkPersonalEmail.email']()}
-                </label>
-                <input
-                    id="classlink-personal-email"
-                    data-testid="classlink-email-input"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    maxLength={254}
-                    value={email}
-                    onChange={event => setEmail(event.target.value)}
-                    disabled={busy || codeStep}
-                    className={inputClass}
-                />
-            </div>
-            {codeStep && (
-                <div>
+    const verifyCode = async (value: string): Promise<void> => {
+        if (busy || value.length !== CODE_LENGTH) return;
+        setError(null);
+        try {
+            const result = await verify.mutateAsync({ email: sentTo, code: value });
+            if (!result.success) throw new Error();
+            const unusable = verifiedEmailError?.(result);
+            onVerified(result, sentTo);
+            if (unusable) {
+                setCode('');
+                setStep('email');
+                setError({ field: 'email', message: unusable });
+                focusNextRef.current = 'email';
+            }
+        } catch (err) {
+            // Clear the boxes so the next code can be typed (or autofilled) straight in.
+            setCode('');
+            fail(err, 'verify');
+        }
+    };
+
+    const changeEmail = (): void => {
+        setError(null);
+        setCode('');
+        setStep('email');
+        focusNextRef.current = 'email';
+    };
+
+    const submit = (event: React.FormEvent): void => {
+        event.preventDefault();
+        if (step === 'email') void sendCode();
+        else void verifyCode(code);
+    };
+
+    const sentToMessage = m['classlinkPersonalEmail.sentTo']({ email: isolateLtr(sentTo) });
+    const emailError = error?.field === 'email' ? error.message : undefined;
+    const codeError = error?.field === 'code' ? error.message : undefined;
+
+    const form = (
+        <form id={formId} onSubmit={submit} noValidate className="w-full">
+            {step === 'email' ? (
+                <div className="text-start">
                     <label
-                        htmlFor="classlink-personal-code"
-                        className="block text-xs font-medium text-grayscale-700 mb-1.5"
+                        htmlFor={emailId}
+                        className={
+                            hideEmailLabel
+                                ? 'sr-only'
+                                : 'block text-xs font-medium text-grayscale-700 mb-1.5'
+                        }
                     >
-                        {m['classlinkPersonalEmail.code']()}
+                        {m['classlinkPersonalEmail.email']()}
                     </label>
                     <input
-                        id="classlink-personal-code"
-                        data-testid="classlink-email-code"
-                        inputMode="numeric"
-                        autoComplete="one-time-code"
-                        pattern="[0-9]{6}"
-                        maxLength={6}
-                        required
-                        value={code}
-                        onChange={event =>
-                            setCode(event.target.value.replace(/\D/g, '').slice(0, 6))
-                        }
+                        ref={emailRef}
+                        id={emailId}
+                        data-testid="classlink-email-input"
+                        type="email"
+                        inputMode="email"
+                        autoComplete="email"
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                        spellCheck={false}
+                        // Addresses read left to right in every language.
+                        dir="ltr"
+                        maxLength={254}
+                        value={email}
+                        onChange={event => {
+                            setEmail(event.target.value);
+                            if (emailError) setError(null);
+                        }}
                         disabled={busy}
-                        className={inputClass}
+                        aria-invalid={emailError ? true : undefined}
+                        aria-describedby={emailErrorId}
+                        className={`${inputClass} ${
+                            emailError
+                                ? 'border-red-300 focus:ring-red-500'
+                                : 'border-grayscale-300 focus:ring-emerald-500'
+                        }`}
                     />
+                    <FieldError id={emailErrorId} message={emailError} />
+                    {emailNote}
+                </div>
+            ) : (
+                <div className="flex flex-col items-center text-center">
+                    {/* A host layout shows this line itself, as its screen's body. */}
+                    {!layout && (
+                        <p className="mb-3 text-sm text-grayscale-600 leading-relaxed">
+                            {sentToMessage}
+                        </p>
+                    )}
+                    <div
+                        ref={codeRef}
+                        role="group"
+                        aria-label={m['classlinkPersonalEmail.code']()}
+                        aria-describedby={codeErrorId}
+                        data-testid="classlink-email-code"
+                        // Digits run left to right in every language.
+                        dir="ltr"
+                        className="w-full flex justify-center"
+                    >
+                        <RecoveryPinInput
+                            variant="code"
+                            length={CODE_LENGTH}
+                            value={code}
+                            onChange={value => {
+                                setCode(value);
+                                if (codeError && value) setError(null);
+                            }}
+                            onComplete={value => void verifyCode(value)}
+                            disabled={busy}
+                            error={!!codeError}
+                        />
+                    </div>
+                    {verify.isPending ? (
+                        <p
+                            role="status"
+                            className="min-h-5 mt-1.5 flex items-center gap-2 text-sm text-grayscale-600"
+                        >
+                            <Spinner />
+                            {m['classlinkPersonalEmail.verifying']()}
+                        </p>
+                    ) : (
+                        <FieldError id={codeErrorId} message={codeError} />
+                    )}
+                    <div className="mt-1 flex flex-wrap items-center justify-center gap-x-4">
+                        <button
+                            type="button"
+                            data-testid="classlink-email-resend"
+                            // Plain text while it counts down, so it reads as status.
+                            className={`${LINK_BUTTON_CLASS} tabular-nums`}
+                            disabled={busy || resendSeconds > 0}
+                            onClick={() => void sendCode()}
+                        >
+                            {start.isPending
+                                ? m['classlinkPersonalEmail.sending']()
+                                : resendSeconds > 0
+                                  ? m['classlinkPersonalEmail.resendIn']({
+                                        seconds: String(resendSeconds),
+                                    })
+                                  : m['classlinkPersonalEmail.resend']()}
+                        </button>
+                        <button
+                            type="button"
+                            data-testid="classlink-email-change"
+                            className={LINK_BUTTON_CLASS}
+                            disabled={busy}
+                            onClick={changeEmail}
+                        >
+                            {m['classlinkPersonalEmail.changeEmail']()}
+                        </button>
+                    </div>
                 </div>
             )}
-            <div className="flex flex-wrap gap-3">
+        </form>
+    );
+
+    // The code is checked as soon as it is complete, so its step has no submit button.
+    const actions = (
+        <>
+            {step === 'email' && (
                 <button
                     type="submit"
+                    form={formId}
                     data-testid="classlink-email-submit"
-                    disabled={busy || (codeStep && code.length !== 6)}
-                    className="py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                    disabled={busy || !EMAIL_SHAPE.test(email.trim())}
+                    className={submitClassName}
                 >
-                    {busy ? (
+                    {start.isPending ? (
                         <span className="flex items-center justify-center gap-2">
-                            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            {codeStep
-                                ? m['classlinkPersonalEmail.verifying']()
-                                : m['classlinkPersonalEmail.sending']()}
+                            <Spinner light />
+                            {m['classlinkPersonalEmail.sending']()}
                         </span>
-                    ) : codeStep ? (
-                        m['classlinkPersonalEmail.verify']()
                     ) : (
                         m['classlinkPersonalEmail.send']()
                     )}
                 </button>
-                {secondaryAction?.(busy)}
-            </div>
-        </form>
+            )}
+            {secondaryAction?.(busy)}
+        </>
+    );
+
+    if (layout) return <>{layout({ form, actions, step, sentTo: sentToMessage })}</>;
+    return (
+        <div className="w-full space-y-3">
+            {form}
+            <div className="space-y-2">{actions}</div>
+        </div>
     );
 };

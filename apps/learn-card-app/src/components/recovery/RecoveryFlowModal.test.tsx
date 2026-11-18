@@ -42,6 +42,7 @@ vi.mock('learn-card-base', async () => {
 });
 
 import { RecoveryFlowModal } from './RecoveryFlowModal';
+import * as m from '../../paraglide/messages.js';
 
 describe('RecoveryFlowModal', () => {
     beforeEach(() => {
@@ -298,6 +299,33 @@ describe('RecoveryFlowModal', () => {
         expect(screen.getByTestId('recovery-identity-no-code-hint')).toHaveTextContent(
             /No code\? We can only send one if this is the recovery email/
         );
+    });
+
+    it('tells school-login tenants to ask their school when no code comes', () => {
+        render(
+            <RecoveryFlowModal
+                {...defaultProps}
+                schoolLoginRecovery
+                identityPhase="verify_email"
+                identityEmail="test@example.com"
+            />
+        );
+        expect(screen.getByTestId('recovery-identity-no-code-hint')).toHaveTextContent(
+            /Didn't get it\? Check spam\. School accounts: if no code arrives, ask your school/
+        );
+    });
+
+    it('asks school-login tenants for the personal email saved to the account', () => {
+        const { rerender } = render(
+            <RecoveryFlowModal {...defaultProps} identityPhase="enter_email" />
+        );
+        expect(screen.getByText(m['recovery.identity.emailDescription']())).toBeInTheDocument();
+        rerender(
+            <RecoveryFlowModal {...defaultProps} schoolLoginRecovery identityPhase="enter_email" />
+        );
+        expect(
+            screen.getByText(m['recovery.identity.emailDescriptionSchool']())
+        ).toBeInTheDocument();
     });
 
     it('renders identity new_login phase', () => {

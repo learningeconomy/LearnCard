@@ -54,10 +54,10 @@ export type InviteSurface = 'empty_state' | 'menu';
 
 /** Where the ClassLink "keep your account" step was offered. */
 export type KeepAccountSource =
-    'transcript_onboarding' | 'transcript_modal' | 'school_connect' | 'dashboard';
+    'onboarding' | 'transcript_onboarding' | 'transcript_modal' | 'school_connect' | 'dashboard';
 
 /** Which "keep your account" step an event is about (`code` = the emailed code). */
-export type KeepAccountAnalyticsStep = 'email' | 'code' | 'method' | 'done' | 'blocked';
+export type KeepAccountAnalyticsStep = 'email' | 'code' | 'pin' | 'method' | 'done' | 'blocked';
 
 export type KeepAccountEventPayload = {
     source: KeepAccountSource;

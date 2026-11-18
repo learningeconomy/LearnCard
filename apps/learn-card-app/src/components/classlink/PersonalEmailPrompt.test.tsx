@@ -68,6 +68,22 @@ describe('PersonalEmailPrompt gating', () => {
         ).toBe(true);
     });
 
+    it('stays off once the keep-account flow is on, so the email is never asked twice', async () => {
+        const all = {
+            classlinkSso: true,
+            classlinkPersonalEmail: true,
+            classlinkKeepAccount: true,
+        };
+        expect(isPersonalEmailPromptEnabled(all)).toBe(false);
+        mocks.features = all;
+        render(<PersonalEmailPrompt />);
+        await act(async () => {
+            await Promise.resolve();
+        });
+        expect(screen.queryByTestId('classlink-email-prompt')).toBeNull();
+        expect(mocks.continuityHook).not.toHaveBeenCalled();
+    });
+
     it('shows the invitation when the server allows a personal email', async () => {
         render(<PersonalEmailPrompt />);
         expect(await screen.findByTestId('classlink-email-prompt')).toBeTruthy();
@@ -131,13 +147,15 @@ describe('PersonalEmailPrompt gating', () => {
         await act(async () => {
             fireEvent.click(screen.getByTestId('classlink-email-submit'));
         });
-        fireEvent.change(screen.getByTestId('classlink-email-code'), {
-            target: { value: '123456' },
-        });
+        // The code is checked as soon as the last digit is in (here, all at once by autofill).
         await act(async () => {
-            fireEvent.click(screen.getByTestId('classlink-email-submit'));
+            fireEvent.change(screen.getByLabelText('Code digit 1'), {
+                target: { value: '123456' },
+            });
         });
         expect(mocks.verify).toHaveBeenCalledWith({ email: 'me@school.example', code: '123456' });
+        // A taken address is about the email: back to its field, with the error under it.
+        expect(screen.getByTestId('classlink-email-input')).toBeTruthy();
         expect(screen.getByRole('alert').textContent).toBe(
             m['classlinkPersonalEmail.conflictError']()
         );

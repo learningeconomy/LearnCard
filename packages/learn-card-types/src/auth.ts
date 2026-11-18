@@ -648,6 +648,13 @@ export interface KeyDerivationStrategy<
          * was rotated or signed; the caller must ask the user to set a new PIN.
          */
         | { enrolled: false; reason: 'pin-reset-required' }
+        /**
+         * Nitro only: this write must bind the account's recovery contact into the signed
+         * intent, but the account has no contact email (e.g. a ClassLink placeholder
+         * email). The enclave would refuse it, so nothing was rotated or signed. Retrying
+         * cannot help until the account gains a contact email.
+         */
+        | { enrolled: false; reason: 'no-contact' }
         | { enrolled: true; changed: false }
         | {
               enrolled: true;

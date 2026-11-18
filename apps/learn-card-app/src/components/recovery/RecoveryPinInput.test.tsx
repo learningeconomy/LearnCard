@@ -102,6 +102,21 @@ describe('RecoveryPinInput code variant', () => {
         expect(screen.queryByLabelText(/PIN digit/)).not.toBeInTheDocument();
     });
 
+    it('spreads an autofilled code across the boxes and completes it', () => {
+        const onChange = vi.fn();
+        const onComplete = vi.fn();
+        render(
+            <RecoveryPinInput variant="code" value="" onChange={onChange} onComplete={onComplete} />
+        );
+        const inputs = screen.getAllByLabelText(/Code digit/);
+        expect(inputs[0]).toHaveAttribute('maxlength', '6');
+        expect(inputs[1]).toHaveAttribute('maxlength', '1');
+        fireEvent.change(inputs[0], { target: { value: '482913' } });
+        expect(onChange).toHaveBeenLastCalledWith('482913');
+        expect(onComplete).toHaveBeenCalledWith('482913');
+        expect(inputs.map(input => (input as HTMLInputElement).value).join('')).toBe('482913');
+    });
+
     it('lets every box shrink so eight fit a narrow card', () => {
         render(<RecoveryPinInput length={8} variant="code" value="" onChange={() => {}} />);
         for (const input of screen.getAllByLabelText(/Code digit/)) {

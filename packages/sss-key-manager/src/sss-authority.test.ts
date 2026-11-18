@@ -1518,6 +1518,42 @@ describe('Nitro owner enrollment flow', () => {
         expect(f.calls.some(c => c.startsWith('DELETE:'))).toBe(false);
         expect(f.strategy.getVerifiedEscrowEnvelope!()).toBeNull();
     });
+    it('reports no-contact, rotating and signing nothing, for an account with no contact email', async () => {
+        const f = await setup();
+        // e.g. a ClassLink placeholder email, which the auth provider exposes as none.
+        const params = { ...f.params, options: { recoveryLanguage: 'en' } };
+        await expect(f.strategy.ensureEscrowEnrollment!(params)).resolves.toEqual({
+            enrolled: false,
+            reason: 'no-contact',
+        });
+        await expect(f.strategy.ensureEscrowEnrollment!(params)).resolves.toEqual({
+            enrolled: false,
+            reason: 'no-contact',
+        });
+        await expect(f.strategy.setEscrowPin!({ ...params, pin: '593827' })).rejects.toThrow(
+            'Automatic recovery is not available for this account.'
+        );
+        await expect(f.strategy.enableEscrowRecovery!(params)).rejects.toThrow(
+            'Automatic recovery is not available for this account.'
+        );
+        expect(f.calls).not.toContain('PUT:/keys/auth-share');
+        expect(f.intents).toHaveLength(0);
+        // The same account enrolls once it has a contact email.
+        await expect(f.strategy.ensureEscrowEnrollment!(f.params)).resolves.toMatchObject({
+            enrolled: true,
+            changed: true,
+        });
+    });
+    it('needs no contact email to carry an existing PIN enrollment to a new share version', async () => {
+        const f = await setup();
+        await f.strategy.setEscrowPin!({ ...f.params, pin: '593827' });
+        f.advance();
+        await f.strategy.ensureEscrowEnrollment!({
+            ...f.params,
+            options: { recoveryLanguage: 'en' },
+        });
+        expect(f.intents.at(-1)?.intent).toMatchObject({ action: 'carry', pinAction: 'keep' });
+    });
     it('rejects a stale signed Snapshot before rotating shares or issuing intent', async () => {
         const f = await setup();
         f.faults.snapshotNonce = true;

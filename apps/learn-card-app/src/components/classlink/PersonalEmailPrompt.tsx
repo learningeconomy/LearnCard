@@ -3,23 +3,33 @@ import { IonIcon } from '@ionic/react';
 import { checkmarkCircleOutline } from 'ionicons/icons';
 import { useClassLinkAccountContinuity, useFeatureConfig } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
+import { isKeepAccountEnabled } from './keepAccountFlags';
 import { PersonalEmailForm } from './PersonalEmailForm';
+import { QUIET_BUTTON_CLASS } from './keepAccountStyles';
 import { useClassLinkSession } from './useClassLinkSession';
 
 const DISMISSED_KEY = 'classlink-personal-email-dismissed-at';
 const DISMISS_MS = 30 * 24 * 60 * 60 * 1000;
 
-/** Tenant flags that allow the personal-email invitation at all. */
+/**
+ * Tenant flags that allow this personal-email card at all. Off once the "keep your
+ * account" flow is on: that flow asks for the email (dashboard banner, transcript,
+ * School Connect), and a second email prompt here would ask for it twice.
+ */
 export const isPersonalEmailPromptEnabled = (features: {
     classlinkSso?: boolean;
     classlinkPersonalEmail?: boolean;
-}): boolean => features.classlinkSso === true && features.classlinkPersonalEmail === true;
+    classlinkKeepAccount?: boolean;
+}): boolean =>
+    features.classlinkSso === true &&
+    features.classlinkPersonalEmail === true &&
+    !isKeepAccountEnabled(features);
 
 /**
  * Invitation for ClassLink accounts to add a verified personal email.
  *
- * Off unless the tenant enables both `classlinkSso` and `classlinkPersonalEmail` and the
- * session is a ClassLink sign-in. Who may add one is the server's decision (each district's
+ * Off unless the tenant enables both `classlinkSso` and `classlinkPersonalEmail` (and not
+ * `classlinkKeepAccount`, which replaces it) and the session is a ClassLink sign-in. Who may add one is the server's decision (each district's
  * account continuity policy, which by default excludes students): the card shows only when
  * `getAccountContinuity` allows it and no personal email is verified yet.
  */
@@ -93,7 +103,7 @@ const PersonalEmailPromptCard: React.FC = () => {
                                 type="button"
                                 disabled={busy}
                                 onClick={dismiss}
-                                className="py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors disabled:opacity-40"
+                                className={QUIET_BUTTON_CLASS}
                             >
                                 {m['classlinkPersonalEmail.skip']()}
                             </button>

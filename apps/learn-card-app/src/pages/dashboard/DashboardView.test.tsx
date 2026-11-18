@@ -108,8 +108,13 @@ describe('DashboardView guardian approval and recovery banner slot', () => {
 });
 
 describe('DashboardView ClassLink keep-account banner', () => {
-    const keepAccount = (step: 'email' | 'method' = 'email') => ({
+    const keepAccount = (
+        step: 'email' | 'pin' | 'method' = 'email',
+        extra: { pinLocked?: boolean; phrase?: boolean } = {}
+    ) => ({
         step,
+        ...extra,
+        title: m['classlinkKeepAccount.title'](),
         onStart: vi.fn(),
         onSnooze: vi.fn(),
     });
@@ -124,17 +129,38 @@ describe('DashboardView ClassLink keep-account banner', () => {
     it('replaces the recovery banner while it shows', () => {
         const { rerender } = render(
             <DashboardView
-                vm={buildVm({ recoveryApplicable: true, keepAccount: keepAccount('method') })}
+                vm={buildVm({ recoveryApplicable: true, keepAccount: keepAccount('pin') })}
             />
         );
 
         expect(screen.getByTestId('dashboard-keep-account-banner')).toBeInTheDocument();
-        expect(screen.getByText(m['classlinkKeepAccount.banner.methodBody']())).toBeInTheDocument();
+        expect(screen.getByText(m['classlinkKeepAccount.banner.pinBody']())).toBeInTheDocument();
+        // The same words as the recovery banner's own PIN ask.
+        expect(screen.getByText(m['recovery.prompt.pinFirst.action']())).toBeInTheDocument();
         expect(screen.queryByTestId('recovery-banner')).not.toBeInTheDocument();
 
         rerender(<DashboardView vm={buildVm({ recoveryApplicable: true })} />);
         expect(screen.queryByTestId('dashboard-keep-account-banner')).not.toBeInTheDocument();
         expect(screen.getByTestId('recovery-banner')).toBeInTheDocument();
+    });
+
+    it('asks for a new PIN when it is locked, and for a passkey or phrase without escrow', () => {
+        const { rerender } = render(
+            <DashboardView vm={buildVm({ keepAccount: keepAccount('pin', { pinLocked: true }) })} />
+        );
+        expect(
+            screen.getByText(m['classlinkKeepAccount.banner.pinLockedBody']())
+        ).toBeInTheDocument();
+        expect(screen.getByText(m['recovery.pin.pinLocked.action']())).toBeInTheDocument();
+
+        rerender(<DashboardView vm={buildVm({ keepAccount: keepAccount('method') })} />);
+        expect(screen.getByText(m['classlinkKeepAccount.methodBody']())).toBeInTheDocument();
+        expect(screen.getByText(m['classlinkKeepAccount.addPasskey']())).toBeInTheDocument();
+
+        rerender(
+            <DashboardView vm={buildVm({ keepAccount: keepAccount('method', { phrase: true }) })} />
+        );
+        expect(screen.getByText(m['classlinkKeepAccount.addPhrase']())).toBeInTheDocument();
     });
 
     it('shows neither banner while the keep-account check is pending', () => {

@@ -172,6 +172,12 @@ export class AuthCoordinator {
         /** Only recovery from an existing escrow enrollment skips the rollout gate. */
         bypassRolloutGate: boolean;
     };
+    /**
+     * The account whose escrow enrollment last reported `no-contact` (no contact email to
+     * bind). Later refreshes skip the call for it until its auth user gains an email, so
+     * a placeholder-email account is not retried (and re-verified) on every refresh.
+     */
+    private escrowNoContactAccount?: { did: string; userId?: string };
     private escrowOperations = new Set<Promise<unknown>>();
     private endingSession = false;
     private destroyed = false;
@@ -464,7 +470,12 @@ export class AuthCoordinator {
                     !gate.allowed &&
                     (repairingRecovery ||
                         ('requirePriorEnrollment' in gate && gate.requirePriorEnrollment === true));
-                if (gate.allowed || requirePriorEnrollment) {
+                const noContact = this.escrowNoContactAccount;
+                const knownNoContact =
+                    !ready.authUser?.email &&
+                    noContact?.did === ready.did &&
+                    noContact.userId === ready.authUser?.id;
+                if ((gate.allowed || requirePriorEnrollment) && !knownNoContact) {
                     const enrollmentResult = await this.runEscrowOperation(async () =>
                         isCurrentAccount()
                             ? this.keyDerivation.ensureEscrowEnrollment?.({
@@ -491,6 +502,14 @@ export class AuthCoordinator {
                         enrollmentVerificationFailed = true;
                         log.warn('escrow.enrollment.failed', err);
                     });
+                    if (isCurrentAccount()) {
+                        this.escrowNoContactAccount =
+                            enrollmentResult &&
+                            !enrollmentResult.enrolled &&
+                            enrollmentResult.reason === 'no-contact'
+                                ? { did: ready.did, userId: ready.authUser?.id }
+                                : undefined;
+                    }
                     // Keep the scoped intent through transient failures for the next refresh;
                     // drop it once repaired or once there is no prior enrollment to repair.
                     if (

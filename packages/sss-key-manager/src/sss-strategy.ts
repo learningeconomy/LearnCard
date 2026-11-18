@@ -257,7 +257,10 @@ const describeHttpStatus = (response: Response): string =>
     response.statusText ? `${response.status} ${response.statusText}` : `${response.status}`;
 
 type EscrowEnrollmentResult =
-    | { enrolled: false; reason: 'disabled' | 'opted-out' | 'not-enrolled' | 'pin-reset-required' }
+    | {
+          enrolled: false;
+          reason: 'disabled' | 'opted-out' | 'not-enrolled' | 'pin-reset-required' | 'no-contact';
+      }
     | { enrolled: true; changed: false }
     | { enrolled: true; changed: true; shareVersion: number; pinCleared?: 'automatic' };
 
@@ -1629,6 +1632,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         let verifiedKey: VerifiedEnclaveIdentity | undefined;
         // Locked, stale or unknown PIN state never satisfies a clear request.
         let hasPin = status.escrowPin?.state !== 'none';
+        // Nitro only: what the signed authority holds, to tell whether a write must bind
+        // the recovery contact (see the no-contact check below).
+        let authorityForContact: Pick<EscrowAuthorityState, 'status' | 'hasPin'> | undefined;
         if (config.escrow.attestation.mode === 'nitro') {
             if (!status.primaryDid || !params.signDidAuthVp)
                 throw new Error('Owner proof signing is required for escrow enrollment.');
@@ -1645,6 +1651,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             // The signed authority survives the identity rebind that drops Mongo's blob.
             if (params.options?.requirePriorEnrollment && current.status === 'empty')
                 return { enrolled: false, reason: 'not-enrolled' };
+            authorityForContact = { status: current.status, hasPin: current.hasPin };
             if (current.status === 'disabled') {
                 verifiedEscrowEnvelope = undefined;
                 if (!allowDisabledEnrollment) return { enrolled: false, reason: 'opted-out' };
@@ -1745,6 +1752,19 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             // Automatic repair preserves current enrollment regardless of PIN status.
             // The enclave can carry an existing verifier when shares rotate.
             return { enrolled: true, changed: false };
+        // An enroll/replace intent must carry the account's recovery contact, and the
+        // enclave refuses one without it. An account with no contact email (e.g. a
+        // ClassLink placeholder email) can never satisfy that, so say so before rotating
+        // shares or signing anything, instead of burning a share version on every refresh.
+        if (
+            authorityForContact &&
+            !recoveryEmail &&
+            resolveEscrowEnrollmentAction(
+                authorityForContact,
+                pin !== undefined ? 'set' : clearPinForEnrollment ? 'clear' : 'automatic'
+            ).bindsRecoveryContact
+        )
+            return { enrolled: false, reason: 'no-contact' };
         if (repairingStaleBlob) staleEscrowReenrollAttempted = true;
         if (!status.primaryDid) throw new Error('Cannot enroll escrow without a primary DID');
         if (!params.signDidAuthVp) {
@@ -3137,6 +3157,8 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     throw new Error('Escrow enrollment did not complete');
                 if (result.reason === 'pin-reset-required')
                     throw new Error('Set a new recovery PIN to turn on automatic recovery.');
+                if (result.reason === 'no-contact')
+                    throw new Error('Automatic recovery is not available for this account.');
                 return { enrolled: false as const, reason: result.reason };
             });
         },

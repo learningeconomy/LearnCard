@@ -46,6 +46,12 @@ interface RecoveryFlowModalProps {
     onFinishIdentityRecovery?: () => void;
     /** The lost-login recovery was a PIN sign-in, which kept devices and recovery methods. */
     identityKeptAccount?: boolean;
+    /**
+     * The tenant signs people in with a school login (ClassLink): the lost-login screens
+     * ask for the personal email saved to the account and say to ask the school when no
+     * code comes.
+     */
+    schoolLoginRecovery?: boolean;
     onCancel: () => void;
 }
 
@@ -113,6 +119,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
     onContinueWithNewLogin,
     onFinishIdentityRecovery,
     identityKeptAccount = false,
+    schoolLoginRecovery = false,
     onCancel,
 }) => {
     const hasMethod = (type: string) => availableMethods.some(m => m.type === type);
@@ -347,7 +354,9 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                         {m['recovery.identity.title']()}
                     </h2>
                     <p className="text-sm text-grayscale-600 leading-relaxed">
-                        {m['recovery.identity.emailDescription']()}
+                        {schoolLoginRecovery
+                            ? m['recovery.identity.emailDescriptionSchool']()
+                            : m['recovery.identity.emailDescription']()}
                     </p>
                 </div>
 
@@ -362,6 +371,8 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                     onChange={event => setRecoveryEmail(event.target.value)}
                     placeholder={m['recovery.identity.recoveryEmailPlaceholder']()}
                     autoComplete="email"
+                    // Addresses read left to right in every language.
+                    dir="ltr"
                     className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                 />
 
@@ -415,7 +426,9 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                     data-testid="recovery-identity-no-code-hint"
                     className="text-xs text-grayscale-500 leading-relaxed mb-5"
                 >
-                    {m['recovery.identity.noCodeHint']()}
+                    {schoolLoginRecovery
+                        ? m['recovery.identity.noCodeHintSchool']()
+                        : m['recovery.identity.noCodeHint']()}
                 </p>
                 {identityError}
                 <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
@@ -430,6 +443,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                     }
                     placeholder="000000"
                     autoComplete="one-time-code"
+                    dir="ltr"
                     className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-center tracking-[0.3em] text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                 />
                 <button

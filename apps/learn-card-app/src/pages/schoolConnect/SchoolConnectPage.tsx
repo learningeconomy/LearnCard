@@ -16,6 +16,7 @@ import { runClassLinkLogin } from '../../auth/classlink/startClassLinkLogin';
 import { TranscriptOptInCard } from '../../components/classlink/TranscriptOptInCard';
 import { KeepAccountStep } from '../../components/classlink/KeepAccountStep';
 import { useKeepAccountOffer } from '../../components/classlink/useKeepAccountOffer';
+import { useOpenBirthDateSettings } from '../../components/classlink/useOpenBirthDateSettings';
 import MainHeader from '../../components/main-header/MainHeader';
 import { useLocale } from '../../i18n';
 import * as m from '../../paraglide/messages.js';
@@ -35,12 +36,15 @@ const SchoolConnectPageContent: React.FC = () => {
 
     const { mutateAsync: getClassLinkAuthorizeUrl } = useClassLinkAuthorizeUrl();
     // Shown while the server allows adding an email or there is one to manage (also once
-    // done, so it can be removed here), never as a standing refusal. Once shown it stays,
-    // so a refusal mid-flow is explained rather than the section vanishing.
+    // done, so it can be removed here), never as a standing refusal, except a missing date
+    // of birth, which the user can fix from here. Once shown it stays, so a refusal
+    // mid-flow is explained rather than the section vanishing.
     const { continuity } = useKeepAccountOffer(connection?.connected === true);
+    const openBirthDateSettings = useOpenBirthDateSettings();
     const keepAccountOffered =
         !!continuity &&
         (continuity.personalEmail.allowed ||
+            continuity.personalEmail.reason === 'age_unknown' ||
             continuity.emailVerified ||
             continuity.nextStep !== 'email');
     const [keepAccountShown, setKeepAccountShown] = useState(false);
@@ -95,7 +99,11 @@ const SchoolConnectPageContent: React.FC = () => {
                         keepAccountSlot={
                             continuity &&
                             (keepAccountOffered || keepAccountShown) && (
-                                <KeepAccountStep variant="inline" source="school_connect" />
+                                <KeepAccountStep
+                                    variant="inline"
+                                    source="school_connect"
+                                    onAddBirthDate={openBirthDateSettings}
+                                />
                             )
                         }
                     />
