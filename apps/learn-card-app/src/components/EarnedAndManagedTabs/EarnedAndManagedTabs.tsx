@@ -160,7 +160,7 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                                                 ? m['boost.browseEarnedPlaceholder']()
                                                 : m['boost.browseManagedPlaceholder']()
                                         }
-                                        className={`rounded-[10px] px-4 w-full h-[44px] font-notoSans text-[14px] text-grayscale-900 outline-hidden placeholder:text-grayscale-900 placeholder:opacity-100 focus-visible:ring-2 focus-visible:ring-emerald-500 ${tabColor}`}
+                                        className={`rounded-[10px] px-4 w-full h-[44px] font-notoSans text-[14px] text-grayscale-900 outline-hidden placeholder:text-grayscale-800 placeholder:italic placeholder:opacity-100 focus-visible:ring-2 focus-visible:ring-emerald-500 ${tabColor}`}
                                     />
                                 </div>
                             )}
