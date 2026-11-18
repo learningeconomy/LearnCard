@@ -12,7 +12,6 @@
  * `data-feedback-exclude` (e.g. on-screen sensitive previews) are skipped.
  */
 
-import html2canvas from 'html2canvas';
 import { getLogger } from 'learn-card-base/logging/logger';
 
 import type { FeedbackScreenshot } from './types';
@@ -111,7 +110,8 @@ export const captureFeedbackScreenshot = async ({
     };
 
     try {
-        const canvas = await Promise.race([
+        // Loaded on demand (only feedback capture needs it); the deadline covers the load too.
+        const render = import('html2canvas').then(({ default: html2canvas }) =>
             html2canvas(document.documentElement, {
                 width: window.innerWidth,
                 height: window.innerHeight,
@@ -129,7 +129,10 @@ export const captureFeedbackScreenshot = async ({
                         notifySourceFrozen();
                     }
                 },
-            }),
+            })
+        );
+        const canvas = await Promise.race([
+            render,
             new Promise<never>((_, reject) => {
                 deadline = setTimeout(
                     () => reject(new Error('screenshot deadline exceeded')),

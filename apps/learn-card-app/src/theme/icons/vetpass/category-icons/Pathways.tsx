@@ -32,4 +32,3 @@ const SvgPathways = (props: SVGProps<SVGSVGElement>) => (
     </svg>
 );
 export default SvgPathways;
-

@@ -18,7 +18,7 @@ import { vi } from 'vitest';
 import { exportJWK, generateKeyPair, importJWK, jwtVerify, JWK } from 'jose';
 import { UnsignedVP, VP, JWKWithPrivateKey } from '@learncard/types';
 
-import { getOpenID4VCPlugin } from './plugin';
+import { getOpenID4VCPlugin } from './plugin.lazy';
 import type { OpenID4VCDependentLearnCard, OpenID4VCPluginMethods } from './types';
 import type { AuthorizationRequest, PresentationDefinition } from './vp/types';
 import { BuildPresentationError } from './vp/present';

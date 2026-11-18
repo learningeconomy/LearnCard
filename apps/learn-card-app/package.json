@@ -238,6 +238,7 @@
         "@fontsource/sacramento": "5.3.0",
         "@inlang/paraglide-js": "2.20.2",
         "@ionic/cli": "^7.2.1",
+        "@learncard/lca-api-service": "workspace:^",
         "@learncard/learn-cloud-service": "workspace:^",
         "@learncard/network-brain-service": "workspace:^",
         "@netlify/edge-functions": "^2.15.1",

@@ -298,6 +298,43 @@ describe('inbox batch method', () => {
     });
 });
 
+describe('credential sync authorization', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it.each([true, false, undefined])(
+        'forwards automatic=%s without changing explicit selections',
+        async automatic => {
+            const mutate = vi.fn().mockResolvedValue(true);
+            const client = {
+                ...getMockClient(),
+                contracts: { syncCredentialsToContract: { mutate } },
+            };
+            vi.mocked(getBrainClient).mockResolvedValue(client as never);
+            const learnCard = getMockLearnCard();
+            const plugin = await getLearnCardNetworkPlugin(
+                learnCard,
+                'https://network.example/trpc'
+            );
+            const categories = { Achievement: ['urn:synthetic:selected'] };
+            await expect(
+                plugin.methods?.syncCredentialsToContract(
+                    learnCard,
+                    'terms',
+                    categories,
+                    2,
+                    automatic
+                )
+            ).resolves.toBe(true);
+            expect(mutate).toHaveBeenCalledExactlyOnceWith({
+                termsUri: 'terms',
+                categories,
+                audienceVersion: 2,
+                automatic,
+            });
+        }
+    );
+});
+
 describe('connection prompt methods', () => {
     beforeEach(() => {
         vi.clearAllMocks();

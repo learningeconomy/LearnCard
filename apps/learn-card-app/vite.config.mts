@@ -16,6 +16,8 @@ import type { Plugin as EsbuildPlugin } from 'esbuild';
 
 import { findDuplicateMessageImports } from './scripts/check-i18n-imports.mjs';
 import { paraglideMissingKeyOnWarn } from './paraglideOnWarn';
+import { paraglideLazyLocales } from './src/i18n/paraglideLazyLocales';
+import { minifySvgPathDataInSource } from './src/buildPlugins/minifySvgPathData';
 import { parseLearnCardAppEnvironment } from './src/config/buildEnvironment';
 import { registryProxyDevServer } from '../../packages/learn-card-base/src/registry-proxy/registryProxyDevServer';
 
@@ -151,6 +153,90 @@ const collectWorkspacePackages = (): string[] => {
 
 const workspacePackages = collectWorkspacePackages();
 
+/**
+ * Production builds: resolve the root entry of each @learncard/* workspace package to its TypeScript
+ * source (the `development` export) instead of its prebuilt ESM dist. Several dist bundles inline their
+ * own copies of zod and @learncard/types (brain-client, openid4vc, render-method, sss-key-manager, helpers...),
+ * so the startup bundle carried ~6 copies that Rollup cannot dedupe or tree-shake. Only root entries of
+ * @learncard/* are redirected; npm packages keep production export conditions (a global `development`
+ * condition would pull dev builds of e.g. micromark). didkit keeps its dist (wasm asset wiring).
+ */
+const SOURCE_ENTRY_EXCLUDE = new Set(['@learncard/didkit-plugin', '@learncard/didkit-plugin-node']);
+const collectWorkspaceSourceEntries = (): Map<string, string> => {
+    const entries = new Map<string, string>();
+    const walk = (dir: string, depth: number): void => {
+        if (depth < 0 || !existsSync(dir)) return;
+        for (const entry of readdirSync(dir, { withFileTypes: true })) {
+            if (!entry.isDirectory() || ['node_modules', 'dist', 'src'].includes(entry.name))
+                continue;
+            const child = path.join(dir, entry.name);
+            const pkgPath = path.join(child, 'package.json');
+            if (existsSync(pkgPath)) {
+                try {
+                    const pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) as {
+                        name?: string;
+                        exports?: Record<string, unknown>;
+                    };
+                    const root = pkg.exports?.['.'] as { development?: unknown } | undefined;
+                    const dev =
+                        typeof root?.development === 'string' ? root.development : undefined;
+                    if (
+                        pkg.name?.startsWith('@learncard/') &&
+                        dev &&
+                        !SOURCE_ENTRY_EXCLUDE.has(pkg.name)
+                    ) {
+                        const file = path.join(child, dev);
+                        if (existsSync(file)) entries.set(pkg.name, file);
+                    }
+                } catch {
+                    // Ignore unreadable/partial package.json files during the scan.
+                }
+            }
+            walk(child, depth - 1);
+        }
+    };
+    walk(path.resolve(__dirname, '../../packages'), 2);
+    return entries;
+};
+
+const workspaceSourceEntries = (): Plugin => {
+    const entries = collectWorkspaceSourceEntries();
+    return {
+        name: 'learncard-workspace-source-entries',
+        enforce: 'pre',
+        apply: 'build',
+        resolveId: id => entries.get(id) ?? null,
+    };
+};
+
+// `lodash` is CommonJS, so one `import { isEqual } from 'lodash'` in workspace code bundles all of it
+// (~76 KB raw) into the entry. Resolve workspace imports of it to lodash-es (same API, tree-shakes).
+// Packages in node_modules keep real lodash: CJS callers may rely on the callable `_` chain.
+const lodashEsForWorkspace = (): Plugin => ({
+    name: 'learncard-lodash-es-for-workspace',
+    enforce: 'pre',
+    apply: 'build',
+    async resolveId(id, importer) {
+        if (id !== 'lodash' || !importer || importer.includes('/node_modules/')) return null;
+        return this.resolve('lodash-es', path.join(__dirname, 'index.html'), { skipSelf: true });
+    },
+});
+
+// Inline SVG icons are Figma exports (absolute coordinates, four decimals): ~1 MB of startup JS.
+// Round path points to a 0.01 grid (0.001 for small view boxes) and use the shorter of absolute or
+// relative commands. Source stays as exported; see src/buildPlugins/minifySvgPathData.ts.
+const minifySvgPathData = (): Plugin => ({
+    name: 'learncard-minify-svg-path-data',
+    enforce: 'pre',
+    apply: 'build',
+    transform(code, id) {
+        if (id.includes('/node_modules/') || !/\.[jt]sx$/.test(id.split('?')[0])) return null;
+        const next = minifySvgPathDataInSource(code);
+        // edits stay within single lines, so the existing source map is still line-accurate
+        return next === null ? null : { code: next, map: null };
+    },
+});
+
 export default defineConfig(async ({ mode, command }) => {
     const loadedEnvironment = loadEnv(mode, __dirname, '');
     const environment = parseLearnCardAppEnvironment(
@@ -187,6 +273,9 @@ export default defineConfig(async ({ mode, command }) => {
     return {
         plugins: [
             devCacheRevalidation,
+            ...(useSourceConditions ? [] : [workspaceSourceEntries()]),
+            lodashEsForWorkspace(),
+            minifySvgPathData(),
             tailwindcss(),
             registryProxyDevServer(),
             i18nImportGuard(),
@@ -198,6 +287,13 @@ export default defineConfig(async ({ mode, command }) => {
                 outdir: './src/paraglide',
                 outputStructure: 'locale-modules',
             }),
+            // Only the active language's strings load at startup (production builds).
+            paraglideLazyLocales(
+                JSON.parse(
+                    readFileSync(path.join(__dirname, 'project.inlang/settings.json'), 'utf8')
+                ).baseLocale,
+                path.join(__dirname, 'src/paraglide/messages')
+            ),
             ...(environment.ANALYZE
                 ? [
                       visualizer({
@@ -285,9 +381,9 @@ export default defineConfig(async ({ mode, command }) => {
                 'recharts',
                 '@digitalcredentials/jsonld',
                 '@capacitor-community/in-app-review',
-                'moment/locale/ar',
-                'moment/locale/es',
-                'moment/locale/fr',
+                'moment/dist/locale/ar',
+                'moment/dist/locale/es',
+                'moment/dist/locale/fr',
             ],
             // Exclude workspace packages from pre-bundling so Vite serves their TypeScript sources.
             exclude: workspacePackages,

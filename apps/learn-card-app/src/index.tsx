@@ -1,5 +1,8 @@
+// First: replace Capacitor's payload-logging bridge hooks before any plugin call.
+import './nativeBridgeLogging';
 import './constants/sentry';
-import { LocaleProvider } from './i18n';
+import { LocaleProvider, resolveInitialLocale } from './i18n';
+import { loadLocaleMessages } from './i18n/localeMessages';
 import { setTenantDefaultLocaleCache, setTenantSupportedLanguagesCache } from './i18n/detectLocale';
 import { createRoot } from 'react-dom/client';
 import { Buffer } from 'buffer';
@@ -17,7 +20,9 @@ import { applyNativeViewportRestrictions } from './helpers/applyNativeViewportRe
 import { getLaunchDarklyProviderProps } from './constants/runtimeLaunchDarkly';
 import App from './App';
 import { markStartupPhase } from './helpers/startupDiagnostics';
-import { prewarmDidKit } from 'learn-card-base/helpers/walletHelpers';
+import { prewarmDidKit } from 'learn-card-base/helpers/didkitPrewarm';
+import { startNativeSQLiteInit } from 'learn-card-base/hooks/useSQLiteStorage';
+import { loadDeferredFontStylesheets } from './deferredFontStylesheets';
 
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import reportWebVitals from './reportWebVitals';
@@ -38,6 +43,10 @@ markStartupPhase('entry');
 
 // Warm DIDKit's WASM while tenant config and flags load; the wallet build awaits the same init.
 prewarmDidKit();
+
+// Open native SQLite now, not after the lazy app shell's first commit: the cached-key read that
+// gates auth:coordinator_ready waits for it. No-op on web; sqliteInit() joins or retries it.
+startNativeSQLiteInit();
 
 (async () => {
     // Native analytics can collect independently of React. On web this call
@@ -90,6 +99,11 @@ prewarmDidKit();
     // LaunchDarkly does not gate the first render (see getLaunchDarklyProviderProps).
     // The mark keeps startup timings on the same phase names.
     markStartupPhase('flags');
+
+    // Production builds split non-base locales out of the startup bundle: load the one the first
+    // render uses (no-op for the base locale and in dev). On failure, render with base strings.
+    await loadLocaleMessages(resolveInitialLocale()).catch(() => undefined);
+
     const container = document.getElementById('root');
     if (container) {
         const root = createRoot(container);
@@ -104,6 +118,9 @@ prewarmDidKit();
             </TenantConfigProvider>
         );
     }
+
+    // Fonts the first screen does not use load after the first render is queued, off the critical path.
+    loadDeferredFontStylesheets();
 
     // If you want your app to work offline and load faster, you can change
     // unregister() to register() below. Note this comes with some pitfalls.

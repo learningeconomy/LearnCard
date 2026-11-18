@@ -24,4 +24,3 @@ const SvgCompassPathways = (props: SVGProps<SVGSVGElement>) => (
     </svg>
 );
 export default SvgCompassPathways;
-

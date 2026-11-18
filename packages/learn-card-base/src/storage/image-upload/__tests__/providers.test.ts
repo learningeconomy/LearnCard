@@ -10,6 +10,7 @@ import { DEFAULT_LEARNCARD_TENANT_CONFIG } from '../../../config/tenantDefaults'
 import { isKnownImageUploadUrl, setImageUploadConfigFromTenant } from '../config';
 import { getProvider } from '../../../filestack/images/images.helpers';
 import { getFileMetadata } from '../../../helpers/attachment.helpers';
+import { client as filestackClient } from '../../../filestack/ReactFileStackClient';
 
 vi.mock('../../../filestack/ReactFileStackClient', () => ({
     client: {
@@ -38,6 +39,26 @@ describe('image upload providers', () => {
     afterEach(() => {
         setImageUploadConfigFromTenant(DEFAULT_LEARNCARD_TENANT_CONFIG);
         vi.restoreAllMocks();
+    });
+
+    it('loads and initializes Filestack only on the first upload, once per provider', async () => {
+        const upload = vi.fn(async () => ({ handle: 'h1', url: 'https://cdn.example.com/h1' }));
+        const init = vi.mocked(filestackClient.init);
+        init.mockClear();
+        init.mockReturnValue({ upload, multiupload: vi.fn() } as never);
+
+        const provider = createFilestackProvider(filestackConfig);
+        expect(init).not.toHaveBeenCalled();
+        expect(provider.getCdnUrl('abc')).toBe('https://cdn.example.com/abc');
+        expect(init).not.toHaveBeenCalled();
+
+        const file = new File(['x'], 'x.png', { type: 'image/png' });
+        await provider.upload(file);
+        await provider.upload(file);
+
+        expect(init).toHaveBeenCalledOnce();
+        expect(init).toHaveBeenCalledWith('test-key', { sessionCache: false });
+        expect(upload).toHaveBeenCalledTimes(2);
     });
 
     it('uses configured Filestack CDN domain for CDN and resize URLs', () => {

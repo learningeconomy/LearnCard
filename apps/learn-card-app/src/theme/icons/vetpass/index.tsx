@@ -46,7 +46,6 @@ import SvgAppsDefault from './menu-icons/Property_1_Apps_Default';
 import SvgAlertsActive from './menu-icons/Property_1_Alerts_Active';
 import SvgNotificationsDefault from './menu-icons/Property_1_Notifications_Default';
 
-
 // ─── Wrapper helpers ─────────────────────────────────────────────────────────
 
 type SvgComponent = React.FC<SVGProps<SVGSVGElement>>;
@@ -61,9 +60,7 @@ const wrapIcon = (Svg: SvgComponent): React.FC<{ className?: string }> => {
     return Wrapped;
 };
 
-const wrapShape = (
-    Svg: SvgComponent,
-): React.FC<{ version?: string; className?: string }> => {
+const wrapShape = (Svg: SvgComponent): React.FC<{ version?: string; className?: string }> => {
     const Wrapped: React.FC<{ version?: string; className?: string }> = ({ className }) => (
         <Svg className={className} />
     );
@@ -75,7 +72,7 @@ const wrapShape = (
 
 const wrapNavbar = (
     ActiveSvg: SvgComponent,
-    DefaultSvg: SvgComponent,
+    DefaultSvg: SvgComponent
 ): React.FC<{ version?: string; className?: string }> => {
     const Wrapped: React.FC<{ version?: string; className?: string }> = ({
         className,

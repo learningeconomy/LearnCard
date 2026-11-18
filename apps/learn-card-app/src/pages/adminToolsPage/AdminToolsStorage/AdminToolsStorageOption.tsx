@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { IonRadio, IonRadioGroup, IonInput } from '@ionic/react';
 import { useQueryClient } from '@tanstack/react-query';
-import _ from 'lodash-es';
+import { shuffle } from 'lodash-es';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('admin-tools-storage-option');
 
@@ -92,7 +92,7 @@ const AdminToolsStorageOption: React.FC<{ option: AdminToolOption; showFooter?: 
     const handleSwitchStorage = async (switchNetwork: boolean) => {
         try {
             newModal(
-                <GenericLoader overrideText={_.shuffle(getStorageSwitchMessages())} />,
+                <GenericLoader overrideText={shuffle(getStorageSwitchMessages())} />,
                 {
                     disableCloseHandlers: true,
                 },

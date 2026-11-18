@@ -58,6 +58,8 @@ import {
     getEscrowPinSignInSubject,
     AccountSecured,
     getAccountSecuredSubject,
+    ContractRequestInvite,
+    getContractRequestInviteSubject,
 } from './templates';
 
 import type {
@@ -82,6 +84,7 @@ import type {
     EscrowPinLockedProps,
     EscrowPinSignInProps,
     AccountSecuredProps,
+    ContractRequestInviteProps,
 } from './templates';
 import { localeProp } from './i18n';
 
@@ -214,6 +217,9 @@ export interface TemplateDataMap {
 
     /** lca-api: "Secure my account" signed out every other device and login */
     'account-secured': AccountSecuredData;
+
+    /** brain-service: contract-request-invites.helpers.ts — invite to an email with no account */
+    'contract-request-invite': ContractRequestInviteData;
 }
 
 export type TemplateId = keyof TemplateDataMap;
@@ -335,6 +341,13 @@ export interface EscrowPinSignInData {
 
 export interface AccountSecuredData {
     securedAt: string;
+}
+
+export interface ContractRequestInviteData {
+    /** Where the button goes: the tenant's app URL. */
+    inviteUrl: string;
+    referrer?: { name?: string };
+    contractOwner?: { name?: string };
 }
 
 // ---------------------------------------------------------------------------
@@ -640,6 +653,16 @@ function buildElement(
             return {
                 element: React.createElement(AccountSecured, props),
                 subject: getAccountSecuredSubject(branding, locale),
+            };
+        }
+
+        case 'contract-request-invite': {
+            const d = data as ContractRequestInviteData;
+            const props: ContractRequestInviteProps = { branding, ...d, ...localeProp(locale) };
+
+            return {
+                element: React.createElement(ContractRequestInvite, props),
+                subject: getContractRequestInviteSubject(branding, d, locale),
             };
         }
 
