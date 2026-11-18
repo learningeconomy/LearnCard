@@ -91,6 +91,13 @@ the examples remain verifiable until that network's test data is reset.
 The supporting courses use managed delivery receipts; the sender checks the
 published status result before reporting a successful batch.
 
+For layout-only review, open the LearnCard app's `/dev/clr-transcript` route
+(locally, `http://localhost:3000/dev/clr-transcript`). Its fixture picker and
+Full/Card/Embed tabs preview renderer variants. The library's
+`clr/multi-issuer-verification` fixture is an unsigned blueprint, not a
+pre-signed verification batch; real signatures and hosted lifecycle status
+require the issuance flow below.
+
 ```bash
 bun run --cwd examples/credential-viewer dev
 ```
@@ -100,9 +107,10 @@ bun run --cwd examples/credential-viewer dev
 2. Select **Local** or **Staging** in the connection bar **before connecting**.
    Generate/connect a publisher account and create its profile if prompted.
    A signing authority is not required for this locally signed demo.
-3. Open **CLR Verification Demo**, enter the recipient's profile ID/public handle
-   on that same network, and select **Send verification demo**. Production is
-   disabled; Custom is limited to loopback services for local verification.
+3. Click the **CLR Verification Demo** toolbar button (it is not a fixture-search
+   result). Enter the recipient profile ID on that same network and select
+   **Send verification demo**. Production is disabled; Custom is limited to
+   loopback services for local verification.
 4. Wait for all five named deliveries. Two supporting course credentials are also
    delivered to establish real revocation/suspension bindings; lifecycle
    notifications may appear. A failed batch lists any transcripts already sent.

@@ -69,11 +69,11 @@ export const ClrVerificationDemoPanel: React.FC<ClrVerificationDemoPanelProps> =
                 className="mx-4 flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-gray-700 bg-gray-900 shadow-2xl"
             >
                 <header className="flex items-start justify-between border-b border-gray-800 px-6 py-4">
-                    <div>
+                    <div className="flex flex-col gap-1">
                         <h2 id="clr-demo-title" className="text-sm font-bold text-white">
                             CLR Verification Demo
                         </h2>
-                        <p className="mt-1 text-xs text-gray-400">
+                        <p className="text-xs text-gray-400">
                             Send real signed transcripts for verification in LearnCard.
                         </p>
                     </div>
@@ -88,7 +88,7 @@ export const ClrVerificationDemoPanel: React.FC<ClrVerificationDemoPanelProps> =
                     </button>
                 </header>
 
-                <div className="space-y-4 overflow-y-auto px-6 py-5 text-xs text-gray-300">
+                <div className="flex min-h-0 flex-col gap-4 overflow-y-auto px-6 py-5 text-xs text-gray-300">
                     <p>
                         Select Local or Staging in the connection bar, then generate or connect an
                         account and create a profile. Production is disabled. Loopback-only Custom
@@ -118,7 +118,7 @@ export const ClrVerificationDemoPanel: React.FC<ClrVerificationDemoPanelProps> =
                             {environmentError}
                         </p>
                     )}
-                    <form onSubmit={send} className="space-y-3">
+                    <form onSubmit={send} className="flex flex-col items-start gap-3">
                         <label
                             htmlFor="clr-demo-recipient"
                             className="block font-medium text-gray-200"
@@ -167,9 +167,9 @@ export const ClrVerificationDemoPanel: React.FC<ClrVerificationDemoPanelProps> =
                         </p>
                     )}
                     {deliveries.length > 0 && (
-                        <div className="rounded-xl border border-gray-800 bg-gray-950/60 p-4">
+                        <div className="flex flex-col gap-2 rounded-xl border border-gray-800 bg-gray-950/60 p-4">
                             <h3 className="font-semibold text-white">Delivered transcripts</h3>
-                            <ul className="mt-2 space-y-2">
+                            <ul className="flex flex-col gap-2">
                                 {deliveries.map((delivery, index) => (
                                     <li key={`${delivery.name}-${index}`}>
                                         <span className="font-medium text-gray-200">
