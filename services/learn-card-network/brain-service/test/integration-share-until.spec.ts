@@ -150,6 +150,7 @@ describe('share-until events', () => {
         expect(events[0]).toMatchObject({
             type: 'consent_updated',
             reason: 'share_until_passed',
+            category: 'Achievement',
             contractUri,
             termsUri,
             role: 'owner',

@@ -358,8 +358,8 @@ type ShareUntilWrite = {
     mutationVersion: ReturnType<typeof int>;
     next: string | null;
     contractId: string | null;
-    /** Ids of the events to create. The category is part of the id only; it is not stored. */
-    eventIds: string[];
+    /** One event per category whose date passed. The category is stored on the event. */
+    emits: { id: string; category: string }[];
 };
 
 /**
@@ -385,8 +385,8 @@ type ShareUntilWrite = {
  * unreported and the same edit moves that category's date to an earlier instant in the past,
  * nothing is reported for it here; the edit itself already produced `consent_updated`.
  *
- * The event carries no category: like every event it only identifies the consent, and the
- * receiver reads the consented data again. A category counts as soon as it is switched on
+ * The event carries the category name (`category`), so a receiver can read just that category
+ * again. A category counts as soon as it is switched on
  * (`sharing`), also while its list of shared credentials is still empty, so a date is not lost
  * when credentials are added later; such an event tells the receiver about a category that had
  * no data to lose.
@@ -445,14 +445,14 @@ export const emitShareUntilPassedEvents = async (
                 nowMs
             );
             const expectedMs = Date.parse(expectedNext);
-            const eventIds =
+            const emits =
                 active && unexpired && typeof contractId === 'string'
                     ? shareUntilEntriesOfProperties(props)
                           .filter(entry => entry.at <= nowMs && entry.at >= expectedMs)
-                          .map(
-                              entry =>
-                                  `${termsId}:share_until:${entry.category}:${entry.shareUntil}`
-                          )
+                          .map(entry => ({
+                              id: `${termsId}:share_until:${entry.category}:${entry.shareUntil}`,
+                              category: entry.category,
+                          }))
                     : [];
 
             writes.push({
@@ -463,7 +463,7 @@ export const emitShareUntilPassedEvents = async (
                 // again (expiry_extended) without a terms write to recompute them.
                 next: active ? computeNextShareUntilFromProperties(props, nowMs) : null,
                 contractId: typeof contractId === 'string' ? contractId : null,
-                eventIds,
+                emits,
             });
         }
 
@@ -475,10 +475,11 @@ export const emitShareUntilPassedEvents = async (
              WHERE terms.nextShareUntil = write.expectedNext
                  AND coalesce(terms.mutationVersion, 0) = write.mutationVersion
              SET terms.nextShareUntil = write.next
-             FOREACH (eventId IN write.eventIds |
-                 MERGE (event:ConsentFlowEvent {id: eventId})
+             FOREACH (emit IN write.emits |
+                 MERGE (event:ConsentFlowEvent {id: emit.id})
                  ON CREATE SET event += {
                      kind: 'consent_updated', reason: 'share_until_passed',
+                     category: emit.category,
                      contractId: write.contractId, termsId: terms.id,
                      requestId: terms.\`referral.requestId\`,
                      requestedBy: terms.\`referral.requestedBy\`,

@@ -293,6 +293,7 @@ The feed record and the webhook body are the same JSON object.
 | `requestId`           | The contract request linked to the event, when there is one                                                                                          |
 | `externalReferenceId` | Your reference from `sendContractRequest`. Present only when the Integration's owner manages the contract (owner or writer) or sent the request      |
 | `reason`              | Why the event happened, for `consent_withdrawn` (`contract_retired`), `consent_paused` (`needs_reconsent`) and `consent_updated` (`expiry_extended`) |
+| `category`            | The credential category the event is about. Present only on `consent_updated` with `reason: "share_until_passed"`                                    |
 | `role`                | Why this Integration received the record: `owner`, `writer`, `recipient` or `requester`. A profile with several roles gets the first that applies    |
 | `occurredAt`          | ISO 8601 time of the source event                                                                                                                    |
 
@@ -335,10 +336,10 @@ The terms status is not changed by expiry, and the [connections snapshot](#conne
 
 ### Category share-until
 
-`shareUntil` is set per credential category inside the terms. When it passes, the consented data reads stop returning that category's data, and you receive `consent_updated` with `reason: "share_until_passed"`.
+`shareUntil` is set per credential category inside the terms. When it passes, the consented data reads stop returning that category's data, and you receive `consent_updated` with `reason: "share_until_passed"` and `category` set to that category's name.
 
 - The connection keeps its current status (live, awaiting re-consent or suspended): it is not withdrawn or expired, and the [connections snapshot](#connections-snapshot) still lists it. Do not change the status you hold for it. Only that category's shared data stops being returned.
-- Re-read that person's shared data when you receive the event.
+- Re-read that person's shared data when you receive the event. `category` tells you which category stopped, if you only want to refresh that one.
 - The event id is unique per category and date (`<termsId>:share_until:<category>:<shareUntil>`), so the same date is never sent twice. Two categories with different dates send two events.
 - It is sent only for consents that are live, awaiting re-consent or suspended and have not expired. Dates that passed before this event existed are not sent.
 - Like other state events, it creates no notification for the person.
