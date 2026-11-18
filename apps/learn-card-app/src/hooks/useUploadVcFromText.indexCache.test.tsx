@@ -20,6 +20,7 @@ vi.mock('learn-card-base', async () => {
     return {
         useWallet: () => ({
             initWallet: async () => ({
+                id: { did: () => 'did:example:importer' },
                 store: { LearnCloud: { uploadEncrypted: host.upload } },
                 index: { LearnCloud: { add: host.add } },
             }),
@@ -27,6 +28,8 @@ vi.mock('learn-card-base', async () => {
         switchedProfileStore: { get: { switchedDid: () => host.switchedDid } },
         invalidateCredentialIndexQueries: cache.invalidateCredentialIndexQueries,
         invalidateVisibleCredentialCounts: counts.invalidateVisibleCredentialCounts,
+        // Contract-sync handoff (LC-2371) is covered in useUploadVcFromText.test.
+        enqueuePendingContractSyncSafely: async () => undefined,
     };
 });
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
