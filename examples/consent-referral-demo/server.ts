@@ -61,6 +61,7 @@ export const startDemo = async ({
     let dismissed = false;
     let sharingActive = false;
     let reference = '';
+    let invite: { requestId: string; email: string } | undefined;
     let boostUri = '';
     let signingAuthority: { endpoint: string; name: string } | undefined;
     let outcome: { uri: string; claimed: boolean; shared: boolean; sharedUri?: string } | undefined;
@@ -197,6 +198,17 @@ export const startDemo = async ({
             }
         };
         const [partnerData, referrerData] = await Promise.all([read(partner), read(referrer)]);
+        // What the referrer can see about its email invitation: status and the email only.
+        const emailInvite = invite
+            ? await referrer.wallet.invoke
+                  .getContractRequest(details.uri, invite.requestId)
+                  .then(found => ({
+                      requestId: found.requestId,
+                      status: found.status,
+                      target: found.target,
+                  }))
+                  .catch(() => undefined)
+            : undefined;
         return {
             ready: true,
             actors: Object.fromEntries(
@@ -216,6 +228,7 @@ export const startDemo = async ({
             },
             request,
             reference,
+            invite: emailInvite,
             dismissed,
             sharingActive,
             choices,
@@ -275,6 +288,7 @@ export const startDemo = async ({
         outcome = undefined;
         dismissed = false;
         reference = `demo-referral-${randomBytes(4).toString('hex')}`;
+        invite = undefined;
         webhookEvents.length = 0;
         record(
             'Fresh partner contract created. Hire Heroes USA is a named data recipient. No learner consent yet.'
@@ -312,6 +326,7 @@ export const startDemo = async ({
         z.object({ action: z.literal('setup') }),
         z.object({ action: z.literal('fresh') }),
         z.object({ action: z.literal('send') }),
+        z.object({ action: z.literal('sendByEmail') }),
         z.object({ action: z.literal('seen') }),
         z.object({ action: z.literal('dismiss') }),
         z.object({ action: z.literal('reopen') }),
@@ -381,6 +396,20 @@ export const startDemo = async ({
                 });
                 record('Hire Heroes USA sent a referral to Alex for Hiring Our Heroes.');
                 break;
+            case 'sendByEmail': {
+                // A synthetic address with no account. The invitation waits for a sign-up.
+                const email = `alex.${randomBytes(4).toString('hex')}@example.com`;
+                const sent = await referrer.wallet.invoke.sendContractRequest({
+                    contractUri: current.uri,
+                    targetEmail: email,
+                    externalReferenceId: `${reference}-email`,
+                });
+                invite = { requestId: sent.requestId, email };
+                record(
+                    'Hire Heroes USA invited a new contact by email. Only the email is visible until they accept.'
+                );
+                break;
+            }
             case 'seen':
                 await learner.wallet.invoke.markContractRequestAsSeen(
                     current.uri,
