@@ -13,7 +13,7 @@ import {
 } from '../schemas';
 import type { HcpContract, HcpV1Caller, HcpV1Deps } from './deps';
 import { createGrant } from './grants';
-import { createStoreActivitySink, directWritePolicy, type WritePolicy } from './seams';
+import { createStoreActivitySink, grantWritePolicy, type WritePolicy } from './seams';
 
 export const SUBJECT_DID = 'did:key:z6MkSubjectA';
 export const CLIENT_DID = 'did:key:z6MkClientAgent';
@@ -43,7 +43,7 @@ export const makeHarness = (overrides: { writePolicy?: WritePolicy } = {}): Harn
         store,
         contracts: { current: async uri => contracts.get(uri) ?? null },
         activity: createStoreActivitySink(store),
-        writePolicy: overrides.writePolicy ?? directWritePolicy,
+        writePolicy: overrides.writePolicy ?? grantWritePolicy,
         providerId: 'did:web:brain.test',
         now: () => now,
         newId: () => `00000000-0000-4000-8000-${String(++counter).padStart(12, '0')}`,

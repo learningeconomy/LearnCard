@@ -88,6 +88,23 @@ describe('contract form update patches', () => {
             },
         });
     });
+    it('sends a write category whose canWrite changed (LC-2423)', () => {
+        const baseline = makeContract();
+        const draft = contractToFormValue(baseline);
+        draft.contract.write.credentials.categories.Certificate = {
+            required: false,
+            canWrite: false,
+        };
+        expect(buildContractFormChanges(baseline, draft)).toEqual({
+            contract: {
+                write: {
+                    credentials: {
+                        categories: { Certificate: { required: false, canWrite: false } },
+                    },
+                },
+            },
+        });
+    });
     it('serializes personal-field defaults and reasons independently of category grants', () => {
         const baseline = makeContract();
         const draft = contractToFormValue(baseline);

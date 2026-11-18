@@ -15,6 +15,25 @@ import {
 import * as m from '../../paraglide/messages.js';
 import { localizeCategoryTitle } from '../../i18n/categoryTitle';
 
+/**
+ * LC-2423: how a credential category may be written. `suggest` lands credentials for
+ * the person to accept; `direct` adds them straight to the wallet.
+ */
+export type WriteMode = 'off' | 'suggest' | 'direct';
+
+export type WriteModeControl = {
+    /** The person's canWrite choice for this category; missing means direct. */
+    canWrite: boolean | undefined;
+    setCanWrite: (canWrite: boolean) => void;
+    /** The contract lets the app add directly (its canWrite is not false). */
+    directAllowed: boolean;
+};
+
+export const currentWriteMode = (term: boolean, control: WriteModeControl): WriteMode => {
+    if (!term) return 'off';
+    return control.directAllowed && control.canWrite !== false ? 'direct' : 'suggest';
+};
+
 type ConsentFlowWriteSharingItemProps = {
     term: ConsentFlowTerms['write']['credentials']['categories'][string];
     setTerm: Updater<ConsentFlowTerms['write']['credentials']['categories'][string]>;
@@ -28,6 +47,8 @@ type ConsentFlowWriteSharingItemProps = {
     titleOverride?: string;
     infoText?: string;
     onClickOverride?: () => void;
+    /** Credential categories: show Off / Suggest only / Add directly (LC-2423). */
+    writeMode?: WriteModeControl;
 };
 
 const ConsentFlowWriteSharingItem: React.FC<ConsentFlowWriteSharingItemProps> = ({
@@ -43,6 +64,7 @@ const ConsentFlowWriteSharingItem: React.FC<ConsentFlowWriteSharingItemProps> = 
     titleOverride,
     infoText,
     onClickOverride,
+    writeMode,
 }) => {
     const {
         IconComponent,
@@ -104,6 +126,89 @@ const ConsentFlowWriteSharingItem: React.FC<ConsentFlowWriteSharingItemProps> = 
     }
 
     const disabled = isAnonymous || (required && term);
+
+    const icon = !hideIcon && (
+        <div
+            className={`flex items-center justify-center h-[40px] w-[40px] rounded-full shrink-0 ${iconCircleClass}`}
+            role="presentation"
+        >
+            {specialIcon ? (
+                specialIcon
+            ) : iconSrc ? (
+                <img src={iconSrc} className="h-[30px] w-[30px] text-white" />
+            ) : IconComponent ? (
+                <IconComponent className={`h-[30px] w-[30px] ${iconClassName}`} />
+            ) : null}
+        </div>
+    );
+    const displayTitle = titleOverride ?? localizeCategoryTitle(title);
+
+    if (writeMode) {
+        const mode = currentWriteMode(term, writeMode);
+        const options: { mode: WriteMode; label: string }[] = [
+            ...(required ? [] : [{ mode: 'off' as const, label: m['consentFlow.writeOff']() }]),
+            { mode: 'suggest', label: m['consentFlow.suggestOnly']() },
+            ...(writeMode.directAllowed
+                ? [{ mode: 'direct' as const, label: m['consentFlow.addDirectly']() }]
+                : []),
+        ];
+        const choose = (next: WriteMode) => {
+            if (next === mode) return;
+            setTerm(next !== 'off');
+            writeMode.setCanWrite(next === 'direct');
+        };
+
+        return (
+            <li
+                key={category}
+                className="border-b border-solid border-grayscale-200 last:border-none text-black"
+            >
+                <div className="w-full flex items-center gap-[10px] py-[15px] px-[10px]">
+                    {icon}
+                    <div className="flex flex-col flex-1 items-start min-w-0">
+                        <h4 className="text-[17px] text-grayscale-900 font-notoSans font-semibold leading-[24px] tracking-[0.25px] line-clamp-1 text-left capitalize">
+                            {displayTitle}
+                        </h4>
+                        {required && (
+                            <span className="text-[14px] text-grayscale-600 text-left self-start">
+                                {m['arabicFixes.required']()}
+                            </span>
+                        )}
+                        {!required && infoText && (
+                            <p className="text-grayscale-600 text-[14px] font-notoSans text-left">
+                                {infoText}
+                            </p>
+                        )}
+                    </div>
+                    <div
+                        role="radiogroup"
+                        aria-label={m['consentFlow.writeModeLabel']({ category: displayTitle })}
+                        className="flex shrink-0 rounded-full bg-grayscale-100 p-[2px]"
+                    >
+                        {options.map(option => (
+                            <button
+                                key={option.mode}
+                                type="button"
+                                role="radio"
+                                aria-checked={mode === option.mode}
+                                disabled={options.length === 1}
+                                onClick={() => choose(option.mode)}
+                                className={`rounded-full px-[10px] py-[4px] font-notoSans text-[13px] font-semibold transition-colors ${
+                                    mode === option.mode
+                                        ? option.mode === 'off'
+                                            ? 'bg-white text-grayscale-700 shadow-sm'
+                                            : 'bg-white text-emerald-700 shadow-sm'
+                                        : 'text-grayscale-600'
+                                }`}
+                            >
+                                {option.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </li>
+        );
+    }
 
     return (
         <li

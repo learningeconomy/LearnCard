@@ -25,6 +25,9 @@ export type HcpChange =
     | { kind: 'add'; input: Omit<HcpEntryRequest, 'subject' | 'grantId'> }
     | { kind: 'edit'; input: Omit<HcpReviseRequest, 'grantId'> }
     | { kind: 'remove'; entryId: string }
+    // LC-2423: an app's suggestion waits for the person to accept or dismiss it.
+    | { kind: 'accept'; entryId: string }
+    | { kind: 'dismiss'; entryId: string }
     | { kind: 'allow'; input: HcpGrantRequest }
     | { kind: 'revoke'; grantId: string };
 
@@ -109,6 +112,13 @@ export const useHcpChange = () => {
                     return hcp.entries.withdraw.mutate({
                         entryId: change.entryId,
                         reason: 'Removed by the person',
+                    });
+                case 'accept':
+                    return hcp.entries.accept.mutate({ entryId: change.entryId });
+                case 'dismiss':
+                    return hcp.entries.withdraw.mutate({
+                        entryId: change.entryId,
+                        reason: 'Suggestion dismissed by the person',
                     });
                 case 'allow':
                     return hcp.grants.create.mutate(change.input);

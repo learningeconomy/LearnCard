@@ -603,10 +603,21 @@ export const updateConsentFlowContractVersion = async (
     if (dryRun) return result;
     const createdAt = new Date().toISOString();
     const versionId = uuid();
-    const removedTermPrefixes = diff.removed.map(
-        scope =>
-            `terms.${scope.area}.${scope.type === 'credential' ? 'credentials.categories' : 'personal'}.${scope.key}`
-    );
+    const removedTermPrefixes = diff.removed.flatMap(scope => [
+        `terms.${scope.area}.${scope.type === 'credential' ? 'credentials.categories' : 'personal'}.${scope.key}`,
+        ...(scope.area === 'write' && scope.type === 'credential'
+            ? [`terms.write.credentials.canWrite.${scope.key}`]
+            : []),
+    ]);
+    // LC-2423: when a category starts letting the app add directly, holders who never
+    // chose keep suggestions until they opt in. Missing terms canWrite means true, so
+    // pin it to false wherever the holder has not set it.
+    const previousWrite = current.contract.write.credentials.categories;
+    const canWriteOffKeys = Object.entries(next.contract.write.credentials.categories)
+        .filter(
+            ([key, config]) => config.canWrite !== false && previousWrite[key]?.canWrite === false
+        )
+        .map(([key]) => `terms.write.credentials.canWrite.${key}`);
     const optionalOffValues: { key: string; value: boolean | string | string[] }[] = diff.added
         .filter(scope => !scope.required)
         .flatMap<{ key: string; value: boolean | string | string[] }>(scope => {
@@ -713,6 +724,7 @@ export const updateConsentFlowContractVersion = async (
              FOREACH (_ IN CASE WHEN term.status IN ['live','needs_reconsent','suspended'] THEN [1] ELSE [] END |
                  SET term.lastReviewedVersion=coalesce(term.lastReviewedVersion,term.consentedVersion,1)
                  SET term.mutationVersion=coalesce(term.mutationVersion,0)+1
+                 FOREACH (key IN $canWriteOffKeys | SET term[key] = coalesce(term[key], false))
                  CREATE (transaction:ConsentFlowTransaction {
                      id:randomUUID(), action:'update', date:$createdAt, version:$nextVersion, kind:$kind
                  })-[:IS_FOR]->(term))
@@ -781,6 +793,7 @@ export const updateConsentFlowContractVersion = async (
                     ? new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
                     : null,
             removedTermPrefixes,
+            canWriteOffKeys,
             optionalOffValues,
             disableReadShareAll,
             preservedReadGrantKeys,

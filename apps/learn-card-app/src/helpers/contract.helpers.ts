@@ -74,9 +74,25 @@ export const isAiContractCategory = (category: string) =>
     AI_CONTRACT_CATEGORIES.includes(category as CredentialCategoryEnum) ||
     AI_CONTRACT_CREDENTIAL_TYPE_OVERRIDES.includes(category);
 
+/**
+ * LC-2423: how credential write categories start. `suggest` (the default, for anything
+ * a person consents to) keeps the app to suggestions until they choose Add directly.
+ * `direct` leaves canWrite unset, so the contract decides; only for first-party flows
+ * that consent in the background (LearnCard AI, sample and demo contracts).
+ */
+export type InitialWriteMode = 'suggest' | 'direct';
+
+const startWriteCategories = (terms: ConsentFlowTerms, writeMode: InitialWriteMode) => {
+    if (writeMode === 'direct') return;
+    terms.write.credentials.canWrite = Object.fromEntries(
+        Object.keys(terms.write.credentials.categories).map(key => [key, false])
+    );
+};
+
 export const getMinimumTermsForContract = (
     contract: ConsentFlowContract,
-    user?: CurrentUser | null
+    user?: CurrentUser | null,
+    { writeMode = 'suggest' }: { writeMode?: InitialWriteMode } = {}
 ): ConsentFlowTerms => {
     const terms: ConsentFlowTerms = {
         read: {
@@ -123,13 +139,15 @@ export const getMinimumTermsForContract = (
         // Use defaultEnabled flag to determine if category should be enabled by default
         terms.write.credentials.categories[key] = value.required || (value.defaultEnabled ?? false);
     });
+    startWriteCategories(terms, writeMode);
 
     return terms;
 };
 
 export const getFullTermsForContract = (
     contract: ConsentFlowContract,
-    user?: CurrentUser | null
+    user?: CurrentUser | null,
+    { writeMode = 'suggest' }: { writeMode?: InitialWriteMode } = {}
 ): ConsentFlowTerms => {
     const terms: ConsentFlowTerms = {
         read: {
@@ -168,6 +186,7 @@ export const getFullTermsForContract = (
     contractCategoryWriteEntries.forEach(([key]) => {
         terms.write.credentials.categories[key] = true;
     });
+    startWriteCategories(terms, writeMode);
 
     return terms;
 };

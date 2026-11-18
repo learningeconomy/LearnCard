@@ -31,6 +31,7 @@ Mounted once in `src/app.ts` as `hcp`; every procedure is `hcp.v1.<area>.<op>`.
 | `hcp.v1.entries.get`      | `POST /hcp/v1/entries/get`        | §5.2.2 Get entry                | subject (by `entryId`); client (by `ref`) with `read` + purpose |
 | `hcp.v1.entries.revise`   | `POST /hcp/v1/entries/revisions`  | §5.2.4 Revise                   | subject; client with `write` on every category of the entry     |
 | `hcp.v1.entries.withdraw` | `POST /hcp/v1/entries/withdraw`   | §5.2.5 Withdraw                 | subject; client with `write` on every category of the entry     |
+| `hcp.v1.entries.accept`   | `POST /hcp/v1/entries/accept`     | none (LearnCard addition)       | subject only                                                    |
 | `hcp.v1.grants.create`    | `POST /hcp/v1/grants`             | §6.1.5 grant                    | subject only                                                    |
 | `hcp.v1.grants.offer`     | `GET /hcp/v1/contract-offer`      | none (LearnCard addition)       | subject only                                                    |
 | `hcp.v1.grants.list`      | `GET /hcp/v1/grants`              | §5.4 List grants                | subject only                                                    |
@@ -71,7 +72,8 @@ Every procedure except `meta` uses the brain's DID-auth chain with a valid chall
    naming any other category is denied; an empty list is malformed. Entries whose
    `permittedPurposes` exclude the purpose are never disclosed.
 3. Writes need `write` on every category touched. `issuer-attested` is accepted only
-   when `assertedBy.id` is the authenticated caller.
+   when `assertedBy.id` is the authenticated caller. A client's write lands as a
+   suggestion unless its grant has `canWrite: true` (see Suggestions below).
 4. Clients receive **disclosures** (§7.4): a grant-scoped random `ref`, never the
    entry `id`, only the categories the grant covers, and `useUntil` capped at one
    hour (no revocation notification channel exists, §7.6 rule 4).
@@ -191,7 +193,7 @@ A ConsentFlow contract may carry an optional HCP section (`contract.hcp`, typed 
 `ConsentFlowContractHcpValidator` in `@learncard/types`):
 `{ agents, categories, actions: ['read'], purposes, duration: '1h' | '4h' | '24h' | 'ongoing' }`.
 The contract is owned by the operator's LearnCard profile; `agents` names the DIDs
-that may act under it. `actions` is read only for now (LC-2423 adds `suggest`).
+that may act under it. `actions` is read only; contract grants never get `canWrite`.
 
 - `grants.offer({ contractUri })` returns what allowing would grant, resolved by the
   brain: the contract's name, owner profile, version, agents, access and duration.
@@ -224,6 +226,27 @@ contractVersion } })` issues the grant. Only the agent DID and the version the
   stays out of the version's `kind`, so it never moves terms holders to
   `needs_reconsent`. An HCP-only change still bumps the version and records the usual
   update for terms holders, with an empty scope diff.
+
+### Suggestions (LC-2423)
+
+A client with `write` suggests by default. The grant's `canWrite` (set only by a
+direct grant: `grants.create({ ..., canWrite: true })` with a `write` action; contract
+grants are always `false`) decides, through the `WritePolicy` seam
+(`service/seams.ts` `grantWritePolicy`):
+
+- `entries.create` from a client without `canWrite` stores the entry with status
+  `suggested` (a LearnCard addition to §4.6 statuses) and records `context.created`
+  with `data.suggested: true`. With `canWrite` it is `active`, as before.
+- Suggested entries are invisible to every client read (`query`, `get`), including
+  the suggesting client's, until the person accepts. The subject sees them in
+  `entries.list` and export.
+- `entries.accept({ entryId })` (subject only) moves a suggestion to `active` and
+  records `https://learncard.com/hcp/v1/events/suggestion-accepted`. Accepting an
+  active entry is a no-op; anything else is `malformed-request`.
+- Dismiss is `entries.withdraw` by the subject. A client without `canWrite` may
+  revise or withdraw only suggested entries (in categories it can write), never
+  active ones.
+- Grants issued before LC-2423 read as `canWrite: false`.
 
 ### Profile delete
 
@@ -273,9 +296,9 @@ src/hcp/
 
 ## Seams (stubbed, not built)
 
-| Seam          | Where              | Today                      | Follow-up                |
-| ------------- | ------------------ | -------------------------- | ------------------------ |
-| `WritePolicy` | `service/seams.ts` | always `{ kind: 'write' }` | LC-2423 suggest vs write |
+| Seam          | Where              | Today                                             | Follow-up                                 |
+| ------------- | ------------------ | ------------------------------------------------- | ----------------------------------------- |
+| `WritePolicy` | `service/seams.ts` | suggest unless the grant has `canWrite` (LC-2423) | richer policy (per category, rate limits) |
 
 ## Decisions
 
@@ -432,6 +455,19 @@ Contract consent (LC-2421), with the same env:
 narrow the contract (the existing grant loses a category at once), widen it (the
 existing grant keeps its pin), allow again (the new grant gets the wider access and
 the old one is revoked), and a DID the grant was not issued to gets `scope-denied`.
+
+Suggestions (LC-2423), with the same env:
+
+1. `... hcp-demo-agent.ts suggest-smoke` runs it over the API with a throwaway person:
+   a grant with `write` but no `canWrite`, so the agent's write comes back with
+   `suggested: true` and the agent reads nothing; the person accepts it and the agent
+   reads it; a second suggestion is dismissed; a grant with `canWrite: true` writes
+   directly.
+2. In the app, a suggestion shows under My info as "Suggested by an app" with Accept
+   and Dismiss, and Activity says "Demo Tutor suggested info for your Goals" and "You
+   accepted a suggestion for your Goals". No app screen gives an agent `write` yet
+   (Allow grants read only), so this side is covered by `HcpScreens.test.tsx` and
+   `hcpModel.test.ts` rather than a manual step.
 
 ## Tests
 

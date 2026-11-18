@@ -10,6 +10,7 @@
  *   bun --conditions=development tests/e2e/scripts/hcp-demo-agent.ts smoke           # whole flow, no app
  *   bun --conditions=development tests/e2e/scripts/hcp-demo-agent.ts contract        # contract consent link (LC-2421)
  *   bun --conditions=development tests/e2e/scripts/hcp-demo-agent.ts contract-smoke  # contract flow, no app
+ *   bun --conditions=development tests/e2e/scripts/hcp-demo-agent.ts suggest-smoke   # suggestions (LC-2423), no app
  *
  * The agent's did:key comes from a random seed made on first run and kept in a 0600
  * file in $TMPDIR, so `link` and `read` are the same agent only with the same $TMPDIR.
@@ -304,6 +305,78 @@ const contractSmoke = async (): Promise<void> => {
     step(`contract link for the app: ${contractLink(uri)}`);
 };
 
+/**
+ * LC-2423: a write from a grant without canWrite lands as a suggestion the agent can't
+ * read back until the person accepts it; a grant with canWrite writes directly.
+ */
+const suggestSmoke = async (): Promise<void> => {
+    const step = (text: string) => console.log(`- ${text}`);
+    const person = await wallet(randomBytes(32).toString('hex'));
+    const profileId = `hcp-demo-${randomBytes(4).toString('hex')}`;
+    await person.invoke.createProfile({
+        profileId,
+        displayName: 'HCP Demo Person',
+        shortBio: '',
+        bio: '',
+    });
+    const mine = await person.invoke.getHcpClient();
+    const { did, hcp } = await agentHcp();
+    const allow = (canWrite: boolean) =>
+        mine.grants.create.mutate({
+            client: { id: did, name: NAME },
+            access: [{ actions: ['read', 'write'], categories: CATEGORIES, purposes: [PURPOSE] }],
+            grantType: 'temporary',
+            expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+            canWrite,
+        });
+    const write = (grant: { grantId: string; subject: { id: string } }, value: string) =>
+        hcp.entries.create.mutate({
+            grantId: grant.grantId,
+            schema: ENTRY_SCHEMA,
+            subject: grant.subject,
+            content: { profile: GENERAL, value },
+            classification: { categories: ['goals_and_constraints'] },
+            assertion: { declarationType: 'person-declared' },
+            record: { provenance: { source: 'hcp-demo-agent' } },
+        });
+
+    const suggesting = await allow(false);
+    step(`allowed ${NAME} with canWrite ${suggesting.canWrite}`);
+    const suggestion = await write(suggesting, 'Practice fractions twice a week');
+    // Clients get a disclosure back; `suggested` says the person must accept it first.
+    const isSuggested = (written: unknown) =>
+        (written as { suggested?: boolean }).suggested === true;
+    step(`agent wrote: ${isSuggested(suggestion) ? 'held as a suggestion' : 'added directly'}`);
+    if (!isSuggested(suggestion)) throw new Error('the write was not a suggestion');
+    if ((await read(hcp, suggesting.grantId)).length !== 0)
+        throw new Error('the agent read back its own suggestion before it was accepted');
+    step('agent reads nothing before the person accepts');
+
+    const listed = (await mine.entries.list.query({})).entries.find(
+        entry => entry.record.status === 'suggested'
+    );
+    if (!listed) throw new Error("the suggestion is missing from the person's list");
+    await mine.entries.accept.mutate({ entryId: listed.id });
+    const afterAccept = await read(hcp, suggesting.grantId);
+    step(`person accepted; agent now reads ${afterAccept.length} entry`);
+    if (afterAccept.length !== 1) throw new Error('the accepted suggestion is not readable');
+
+    const dismissed = await write(suggesting, 'Skip homework on Fridays');
+    const toDismiss = (await mine.entries.list.query({})).entries.find(
+        entry => entry.record.status === 'suggested'
+    );
+    if (!toDismiss || !isSuggested(dismissed))
+        throw new Error('the second write was not a suggestion');
+    await mine.entries.withdraw.mutate({ entryId: toDismiss.id, reason: 'Dismissed' });
+    step('person dismissed a second suggestion');
+
+    const direct = await write(await allow(true), 'Finish the algebra unit by May');
+    step(
+        `with canWrite, agent wrote: ${isSuggested(direct) ? 'held as a suggestion' : 'added directly'}`
+    );
+    if (isSuggested(direct)) throw new Error('a canWrite grant did not write directly');
+};
+
 const main = async (): Promise<void> => {
     assertLocal();
     const [command, grantId] = process.argv.slice(2);
@@ -320,9 +393,11 @@ const main = async (): Promise<void> => {
         console.log(contractLink((await operatorContract(did)).uri));
     } else if (command === 'contract-smoke') {
         await contractSmoke();
+    } else if (command === 'suggest-smoke') {
+        await suggestSmoke();
     } else {
         console.log(
-            'Usage: bun --conditions=development tests/e2e/scripts/hcp-demo-agent.ts <link | read <grantId> | smoke | contract | contract-smoke>'
+            'Usage: bun --conditions=development tests/e2e/scripts/hcp-demo-agent.ts <link | read <grantId> | smoke | contract | contract-smoke | suggest-smoke>'
         );
         process.exitCode = 1;
     }

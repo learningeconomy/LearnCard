@@ -159,6 +159,7 @@ const grantProps = (g: StoredGrant): Props => ({
     status: g.status,
     statusChangedAt: g.statusChangedAt,
     source: json(g.source),
+    canWrite: g.canWrite === true,
 });
 
 const toGrant = (p: Props): StoredGrant => ({
@@ -172,6 +173,7 @@ const toGrant = (p: Props): StoredGrant => ({
     status: str(p.status) as StoredGrant['status'],
     statusChangedAt: strOrNull(p.statusChangedAt),
     source: parse(p.source),
+    canWrite: p.canWrite === true,
 });
 
 const eventProps = (e: StoredEvent): Props => ({

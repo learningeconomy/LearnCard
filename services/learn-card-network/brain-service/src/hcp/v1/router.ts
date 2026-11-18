@@ -16,6 +16,7 @@ import { contracts, providerId } from './ports';
 import {
     ContractOfferInputSchema,
     ContractOfferSchema,
+    AcceptSuggestionInputSchema,
     CreateEntryInputSchema,
     CreateGrantInputSchema,
     EntryViewSchema,
@@ -38,12 +39,19 @@ import {
     WithdrawResultSchema,
 } from './schemas';
 import type { HcpV1Caller, HcpV1Deps } from './service/deps';
-import { createEntry, getEntry, queryEntries, reviseEntry, withdrawEntry } from './service/entries';
+import {
+    acceptSuggestion,
+    createEntry,
+    getEntry,
+    queryEntries,
+    reviseEntry,
+    withdrawEntry,
+} from './service/entries';
 import { HcpV1Error, type HcpV1ErrorType } from './service/errors';
 import { exportContext, listAudit, listOwnEntries } from './service/governance';
 import { createGrant, getContractOffer, getGrant, listGrants, revokeGrant } from './service/grants';
 import { hcpV1Meta } from './service/meta';
-import { createStoreActivitySink, directWritePolicy } from './service/seams';
+import { createStoreActivitySink, grantWritePolicy } from './service/seams';
 import { createNeo4jHcpV1Store } from './store/neo4j';
 
 const store = createNeo4jHcpV1Store();
@@ -53,7 +61,7 @@ const depsFor = (): HcpV1Deps => ({
     store,
     contracts,
     activity,
-    writePolicy: directWritePolicy,
+    writePolicy: grantWritePolicy,
     providerId: providerId(),
     now: () => new Date(),
     newId: randomUUID,
@@ -222,6 +230,23 @@ const entriesRouter = t.router({
         .input(WithdrawEntryInputSchema)
         .output(WithdrawResultSchema)
         .mutation(({ ctx, input }) => withdrawEntry(depsFor(), callerOf(ctx.user), input)),
+
+    accept: hcpRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/hcp/v1/entries/accept',
+                tags: TAGS,
+                summary: 'Accept a suggested entry',
+                description:
+                    'LearnCard addition (LC-2423), Context Subject only. A Context Client without direct write lands entries as `suggested`; accepting one makes it active. Dismiss a suggestion by withdrawing it.',
+            },
+            requiredScope: WRITE,
+        })
+        .input(AcceptSuggestionInputSchema)
+        .output(EntryViewSchema)
+        .mutation(({ ctx, input }) => acceptSuggestion(depsFor(), callerOf(ctx.user), input)),
 
     list: hcpRoute
         .meta({

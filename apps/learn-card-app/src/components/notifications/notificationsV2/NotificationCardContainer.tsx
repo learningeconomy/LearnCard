@@ -8,6 +8,7 @@ import {
     useMarkNotificationRead,
     useGetProfile,
     useGetCurrentLCNUser,
+    useWallet,
 } from 'learn-card-base';
 import { getConnectionPromptCopy } from '../../../helpers/connectionPromptCopy';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
@@ -63,6 +64,7 @@ export const NOTIFICATION_TYPES = {
     CREDENTIAL_SUSPENDED: 'CREDENTIAL_SUSPENDED',
     CREDENTIAL_UNSUSPENDED: 'CREDENTIAL_UNSUSPENDED',
     CREDENTIAL_REFRESHED: 'CREDENTIAL_REFRESHED',
+    CREDENTIAL_SUGGESTED: 'CREDENTIAL_SUGGESTED',
 };
 
 import { getLogger } from 'learn-card-base';
@@ -107,6 +109,7 @@ const StandardNotificationCardContainer: React.FC<NotificationCardProps> = ({
 
     const { mutate: markNotificationAsRead } = useMarkNotificationRead();
     const { refetch: refetchCurrentLCNUser } = useGetCurrentLCNUser();
+    const { initWallet } = useWallet();
 
     const handleArchiveNotification = () => {
         updateNotification(
@@ -120,6 +123,21 @@ const StandardNotificationCardContainer: React.FC<NotificationCardProps> = ({
                 },
             }
         );
+    };
+
+    // Archiving a suggestion the person has not accepted also dismisses it, so it
+    // leaves their incoming credentials. Best effort: the archive still happens.
+    const handleDismissSuggestion = async () => {
+        const uri = notification?.data?.vcUris?.[0];
+        if (uri && !notification?.archived && notification?.actionStatus !== 'COMPLETED') {
+            try {
+                const wallet = await initWallet();
+                await wallet.invoke.dismissContractSuggestion(uri);
+            } catch (error) {
+                log.warn('Could not dismiss suggested credential', error);
+            }
+        }
+        handleArchiveNotification();
     };
 
     const handleMarkAsRead = async () => {
@@ -318,6 +336,20 @@ const StandardNotificationCardContainer: React.FC<NotificationCardProps> = ({
                 handleRead={handleMarkAsRead}
                 claimStatus={claimStatus}
                 handleArchive={handleArchiveNotification}
+                issueDate={displayDate}
+                cardLoading={isLoading}
+            />
+        );
+    }
+    /* A contract app suggested a credential (LC-2423): accept claims it, archive dismisses it */
+    if (type === NOTIFICATION_TYPES.CREDENTIAL_SUGGESTED) {
+        const claimStatus = notification?.actionStatus === 'COMPLETED' ? true : false;
+        return (
+            <NotificationBoostCard
+                notification={notification}
+                handleRead={handleMarkAsRead}
+                claimStatus={claimStatus}
+                handleArchive={handleDismissSuggestion}
                 issueDate={displayDate}
                 cardLoading={isLoading}
             />

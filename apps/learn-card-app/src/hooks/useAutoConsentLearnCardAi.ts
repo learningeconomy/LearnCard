@@ -106,7 +106,14 @@ export const useAutoConsentLearnCardAi = () => {
                         ...(currentUser ?? {}),
                         ...(userOverrides ?? {}),
                     };
-                    const terms = getMinimumTermsForContract(contractDetails.contract, consentUser);
+                    // First-party and consented in the background: the contract decides (LC-2423).
+                    const terms = getMinimumTermsForContract(
+                        contractDetails.contract,
+                        consentUser,
+                        {
+                            writeMode: 'direct',
+                        }
+                    );
 
                     const categoriesWithLiveSync = Object.keys(terms.read.credentials.categories);
                     for (const category of categoriesWithLiveSync) {

@@ -360,6 +360,23 @@ describe('HCP my info', () => {
         );
         expect(screen.getByRole('alert').textContent).toContain("Couldn't remove that");
     });
+
+    it('lets the person accept or dismiss an app suggestion (LC-2423)', () => {
+        state.entries = [
+            {
+                ...entry('e1', 'goals_and_constraints', 'Practice fractions'),
+                record: { version: 1, status: 'suggested' },
+            },
+        ];
+        render(<MyInfoSection />);
+        expect(screen.getByText(/Suggested by an app/)).toBeTruthy();
+        expect(screen.queryByText('Not shared anymore')).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull();
+        fireEvent.click(screen.getByRole('button', { name: 'Accept' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+        expect(state.mutate).toHaveBeenNthCalledWith(1, { kind: 'accept', entryId: 'e1' });
+        expect(state.mutate).toHaveBeenNthCalledWith(2, { kind: 'dismiss', entryId: 'e1' });
+    });
 });
 
 describe('HCP without a LearnCard profile', () => {

@@ -150,8 +150,14 @@ export const DeclarationTypeSchema = z.enum([
     'issuer-attested',
 ]);
 export const ConfidenceSchema = z.enum(['high', 'medium', 'low']);
+/**
+ * Draft 3 §4.2.4 statuses, plus the LearnCard addition `suggested` (LC-2423): a
+ * Context Client without direct write wrote it, and it waits for the Context Subject
+ * to accept (active) or dismiss (withdrawn). Context Clients never read it.
+ */
 export const EntryStatusSchema = z.enum([
     'active',
+    'suggested',
     'deprecated',
     'conflicted',
     'expired',
@@ -331,6 +337,11 @@ export const DisclosureSchema = z.object({
     classification: ClassificationOutput,
     standing: z.object({ assurance: AssuranceSchema, confirmed: z.boolean() }),
     useUntil: z.string(),
+    /**
+     * LearnCard addition (LC-2423): set on the create or revise response when the write
+     * was held for the Context Subject to accept. Reads never return suggested entries.
+     */
+    suggested: z.literal(true).optional(),
 });
 export type Disclosure = z.infer<typeof DisclosureSchema>;
 
@@ -395,6 +406,10 @@ export type ListEntriesResult = z.infer<typeof ListEntriesResultSchema>;
 // Grants (Draft 3 §6.1.5)
 // ---------------------------------------------------------------------------
 
+/** LearnCard addition (LC-2423), Context Subject only. */
+export const AcceptSuggestionInputSchema = z.object({ entryId: Id });
+export type AcceptSuggestionInput = z.infer<typeof AcceptSuggestionInputSchema>;
+
 export const GrantActionSchema = z.enum(['read', 'write']);
 export type GrantAction = z.infer<typeof GrantActionSchema>;
 
@@ -451,6 +466,12 @@ export const CreateGrantInputSchema = z
         grantType: GrantTypeSchema.optional(),
         /** Direct temporary grants. Defaults to 4 hours; at most 24 hours (Draft 3 §6.1.3). */
         expiresAt: IsoDateTime.optional(),
+        /**
+         * LearnCard addition (LC-2423), direct grants with `write`: true lets the client's
+         * writes become active entries. Missing or false lands them as suggestions for the
+         * subject to accept. Contract grants never write directly.
+         */
+        canWrite: z.boolean().optional(),
         source: z
             .discriminatedUnion('type', [
                 z.object({ type: z.literal('direct') }),
@@ -515,6 +536,8 @@ export const GrantSchema = z.object({
     expiresAt: z.string().nullable(),
     status: GrantStatusSchema,
     source: GrantSourceSchema,
+    /** LearnCard addition (LC-2423): whether writes become active entries directly. */
+    canWrite: z.boolean(),
 });
 export type Grant = z.infer<typeof GrantSchema>;
 
@@ -534,6 +557,12 @@ export type Grant = z.infer<typeof GrantSchema>;
 export const READ_DENIED_EVENT = 'https://learncard.com/hcp/v1/events/read-denied';
 
 /**
+ * LearnCard extension event type (LC-2423): the Context Subject accepted an entry a
+ * Context Client suggested, so it became active. Dismissing one is `context.withdrawn`.
+ */
+export const SUGGESTION_ACCEPTED_EVENT = 'https://learncard.com/hcp/v1/events/suggestion-accepted';
+
+/**
  * Event types v1 records (Draft 3 §8.1). State changes commit with their event;
  * `context.read`, `context.exported` and read denials go through the ActivitySink.
  */
@@ -548,6 +577,7 @@ export const AuditEventTypeSchema = z.enum([
     'grant.revoked',
     'grant.expired',
     READ_DENIED_EVENT,
+    SUGGESTION_ACCEPTED_EVENT,
 ]);
 export type AuditEventType = z.infer<typeof AuditEventTypeSchema>;
 

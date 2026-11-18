@@ -814,7 +814,9 @@ export type LearnCardNetworkPluginMethods = {
         did: string,
         contractUri: string,
         credential: VC | JWE,
-        boostUri: string
+        boostUri: string,
+        /** LC-2423: 'suggest' lands it for the holder to accept even where the app may write. */
+        options?: { mode?: 'suggest' }
     ) => Promise<string>;
 
     consentToContract: (
@@ -859,8 +861,15 @@ export type LearnCardNetworkPluginMethods = {
         options?: Partial<PaginationOptionsType> & { includeReceived?: boolean }
     ) => Promise<PaginatedContractCredentials>;
     getConsentFlowCredentials: (
-        options?: Partial<PaginationOptionsType> & { includeReceived?: boolean }
+        options?: Partial<PaginationOptionsType> & {
+            includeReceived?: boolean;
+            /** LC-2423: defaults to direct writes; 'suggest' lists pending suggestions. */
+            actions?: Array<'write' | 'suggest'>;
+        }
     ) => Promise<PaginatedContractCredentials>;
+
+    /** LC-2423: dismiss a credential a contract app suggested. */
+    dismissContractSuggestion: (credentialUri: string) => Promise<boolean>;
 
     verifyConsent: (uri: string, profileId: string) => Promise<boolean>;
 

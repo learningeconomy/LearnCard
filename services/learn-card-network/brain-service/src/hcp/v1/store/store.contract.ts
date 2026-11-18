@@ -74,6 +74,7 @@ const grant = (grantId: string, options: Partial<StoredGrant> = {}): StoredGrant
     status: 'active',
     statusChangedAt: null,
     source: { type: 'direct' },
+    canWrite: false,
     ...options,
 });
 

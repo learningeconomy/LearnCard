@@ -120,9 +120,6 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
 
     const updateRead = curriedStateSlice(updateSlice('read'));
 
-    const updateWrite = curriedStateSlice(updateSlice('write'));
-    const updateWriteCredentials = curriedStateSlice(updateWrite('credentials'));
-
     const { initWallet } = useWallet();
     const readTerms = {
         anonymize: false,
@@ -284,11 +281,25 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
     };
 
     const handleToggleAllWriteToggles = () => {
-        updateWriteCredentials('categories', oldCategories => {
-            Object.keys(oldCategories).forEach(key => {
-                oldCategories[key] =
+        updateSlice('write', oldWrite => {
+            const { categories } = oldWrite.credentials;
+            Object.keys(categories).forEach(key => {
+                const enabled = Boolean(
                     !allWriteToggle ||
-                    contractDetails?.contract.write.credentials.categories[key]?.required;
+                    contractDetails?.contract.write.credentials.categories[key]?.required
+                );
+                // LC-2423: a category turned on here starts as Suggest only.
+                if (
+                    enabled &&
+                    !categories[key] &&
+                    oldWrite.credentials.canWrite?.[key] === undefined
+                ) {
+                    oldWrite.credentials.canWrite = {
+                        ...(oldWrite.credentials.canWrite ?? {}),
+                        [key]: false,
+                    };
+                }
+                categories[key] = enabled;
             });
         });
     };

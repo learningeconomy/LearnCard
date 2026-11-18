@@ -6,19 +6,29 @@ import {
     QueryInputSchema,
     READ_DENIED_EVENT,
     ReviseEntryInputSchema,
+    SUGGESTION_ACCEPTED_EVENT,
     type Disclosure,
     type Entry,
 } from '../schemas';
-import { createEntry, getEntry, queryEntries, reviseEntry, withdrawEntry } from './entries';
-import { exportContext } from './governance';
-import { revokeGrant } from './grants';
+import {
+    acceptSuggestion,
+    createEntry,
+    getEntry,
+    queryEntries,
+    reviseEntry,
+    withdrawEntry,
+} from './entries';
+import { exportContext, listOwnEntries } from './governance';
+import { createGrant, revokeGrant } from './grants';
 import {
     CLIENT_DID,
+    OTHER_CLIENT_DID,
     OTHER_PURPOSE,
     PURPOSE,
     SUBJECT_DID,
     client,
     entryInput,
+    grantInput,
     issueGrant,
     makeHarness,
     otherClient,
@@ -402,6 +412,7 @@ describe('HCP v1 entries: client writes', () => {
             actorDid: CLIENT_DID,
             grantId: writer,
             categories: ['general_preferences'],
+            canWrite: false,
         });
     });
 });
@@ -444,7 +455,7 @@ describe('HCP v1 entries: revise and withdraw', () => {
     it('lets a writing client revise by ref and keeps the ref stable', async () => {
         const h = makeHarness();
         await subjectCreate(h);
-        const grantId = await issueGrant(h.deps, { actions: ['read', 'write'] });
+        const grantId = await issueGrant(h.deps, { actions: ['read', 'write'], canWrite: true });
         const [found] = (await queryEntries(h.deps, client, query({ grantId })))
             .entries as Disclosure[];
 
@@ -459,7 +470,7 @@ describe('HCP v1 entries: revise and withdraw', () => {
     it('withdraws idempotently, hides from clients, keeps for the subject', async () => {
         const h = makeHarness();
         const created = await subjectCreate(h);
-        const grantId = await issueGrant(h.deps, { actions: ['read', 'write'] });
+        const grantId = await issueGrant(h.deps, { actions: ['read', 'write'], canWrite: true });
         const [found] = (await queryEntries(h.deps, client, query({ grantId })))
             .entries as Disclosure[];
 
@@ -620,5 +631,164 @@ describe('HCP v1 entries: custom categories (Draft 3 §4.5)', () => {
         await expect(
             createEntry(h.deps, client, entryInput({ grantId: clubs, categories: [CLUBS] }))
         ).resolves.toMatchObject({ classification: { categories: [CLUBS] } });
+    });
+});
+
+describe('HCP v1 entries: suggestions (LC-2423)', () => {
+    const statusOf = async (h: ReturnType<typeof makeHarness>, entryId: string) =>
+        (await h.store.getEntry(SUBJECT_DID, entryId))?.header.status;
+
+    it('lands a write as a suggestion unless the grant has canWrite', async () => {
+        const h = makeHarness();
+        const suggester = await issueGrant(h.deps, { actions: ['read', 'write'] });
+        const writer = await issueGrant(h.deps, {
+            actions: ['read', 'write'],
+            canWrite: true,
+            clientDid: OTHER_CLIENT_DID,
+        });
+
+        const suggested = (await createEntry(
+            h.deps,
+            client,
+            entryInput({ grantId: suggester, value: 'Suggested' })
+        )) as Disclosure;
+        const direct = (await createEntry(
+            h.deps,
+            otherClient,
+            entryInput({ grantId: writer, value: 'Direct' })
+        )) as Disclosure;
+        const own = (await createEntry(h.deps, subject, entryInput())) as Entry;
+
+        const ids = (await listOwnEntries(h.deps, subject, {})).entries.map(entry => ({
+            value: (entry.content as { value: string }).value,
+            status: entry.record.status,
+        }));
+        expect(ids).toEqual(
+            expect.arrayContaining([
+                { value: 'Suggested', status: 'suggested' },
+                { value: 'Direct', status: 'active' },
+            ])
+        );
+        expect(await statusOf(h, own.id)).toBe('active');
+        expect(suggested.ref).toBeDefined();
+        expect(suggested.suggested).toBe(true);
+        expect(direct.ref).toBeDefined();
+        expect(direct.suggested).toBeUndefined();
+
+        const [created] = await h.store.listEvents(
+            SUBJECT_DID,
+            { eventTypes: ['context.created'], grantId: suggester },
+            { limit: 10 }
+        );
+        expect(created?.data).toEqual({ version: 1, suggested: true });
+    });
+
+    it('never shows a suggestion to clients until the subject accepts it', async () => {
+        const h = makeHarness();
+        const suggester = await issueGrant(h.deps, { actions: ['read', 'write'] });
+        await createEntry(h.deps, client, entryInput({ grantId: suggester }));
+        expect((await queryEntries(h.deps, client, query({ grantId: suggester }))).entries).toEqual(
+            []
+        );
+
+        const [entry] = (await listOwnEntries(h.deps, subject, {})).entries;
+        const accepted = (await acceptSuggestion(h.deps, subject, {
+            entryId: entry!.id,
+        })) as Entry;
+        expect(accepted.record.status).toBe('active');
+        expect(await statusOf(h, entry!.id)).toBe('active');
+        expect(
+            (await queryEntries(h.deps, client, query({ grantId: suggester }))).entries
+        ).toHaveLength(1);
+        expect(
+            await h.store.listEvents(
+                SUBJECT_DID,
+                { eventTypes: [SUGGESTION_ACCEPTED_EVENT] },
+                { limit: 10 }
+            )
+        ).toHaveLength(1);
+
+        // Accepting again is a no-op.
+        await acceptSuggestion(h.deps, subject, { entryId: entry!.id });
+        expect(
+            await h.store.listEvents(
+                SUBJECT_DID,
+                { eventTypes: [SUGGESTION_ACCEPTED_EVENT] },
+                { limit: 10 }
+            )
+        ).toHaveLength(1);
+    });
+
+    it('lets the subject dismiss a suggestion by withdrawing it', async () => {
+        const h = makeHarness();
+        const suggester = await issueGrant(h.deps, { actions: ['read', 'write'] });
+        await createEntry(h.deps, client, entryInput({ grantId: suggester }));
+        const [entry] = (await listOwnEntries(h.deps, subject, {})).entries;
+
+        await withdrawEntry(h.deps, subject, { entryId: entry!.id, reason: 'Not me' });
+        expect(await statusOf(h, entry!.id)).toBe('deleted');
+        await expect(
+            acceptSuggestion(h.deps, subject, { entryId: entry!.id })
+        ).rejects.toMatchObject({ type: 'malformed-request' });
+    });
+
+    it('keeps a suggest-only client off active entries but lets it revise or take back its suggestion', async () => {
+        const h = makeHarness();
+        await subjectCreate(h);
+        const suggester = await issueGrant(h.deps, { actions: ['read', 'write'] });
+        const [active] = (await queryEntries(h.deps, client, query({ grantId: suggester })))
+            .entries as Disclosure[];
+
+        const before = await h.snapshot();
+        await expect(
+            reviseEntry(h.deps, client, revision({ grantId: suggester, ref: active!.ref }))
+        ).rejects.toMatchObject(DENIED);
+        await expect(
+            withdrawEntry(h.deps, client, { grantId: suggester, ref: active!.ref, reason: 'x' })
+        ).rejects.toMatchObject(DENIED);
+        expect(await h.snapshot()).toEqual(before);
+
+        const mine = (await createEntry(
+            h.deps,
+            client,
+            entryInput({ grantId: suggester })
+        )) as Disclosure;
+        const revised = (await reviseEntry(
+            h.deps,
+            client,
+            revision({ grantId: suggester, ref: mine.ref })
+        )) as Disclosure;
+        expect(revised.version).toBe(2);
+        const suggestedId = (await listOwnEntries(h.deps, subject, {})).entries.find(
+            entry => entry.record.status === 'suggested'
+        )!.id;
+        expect(await statusOf(h, suggestedId)).toBe('suggested');
+
+        await withdrawEntry(h.deps, client, { grantId: suggester, ref: mine.ref, reason: 'oops' });
+        expect(await statusOf(h, suggestedId)).toBe('deleted');
+    });
+
+    it('lets only the subject accept', async () => {
+        const h = makeHarness();
+        const suggester = await issueGrant(h.deps, { actions: ['read', 'write'] });
+        await createEntry(h.deps, client, entryInput({ grantId: suggester }));
+        const [entry] = (await listOwnEntries(h.deps, subject, {})).entries;
+        await expect(
+            acceptSuggestion(h.deps, client, { entryId: entry!.id })
+        ).rejects.toMatchObject(DENIED);
+    });
+
+    it('ignores canWrite on a read-only grant', async () => {
+        const h = makeHarness();
+        const grant = await createGrant(h.deps, subject, grantInput({ canWrite: true }));
+        expect(grant.canWrite).toBe(false);
+        const writer = await createGrant(
+            h.deps,
+            subject,
+            grantInput({ actions: ['write'], canWrite: true })
+        );
+        expect(writer.canWrite).toBe(true);
+        const suggester = await createGrant(h.deps, subject, grantInput({ actions: ['write'] }));
+        expect(suggester.canWrite).toBe(false);
     });
 });

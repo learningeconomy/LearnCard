@@ -105,7 +105,7 @@ export const exportContext = async (
 
     const records = await deps.store.listEntries(subjectDid, {
         statuses: options.excludeDeleted
-            ? ['active', 'deprecated', 'conflicted', 'expired', 'revoked', 'suspended']
+            ? ['active', 'suggested', 'deprecated', 'conflicted', 'expired', 'revoked', 'suspended']
             : undefined,
         limit: Number.MAX_SAFE_INTEGER,
     });
@@ -165,6 +165,7 @@ export const listOwnEntries = async (
     const records = await deps.store.listEntries(subjectDid, {
         statuses: input.statuses ?? [
             'active',
+            'suggested',
             'deprecated',
             'conflicted',
             'expired',

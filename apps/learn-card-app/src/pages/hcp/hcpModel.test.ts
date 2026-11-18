@@ -7,6 +7,7 @@ import {
     categoryName,
     groupEntries,
     READ_DENIED_EVENT,
+    SUGGESTION_ACCEPTED_EVENT,
 } from './hcpModel';
 
 const entry = (id: string, categories: string[]): HcpEntry =>
@@ -177,6 +178,36 @@ describe('HCP activity sentences', () => {
                 names
             )
         ).toBe('You looked up your info');
+    });
+
+    it('says when an app suggested info and when the person accepted it (LC-2423)', () => {
+        const byApp = {
+            participants: {
+                initiator: { role: 'context-client' as const, id: 'did:key:tutor' },
+                authorizingPrincipal: { id: 'did:key:me' },
+                provider: { id: 'did:web:brain' },
+            },
+        };
+        expect(
+            activitySentence(
+                event({
+                    ...byApp,
+                    eventType: 'context.created',
+                    categories: ['goals_and_constraints'],
+                    data: { version: 1, suggested: true },
+                }),
+                names
+            )
+        ).toBe('Demo Tutor suggested info for your Goals');
+        expect(
+            activitySentence(
+                event({
+                    eventType: SUGGESTION_ACCEPTED_EVENT,
+                    categories: ['goals_and_constraints'],
+                }),
+                names
+            )
+        ).toBe('You accepted a suggestion for your Goals');
     });
 
     it('learns app names from grant.issued events', () => {

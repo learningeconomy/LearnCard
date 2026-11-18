@@ -24,6 +24,7 @@ const makeHcp = () => ({
         create: { mutate: vi.fn().mockResolvedValue({ id: 'urn:uuid:1' }) },
         revise: { mutate: vi.fn() },
         withdraw: { mutate: vi.fn().mockResolvedValue({ status: 'deleted' }) },
+        accept: { mutate: vi.fn().mockResolvedValue({ status: 'active' }) },
     },
     grants: {
         list: { query: vi.fn().mockResolvedValue([]) },
@@ -88,6 +89,18 @@ describe('HCP hooks', () => {
         });
         await waitFor(() => expect(hcp.entries.list.query).toHaveBeenCalledTimes(3));
         expect(client.getQueryState(['hcp', '', 'entries'])?.status).toBe('success');
+    });
+
+    it('accepts a suggestion and dismisses one by withdrawing it (LC-2423)', async () => {
+        const { hcp, wrapper } = setup();
+        const { result } = renderHook(() => useHcpChange(), { wrapper });
+        await act(() => result.current.mutateAsync({ kind: 'accept', entryId: 'e1' }));
+        await act(() => result.current.mutateAsync({ kind: 'dismiss', entryId: 'e2' }));
+        expect(hcp.entries.accept.mutate).toHaveBeenCalledWith({ entryId: 'e1' });
+        expect(hcp.entries.withdraw.mutate).toHaveBeenCalledWith({
+            entryId: 'e2',
+            reason: 'Suggestion dismissed by the person',
+        });
     });
 
     it('keeps profiles apart in the cache', async () => {

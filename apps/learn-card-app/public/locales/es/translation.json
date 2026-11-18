@@ -2355,7 +2355,15 @@
             "email": "correo electrónico",
             "profilePicture": "foto de perfil"
         },
-        "retryPublication": "Tus opciones para compartir están guardadas. Inténtalo de nuevo para terminar de enviarlas."
+        "retryPublication": "Tus opciones para compartir están guardadas. Inténtalo de nuevo para terminar de enviarlas.",
+        "writeOff": "Desactivado",
+        "suggestOnly": "Solo sugerir",
+        "addDirectly": "Agregar directamente",
+        "writeModeLabel": "Cómo esta app puede agregar {{category}}",
+        "suggested": "Sugerido",
+        "suggestedCredential": "Esta app te sugirió una credencial para que la aceptes.",
+        "dismissed": "Descartado",
+        "dismissedCredential": "Descartaste una credencial sugerida."
     },
     "recovery": {
         "pin": {
@@ -10558,7 +10566,10 @@
             "emptyTitle": "Aún no hay nada",
             "emptyBody": "Agrega algo que quieras que las apps sepan. No se comparte nada hasta que lo permitas.",
             "removing": "Eliminando...",
-            "truncated": "Se muestran tus primeros 500 elementos."
+            "truncated": "Se muestran tus primeros 500 elementos.",
+            "suggested": "Sugerido por una app. Las apps no lo ven hasta que lo aceptes.",
+            "accept": "Aceptar",
+            "dismiss": "Descartar"
         },
         "apps": {
             "canSee": "Puede ver: {{categories}}",
@@ -10593,7 +10604,9 @@
             "replaced": "El acceso anterior de {{app}} se reemplazó cuando lo volviste a permitir",
             "more": "Mostrar más",
             "emptyTitle": "Aún no hay actividad",
-            "emptyBody": "Cuando tú o una app usen tu información, lo verás aquí."
+            "emptyBody": "Cuando tú o una app usen tu información, lo verás aquí.",
+            "appSuggested": "{{app}} sugirió información para tu {{categories}}",
+            "youAccepted": "Aceptaste una sugerencia para tu {{categories}}"
         },
         "connect": {
             "heading": "Compartir tu información",

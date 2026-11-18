@@ -2969,7 +2969,8 @@ export async function getLearnCardNetworkPlugin(
                 did,
                 contractUri,
                 credential,
-                boostUri
+                boostUri,
+                options
             ) => {
                 await ensureUser();
 
@@ -2978,6 +2979,7 @@ export async function getLearnCardNetworkPlugin(
                     contractUri,
                     credential,
                     boostUri,
+                    ...(options?.mode ? { mode: options.mode } : {}),
                 });
             },
 
@@ -3059,6 +3061,12 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
 
                 return client.contracts.getAllCredentialsForTerms.query(options);
+            },
+
+            dismissContractSuggestion: async (_learnCard, credentialUri) => {
+                await ensureUser();
+
+                return client.contracts.dismissContractSuggestion.mutate({ credentialUri });
             },
 
             verifyConsent: async (_learnCard, uri, profileId) => {

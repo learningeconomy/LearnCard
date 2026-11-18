@@ -2355,7 +2355,15 @@
             "email": "e-mail",
             "profilePicture": "photo de profil"
         },
-        "retryPublication": "Vos choix de partage sont enregistrés. Réessayez pour terminer leur envoi."
+        "retryPublication": "Vos choix de partage sont enregistrés. Réessayez pour terminer leur envoi.",
+        "writeOff": "Désactivé",
+        "suggestOnly": "Suggestion uniquement",
+        "addDirectly": "Ajouter directement",
+        "writeModeLabel": "Comment cette app peut ajouter {{category}}",
+        "suggested": "Suggéré",
+        "suggestedCredential": "Cette app vous a suggéré un justificatif à accepter.",
+        "dismissed": "Ignoré",
+        "dismissedCredential": "Vous avez ignoré un justificatif suggéré."
     },
     "recovery": {
         "pin": {
@@ -10558,7 +10566,10 @@
             "emptyTitle": "Rien pour l'instant",
             "emptyBody": "Ajoutez ce que vous voulez que les applis sachent. Rien n'est partagé sans votre accord.",
             "removing": "Suppression...",
-            "truncated": "Affichage de vos 500 premiers éléments."
+            "truncated": "Affichage de vos 500 premiers éléments.",
+            "suggested": "Suggéré par une app. Les apps ne le voient pas tant que vous ne l’acceptez pas.",
+            "accept": "Accepter",
+            "dismiss": "Ignorer"
         },
         "apps": {
             "canSee": "Peut voir : {{categories}}",
@@ -10593,7 +10604,9 @@
             "replaced": "L'accès précédent de {{app}} a été remplacé quand vous l'avez de nouveau autorisé",
             "more": "Voir plus",
             "emptyTitle": "Aucune activité",
-            "emptyBody": "Quand vous ou une appli utilisez vos infos, cela apparaît ici."
+            "emptyBody": "Quand vous ou une appli utilisez vos infos, cela apparaît ici.",
+            "appSuggested": "{{app}} a suggéré une info pour {{categories}}",
+            "youAccepted": "Vous avez accepté une suggestion pour {{categories}}"
         },
         "connect": {
             "heading": "Partager vos infos",

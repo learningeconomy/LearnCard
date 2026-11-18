@@ -35,12 +35,14 @@ const scopes = (contract: ConsentFlowContract): ConsentFlowContractScope[] => {
     for (const area of ['read', 'write'] as const) {
         const access = contract[area];
         for (const [key, config] of Object.entries(access.credentials.categories)) {
+            const canWrite = (config as { canWrite?: boolean }).canWrite;
             result.push({
                 area,
                 type: 'credential',
                 key,
                 required: config.required,
                 reason: config.reason,
+                ...(area === 'write' && canWrite !== undefined ? { canWrite } : {}),
             });
         }
         for (const [key, config] of Object.entries(access.personal)) {
@@ -55,6 +57,10 @@ const scopes = (contract: ConsentFlowContract): ConsentFlowContractScope[] => {
     }
     return result.sort((a, b) => scopeKey(a).localeCompare(scopeKey(b)));
 };
+
+/** Missing canWrite means direct write, so contracts from before LC-2423 keep it. */
+const directWrite = (scope: ConsentFlowContractScope): boolean =>
+    scope.area === 'write' && scope.type === 'credential' && scope.canWrite !== false;
 
 const scopeKey = ({ area, type, key }: ConsentFlowContractScope): string =>
     `${area}:${type}:${key}`;
@@ -71,7 +77,11 @@ const diffScopes = (
     for (const [key, scope] of after) {
         const old = before.get(key);
         if (!old) added.push(scope);
-        else if (old.required !== scope.required || old.reason !== scope.reason)
+        else if (
+            old.required !== scope.required ||
+            old.reason !== scope.reason ||
+            directWrite(old) !== directWrite(scope)
+        )
             changed.push(scope);
     }
     for (const [key, scope] of before) if (!after.has(key)) removed.push(scope);
@@ -165,12 +175,49 @@ export const classifyContractChange = (
         const previous = before.get(scopeKey(scope));
         if (scope.reason !== previous?.reason || (scope.required && !previous?.required))
             requiresConsent = true;
+        // LC-2423: letting the app add directly instead of only suggesting is a new
+        // option holders choose; taking it away (true -> false) only narrows, so relaxed.
+        if (previous && directWrite(scope) && !directWrite(previous)) expandedOptional = true;
     }
     const oldBoosts = set(prev.autoboosts);
     if ([...set(next.autoboosts)].some(boost => !oldBoosts.has(boost))) requiresConsent = true;
     if (requiresConsent) return 'requires_consent';
     if (expandedOptional) return 'expanded_optional';
     return 'relaxed';
+};
+
+export type ContractWriteMode = 'write' | 'suggest' | 'refused';
+
+/**
+ * The effective write mode for one credential category (LC-2423). The terms category
+ * flag means the app may at least suggest; direct write also needs both the holder's
+ * and the contract's canWrite, each defaulting to true when missing. `mode: 'suggest'`
+ * lets a sender ask for a suggestion even where it could write. The brain enforces the
+ * same rule in Cypher (`contractWriteActionCypher`).
+ */
+export const contractWriteMode = ({
+    contract,
+    terms,
+    category,
+    mode,
+}: {
+    contract: Pick<ConsentFlowContract, 'write'>;
+    terms: {
+        write: {
+            credentials: {
+                categories: Record<string, boolean>;
+                canWrite?: Record<string, boolean>;
+            };
+        };
+    };
+    category: string;
+    mode?: 'suggest';
+}): ContractWriteMode => {
+    if (terms.write.credentials.categories[category] !== true) return 'refused';
+    if (mode === 'suggest') return 'suggest';
+    if (terms.write.credentials.canWrite?.[category] === false) return 'suggest';
+    if (contract.write.credentials.categories[category]?.canWrite === false) return 'suggest';
+    return 'write';
 };
 
 const HCP_DURATION_HOURS: Record<ConsentFlowContractHcp['duration'], number> = {

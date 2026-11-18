@@ -64,6 +64,7 @@ export const toGrant = (grant: StoredGrant): Grant => ({
     expiresAt: grant.expiresAt,
     status: grant.status,
     source: grant.source,
+    canWrite: grant.canWrite === true,
 });
 
 const expiryFor = (input: DirectGrantInput, now: Date): string | null => {
@@ -82,7 +83,10 @@ const expiryFor = (input: DirectGrantInput, now: Date): string | null => {
     return new Date(expiresAt).toISOString();
 };
 
-type GrantTerms = Pick<StoredGrant, 'client' | 'access' | 'grantType' | 'expiresAt' | 'source'>;
+type GrantTerms = Pick<
+    StoredGrant,
+    'client' | 'access' | 'grantType' | 'expiresAt' | 'source' | 'canWrite'
+>;
 
 const directTerms = (input: DirectGrantInput, now: Date): GrantTerms => ({
     client: input.client,
@@ -90,6 +94,9 @@ const directTerms = (input: DirectGrantInput, now: Date): GrantTerms => ({
     grantType: input.grantType ?? 'temporary',
     expiresAt: expiryFor(input, now),
     source: input.source,
+    // LC-2423: direct write needs both the subject's say-so and a write action.
+    canWrite:
+        input.canWrite === true && input.access.some(detail => detail.actions.includes('write')),
 });
 
 const NO_HCP_OFFER = 'The contract does not offer HCP access.';
@@ -127,6 +134,8 @@ const contractTerms = async (
             contractUri: contract.uri,
             contractVersion: contract.version,
         },
+        // Contract HCP sections are read-only (LC-2421), so contract grants never write.
+        canWrite: false,
     };
 };
 
@@ -182,6 +191,7 @@ export const createGrant = async (
             modality: 'api',
             client: grant.client,
             source: grant.source,
+            canWrite: grant.canWrite === true,
         },
     });
     if (grant.source.type === 'consentflow') await supersede(deps, caller, grant);

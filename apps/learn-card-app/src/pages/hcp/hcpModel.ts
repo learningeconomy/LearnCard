@@ -159,6 +159,9 @@ export const appNames = (grants: readonly HcpGrant[], events: readonly HcpEvent[
  */
 export const READ_DENIED_EVENT = 'https://learncard.com/hcp/v1/events/read-denied';
 
+/** LC-2423: the person accepted an app's suggestion (hcp/v1/schemas.ts SUGGESTION_ACCEPTED_EVENT). */
+export const SUGGESTION_ACCEPTED_EVENT = 'https://learncard.com/hcp/v1/events/suggestion-accepted';
+
 const stringList = (value: unknown): string[] =>
     Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
 
@@ -179,9 +182,13 @@ export const activitySentence = (event: HcpEvent, names: ReadonlyMap<string, str
     const categories = categoryList(event.categories);
     switch (event.eventType) {
         case 'context.created':
+            if (byApp && event.data.suggested === true)
+                return m['hcp.activity.appSuggested']({ app, categories });
             return byApp
                 ? m['hcp.activity.appAdded']({ app, categories })
                 : m['hcp.activity.youAdded']({ categories });
+        case SUGGESTION_ACCEPTED_EVENT:
+            return m['hcp.activity.youAccepted']({ categories });
         case 'context.revised':
             return byApp
                 ? m['hcp.activity.appUpdated']({ app, categories })

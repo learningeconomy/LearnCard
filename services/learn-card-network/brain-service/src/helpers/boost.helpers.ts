@@ -1,3 +1,4 @@
+import type { ContractWriteAction } from '@helpers/contract-write-mode.helpers';
 import cloneDeep from 'lodash/cloneDeep';
 import type { Transaction } from 'neo4j-driver';
 import { neogma } from '@instance';
@@ -161,6 +162,7 @@ export const sendBoost = async ({
     atomicClaimLink = false,
     claimLinkOwnerToken,
     onStorageStart,
+    forceSuggest = false,
 }: {
     from: CredentialIssuer;
     to: ProfileType;
@@ -180,6 +182,8 @@ export const sendBoost = async ({
     atomicClaimLink?: boolean;
     claimLinkOwnerToken?: string;
     onStorageStart?: () => void;
+    /** Contract writes: land as a suggestion even where the app could write (LC-2423). */
+    forceSuggest?: boolean;
 }): Promise<string> => {
     return trace(
         'boost',
@@ -283,9 +287,10 @@ export const sendBoost = async ({
                     : await neogma.getTransaction(null, persistDelivery);
             }
 
+            let contractAction: ContractWriteAction | undefined;
             try {
                 if (contractTerms) {
-                    await traceDb('createRelationships', () =>
+                    contractAction = await traceDb('createRelationships', () =>
                         createContractCredentialRelationships({
                             issuer: from,
                             writerProfileId: contractWriterProfileId ?? fromProfile.profileId,
@@ -298,6 +303,7 @@ export const sendBoost = async ({
                             integrationId,
                             listingId,
                             allowConsumedOneTime,
+                            forceSuggest,
                         })
                     );
                 }
@@ -309,7 +315,9 @@ export const sendBoost = async ({
                 }
                 throw error;
             }
-            if (autoAcceptCredential) {
+            const suggested = contractAction === 'suggest';
+            // A suggestion waits for the holder (LC-2423): never accept it for them.
+            if (autoAcceptCredential && !suggested) {
                 await acceptCredential(to, getCredentialUri(credentialInstance.id, domain), {
                     skipNotification,
                 });
@@ -317,8 +325,32 @@ export const sendBoost = async ({
 
             const boostUri = getCredentialUri(credentialInstance.id, domain);
 
+            // Contract writes are usually silent because the app syncs them in; a
+            // suggestion needs the holder, so it always tells them.
+            if (suggested) {
+                addNotificationToQueue({
+                    type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_SUGGESTED,
+                    to,
+                    from: fromProfile,
+                    message: getNotificationMessage(
+                        'credentialSuggested',
+                        resolveRecipientLocale(to),
+                        { issuer: getIssuerDisplayName(from) }
+                    ),
+                    data: {
+                        vcUris: [boostUri],
+                        metadata: { ...(metadata ?? {}), boostUri: sourceBoostUri },
+                    },
+                }).catch((err: unknown) => {
+                    console.error('[sendBoost] CREDENTIAL_SUGGESTED notification enqueue failed', {
+                        err: err instanceof Error ? err.message : String(err),
+                        to: to.profileId,
+                    });
+                });
+            }
+
             if (typeof boostUri === 'string') {
-                if (!skipNotification) {
+                if (!skipNotification && !suggested) {
                     // LC-1644: fire-and-forget the BOOST_RECEIVED notification enqueue.
                     // addNotificationToQueue is an SQS SendMessage in prod (~5-30ms) or a
                     // direct webhook call in offline/dev. Neither produces a value the caller

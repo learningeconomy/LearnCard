@@ -2401,7 +2401,15 @@
             "email": "email",
             "profilePicture": "profile picture"
         },
-        "retryPublication": "Your sharing choices are saved. Try again to finish sending them."
+        "retryPublication": "Your sharing choices are saved. Try again to finish sending them.",
+        "writeOff": "Off",
+        "suggestOnly": "Suggest only",
+        "addDirectly": "Add directly",
+        "writeModeLabel": "How this app can add {{category}}",
+        "suggested": "Suggested",
+        "suggestedCredential": "This app suggested a credential for you to accept.",
+        "dismissed": "Dismissed",
+        "dismissedCredential": "You dismissed a suggested credential."
     },
     "recovery": {
         "cancel": {
@@ -10621,7 +10629,10 @@
             "emptyTitle": "Nothing here yet",
             "emptyBody": "Add something you'd like apps to know. Nothing is shared until you allow it.",
             "removing": "Removing...",
-            "truncated": "Showing your first 500 items."
+            "truncated": "Showing your first 500 items.",
+            "suggested": "Suggested by an app. Apps can’t see it until you accept it.",
+            "accept": "Accept",
+            "dismiss": "Dismiss"
         },
         "apps": {
             "canSee": "Can see: {{categories}}",
@@ -10656,7 +10667,9 @@
             "replaced": "{{app}}'s earlier access was replaced when you allowed it again",
             "more": "Show more",
             "emptyTitle": "No activity yet",
-            "emptyBody": "When you or an app uses your info, you'll see it here."
+            "emptyBody": "When you or an app uses your info, you'll see it here.",
+            "appSuggested": "{{app}} suggested info for your {{categories}}",
+            "youAccepted": "You accepted a suggestion for your {{categories}}"
         },
         "connect": {
             "heading": "Share your info",

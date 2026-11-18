@@ -42,6 +42,7 @@ export const resolveNotificationRoute = (notification: LCNNotification): string 
             return resolveCredentialRefreshRoute(notification);
         case LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED:
         case LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED:
+        case LCNNotificationTypeEnumValidator.enum.CREDENTIAL_SUGGESTED:
             return `/notifications?uri=${notification?.data?.vcUris?.[0]}&claim=true`;
         case LCNNotificationTypeEnumValidator.enum.DEVICE_LINK_REQUEST:
             // Store session data so the app can auto-open the approver overlay
@@ -115,6 +116,13 @@ export const getNotificationToastCopy = (
             return {
                 title: 'New credential received',
                 body: fromName ? `${fromName} sent you a credential` : 'You received a credential',
+            };
+        case LCNNotificationTypeEnumValidator.enum.CREDENTIAL_SUGGESTED:
+            return {
+                title: 'Suggested for you',
+                body: fromName
+                    ? `${fromName} suggested a credential for your wallet`
+                    : 'An app suggested a credential for your wallet',
             };
         case LCNNotificationTypeEnumValidator.enum.CREDENTIAL_REFRESHED:
             // Generic by design: the credential is identified only after the holder

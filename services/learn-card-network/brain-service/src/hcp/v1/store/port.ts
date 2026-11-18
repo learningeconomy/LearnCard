@@ -62,6 +62,8 @@ export type StoredGrant = {
     status: GrantStatus;
     statusChangedAt: string | null;
     source: GrantSource;
+    /** LC-2423: writes become active entries only when true. Grants stored before it read as false. */
+    canWrite: boolean;
 };
 
 export type StoredEvent = {

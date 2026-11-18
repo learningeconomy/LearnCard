@@ -27,15 +27,21 @@ export type WriteRequest = {
     actorDid: string;
     grantId: string | null;
     categories: readonly Category[];
+    /** The subject, or a client whose grant has canWrite (LC-2423). */
+    canWrite: boolean;
 };
 
 /**
- * Decides how an authorized write lands. Only `write` exists today.
- * TODO(LC-2423): add `{ kind: 'suggest' }`, where a client's write is held for the
- * Context Subject to accept instead of becoming an active entry.
+ * Decides how an authorized write lands (LC-2423): `write` makes or keeps an active
+ * entry; `suggest` holds it as `suggested` for the Context Subject to accept.
  */
-export type WriteDecision = { kind: 'write' };
+export type WriteDecision = { kind: 'write' } | { kind: 'suggest' };
 
 export type WritePolicy = (request: WriteRequest) => Promise<WriteDecision>;
 
+/** The default: suggest unless the writer may write directly. */
+export const grantWritePolicy: WritePolicy = async request =>
+    request.canWrite ? { kind: 'write' } : { kind: 'suggest' };
+
+/** Every authorized write lands directly. For tests of the write path itself. */
 export const directWritePolicy: WritePolicy = async () => ({ kind: 'write' });

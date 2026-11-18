@@ -66,6 +66,7 @@ export const toDisclosure = (
     // Confirmation (Draft 3 §3.8) is not implemented in v1, so nothing is confirmed.
     standing: { assurance: version.provenance.assertedBy.assurance, confirmed: false },
     useUntil: disclosureExpiry(version, now),
+    ...(header.status === 'suggested' ? { suggested: true as const } : {}),
 });
 
 const tokens = (text: string): Set<string> =>

@@ -89,8 +89,7 @@ export const getReceivedCredentialsForProfile = async (
             sent: sentProps.date as string,
             received: receivedProps.date as string,
             metadata: (receivedProps.metadata ?? sentProps.metadata) as
-                | Record<string, unknown>
-                | undefined,
+                Record<string, unknown> | undefined,
         };
     });
 };
@@ -151,8 +150,7 @@ export const getSentCredentialsForProfile = async (
             sent: sentProps.date as string,
             received: receivedProps?.date as string | undefined,
             metadata: (sentProps.metadata ?? receivedProps?.metadata) as
-                | Record<string, unknown>
-                | undefined,
+                Record<string, unknown> | undefined,
         };
     });
 };
@@ -168,7 +166,7 @@ export const getIncomingCredentialsForProfile = async (
         `MATCH (source)-[relationship:CREDENTIAL_SENT {to: $profileId}]->(credential:Credential)
          WHERE (source:Profile OR source:AppStoreListing)
            AND NOT (credential)-[:CREDENTIAL_RECEIVED]->()
-           AND coalesce(relationship.status, "") <> "revoked"
+           AND NOT coalesce(relationship.status, "") IN ["revoked", "dismissed"]
            ${
                from && from.length > 0
                    ? 'AND ((source:Profile AND source.profileId IN $from) OR (source:AppStoreListing AND source.listing_id IN $from))'
@@ -255,10 +253,10 @@ export const getCredentialStatusForBoostAndProfile = async (
         rawStatus === 'revoked'
             ? 'revoked'
             : rawStatus === 'suspended'
-            ? 'suspended'
-            : receivedProps
-            ? 'claimed'
-            : 'pending';
+              ? 'suspended'
+              : receivedProps
+                ? 'claimed'
+                : 'pending';
 
     return {
         credential,

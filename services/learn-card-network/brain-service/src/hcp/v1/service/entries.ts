@@ -1,4 +1,7 @@
-/** Draft 3 §5.2 context operations: create, query, get entry, revise, withdraw. */
+/**
+ * Draft 3 §5.2 context operations: create, query, get entry, revise, withdraw; and
+ * the LearnCard addition accepting a suggested entry (LC-2423).
+ */
 import {
     disclosableCategories,
     queryCategories,
@@ -11,6 +14,8 @@ import {
     orderCategories,
     READ_DENIED_EVENT,
     REGISTERED_CATEGORY_IDS,
+    SUGGESTION_ACCEPTED_EVENT,
+    type AcceptSuggestionInput,
     type Assertion,
     type AuditEventType,
     type Category,
@@ -42,6 +47,7 @@ export const QUERY_CANDIDATE_LIMIT = 500;
 
 const NOT_DELETED: readonly EntryStatus[] = [
     'active',
+    'suggested',
     'deprecated',
     'conflicted',
     'expired',
@@ -50,6 +56,10 @@ const NOT_DELETED: readonly EntryStatus[] = [
 ];
 
 type EntryName = { ref?: string; entryId?: string };
+
+/** LC-2423: the subject writes directly; a client only when its grant has canWrite. */
+const mayWriteDirectly = (actor: Actor): boolean =>
+    actor.kind === 'subject' || actor.grant.canWrite === true;
 
 const initiator = (actor: Actor): StoredEvent['initiator'] => ({
     role: actor.kind === 'subject' ? 'management-client' : 'context-client',
@@ -231,20 +241,22 @@ export const createEntry = async (
         input.record.provenance,
         at
     );
-    await deps.writePolicy({
+    const decision = await deps.writePolicy({
         operation: 'create',
         subjectDid: actor.subjectDid,
         actorDid: actor.did,
         grantId: actor.kind === 'client' ? actor.grant.grantId : null,
         categories,
+        canWrite: mayWriteDirectly(actor),
     });
+    const suggested = decision.kind === 'suggest';
 
     const id = urn(deps.newId());
     const record: EntryRecord = {
         header: {
             id,
             subjectDid: actor.subjectDid,
-            status: 'active',
+            status: suggested ? 'suggested' : 'active',
             version: 1,
             categories: orderCategories(categories),
             dimension: input.classification.dimension ?? null,
@@ -265,7 +277,10 @@ export const createEntry = async (
 
     await deps.store.insertEntry(
         record,
-        entryEvent(deps, actor, 'context.created', at, record, { version: 1 })
+        entryEvent(deps, actor, 'context.created', at, record, {
+            version: 1,
+            ...(suggested ? { suggested: true } : {}),
+        })
     );
 
     const visible =
@@ -551,7 +566,9 @@ export const reviseEntry = async (
     const actor = await resolveActor(deps, caller, input.grantId);
     const record = await resolveEntry(deps, actor, input);
 
-    if (actor.kind === 'client' && record.header.status !== 'active') throw scopeDenied();
+    const wasSuggested = record.header.status === 'suggested';
+    if (actor.kind === 'client' && record.header.status !== 'active' && !wasSuggested)
+        throw scopeDenied();
     requireWrite(actor, record.header.categories);
     if (record.header.status === 'deleted') throw malformed('A withdrawn entry cannot be revised.');
     if (input.expectedVersion !== record.header.version) throw versionConflict();
@@ -568,13 +585,18 @@ export const reviseEntry = async (
         input.record.provenance,
         at
     );
-    await deps.writePolicy({
+    const decision = await deps.writePolicy({
         operation: 'revise',
         subjectDid: actor.subjectDid,
         actorDid: actor.did,
         grantId: actor.kind === 'client' ? actor.grant.grantId : null,
         categories: record.header.categories,
+        canWrite: mayWriteDirectly(actor),
     });
+    // A suggestion may be revised as a suggestion; an entry the subject has (or
+    // accepted) is changed only by a writer allowed to write directly (LC-2423).
+    if (decision.kind === 'suggest' && !wasSuggested) throw scopeDenied();
+    const nextStatus: EntryStatus = decision.kind === 'suggest' ? 'suggested' : 'active';
 
     const next: EntryVersion = {
         entryId: record.header.id,
@@ -592,7 +614,7 @@ export const reviseEntry = async (
             record.header.id,
             input.expectedVersion,
             next,
-            'active',
+            nextStatus,
             at,
             entryEvent(deps, actor, 'context.revised', at, record, {
                 version: next.version,
@@ -603,7 +625,7 @@ export const reviseEntry = async (
         throw versionConflict();
 
     const revised: EntryRecord = {
-        header: { ...record.header, version: next.version, status: 'active', updatedAt: at },
+        header: { ...record.header, version: next.version, status: nextStatus, updatedAt: at },
         current: next,
     };
     const visible =
@@ -623,10 +645,13 @@ export const withdrawEntry = async (
     if (
         actor.kind === 'client' &&
         record.header.status !== 'active' &&
+        record.header.status !== 'suggested' &&
         record.header.status !== 'deleted'
     )
         throw scopeDenied();
     requireWrite(actor, record.header.categories);
+    // LC-2423: without direct write a client may only take back a suggestion.
+    if (!mayWriteDirectly(actor) && record.header.status === 'active') throw scopeDenied();
 
     const at = deps.now().toISOString();
     await deps.store.transitionEntryStatus(
@@ -642,4 +667,40 @@ export const withdrawEntry = async (
         status: 'deleted',
         timestamp: at,
     };
+};
+
+/**
+ * LearnCard addition (LC-2423), Context Subject only: accept a suggested entry, which
+ * makes it active. Dismissing a suggestion is withdrawing it. Accepting an entry that
+ * is already active is a no-op.
+ */
+export const acceptSuggestion = async (
+    deps: HcpV1Deps,
+    caller: HcpV1Caller,
+    input: AcceptSuggestionInput
+): Promise<EntryView> => {
+    const actor = await resolveActor(deps, caller, undefined);
+    if (actor.kind !== 'subject') throw scopeDenied();
+    const record = await resolveEntry(deps, actor, input);
+    if (record.header.status === 'active') return view(deps, actor, record, record.current, []);
+    if (record.header.status !== 'suggested')
+        throw malformed('Only a suggested entry can be accepted.');
+
+    const at = deps.now().toISOString();
+    const accepted = await deps.store.transitionEntryStatus(
+        record.header.id,
+        ['suggested'],
+        'active',
+        at,
+        entryEvent(deps, actor, SUGGESTION_ACCEPTED_EVENT, at, record, {
+            version: record.header.version,
+        })
+    );
+    if (!accepted) throw versionConflict();
+
+    const active: EntryRecord = {
+        header: { ...record.header, status: 'active', updatedAt: at },
+        current: record.current,
+    };
+    return view(deps, actor, active, active.current, []);
 };

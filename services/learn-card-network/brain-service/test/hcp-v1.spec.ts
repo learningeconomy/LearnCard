@@ -154,11 +154,13 @@ describe('HCP v1 router (hcp.v1.*)', () => {
                     purposes: [{ code: PURPOSE, description: 'Tutoring' }],
                 },
             ],
+            canWrite: true,
         });
         expect(grant).toMatchObject({
             subject: { id: subjectDid },
             status: 'active',
             grantType: 'temporary',
+            canWrite: true,
         });
         await expect(asAgent.grants.get({ grantId: grant.grantId })).resolves.toMatchObject({
             grantId: grant.grantId,
@@ -669,6 +671,51 @@ describe('HCP v1 router (hcp.v1.*)', () => {
         });
     });
 
+    it('lands a write without canWrite as a suggestion the subject accepts (LC-2423)', async () => {
+        const subjectDid = subject.learnCard.id.did();
+        const own = subject.clients.fullAuth.hcp.v1;
+        const asAgent = agent.clients.fullAuth.hcp.v1;
+        const grant = await own.grants.create({
+            client: { id: agent.learnCard.id.did(), name: 'Suggesting Agent' },
+            access: [
+                {
+                    actions: ['read', 'write'],
+                    categories: ['goals_and_constraints'],
+                    purposes: [{ code: PURPOSE, description: 'Tutoring' }],
+                },
+            ],
+        });
+        expect(grant.canWrite).toBe(false);
+
+        const created = await asAgent.entries.create({
+            ...entry(subjectDid, 'Pass algebra in June', {
+                classification: { categories: ['goals_and_constraints'] },
+            }),
+            grantId: grant.grantId,
+        });
+        expect(created).toMatchObject({ suggested: true });
+        const query = () =>
+            asAgent.entries.query({ grantId: grant.grantId, query: 'algebra', purpose: PURPOSE });
+        expect((await query()).entries).toEqual([]);
+
+        const suggested = (await own.entries.list({})).entries.find(
+            e => e.record.status === 'suggested'
+        );
+        expect(suggested?.content).toMatchObject({ value: 'Pass algebra in June' });
+
+        await expect(asAgent.entries.accept({ entryId: suggested!.id })).rejects.toMatchObject({
+            code: 'FORBIDDEN',
+        });
+        await expect(own.entries.accept({ entryId: suggested!.id })).resolves.toMatchObject({
+            record: { status: 'active' },
+        });
+        expect((await query()).entries).toHaveLength(1);
+        const events = await own.audit.list({});
+        expect(events.events.map(e => e.eventType)).toContain(
+            'https://learncard.com/hcp/v1/events/suggestion-accepted'
+        );
+    });
+
     it('documents every v1 procedure in the OpenAPI document under /hcp/v1', async () => {
         const { openApiDocument } = await import('../src/openapi');
         const paths = Object.keys(openApiDocument.paths ?? {}).filter(path =>
@@ -678,6 +725,7 @@ describe('HCP v1 router (hcp.v1.*)', () => {
             '/hcp/v1/audit',
             '/hcp/v1/contract-offer',
             '/hcp/v1/entries',
+            '/hcp/v1/entries/accept',
             '/hcp/v1/entries/get',
             '/hcp/v1/entries/list',
             '/hcp/v1/entries/query',

@@ -2,6 +2,7 @@ import React from 'react';
 import { Updater } from 'use-immer';
 import { LaunchPadAppListItem, ModalTypes, useModal } from 'learn-card-base';
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
+import type { WriteModeControl } from './ConsentFlowWriteSharingItem';
 
 import { IonRippleEffect } from '@ionic/react';
 import BlueMagicWand from 'learn-card-base/svgs/BlueMagicWand';
@@ -15,6 +16,8 @@ type ConsentFlowAiSessionsWriteItemProps = {
             required: boolean;
             term: ConsentFlowTerms['write']['credentials']['categories'][string];
             setTerm: Updater<ConsentFlowTerms['write']['credentials']['categories'][string]>;
+            /** LC-2423: Off / Suggest only / Add directly. */
+            writeMode?: WriteModeControl;
         };
     };
     contractDetails: ConsentFlowContractDetails;

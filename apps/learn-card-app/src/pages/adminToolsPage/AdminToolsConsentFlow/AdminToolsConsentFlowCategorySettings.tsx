@@ -64,7 +64,9 @@ const AdminToolsConsentFlowCategorySettings: React.FC<{
     category: string;
     onChange: (categories: ConsentFlowContract['read']['credentials']['categories']) => void;
     titleOverride?: string;
-}> = ({ values, category, onChange, titleOverride }) => {
+    /** Write categories also choose whether the app may add directly (LC-2423). */
+    mode?: 'read' | 'write';
+}> = ({ values, category, onChange, titleOverride, mode = 'read' }) => {
     const { plural, IconWithShape } = contractCategoryNameToCategoryMetadata(category) || {};
     const inputId = React.useId();
 
@@ -80,6 +82,10 @@ const AdminToolsConsentFlowCategorySettings: React.FC<{
         required: isRequired,
         defaultEnabled: isDefaultEnabled,
     });
+
+    const [canWrite, setCanWrite] = React.useState(
+        (value as { canWrite?: boolean } | undefined)?.canWrite !== false
+    );
 
     const getSelectedOption = (settingType: ConsentFlowCategorySettingTypesEnum): boolean => {
         if (settingType === ConsentFlowCategorySettingTypesEnum.Required) {
@@ -153,6 +159,44 @@ const AdminToolsConsentFlowCategorySettings: React.FC<{
                     );
                 })}
             </IonCol>
+
+            {mode === 'write' && (
+                <IonCol size="12" className="w-full bg-white rounded-[15px] py-2 px-5 mt-3">
+                    <section className="w-full justify-between items-center flex gap-3 py-3">
+                        <label
+                            htmlFor={`${inputId}-can-write`}
+                            className="flex flex-col flex-1 gap-1"
+                        >
+                            <h6 className="text-grayscale-900 text-lg font-poppins">
+                                Add directly
+                            </h6>
+                            <span className="text-grayscale-700 text-sm font-poppins">
+                                Let the app add credentials straight to the wallet when the user
+                                allows it. Off: the app can only suggest credentials, and the user
+                                accepts each one.
+                            </span>
+                        </label>
+                        <input
+                            id={`${inputId}-can-write`}
+                            type="checkbox"
+                            className="h-5 w-5 shrink-0 accent-emerald-600"
+                            checked={canWrite}
+                            onChange={event => {
+                                const next = event.target.checked;
+                                setCanWrite(next);
+                                onChange({
+                                    ...values,
+                                    // Write categories carry canWrite; the shared prop type is the read shape.
+                                    [category]: {
+                                        ...values[category],
+                                        canWrite: next,
+                                    } as (typeof values)[string],
+                                });
+                            }}
+                        />
+                    </section>
+                </IonCol>
+            )}
         </div>
     );
 };

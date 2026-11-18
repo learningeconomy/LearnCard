@@ -62,6 +62,8 @@ export type NotificationMessageKey =
     // --- Managed credential refresh (LC-2136) — generic copy only: never name the
     // credential, the holder's claims, or implementation terms (refresh/sync/etc.) ---
     | 'credentialRefreshed'
+    // --- LC-2423: a contract app suggested a credential the holder may accept ---
+    | 'credentialSuggested'
     | 'shareViewed';
 
 type MessageTemplate = { title: string; body: string };
@@ -237,6 +239,10 @@ const en: LocaleCatalog = {
         title: 'Credential updated',
         body: '{from} updated one of your credentials.',
     },
+    credentialSuggested: {
+        title: 'Suggested for you',
+        body: '{issuer} suggested a credential for your wallet. Review it to add it.',
+    },
     shareViewed: {
         title: 'Share viewed',
         body: 'Your share “{title} ({count})” was viewed.',
@@ -407,6 +413,10 @@ const es: LocaleCatalog = {
     credentialRefreshed: {
         title: 'Credencial actualizada',
         body: '{from} actualizó una de tus credenciales.',
+    },
+    credentialSuggested: {
+        title: 'Sugerencia para ti',
+        body: '{issuer} te sugirió una credencial para tu billetera. Revísala para agregarla.',
     },
     shareViewed: {
         title: 'Enlace visto',
@@ -579,6 +589,10 @@ const fr: LocaleCatalog = {
         title: 'Titre mis à jour',
         body: "{from} a mis à jour l'un de vos titres.",
     },
+    credentialSuggested: {
+        title: 'Suggestion pour vous',
+        body: '{issuer} vous a suggéré un justificatif pour votre portefeuille. Consultez-le pour l’ajouter.',
+    },
     shareViewed: {
         title: 'Partage consulté',
         body: 'Votre partage « {title} ({count}) » a été consulté.',
@@ -740,6 +754,10 @@ const ar: LocaleCatalog = {
     credentialRefreshed: {
         title: 'تم تحديث الشهادة',
         body: 'قام {from} بتحديث إحدى شهاداتك.',
+    },
+    credentialSuggested: {
+        title: 'اقتراح لك',
+        body: 'اقترح {issuer} شهادة لمحفظتك. راجعها لإضافتها.',
     },
     shareViewed: {
         title: 'تمت مشاهدة المشاركة',

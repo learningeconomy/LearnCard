@@ -123,7 +123,10 @@ const DemoSchoolBox: React.FC = () => {
 
         try {
             await consentToContract({
-                terms: getMinimumTermsForContract(contract?.contract, currentUser),
+                // Its auto-boosts must land in the wallet, not as suggestions (LC-2423).
+                terms: getMinimumTermsForContract(contract?.contract, currentUser, {
+                    writeMode: 'direct',
+                }),
                 expiresAt: '',
                 oneTime: false,
             });

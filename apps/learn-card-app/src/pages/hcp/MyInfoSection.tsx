@@ -131,6 +131,44 @@ const EntryForm: React.FC<{
     );
 };
 
+/** LC-2423: an app suggested this; apps can't read it until the person accepts it. */
+const SuggestedEntryRow: React.FC<{ entry: HcpEntry }> = ({ entry }) => {
+    const change = useHcpChange();
+    const pending = change.isPending ? change.variables?.kind : undefined;
+
+    return (
+        <li className="py-3 border-b border-grayscale-200 last:border-b-0">
+            <p className="text-xs font-medium text-amber-700 mb-1">{m['hcp.info.suggested']()}</p>
+            <p className="text-sm text-grayscale-900 whitespace-pre-wrap break-words">
+                {entryText(entry)}
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+                <button
+                    type="button"
+                    onClick={() => change.mutate({ kind: 'accept', entryId: entry.id })}
+                    disabled={change.isPending}
+                    className="py-1.5 px-3 rounded-[20px] bg-grayscale-900 text-white text-sm disabled:opacity-50"
+                >
+                    {pending === 'accept' ? <Spinner /> : m['hcp.info.accept']()}
+                </button>
+                <button
+                    type="button"
+                    onClick={() => change.mutate({ kind: 'dismiss', entryId: entry.id })}
+                    disabled={change.isPending}
+                    className="py-1.5 px-3 rounded-[20px] border border-grayscale-300 text-sm text-grayscale-700 disabled:opacity-50"
+                >
+                    {pending === 'dismiss' ? <Spinner /> : m['hcp.info.dismiss']()}
+                </button>
+                {change.isError && (
+                    <p role="alert" className="basis-full text-sm text-red-700">
+                        {m['hcp.error.save']()}
+                    </p>
+                )}
+            </div>
+        </li>
+    );
+};
+
 const EntryRow: React.FC<{ entry: HcpEntry; onEdit: () => void }> = ({ entry, onEdit }) => {
     const change = useHcpChange();
     const [confirming, setConfirming] = useState(false);
@@ -248,13 +286,17 @@ const MyInfoSection: React.FC = () => {
                             {group.name}
                         </h3>
                         <ul className="bg-white rounded-2xl px-4 border border-grayscale-200">
-                            {group.entries.map(entry => (
-                                <EntryRow
-                                    key={entry.id}
-                                    entry={entry}
-                                    onEdit={() => setEditing({ kind: 'edit', entry })}
-                                />
-                            ))}
+                            {group.entries.map(entry =>
+                                entry.record.status === 'suggested' ? (
+                                    <SuggestedEntryRow key={entry.id} entry={entry} />
+                                ) : (
+                                    <EntryRow
+                                        key={entry.id}
+                                        entry={entry}
+                                        onEdit={() => setEditing({ kind: 'edit', entry })}
+                                    />
+                                )
+                            )}
                         </ul>
                     </section>
                 ))
