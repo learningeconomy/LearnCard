@@ -189,7 +189,8 @@ export const consentToContract = async (
                         audienceVersion: audienceVersion ?? null,
                         expectedRequestId: expectedRequestId ?? null,
                         consenterProfileId: consenter.profileId,
-                        nextShareUntil: computeNextShareUntil(terms),
+                        // One-time terms are consumed at once and never report a date.
+                        nextShareUntil: oneTime ? null : computeNextShareUntil(terms),
                     })
                 ),
                 contract.id

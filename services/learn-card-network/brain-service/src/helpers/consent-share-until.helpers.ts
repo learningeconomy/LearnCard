@@ -2,9 +2,10 @@
  * Category-level `shareUntil` dates of a consent, and the derived `nextShareUntil` scalar that
  * lets the deadline job find consents with a passing date through an index.
  *
- * A date counts only for a category that is being shared (`sharing` true, and the credentials
- * area not switched off with `sharing: false`), the same rule the consented-data reads use.
- * Unparseable or empty dates are ignored.
+ * A date counts only for a category that is switched on (`sharing` true, and the credentials
+ * area not switched off with `sharing: false`). The consented-data reads additionally need at
+ * least one shared credential; that is deliberately not required here, so a date keeps being
+ * tracked while the list is still empty. Unparseable or empty dates are ignored.
  *
  * Keep this module free of imports: a small Lambda bundles it.
  */

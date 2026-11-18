@@ -418,6 +418,47 @@ describe('share-until events', () => {
         expect(await nextShareUntilOf(termsUri)).toBeNull();
     });
 
+    it('stores no nextShareUntil for one-time terms', async () => {
+        const { audienceVersion } = await owner.clients.fullAuth.contracts.getConsentFlowContract({
+            uri: contractUri,
+        });
+        const { termsUri } = await learner.clients.fullAuth.contracts.consentToContract({
+            contractUri,
+            terms: termsWith({ Achievement: hoursFromNow(5) }),
+            audienceVersion,
+            oneTime: true,
+        });
+
+        expect(await nextShareUntilOf(termsUri)).toBeNull();
+    });
+
+    it('still advances the backfill when the share-until scan fails', async () => {
+        await run("MATCH (state:ConsentFlowJobState {id: 'share-until-backfill-v1'}) DELETE state");
+
+        const runner = neogma.queryRunner;
+        const original = runner.run.bind(runner);
+
+        vi.spyOn(runner, 'run').mockImplementation(async (...args) => {
+            if (String(args[0]).includes('ConsentFlowTerms(nextShareUntil)')) {
+                throw new Error('scan failed');
+            }
+
+            return original(...args);
+        });
+        vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+        const summary = await runConsentFlowDeadlinePass();
+
+        expect(summary.shareUntilPassed).toBe(0);
+        expect(console.warn).toHaveBeenCalledWith('integration_events: share_until_scan_failed');
+
+        const state = await original(
+            "MATCH (state:ConsentFlowJobState {id: 'share-until-backfill-v1'}) RETURN state.startedAt AS startedAt"
+        );
+
+        expect(typeof state.records[0]?.get('startedAt')).toBe('string');
+    });
+
     it('backfills existing terms in bounded batches and stops once done', async () => {
         const termsUri = await consent(termsWith({ Achievement: hoursFromNow(4) }));
         const expected = await nextShareUntilOf(termsUri);

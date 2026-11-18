@@ -358,7 +358,8 @@ type ShareUntilWrite = {
     mutationVersion: ReturnType<typeof int>;
     next: string | null;
     contractId: string | null;
-    emits: { id: string; category: string }[];
+    /** Ids of the events to create. The category is part of the id only; it is not stored. */
+    eventIds: string[];
 };
 
 /**
@@ -380,7 +381,18 @@ type ShareUntilWrite = {
  *
  * Only categories dated at or after the stored `nextShareUntil` are reported: that value was the
  * earliest future date when the terms were written, so anything earlier had already passed
- * before and is never reported. Only live, needs_reconsent and suspended terms whose consent has
+ * before and is never reported. This includes one case of a terms edit: when a due date is still
+ * unreported and the same edit moves that category's date to an earlier instant in the past,
+ * nothing is reported for it here; the edit itself already produced `consent_updated`.
+ *
+ * The event carries no category: like every event it only identifies the consent, and the
+ * receiver reads the consented data again. A category counts as soon as it is switched on
+ * (`sharing`), also while its list of shared credentials is still empty, so a date is not lost
+ * when credentials are added later; such an event tells the receiver about a category that had
+ * no data to lose.
+ *
+ * Like the backfill below, a call always handles at least one batch, also with a budget of 0;
+ * the pass decides whether there is time left to call it. Only live, needs_reconsent and suspended terms whose consent has
  * not expired emit. An expired consent emits nothing but keeps tracking its later dates;
  * withdrawn terms lose `nextShareUntil`. Failures are left to the caller.
  */
@@ -397,6 +409,8 @@ export const emitShareUntilPassedEvents = async (
     await ensureContractEventMaintenance();
 
     do {
+        // `nextShareUntil <= $now` compares strings. That is correct only because every stored
+        // value is the output of toISOString() (UTC, fixed width); keep new write paths to that.
         const found = await neogma.queryRunner.run(
             `MATCH (terms:ConsentFlowTerms)
              USING INDEX terms:ConsentFlowTerms(nextShareUntil)
@@ -431,14 +445,14 @@ export const emitShareUntilPassedEvents = async (
                 nowMs
             );
             const expectedMs = Date.parse(expectedNext);
-            const emits =
+            const eventIds =
                 active && unexpired && typeof contractId === 'string'
                     ? shareUntilEntriesOfProperties(props)
                           .filter(entry => entry.at <= nowMs && entry.at >= expectedMs)
-                          .map(entry => ({
-                              id: `${termsId}:share_until:${entry.category}:${entry.shareUntil}`,
-                              category: entry.category,
-                          }))
+                          .map(
+                              entry =>
+                                  `${termsId}:share_until:${entry.category}:${entry.shareUntil}`
+                          )
                     : [];
 
             writes.push({
@@ -449,7 +463,7 @@ export const emitShareUntilPassedEvents = async (
                 // again (expiry_extended) without a terms write to recompute them.
                 next: active ? computeNextShareUntilFromProperties(props, nowMs) : null,
                 contractId: typeof contractId === 'string' ? contractId : null,
-                emits,
+                eventIds,
             });
         }
 
@@ -461,8 +475,8 @@ export const emitShareUntilPassedEvents = async (
              WHERE terms.nextShareUntil = write.expectedNext
                  AND coalesce(terms.mutationVersion, 0) = write.mutationVersion
              SET terms.nextShareUntil = write.next
-             FOREACH (emit IN write.emits |
-                 MERGE (event:ConsentFlowEvent {id: emit.id})
+             FOREACH (eventId IN write.eventIds |
+                 MERGE (event:ConsentFlowEvent {id: eventId})
                  ON CREATE SET event += {
                      kind: 'consent_updated', reason: 'share_until_passed',
                      contractId: write.contractId, termsId: terms.id,
@@ -594,10 +608,15 @@ export const backfillNextShareUntil = async (
     return { backfilled, done: false };
 };
 
+/** Share of a pass's time the expiry scan may not use, so the share-until work always gets a turn. */
+const SHARE_UNTIL_RESERVED_BUDGET = { fraction: 0.25, maxMs: 4_000 };
+
 /**
  * One pass of the consentFlowDeadline job: suspend overdue re-consents, record expiry events, then
- * record share-until events and advance the one-off `nextShareUntil` backfill. A failing scan is
- * retried by the next pass and never hides the earlier work.
+ * record share-until events and advance the one-off `nextShareUntil` backfill. Each of the last
+ * three steps fails on its own: a failing scan is retried by the next pass and never hides the
+ * earlier work or stops a later step. The expiry scan leaves part of the time for the
+ * share-until steps, and a step is skipped when no time is left.
  */
 export const runConsentFlowDeadlinePass = async ({
     limit = 200,
@@ -605,6 +624,10 @@ export const runConsentFlowDeadlinePass = async ({
 }: BatchOptions = {}): Promise<ConsentFlowDeadlineSummary> => {
     const startedAt = Date.now();
     const remaining = (): number => Math.max(0, budgetMs - (Date.now() - startedAt));
+    const reservedMs = Math.min(
+        SHARE_UNTIL_RESERVED_BUDGET.maxMs,
+        budgetMs * SHARE_UNTIL_RESERVED_BUDGET.fraction
+    );
     const { suspended } = await suspendExpiredConsentFlowTerms(undefined, { limit, budgetMs });
     let expired = 0;
     let shareUntilPassed = 0;
@@ -612,7 +635,7 @@ export const runConsentFlowDeadlinePass = async ({
     try {
         ({ expired } = await emitExpiredConsentEvents(undefined, {
             limit,
-            budgetMs: remaining(),
+            budgetMs: Math.max(0, remaining() - reservedMs),
         }));
     } catch {
         // Never log identifiers.
@@ -620,13 +643,22 @@ export const runConsentFlowDeadlinePass = async ({
     }
 
     try {
-        ({ shareUntilPassed } = await emitShareUntilPassedEvents(undefined, {
-            limit,
-            budgetMs: remaining(),
-        }));
-        await backfillNextShareUntil(undefined, { limit, budgetMs: remaining() });
+        if (remaining() > 0) {
+            ({ shareUntilPassed } = await emitShareUntilPassedEvents(undefined, {
+                limit,
+                budgetMs: remaining(),
+            }));
+        }
     } catch {
         console.warn('integration_events: share_until_scan_failed');
+    }
+
+    try {
+        if (remaining() > 0) {
+            await backfillNextShareUntil(undefined, { limit, budgetMs: remaining() });
+        }
+    } catch {
+        console.warn('integration_events: share_until_backfill_failed');
     }
 
     return { suspended, expired, shareUntilPassed };
