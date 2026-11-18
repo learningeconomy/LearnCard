@@ -1,6 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { IssueInboxCredentialValidator, type IssueInboxCredentialType } from '@learncard/types';
+import {
+    IssueInboxCredentialValidator,
+    IssueInboxCredentialResponseValidator,
+    type IssueInboxCredentialType,
+} from '@learncard/types';
 import { SQSClient } from '@aws-sdk/client-sqs';
 import { Profile, Credential, InboxCredential, ContactMethod } from '@models';
 import { neogma } from '@instance';
@@ -22,6 +26,7 @@ import {
     submitInboxBatch,
 } from '@helpers/inbox-queue.helpers';
 import * as notifications from '@helpers/notifications.helpers';
+import * as inboxHelpers from '@helpers/inbox.helpers';
 import { AUTH_GRANT_FULL_ACCESS_SCOPE } from '../src/constants/auth-grant';
 import { getUser } from './helpers/getClient';
 import { addNotificationToQueueSpy, sendSpy } from './helpers/spies';
@@ -171,6 +176,97 @@ describe('single inbox durable idempotency', () => {
             issuer.clients.fullAuth.inbox.issue(await inputFor(issuer, key, 'Changed'))
         ).rejects.toMatchObject({ code: 'CONFLICT' });
         expect(await issuer.clients.fullAuth.inbox.issue(input)).toEqual(first);
+        await expectCounts(1);
+    });
+    it('returns the successful batch receipt after rapid single retries encounter an in-progress owner', async () => {
+        const input = await inputFor(issuer, randomUUID());
+        let entered!: () => void;
+        let release!: () => void;
+        const ready = new Promise<void>(resolve => {
+            entered = resolve;
+        });
+        const resumed = new Promise<void>(resolve => {
+            release = resolve;
+        });
+        const original = inboxHelpers.issueToInbox;
+        vi.spyOn(inboxHelpers, 'issueToInbox').mockImplementationOnce(async (...args) => {
+            const result = await original(...args);
+            entered();
+            await resumed; // Delivery committed; the replay receipt is not committed yet.
+            return result;
+        });
+        const owner = await issuer.clients.fullAuth.inbox.issueBatch({
+            requestId: 'batch-owner',
+            items: [input],
+        });
+        const processing = processInboxQueueMessage(
+            JSON.stringify({ itemId: `${owner.batchId}:0` })
+        );
+        try {
+            await ready;
+            await expectCounts(1);
+            for (let i = 0; i < 6; i += 1) {
+                await expect(issuer.clients.fullAuth.inbox.issue(input)).rejects.toMatchObject({
+                    code: 'CONFLICT',
+                });
+            }
+            const retryBatch = await admit(input);
+            const attempts = await neogma.queryRunner.run(
+                'MATCH (i:InboxBatchItem {id:$id}) RETURN i.attempts AS attempts',
+                { id: `${retryBatch}:0` }
+            );
+            expect(Number(attempts.records[0]!.get('attempts'))).toBe(0);
+            // Also model a terminal snapshot left by the old implementation, using
+            // the real worker/finish path rather than fabricating a success receipt.
+            for (let i = 0; i < 5; i += 1) {
+                await processInboxQueueMessage(JSON.stringify({ itemId: `${retryBatch}:0` }));
+            }
+            expect((await getInboxBatch(issuerId, retryBatch)).items[0]?.result).toMatchObject({
+                success: false,
+                error: { reason: 'IN_PROGRESS' },
+            });
+        } finally {
+            release();
+            await processing;
+        }
+        const ownerStatus = await getInboxBatch(issuerId, owner.batchId);
+        expect(ownerStatus.items[0]?.result?.success).toBe(true);
+        const originalReceipt = IssueInboxCredentialResponseValidator.parse(
+            ownerStatus.items[0]!.result
+        );
+        await expect(issuer.clients.fullAuth.inbox.issue(input)).resolves.toEqual(originalReceipt);
+        await expectCounts(1);
+    }, 30000);
+    it('rejects a substituted payload against the current successful batch replay', async () => {
+        const key = randomUUID();
+        const input = await inputFor(issuer, key);
+        const owner = await issuer.clients.fullAuth.inbox.issueBatch({ items: [input] });
+        await processInboxQueueMessage(JSON.stringify({ itemId: `${owner.batchId}:0` }));
+        await expect(
+            issuer.clients.fullAuth.inbox.issue(await inputFor(issuer, key, 'Substituted'))
+        ).rejects.toMatchObject({ code: 'CONFLICT' });
+        await expectCounts(1);
+    });
+    it('does not spend item attempts before the persisted dispatch schedule', async () => {
+        const input = await inputFor(issuer, randomUUID());
+        const batch = await admit(input);
+        await neogma.queryRunner.run('MATCH (i:InboxBatchItem {id:$id}) SET i.dispatchAt=$future', {
+            id: `${batch}:0`,
+            future: Date.now() + 60000,
+        });
+        await expect(issuer.clients.fullAuth.inbox.issue(input)).rejects.toMatchObject({
+            code: 'CONFLICT',
+        });
+        const attempts = await neogma.queryRunner.run(
+            'MATCH (i:InboxBatchItem {id:$id}) RETURN i.attempts AS attempts',
+            { id: `${batch}:0` }
+        );
+        expect(Number(attempts.records[0]!.get('attempts'))).toBe(0);
+        await expectCounts(0);
+        await neogma.queryRunner.run('MATCH (i:InboxBatchItem {id:$id}) SET i.dispatchAt=0', {
+            id: `${batch}:0`,
+        });
+        expect((await issuer.clients.fullAuth.inbox.issue(input)).status).toBe('ISSUED');
         await expectCounts(1);
     });
     it('isolates the same key across authenticated issuers', async () => {

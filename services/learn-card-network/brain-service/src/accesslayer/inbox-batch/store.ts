@@ -119,7 +119,8 @@ export const readBatchJob = async (
 /** Lock before testing ownership: concurrent SQS deliveries must not both enter issuance. */
 export const claimBatchItem = async (
     id: string,
-    owner: string
+    owner: string,
+    respectDispatchAt = false
 ): Promise<{ job: BatchJob; item: BatchItem } | undefined> =>
     transaction(async tx => {
         const result = await tx.run(
@@ -128,8 +129,11 @@ export const claimBatchItem = async (
             { id }
         );
         if (!result.records.length) return;
-        const item = result.records[0]!.get('i').properties as BatchItem;
+        const item = result.records[0]!.get('i').properties as BatchItem & { dispatchAt?: number };
         if (item.state !== 'QUEUED') return;
+        // SQS workers already have a dispatch lease; only direct HTTP attempts
+        // must wait for the persisted schedule rather than spending retry attempts.
+        if (respectDispatchAt && Number(item.dispatchAt ?? 0) > Date.now()) return;
         await tx.run(
             `MATCH (i:InboxBatchItem {id: $id}) SET i.state = 'PROCESSING', i.phase = 'PREPARING',
         i.owner = $owner, i.leaseUntil = $lease, i.attempts = i.attempts + 1`,
@@ -168,20 +172,22 @@ export const markBatchIssuanceStarted = async (id: string, owner: string): Promi
  * Processing markers have no expiry. Orphaned internal markers are removed after job retention;
  * client-keyed markers remain blocked. Only confirmed successes get the 24-hour replay expiry.
  */
+export const readBatchReplay = async (replayKey: string): Promise<string | null> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (r:InboxBatchReplay {id: $id})
+         WHERE r.expiresAt IS NULL OR r.expiresAt > $now RETURN r.value AS value`,
+        { id: replayKey, now: Date.now() }
+    );
+    const value = result.records[0]?.get('value');
+    return value ? decryptInboxCredential(value) : null;
+};
+
 export const batchReplayStore = (
     itemId: string,
     owner: string,
     replayKey: string
 ): BatchReplayStore => ({
-    get: async (_key: string): Promise<string | null> => {
-        const result = await neogma.queryRunner.run(
-            `MATCH (r:InboxBatchReplay {id: $id})
-            WHERE r.expiresAt IS NULL OR r.expiresAt > $now RETURN r.value AS value`,
-            { id: replayKey, now: Date.now() }
-        );
-        const value = result.records[0]?.get('value');
-        return value ? decryptInboxCredential(value) : null;
-    },
+    get: async (_key: string): Promise<string | null> => readBatchReplay(replayKey),
     setIfAbsent: async (_key: string, value: string, _ttl: number): Promise<'OK' | null> => {
         const encrypted = await encryptInboxCredential(value);
         return transaction(async tx => {

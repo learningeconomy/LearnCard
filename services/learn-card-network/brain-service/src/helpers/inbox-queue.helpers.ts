@@ -27,12 +27,19 @@ import {
     finishBatchItem,
     markBatchIssuanceStarted,
     readBatchJob,
+    readBatchReplay,
     recoverInboxJobs,
     takeInboxDispatches,
 } from '@accesslayer/inbox-batch/store';
 import { acknowledgeInboxDispatches, deadLetterBatchItem } from '@accesslayer/inbox-batch/store';
 import { encryptInboxCredential, decryptInboxCredential } from './inbox-encryption.helpers';
-import { fingerprint, issueInboxBatch } from './inbox-batch.helpers';
+import {
+    fingerprint,
+    issueInboxBatch,
+    inboxItemReplayKey,
+    inboxItemRequestHash,
+    replayResult,
+} from './inbox-batch.helpers';
 import { INBOX_BATCH_MAX_BYTES } from './inbox-batch-http.helpers';
 import { getInboxBatchState } from './inbox-batch-status.helpers';
 
@@ -89,7 +96,7 @@ export const submitInboxBatch = async (
                 replayKey:
                     item.idempotencyKey === undefined
                         ? `internal:${randomUUID()}`
-                        : `client:${fingerprint([profile.profileId, item.idempotencyKey])}`,
+                        : inboxItemReplayKey(profile.profileId, item.idempotencyKey),
             };
         })
     );
@@ -175,7 +182,7 @@ export const getInboxBatch = async (issuer: string, batchId: string): Promise<In
 };
 
 /** SQS is at-least-once. Ownership and issuance checkpoints, not delivery count, control execution. */
-export const processInboxQueueMessage = async (body: string): Promise<void> => {
+export const processInboxQueueMessage = async (body: string, inline = false): Promise<void> => {
     const message: unknown = JSON.parse(body);
     if (
         !message ||
@@ -185,7 +192,9 @@ export const processInboxQueueMessage = async (body: string): Promise<void> => {
     )
         throw new Error('Invalid inbox queue message');
     const owner = randomUUID();
-    const claimed = await claimBatchItem(message.itemId, owner);
+    const claimed = inline
+        ? await claimBatchItem(message.itemId, owner, true)
+        : await claimBatchItem(message.itemId, owner);
     if (!claimed) return;
     const { job, item } = claimed;
     const fail = (code: string, text: string): IssueInboxCredentialBatchItemResult => ({
@@ -272,7 +281,17 @@ export const issueKeyedInboxCredential = async (
         },
         ctx
     );
-    await processInboxQueueMessage(JSON.stringify({ itemId: `${receipt.batchId}:0` }));
+    // A separate job's IN_PROGRESS snapshot is not authoritative once its owner
+    // commits the shared receipt. Validate the live record before trusting that job.
+    const stored = await readBatchReplay(
+        inboxItemReplayKey(profile.profileId, input.idempotencyKey)
+    );
+    if (stored !== null) {
+        return IssueInboxCredentialResponseValidator.parse(
+            replayResult(stored, inboxItemRequestHash(input), 0)
+        );
+    }
+    await processInboxQueueMessage(JSON.stringify({ itemId: `${receipt.batchId}:0` }), true);
     const batch = await getInboxBatch(profile.profileId, receipt.batchId);
     const result = batch.items[0]?.result;
     if (!result) {
