@@ -128,6 +128,7 @@ describe('HCP consent screen', () => {
 
     it('Allow creates a read-only grant for exactly what was asked', () => {
         renderAt(consentUrl);
+        expect(screen.getByText("It can only look. It can't change anything.")).toBeTruthy();
         fireEvent.click(screen.getByRole('button', { name: 'Allow' }));
         expect(state.mutate).toHaveBeenCalledTimes(1);
         const [change] = state.mutate.mock.calls[0];
@@ -142,6 +143,33 @@ describe('HCP consent screen', () => {
                         purposes: [{ code: DEFAULT_PURPOSE_CODE, description: 'Help you study' }],
                     },
                 ],
+                grantType: 'temporary',
+            },
+        });
+        expect(change.input).not.toHaveProperty('canWrite');
+    });
+
+    it('suggest=1 Allow grants write with canWrite false (LC-2423)', () => {
+        renderAt(`${consentUrl}&suggest=1`);
+        expect(
+            screen.getByText(
+                'It can look, and suggest additions. Nothing is saved until you accept.'
+            )
+        ).toBeTruthy();
+        fireEvent.click(screen.getByRole('button', { name: 'Allow' }));
+        const [change] = state.mutate.mock.calls[0];
+        expect(change).toMatchObject({
+            kind: 'allow',
+            input: {
+                client: { id: CLIENT, name: 'Demo Tutor' },
+                access: [
+                    {
+                        actions: ['read', 'write'],
+                        categories: ['goals_and_constraints', 'education_learner_profile'],
+                        purposes: [{ code: DEFAULT_PURPOSE_CODE, description: 'Help you study' }],
+                    },
+                ],
+                canWrite: false,
                 grantType: 'temporary',
             },
         });

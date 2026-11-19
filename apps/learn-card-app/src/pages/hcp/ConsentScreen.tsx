@@ -35,7 +35,9 @@ const ConsentScreen: React.FC<{
             <h2 className="text-[20px] font-semibold text-grayscale-900 mb-1">
                 {m['hcp.connect.title']({ app: request.client.name })}
             </h2>
-            <p className="text-sm text-grayscale-600">{m['hcp.connect.readOnly']()}</p>
+            <p className="text-sm text-grayscale-600">
+                {request.canSuggest ? m['hcp.connect.canSuggest']() : m['hcp.connect.readOnly']()}
+            </p>
         </div>
         <section className="p-4 bg-white rounded-2xl border border-grayscale-200 space-y-3">
             <div>

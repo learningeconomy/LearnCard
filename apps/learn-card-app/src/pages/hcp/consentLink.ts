@@ -17,9 +17,15 @@ export type AccessRequest = {
     duration: Duration;
     /** The contract owner's LearnCard profile name, when a contract stands behind it. */
     offeredBy?: string;
+    /**
+     * LC-2423 hand-test: `suggest=1` on the link. Allow grants write with canWrite false
+     * so the app can only land suggestions until the person accepts.
+     */
+    canSuggest?: boolean;
 };
 
-export type LinkProblem = 'app' | 'name' | 'categories' | 'purpose' | 'duration' | 'contract';
+export type LinkProblem =
+    'app' | 'name' | 'categories' | 'purpose' | 'duration' | 'contract' | 'suggest';
 export type ParsedLink =
     | { kind: 'ok'; request: AccessRequest }
     | { kind: 'contract'; contractUri: string; client: string | null }
@@ -94,6 +100,13 @@ export const parseConsentLink = (search: string): ParsedLink => {
         return { kind: 'bad', problem: 'purpose' };
     if (!isDuration(duration)) return { kind: 'bad', problem: 'duration' };
 
+    // LC-2423: absent = read-only Allow; exactly suggest=1 = write + canWrite false.
+    const suggestValues = params.getAll('suggest');
+    if (suggestValues.length > 1) return { kind: 'bad', problem: 'suggest' };
+    const suggest = suggestValues[0]?.trim();
+    if (suggest !== undefined && suggest !== '1') return { kind: 'bad', problem: 'suggest' };
+    const canSuggest = suggest === '1';
+
     return {
         kind: 'ok',
         request: {
@@ -101,14 +114,26 @@ export const parseConsentLink = (search: string): ParsedLink => {
             categories: [first, ...rest],
             purpose: { code, description },
             duration,
+            ...(canSuggest ? { canSuggest: true } : {}),
         },
     };
 };
 
-/** Read-only, exactly the requested categories, temporary unless the app asked for ongoing. */
+/**
+ * Exactly the requested categories, temporary unless the app asked for ongoing.
+ * Default: read only. With canSuggest (LC-2423): read+write and canWrite false so
+ * writes land as suggestions until the person accepts.
+ */
 export const grantRequestFor = (request: AccessRequest, now: Date): HcpGrantRequest => ({
     client: request.client,
-    access: [{ actions: ['read'], categories: request.categories, purposes: [request.purpose] }],
+    access: [
+        {
+            actions: request.canSuggest ? ['read', 'write'] : ['read'],
+            categories: request.categories,
+            purposes: [request.purpose],
+        },
+    ],
+    ...(request.canSuggest ? { canWrite: false } : {}),
     ...(request.duration === 'ongoing'
         ? { grantType: 'persistent' }
         : {

@@ -10612,6 +10612,7 @@
             "heading": "Compartir tu información",
             "title": "{{app}} quiere ver parte de tu información",
             "readOnly": "Solo puede mirar. No puede cambiar nada.",
+            "canSuggest": "Puede mirar y sugerir añadidos. Nada se guarda hasta que aceptes.",
             "whatLabel": "Qué puede ver",
             "whyLabel": "Por qué",
             "howLongLabel": "Por cuánto tiempo",

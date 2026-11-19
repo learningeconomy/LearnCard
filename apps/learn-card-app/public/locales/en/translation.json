@@ -10675,6 +10675,7 @@
             "heading": "Share your info",
             "title": "{{app}} would like to see some of your info",
             "readOnly": "It can only look. It can't change anything.",
+            "canSuggest": "It can look, and suggest additions. Nothing is saved until you accept.",
             "whatLabel": "What it can see",
             "whyLabel": "Why",
             "howLongLabel": "For how long",

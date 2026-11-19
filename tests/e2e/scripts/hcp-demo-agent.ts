@@ -10,6 +10,8 @@
  *   bun --conditions=development tests/e2e/scripts/hcp-demo-agent.ts smoke           # whole flow, no app
  *   bun --conditions=development tests/e2e/scripts/hcp-demo-agent.ts contract        # contract consent link (LC-2421)
  *   bun --conditions=development tests/e2e/scripts/hcp-demo-agent.ts contract-smoke  # contract flow, no app
+ *   bun --conditions=development tests/e2e/scripts/hcp-demo-agent.ts suggest-link    # consent link with suggest=1 (LC-2423)
+ *   bun --conditions=development tests/e2e/scripts/hcp-demo-agent.ts suggest <grantId> [text…]  # write a suggestion under a grant
  *   bun --conditions=development tests/e2e/scripts/hcp-demo-agent.ts suggest-smoke   # suggestions (LC-2423), no app
  *
  * The agent's did:key comes from a random seed made on first run and kept in a 0600
@@ -76,6 +78,10 @@ export const consentLink = (clientDid: string): string =>
         purposeCode: PURPOSE.code,
         duration: '1h',
     })}`;
+
+/** Same as `link`, plus `suggest=1` so Allow grants write with canWrite false (LC-2423). */
+export const suggestConsentLink = (clientDid: string): string =>
+    `${consentLink(clientDid)}&suggest=1`;
 
 type Hcp = Awaited<ReturnType<Awaited<ReturnType<typeof wallet>>['invoke']['getHcpClient']>>;
 
@@ -306,6 +312,24 @@ const contractSmoke = async (): Promise<void> => {
 };
 
 /**
+ * LC-2423 hand-test: create a suggestion under an existing grant (from suggest-link Allow).
+ * Resolves the subject via grants.get (clients may read their own grant).
+ */
+const suggestUnderGrant = async (grantId: string, value: string): Promise<unknown> => {
+    const { hcp } = await agentHcp();
+    const grant = await hcp.grants.get.query({ grantId });
+    return hcp.entries.create.mutate({
+        grantId,
+        schema: ENTRY_SCHEMA,
+        subject: grant.subject,
+        content: { profile: GENERAL, value },
+        classification: { categories: ['goals_and_constraints'] },
+        assertion: { declarationType: 'person-declared' },
+        record: { provenance: { source: 'hcp-demo-agent' } },
+    });
+};
+
+/**
  * LC-2423: a write from a grant without canWrite lands as a suggestion the agent can't
  * read back until the person accepts it; a grant with canWrite writes directly.
  */
@@ -379,13 +403,19 @@ const suggestSmoke = async (): Promise<void> => {
 
 const main = async (): Promise<void> => {
     assertLocal();
-    const [command, grantId] = process.argv.slice(2);
+    const [command, grantId, ...rest] = process.argv.slice(2);
     if (command === 'link') {
         const { did } = await agentHcp();
         console.log(consentLink(did));
+    } else if (command === 'suggest-link') {
+        const { did } = await agentHcp();
+        console.log(suggestConsentLink(did));
     } else if (command === 'read' && grantId) {
         const { hcp } = await agentHcp();
         console.log(JSON.stringify(await read(hcp, grantId), null, 2));
+    } else if (command === 'suggest' && grantId) {
+        const value = rest.join(' ').trim() || 'Practice fractions twice a week';
+        console.log(JSON.stringify(await suggestUnderGrant(grantId, value), null, 2));
     } else if (command === 'smoke') {
         await smoke();
     } else if (command === 'contract') {
@@ -397,7 +427,7 @@ const main = async (): Promise<void> => {
         await suggestSmoke();
     } else {
         console.log(
-            'Usage: bun --conditions=development tests/e2e/scripts/hcp-demo-agent.ts <link | read <grantId> | smoke | contract | contract-smoke | suggest-smoke>'
+            'Usage: bun --conditions=development tests/e2e/scripts/hcp-demo-agent.ts <link | suggest-link | read <grantId> | suggest <grantId> [text…] | smoke | contract | contract-smoke | suggest-smoke>'
         );
         process.exitCode = 1;
     }

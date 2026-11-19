@@ -86,6 +86,42 @@ describe('HCP consent links', () => {
         });
         expect(grantRequestFor(parsed.request, new Date())).not.toHaveProperty('expiresAt');
     });
+
+    it('suggest=1 asks for write with canWrite false; default stays read-only', () => {
+        const suggesting = parseConsentLink(link({ ...valid, suggest: '1' }));
+        if (suggesting.kind !== 'ok') throw new Error('expected a valid link');
+        expect(suggesting.request.canSuggest).toBe(true);
+        expect(grantRequestFor(suggesting.request, new Date('2026-11-17T20:00:00.000Z'))).toEqual({
+            client: { id: CLIENT, name: 'Demo Tutor' },
+            access: [
+                {
+                    actions: ['read', 'write'],
+                    categories: suggesting.request.categories,
+                    purposes: [{ code: DEFAULT_PURPOSE_CODE, description: 'Help you study' }],
+                },
+            ],
+            canWrite: false,
+            grantType: 'temporary',
+            expiresAt: '2026-11-17T21:00:00.000Z',
+        });
+
+        const plain = parseConsentLink(link(valid));
+        if (plain.kind !== 'ok') throw new Error('expected a valid link');
+        expect(plain.request.canSuggest).toBeUndefined();
+        expect(grantRequestFor(plain.request, new Date())).not.toHaveProperty('canWrite');
+        expect(grantRequestFor(plain.request, new Date()).access[0]?.actions).toEqual(['read']);
+    });
+
+    it('rejects a bad or repeated suggest param', () => {
+        expect(parseConsentLink(link({ ...valid, suggest: 'true' }))).toEqual({
+            kind: 'bad',
+            problem: 'suggest',
+        });
+        expect(parseConsentLink(`${link(valid)}&suggest=1&suggest=1`)).toEqual({
+            kind: 'bad',
+            problem: 'suggest',
+        });
+    });
 });
 
 describe('HCP contract links (LC-2421)', () => {

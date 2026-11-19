@@ -463,11 +463,13 @@ Suggestions (LC-2423), with the same env:
    `suggested: true` and the agent reads nothing; the person accepts it and the agent
    reads it; a second suggestion is dismissed; a grant with `canWrite: true` writes
    directly.
-2. In the app, a suggestion shows under My info as "Suggested by an app" with Accept
-   and Dismiss, and Activity says "Demo Tutor suggested info for your Goals" and "You
-   accepted a suggestion for your Goals". No app screen gives an agent `write` yet
-   (Allow grants read only), so this side is covered by `HcpScreens.test.tsx` and
-   `hcpModel.test.ts` rather than a manual step.
+2. Hand-test in the app: `suggest-link` prints a consent URL with `suggest=1`. Open it
+   signed in and Allow — the screen says the app can look and suggest additions. Copy
+   `grantId` from the `hcp.v1.grants.list` network response, then
+   `suggest '<grantId>'` (optional text after the id; default "Practice fractions twice
+   a week"). The JSON includes `suggested: true`. In My info the entry shows as
+   "Suggested by an app" with Accept and Dismiss; Activity says "Demo Tutor suggested
+   info for your Goals" and, after Accept, "You accepted a suggestion for your Goals".
 
 ## Tests
 
