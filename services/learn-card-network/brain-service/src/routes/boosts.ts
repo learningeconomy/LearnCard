@@ -24,6 +24,7 @@ import {
     PaginatedVisibleLCNProfilesValidator,
     PaginatedSkillFrameworksValidator,
     BoostPermissions,
+    BoostExclusionValidator,
     BoostQueryValidator,
     SkillFrameworkQueryValidator,
     LCNProfileQueryValidator,
@@ -2534,7 +2535,8 @@ export const boostsRouter = t.router({
                 path: '/boost/paginated',
                 tags: ['Boosts'],
                 summary: 'Get boosts',
-                description: "This endpoint gets the current user's boosts",
+                description:
+                    "Gets the current user's boosts with optional name and category exclusions before pagination",
             },
             requiredScope: 'boosts:read',
         })
@@ -2542,16 +2544,22 @@ export const boostsRouter = t.router({
             PaginationOptionsValidator.extend({
                 limit: PaginationOptionsValidator.shape.limit.default(25),
                 query: BoostQueryValidator.optional(),
+                exclude: BoostExclusionValidator.optional(),
             }).default({
                 limit: 25,
             })
         )
         .output(PaginatedBoostsValidator)
         .query(async ({ ctx, input }) => {
-            const { limit, cursor, query } = input;
+            const { limit, cursor, query, exclude } = input;
             const { profile } = ctx.user;
 
-            const records = await getBoostsForProfile(profile, { limit: limit + 1, cursor, query });
+            const records = await getBoostsForProfile(profile, {
+                limit: limit + 1,
+                cursor,
+                query,
+                exclude,
+            });
 
             const hasMore = records.length > limit;
             const newCursor = records.at(hasMore ? -2 : -1)?.created;

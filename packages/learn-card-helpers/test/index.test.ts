@@ -135,6 +135,25 @@ describe('RegExp Transformer', () => {
     });
 
     describe('roundtrip', () => {
+        it('preserves exact boost exclusions while decoding regex operators and other fields', () => {
+            const input = {
+                exclude: {
+                    name: '/Math/ig',
+                    category: { $in: ['/Art/', '/Music/i', 'Resume'] },
+                },
+                query: { name: { $regex: /Math/i } },
+            };
+
+            expect(RegExpTransformer.deserialize(RegExpTransformer.serialize(input))).toEqual(
+                input
+            );
+            expect(
+                RegExpTransformer.deserialize(
+                    RegExpTransformer.serialize({ exclude: { name: { $regex: /Math/i } } })
+                )
+            ).toEqual({ exclude: { name: { $regex: /Math/i } } });
+        });
+
         it('should preserve RegExp objects through serialize/deserialize cycle', () => {
             const original = {
                 simple: /test/g,
