@@ -1,5 +1,4 @@
 import base64url from 'base64url';
-import { PDFDocument } from 'pdf-lib';
 import {
     isPdfAttachmentSource,
     PDF_DATA_URL_PATTERN,
@@ -84,6 +83,8 @@ export const resolvePdfDocumentResource = async (
     let numberOfPages: number | undefined;
 
     try {
+        // pdf-lib (~350 KB with its fonts) loads only when a PDF attachment is resolved, not at startup.
+        const { PDFDocument } = await import('pdf-lib');
         const pdfDocument = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
         numberOfPages = pdfDocument.getPageCount();
     } catch {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useInsertionEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Capacitor } from '@capacitor/core';
 import type { MyCampaign } from '@learncard/types';
@@ -39,13 +39,17 @@ export const useMyCampaigns = (): CampaignMessageSource => {
     const { initWallet } = useWallet();
     const active = useRef(scope);
     const initRef = useRef(initWallet);
-    useLayoutEffect(() => {
-        active.current = scope;
+    useInsertionEffect(() => {
         initRef.current = initWallet;
+    }, [initWallet]);
+    // Commit the scope before child layout effects can report a presentation.
+    // Updating during render could expose an uncommitted scope to stale callbacks.
+    useInsertionEffect(() => {
+        active.current = scope;
         return () => {
             active.current = null;
         };
-    }, [scope, initWallet]);
+    }, [scope]);
 
     // The LearnCard Network plugin reports did:key until its profile loads, then the profile's
     // did:web, on the same wallet. That is the same account, not a profile change (LEARN-CARD-APP-M7A).

@@ -1,5 +1,5 @@
 import React, { useEffect, Suspense, useState } from 'react';
-import { EmojiClickData } from 'emoji-picker-react';
+import type { EmojiClickData } from 'emoji-picker-react';
 
 import { IonInput, IonTextarea, IonToggle, useIonModal } from '@ionic/react';
 const FamilyEmojiPicker = React.lazy(() => import('../FamilyCMSEmojiPicker/FamilyEmojiPicker'));

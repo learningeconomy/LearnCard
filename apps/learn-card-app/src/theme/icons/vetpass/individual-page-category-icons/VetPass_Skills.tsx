@@ -13,4 +13,3 @@ const SvgVetPassSkills = (props: SVGProps<SVGSVGElement>) => (
     </svg>
 );
 export default SvgVetPassSkills;
-

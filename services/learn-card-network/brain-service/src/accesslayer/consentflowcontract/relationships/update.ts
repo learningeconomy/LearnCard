@@ -15,6 +15,7 @@ import {
 import { ConsentFlowTerms, ConsentFlowTransaction, ConsentFlowContract } from '@models';
 import { neogma } from '@instance';
 import { flattenObject } from '@helpers/objects.helpers';
+import { computeNextShareUntil } from '@helpers/consent-share-until.helpers';
 import { DbContractType, DbTermsType } from 'types/consentflowcontract';
 import { getBoostUri, sendBoost, stampIssuanceDate } from '@helpers/boost.helpers';
 import { setCredentialSubjectIds } from '@helpers/credentialSubject.helpers';
@@ -171,6 +172,10 @@ export const reconsentTerms = async (
                         expectedRequestId: expectedRequestId ?? null,
                         consenterProfileId: relationship.consenter.profileId,
                         termsMutationVersion: Number(relationship.terms.mutationVersion ?? 0),
+                        // One-time terms are consumed at once and never report a date.
+                        nextShareUntil: effectiveOneTime ? null : computeNextShareUntil(terms),
+                        keepDueNextShareUntil: !effectiveOneTime,
+                        nextShareUntilNow: new Date().toISOString(),
                         params: {
                             ...newFlat,
                             ...removedProperties,
@@ -211,6 +216,11 @@ export const reconsentTerms = async (
                 })
                 .where('coalesce(terms.mutationVersion, 0) = $termsMutationVersion')
                 .set('terms += $params')
+                // A date that is already due but not yet reported by the deadline job is kept,
+                // so a terms write landing before the job runs cannot drop that event.
+                .set(
+                    'terms.nextShareUntil = CASE WHEN $keepDueNextShareUntil AND terms.nextShareUntil IS NOT NULL AND terms.nextShareUntil <= $nextShareUntilNow THEN terms.nextShareUntil ELSE $nextShareUntil END'
+                )
                 .set('terms.mutationVersion = coalesce(terms.mutationVersion, 0) + 1')
                 .with('terms, contract')
                 .create({
@@ -475,6 +485,10 @@ export const updateTerms = async (
                 new QueryBuilder(
                     new BindParam({
                         params: paramsForSet,
+                        // One-time terms are consumed at once and never report a date.
+                        nextShareUntil: effectiveOneTime ? null : computeNextShareUntil(terms),
+                        keepDueNextShareUntil: !effectiveOneTime,
+                        nextShareUntilNow: new Date().toISOString(),
                         expectedContractVersion: Number(relationship.contract.currentVersion ?? 1),
                         audienceVersion: audienceVersion ?? null,
                         termsMutationVersion: Number(relationship.terms.mutationVersion ?? 0),
@@ -494,6 +508,11 @@ export const updateTerms = async (
                 })
                 .where('coalesce(terms.mutationVersion, 0) = $termsMutationVersion')
                 .set('terms += $params')
+                // A date that is already due but not yet reported by the deadline job is kept,
+                // so a terms write landing before the job runs cannot drop that event.
+                .set(
+                    'terms.nextShareUntil = CASE WHEN $keepDueNextShareUntil AND terms.nextShareUntil IS NOT NULL AND terms.nextShareUntil <= $nextShareUntilNow THEN terms.nextShareUntil ELSE $nextShareUntil END'
+                )
                 .set('terms.mutationVersion = coalesce(terms.mutationVersion, 0) + 1')
                 .with('terms, contract')
                 .create({
@@ -704,6 +723,7 @@ export const withdrawTerms = async (
                     identifier: 'terms',
                 })
                 .set('terms.status = "withdrawn"')
+                .set('terms.nextShareUntil = null')
                 .set('terms.mutationVersion = coalesce(terms.mutationVersion, 0) + 1')
                 .with('terms, contract')
                 .create({
@@ -750,7 +770,8 @@ export const syncCredentialsToContract = async (
     },
     categories: Record<string, string[]>,
     audienceVersion?: number,
-    domain?: string
+    domain?: string,
+    automatic = false
 ): Promise<boolean> => {
     if (
         relationship.terms.status === 'needs_reconsent' ||
@@ -829,6 +850,9 @@ export const syncCredentialsToContract = async (
                     new BindParam({
                         expectedContractVersion: Number(relationship.contract.currentVersion ?? 1),
                         audienceVersion: audienceVersion ?? null,
+                        // Automatic delivery must still have category-wide consent at the write.
+                        // Explicit selections keep the existing selective-sharing behavior.
+                        automaticCategories: automatic ? Object.keys(categories) : [],
                         termsMutationVersion: Number(relationship.terms.mutationVersion ?? 0),
                         now: new Date().toISOString(),
                         params: flattenObject({
@@ -851,6 +875,12 @@ export const syncCredentialsToContract = async (
                 .where(
                     `coalesce(terms.mutationVersion, 0) = $termsMutationVersion AND terms.status = 'live'
             AND (CASE WHEN terms.expiresAt IS NULL OR trim(terms.expiresAt) = '' THEN true ELSE datetime(terms.expiresAt) > datetime($now) END)
+            AND all(category IN $automaticCategories WHERE
+                terms['terms.read.credentials.categories.' + category + '.sharing'] = true
+                AND terms['terms.read.credentials.categories.' + category + '.shareAll'] = true
+                AND (CASE WHEN terms['terms.read.credentials.categories.' + category + '.shareUntil'] IS NULL
+                    OR trim(toString(terms['terms.read.credentials.categories.' + category + '.shareUntil'])) = ''
+                    THEN true ELSE datetime(terms['terms.read.credentials.categories.' + category + '.shareUntil']) > datetime.realtime() END))
             AND (CASE WHEN contract.expiresAt IS NULL OR trim(contract.expiresAt) = '' THEN true ELSE datetime(contract.expiresAt) > datetime($now) END)`
                 )
                 .set('terms += $params')
@@ -953,6 +983,25 @@ export const pruneDeletedUrisFromConsentTerms = async (
         .run();
 
     return result.summary.counters.containsUpdates() ? removedSharedUris : 0;
+};
+
+/**
+ * Marks an existing legacy (unattributed) request seen. Never creates a relationship, so a
+ * contract writer's call has the same effect whether or not the profile holds a request.
+ */
+export const markLegacyContractRequestSeen = async (
+    id: string,
+    profileId: string
+): Promise<void> => {
+    await neogma.queryRunner.run(
+        `MATCH (contract:ConsentFlowContract {id: $id})
+        SET contract.audienceLock = coalesce(contract.audienceLock, 0) + 1
+        WITH contract
+        MATCH (contract)-[r:REQUESTED_FOR]->(:Profile {profileId: $profileId})
+        WHERE r.requestId IS NULL
+        SET r.readStatus = 'seen'`,
+        { id, profileId }
+    );
 };
 
 export const upsertRequestedForRelationship = async (

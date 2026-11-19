@@ -14,6 +14,8 @@ type DashboardHeaderCardProps = {
     shortBio?: string;
     professionalTitle?: string;
     onAvatarClick?: () => void;
+    /** Hover, focus, or press start on the avatar, before the click: a chance to prefetch. */
+    onAvatarIntent?: () => void;
     onNotificationsClick?: () => void;
     unreadCount?: number;
     qrCodeAction?: React.ReactNode;
@@ -53,6 +55,7 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
     shortBio,
     professionalTitle,
     onAvatarClick,
+    onAvatarIntent,
     onNotificationsClick,
     unreadCount = 0,
     qrCodeAction,
@@ -149,6 +152,10 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
                             <button
                                 type="button"
                                 onClick={onAvatarClick}
+                                onPointerEnter={onAvatarIntent}
+                                onFocus={onAvatarIntent}
+                                onPointerDown={onAvatarIntent}
+                                onTouchStart={onAvatarIntent}
                                 aria-label={m['dashboard.header.avatarAria']({ brand: brandName })}
                                 className="rounded-full active:scale-[0.97] transition-transform focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                             >

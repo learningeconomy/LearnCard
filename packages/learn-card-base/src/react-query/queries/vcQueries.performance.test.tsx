@@ -75,15 +75,19 @@ afterEach(() => {
     cleanup();
     client.clear();
 });
-const makeWallet = (did = 'account-a') => {
+const makeWallet = (did = 'account-a', options?: { useBatch?: boolean }) => {
     const read = vi.fn().mockResolvedValue(vc);
     const get = vi.fn().mockResolvedValue([{ uri: 'uri' }]);
+    const learnCloudBatchResolve = vi.fn(async (uris: string[]) => uris.map(() => vc));
     host.wallet = {
         id: { did: () => did },
         read: { get: read },
         index: { LearnCloud: { get } },
+        plugins: [],
+        // Default off so existing read-count assertions stay meaningful; LC-2382 opts in.
+        invoke: options?.useBatch ? { learnCloudBatchResolve } : {},
     } as unknown as BespokeLearnCard;
-    return { read, get };
+    return { read, get, learnCloudBatchResolve };
 };
 describe('credential query consumers', () => {
     it('shares one document across single, plural, collection and category hooks', async () => {
@@ -459,4 +463,19 @@ it('keeps summary information when optional topic and assessment credentials are
     expect(result.current.data?.summaryVc).toEqual(summary);
     expect(result.current.data?.topicVc).toBeUndefined();
     expect(result.current.data?.assessmentVc).toBeUndefined();
+});
+
+describe('LC-2382 wallet resolve batching', () => {
+    it('batches wallet credential warm via learnCloudBatchResolve instead of N read.get calls', async () => {
+        const { read, learnCloudBatchResolve } = makeWallet('account-a', { useBatch: true });
+        const uris = Array.from(
+            { length: 12 },
+            (_, i) => `lc:cloud:cloud.learncard.com/trpc:credential:id-${i}`
+        );
+        const { result } = renderHook(() => useGetResolvedCredentials(uris), { wrapper });
+        await waitFor(() => expect(result.current.every(r => r.isSuccess)).toBe(true));
+        expect(learnCloudBatchResolve).toHaveBeenCalledTimes(1);
+        expect(learnCloudBatchResolve.mock.calls[0][0]).toEqual(uris);
+        expect(read).not.toHaveBeenCalled();
+    });
 });

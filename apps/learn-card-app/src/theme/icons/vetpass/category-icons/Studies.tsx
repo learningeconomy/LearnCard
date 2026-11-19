@@ -32,4 +32,3 @@ const SvgStudies = (props: SVGProps<SVGSVGElement>) => (
     </svg>
 );
 export default SvgStudies;
-

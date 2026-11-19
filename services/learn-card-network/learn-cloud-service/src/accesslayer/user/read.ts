@@ -8,20 +8,16 @@ export const getUserForDid = async (
     did: string,
     session?: ClientSession
 ): Promise<MongoUserType | null> => {
-    try {
-        const cachedResponse = await getCachedUserForDid(did);
+    const cachedResponse = await getCachedUserForDid(did);
 
-        if (cachedResponse) return cachedResponse;
+    if (cachedResponse) return cachedResponse;
 
-        const user = await Users.findOne({ dids: did }, { session });
+    // A failed lookup throws: null means "no user", and callers act on that (LC-2434).
+    const user = await Users.findOne({ dids: did }, { session });
 
-        if (user) await setCachedUserForDid(did, user);
+    if (user) await setCachedUserForDid(did, user);
 
-        return user;
-    } catch (e) {
-        console.error(e);
-        return null;
-    }
+    return user;
 };
 
 export const getAllDidsForDid = async (did: string, session?: ClientSession): Promise<string[]> => {

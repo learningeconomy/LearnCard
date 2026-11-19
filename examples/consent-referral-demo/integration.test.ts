@@ -23,6 +23,7 @@ type Snapshot = {
     webhooks: { event: string; role: string; reference: string; verified: boolean }[];
     dismissed: boolean;
     outcome: { claimed: boolean; shared: boolean };
+    invite?: { requestId: string; status: string; target: { email?: string } };
 };
 const state = async (): Promise<Snapshot> => {
     const response = await fetch(`${demo.url}/api/state`);
@@ -173,3 +174,14 @@ test('dismissal preserves the invitation; denial and cancellation cannot become 
     snapshot = await state();
     expect(snapshot.outcome).toBeUndefined();
 }, 120_000);
+
+test('an email invitation answers pending and shows only the email', async () => {
+    let snapshot = await action('fresh');
+    expect(snapshot.invite).toBeUndefined();
+    snapshot = await action('sendByEmail');
+    expect(snapshot.invite?.status).toBe('pending');
+    expect(snapshot.invite?.target.email).toMatch(/@example\.com$/);
+    expect(JSON.stringify(snapshot.invite)).not.toContain('did:');
+    // The ordinary referral to Alex is independent of the email invitation.
+    expect(snapshot.request).toBeNull();
+}, 60_000);

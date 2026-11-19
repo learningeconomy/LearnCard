@@ -11,14 +11,37 @@ import {
     getChainIdFromProvider,
 } from './helpers';
 import ERC20ABI from './erc20.abi.json';
-import uniswapDefaultTokenList from '@uniswap/default-token-list/build/uniswap-default.tokenlist.json';
 import hardcodedTokens from './hardcodedTokens';
 
 export * from './types';
 
-const defaultTokenList = (uniswapDefaultTokenList as { tokens: TokenList }).tokens.concat(
-    hardcodedTokens
-);
+// The Uniswap token list is ~175 KB of JSON that only token lookups need; load it on first use so it
+// stays out of wallet start-up. A failed import (stale chunk after a deploy, flaky fetch) is retried
+// once in place; if that fails too, the lookup rejects with the first import error and the next
+// lookup imports again instead of replaying the cached rejection.
+let defaultTokenListPromise: Promise<TokenList> | undefined;
+const importTokenList = () =>
+    import('@uniswap/default-token-list/build/uniswap-default.tokenlist.json');
+const getDefaultTokenList = (): Promise<TokenList> => {
+    if (defaultTokenListPromise) return defaultTokenListPromise;
+    const pending = importTokenList()
+        .catch(firstError =>
+            importTokenList().catch(() => {
+                throw firstError;
+            })
+        )
+        .then(module => {
+            const list = ((module as { default?: unknown }).default ?? module) as {
+                tokens: TokenList;
+            };
+            return list.tokens.concat(hardcodedTokens);
+        });
+    defaultTokenListPromise = pending;
+    pending.catch(() => {
+        if (defaultTokenListPromise === pending) defaultTokenListPromise = undefined;
+    });
+    return pending;
+};
 
 /**
  * @group Plugins
@@ -37,8 +60,12 @@ export const getEthereumPlugin = (
     }
 
     const privateKey = Buffer.from(secpKeypair.d, 'base64').toString('hex');
-    let ethersWallet = new ethers.Wallet(privateKey);
-    const publicKey: string = ethersWallet.address;
+    // Constructing an ethers Wallet precomputes secp256k1 tables (~35 ms on a desktop CPU, several
+    // times that on phones), and every wallet start would pay it. Build it on first use instead.
+    let wallet: ethers.Wallet | undefined;
+    const getWallet = (): ethers.Wallet => (wallet ??= new ethers.Wallet(privateKey));
+    let address: string | undefined;
+    const getAddress = (): string => (address ??= getWallet().address);
 
     // Provider
     const getProvider = () => {
@@ -49,12 +76,10 @@ export const getEthereumPlugin = (
             provider = ethers.getDefaultProvider(network);
         }
 
-        ethersWallet = ethersWallet.connect(provider);
+        wallet = getWallet().connect(provider);
         return provider;
     };
     let provider: ethers.providers.Provider;
-
-    const defaultTokenListForNetwork = defaultTokenList;
 
     const getTokenAddress = async (tokenSymbolOrAddress: string) => {
         if (!provider) provider = getProvider();
@@ -62,7 +87,7 @@ export const getEthereumPlugin = (
         return (
             await getTokenFromSymbolOrAddress(
                 tokenSymbolOrAddress,
-                defaultTokenListForNetwork,
+                await getDefaultTokenList(),
                 await getChainIdFromProvider(provider)
             )
         )?.address;
@@ -70,7 +95,7 @@ export const getEthereumPlugin = (
 
     const getErc20TokenBalance = async (
         tokenContractAddress: string,
-        walletPublicAddress = publicKey
+        walletPublicAddress = getAddress()
     ) => {
         if (!provider) provider = getProvider();
 
@@ -80,7 +105,7 @@ export const getEthereumPlugin = (
         const formattedBalance = formatUnits(
             balance,
             tokenContractAddress,
-            defaultTokenList,
+            await getDefaultTokenList(),
             await getChainIdFromProvider(provider)
         );
 
@@ -88,7 +113,7 @@ export const getEthereumPlugin = (
     };
 
     // Core Methods
-    const getBalance = async (walletAddress = publicKey, tokenSymbolOrAddress = 'ETH') => {
+    const getBalance = async (walletAddress = getAddress(), tokenSymbolOrAddress = 'ETH') => {
         if (!provider) provider = getProvider();
 
         if (!tokenSymbolOrAddress || tokenSymbolOrAddress === 'ETH') {
@@ -115,10 +140,10 @@ export const getEthereumPlugin = (
         displayName: 'Ethereum',
         description: 'Provides access to currency',
         methods: {
-            getEthereumAddress: () => publicKey,
+            getEthereumAddress: () => getAddress(),
 
             getBalance: async (_learnCard, symbolOrAddress = 'ETH') =>
-                getBalance(publicKey, symbolOrAddress),
+                getBalance(getAddress(), symbolOrAddress),
             getBalanceForAddress: async (_learnCard, walletAddress, symbolOrAddress) =>
                 getBalance(walletAddress, symbolOrAddress),
 
@@ -133,7 +158,7 @@ export const getEthereumPlugin = (
                         value: ethers.utils.parseEther(amount.toString()),
                     };
 
-                    return (await ethersWallet.sendTransaction(transaction)).hash;
+                    return (await getWallet().sendTransaction(transaction)).hash;
                 }
 
                 const tokenAddress = await getTokenAddress(tokenSymbolOrAddress);
@@ -143,7 +168,7 @@ export const getEthereumPlugin = (
                     );
                 }
 
-                const tokenContract = new ethers.Contract(tokenAddress, ERC20ABI, ethersWallet);
+                const tokenContract = new ethers.Contract(tokenAddress, ERC20ABI, getWallet());
 
                 return (
                     await tokenContract.transfer(
@@ -151,7 +176,7 @@ export const getEthereumPlugin = (
                         await parseUnits(
                             amount.toString(),
                             tokenContract.address,
-                            defaultTokenList,
+                            await getDefaultTokenList(),
                             await getChainIdFromProvider(provider)
                         )
                     )

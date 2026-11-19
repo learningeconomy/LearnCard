@@ -1,4 +1,7 @@
-import React from 'react';
+import {
+    pendingContractSyncStore,
+    enqueuePendingContractSyncSafely,
+} from '../../../../../packages/learn-card-base/src/stores/pendingContractSyncStore';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -29,7 +32,7 @@ vi.mock('learn-card-base', async () => ({
     contractCategoryNameToCategoryMetadata: {},
     ModalTypes: { Right: 'right' },
     ToastTypeEnum: { Error: 'error' },
-    enqueuePendingContractSync: state.enqueue,
+    enqueuePendingContractSyncSafely,
 }));
 vi.mock('@analytics', () => ({ AnalyticsEvents: {}, useAnalytics: () => ({ track: vi.fn() }) }));
 vi.mock('../../hooks/useGuardianGate', () => ({
@@ -128,5 +131,17 @@ it('keeps installation blocked through a conflict and failed refresh, then recov
     fireEvent.click(install);
     await waitFor(() => expect(state.accept).toHaveBeenCalledOnce());
     expect(state.consent).toHaveBeenCalledTimes(2);
-    expect(state.enqueue).toHaveBeenCalledOnce();
+    expect(state.enqueue).not.toHaveBeenCalled();
+});
+
+it('continues installation when consent backfill persistence rejects', async () => {
+    vi.spyOn(pendingContractSyncStore.set, 'enqueueContractSyncJob').mockRejectedValueOnce(
+        new Error('queue unavailable')
+    );
+    state.consent.mockResolvedValueOnce({ termsUri: 'lc:terms' });
+    show();
+    const install = await screen.findByRole('button', { name: 'Install' });
+    await waitFor(() => expect(install).toBeEnabled());
+    fireEvent.click(install);
+    await waitFor(() => expect(state.accept).toHaveBeenCalledOnce());
 });
