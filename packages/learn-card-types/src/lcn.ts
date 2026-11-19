@@ -2,7 +2,7 @@ import type {} from 'zod-openapi';
 import { z } from 'zod/v4';
 
 import { PaginationResponseValidator } from './mongo';
-import { StringQuery } from './queries';
+import { BaseStringQuery, StringQuery } from './queries';
 import { UnsignedVCValidator, VCValidator, VPValidator } from './vc';
 import {
     BitstringStatusListEntryValidator,
@@ -399,6 +399,13 @@ export const BoostQueryValidator = z.union([
     BaseBoostQueryValidator,
 ]);
 export type BoostQuery = z.infer<typeof BoostQueryValidator>;
+
+/** A paginated boost is omitted if its name or category matches an exclusion. */
+export const BoostExclusionValidator = z.object({
+    name: BaseStringQuery.optional(),
+    category: BaseStringQuery.optional(),
+});
+export type BoostExclusion = z.infer<typeof BoostExclusionValidator>;
 
 export const PaginatedBoostsValidator = PaginationResponseValidator.extend({
     records: BoostValidator.array(),

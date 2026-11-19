@@ -656,6 +656,42 @@ describe('Boosts', () => {
             expect([...firstPage.records, ...secondPage.records]).toEqual(boosts.records);
         });
 
+        it('should exclude matches before paginating and keep boosts with missing metadata', async () => {
+            const client = userA.clients.fullAuth.boost;
+            const createLiveBoost = (metadata: { name?: string; category?: string }) =>
+                client.createBoost({ credential: testUnsignedBoost, status: 'LIVE', ...metadata });
+
+            const uncategorized = await createLiveBoost({ name: 'Older credential' });
+            const unnamed = await createLiveBoost({ category: 'Custom category' });
+            await client.createBoost({
+                credential: testUnsignedBoost,
+                status: 'DRAFT',
+                category: 'Award',
+            });
+            await createLiveBoost({ name: 'AI PASSPORT CREDENTIAL', category: 'Achievement' });
+            await createLiveBoost({ category: 'Resume' });
+            await createLiveBoost({ category: 'AI Topic' });
+
+            const options = {
+                limit: 1,
+                query: { status: 'LIVE' as const },
+                exclude: {
+                    name: { $regex: /^AI Passport credential$/i },
+                    category: { $in: ['Resume', 'AI Topic'] },
+                },
+            };
+            const first = await client.getPaginatedBoosts(options);
+
+            expect(first.records.map(record => record.uri)).toEqual([unnamed]);
+            expect(first.hasMore).toBe(true);
+            expect(first.cursor).toBeDefined();
+
+            const second = await client.getPaginatedBoosts({ ...options, cursor: first.cursor });
+
+            expect(second.records.map(record => record.uri)).toEqual([uncategorized]);
+            expect(second.hasMore).toBe(false);
+        });
+
         it('should include meta', async () => {
             await userA.clients.fullAuth.boost.createBoost({
                 credential: testUnsignedBoost,

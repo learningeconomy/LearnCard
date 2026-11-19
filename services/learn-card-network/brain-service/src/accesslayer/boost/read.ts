@@ -8,7 +8,12 @@ import {
 } from '@helpers/neo4j.helpers';
 import { Boost, Profile, BoostInstance, ProfileManager } from '@models';
 import { BoostType } from 'types/boost';
-import { BoostQuery, LCNProfileManager, LCNProfileManagerQuery } from '@learncard/types';
+import {
+    BoostExclusion,
+    BoostQuery,
+    LCNProfileManager,
+    LCNProfileManagerQuery,
+} from '@learncard/types';
 import { inflateObject } from '@helpers/objects.helpers';
 import { ProfileType } from 'types/profile';
 import { ProfileManagerType } from 'types/profile-manager';
@@ -35,12 +40,13 @@ export const getBoostsForProfile = async (
         limit,
         cursor,
         query: matchQuery = {},
-    }: { limit: number; cursor?: string; query?: BoostQuery }
+        exclude = {},
+    }: { limit: number; cursor?: string; query?: BoostQuery; exclude?: BoostExclusion }
 ): Promise<Array<BoostType & { created: string }>> => {
-    const convertedQuery = convertObjectRegExpToNeo4j(matchQuery);
     const { whereClause, params: queryParams } = buildWhereForQueryBuilder(
         'boost',
-        convertedQuery as any
+        convertObjectRegExpToNeo4j(matchQuery),
+        convertObjectRegExpToNeo4j(exclude)
     );
 
     const _query = new QueryBuilder(new BindParam({ cursor, ...queryParams }))
