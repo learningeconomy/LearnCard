@@ -44,6 +44,7 @@ const renderFields = (
                     terms: { read: { credentials: { categories: {} } } } as ConsentFlowTerms,
                 }}
                 onConfirm={onConfirm}
+                onCancel={vi.fn()}
             />
         </TenantConfigProvider>
     );

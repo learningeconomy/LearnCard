@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { IonIcon } from '@ionic/react';
+import { chevronDownOutline } from 'ionicons/icons';
 import {
     VERIFIABLE_DATA_FIELD_PREFIX,
     type ConsentFlowContractDetails,
@@ -27,14 +29,30 @@ interface Answer {
     saved?: { value: string; uri: string };
 }
 
+const inputClass =
+    'block min-h-12 w-full min-w-0 rounded-xl border border-grayscale-300 bg-white px-4 py-3 text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent';
+
+const ProfileSelect = (props: React.ComponentPropsWithoutRef<'select'>) => (
+    <div className="relative min-w-0">
+        <select {...props} className={`${inputClass} appearance-none pe-11`} />
+        <IonIcon
+            icon={chevronDownOutline}
+            aria-hidden="true"
+            className="pointer-events-none absolute end-4 top-1/2 h-4 w-4 -translate-y-1/2 text-grayscale-700"
+        />
+    </div>
+);
+
 export const ConsentProfileFields = ({
     contract,
     review,
     onConfirm,
+    onCancel,
 }: {
     contract: ConsentFlowContractDetails;
     review: FieldReview;
     onConfirm: (terms: ConsentFlowTerms) => void;
+    onCancel: () => void;
 }) => {
     const config = useTenantConfig();
     const t = useT();
@@ -141,20 +159,17 @@ export const ConsentProfileFields = ({
             setSaving(false);
         }
     };
-    const inputClass =
-        'w-full py-3 px-4 rounded-xl border border-grayscale-300 bg-white text-grayscale-900 focus:outline-none focus:ring-2 focus:ring-emerald-500';
     return (
-        <form className="space-y-4" onSubmit={submit}>
+        <form className="flex flex-col gap-5" onSubmit={submit}>
             {answers.map(({ field, category, mode, required, value }) => (
-                <fieldset key={category} disabled={saving} className="space-y-2">
-                    <legend className="text-sm font-semibold text-grayscale-900">
+                <fieldset key={category} disabled={saving} className="min-w-0">
+                    <legend className="mb-2 text-sm font-semibold text-grayscale-900">
                         {field?.label ?? t('profileFields.unavailable')}
                     </legend>
                     {field && (
-                        <>
-                            <select
+                        <div className="grid gap-2.5">
+                            <ProfileSelect
                                 aria-label={field.label + ' — ' + t('profileFields.permission')}
-                                className={inputClass}
                                 value={mode}
                                 onChange={e =>
                                     update(category, { mode: e.target.value as Answer['mode'] })
@@ -163,12 +178,11 @@ export const ConsentProfileFields = ({
                                 {!required && <option value="off">{t('profileFields.off')}</option>}
                                 <option value="once">{t('profileFields.once')}</option>
                                 <option value="live">{t('profileFields.live')}</option>
-                            </select>
+                            </ProfileSelect>
                             {mode !== 'off' &&
                                 (field.type === 'select' ? (
-                                    <select
+                                    <ProfileSelect
                                         aria-label={field.label}
-                                        className={inputClass}
                                         required
                                         value={value}
                                         onChange={e => update(category, { value: e.target.value })}
@@ -179,7 +193,7 @@ export const ConsentProfileFields = ({
                                                 {choice}
                                             </option>
                                         ))}
-                                    </select>
+                                    </ProfileSelect>
                                 ) : (
                                     <input
                                         aria-label={field.label}
@@ -191,7 +205,7 @@ export const ConsentProfileFields = ({
                                         onChange={e => update(category, { value: e.target.value })}
                                     />
                                 ))}
-                        </>
+                        </div>
                     )}
                 </fieldset>
             ))}
@@ -212,22 +226,37 @@ export const ConsentProfileFields = ({
                     {t('profileFields.retry')}
                 </button>
             )}
-            <button
-                type="submit"
-                disabled={
-                    loading ||
-                    saving ||
-                    !answers.length ||
-                    answers.some(a => a.required && !a.field)
-                }
-                className="py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-40"
-            >
-                {loading
-                    ? t('profileFields.loading')
-                    : saving
-                      ? t('profileFields.saving')
-                      : t('consentAudience.confirm')}
-            </button>
+            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] gap-3 border-t border-solid border-grayscale-200 pt-5">
+                <button
+                    type="button"
+                    onClick={onCancel}
+                    className="rounded-[20px] border border-solid border-grayscale-300 px-3 py-3 text-sm font-medium text-grayscale-700 transition-colors hover:bg-grayscale-10"
+                >
+                    {t('consentAudience.cancel')}
+                </button>
+                <button
+                    type="submit"
+                    disabled={
+                        loading ||
+                        saving ||
+                        !answers.length ||
+                        answers.some(a => a.required && !a.field)
+                    }
+                    className="flex items-center justify-center gap-2 rounded-[20px] bg-grayscale-900 px-3 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                    {(loading || saving) && (
+                        <span
+                            aria-hidden="true"
+                            className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-white/30 border-t-white"
+                        />
+                    )}
+                    {loading
+                        ? t('profileFields.loading')
+                        : saving
+                          ? t('profileFields.saving')
+                          : t('consentAudience.confirm')}
+                </button>
+            </div>
         </form>
     );
 };
