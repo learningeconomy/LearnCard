@@ -1414,6 +1414,34 @@ describe('LC-2409: confirm-current-PIN limits', () => {
         expect(applyCalls).toBe(0);
     });
 
+    it('an automatic carry rotation does not reset the hourly or per-version counters', async () => {
+        await enrollPin();
+        for (let i = 0; i < ESCROW_CONFIRM_HOURLY_LIMIT; i += 1)
+            await expect(confirm(wrongProof)).rejects.toMatchObject({ code: 'FORBIDDEN' });
+        await bumpShareVersion(2);
+        const envelope = await sealPin(2);
+        await owner().escrow.enroll({
+            ...auth,
+            envelope,
+            shareVersion: 2,
+            enclaveKeyId: keyId,
+            signedIntent: await signedIntent(envelope, {
+                action: 'carry',
+                pinAction: 'keep',
+                shareVersion: 2,
+                recoveryEmail: null,
+            }),
+            sourceEnvelope: authority.envelope,
+        });
+        expect(Number(await redis().get(`escrow-confirm:${did}`))).toBe(
+            ESCROW_CONFIRM_HOURLY_LIMIT
+        );
+        expect(await redis().scard(`escrow-confirm-versions:${did}`)).toBe(1);
+        applyCalls = 0;
+        await expect(confirm(pinProof, 2)).rejects.toMatchObject({ code: 'TOO_MANY_REQUESTS' });
+        expect(applyCalls).toBe(0);
+    });
+
     it('a successful confirm resets the hourly and per-version counters', async () => {
         await enrollPin();
         await expect(confirm(wrongProof, 1)).rejects.toMatchObject({ code: 'FORBIDDEN' });

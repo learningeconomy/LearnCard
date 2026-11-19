@@ -152,8 +152,9 @@ const limitCancelLinkAttempts = async (clientIp: string | undefined): Promise<vo
  * its attempt budget for it, so lca-api bounds the guesses: 5 per hour, 10 failed or
  * unresolved per PIN generation (then a new PIN is required), and at most 2 share versions
  * spent on uncommitted confirms since the last commit (keeps passkey and phrase methods
- * inside MAX_PREVIOUS_AUTH_SHARES). A successful commit resets the hourly and per-version
- * counters and refunds its own lifetime charge. Bounded by lca-api only (no enclave change).
+ * inside MAX_PREVIOUS_AUTH_SHARES). A successful confirm, or a new PIN generation, resets the
+ * hourly and per-version counters (a successful confirm also refunds its own lifetime charge);
+ * an automatic carry rotation does not. Bounded by lca-api only (no enclave change).
  */
 export const ESCROW_CONFIRM_HOURLY_LIMIT = 5;
 export const ESCROW_CONFIRM_LIFETIME_LIMIT = 10;
@@ -224,8 +225,12 @@ const settleEscrowConfirm = async (
     if (outcome === 'committed') await redis.del(keys.hourly, keys.versions);
 };
 
-/** Any committed enrollment (a new PIN or an automatic rotation) resets the confirm budget's
- * hourly and per-version counters; the lifetime count stays per PIN generation. */
+/**
+ * A committed PIN set, change or clear (a new PIN generation) resets the confirm budget's
+ * hourly and per-version counters. An automatic `carry` (or any other `keep`) commit does not:
+ * it needs no PIN knowledge, so resetting there would let a stolen session lift the hourly
+ * limit and the version cap at will. The lifetime count is per PIN generation.
+ */
 const resetEscrowConfirmCounters = async (did: string): Promise<void> => {
     const redis = cache.redis ?? cache.node;
     const keys = confirmKeys(did, 0);
@@ -985,7 +990,12 @@ export const escrowRouter = t.router({
                         current.state.pinGeneration,
                         'committed'
                     ).catch(() => undefined);
-                else await resetEscrowConfirmCounters(confirmDid).catch(() => undefined);
+                else if (
+                    intent.pinAction === 'set' ||
+                    intent.pinAction === 'change' ||
+                    intent.pinAction === 'clear'
+                )
+                    await resetEscrowConfirmCounters(confirmDid).catch(() => undefined);
                 if (!result.envelope)
                     throw new TRPCError({
                         code: 'SERVICE_UNAVAILABLE',
