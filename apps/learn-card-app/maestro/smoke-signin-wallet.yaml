@@ -8,20 +8,37 @@ androidWebViewHierarchy: devtools
 - extendedWaitUntil:
       visible: '(?i)sign in with email'
       timeout: 90000
-- tapOn:
-      id: login-email
+- runFlow:
+      when:
+          visible:
+              id: login-email
+      commands:
+          - tapOn:
+                id: login-email
+- runFlow:
+      when:
+          notVisible:
+              id: login-email
+      commands:
+          - tapOn: 'Email address|Email'
 - inputText: demo@learningeconomy.io
 - tapOn: '(?i)sign in with email'
 - extendedWaitUntil:
       visible: Passport
       timeout: 120000
-- scrollUntilVisible:
-      element: "Credential card"
-      direction: DOWN
-      timeout: 90000
-      speed: 40
-      visibilityPercentage: 20
-- extendedWaitUntil:
-      visible: "Credential card"
-      timeout: 30000
+- runFlow:
+      when:
+          platform: Android
+      commands:
+          - extendedWaitUntil:
+                visible:
+                    id: 'credential-card-.*'
+                timeout: 30000
+- runFlow:
+      when:
+          platform: iOS
+      commands:
+          - extendedWaitUntil:
+                visible: 'Credential card'
+                timeout: 30000
 - takeScreenshot: wallet-loaded

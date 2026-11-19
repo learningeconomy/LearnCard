@@ -375,9 +375,9 @@ platform :ios do
     profile_name = profile_mapping[ENV["APP_ID"]]
     UI.user_error!("No development provisioning profile for #{ENV['APP_ID']}. The smoke IPA assumes the existing match development profile.") unless profile_name
 
-    # Resolve from this Fastfile. `Dir.pwd` during the lane is the parent of
-    # `fastlane/`, so a raw relative XCODE_PROJECT opens the wrong directory.
-    xcode_project = File.expand_path(ENV.fetch("XCODE_PROJECT"), __dir__)
+    # CI supplies absolute paths because Fastlane actions change directories.
+    xcode_project = File.expand_path(ENV.fetch("XCODE_PROJECT"))
+    xcode_workspace = File.expand_path(ENV.fetch("XCODE_WORKSPACE"))
     UI.message("Smoke Xcode project: #{xcode_project}")
 
     update_code_signing_settings(
@@ -409,7 +409,7 @@ platform :ios do
 
     build_app(
       scheme: "App",
-      workspace: ENV["XCODE_WORKSPACE"],
+      workspace: xcode_workspace,
       configuration: "Debug",
       export_method: "development",
       destination: "generic/platform=iOS",
