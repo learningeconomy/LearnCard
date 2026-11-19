@@ -34,6 +34,7 @@ import {
 } from '@models';
 import {
     getContractTermsByUri,
+    getContractTermsForProfile,
     getTransactionsForTerms,
 } from '@accesslayer/consentflowcontract/relationships/read';
 import { normalContract, normalFullTerms } from './helpers/contract';
@@ -299,6 +300,96 @@ describe('Consent external grant issuance fence', () => {
             expect(after.records[0]!.get('audits')).toEqual(before.records[0]!.get('audits'));
         }
     );
+
+    // Neo4j readers take no locks. While a commit moves `status` inside the node's
+    // property chain (live -> withdrawn needs more room), a reader can see every
+    // other property and no status. A committed status-less node plus an open
+    // transaction holding the audience lock reproduces that view deterministically.
+    describe('terms read while a status change is being applied', () => {
+        const hideStatus = async (id: string): Promise<void> => {
+            await neogma.queryRunner.run(
+                'MATCH (terms:ConsentFlowTerms {id:$id}) REMOVE terms.status',
+                { id }
+            );
+        };
+
+        it('waits for the audience lock holder and returns its committed status', async () => {
+            const fixture = await setupConsent();
+            const { terms, contract } = (await getContractTermsByUri(fixture.termsUri))!;
+            const credential = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userB.learnCard.id.did(),
+                },
+                boostId: fixture.boostUri,
+            });
+            await hideStatus(terms.id);
+            const session = neogma.driver.session();
+            const withdrawal = session.beginTransaction();
+            try {
+                await withdrawal.run(
+                    `MATCH (contract:ConsentFlowContract {id:$contractId})
+                     SET contract.audienceLock = coalesce(contract.audienceLock, 0) + 1
+                     WITH contract
+                     MATCH (terms:ConsentFlowTerms {id:$termsId})
+                     SET terms.status = 'withdrawn',
+                         terms.mutationVersion = coalesce(terms.mutationVersion, 0) + 1`,
+                    { contractId: contract.id, termsId: terms.id }
+                );
+                let settled = 0;
+                const count = <T>(value: T): T => {
+                    settled += 1;
+                    return value;
+                };
+                const read = getContractTermsForProfile('userb', contract).then(
+                    value => count({ status: 'fulfilled' as const, value }),
+                    error => count({ status: 'rejected' as const, error })
+                );
+                const write = userA.clients.fullAuth.contracts
+                    .writeCredentialToContract({
+                        did: userB.learnCard.id.did(),
+                        contractUri: fixture.contractUri,
+                        boostUri: fixture.boostUri,
+                        credential,
+                        expectedExternalGrant: expectedGrant,
+                    })
+                    .then(
+                        value => count({ status: 'fulfilled' as const, value }),
+                        error => count({ status: 'rejected' as const, error })
+                    );
+                await new Promise(resolve => setTimeout(resolve, 500));
+                expect(settled).toBe(0);
+                await withdrawal.commit();
+                const readResult = await read;
+                expect(readResult.status).toBe('fulfilled');
+                if (readResult.status !== 'fulfilled') throw readResult.error;
+                expect(readResult.value?.status).toBe('withdrawn');
+                const writeResult = await write;
+                expect(writeResult.status).toBe('rejected');
+                if (writeResult.status !== 'rejected') throw new Error('Stale write delivered');
+                expect(writeResult.error).toMatchObject({ code: 'FORBIDDEN' });
+            } finally {
+                if (withdrawal.isOpen()) await withdrawal.rollback();
+                await session.close();
+            }
+            await expectNoDelivery(fixture.termsUri);
+        }, 30000);
+
+        it('still rejects stored terms whose status is really missing', async () => {
+            const fixture = await setupConsent();
+            const { terms, contract } = (await getContractTermsByUri(fixture.termsUri))!;
+            await hideStatus(terms.id);
+            await expect(getContractTermsForProfile('userb', contract)).rejects.toMatchObject({
+                name: 'ZodError',
+                issues: [expect.objectContaining({ code: 'invalid_value', path: ['status'] })],
+            });
+            await expect(writeCredential('direct', fixture, expectedGrant)).rejects.toMatchObject({
+                code: 'INTERNAL_SERVER_ERROR',
+            });
+        });
+    });
 
     describe.each(['withdraw', 'revision bump'] as const)(
         'concurrent route contention: %s',
