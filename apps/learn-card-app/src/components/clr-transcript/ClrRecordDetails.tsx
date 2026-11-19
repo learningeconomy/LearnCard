@@ -186,7 +186,7 @@ export const ClrRecordDetails = ({
         <div
             className={
                 drawer
-                    ? 'min-w-0 space-y-5'
+                    ? 'flex min-w-0 flex-col gap-5 empty:hidden'
                     : 'space-y-v3-5 rounded-2xl border border-grayscale-200 bg-white p-4 font-poppins'
             }
         >
