@@ -226,8 +226,9 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
         typeof credential?.issuer === 'string' ? credential.issuer : credential?.issuer?.id;
     const { data: knownDIDRegistry } = useKnownDIDRegistry(profileID);
 
+    // Verify the original signed payload. Display edits create a new object on each render.
     const vcVerifications = useVerification(
-        credential,
+        unwrappedCredential,
         !sharedOriginal && !isUnsignedPreview && !skipVerification
     );
     const [isFront, setIsFront] = useState(true);
