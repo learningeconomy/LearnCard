@@ -85,29 +85,31 @@ publisher; Deploy Previews may still be built by Netlify's git integration.
 ## AI Passport Backend (Fly) Deploys
 
 AI Passport backend deploys run from `.github/workflows/deploy.yml` (`deploy-ai-passport-backend`
-job). Until the cutover below, the AI-Passport repo's `deploy-fly.yml` is still the live
-deployer, so **automatic legs stay off** unless the repo variable `AIP_DEPLOY_ENABLED` is `true`.
-Manual dispatch (`deploy-ai-passport-backend`, environment `staging` or `production`) works
+job). Automatic legs run when the repo variable `AIP_DEPLOY_ENABLED` is `true`. Manual
+dispatch (`deploy-ai-passport-backend`, environment `staging` or `production`) works
 regardless. The Astro AI Passport frontend (`apps/ai-passport`) has been removed from the
 monorepo, so there is no app deploy job.
 
-| Trigger                     | Backend (Fly)                                                  |
-| --------------------------- | -------------------------------------------------------------- |
-| Push to `main`              | staging, when Nx marks `ai-passport-backend` affected          |
-| Release (`chore(release):`) | production, when `services/ai-passport-backend` version bumped |
-| Manual dispatch             | staging or production                                          |
+The Fly app `ai-passport` is retired and is no longer a production deploy target. Production
+deploys go only to `lca-backend` (`claude-ai-passport` was already retired). A release that
+still included the retired leg failed while listing that app's secrets (`unauthorized`), and
+the check reported it as missing secrets:
+https://github.com/learningeconomy/LearnCard/actions/runs/44586993630/job/135783405007
 
-Production backend fans out to the two Fly apps AI-Passport deployed: `ai-passport` and
-`lca-backend` (`claude-ai-passport` is retired and isn't deployed).
+| Trigger                     | Backend (Fly)                                                                  |
+| --------------------------- | ------------------------------------------------------------------------------ |
+| Push to `main`              | staging, when Nx marks `ai-passport-backend` affected                          |
+| Release (`chore(release):`) | production (`lca-backend`), when `services/ai-passport-backend` version bumped |
+| Manual dispatch             | staging, or production (`lca-backend` only)                                    |
 
 | Environment                          | Deploys                         |
 | ------------------------------------ | ------------------------------- |
 | `ai-passport-api-staging`            | Fly app named by `FLY_APP_NAME` |
-| `ai-passport-api-production`         | Fly app `ai-passport` (pinned)  |
 | `ai-passport-lca-backend-production` | Fly app `lca-backend` (pinned)  |
 
-None of these environments exist yet, and neither does the staging Fly app, Mongo, Redis,
-Qdrant, Bedrock role or Guardrail. Creating them is ops work; CI only deploys into them.
+The `ai-passport-api-production` GitHub Environment is no longer in the deploy matrix. Staging
+still needs the `ai-passport-api-staging` Environment, its Fly app, and the data stores /
+Bedrock role / Guardrail described below; CI only deploys into them.
 
 ### Backend environments
 
@@ -149,15 +151,11 @@ The LearnCard app picks the matching contract from its network URL
 staging app: a Fly secret with the same name takes precedence over `--env`, so the guard here would check one value while the app
 ran another. The staging role's trust policy must allow the staging Fly app's OIDC identity.
 
-### Cutover order
+Automatic production deploys from this repo run when `AIP_DEPLOY_ENABLED` is `true` (it is
+today) and ship to `lca-backend` only.
 
-1. Create the staging Fly app and its data stores, Bedrock role and Guardrail (ops).
-2. Create the three GitHub Environments above with their tokens and vars.
-3. Dry run: dispatch `deploy-ai-passport-backend` to `staging`.
-4. Disable AI-Passport's `deploy-fly.yml` (AIP is frozen at the monorepo import), then set `AIP_DEPLOY_ENABLED=true`.
-5. The next release that bumps `ai-passport-backend` deploys production from here.
-
-`fly.mcp.toml` (the MCP server) was never deployed by AI-Passport CI and isn't deployed here.
+`fly.mcp.toml` (the MCP server) is deployed by the separate `deploy-ai-passport-mcp` job,
+not this backend job.
 
 ## Environment Variables
 
