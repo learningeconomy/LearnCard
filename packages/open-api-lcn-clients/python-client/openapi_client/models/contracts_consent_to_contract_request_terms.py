@@ -21,6 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.contracts_consent_to_contract_request_terms_read import ContractsConsentToContractRequestTermsRead
 from openapi_client.models.contracts_consent_to_contract_request_terms_write import ContractsConsentToContractRequestTermsWrite
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_transactions_inner_terms_external_grant import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsExternalGrant
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -29,10 +30,11 @@ class ContractsConsentToContractRequestTerms(BaseModel):
     """
     ContractsConsentToContractRequestTerms
     """ # noqa: E501
+    external_grant: Optional[CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsExternalGrant] = Field(default=None, alias="externalGrant")
     read: Optional[ContractsConsentToContractRequestTermsRead] = None
     write: Optional[ContractsConsentToContractRequestTermsWrite] = None
     denied_writers: Optional[List[StrictStr]] = Field(default=None, alias="deniedWriters")
-    __properties: ClassVar[List[str]] = ["read", "write", "deniedWriters"]
+    __properties: ClassVar[List[str]] = ["externalGrant", "read", "write", "deniedWriters"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -72,6 +74,9 @@ class ContractsConsentToContractRequestTerms(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # override the default output from pydantic by calling `to_dict()` of external_grant
+        if self.external_grant:
+            _dict['externalGrant'] = self.external_grant.to_dict()
         # override the default output from pydantic by calling `to_dict()` of read
         if self.read:
             _dict['read'] = self.read.to_dict()
@@ -90,6 +95,7 @@ class ContractsConsentToContractRequestTerms(BaseModel):
             return cls.model_validate(obj)
 
         _values = {
+            "externalGrant": CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsExternalGrant.from_dict(obj["externalGrant"]) if obj.get("externalGrant") is not None else None,
             "read": ContractsConsentToContractRequestTermsRead.from_dict(obj["read"]) if obj.get("read") is not None else None,
             "write": ContractsConsentToContractRequestTermsWrite.from_dict(obj["write"]) if obj.get("write") is not None else None,
             "deniedWriters": obj.get("deniedWriters")

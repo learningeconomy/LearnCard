@@ -32,12 +32,23 @@ class CredentialRefreshPublishCredentialRefreshRequestOneOf1(BaseModel):
     """ # noqa: E501
     refresh_id: Annotated[str, Field(min_length=1, strict=True)] = Field(alias="refreshId")
     notify_holder: Optional[StrictBool] = Field(default=None, alias="notifyHolder")
-    update_summary: Optional[StrictStr] = Field(default=None, alias="updateSummary")
+    update_summary: Optional[Annotated[str, Field(strict=True, max_length=280)]] = Field(default=None, description="Public legacy update summary. Do not include private claims; prefer updateReason.", alias="updateSummary")
+    update_reason: Optional[StrictStr] = Field(default=None, description="Public reason for this update", alias="updateReason")
     idempotency_key: Optional[StrictStr] = Field(default=None, alias="idempotencyKey")
     mode: StrictStr
     credential: BoostSendRequestTemplateCredentialAnyOf1
     signing_authority: CredentialRefreshPublishCredentialRefreshRequestOneOf1SigningAuthority = Field(alias="signingAuthority")
-    __properties: ClassVar[List[str]] = ["refreshId", "notifyHolder", "updateSummary", "idempotencyKey", "mode", "credential", "signingAuthority"]
+    __properties: ClassVar[List[str]] = ["refreshId", "notifyHolder", "updateSummary", "updateReason", "idempotencyKey", "mode", "credential", "signingAuthority"]
+
+    @field_validator('update_reason')
+    def update_reason_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['corrected', 'updated', 'reissued']):
+            raise ValueError("must be one of enum values ('corrected', 'updated', 'reissued')")
+        return value
 
     @field_validator('mode')
     def mode_validate_enum(cls, value):
@@ -110,6 +121,7 @@ class CredentialRefreshPublishCredentialRefreshRequestOneOf1(BaseModel):
             "refreshId": obj.get("refreshId"),
             "notifyHolder": obj.get("notifyHolder"),
             "updateSummary": obj.get("updateSummary"),
+            "updateReason": obj.get("updateReason"),
             "idempotencyKey": obj.get("idempotencyKey"),
             "mode": obj.get("mode"),
             "credential": BoostSendRequestTemplateCredentialAnyOf1.from_dict(obj["credential"]) if obj.get("credential") is not None else None,

@@ -2,16 +2,18 @@
 
 ## Properties
 
-| Name                      | Type                                                                                                      | Description | Notes      |
-| ------------------------- | --------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
-| **request_id**            | **str**                                                                                                   |             | [optional] |
-| **requested_by**          | **str**                                                                                                   |             | [optional] |
-| **external_reference_id** | **str**                                                                                                   |             | [optional] |
-| **requested_at**          | **str**                                                                                                   |             | [optional] |
-| **message**               | **str**                                                                                                   |             | [optional] |
-| **profile**               | [**BoostGetBoostRecipients200ResponseInnerToAnyOf3**](BoostGetBoostRecipients200ResponseInnerToAnyOf3.md) |             |
-| **status**                | **str**                                                                                                   |             |
-| **read_status**           | **str**                                                                                                   |             | [optional] |
+| Name                      | Type                                                                                                                    | Description | Notes      |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **request_id**            | **str**                                                                                                                 |             | [optional] |
+| **requested_by**          | **str**                                                                                                                 |             | [optional] |
+| **external_reference_id** | **str**                                                                                                                 |             | [optional] |
+| **requested_at**          | **str**                                                                                                                 |             | [optional] |
+| **message**               | **str**                                                                                                                 |             | [optional] |
+| **profile**               | [**BoostGetBoostRecipients200ResponseInnerToAnyOf3**](BoostGetBoostRecipients200ResponseInnerToAnyOf3.md)               |             | [optional] |
+| **target**                | [**ContractsGetContractSentRequests200ResponseInnerTarget**](ContractsGetContractSentRequests200ResponseInnerTarget.md) |             | [optional] |
+| **expires_at**            | **str**                                                                                                                 |             | [optional] |
+| **status**                | **str**                                                                                                                 |             |
+| **read_status**           | **str**                                                                                                                 |             | [optional] |
 
 ## Example
 

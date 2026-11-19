@@ -38,9 +38,8 @@ class TestInboxClaim200Response(unittest.TestCase):
                 inbox_credential = openapi_client.models.inbox_claim_200_response_inbox_credential.inbox_claim_200_response_inboxCredential(
                     refresh = openapi_client.models.inbox_issue_200_response_refresh.inbox_issue_200_response_refresh(
                         refresh_id = '0', 
-                        refresh_service = {
-                            'key' : null
-                            }, 
+                        refresh_service = null, 
+                        refresh_service_binding = 'managed-entry', 
                         credential_id = '0', 
                         issuer_did = '0', 
                         credential_status = null, 
@@ -76,9 +75,8 @@ class TestInboxClaim200Response(unittest.TestCase):
                 inbox_credential = openapi_client.models.inbox_claim_200_response_inbox_credential.inbox_claim_200_response_inboxCredential(
                     refresh = openapi_client.models.inbox_issue_200_response_refresh.inbox_issue_200_response_refresh(
                         refresh_id = '0', 
-                        refresh_service = {
-                            'key' : null
-                            }, 
+                        refresh_service = null, 
+                        refresh_service_binding = 'managed-entry', 
                         credential_id = '0', 
                         issuer_did = '0', 
                         credential_status = null, 

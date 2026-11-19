@@ -38,7 +38,10 @@ class TestBoostGetPaginatedBoostsRequest(unittest.TestCase):
                 limit = 1.337,
                 cursor = '',
                 sort = '',
-                query = None
+                query = None,
+                exclude = openapi_client.models.boost_get_paginated_boosts_request_exclude.boost_getPaginatedBoosts_request_exclude(
+                    name = null, 
+                    category = null, )
             )
         else:
             return BoostGetPaginatedBoostsRequest(

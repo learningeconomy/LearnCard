@@ -31,11 +31,22 @@ class CredentialRefreshPublishCredentialRefreshRequestOneOf(BaseModel):
     """ # noqa: E501
     refresh_id: Annotated[str, Field(min_length=1, strict=True)] = Field(alias="refreshId")
     notify_holder: Optional[StrictBool] = Field(default=None, alias="notifyHolder")
-    update_summary: Optional[StrictStr] = Field(default=None, alias="updateSummary")
+    update_summary: Optional[Annotated[str, Field(strict=True, max_length=280)]] = Field(default=None, description="Public legacy update summary. Do not include private claims; prefer updateReason.", alias="updateSummary")
+    update_reason: Optional[StrictStr] = Field(default=None, description="Public reason for this update", alias="updateReason")
     idempotency_key: Optional[StrictStr] = Field(default=None, alias="idempotencyKey")
     mode: StrictStr
     signed_credential: BoostSendRequestTemplateCredentialAnyOf = Field(alias="signedCredential")
-    __properties: ClassVar[List[str]] = ["refreshId", "notifyHolder", "updateSummary", "idempotencyKey", "mode", "signedCredential"]
+    __properties: ClassVar[List[str]] = ["refreshId", "notifyHolder", "updateSummary", "updateReason", "idempotencyKey", "mode", "signedCredential"]
+
+    @field_validator('update_reason')
+    def update_reason_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['corrected', 'updated', 'reissued']):
+            raise ValueError("must be one of enum values ('corrected', 'updated', 'reissued')")
+        return value
 
     @field_validator('mode')
     def mode_validate_enum(cls, value):
@@ -105,6 +116,7 @@ class CredentialRefreshPublishCredentialRefreshRequestOneOf(BaseModel):
             "refreshId": obj.get("refreshId"),
             "notifyHolder": obj.get("notifyHolder"),
             "updateSummary": obj.get("updateSummary"),
+            "updateReason": obj.get("updateReason"),
             "idempotencyKey": obj.get("idempotencyKey"),
             "mode": obj.get("mode"),
             "signedCredential": BoostSendRequestTemplateCredentialAnyOf.from_dict(obj["signedCredential"]) if obj.get("signedCredential") is not None else None

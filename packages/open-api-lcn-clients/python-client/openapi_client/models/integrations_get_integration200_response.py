@@ -17,7 +17,7 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.integrations_add_integration_request_whitelisted_domains_inner import IntegrationsAddIntegrationRequestWhitelistedDomainsInner
 from typing import Optional, Set
@@ -33,13 +33,16 @@ class IntegrationsGetIntegration200Response(BaseModel):
     description: Optional[StrictStr] = None
     publishable_key: StrictStr = Field(alias="publishableKey")
     whitelisted_domains: List[IntegrationsAddIntegrationRequestWhitelistedDomainsInner] = Field(alias="whitelistedDomains")
+    webhook_url: Optional[StrictStr] = Field(default=None, alias="webhookUrl")
+    has_webhook_secret: Optional[StrictBool] = Field(default=None, alias="hasWebhookSecret")
+    contract_events_enabled_at: Optional[StrictStr] = Field(default=None, alias="contractEventsEnabledAt")
     status: StrictStr
     guide_type: Optional[StrictStr] = Field(default=None, alias="guideType")
     guide_state: Optional[Dict[str, Any]] = Field(default=None, alias="guideState")
     created_at: Optional[StrictStr] = Field(default=None, alias="createdAt")
     updated_at: Optional[StrictStr] = Field(default=None, alias="updatedAt")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["id", "name", "description", "publishableKey", "whitelistedDomains", "status", "guideType", "guideState", "createdAt", "updatedAt"]
+    __properties: ClassVar[List[str]] = ["id", "name", "description", "publishableKey", "whitelistedDomains", "webhookUrl", "hasWebhookSecret", "contractEventsEnabledAt", "status", "guideType", "guideState", "createdAt", "updatedAt"]
 
     @field_validator('status')
     def status_validate_enum(cls, value):
@@ -116,6 +119,9 @@ class IntegrationsGetIntegration200Response(BaseModel):
             "description": obj.get("description"),
             "publishableKey": obj.get("publishableKey"),
             "whitelistedDomains": [IntegrationsAddIntegrationRequestWhitelistedDomainsInner.from_dict(_item) for _item in obj["whitelistedDomains"]] if obj.get("whitelistedDomains") is not None else None,
+            "webhookUrl": obj.get("webhookUrl"),
+            "hasWebhookSecret": obj.get("hasWebhookSecret"),
+            "contractEventsEnabledAt": obj.get("contractEventsEnabledAt"),
             "status": obj.get("status") if obj.get("status") is not None else 'setup',
             "guideType": obj.get("guideType"),
             "guideState": obj.get("guideState"),

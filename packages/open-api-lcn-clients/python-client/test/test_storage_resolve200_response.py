@@ -108,6 +108,11 @@ class TestStorageResolve200Response(unittest.TestCase):
                     personal = {
                         'key' : True
                         }, ),
+                external_grant = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_terms_external_grant.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_terms_externalGrant(
+                    issuer = 'k0', 
+                    ref = 'k0', 
+                    revision = 0, 
+                    hash = 'k0', ),
                 denied_writers = [
                     ''
                     ]
