@@ -1537,6 +1537,26 @@ const AuthSessionManager: React.FC<{
         ]
     );
 
+    // LC-2409: after a sign-in email change, also publish the refreshed user to the app's
+    // auth-user store (the coordinator's `ready.authUser` is updated by the coordinator).
+    const coordinatorRefreshAccountContact = coordinator.refreshAccountContact;
+    const refreshAccountContact = useCallback<AppAuthContextValue['refreshAccountContact']>(
+        async params => {
+            const result = await coordinatorRefreshAccountContact(params);
+            if (result === 'ok' && authProvider) {
+                try {
+                    const freshUser = await authProvider.getCurrentUser();
+                    if (freshUser) authUserStore.set.setUser(freshUser);
+                } catch {
+                    // The coordinator already holds the refreshed user; the store catches up
+                    // on the next auth-state event.
+                }
+            }
+            return result;
+        },
+        [coordinatorRefreshAccountContact, authProvider]
+    );
+
     const providerOverlayOpen = isProviderOverlayOpen({
         recoverySetup: showRecoverySetup,
         secureAccount: secureAccountOpen,
@@ -1577,6 +1597,10 @@ const AuthSessionManager: React.FC<{
             setEscrowPin,
             clearEscrowPin,
 
+            // LC-2409 sign-in email: `confirmEscrowPin`, `resealEscrowContact`,
+            // `rememberConfirmedContact` and `getConfirmedContact` come from the coordinator.
+            refreshAccountContact,
+
             // Provider-agnostic auth provider (consumers should use this
             // instead of importing Firebase directly)
             authProvider: authProvider,
@@ -1599,6 +1623,7 @@ const AuthSessionManager: React.FC<{
             openSecureAccount,
             setEscrowPin,
             clearEscrowPin,
+            refreshAccountContact,
             authProvider,
         ]
     );

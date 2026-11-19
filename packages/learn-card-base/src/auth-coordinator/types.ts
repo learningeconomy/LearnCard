@@ -256,6 +256,14 @@ export interface AuthCoordinatorConfig {
     pinChangeGuardStorage?: PinChangeGuardStorage | null;
 
     /**
+     * Optional (LC-2409): where the device-confirmed sign-in address is kept per DID
+     * (`lc.confirmedContact.<did>`): an address the user typed or proved on this device,
+     * which `confirmEscrowPin` / `resealEscrowContact` require before sealing it into
+     * escrow. Defaults to `localStorage` when available; `null` keeps it in memory only.
+     */
+    confirmedContactStorage?: PinChangeGuardStorage | null;
+
+    /**
      * Optional: wipe any pending escrow recovery request from the storage the
      * app actually uses for device secrets. Called by `forgetDevice()`. When
      * omitted the coordinator clears the web (IndexedDB / sessionStorage) copy.

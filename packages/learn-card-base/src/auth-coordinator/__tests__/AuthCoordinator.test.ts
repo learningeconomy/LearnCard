@@ -5197,3 +5197,320 @@ describe('AuthCoordinator', () => {
         });
     });
 });
+
+// ---------------------------------------------------------------------------
+// LC-2409: the personal email becomes the sign-in email and the escrow contact
+// ---------------------------------------------------------------------------
+
+describe('AuthCoordinator LC-2409 escrow contact', () => {
+    const personalUser: AuthUser = { ...mockUser, email: 'personal@example.com' };
+
+    const ready = async (options: SetupOptions = {}) => {
+        const result = setup({
+            ...options,
+            config: { signDidAuthVp: vi.fn(), confirmedContactStorage: null, ...options.config },
+        });
+        await result.coordinator.initialize();
+        expect(result.coordinator.getState().status).toBe('ready');
+        return result;
+    };
+
+    describe('refreshAccountContact()', () => {
+        it('reauths with the custom token before any escrow call, clears escrowNoContactAccount and escrowEnrollment, awaits refreshEscrow, and the next enroll seals the new email', async () => {
+            const order: string[] = [];
+            let finishEnroll!: () => void;
+            const ensureEscrowEnrollment = vi
+                .fn()
+                .mockImplementationOnce(async () => {
+                    order.push('enroll:none');
+                    return { enrolled: false, reason: 'no-contact' };
+                })
+                .mockImplementation(async (params: { options?: { recoveryEmail?: string } }) => {
+                    order.push(`enroll:${params.options?.recoveryEmail}`);
+                    await new Promise<void>(resolve => {
+                        finishEnroll = resolve;
+                    });
+                    return { enrolled: true, changed: true, shareVersion: 2 };
+                });
+            const getEscrowEnrollmentState = vi.fn().mockResolvedValue({ state: 'not-enrolled' });
+            const reauthenticateWithToken = vi.fn(async () => {
+                order.push('reauth');
+                return personalUser;
+            });
+            const placeholder = { ...mockUser, email: undefined };
+            const { coordinator, stateChanges } = await ready({
+                authProvider: {
+                    getCurrentUser: vi.fn().mockResolvedValue(placeholder),
+                    reauthenticateWithToken,
+                },
+                keyDerivation: { ensureEscrowEnrollment, getEscrowEnrollmentState },
+            });
+            await vi.waitFor(() =>
+                expect(coordinator.getState()).toMatchObject({ escrowEnrollment: 'not-enrolled' })
+            );
+            // The no-contact result is cached: a plain refresh does not enroll again.
+            await (
+                coordinator as unknown as { refreshEscrow: (s: unknown) => Promise<void> }
+            ).refreshEscrow(coordinator.getState());
+            expect(ensureEscrowEnrollment).toHaveBeenCalledTimes(1);
+
+            let settled = false;
+            const refreshing = coordinator
+                .refreshAccountContact({
+                    expectedEmail: ' Personal@Example.com ',
+                    customToken: 'custom-token-T',
+                    primaryUid: 'user-1',
+                })
+                .then(result => {
+                    settled = true;
+                    return result;
+                });
+            await vi.waitFor(() => expect(ensureEscrowEnrollment).toHaveBeenCalledTimes(2));
+            // Still waiting on the escrow refresh.
+            await new Promise(resolve => setTimeout(resolve, 10));
+            expect(settled).toBe(false);
+            finishEnroll();
+            await expect(refreshing).resolves.toBe('ok');
+
+            expect(reauthenticateWithToken).toHaveBeenCalledWith('custom-token-T');
+            expect(order).toEqual(['enroll:none', 'reauth', 'enroll:personal@example.com']);
+            const published = stateChanges.find(
+                state =>
+                    state.status === 'ready' && state.authUser?.email === 'personal@example.com'
+            );
+            expect(published).toBeDefined();
+            expect(published).not.toHaveProperty('escrowEnrollment', 'not-enrolled');
+            expect(coordinator.getState()).toMatchObject({
+                status: 'ready',
+                authSessionValid: true,
+                authUser: personalUser,
+            });
+        });
+
+        it('mismatch leaves state unchanged', async () => {
+            const reauthenticateWithToken = vi.fn().mockResolvedValue({
+                ...mockUser,
+                email: 'someone-else@example.com',
+            });
+            const ensureEscrowEnrollment = vi
+                .fn()
+                .mockResolvedValue({ enrolled: true, changed: false });
+            const { coordinator } = await ready({
+                authProvider: { reauthenticateWithToken },
+                keyDerivation: { ensureEscrowEnrollment },
+            });
+            await vi.waitFor(() => expect(ensureEscrowEnrollment).toHaveBeenCalledTimes(1));
+            const before = coordinator.getState();
+            await expect(
+                coordinator.refreshAccountContact({
+                    expectedEmail: 'personal@example.com',
+                    customToken: 'custom-token-T',
+                })
+            ).resolves.toBe('mismatch');
+            expect(coordinator.getState()).toBe(before);
+            expect(ensureEscrowEnrollment).toHaveBeenCalledTimes(1);
+
+            // Another user behind the session is a mismatch too.
+            reauthenticateWithToken.mockResolvedValue({ ...personalUser, id: 'user-2' });
+            await expect(
+                coordinator.refreshAccountContact({
+                    expectedEmail: 'personal@example.com',
+                    customToken: 'custom-token-T',
+                })
+            ).resolves.toBe('mismatch');
+            expect(coordinator.getState()).toBe(before);
+        });
+
+        it('other-uid skips reauth', async () => {
+            const reauthenticateWithToken = vi.fn().mockResolvedValue(personalUser);
+            const { coordinator, authProvider } = await ready({
+                authProvider: { reauthenticateWithToken },
+            });
+            const before = coordinator.getState();
+            vi.mocked(authProvider.getCurrentUser).mockClear();
+            await expect(
+                coordinator.refreshAccountContact({
+                    expectedEmail: 'personal@example.com',
+                    customToken: 'custom-token-T',
+                    primaryUid: 'user-T',
+                })
+            ).resolves.toBe('other-uid');
+            expect(reauthenticateWithToken).not.toHaveBeenCalled();
+            expect(authProvider.getCurrentUser).not.toHaveBeenCalled();
+            expect(coordinator.getState()).toBe(before);
+        });
+
+        it('without a custom token reads the current user', async () => {
+            const { coordinator, authProvider } = await ready();
+            vi.mocked(authProvider.getCurrentUser).mockResolvedValue(personalUser);
+            await expect(
+                coordinator.refreshAccountContact({ expectedEmail: 'personal@example.com' })
+            ).resolves.toBe('ok');
+            expect(coordinator.getState()).toMatchObject({ authUser: personalUser });
+        });
+    });
+
+    describe('confirmEscrowPin() / resealEscrowContact()', () => {
+        const strategy = () => ({
+            confirmEscrowPin: vi.fn().mockResolvedValue(undefined),
+            resealEscrowContact: vi.fn().mockResolvedValue(undefined),
+        });
+
+        it('confirmEscrowPin sends the PIN to the strategy confirm (replace + keep, no new PIN) with the session email', async () => {
+            const methods = strategy();
+            const setEscrowPin = vi.fn();
+            const { coordinator } = await ready({
+                authProvider: { getCurrentUser: vi.fn().mockResolvedValue(personalUser) },
+                keyDerivation: { ...methods, setEscrowPin },
+                config: { getRecoveryLanguage: () => 'en' },
+            });
+            coordinator.rememberConfirmedContact('Personal@Example.com');
+            await coordinator.confirmEscrowPin({ pin: '593827', primaryUid: 'user-1' });
+            expect(methods.confirmEscrowPin).toHaveBeenCalledTimes(1);
+            expect(methods.confirmEscrowPin).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    pin: '593827',
+                    privateKey: 'reconstructed-private-key',
+                    options: { recoveryEmail: 'personal@example.com', recoveryLanguage: 'en' },
+                })
+            );
+            expect(methods.confirmEscrowPin.mock.calls[0]![0]).not.toHaveProperty('pinSalt');
+            expect(setEscrowPin).not.toHaveBeenCalled();
+        });
+
+        it('confirm refuses an address not confirmed on this device', async () => {
+            const methods = strategy();
+            const { coordinator } = await ready({
+                authProvider: { getCurrentUser: vi.fn().mockResolvedValue(personalUser) },
+                keyDerivation: methods,
+            });
+            // Nothing stored: the user must re-type.
+            await expect(
+                coordinator.confirmEscrowPin({ pin: '593827', primaryUid: 'user-1' })
+            ).rejects.toMatchObject({
+                name: 'EscrowContactNotConfirmedError',
+                reason: 'unconfirmed',
+            });
+            // A different stored address (e.g. lca-api changed the email) is refused too.
+            coordinator.rememberConfirmedContact('school@district.edu');
+            await expect(
+                coordinator.confirmEscrowPin({ pin: '593827', primaryUid: 'user-1' })
+            ).rejects.toMatchObject({ reason: 'unconfirmed' });
+            await expect(
+                coordinator.resealEscrowContact({ primaryUid: 'user-1' })
+            ).rejects.toMatchObject({ reason: 'unconfirmed' });
+            // A re-typed address that differs is refused.
+            await expect(
+                coordinator.confirmEscrowPin({
+                    pin: '593827',
+                    primaryUid: 'user-1',
+                    retypedEmail: 'other@example.com',
+                })
+            ).rejects.toMatchObject({ reason: 'unconfirmed' });
+            expect(methods.confirmEscrowPin).not.toHaveBeenCalled();
+            expect(methods.resealEscrowContact).not.toHaveBeenCalled();
+            // Re-typing the session's address confirms it, and it is remembered.
+            await coordinator.confirmEscrowPin({
+                pin: '593827',
+                primaryUid: 'user-1',
+                retypedEmail: ' PERSONAL@example.com',
+            });
+            expect(coordinator.getConfirmedContact()).toBe('personal@example.com');
+            await coordinator.confirmEscrowPin({ pin: '593827', primaryUid: 'user-1' });
+            expect(methods.confirmEscrowPin).toHaveBeenCalledTimes(2);
+        });
+
+        it('confirm refuses on a non-T session', async () => {
+            const methods = strategy();
+            const { coordinator } = await ready({
+                authProvider: { getCurrentUser: vi.fn().mockResolvedValue(personalUser) },
+                keyDerivation: methods,
+            });
+            coordinator.rememberConfirmedContact('personal@example.com');
+            await expect(
+                coordinator.confirmEscrowPin({ pin: '593827', primaryUid: 'user-T' })
+            ).rejects.toMatchObject({
+                name: 'EscrowContactNotConfirmedError',
+                reason: 'other-uid',
+            });
+            await expect(
+                coordinator.resealEscrowContact({ primaryUid: 'user-T' })
+            ).rejects.toMatchObject({ reason: 'other-uid' });
+            expect(methods.confirmEscrowPin).not.toHaveBeenCalled();
+            expect(methods.resealEscrowContact).not.toHaveBeenCalled();
+        });
+
+        it('a required PIN change throws PinChangeRequiredError before the strategy runs', async () => {
+            const methods = strategy();
+            const { coordinator } = await ready({
+                authProvider: { getCurrentUser: vi.fn().mockResolvedValue(personalUser) },
+                keyDerivation: methods,
+            });
+            coordinator.rememberConfirmedContact('personal@example.com');
+            await expect(
+                coordinator.confirmEscrowPin({
+                    pin: '593827',
+                    primaryUid: 'user-1',
+                    pinChangeRequired: true,
+                })
+            ).rejects.toMatchObject({ name: 'PinChangeRequiredError' });
+            expect(methods.confirmEscrowPin).not.toHaveBeenCalled();
+        });
+
+        it('a pending "choose a new PIN" (escrowPinChangeRequired) throws PinChangeRequiredError', async () => {
+            const methods = strategy();
+            const getEscrowEnrollmentState = vi.fn().mockResolvedValue({
+                state: 'enrolled',
+                escrowPin: {
+                    state: 'enabled',
+                    enabled: true,
+                    attemptsRemaining: 8,
+                    wrongAttempts: 2,
+                },
+            });
+            const { coordinator } = await ready({
+                authProvider: { getCurrentUser: vi.fn().mockResolvedValue(personalUser) },
+                keyDerivation: { ...methods, getEscrowEnrollmentState },
+            });
+            await vi.waitFor(() =>
+                expect(coordinator.getState()).toMatchObject({ escrowPinChangeRequired: true })
+            );
+            coordinator.rememberConfirmedContact('personal@example.com');
+            await expect(
+                coordinator.confirmEscrowPin({ pin: '593827', primaryUid: 'user-1' })
+            ).rejects.toMatchObject({ name: 'PinChangeRequiredError' });
+            expect(methods.confirmEscrowPin).not.toHaveBeenCalled();
+        });
+
+        it('resealEscrowContact calls the strategy re-seal with no PIN', async () => {
+            const methods = strategy();
+            const { coordinator } = await ready({
+                authProvider: { getCurrentUser: vi.fn().mockResolvedValue(personalUser) },
+                keyDerivation: methods,
+            });
+            coordinator.rememberConfirmedContact('personal@example.com');
+            await coordinator.resealEscrowContact({ primaryUid: 'user-1' });
+            expect(methods.resealEscrowContact).toHaveBeenCalledTimes(1);
+            const call = methods.resealEscrowContact.mock.calls[0]![0];
+            expect(call).not.toHaveProperty('pin');
+            expect(call.options).toMatchObject({ recoveryEmail: 'personal@example.com' });
+        });
+
+        it('keeps the confirmed address per DID in storage, and forgetDevice drops it', async () => {
+            const backing = new Map<string, string>();
+            const confirmedContactStorage = {
+                getItem: (key: string) => backing.get(key) ?? null,
+                setItem: (key: string, value: string) => void backing.set(key, value),
+                removeItem: (key: string) => void backing.delete(key),
+            };
+            const first = await ready({ config: { confirmedContactStorage } });
+            first.coordinator.rememberConfirmedContact('Personal@Example.com');
+            expect(backing.get('lc.confirmedContact.did:key:z123')).toBe('personal@example.com');
+            // A new coordinator (app restart) reads it back.
+            const second = await ready({ config: { confirmedContactStorage } });
+            expect(second.coordinator.getConfirmedContact()).toBe('personal@example.com');
+            await second.coordinator.forgetDevice();
+            expect(backing.has('lc.confirmedContact.did:key:z123')).toBe(false);
+        });
+    });
+});
