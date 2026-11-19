@@ -526,10 +526,10 @@ describe('ClassLink personal email', () => {
             vi.mocked(updateClassLinkIdentity).mockRejectedValueOnce(new Error('injected'));
             await expect(verify(email)).rejects.toThrow();
             expect(await caller().getPersonalEmail()).toEqual({ verified: false });
-            // Firebase already changed, so the retry has no session to revoke and no token.
-            const { customToken, ...rest } = promoted;
-            expect(customToken).toBeDefined();
-            expect(await verify(email)).toEqual(rest);
+            // The first attempt changed T's email (revoking its sessions) and then failed: the
+            // retry still returns T's token so this device can sign back in.
+            expect(firebaseEmail()).toBe(email);
+            expect(await verify(email)).toEqual(promoted);
             expect(await caller().getPersonalEmail()).toEqual({ email, verified: true });
             expect((await identity())?.primaryEmail).toMatchObject({
                 state: 'active',
@@ -598,6 +598,23 @@ describe('ClassLink personal email', () => {
             expect(firebaseEmail()).toBe(school);
             expect((await identity())?.primaryEmail).toBeUndefined();
             expect(await caller().getPersonalEmail()).toEqual({ email, verified: true });
+            // The account already signs in with it: continuity does not ask for the email again.
+            await mongodb.collection('userkeys').updateOne(
+                { primaryDid: did },
+                {
+                    $set: {
+                        recoveryMethods: [
+                            { type: 'passkey', createdAt: new Date(), confirmedAt: new Date() },
+                        ],
+                    },
+                }
+            );
+            expect(await caller().getAccountContinuity()).toMatchObject({
+                emailPrimary: false,
+                signInEmailSource: 'account',
+                primaryUid: 'uid-test',
+                nextStep: 'done',
+            });
         });
 
         it('stray empty Firebase user is reclaimed; a user with a UserKey is not', async () => {
@@ -716,6 +733,81 @@ describe('ClassLink personal email', () => {
                 email: 'second@example.com',
                 prevFirebaseEmail: school,
                 prevContactMethod: { type: 'email', value: school },
+            });
+        });
+
+        it('an address change interrupted before the Firebase write converges on retry', async () => {
+            await verify('first@example.com');
+            vi.spyOn(e2eAdminAuth.auth, 'updateUser').mockRejectedValueOnce(
+                Object.assign(new Error('unavailable'), { code: 'auth/internal-error' })
+            );
+            await expect(verify('second@example.com')).rejects.toThrow();
+            expect(firebaseEmail()).toBe('first@example.com');
+            expect((await identity())?.primaryEmail).toMatchObject({
+                state: 'pending',
+                email: 'second@example.com',
+                replacedEmail: 'first@example.com',
+                prevFirebaseEmail: school,
+            });
+            // The retry still promotes (T holds the replaced address) and returns T's token.
+            expect(await verify('second@example.com')).toEqual(promoted);
+            expect(firebaseEmail()).toBe('second@example.com');
+            expect((await userKey())?.contactMethod).toEqual({
+                type: 'email',
+                value: 'second@example.com',
+            });
+            const stored = (await identity())?.primaryEmail;
+            expect(stored).toMatchObject({
+                state: 'active',
+                email: 'second@example.com',
+                prevFirebaseEmail: school,
+                prevContactMethod: { type: 'email', value: school },
+            });
+            expect(stored?.replacedEmail).toBeUndefined();
+        });
+
+        it('an interrupted address change left for the reconcile is demoted fully', async () => {
+            await verify('first@example.com');
+            vi.spyOn(e2eAdminAuth.auth, 'updateUser').mockRejectedValueOnce(
+                Object.assign(new Error('unavailable'), { code: 'auth/internal-error' })
+            );
+            await expect(verify('second@example.com')).rejects.toThrow();
+            await getClassLinkIdentitiesCollection().updateOne(
+                { firebaseUid: 'uid-test' },
+                { $set: { 'primaryEmail.at': new Date(Date.now() - 11 * 60 * 1000) } }
+            );
+            await caller().getAccountContinuity();
+            // T and the contact no longer keep the replaced personal address.
+            expect(firebaseEmail()).toBe(school);
+            expect((await userKey())?.contactMethod).toEqual({ type: 'email', value: school });
+            expect((await identity())?.primaryEmail).toBeUndefined();
+        });
+
+        it('a contact CAS failure while changing the address restores the previous one', async () => {
+            await verify('first@example.com');
+            const original = e2eAdminAuth.auth.updateUser;
+            vi.spyOn(e2eAdminAuth.auth, 'updateUser').mockImplementationOnce(async (...args) => {
+                await mongodb
+                    .collection('userkeys')
+                    .updateOne(
+                        { primaryDid: did },
+                        { $set: { contactMethod: { type: 'email', value: 'moved@example.org' } } }
+                    );
+                return original(...args);
+            });
+            expect(await errorOf(verify('second@example.com'))).toMatchObject({
+                code: 'CONFLICT',
+            });
+            expect(firebaseEmail()).toBe('first@example.com');
+            expect(await findAuthSubjectByIdentityKey('email:second@example.com')).toBeNull();
+            expect((await identity())?.primaryEmail).toMatchObject({
+                state: 'active',
+                email: 'first@example.com',
+                prevFirebaseEmail: school,
+            });
+            expect(await caller().getPersonalEmail()).toEqual({
+                email: 'first@example.com',
+                verified: true,
             });
         });
 
@@ -861,6 +953,7 @@ describe('ClassLink personal email', () => {
                 personalEmail: { allowed: true },
                 emailVerified: false,
                 emailPrimary: false,
+                primaryUid: 'uid-test',
                 hasSchoolEmail: false,
                 contactStale: false,
                 canRemove: false,
@@ -1046,6 +1139,8 @@ describe('ClassLink personal email', () => {
                 emailPrimary: false,
                 contactStale: true,
                 nextStep: 'confirmPin',
+                // The client's same-session gate needs T even without a promotion.
+                primaryUid: 'uid-test',
             });
         });
 

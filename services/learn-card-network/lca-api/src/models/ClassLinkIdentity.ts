@@ -53,6 +53,12 @@ export interface ClassLinkPrimaryEmail {
     prevFirebaseEmail: string | null;
     /** The account's contact method before the promotion. */
     prevContactMethod?: { type: 'email' | 'phone'; value: string };
+    /**
+     * While `pending`: an earlier promoted address this change replaces, which T's Firebase
+     * email and the contact may still hold if the change stopped before its Firebase write.
+     * Treated like `email` by plan and demote; dropped once the change is `active`.
+     */
+    replacedEmail?: string;
     state: 'pending' | 'active';
     at: Date;
 }

@@ -151,6 +151,12 @@ const PENDING_PROMOTION_MAX_AGE_MS = 10 * 60 * 1000;
 const normalize = (email: string | null | undefined): string | undefined =>
     email?.trim().toLowerCase() || undefined;
 
+/** The record without `replacedEmail` (only meaningful while `pending`). */
+const omitReplacedEmail = ({
+    replacedEmail: _replaced,
+    ...rest
+}: ClassLinkPrimaryEmail): ClassLinkPrimaryEmail => rest;
+
 /** The promotion replaced a placeholder (synthetic or absent) contact. */
 const replacedPlaceholder = (record: ClassLinkPrimaryEmail): boolean =>
     !record.prevContactMethod ||
@@ -230,6 +236,24 @@ const assertEmailAvailable = async (email: string, subject: string): Promise<voi
 };
 
 /**
+ * Whether the account already signs in with `email` on another of its Firebase logins (verify's
+ * `own-email` outcome for an address held by another uid of the same account).
+ */
+const isSignInEmailOfAccount = async (
+    auth: NonNullable<ReturnType<typeof getAdminAuth>>,
+    userKey: MongoUserKeyType,
+    email: string
+): Promise<boolean> => {
+    const holder = await auth.getUserByEmail(normalize(email) as string).catch(() => undefined);
+    return Boolean(
+        holder &&
+        (userKey.authProviders ?? []).some(
+            provider => provider.type === 'firebase' && provider.id === holder.uid
+        )
+    );
+};
+
+/**
  * Best-effort reconcile, under the lock: demote a promotion recorded as `demotePending`
  * (a rebind, revoke or the login orphan guard could not demote it) or left `pending` for over
  * 10 minutes (an interrupted verify). Returns whether it changed anything. Never throws.
@@ -278,10 +302,11 @@ export const personalEmailProcedures = {
      * the tenant ID, the policy or the date of birth.
      *
      * - `emailPrimary`: the verified personal email is T's Firebase email (the sign-in email);
-     *   `primaryUid` is T, for the client's same-session check. A promotion whose Firebase
-     *   email drifted reports false (the user re-verifies).
+     *   `primaryUid` is T, for the client's same-session check (always returned). A promotion
+     *   whose Firebase email drifted reports false (the user re-verifies).
      * - `signInEmailSource`: `personal` (promoted) or `account` (T already signs in with its
-     *   own real, non-school email; verify only links an alias).
+     *   own real, non-school email, or the verified address is the Firebase email of another
+     *   login of the account; verify only links an alias).
      * - `hasSchoolEmail`: the school email still signs in (trusted domain, `email:` subject,
      *   ClassLink sign-in within the district's idle limit).
      * - `contactStale` (remote escrow only): the sealed escrow contact is not the sign-in email.
@@ -349,7 +374,15 @@ export const personalEmailProcedures = {
             }
             const signInEmailSource = emailPrimary
                 ? ('personal' as const)
-                : !record && expected && expected !== normalize(identity.email)
+                : !record &&
+                    ((expected && expected !== normalize(identity.email)) ||
+                        (emailVerified &&
+                            auth &&
+                            (await isSignInEmailOfAccount(
+                                auth,
+                                userKey,
+                                identity.personalEmail as string
+                            ))))
                   ? ('account' as const)
                   : undefined;
             const hasUserRecoveryMethod = confirmed.some(method => method.type !== 'escrow');
@@ -383,7 +416,10 @@ export const personalEmailProcedures = {
                     ? { maskedEmail: maskEmail(identity.personalEmail) }
                     : {}),
                 emailPrimary,
-                ...(signInEmailSource ? { primaryUid: uid, signInEmailSource } : {}),
+                // Always: the client's same-session gate for `confirmPin` needs it, including
+                // when the digest is stale without a promotion (e.g. after removal).
+                primaryUid: uid,
+                ...(signInEmailSource ? { signInEmailSource } : {}),
                 hasSchoolEmail: await hasLiveSchoolEmailAlias(identity),
                 contactStale,
                 canRemove: Boolean(identity.personalEmail) && !placeholderEscrow,
@@ -554,18 +590,39 @@ export const personalEmailProcedures = {
                             value: email,
                         }));
                     if (!moved) {
-                        // Put Firebase back, then drop the reservation and the marker.
-                        const pending = await findClassLinkIdentityByIdentityKey(
-                            identity.identityKey
-                        );
-                        if (pending)
-                            await demotePersonalEmail({
-                                auth,
-                                identity: pending,
-                                userKey,
-                                reason: 'verify_rollback',
-                                lock,
-                            });
+                        const { previous } = promoted;
+                        if (
+                            previous?.state === 'active' &&
+                            previous.uid === plan.uid &&
+                            previous.email !== email
+                        ) {
+                            // Changing an active address: put T back on the previous address
+                            // and restore its record, rather than demoting the account.
+                            await lock.assertHeld();
+                            if (normalize((await auth.getUser(plan.uid)).email) === email)
+                                await auth.updateUser(plan.uid, {
+                                    email: previous.email,
+                                    emailVerified: true,
+                                });
+                            await rollbackPrimaryEmailRecord(
+                                identity.identityKey,
+                                record,
+                                previous
+                            );
+                        } else {
+                            // Put Firebase back, then drop the reservation and the marker.
+                            const pending = await findClassLinkIdentityByIdentityKey(
+                                identity.identityKey
+                            );
+                            if (pending)
+                                await demotePersonalEmail({
+                                    auth,
+                                    identity: pending,
+                                    userKey,
+                                    reason: 'verify_rollback',
+                                    lock,
+                                });
+                        }
                         await releaseReservation();
                         conflict();
                     }
@@ -574,7 +631,13 @@ export const personalEmailProcedures = {
                             userKey._id,
                             userKey.recoveryEmail as string
                         );
-                    if (promoted.firebaseChanged)
+                    // An earlier attempt for this address may have changed T's email (revoking
+                    // its sessions) and then failed: its retry still needs the token.
+                    const retried =
+                        identity.primaryEmail?.state === 'pending' &&
+                        identity.primaryEmail.uid === plan.uid &&
+                        normalize(identity.primaryEmail.email) === email;
+                    if (promoted.firebaseChanged || retried)
                         customToken = await auth.createCustomToken(plan.uid);
                 }
 
@@ -601,7 +664,14 @@ export const personalEmailProcedures = {
                 await updateClassLinkIdentity(identity.identityKey, {
                     personalEmail: email,
                     personalEmailVerifiedAt: new Date(),
-                    ...(record ? { primaryEmail: { ...record, state: 'active' as const } } : {}),
+                    ...(record
+                        ? {
+                              primaryEmail: {
+                                  ...omitReplacedEmail(record),
+                                  state: 'active' as const,
+                              },
+                          }
+                        : {}),
                 });
                 const audit = { tenantId: continuity.tenantId, policyHash: continuity.policyHash };
                 logAccountContinuityEvent('verified', audit);

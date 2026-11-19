@@ -45,9 +45,15 @@ export type ClassLinkAccountContinuity = {
     maskedEmail?: string;
     /** The verified personal email is the account's sign-in email (T's Firebase email). */
     emailPrimary: boolean;
-    /** T, the uid that signs in with the sign-in email; compare with the session uid. */
+    /**
+     * T, the ClassLink identity's uid (the one that signs in with the sign-in email); compare
+     * with the session uid. Always returned by current servers.
+     */
     primaryUid?: string;
-    /** `personal`: promoted; `account`: T already signs in with its own real email. */
+    /**
+     * `personal`: promoted; `account`: T already signs in with its own real email, or the
+     * verified address is the email of another login of the same account.
+     */
     signInEmailSource?: 'personal' | 'account';
     /** The school email still signs in (trusted domain, linked, not idle). */
     hasSchoolEmail: boolean;

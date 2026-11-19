@@ -293,6 +293,7 @@ export const planPrimaryEmail = async ({
         isSyntheticEmail(current) ||
         current === normalize(identity.email) ||
         current === normalize(identity.primaryEmail?.email) ||
+        current === normalize(identity.primaryEmail?.replacedEmail) ||
         current === email;
     if (!replaceable) return { kind: 'own-email' };
 
@@ -343,6 +344,15 @@ export const promotePersonalEmail = async ({
         await demotePersonalEmail({ auth, identity, reason: 'uid_changed', lock });
         previous = undefined;
     }
+    // Changing the address: remember the promoted address T may still hold (the one it holds
+    // now, else the earlier record's), so an interrupted change converges or is demoted.
+    const current = normalize(plan.prevFirebaseEmail);
+    const earlier = previous
+        ? [previous.email, previous.replacedEmail].filter(
+              (value): value is string => Boolean(value) && value !== plan.email
+          )
+        : [];
+    const replacedEmail = current && earlier.includes(current) ? current : earlier[0];
     const record: ClassLinkPrimaryEmail = {
         email: plan.email,
         uid: plan.uid,
@@ -354,6 +364,7 @@ export const promotePersonalEmail = async ({
                       : plan.prevContactMethod) as ContactMethod,
               }
             : {}),
+        ...(replacedEmail ? { replacedEmail } : {}),
         state: 'pending',
         at: new Date(),
     };
@@ -470,8 +481,12 @@ export const demotePersonalEmail = async ({
         });
     }
     let firebaseChanged = false;
+    const promotedEmails = [record.email, record.replacedEmail].filter((value): value is string =>
+        Boolean(value)
+    );
     const user = await getFirebaseUserOrUndefined(auth, record.uid);
-    if (user && normalize(user.email) === record.email) {
+    const held = normalize(user?.email);
+    if (user && held && promotedEmails.includes(held)) {
         const restored = await resolveRestoredEmail(auth, identity, record);
         await lock?.assertHeld();
         await auth.updateUser(record.uid, restored);
@@ -483,12 +498,17 @@ export const demotePersonalEmail = async ({
         (await findUserKeyByAuthProvider('firebase', record.uid)) ??
         (identity.primaryDid ? await findUserKeyByDid(identity.primaryDid) : null);
     if (account?._id && record.prevContactMethod) {
-        await lock?.assertHeld();
-        await setContactMethodIfUnchanged(
-            account._id,
-            { type: 'email', value: record.email },
-            record.prevContactMethod
-        );
+        for (const address of promotedEmails) {
+            await lock?.assertHeld();
+            if (
+                await setContactMethodIfUnchanged(
+                    account._id,
+                    { type: 'email', value: address },
+                    record.prevContactMethod
+                )
+            )
+                break;
+        }
     }
 
     await lock?.assertHeld();
