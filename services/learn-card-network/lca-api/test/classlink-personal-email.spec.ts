@@ -279,14 +279,26 @@ describe('ClassLink personal email', () => {
         await getClassLinkIdentitiesCollection().deleteMany({});
         await expect(caller().getPersonalEmail()).rejects.toMatchObject({ code: 'FORBIDDEN' });
     });
-    it('counts every guess before comparing, so parallel guesses cannot exceed the limit', async () => {
+    it('parallel guesses cannot exceed the limit', async () => {
         await caller().startPersonalEmail({ email });
         const results = await Promise.allSettled(
             Array.from({ length: 12 }, () =>
                 caller().verifyPersonalEmail({ email, code: '000000' })
             )
         );
-        expect(results.every(result => result.status === 'rejected')).toBe(true);
+        // Each guess is either refused by the per-account change lock (never compared) or
+        // counted before comparing, so at most the limit are ever checked.
+        const codes = results.map(result =>
+            result.status === 'rejected' ? (result.reason as { code?: string }).code : 'ok'
+        );
+        expect(codes.every(code => code === 'BAD_REQUEST' || code === 'PRECONDITION_FAILED')).toBe(
+            true
+        );
+        expect(codes.filter(code => code === 'BAD_REQUEST').length).toBeLessThanOrEqual(5);
+        for (let guess = 0; guess < 5; guess += 1)
+            await caller()
+                .verifyPersonalEmail({ email, code: '000000' })
+                .catch(() => undefined);
         expect(await cache.get(key)).toBeNull();
         await expect(
             caller().verifyPersonalEmail({ email, code: getCode() })
@@ -504,6 +516,45 @@ describe('ClassLink personal email', () => {
             expect(await userKey()).not.toHaveProperty('recoveryEmailVerifiedAt');
             expect(await caller().getPersonalEmail()).toEqual({ verified: false });
             await expect(caller().removePersonalEmail()).resolves.toEqual({ success: true });
+        });
+
+        it('serializes removal against a concurrent verification of a new address', async () => {
+            await verify('first@example.com');
+            await caller().startPersonalEmail({ email: 'second@example.com' });
+            // Pause verify(B) mid-write, after it took the lock, then race remove(A).
+            let removal: Promise<unknown> | undefined;
+            vi.mocked(getOrCreateAuthSubjectLinkedTo).mockImplementationOnce(async (...args) => {
+                removal = caller()
+                    .removePersonalEmail()
+                    .then(
+                        () => 'removed',
+                        (error: unknown) => error
+                    );
+                await removal;
+                const actual = await vi.importActual<typeof import('../src/models/AuthSubject')>(
+                    '../src/models/AuthSubject'
+                );
+                return actual.getOrCreateAuthSubjectLinkedTo(...args);
+            });
+            await expect(
+                caller().verifyPersonalEmail({ email: 'second@example.com', code: getCode() })
+            ).resolves.toMatchObject({ success: true, recoveryEmailSet: true });
+            // The removal was refused without writing, so B stays tracked in all three stores.
+            expect(await removal).toMatchObject({ code: 'PRECONDITION_FAILED' });
+            expect(await caller().getPersonalEmail()).toEqual({
+                email: 'second@example.com',
+                verified: true,
+            });
+            expect((await userKey())?.recoveryEmail).toBe('second@example.com');
+            expect(await findAuthSubjectByIdentityKey('email:second@example.com')).toMatchObject({
+                subject: 'same-subject',
+            });
+            expect(await findAuthSubjectByIdentityKey('email:first@example.com')).toBeNull();
+            // Once the lock is released, a retry removes B everywhere.
+            await expect(caller().removePersonalEmail()).resolves.toEqual({ success: true });
+            expect(await findAuthSubjectByIdentityKey('email:second@example.com')).toBeNull();
+            expect(await userKey()).not.toHaveProperty('recoveryEmail');
+            expect(await caller().getPersonalEmail()).toEqual({ verified: false });
         });
 
         it('removePersonalEmail keeps a different recovery email', async () => {

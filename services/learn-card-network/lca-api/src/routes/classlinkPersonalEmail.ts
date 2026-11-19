@@ -1,4 +1,4 @@
-import { createHash, randomInt } from 'node:crypto';
+import { createHash, randomInt, randomUUID } from 'node:crypto';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { accountRoute, type Context } from '@routes';
@@ -120,6 +120,44 @@ const consumeBudget = async (
         return;
     }
     if (used > limit) throw tooMany(message);
+};
+
+/** Longest a personal-email change may hold the per-account lock (safety expiry). */
+const EMAIL_CHANGE_LOCK_SECONDS = 30;
+const RELEASE_LOCK = `
+if redis.call('GET', KEYS[1]) == ARGV[1] then return redis.call('DEL', KEYS[1]) end
+return 0
+`;
+
+/**
+ * Run a personal-email change (verify or remove) while holding a per-account Redis lock, so
+ * the two never interleave: each reads the identity, sign-in link and recovery email inside
+ * the lock and writes all three before another change starts. Fails closed: if the lock is
+ * held or Redis is down, nothing is written and the caller is asked to retry.
+ */
+const withEmailChangeLock = async <T>(accountDid: string, fn: () => Promise<T>): Promise<T> => {
+    const key = `classlink:lock:personal-email:${sha256Hex(accountDid)}`;
+    const token = randomUUID();
+    const busy = (): never => {
+        throw new TRPCError({
+            code: 'PRECONDITION_FAILED',
+            message: 'Another change to your email is in progress. Please try again.',
+        });
+    };
+    let acquired: unknown;
+    try {
+        acquired = await getRedis().set(key, token, 'EX', EMAIL_CHANGE_LOCK_SECONDS, 'NX');
+    } catch {
+        busy();
+    }
+    if (!acquired) busy();
+    try {
+        return await fn();
+    } finally {
+        await getRedis()
+            .eval(RELEASE_LOCK, 1, key, token)
+            .catch(() => undefined);
+    }
 };
 
 const codeKey = (identityKey: string): string =>
@@ -344,115 +382,134 @@ export const personalEmailProcedures = {
                 recoveryEmailSkipped: z.literal('shared').optional(),
             })
         )
-        .mutation(async ({ input: { email, code }, ctx }) => {
-            const { identity, userKey, continuity } = await validateEmail(ctx, email);
-            const result = await getRedis().eval(
-                CHECK_CODE,
-                2,
-                codeKey(identity.identityKey),
-                attemptKey(identity.identityKey),
-                JSON.stringify({ email, code }),
-                PERSONAL_EMAIL_ATTEMPT_LIMIT,
-                300
-            );
-            if (result !== 'ok')
-                throw new TRPCError({
-                    code: 'BAD_REQUEST',
-                    message: 'Invalid or expired code. Please try again.',
-                });
-            // The caller proved they read the code, so it is safe to say the address is taken.
-            await assertEmailAvailable(email, identity.subject);
-            // Decide before any write, so a shared address never leaves a half-finished link.
-            const previous = identity.personalEmail?.trim().toLowerCase();
-            const recoveryEmail = await planRecoveryEmail(userKey, previous, email);
-            // Reserve without modifying existing attributes, including when another
-            // account races the initial lookup. Subjects are immutable after insertion.
-            await ensureAuthSubjectIndexes();
-            try {
-                await getAuthSubjectsCollection().updateOne(
-                    { identityKey: `email:${email}` },
-                    {
-                        $setOnInsert: {
-                            identityKey: `email:${email}`,
-                            subject: identity.subject,
-                            email,
-                            emailVerified: true,
-                            createdAt: new Date(),
-                            lastLoginAt: new Date(),
-                        },
-                    },
-                    { upsert: true }
+        .mutation(({ input: { email, code }, ctx }) =>
+            withEmailChangeLock(ctx.user.accountDid, async () => {
+                const { identity, userKey, continuity } = await validateEmail(ctx, email);
+                const result = await getRedis().eval(
+                    CHECK_CODE,
+                    2,
+                    codeKey(identity.identityKey),
+                    attemptKey(identity.identityKey),
+                    JSON.stringify({ email, code }),
+                    PERSONAL_EMAIL_ATTEMPT_LIMIT,
+                    300
                 );
-            } catch (error) {
-                if (
-                    typeof error !== 'object' ||
-                    error === null ||
-                    !('code' in error) ||
-                    error.code !== 11000
-                )
-                    throw error;
-            }
-            const linked = await findAuthSubjectByIdentityKey(`email:${email}`);
-            if (!linked || linked.subject !== identity.subject) conflict();
-            await getOrCreateAuthSubjectLinkedTo(`email:${email}`, identity.subject, {
-                email,
-                emailVerified: true,
-            });
-            // False when the recovery email changed after the plan (compare-and-set).
-            const recoveryEmailSet =
-                recoveryEmail.set && userKey._id
-                    ? await setRecoveryEmailByUserKeyId(userKey._id, email, recoveryEmail.replaces)
-                    : false;
-            // Release the replaced address, so it stops signing in to this account and is
-            // not left behind by account deletion (which only knows the current address).
-            if (
-                previous &&
-                previous !== email &&
-                (await canDeletePersonalEmailSubject(previous, identity.subject, userKey))
-            )
-                await getAuthSubjectsCollection().deleteOne({
-                    identityKey: `email:${previous}`,
-                    subject: identity.subject,
+                if (result !== 'ok')
+                    throw new TRPCError({
+                        code: 'BAD_REQUEST',
+                        message: 'Invalid or expired code. Please try again.',
+                    });
+                // The caller proved they read the code, so it is safe to say the address is taken.
+                await assertEmailAvailable(email, identity.subject);
+                // Decide before any write, so a shared address never leaves a half-finished link.
+                const previous = identity.personalEmail?.trim().toLowerCase();
+                const recoveryEmail = await planRecoveryEmail(userKey, previous, email);
+                // Reserve without modifying existing attributes, including when another
+                // account races the initial lookup. Subjects are immutable after insertion.
+                await ensureAuthSubjectIndexes();
+                try {
+                    await getAuthSubjectsCollection().updateOne(
+                        { identityKey: `email:${email}` },
+                        {
+                            $setOnInsert: {
+                                identityKey: `email:${email}`,
+                                subject: identity.subject,
+                                email,
+                                emailVerified: true,
+                                createdAt: new Date(),
+                                lastLoginAt: new Date(),
+                            },
+                        },
+                        { upsert: true }
+                    );
+                } catch (error) {
+                    if (
+                        typeof error !== 'object' ||
+                        error === null ||
+                        !('code' in error) ||
+                        error.code !== 11000
+                    )
+                        throw error;
+                }
+                const linked = await findAuthSubjectByIdentityKey(`email:${email}`);
+                if (!linked || linked.subject !== identity.subject) conflict();
+                await getOrCreateAuthSubjectLinkedTo(`email:${email}`, identity.subject, {
+                    email,
+                    emailVerified: true,
                 });
-            await updateClassLinkIdentity(identity.identityKey, {
-                personalEmail: email,
-                personalEmailVerifiedAt: new Date(),
-            });
-            const audit = { tenantId: continuity.tenantId, policyHash: continuity.policyHash };
-            logAccountContinuityEvent('verified', audit);
-            if (recoveryEmailSet) logAccountContinuityEvent('recovery_email_set', audit);
-            return {
-                success: true,
-                recoveryEmailSet,
-                ...(recoveryEmail.skipped ? { recoveryEmailSkipped: recoveryEmail.skipped } : {}),
-            };
-        }),
+                // False when the recovery email changed after the plan (compare-and-set).
+                const recoveryEmailSet =
+                    recoveryEmail.set && userKey._id
+                        ? await setRecoveryEmailByUserKeyId(
+                              userKey._id,
+                              email,
+                              recoveryEmail.replaces
+                          )
+                        : false;
+                // Release the replaced address, so it stops signing in to this account and is
+                // not left behind by account deletion (which only knows the current address).
+                if (
+                    previous &&
+                    previous !== email &&
+                    (await canDeletePersonalEmailSubject(previous, identity.subject, userKey))
+                )
+                    await getAuthSubjectsCollection().deleteOne({
+                        identityKey: `email:${previous}`,
+                        subject: identity.subject,
+                    });
+                await updateClassLinkIdentity(identity.identityKey, {
+                    personalEmail: email,
+                    personalEmailVerifiedAt: new Date(),
+                });
+                const audit = { tenantId: continuity.tenantId, policyHash: continuity.policyHash };
+                logAccountContinuityEvent('verified', audit);
+                if (recoveryEmailSet) logAccountContinuityEvent('recovery_email_set', audit);
+                return {
+                    success: true,
+                    recoveryEmailSet,
+                    ...(recoveryEmail.skipped
+                        ? { recoveryEmailSkipped: recoveryEmail.skipped }
+                        : {}),
+                };
+            })
+        ),
     /**
      * Remove the personal email from all three stores: its `email:` sign-in link (under the
      * same guard as the deletion cascade), the recovery email when it is still this address,
-     * and last the identity fields. Always allowed, whatever the continuity policy.
+     * and last the identity fields. Always allowed, whatever the continuity policy. Holds the
+     * same per-account lock as `verifyPersonalEmail`, so a concurrent verify cannot leave a
+     * new address active but untracked.
      */
     removePersonalEmail: accountRoute
         .output(z.object({ success: z.boolean() }))
-        .mutation(async ({ ctx }) => {
-            const { identity, userKey } = await resolveClassLinkContext(ctx.user.accountDid);
-            const address = identity.personalEmail?.trim().toLowerCase();
-            if (!address) return { success: true };
-            if (await canDeletePersonalEmailSubject(address, identity.subject, userKey))
-                await getAuthSubjectsCollection().deleteOne({
-                    identityKey: `email:${address}`,
-                    subject: identity.subject,
-                });
-            if (userKey._id && userKey.recoveryEmail?.trim().toLowerCase() === address)
-                await clearRecoveryEmailIfUnchanged(userKey._id, userKey.recoveryEmail);
-            await getClassLinkIdentitiesCollection().updateOne(
-                { identityKey: identity.identityKey },
-                {
-                    $unset: { personalEmail: '', personalEmailVerifiedAt: '' },
-                    $set: { updatedAt: new Date() },
-                }
-            );
-            logAccountContinuityEvent('removed', { tenantId: identity.tenantId });
-            return { success: true };
-        }),
+        .mutation(({ ctx }) =>
+            withEmailChangeLock(ctx.user.accountDid, async () => {
+                const { identity, userKey } = await resolveClassLinkContext(ctx.user.accountDid);
+                const address = identity.personalEmail?.trim().toLowerCase();
+                if (!address) return { success: true };
+                if (await canDeletePersonalEmailSubject(address, identity.subject, userKey))
+                    await getAuthSubjectsCollection().deleteOne({
+                        identityKey: `email:${address}`,
+                        subject: identity.subject,
+                    });
+                if (userKey._id && userKey.recoveryEmail?.trim().toLowerCase() === address)
+                    await clearRecoveryEmailIfUnchanged(userKey._id, userKey.recoveryEmail);
+                // Only clear the address this call removed (defence in depth behind the lock).
+                await getClassLinkIdentitiesCollection().updateOne(
+                    {
+                        identityKey: identity.identityKey,
+                        personalEmail: identity.personalEmail,
+                        personalEmailVerifiedAt: identity.personalEmailVerifiedAt ?? {
+                            $exists: false,
+                        },
+                    },
+                    {
+                        $unset: { personalEmail: '', personalEmailVerifiedAt: '' },
+                        $set: { updatedAt: new Date() },
+                    }
+                );
+                logAccountContinuityEvent('removed', { tenantId: identity.tenantId });
+                return { success: true };
+            })
+        ),
 };
