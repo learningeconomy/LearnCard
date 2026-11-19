@@ -244,6 +244,24 @@ describe('school-channel notice recipients (getSchoolNoticeRecipients)', () => {
         await expect(getSchoolNoticeRecipients(account)).resolves.toEqual([]);
     });
 
+    it('a recycled school address (two identities) or an unlinked subject gets none', async () => {
+        await seedIdentity('classlink:tenant-alias:source-2', {
+            firebaseUid: 'other-uid',
+            subject: 'other-subject',
+            primaryDid: 'did:key:other-student',
+        });
+        await expect(getSchoolNoticeRecipients(account)).resolves.toEqual([]);
+        await getClassLinkIdentitiesCollection().deleteOne({
+            identityKey: 'classlink:tenant-alias:source-2',
+        });
+        await expect(getSchoolNoticeRecipients(account)).resolves.toEqual([school]);
+        await getAuthSubjectsCollection().updateOne(
+            { identityKey: `email:${school}` },
+            { $set: { subject: 'other-subject' } }
+        );
+        await expect(getSchoolNoticeRecipients(account)).resolves.toEqual([]);
+    });
+
     it('only an active promotion counts, and only for this account', async () => {
         await getClassLinkIdentitiesCollection().updateOne(
             { identityKey },

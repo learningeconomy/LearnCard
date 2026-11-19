@@ -198,9 +198,11 @@ export const hasLiveSchoolEmailAlias = async (
 
 /**
  * School addresses that also get the account's security notices (LC-2409): for each ClassLink
- * identity of the account with an active promotion, its school email while the domain is
- * trusted and the alias is not idle. Best effort: never throws, and never helps against a
- * compromised lca-api (it sends these itself).
+ * identity of the account with an active promotion, its school email under the same rules as
+ * the sign-in alias (`hasLiveSchoolEmailAlias`: trusted domain, not idle, a verified
+ * `email:<school>` subject linked to the identity; and exactly one identity with the address,
+ * so a recycled school inbox hears nothing). Best effort: never throws, and never helps
+ * against a compromised lca-api (it sends these itself).
  */
 export const getSchoolNoticeRecipients = async (
     userKey: Pick<MongoUserKeyType, 'primaryDid' | 'linkedDids'> | null | undefined,
@@ -217,7 +219,12 @@ export const getSchoolNoticeRecipients = async (
         const recipients = new Set<string>();
         for (const identity of identities) {
             const school = normalize(identity.email);
-            if (school && isSchoolEmailAliasLive(identity, now)) recipients.add(school);
+            if (!school || !(await hasLiveSchoolEmailAlias(identity, now))) continue;
+            const holders = await getClassLinkIdentitiesCollection()
+                .find({ email: school }, { projection: { _id: 1 } })
+                .limit(2)
+                .toArray();
+            if (holders.length === 1) recipients.add(school);
         }
         return [...recipients];
     } catch {
