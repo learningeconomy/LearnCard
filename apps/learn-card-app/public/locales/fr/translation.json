@@ -10459,7 +10459,7 @@
         "revocationCheck": "Vérification de révocation disponible",
         "evidenceCount": "Éléments de preuve : {{count}}",
         "evidence": "Pièces justificatives",
-        "recordsNeedAttention": "Relevés à examiner : {{count}}",
+        "recordsNotFullyVerified": "Relevés non entièrement vérifiés : {{count}}",
         "checkingVerification": "Vérification en cours",
         "issuedDifferentLearner": "Délivré à un autre apprenant",
         "learnerMatchUnknown": "La correspondance de l’apprenant n’a pas pu être confirmée",

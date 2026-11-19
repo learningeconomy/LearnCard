@@ -10507,7 +10507,7 @@
         "revocationCheck": "Revocation check available",
         "evidenceCount": "Evidence items: {{count}}",
         "evidence": "Supporting evidence",
-        "recordsNeedAttention": "Records needing attention: {{count}}",
+        "recordsNotFullyVerified": "Records not fully verified: {{count}}",
         "checkingVerification": "Checking verification",
         "issuedDifferentLearner": "Issued for a different learner",
         "learnerMatchUnknown": "Learner match could not be confirmed",

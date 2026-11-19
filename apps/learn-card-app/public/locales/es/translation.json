@@ -10459,7 +10459,7 @@
         "revocationCheck": "Comprobación de revocación disponible",
         "evidenceCount": "Elementos de evidencia: {{count}}",
         "evidence": "Evidencia de apoyo",
-        "recordsNeedAttention": "Registros que necesitan revisión: {{count}}",
+        "recordsNotFullyVerified": "Registros no verificados por completo: {{count}}",
         "checkingVerification": "Comprobando verificación",
         "issuedDifferentLearner": "Emitido para otro estudiante",
         "learnerMatchUnknown": "No se pudo confirmar la coincidencia del estudiante",

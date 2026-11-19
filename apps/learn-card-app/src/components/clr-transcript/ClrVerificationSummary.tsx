@@ -489,7 +489,7 @@ export const ClrVerificationSummary = ({
                             ? m['clrRenderer.verifiedLabel']()
                             : !snapshot.complete
                               ? m['clrRenderer.checkingVerification']()
-                              : m['clrRenderer.recordsNeedAttention']({
+                              : m['clrRenderer.recordsNotFullyVerified']({
                                     count: new Set(
                                         records
                                             .filter(entry => !isClrRecordConfirmed(entry.node))
@@ -570,7 +570,7 @@ export const ClrVerificationSummary = ({
                                                         aria-hidden="true"
                                                         className="invisible col-start-1 row-start-1"
                                                     >
-                                                        {m['clrRenderer.recordsNeedAttention']({
+                                                        {m['clrRenderer.recordsNotFullyVerified']({
                                                             count: records.length,
                                                         })}
                                                     </span>
