@@ -198,6 +198,17 @@ export const exchangeToken = async (
     if (body.grant_type !== 'authorization_code') {
         return fail(400, 'unsupported_grant_type');
     }
+    // Validate types before takeCode: a non-string resource used to throw after
+    // the one-time code was consumed, turning a bad request into a 500.
+    if (
+        typeof body.code !== 'string' ||
+        typeof body.redirect_uri !== 'string' ||
+        typeof body.client_id !== 'string' ||
+        typeof body.code_verifier !== 'string' ||
+        (body.resource !== null && typeof body.resource !== 'string')
+    ) {
+        return fail(400, 'invalid_request');
+    }
     if (!body.code || !body.redirect_uri || !body.client_id || !body.code_verifier) {
         return fail(400, 'invalid_request');
     }

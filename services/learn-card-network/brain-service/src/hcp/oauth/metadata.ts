@@ -31,12 +31,11 @@ export const buildAuthorizationServerMetadata = (
         authorization_endpoint: `${issuer}/oauth/authorize`,
         token_endpoint: `${issuer}/oauth/token`,
         registration_endpoint: `${issuer}/oauth/register`,
-        revocation_endpoint: `${issuer}/oauth/revoke`,
         scopes_supported: scopesSupported,
         response_types_supported: ['code'],
         grant_types_supported: ['authorization_code'],
         code_challenge_methods_supported: ['S256'],
-        token_endpoint_auth_methods_supported: ['none', 'client_secret_post'],
+        token_endpoint_auth_methods_supported: ['none'],
         // MCP clients discover the resource via PRM; AS still advertises resource indicators.
         require_resource: true,
     };

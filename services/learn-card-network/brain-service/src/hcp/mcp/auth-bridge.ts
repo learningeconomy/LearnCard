@@ -18,7 +18,13 @@ export type HcpMcpAuthExtra = {
     subjectDid: string;
 };
 
-/** Keep only access pairs that appear in `scopes`. Custom categories have no OAuth form. */
+/**
+ * Keep only registered category/action pairs that appear in `scopes`.
+ * Filtering categories and actions independently would rebuild the AccessDetail
+ * cross product (`scopesForAccess`) and widen past the token. Custom categories
+ * have no OAuth scope form, so they stay on a separate detail with their
+ * original actions.
+ */
 export const narrowAccessToScopes = (
     access: readonly AccessDetail[],
     scopes: readonly string[]
@@ -28,21 +34,16 @@ export const narrowAccessToScopes = (
     for (const detail of access) {
         const custom = detail.categories.filter(c => !isRegisteredCategory(c));
         const registered = detail.categories.filter(isRegisteredCategory);
-        if (registered.length === 0) {
-            narrowed.push(detail);
-            continue;
+        for (const category of registered) {
+            const keptActions = detail.actions.filter(action =>
+                allowed.has(`hcp:${category}:${action}`)
+            );
+            if (keptActions.length === 0) continue;
+            narrowed.push({ ...detail, categories: [category], actions: keptActions });
         }
-        const keptRegistered = registered.filter(category =>
-            detail.actions.some(action => allowed.has(`hcp:${category}:${action}`))
-        );
-        const keptActions = detail.actions.filter(
-            action =>
-                keptRegistered.some(category => allowed.has(`hcp:${category}:${action}`)) ||
-                (custom.length > 0 && detail.actions.includes(action))
-        );
-        const categories = [...keptRegistered, ...custom];
-        if (categories.length === 0 || keptActions.length === 0) continue;
-        narrowed.push({ ...detail, categories, actions: keptActions });
+        if (custom.length > 0) {
+            narrowed.push({ ...detail, categories: custom, actions: [...detail.actions] });
+        }
     }
     return narrowed;
 };

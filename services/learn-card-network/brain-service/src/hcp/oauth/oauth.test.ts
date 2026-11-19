@@ -208,6 +208,8 @@ describe('HCP OAuth Unit 1 (AS + PRM + RS probe)', () => {
         expect(body.token_endpoint).toBe(`${baseUrl}/oauth/token`);
         expect(body.registration_endpoint).toBe(`${baseUrl}/oauth/register`);
         expect(body.code_challenge_methods_supported).toEqual(['S256']);
+        expect(body.token_endpoint_auth_methods_supported).toEqual(['none']);
+        expect(body).not.toHaveProperty('revocation_endpoint');
     });
 
     it('issues a grant-bound token via PKCE and resolves probe without grantId in body', async () => {
@@ -339,6 +341,85 @@ describe('HCP OAuth Unit 1 (AS + PRM + RS probe)', () => {
         const afterBody = (await after.json()) as { scopes: string[] };
         expect(afterBody.scopes).toEqual(['hcp:general_preferences:read']);
         expect(afterBody.scopes).not.toContain('hcp:general_preferences:write');
+    });
+
+    it('rejects a non-string token resource with 400 and leaves the code usable', async () => {
+        const redirectUri = 'http://127.0.0.1/cb-types';
+        const reg = await fetch(`${baseUrl}/oauth/register`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+                redirect_uris: [redirectUri],
+                client_name: 'type guard test',
+                token_endpoint_auth_method: 'none',
+            }),
+        });
+        expect(reg.status).toBe(201);
+        const client = (await reg.json()) as { client_id: string };
+
+        const verifier = createCodeVerifier();
+        const authorizeUrl = new URL(`${baseUrl}/oauth/authorize`);
+        authorizeUrl.searchParams.set('response_type', 'code');
+        authorizeUrl.searchParams.set('client_id', client.client_id);
+        authorizeUrl.searchParams.set('redirect_uri', redirectUri);
+        authorizeUrl.searchParams.set('code_challenge', createCodeChallenge(verifier));
+        authorizeUrl.searchParams.set('code_challenge_method', 'S256');
+        authorizeUrl.searchParams.set('resource', baseUrl);
+
+        const authRes = await fetch(authorizeUrl, { redirect: 'manual' });
+        expect(authRes.status).toBe(302);
+        const requestId = new URL(authRes.headers.get('location')!, baseUrl).searchParams.get(
+            'request_id'
+        );
+        expect(requestId).toBeTruthy();
+
+        const consentRes = await fetch(`${baseUrl}/oauth/consent`, {
+            method: 'POST',
+            redirect: 'manual',
+            headers: { 'content-type': 'application/x-www-form-urlencoded' },
+            body: formBody({
+                request_id: requestId!,
+                subject_did: SUBJECT_DID,
+                grant_id: grantId,
+            }),
+        });
+        expect(consentRes.status).toBe(302);
+        const code = new URL(consentRes.headers.get('location')!).searchParams.get('code');
+        expect(code).toBeTruthy();
+
+        // JSON body can supply a non-string resource (array or object).
+        const bad = await fetch(`${baseUrl}/oauth/token`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+                grant_type: 'authorization_code',
+                code,
+                redirect_uri: redirectUri,
+                client_id: client.client_id,
+                code_verifier: verifier,
+                resource: [baseUrl, baseUrl],
+            }),
+        });
+        expect(bad.status).toBe(400);
+        const badBody = (await bad.json()) as { error: string };
+        expect(badBody.error).toBe('invalid_request');
+
+        const good = await fetch(`${baseUrl}/oauth/token`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/x-www-form-urlencoded' },
+            body: formBody({
+                grant_type: 'authorization_code',
+                code: code!,
+                redirect_uri: redirectUri,
+                client_id: client.client_id,
+                code_verifier: verifier,
+                resource: baseUrl,
+            }),
+        });
+        expect(good.status).toBe(200);
+        const goodBody = (await good.json()) as { access_token: string; token_type: string };
+        expect(goodBody.token_type).toBe('Bearer');
+        expect(goodBody.access_token).toBeTruthy();
     });
 
     it('GET /oauth/consent 400s for an unknown request_id (P3)', async () => {

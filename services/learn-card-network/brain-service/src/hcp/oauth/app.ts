@@ -173,12 +173,16 @@ export const createHcpOAuthApp = (options: CreateHcpOAuthAppOptions): Express =>
     app.post('/oauth/token', async (req, res, next) => {
         try {
             const body = req.body ?? {};
+            const str = (value: unknown): string | null =>
+                typeof value === 'string' ? value : null;
             const result = await exchangeToken(asDeps, {
-                grant_type: body.grant_type ?? null,
-                code: body.code ?? null,
-                redirect_uri: body.redirect_uri ?? null,
-                client_id: body.client_id ?? null,
-                code_verifier: body.code_verifier ?? null,
+                grant_type: str(body.grant_type),
+                code: str(body.code),
+                redirect_uri: str(body.redirect_uri),
+                client_id: str(body.client_id),
+                code_verifier: str(body.code_verifier),
+                // Optional; do not coerce a non-string to null (that would
+                // silently fall back to the authorization-time resource).
                 resource: body.resource ?? null,
             });
             if (!result.ok)

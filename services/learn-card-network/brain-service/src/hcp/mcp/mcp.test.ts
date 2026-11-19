@@ -19,6 +19,7 @@ import { createHcpMcpApp, HCP_MCP_PATH } from './app';
 import { authInfoFromResolved, narrowAccessToScopes } from './auth-bridge';
 import { HCP_MCP_TOOL_NAMES, createHcpMcpTools } from './tools';
 import { CONTEXT_ACCESS_DETAIL_TYPE, type AccessDetail } from '../v1/schemas';
+import { scopesForAccess } from '../v1/scopes';
 import { resolveBearerToGrant } from '../oauth/rs';
 import type { TokenSignerConfig } from '../oauth/tokens';
 
@@ -153,6 +154,46 @@ describe('narrowAccessToScopes', () => {
         const narrowed = narrowAccessToScopes(access, ['hcp:general_preferences:read']);
         expect(narrowed).toHaveLength(1);
         expect(narrowed[0]!.actions).toEqual(['read']);
+        expect(scopesForAccess(narrowed)).toEqual(['hcp:general_preferences:read']);
+    });
+
+    it('does not rebuild a category/action cross product wider than the token', () => {
+        const mixed: AccessDetail[] = [
+            {
+                type: CONTEXT_ACCESS_DETAIL_TYPE,
+                actions: ['read', 'write'],
+                categories: ['general_preferences', 'health_context'],
+                purposes: [{ code: PURPOSE, description: 'Help' }],
+            },
+        ];
+        const scopes = ['hcp:general_preferences:write', 'hcp:health_context:read'];
+        const narrowed = narrowAccessToScopes(mixed, scopes);
+        expect(scopesForAccess(narrowed).sort()).toEqual([...scopes].sort());
+        expect(scopesForAccess(narrowed)).not.toContain('hcp:general_preferences:read');
+        expect(scopesForAccess(narrowed)).not.toContain('hcp:health_context:write');
+        const prefs = narrowed.find(d => d.categories.includes('general_preferences'));
+        const health = narrowed.find(d => d.categories.includes('health_context'));
+        expect(prefs?.actions).toEqual(['write']);
+        expect(health?.actions).toEqual(['read']);
+    });
+
+    it('does not leak write onto a registered category in a mixed custom detail', () => {
+        const mixed: AccessDetail[] = [
+            {
+                type: CONTEXT_ACCESS_DETAIL_TYPE,
+                actions: ['read', 'write'],
+                categories: ['general_preferences', 'https://school.example/custom'],
+                purposes: [{ code: PURPOSE, description: 'Help' }],
+            },
+        ];
+        const narrowed = narrowAccessToScopes(mixed, ['hcp:general_preferences:read']);
+        expect(scopesForAccess(narrowed)).toEqual(['hcp:general_preferences:read']);
+        const prefs = narrowed.find(d => d.categories.includes('general_preferences'));
+        expect(prefs?.actions).toEqual(['read']);
+        expect(prefs?.categories).toEqual(['general_preferences']);
+        const custom = narrowed.find(d => d.categories.includes('https://school.example/custom'));
+        expect(custom?.actions).toEqual(['read', 'write']);
+        expect(custom?.categories).toEqual(['https://school.example/custom']);
     });
 });
 
