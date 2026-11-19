@@ -4,6 +4,7 @@ import { renderEmail } from '../render';
 import type { TemplateId, TemplateDataMap } from '../render';
 import { DEFAULT_BRANDING } from '../branding';
 import type { TenantBranding } from '../branding';
+import { resolveTenantFromRequest } from '../tenant-registry';
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -189,6 +190,27 @@ const ALL_TEMPLATE_IDS = Object.keys(TEMPLATE_FIXTURES) as TemplateId[];
 // ---------------------------------------------------------------------------
 
 describe('renderEmail — smoke tests', () => {
+    it.each([
+        'escrow-hold-started',
+        'escrow-hold-reminder',
+        'escrow-hold-released',
+        'escrow-hold-cancelled',
+        'escrow-pin-locked',
+        'escrow-pin-sign-in',
+        'account-secured',
+    ] as const)('"%s" renders with registered ScoutPass branding', async templateId => {
+        const tenant = resolveTenantFromRequest({ 'x-tenant-id': 'scoutpass' });
+        const result = await renderEmail(
+            templateId,
+            tenant.emailBranding,
+            TEMPLATE_FIXTURES[templateId]
+        );
+        expect(result.html).toContain('ScoutPass');
+        expect(result.text).toContain('ScoutPass');
+        expect(result.html).toContain('support@scout.org');
+        expect(result.html).toContain('https://pass.scout.org/assets/icon/icon.png');
+    });
+
     it.each(ALL_TEMPLATE_IDS)('"%s" renders with default branding', async templateId => {
         const result = await renderEmail(
             templateId,
