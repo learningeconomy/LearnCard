@@ -430,13 +430,12 @@ const AppRouter: React.FC = () => {
     }, [enablePrefetch]);
 
     // Warm the landing chunks immediately — while the boot loader or login
-    // form is still up, before auth resolves. Uses fetch() only (warmRoute), not
-    // import(), so a 503 can't poison the module map before the real navigation.
-    // The post-login redirect (→ /dashboard) and the post-boot mount would
-    // otherwise only START downloading their chunk after navigation, leaving
-    // a white Suspense gap between the loader and the app on a cold cache.
-    // The full prefetch above stays gated on login; this is just the entry
-    // routes: the default landing pages plus wherever the URL already points.
+    // form is still up, before auth resolves. Uses fetch() first (warmRoute) so a
+    // 503 can't poison the module map. For /dashboard only, a successful warm then
+    // import()s so LC-2415's direct-render path can skip React.lazy suspend on the
+    // post-login landing. The full idle prefetch above stays gated on login; this
+    // is just the entry routes: the default landing pages plus wherever the URL
+    // already points.
     const initialPathRef = useRef(window.location.pathname);
     useEffect(() => {
         observeDashboardLongTasks();
@@ -444,7 +443,7 @@ const AppRouter: React.FC = () => {
         preloadRoutes().catch(() => undefined);
         import('./Routes')
             .then(m => {
-                // fetch() only — import() here would poison the module map on a 503.
+                // fetch() first; /dashboard import()s only after a successful warm (LC-2415).
                 m.warmRoute('/dashboard');
                 m.warmRoute('/wallet');
                 m.warmRoute(initialPathRef.current);

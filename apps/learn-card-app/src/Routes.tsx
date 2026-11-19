@@ -24,7 +24,11 @@ import { ROUTE_WARM_KEYS, type PrefetchChunkKey } from './buildPlugins/chunkPref
 
 const CampaignsPage = lazyWithRetry(() => import('./pages/campaigns/CampaignsPage'));
 const WalletPage = lazyWithRetry(() => import('./pages/wallet/WalletPage'));
-import { DashboardPageRoute, preloadDashboardPage } from './pages/dashboard/DashboardPageRoute';
+import {
+    DashboardPageRoute,
+    preloadDashboardPage,
+    warmDashboardPage,
+} from './pages/dashboard/DashboardPageRoute';
 const LaunchPad = lazyWithRetry(() => import('./pages/launchPad/LaunchPad'));
 const MyAppsLanding = lazyWithRetry(() => import('./pages/myApps/MyAppsLanding'));
 const EmbedAppFullScreen = lazyWithRetry(() => import('./pages/launchPad/EmbedAppFullScreen'));
@@ -571,11 +575,18 @@ interface PrefetchOptions {
 }
 
 /**
- * Warm a route's files into the HTTP cache with fetch() only — never import(). Safe to call
- * speculatively (idle, accept-screen, early boot). The first import() happens on real
- * navigation via ROUTE_PRELOAD / the lazy route.
+ * Warm a route's files into the HTTP cache with fetch() — never a speculative import()
+ * that could poison the module map. Safe for idle, accept-screen, and early boot.
+ *
+ * `/dashboard` is special (LC-2415): after a *successful* fetch() warm we import() so
+ * `loadedDashboardPage` is set and the next mount can render directly without React.lazy
+ * suspending. A failed warm still skips import().
  */
 export const warmRoute = (path: string): void => {
+    if (path === '/dashboard') {
+        void warmDashboardPage();
+        return;
+    }
     const key = ROUTE_WARM_KEYS[path];
     if (key) void prefetchChunk(key);
 };

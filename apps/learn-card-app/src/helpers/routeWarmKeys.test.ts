@@ -15,7 +15,7 @@ describe('ROUTE_WARM_KEYS', () => {
         expect(ROUTE_WARM_KEYS['/home']).toBe('wallet');
         expect(ROUTE_WARM_KEYS['/skills']).toBe('skills');
         expect(ROUTE_WARM_KEYS['/dashboard']).toBe('dashboard');
-        // One entry per ROUTE_PRELOAD path (29 paths including the three wallet aliases).
+        // One entry per ROUTE_PRELOAD path (31 paths including the three wallet aliases).
         expect(Object.keys(ROUTE_WARM_KEYS)).toHaveLength(31);
     });
 });
