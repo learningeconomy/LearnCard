@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import mongodb from '@mongo';
 import { getClassLinkConfig } from '../src/helpers/classlink.config';
 import {
+    getSchoolNoticeRecipients,
     resolveClassLinkAliasUid,
     resolveOrCreateFirebaseUserByEmail,
 } from '../src/helpers/classlinkPrimaryEmail.helpers';
@@ -216,5 +217,43 @@ describe('school-email alias (resolveOrCreateFirebaseUserByEmail)', () => {
         await expect(
             resolveOrCreateFirebaseUserByEmail(auth, personal, { allowCreate: true })
         ).resolves.toEqual({ status: 'found', uid: T });
+    });
+});
+
+describe('school-channel notice recipients (getSchoolNoticeRecipients)', () => {
+    const account = { primaryDid: did, linkedDids: [] as string[] };
+
+    it('the school address gets notices while trusted and not idle', async () => {
+        await expect(getSchoolNoticeRecipients(account)).resolves.toEqual([school]);
+    });
+
+    it('an untrusted domain gets none', async () => {
+        setTenant({ allowedEmailDomains: [] });
+        await expect(getSchoolNoticeRecipients(account)).resolves.toEqual([]);
+    });
+
+    it('an idle alias gets none, and 0 turns it off', async () => {
+        await getClassLinkIdentitiesCollection().updateOne(
+            { identityKey },
+            { $set: { lastAuthTime: new Date(Date.now() - 366 * 24 * 60 * 60 * 1000) } }
+        );
+        await expect(getSchoolNoticeRecipients(account)).resolves.toEqual([]);
+        setTenant({ schoolEmailAliasMaxIdleDays: 400 });
+        await expect(getSchoolNoticeRecipients(account)).resolves.toEqual([school]);
+        setTenant({ schoolEmailAliasMaxIdleDays: 0 });
+        await expect(getSchoolNoticeRecipients(account)).resolves.toEqual([]);
+    });
+
+    it('only an active promotion counts, and only for this account', async () => {
+        await getClassLinkIdentitiesCollection().updateOne(
+            { identityKey },
+            { $set: { 'primaryEmail.state': 'pending' } }
+        );
+        await expect(getSchoolNoticeRecipients(account)).resolves.toEqual([]);
+        await promote();
+        await expect(
+            getSchoolNoticeRecipients({ primaryDid: 'did:key:someone-else', linkedDids: [] })
+        ).resolves.toEqual([]);
+        await expect(getSchoolNoticeRecipients(null)).resolves.toEqual([]);
     });
 });

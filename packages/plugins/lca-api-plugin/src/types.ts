@@ -29,6 +29,11 @@ export type ClassLinkAccountContinuityReason =
  * - `placeholder_escrow`: the email cannot be removed from a placeholder account with escrow;
  *   offer "use a different email" only.
  * - `pin_change_required`: the PIN cannot be confirmed any more; offer "choose a new PIN".
+ *   Raised by `escrow.enroll` for a confirm-current-PIN re-seal (`replace` + `keep`, no
+ *   `pinSalt`) after 10 failed confirms per PIN or 2 share versions spent without a commit.
+ *   tRPC does not send `cause` to clients: match the message `Choose a new PIN to continue.`.
+ *   A wrong PIN on that path is `FORBIDDEN` with the message `Incorrect PIN.`; more than 5
+ *   confirms an hour is `TOO_MANY_REQUESTS`.
  */
 export type ClassLinkSignInEmailRefusalReason =
     'account_moved' | 'busy' | 'placeholder_escrow' | 'pin_change_required';

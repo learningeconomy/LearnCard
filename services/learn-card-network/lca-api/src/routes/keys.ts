@@ -25,7 +25,10 @@ import { maskEmail } from '@helpers/maskEmail';
 import { isSyntheticEmail } from '@helpers/syntheticEmail.helpers';
 import { deleteClassLinkDataForAccount } from '@helpers/classlinkDeletion.helpers';
 import { pinClassLinkIdentitiesToAccount } from '@helpers/classlinkContext.helpers';
-import { demoteUnlinkedPrimaryEmails } from '@helpers/classlinkPrimaryEmail.helpers';
+import {
+    demoteUnlinkedPrimaryEmails,
+    getSchoolNoticeRecipients,
+} from '@helpers/classlinkPrimaryEmail.helpers';
 import cache from '@cache';
 import { setValidChallengeForDid } from '@cache/challenges';
 import { checkRateLimit, clearRateLimit } from '@helpers/rateLimit.helpers';
@@ -318,13 +321,18 @@ export const assertRecoverySessionEpoch = (
 const notifyIdentityRebind = async (
     userKey: MongoUserKeyType,
     newContactMethod: ContactMethod,
-    branding: Partial<TenantBranding> | undefined
+    branding: Partial<TenantBranding> | undefined,
+    /** Read before a demote that would end the alias; looked up here when absent. */
+    schoolRecipients?: string[]
 ): Promise<void> => {
     const recipients = new Set<string>();
 
     if (userKey.contactMethod.type === 'email') recipients.add(userKey.contactMethod.value);
     if (userKey.recoveryEmail) recipients.add(userKey.recoveryEmail);
     if (newContactMethod.type === 'email') recipients.add(newContactMethod.value);
+    // LC-2409: the ClassLink school address while its alias is live (best effort).
+    for (const school of schoolRecipients ?? (await getSchoolNoticeRecipients(userKey)))
+        recipients.add(school);
     // Synthetic ClassLink account addresses are undeliverable; never mail them.
     for (const recipient of recipients) {
         if (isSyntheticEmail(recipient)) recipients.delete(recipient);
@@ -388,9 +396,13 @@ const getAccountSecuredRecipients = (userKey: MongoUserKeyType): string[] => {
 const notifyAccountSecured = async (
     userKey: MongoUserKeyType,
     branding: Partial<TenantBranding> | undefined,
-    securedAt: Date
+    securedAt: Date,
+    /** LC-2409: the ClassLink school addresses, read before the revoke's demote. */
+    schoolRecipients: string[] = []
 ): Promise<void> => {
     const recipients = getAccountSecuredRecipients(userKey);
+    for (const school of schoolRecipients)
+        if (!recipients.includes(school)) recipients.push(school);
     if (recipients.length === 0) return;
 
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -783,6 +795,9 @@ export const keysRouter = t.router({
             // Fill-only re-pin for a ClassLink identity created on the old uid between the
             // pin above and the commit. Best effort: the pin before the commit is the guarantee.
             await pinClassLinkIdentitiesToAccount(oldUserKey).catch(() => undefined);
+            // Read before the demote below ends the school alias, so the school address still
+            // hears about the rebind (LC-2409). Never throws.
+            const schoolRecipients = await getSchoolNoticeRecipients(oldUserKey);
             // The old login no longer opens the account: demote a personal email promoted on
             // it (or record demotePending). Never throws.
             await demoteUnlinkedPrimaryEmails(input.primaryDid, 'rebind');
@@ -791,7 +806,8 @@ export const keysRouter = t.router({
             void notifyIdentityRebind(
                 oldUserKey,
                 newContactMethod,
-                ctx.tenant?.emailBranding
+                ctx.tenant?.emailBranding,
+                schoolRecipients
             ).catch(error => console.error('[completeRecoveryRebind] Notification failed:', error));
 
             return {
@@ -1032,6 +1048,9 @@ export const keysRouter = t.router({
             // Fill-only re-pin for a ClassLink identity created on a removed uid between the pin
             // above and the commit. Best effort: the pin before the commit is the guarantee.
             await pinClassLinkIdentitiesToAccount(userKey).catch(() => undefined);
+            // Read before the demote below can end the school alias, so the school address
+            // still gets the account-secured notice (LC-2409). Never throws.
+            const schoolRecipients = await getSchoolNoticeRecipients(userKey);
             // Unlinked logins no longer open the account: demote a personal email promoted on
             // one of them (or record demotePending). Never throws.
             await demoteUnlinkedPrimaryEmails(input.primaryDid, 'revoke');
@@ -1043,7 +1062,12 @@ export const keysRouter = t.router({
                 console.error('[revokeOtherDevices] Pending escrow hold clean-up failed')
             );
             // Fail-open after the commit: the owner may not be the one who ran this.
-            await notifyAccountSecured(userKey, ctx.tenant?.emailBranding, new Date());
+            await notifyAccountSecured(
+                userKey,
+                ctx.tenant?.emailBranding,
+                new Date(),
+                schoolRecipients
+            );
 
             return {
                 success: true as const,
@@ -2143,9 +2167,10 @@ export const keysRouter = t.router({
 
             // Cascade the account's ClassLink data. Best effort: the key is already gone, and
             // classlink.deleteMyData (idempotent, DID-keyed) can finish the job later.
-            await deleteClassLinkDataForAccount(userKey, { clearPrivacyLock: true }).catch(() =>
-                console.error('classlink.account_deletion.cascade_failed')
-            );
+            await deleteClassLinkDataForAccount(userKey, {
+                clearPrivacyLock: true,
+                accountDeleted: true,
+            }).catch(() => console.error('classlink.account_deletion.cascade_failed'));
 
             return { success: true };
         }),

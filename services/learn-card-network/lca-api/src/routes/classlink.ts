@@ -439,7 +439,7 @@ export const classlinkRouter = t.router({
             const result = await deleteClassLinkDataForAccount(
                 userKey ?? { authProviders: [], primaryDid: ctx.user.accountDid, linkedDids: [] },
                 // The lock is lifted only after the account's key is gone (account deletion).
-                { clearPrivacyLock: !userKey }
+                { clearPrivacyLock: !userKey, accountDeleted: !userKey }
             );
             return { deleted: result.identities + result.transcriptRequests };
         }),

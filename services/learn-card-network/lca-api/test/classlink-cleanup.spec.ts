@@ -14,6 +14,10 @@ vi.mock('@routes', async () => {
     return { t, openRoute: t.procedure, didAndChallengeRoute: t.procedure, accountRoute };
 });
 vi.mock('../src/firebase', () => ({ default: { auth: vi.fn() } }));
+vi.mock('../src/helpers/firebaseAdminAuth.helpers', async importOriginal => ({
+    ...(await importOriginal<typeof import('../src/helpers/firebaseAdminAuth.helpers')>()),
+    getAdminAuth: vi.fn(() => undefined),
+}));
 vi.mock('../src/helpers/classlink.config', async importOriginal => ({
     ...(await importOriginal<typeof import('../src/helpers/classlink.config')>()),
     getClassLinkConfig: vi.fn(() => null),
@@ -33,7 +37,12 @@ import {
 } from '../src/models/Preferences';
 import { getPrivacyLockState } from '../src/accesslayer/preferences/privacyLock';
 import { getAuthSubjectsCollection, getOrCreateAuthSubject } from '../src/models/AuthSubject';
-import { deleteClassLinkDataForAccount } from '../src/helpers/classlinkDeletion.helpers';
+import {
+    canDeletePersonalEmailSubject,
+    deleteClassLinkDataForAccount,
+} from '../src/helpers/classlinkDeletion.helpers';
+import { createInMemoryAdminAuth, getAdminAuth } from '../src/helpers/firebaseAdminAuth.helpers';
+import { syntheticEmailForUid } from '../src/helpers/syntheticEmail.helpers';
 import { Preferences } from '../src/accesslayer/preferences';
 import { ThemeEnum } from '../src/types/preferences';
 
@@ -348,6 +357,116 @@ describe('ClassLink account cleanup', () => {
                 transcriptRequests: 0,
                 authSubjects: 0,
                 privacyLocks: 0,
+            });
+        });
+
+        describe('LC-2409: a promoted personal email', () => {
+            const personal = 'me@personal.example';
+            const fake = createInMemoryAdminAuth();
+            const deletedAccount = {
+                ...userKey,
+                contactMethod: { type: 'email', value: personal },
+            } as unknown as MongoUserKeyType;
+
+            beforeEach(async () => {
+                fake.reset({ lazyUsers: false });
+                fake.setUser({ uid, email: personal, emailVerified: true });
+                vi.mocked(getAdminAuth).mockReturnValue(fake.auth);
+                await getClassLinkIdentitiesCollection().updateOne(
+                    { identityKey: 'classlink:cleanup:identity' },
+                    {
+                        $set: {
+                            personalEmail: personal,
+                            primaryEmail: {
+                                email: personal,
+                                uid,
+                                prevFirebaseEmail: 'cleanup@example.test',
+                                prevContactMethod: {
+                                    type: 'email',
+                                    value: 'cleanup@example.test',
+                                },
+                                state: 'active',
+                                at: new Date(),
+                            },
+                        },
+                    }
+                );
+                await getAuthSubjectsCollection().insertOne({
+                    identityKey: `email:${personal}`,
+                    subject: 'subject',
+                    emailVerified: true,
+                    createdAt: new Date(),
+                    lastLoginAt: new Date(),
+                });
+                // The promotion moved the contact to the personal address.
+                await getUserKeysCollection().updateOne(
+                    { primaryDid: did },
+                    { $set: { contactMethod: { type: 'email', value: personal } } }
+                );
+            });
+
+            it('account deletion removes email:personal and demotes T', async () => {
+                // keys.deleteUserKey: the key goes first, then the cascade.
+                await getUserKeysCollection().deleteMany({ primaryDid: did });
+
+                await deleteClassLinkDataForAccount(deletedAccount, {
+                    clearPrivacyLock: true,
+                    accountDeleted: true,
+                });
+
+                // School domain not trusted here: T gets the reserved synthetic address back.
+                expect(fake.peek(uid)?.email).toBe(syntheticEmailForUid(uid));
+                expect(
+                    await getAuthSubjectsCollection().countDocuments({
+                        identityKey: `email:${personal}`,
+                    })
+                ).toBe(0);
+                expect(await getClassLinkIdentitiesCollection().countDocuments({})).toBe(0);
+            });
+
+            it('deleteMyData on a live account restores the contact before releasing the subject', async () => {
+                await caller().deleteMyData({});
+
+                expect(fake.peek(uid)?.email).toBe(syntheticEmailForUid(uid));
+                expect(
+                    (await getUserKeysCollection().findOne({ primaryDid: did }))?.contactMethod
+                ).toEqual({ type: 'email', value: 'cleanup@example.test' });
+                expect(
+                    await getAuthSubjectsCollection().countDocuments({
+                        identityKey: `email:${personal}`,
+                    })
+                ).toBe(0);
+            });
+
+            it('a demote that cannot run keeps the identity with demotePending', async () => {
+                vi.mocked(getAdminAuth).mockReturnValue(undefined);
+                vi.spyOn(console, 'warn').mockImplementation(() => {});
+                await getUserKeysCollection().deleteMany({ primaryDid: did });
+
+                await deleteClassLinkDataForAccount(deletedAccount, { accountDeleted: true });
+
+                const kept = await getClassLinkIdentitiesCollection().findOne({});
+                expect(kept?.demotePending).toMatchObject({
+                    reason: expect.stringMatching(/^account_deleted/),
+                });
+                expect(fake.peek(uid)?.email).toBe(personal);
+                expect(
+                    await getAuthSubjectsCollection().countDocuments({
+                        identityKey: `email:${personal}`,
+                    })
+                ).toBe(1);
+            });
+
+            it('canDeletePersonalEmailSubject skips the contact check only for a deleted account', async () => {
+                await expect(
+                    canDeletePersonalEmailSubject(personal, 'subject', deletedAccount)
+                ).resolves.toBe(false);
+                await getUserKeysCollection().deleteMany({ primaryDid: did });
+                await expect(
+                    canDeletePersonalEmailSubject(personal, 'subject', deletedAccount, {
+                        accountDeleted: true,
+                    })
+                ).resolves.toBe(true);
             });
         });
 

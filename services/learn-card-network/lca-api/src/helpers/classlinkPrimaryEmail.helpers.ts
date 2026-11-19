@@ -196,6 +196,36 @@ export const hasLiveSchoolEmailAlias = async (
     return Boolean(subject?.emailVerified && subject.subject === identity.subject);
 };
 
+/**
+ * School addresses that also get the account's security notices (LC-2409): for each ClassLink
+ * identity of the account with an active promotion, its school email while the domain is
+ * trusted and the alias is not idle. Best effort: never throws, and never helps against a
+ * compromised lca-api (it sends these itself).
+ */
+export const getSchoolNoticeRecipients = async (
+    userKey: Pick<MongoUserKeyType, 'primaryDid' | 'linkedDids'> | null | undefined,
+    now = new Date()
+): Promise<string[]> => {
+    try {
+        if (!userKey?.primaryDid) return [];
+        const identities = await getClassLinkIdentitiesCollection()
+            .find({
+                primaryDid: { $in: getAccountDids(userKey) },
+                'primaryEmail.state': 'active',
+            })
+            .toArray();
+        const recipients = new Set<string>();
+        for (const identity of identities) {
+            const school = normalize(identity.email);
+            if (school && isSchoolEmailAliasLive(identity, now)) recipients.add(school);
+        }
+        return [...recipients];
+    } catch {
+        console.warn('classlink.school_notice.lookup_failed');
+        return [];
+    }
+};
+
 // ---------------------------------------------------------------------------------------
 // Plan, promote, demote
 // ---------------------------------------------------------------------------------------

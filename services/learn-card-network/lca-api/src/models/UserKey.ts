@@ -644,6 +644,7 @@ export const upsertUserKey = async (
                     ...((updateOps.$unset as Record<string, unknown> | undefined) ?? {}),
                     escrowBlob: '',
                     escrowPin: '',
+                    escrowContactDigest: '',
                 };
             }
         } else if (data.authShare) {
@@ -754,6 +755,7 @@ export const upsertUserKeyByAuthProvider = async (
                     ...((updateOps.$unset as Record<string, unknown> | undefined) ?? {}),
                     escrowBlob: '',
                     escrowPin: '',
+                    escrowContactDigest: '',
                 };
             }
         } else if (data.authShare) {
@@ -1134,7 +1136,12 @@ export const commitEscrowEnrollmentLease = async (
         return getUserKeysCollection().findOneAndUpdate(
             filter,
             {
-                $unset: { escrowBlob: '', escrowPin: '', escrowEnrollmentLease: '' },
+                $unset: {
+                    escrowBlob: '',
+                    escrowPin: '',
+                    escrowEnrollmentLease: '',
+                    escrowContactDigest: '',
+                },
                 $pull: { recoveryMethods: { type: 'escrow' } },
                 $set: { updatedAt: now, ...(lease.optOut ? { escrowOptedOutAt: now } : {}) },
             },
@@ -1189,6 +1196,15 @@ export const commitEscrowEnrollmentLease = async (
                                 }
                               : '$$REMOVE',
                     escrowEnrollmentLease: '$$REMOVE',
+                    // LC-2409: an enroll/replace seals the intent's contact (no digest: no
+                    // contact, or unknown); a carry or rewrap keeps the sealed contact.
+                    ...(lease.action === 'enroll' || lease.action === 'replace'
+                        ? {
+                              escrowContactDigest: lease.contactDigest
+                                  ? { $literal: lease.contactDigest }
+                                  : '$$REMOVE',
+                          }
+                        : {}),
                     updatedAt: now,
                     // A rewrap only re-seals the confirmed copy: its descriptor stands.
                     ...(lease.action === 'rewrap'
@@ -1304,7 +1320,7 @@ export const clearEscrowByAuthProvider = async (
                 : {}),
         },
         {
-            $unset: { escrowBlob: '', escrowPin: '' },
+            $unset: { escrowBlob: '', escrowPin: '', escrowContactDigest: '' },
             $pull: { recoveryMethods: { type: 'escrow' } },
             $set: { updatedAt: now, ...(optOut ? { escrowOptedOutAt: now } : {}) },
         },
@@ -1543,7 +1559,13 @@ export const removeRecoveryMethodFromUserKeyByAuthProvider = async (
     await getUserKeysCollection().updateOne(getAuthProviderFilter(authProvider), {
         $pull: { recoveryMethods: pullFilter },
         ...(type === 'escrow'
-            ? { $unset: { escrowBlob: '' as const, escrowPin: '' as const } }
+            ? {
+                  $unset: {
+                      escrowBlob: '' as const,
+                      escrowPin: '' as const,
+                      escrowContactDigest: '' as const,
+                  },
+              }
             : {}),
         $set: { updatedAt: new Date() },
     });
@@ -1760,6 +1782,7 @@ export const purgeExpiredProvisionalMigrationByAuthProvider = async (
                 authShare: '',
                 escrowBlob: '',
                 escrowPin: '',
+                escrowContactDigest: '',
                 shareUpdatedAt: '',
                 sssActivationState: '',
                 provisionalCreatedAt: '',
@@ -1986,6 +2009,7 @@ const buildSecurityRotationUpdate = (
             provisionalCreatedAt: '',
             escrowBlob: '',
             escrowPin: '',
+            escrowContactDigest: '',
             escrowEnrollmentLease: '',
             escrowPinCompares: '',
         },
