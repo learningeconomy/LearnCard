@@ -175,6 +175,15 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         await expect(page.locator('textarea.font-mono')).toBeVisible({ timeout: 30_000 });
     });
 
+    test('left-aligns the import label on a narrow mobile viewport', async ({ page }) => {
+        await page.setViewportSize({ width: 320, height: 700 });
+        const importOption = page.getByRole('button', {
+            name: 'Import a credential or spreadsheet',
+        });
+        await expect(importOption).toBeVisible();
+        await expect(importOption).toHaveCSS('text-align', 'start');
+    });
+
     for (const viewport of [
         { name: 'desktop', width: 1280, height: 800, mobile: false },
         { name: 'mobile', width: 390, height: 844, mobile: true },

@@ -38,7 +38,7 @@ export const StartFromExisting: React.FC<StartFromExistingProps> = ({ onImport }
                         SPREADSHEET_MODAL_TYPES
                     )
                 }
-                className="flex items-center gap-2 text-sm font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors"
+                className="flex items-center gap-2 text-start text-sm font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors"
             >
                 <Wand2 className="w-4 h-4 shrink-0 text-grayscale-400" />
                 {m['issueFlow.startFromLink']()}
