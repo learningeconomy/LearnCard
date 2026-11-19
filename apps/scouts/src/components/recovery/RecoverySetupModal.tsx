@@ -18,6 +18,7 @@ import { isWebAuthnSupported } from '@learncard/sss-key-manager';
 import * as m from '../../paraglide/messages.js';
 import { TransP } from '../../i18n/TransP';
 import { getLogger } from 'learn-card-base';
+import { AutomaticRecoveryCard, type AutomaticRecoveryProps } from './AutomaticRecoveryCard';
 const log = getLogger('recovery-setup-modal');
 
 /** Map raw confirmation errors to friendly, localized copy. Never surface Error.message directly. */
@@ -44,6 +45,8 @@ const toFriendlyConfirmError = (err: unknown): string => {
 export type RecoverySetupType = 'passkey' | 'phrase' | 'backup' | 'email';
 
 interface RecoverySetupModalProps {
+    automaticRecovery?: AutomaticRecoveryProps;
+    onSecureAccount?: () => void;
     onSetupPasskey: () => Promise<string>;
     onGeneratePhrase: () => Promise<{
         phrase: string;
@@ -77,6 +80,8 @@ const isValidChallengeOptions = (
     options.every(choices => Array.isArray(choices) && choices.length > 1);
 
 export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
+    automaticRecovery,
+    onSecureAccount,
     onSetupPasskey,
     onGeneratePhrase,
     onConfirmPhrase,
@@ -663,7 +668,17 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     // ── Render ─────────────────────────────────────────────────────────
 
     return (
-        <div className="p-6 max-w-md mx-auto bg-white min-h-full relative">
+        <div className="p-6 max-w-md mx-auto bg-white min-h-full relative font-poppins">
+            {automaticRecovery && <AutomaticRecoveryCard {...automaticRecovery} />}
+            {onSecureAccount && (
+                <button
+                    onClick={onSecureAccount}
+                    disabled={loading || !!unfinished}
+                    className="w-full mb-5 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                    {m['recovery.secureAccount.title']()}
+                </button>
+            )}
             {showLeaveGuard && (
                 <div
                     className="absolute inset-0 z-50 bg-white/80 backdrop-blur-xs flex items-center justify-center p-6 animate-fade-in-up motion-reduce:animate-none"
