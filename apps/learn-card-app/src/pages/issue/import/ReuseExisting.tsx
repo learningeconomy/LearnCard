@@ -51,6 +51,8 @@ interface ReuseExistingProps {
 type Step = 'list' | 'preview' | 'recipient' | 'success';
 
 const ENUM_VALUES = Object.values(BoostCategoryOptionsEnum);
+const normalizeCategory = (category: string): string =>
+    category.toLowerCase().replace(/[\s-]/g, '');
 const AI_PASSPORT_CATEGORIES = new Set<string>(
     [
         BoostCategoryOptionsEnum.aiSummary,
@@ -58,12 +60,12 @@ const AI_PASSPORT_CATEGORIES = new Set<string>(
         BoostCategoryOptionsEnum.aiPathway,
         BoostCategoryOptionsEnum.aiInsight,
         BoostCategoryOptionsEnum.aiAssessment,
-    ].map(category => category.toLowerCase().replace(/ /g, ''))
+    ].map(normalizeCategory)
 );
 
 // The stored name also identifies AI Passport boosts with a generic category.
 const isAIPassportBoost = ({ category, name }: BoostRecord): boolean =>
-    AI_PASSPORT_CATEGORIES.has(category?.toLowerCase().replace(/[\s-]/g, '') ?? '') ||
+    AI_PASSPORT_CATEGORIES.has(normalizeCategory(category ?? '')) ||
     name?.trim().toLowerCase() === 'ai passport credential';
 
 const resolveCategory = (category?: string): BoostCategoryOptionsEnum => {
