@@ -472,12 +472,21 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
             </div>
         );
     }
-    // No ClassLink identity, or the check failed: there is nothing to offer.
-    if (!data || !view || view === 'hidden' || handOff) return null;
+    // No ClassLink identity, or the check failed: there is nothing to offer. Inline, a
+    // stored address stays listed (with Remove) even when the step is switched off.
+    const storedEmail = Boolean(data?.maskedEmail);
+    if (!data || !view || handOff) return null;
+    if (view === 'hidden' && !(variant === 'inline' && storedEmail)) return null;
 
     const heading = variant === 'onboarding' ? 'h1' : 'h2';
     const shellVariant = variant === 'onboarding' ? 'onboarding' : 'sheet';
     const maskedEmail = isolateLtr(data.maskedEmail ?? '');
+    // Where recovery codes actually go: a recovery email the user verified earlier is
+    // never replaced, so it can differ from the personal email.
+    const otherRecoveryEmail = data.maskedRecoveryEmail
+        ? isolateLtr(data.maskedRecoveryEmail)
+        : undefined;
+    const codesTo = otherRecoveryEmail ?? maskedEmail;
     const stepTitle = title ?? defaultTitle;
     // A PIN (or one still to create) is what gets an escrow account back in. Without
     // one yet, the copy promises nothing the email cannot do on its own.
@@ -487,7 +496,8 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
             : m['classlinkKeepAccount.bodyNoPin']();
 
     const dismiss = (): void => {
-        track(AnalyticsEvents.KEEP_ACCOUNT_DISMISSED, { source, step: view });
+        if (view !== 'hidden')
+            track(AnalyticsEvents.KEEP_ACCOUNT_DISMISSED, { source, step: view });
         onDismiss?.();
     };
 
@@ -640,12 +650,24 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
                 title={m['classlinkKeepAccount.rowLabel']()}
                 titleRef={headingRef}
                 subtitle={
-                    view === 'done'
-                        ? `${maskedEmail} · ${m['classlinkKeepAccount.rowStatus']()}`
-                        : maskedEmail
+                    otherRecoveryEmail && view !== 'email'
+                        ? `${maskedEmail} · ${m['classlinkKeepAccount.rowCodesTo']({
+                              email: otherRecoveryEmail,
+                          })}`
+                        : view === 'done'
+                          ? `${maskedEmail} · ${m['classlinkKeepAccount.rowStatus']()}`
+                          : maskedEmail
                 }
                 action={removeButton}
             />
+        );
+        // A stored address the step cannot finish with (shared with another account, or
+        // the policy now refuses it) stays removable.
+        const storedRow = storedEmail && (
+            <>
+                {emailRow}
+                {removeEmail.failed && <RemoveFailed />}
+            </>
         );
         if (inlineSaved) {
             // A beat to confirm, then the form folds into the address row.
@@ -677,10 +699,15 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
         } else if (view === 'email') {
             content = (
                 <>
+                    {storedRow}
                     <Row
                         icon="mail"
-                        title={m['classlinkKeepAccount.rowLabel']()}
-                        titleRef={headingRef}
+                        title={
+                            storedEmail
+                                ? m['classlinkKeepAccount.rowDifferent']()
+                                : m['classlinkKeepAccount.rowLabel']()
+                        }
+                        titleRef={storedEmail ? undefined : headingRef}
                         subtitle={m['classlinkKeepAccount.banner.emailBody']()}
                         action={
                             !expanded && (
@@ -704,7 +731,9 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
                 : m['classlinkKeepAccount.pinTitle']();
             const pinBody = pinLocked
                 ? m['recovery.pin.pinLocked.body']()
-                : m['classlinkKeepAccount.pinBody']();
+                : otherRecoveryEmail
+                  ? m['classlinkKeepAccount.pinBodyRecoveryEmail']({ email: otherRecoveryEmail })
+                  : m['classlinkKeepAccount.pinBody']();
             content = (
                 <>
                     {emailRow}
@@ -740,34 +769,39 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
                     {removeEmail.failed && <RemoveFailed />}
                 </>
             );
+        } else if (view === 'hidden') {
+            content = storedRow;
         } else {
             // The row is short: the pill says what to add, the subtitle why.
             content = (
-                <Row
-                    icon="info"
-                    title={m['classlinkKeepAccount.rowLabel']()}
-                    titleRef={headingRef}
-                    subtitle={
-                        <span data-testid="keep-account-blocked">
-                            {canAddBirthDate
-                                ? m['classlinkKeepAccount.rowNeedsBirthDate']()
-                                : keepAccountReasonMessage(data.personalEmail.reason)}
-                        </span>
-                    }
-                    action={
-                        canAddBirthDate && (
-                            <button
-                                type="button"
-                                data-testid="keep-account-add-birth-date"
-                                aria-label={m['classlinkKeepAccount.addBirthDate']()}
-                                className={ROW_ACTION_CLASS}
-                                onClick={onAddBirthDate}
-                            >
-                                {m['classlinkKeepAccount.rowAdd']()}
-                            </button>
-                        )
-                    }
-                />
+                <>
+                    {storedRow}
+                    <Row
+                        icon="info"
+                        title={m['classlinkKeepAccount.rowLabel']()}
+                        titleRef={storedEmail ? undefined : headingRef}
+                        subtitle={
+                            <span data-testid="keep-account-blocked">
+                                {canAddBirthDate
+                                    ? m['classlinkKeepAccount.rowNeedsBirthDate']()
+                                    : keepAccountReasonMessage(data.personalEmail.reason)}
+                            </span>
+                        }
+                        action={
+                            canAddBirthDate && (
+                                <button
+                                    type="button"
+                                    data-testid="keep-account-add-birth-date"
+                                    aria-label={m['classlinkKeepAccount.addBirthDate']()}
+                                    className={ROW_ACTION_CLASS}
+                                    onClick={onAddBirthDate}
+                                >
+                                    {m['classlinkKeepAccount.rowAdd']()}
+                                </button>
+                            )
+                        }
+                    />
+                </>
             );
         }
     } else if (savedView) {
@@ -796,7 +830,13 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
                     autoFocus
                     headingLevel={heading}
                     title={m['classlinkKeepAccount.pinTitle']()}
-                    body={m['classlinkKeepAccount.pinBody']()}
+                    body={
+                        otherRecoveryEmail
+                            ? m['classlinkKeepAccount.pinBodyRecoveryEmail']({
+                                  email: otherRecoveryEmail,
+                              })
+                            : m['classlinkKeepAccount.pinBody']()
+                    }
                     setPin={setEscrowPin}
                     onComplete={pinSaved}
                     onStepChange={setPinStep}
@@ -869,8 +909,9 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
                     ? m['classlinkKeepAccount.doneBody']
                     : m['classlinkKeepAccount.doneBodyMethod'])({
                     option: m['recovery.identity.lostSchoolLogin'](),
-                    // Always present once the email is verified (the only way here).
-                    email: maskedEmail,
+                    // The address recovery codes go to (the personal email unless the
+                    // user verified a different recovery email earlier).
+                    email: codesTo,
                 })}
                 actions={
                     onComplete && (

@@ -8,6 +8,7 @@ type Continuity = {
     personalEmail: { allowed: boolean; reason?: string };
     emailVerified: boolean;
     maskedEmail?: string;
+    maskedRecoveryEmail?: string;
     recoveryEmailVerified: boolean;
     hasServerConfirmedMethod: boolean;
     hasUserRecoveryMethod: boolean;
@@ -349,6 +350,31 @@ describe('KeepAccountStep', () => {
         expect(mocks.openRecoverySetup.mock.calls[0][0].initialMethod).toBe('phrase');
     });
 
+    it('says codes go to a different recovery email the user verified earlier', () => {
+        mocks.continuity = { ...DONE, maskedRecoveryEmail: 'c***@example.net' };
+        renderStep();
+        expect(
+            screen.getByText(
+                m['classlinkKeepAccount.doneBody']({
+                    option: m['recovery.identity.lostSchoolLogin'](),
+                    email: isolateLtr('c***@example.net'),
+                })
+            )
+        ).toBeTruthy();
+    });
+
+    it('names a different recovery email on the PIN step', () => {
+        mocks.continuity = { ...PIN, maskedRecoveryEmail: 'c***@example.net' };
+        renderStep();
+        expect(
+            screen.getByText(
+                m['classlinkKeepAccount.pinBodyRecoveryEmail']({
+                    email: isolateLtr('c***@example.net'),
+                })
+            )
+        ).toBeTruthy();
+    });
+
     it('is done only when the server says so, with nothing to undo on the success screen', () => {
         mocks.continuity = DONE;
         const { onComplete } = renderStep();
@@ -680,6 +706,59 @@ describe('KeepAccountStep', () => {
             });
             expect(mocks.remove).toHaveBeenCalledTimes(1);
             expect(mocks.invalidate).toHaveBeenCalled();
+        });
+
+        it('names a different recovery email, since codes go there', () => {
+            mocks.continuity = { ...DONE, maskedRecoveryEmail: 'c***@example.net' };
+            renderStep({ variant: 'inline' });
+            const other = isolateLtr('c***@example.net');
+            expect(
+                screen.getByText(
+                    `${MASKED} · ${m['classlinkKeepAccount.rowCodesTo']({ email: other })}`
+                )
+            ).toBeTruthy();
+            expect(
+                screen.queryByText(m['classlinkKeepAccount.rowStatus'](), { exact: false })
+            ).toBeNull();
+        });
+
+        it.each([
+            [
+                'shared with another account',
+                state({ emailVerified: true, maskedEmail: 'm***@example.org' }),
+            ],
+            [
+                'refused by policy',
+                state({
+                    emailVerified: true,
+                    maskedEmail: 'm***@example.org',
+                    personalEmail: { allowed: false, reason: 'students_excluded' },
+                }),
+            ],
+            [
+                'switched off',
+                state({
+                    emailVerified: true,
+                    maskedEmail: 'm***@example.org',
+                    personalEmail: { allowed: false, reason: 'disabled' },
+                }),
+            ],
+        ])('keeps a stored address removable when %s', async (_label, continuity) => {
+            mocks.continuity = continuity;
+            renderStep({ variant: 'inline', onDismiss: undefined });
+            expect(screen.getByText(MASKED)).toBeTruthy();
+            fireEvent.click(screen.getByTestId('keep-account-remove'));
+            await act(async () => {
+                lastAlert().buttons[1].handler?.();
+            });
+            expect(mocks.remove).toHaveBeenCalledTimes(1);
+        });
+
+        it('offers a different address when the stored one could not be the recovery email', () => {
+            mocks.continuity = state({ emailVerified: true, maskedEmail: 'm***@example.org' });
+            renderStep({ variant: 'inline', onDismiss: undefined });
+            expect(screen.getByText(m['classlinkKeepAccount.rowDifferent']())).toBeTruthy();
+            expect(screen.getByTestId('keep-account-add')).toBeTruthy();
         });
 
         it('confirms Saved in place, then folds into the address row', async () => {
