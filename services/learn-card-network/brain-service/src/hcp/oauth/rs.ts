@@ -40,8 +40,12 @@ export const resolveBearerToGrant = async (
         return { ok: false, status: 401, error: 'invalid_token' };
     }
 
-    // Touch toGrant so scopes stay derived from live access, not the JWT alone.
+    // Token scope is an upper bound from consent; live grant may shrink later.
+    // Never widen: auth.scopes = intersection(token, live).
     const live = toGrant(settled);
+    const tokenScopes = parseScopeString(verified.claims.scope);
+    const liveSet = new Set(live.scopes);
+    const scopes = tokenScopes.filter(scope => liveSet.has(scope));
 
     return {
         ok: true,
@@ -49,7 +53,7 @@ export const resolveBearerToGrant = async (
             grant: settled,
             clientDid: settled.client.id,
             oauthClientId: verified.claims.client_id,
-            scopes: live.scopes.length > 0 ? live.scopes : parseScopeString(verified.claims.scope),
+            scopes,
             tokenJti: verified.claims.jti,
         },
     };

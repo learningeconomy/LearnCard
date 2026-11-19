@@ -38,6 +38,13 @@ const jsonError = (res: Response, status: number, error: string, description?: s
     });
 };
 
+const escapeHtml = (value: string): string =>
+    value
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
 const consentPage = (requestId: string): string => `<!doctype html>
 <html lang="en">
 <head><meta charset="utf-8"/><title>HCP OAuth consent (local)</title>
@@ -54,7 +61,7 @@ const consentPage = (requestId: string): string => `<!doctype html>
   <p>Select an <strong>already-issued</strong> active grant. This page is for local Claude Code /
   curl only; production must use DID-authenticated consent (Draft 3 §6.1.6).</p>
   <form method="post" action="/oauth/consent">
-    <input type="hidden" name="request_id" value="${requestId}"/>
+    <input type="hidden" name="request_id" value="${escapeHtml(requestId)}"/>
     <label for="subject_did">Subject DID</label>
     <input id="subject_did" name="subject_did" required placeholder="did:key:…"/>
     <label for="grant_id">Grant ID</label>
@@ -133,10 +140,18 @@ export const createHcpOAuthApp = (options: CreateHcpOAuthAppOptions): Express =>
         }
     });
 
-    app.get('/oauth/consent', (req, res) => {
-        const requestId = typeof req.query.request_id === 'string' ? req.query.request_id : '';
-        if (!requestId) return jsonError(res, 400, 'invalid_request', 'request_id required');
-        res.type('html').send(consentPage(requestId));
+    app.get('/oauth/consent', async (req, res, next) => {
+        try {
+            const requestId = typeof req.query.request_id === 'string' ? req.query.request_id : '';
+            if (!requestId) return jsonError(res, 400, 'invalid_request', 'request_id required');
+            const pending = await sessions.getPending(requestId);
+            if (!pending) {
+                return jsonError(res, 400, 'invalid_request', 'unknown or expired request_id');
+            }
+            res.type('html').send(consentPage(requestId));
+        } catch (error) {
+            next(error);
+        }
     });
 
     app.post('/oauth/consent', async (req, res, next) => {
