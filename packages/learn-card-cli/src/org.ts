@@ -1,9 +1,11 @@
+import { loadReferralInputs } from './org/referral-inputs';
 import type { Command } from 'commander';
 import {
     connect,
     connectAsDidWeb,
     connectAsDidWebSigner,
     ensureIdentity,
+    resolveServices,
     loadProject,
     type Project,
     type ProjectOptions,
@@ -16,6 +18,8 @@ import { generateRandomSeed } from './random';
 
 export type OrgApplyOptions = ProjectOptions & {
     dryRun?: boolean;
+    allowReconsent?: boolean;
+    tenantConfig?: string[];
     secretsOut?: string;
     cwd?: string;
     /** Operate on this in-memory project instead of loading .env from cwd (dry-run previews). */
@@ -24,6 +28,9 @@ export type OrgApplyOptions = ProjectOptions & {
 
 export const runOrgApply = async (file: string, options: OrgApplyOptions): Promise<void> => {
     const spec = await loadOrgSpec(file);
+    const inputs = await loadReferralInputs(spec, options.tenantConfig);
+    if (spec.referralPrograms?.length && !options.dryRun && !options.secretsOut)
+        throw new Error('Referral programs require --secrets-out for the integrator handoff.');
     const project = options.project ?? (await loadProject(options.cwd ?? process.cwd()));
 
     if (options.profileId && options.profileId !== spec.issuer.profileId)
@@ -60,9 +67,57 @@ export const runOrgApply = async (file: string, options: OrgApplyOptions): Promi
     const result = await applyOrg(spec, learnCard, project, {
         dryRun: options.dryRun,
         secretsOut: options.secretsOut,
-        connectAsManager: managerDid => connectAsDidWeb(project, options, managerDid),
-        connectAsManaged: managedDid => connectAsDidWeb(project, options, managedDid),
-        connectAsManagedSigner: managedDid => connectAsDidWebSigner(project, options, managedDid),
+        allowReconsent: options.allowReconsent,
+        referrals: {
+            ...inputs,
+            root: learnCard,
+            asProfile: did =>
+                connectAsDidWeb(project, { ...options, readOnly: !!options.dryRun }, did),
+            network: resolveServices(project.env, options.network).network,
+            provisionReadable: async (profileId, displayName, requestId) => {
+                // LC-2369 is deployed independently. Use its authenticated client route, and
+                // fail before issuing a token if the network cannot enable this disclosure.
+                const client = await learnCard.invoke.getLCNClient();
+                type Provision = {
+                    readableDelivery: {
+                        createRecipient: {
+                            mutate: (input: {
+                                profileId: string;
+                                displayName: string;
+                                requestId: string;
+                                disclosureVersion: '2';
+                                acceptDelegatedAuthority: true;
+                            }) => Promise<{
+                                profileId: string;
+                                enabled: boolean;
+                                disclosureVersion: string;
+                            }>;
+                        };
+                    };
+                };
+                const result = await (
+                    client as unknown as Provision
+                ).readableDelivery.createRecipient.mutate({
+                    profileId,
+                    displayName,
+                    requestId,
+                    disclosureVersion: '2',
+                    acceptDelegatedAuthority: true,
+                });
+                if (
+                    !result.enabled ||
+                    result.profileId !== profileId ||
+                    result.disclosureVersion !== '2'
+                )
+                    throw new Error(`Readable delivery could not be enabled for ${profileId}.`);
+            },
+        },
+        connectAsManager: managerDid =>
+            connectAsDidWeb(project, { ...options, readOnly: !!options.dryRun }, managerDid),
+        connectAsManaged: managedDid =>
+            connectAsDidWeb(project, { ...options, readOnly: !!options.dryRun }, managedDid),
+        connectAsManagedSigner: managedDid =>
+            connectAsDidWebSigner(project, { ...options, readOnly: !!options.dryRun }, managedDid),
     });
 
     if (options.dryRun) out.log('Dry run: no changes were made.');
@@ -73,6 +128,14 @@ export const runOrgApply = async (file: string, options: OrgApplyOptions): Promi
     }
     out.log(`Issuer DID: ${result.outputs.issuerDid}`);
 
+    for (const entry of result.outputs.referrals ?? []) {
+        out.log(
+            `${entry.program} → ${entry.recipient} on ${entry.network}: ${entry.contractUri ?? 'contract planned'}`
+        );
+        out.log(
+            `Token key ${entry.tokenKey}${entry.webhookSecretKey ? ', webhook secret key ' + entry.webhookSecretKey : ''}${entry.integrationId ? ', integration ' + entry.integrationId : ''}`
+        );
+    }
     out.set({ changes: result.changes, outputs: result.outputs });
 };
 
@@ -100,6 +163,13 @@ export const registerOrgCommand = (
         )
         .option('--network <url>', 'production|staging|local or a tRPC URL (default: production)')
         .option('--json', 'print a single JSON result on stdout')
+        .option('--allow-reconsent', 'publish changes that require learners to consent again')
+        .option(
+            '--tenant-config <tenant=path>',
+            'resolve referral fields from a tenant config (repeatable)',
+            (value: string, previous: string[]) => [...previous, value],
+            [] as string[]
+        )
         .option('--dry-run', 'preview changes without applying them')
         .option(
             '--secrets-out <path>',

@@ -1,4 +1,6 @@
 import {
+    ReferralAudienceInputValidator,
+    ReferralAudienceResultValidator,
     SendContractRequestValidator,
     SendContractRequestResultValidator,
     ContractRequestFieldsValidator,
@@ -150,6 +152,7 @@ import { ProfileType } from 'types/profile';
 import {
     getRecipientsForContract,
     addRecipientToContract,
+    reconcileReferralAudience,
     removeRecipientFromContract,
     canReadContractData,
     canReadContractConnections,
@@ -226,6 +229,7 @@ export const contractsRouter = t.router({
         })
         .input(
             z.object({
+                referralProgram: z.string().trim().min(1).max(100).optional(),
                 contract: ConsentFlowContractValidator,
                 name: z.string(),
                 subtitle: z.string().optional(),
@@ -356,6 +360,7 @@ export const contractsRouter = t.router({
                 contract,
                 ownerProfileId: ctx.user.profile.profileId,
                 recipientIds,
+                referralProgram: input.referralProgram,
                 writerIds: writers,
                 autoboosts: preparedAutoBoosts,
                 name,
@@ -371,6 +376,19 @@ export const contractsRouter = t.router({
 
             return constructUri('contract', createdContract.id, ctx.domain);
         }),
+
+    reconcileReferralAudience: profileRoute
+        .meta({ requiredScope: 'contracts:write' })
+        .input(ReferralAudienceInputValidator)
+        .output(ReferralAudienceResultValidator)
+        .mutation(({ ctx, input }) =>
+            reconcileReferralAudience(
+                getIdFromUri(input.contractUri),
+                ctx.user.profile.profileId,
+                input.recipients,
+                input.dryRun
+            )
+        ),
 
     addContractRecipient: profileRoute
         .meta({
@@ -467,6 +485,7 @@ export const contractsRouter = t.router({
                 owner: updateDidForProfile(ctx.domain, result.contractOwner),
                 readableDeliveryRecipients,
                 contract: result.contract.contract,
+                referralProgram: result.contract.referralProgram,
                 name: result.contract.name,
                 subtitle: result.contract.subtitle,
                 description: result.contract.description,
@@ -662,6 +681,7 @@ export const contractsRouter = t.router({
                 cursor: nextCursor,
                 records: contracts.map(({ contract, autoBoosts }) => ({
                     contract: contract.contract,
+                    referralProgram: contract.referralProgram,
                     name: contract.name,
                     subtitle: contract.subtitle,
                     description: contract.description,

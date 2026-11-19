@@ -18,6 +18,25 @@ npx @learncard/cli org apply org.yaml --network staging --secrets-out ./secrets.
 
 Creates missing resources, updates supported profile and signing settings (display names, branding, primary signer, the `SIGNING_AUTHORITY_*` selection in `.env`), and leaves matching resources alone. Service-account scope or expiry drift requires revoking the grant and re-running; it is never silently updated. A self-hosted signer whose registered DID differs from the spec is reported as drift and fails the run. Unknown keys anywhere in the spec are rejected, so a typo cannot silently drop a section. With `--secrets-out`, a missing token is re-issued into that file. An identical run with all tokens present prints `No changes.`
 
+## Configure a referral program
+
+Start with [the referral program example](https://github.com/learningeconomy/LearnCard/blob/main/packages/learn-card-cli/examples/hhusa-referrals.yaml). The `partner` owns the consent contract. Set `outcomes.issuer` to the issuer or a managed profile with a hosted signer. The outcome category appears in both read and write permissions. Use its exact wallet spelling, such as `Work History`.
+
+List dedicated recipient organizations under `referralRecipients` to create them with this admin, or reference a directly managed organization by its existing profile ID. Each integration receives events for every contract its recipient participates in. Give each customer a dedicated recipient.
+
+From the staging issuer's project directory, set the environment variable named by `delivery.webhookEnv` to the mediator's staging HTTPS endpoint. Pass the tenant config that will render the consent form. Each `tenant:schema` ask expands to individual field permissions. To request one field, use `tenant:schema:field`. String asks are optional. Use `{ key: email, required: true }` to require a field.
+
+```bash
+npx @learncard/cli org apply hhusa-referrals.yaml --network staging --tenant-config vetpass=/path/to/vetpass/config.staging.json --secrets-out ./referral-secrets.env --dry-run
+```
+
+1. Review the owner, recipients, signer and scopes. Setting `delivery.readable: true` delegates management of the dedicated recipient to LearnCard for full credential delivery. The target network must support that operation.
+2. Run the same command without `--dry-run`. The handoff lists the network, contract URI, recipient, integration ID and keys in the mode-0600 secrets file. Transfer the token and webhook signing secret through your secret manager. The token authenticates as the recipient.
+3. Run the preview again to inspect drift. Keep the program name stable between applies. Recipients freeze at first consent, including after withdrawal. A change classified as requiring fresh consent can be published with `--allow-reconsent`. Set `reason` in the program to the explanation learners should see.
+4. Verify an invitation, learner consent, outcome, readable result and signed event with the sandbox mediator before setting up a separate production project. Use the production tenant config, endpoint and secrets file for that project. Pilot feature-flag targeting is a separate operator step.
+
+If the file loses a webhook secret, restore the existing secret from secure storage or explicitly rotate it in the integration. Reapplying never silently rotates a secret.
+
 ## Before you start: one folder, one identity
 
 The CLI keeps your identity in a `.env` in the current folder. **A folder is one profile on one network.** Make a fresh folder for this guide, and a different folder (or let `promote` make one) for production.

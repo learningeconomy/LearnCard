@@ -1,15 +1,12 @@
-import fs from 'node:fs/promises';
-import { randomUUID } from 'node:crypto';
-import path from 'node:path';
-import type { LCALearnCard } from '@learncard/lca-api-plugin';
+import { hasSecret, writeSecret, withSecretsLock } from './secrets';
 import {
-    ensureGitignored,
-    noteCreatedProfileDid,
-    parseEnv,
-    upsertEnv,
-    saveProject,
-    type Project,
-} from '../project';
+    planNewReferral,
+    applyReferrals,
+    type ReferralContext,
+    type ReferralHandoff,
+} from './referrals';
+import type { LCALearnCard } from '@learncard/lca-api-plugin';
+import { noteCreatedProfileDid, saveProject, type Project } from '../project';
 import { setupSigning } from '../setup-signing';
 import { out } from '../out';
 import {
@@ -18,7 +15,7 @@ import {
     normalizeActAs,
     type AuthGrantWithActAs,
 } from '../auth-grant';
-import { toEnvKey, type OrgBranding, type OrgServiceAccountSpec, type OrgSpec } from './schema';
+import { type OrgBranding, type OrgServiceAccountSpec, type OrgSpec } from './schema';
 export { toEnvKey } from './schema';
 
 export type OrgResource =
@@ -28,7 +25,11 @@ export type OrgResource =
     | 'managedProfile'
     | 'branding'
     | 'serviceAccount'
-    | 'webhook';
+    | 'webhook'
+    | 'referralContract'
+    | 'referralRecipient'
+    | 'readableDelivery'
+    | 'integrationWebhook';
 
 export type OrgChangeAction =
     'created' | 'updated' | 'unchanged' | 'would-create' | 'would-update' | 'drifted';
@@ -44,6 +45,7 @@ export interface OrgApplyResult {
     changes: OrgChange[];
     outputs: {
         issuerDid: string;
+        referrals?: ReferralHandoff[];
         managerDid?: string;
         managed: Array<{ profileId: string; did: string }>;
         serviceAccounts: Array<{ name: string; grantId: string; created: boolean }>;
@@ -81,6 +83,8 @@ export type ManagedSignerCard = {
 };
 
 export interface ApplyOrgOptions {
+    referrals?: ReferralContext;
+    allowReconsent?: boolean;
     dryRun?: boolean;
     secretsOut?: string;
     /** Required when the spec has `profileManager.managed` entries. */
@@ -122,60 +126,19 @@ const resolveIssuerDid = (learnCard: OrgLearnCard): string => {
     }
 };
 
-const inspectSecrets = async (secretsOut: string) => {
-    const info = await fs.lstat(secretsOut).catch((error: NodeJS.ErrnoException) => {
-        if (error.code === 'ENOENT') return undefined;
-        throw error;
-    });
-    if (info && !info.isFile())
-        throw new Error('Secrets output must be a regular file, not a symlink.');
-    return info;
-};
-
-const hasSecret = async (secretsOut: string, name: string): Promise<boolean> => {
-    if (!(await inspectSecrets(secretsOut))) return false;
-    const env = parseEnv(await fs.readFile(secretsOut, 'utf8'));
-    return !!env[toEnvKey(name)]?.trim();
-};
-
-/** Replace a token entry without duplicate keys, securing existing files before writing. */
-const writeSecret = async (secretsOut: string, name: string, token: string): Promise<void> => {
-    await fs.mkdir(path.dirname(secretsOut), { recursive: true });
-    const info = await inspectSecrets(secretsOut);
-    if (info) await fs.chmod(secretsOut, 0o600);
-    const existing = info ? await fs.readFile(secretsOut, 'utf8') : '';
-    const key = toEnvKey(name);
-    const retained = existing
-        .split('\n')
-        .filter(line => line.match(/^\s*(?:export\s+)?([\w]+)\s*=/)?.[1] !== key)
-        .join('\n');
-    const next = upsertEnv(retained, { [key]: token });
-    // Like saveProject, stage the replacement so a failed write cannot destroy other tokens.
-    const temporary = `${secretsOut}.${randomUUID()}.tmp`;
-    const handle = await fs.open(temporary, 'wx', 0o600);
-    try {
-        try {
-            await handle.writeFile(next, 'utf8');
-        } finally {
-            await handle.close();
-        }
-        await inspectSecrets(secretsOut);
-        await fs.rename(temporary, secretsOut);
-    } finally {
-        await fs.rm(temporary, { force: true });
-    }
-    await ensureGitignored(path.dirname(secretsOut), path.basename(secretsOut));
-};
-
 const GRANT_PAGE_SIZE = 100;
 
 type Grant = NonNullable<Awaited<ReturnType<OrgLearnCard['invoke']['getAuthGrants']>>>[number];
 
 /** Walk every page for this account's name so an older active grant is never missed and duplicated. */
-const findActiveGrant = async (
-    learnCard: OrgLearnCard,
-    name: string
-): Promise<Grant | undefined> => {
+export type GrantCard = {
+    invoke: Pick<
+        OrgLearnCard['invoke'],
+        'getAuthGrants' | 'addAuthGrant' | 'getAPITokenForAuthGrant'
+    >;
+};
+
+const findActiveGrant = async (learnCard: GrantCard, name: string): Promise<Grant | undefined> => {
     let cursor: string | undefined;
     for (;;) {
         const page =
@@ -190,32 +153,6 @@ const findActiveGrant = async (
         if (page.length < GRANT_PAGE_SIZE || !last?.createdAt || last.createdAt === cursor)
             return undefined;
         cursor = last.createdAt;
-    }
-};
-
-/**
- * Serialize applies that share a secrets file: two overlapping runs would otherwise
- * both miss the grant, both create one, and overwrite each other's token.
- */
-const withSecretsLock = async <T>(
-    secretsOut: string | undefined,
-    fn: () => Promise<T>
-): Promise<T> => {
-    if (!secretsOut) return fn();
-    await fs.mkdir(path.dirname(secretsOut), { recursive: true });
-    const lockPath = path.join(path.dirname(secretsOut), `.${path.basename(secretsOut)}.lock`);
-    const lock = await fs.open(lockPath, 'wx', 0o600).catch((error: NodeJS.ErrnoException) => {
-        if (error.code === 'EEXIST')
-            throw new Error(
-                `Another org apply is reconciling service accounts for ${secretsOut}. Retry when it finishes; remove a stale ${path.basename(lockPath)} only if no command is running.`
-            );
-        throw error;
-    });
-    try {
-        return await fn();
-    } finally {
-        await lock.close();
-        await fs.rm(lockPath, { force: true });
     }
 };
 
@@ -695,97 +632,91 @@ const applyProfileManager = async (
 const actAsValue = (actAs: OrgServiceAccountSpec['actAs']): string | undefined =>
     actAs === undefined ? undefined : actAs === '*' ? '*' : actAs.join(',');
 
-const applyServiceAccounts = async (
-    spec: OrgSpec,
-    learnCard: OrgLearnCard,
+const reconcileServiceAccounts = async (
+    accounts: OrgServiceAccountSpec[],
+    learnCard: GrantCard,
     dryRun: boolean,
     secretsOut: string | undefined,
     changes: OrgChange[],
     serviceAccounts: Array<{ name: string; grantId: string; created: boolean }>
 ): Promise<void> => {
-    if (!spec.serviceAccounts?.length) return;
-
-    await withSecretsLock(dryRun ? undefined : secretsOut, async () => {
-        for (const account of spec.serviceAccounts ?? []) {
-            const actAs = actAsValue(account.actAs);
-            const existing = await findActiveGrant(learnCard, account.name);
-            if (existing) {
-                if (!existing.id)
-                    throw new Error(
-                        `Service account "${account.name}" returned a grant without an ID; cannot safely reconcile it.`
-                    );
-                serviceAccounts.push({
-                    name: account.name,
-                    grantId: existing.id,
-                    created: false,
-                });
-                // scope, expiresAt and actAs are all fixed when the token is minted — the only
-                // way to change them is to revoke and mint a replacement.
-                const drift = [
-                    normalizeScope(existing.scope) !== normalizeScope(account.scopes.join(' ')) &&
-                        'scope',
-                    expiryInstant(existing.expiresAt) !== expiryInstant(account.expiresAt) &&
-                        'expiresAt',
-                    normalizeActAs(getGrantActAs(existing)) !== normalizeActAs(actAs) &&
-                        `actAs ${describeActAs(getGrantActAs(existing))} -> ${describeActAs(actAs)}`,
-                ].filter(Boolean);
-                if (drift.length) {
-                    const detail = `Service account "${account.name}" grant has drifted (${drift.join(', ')}). These are fixed when the token is minted — revoke it (npx @learncard/cli token --revoke ${existing.id}) and re-run org apply with --secrets-out to mint a replacement.`;
-                    if (!dryRun) throw new Error(detail);
-                    changes.push({
-                        resource: 'serviceAccount',
-                        name: account.name,
-                        action: 'drifted',
-                        detail,
-                    });
-                } else if (secretsOut && !(await hasSecret(secretsOut, account.name))) {
-                    if (!dryRun) {
-                        const token = await learnCard.invoke.getAPITokenForAuthGrant(existing.id);
-                        await writeSecret(secretsOut, account.name, token);
-                    }
-                    changes.push({
-                        resource: 'serviceAccount',
-                        name: account.name,
-                        action: dryRun ? 'would-update' : 'updated',
-                        detail: dryRun ? 'token would be re-issued' : 'token re-issued',
-                    });
-                } else {
-                    changes.push({
-                        resource: 'serviceAccount',
-                        name: account.name,
-                        action: 'unchanged',
-                    });
-                }
-                continue;
-            }
-            if (dryRun) {
+    for (const account of accounts) {
+        const actAs = actAsValue(account.actAs);
+        const existing = await findActiveGrant(learnCard, account.name);
+        if (existing) {
+            if (!existing.id)
+                throw new Error(
+                    `Service account "${account.name}" returned a grant without an ID; cannot safely reconcile it.`
+                );
+            serviceAccounts.push({
+                name: account.name,
+                grantId: existing.id,
+                created: false,
+            });
+            // scope, expiresAt and actAs are all fixed when the token is minted — the only
+            // way to change them is to revoke and mint a replacement.
+            const drift = [
+                normalizeScope(existing.scope) !== normalizeScope(account.scopes.join(' ')) &&
+                    'scope',
+                expiryInstant(existing.expiresAt) !== expiryInstant(account.expiresAt) &&
+                    'expiresAt',
+                normalizeActAs(getGrantActAs(existing)) !== normalizeActAs(actAs) &&
+                    `actAs ${describeActAs(getGrantActAs(existing))} -> ${describeActAs(actAs)}`,
+            ].filter(Boolean);
+            if (drift.length) {
+                const detail = `Service account "${account.name}" grant has drifted (${drift.join(', ')}). These are fixed when the token is minted — revoke it (npx @learncard/cli token --revoke ${existing.id}) and re-run org apply with --secrets-out to mint a replacement.`;
+                if (!dryRun) throw new Error(detail);
                 changes.push({
                     resource: 'serviceAccount',
                     name: account.name,
-                    action: 'would-create',
+                    action: 'drifted',
+                    detail,
                 });
-                continue;
+            } else if (secretsOut && !(await hasSecret(secretsOut, account.name))) {
+                if (!dryRun) {
+                    const token = await learnCard.invoke.getAPITokenForAuthGrant(existing.id);
+                    await writeSecret(secretsOut, account.name, token);
+                }
+                changes.push({
+                    resource: 'serviceAccount',
+                    name: account.name,
+                    action: dryRun ? 'would-update' : 'updated',
+                    detail: dryRun ? 'token would be re-issued' : 'token re-issued',
+                });
+            } else {
+                changes.push({
+                    resource: 'serviceAccount',
+                    name: account.name,
+                    action: 'unchanged',
+                });
             }
-            if (!secretsOut)
-                throw new Error(
-                    `Pass --secrets-out ./secrets.env (any path; keep it beside .env and out of git) to create service account "${account.name}" — the token is written to this file and not stored elsewhere by the CLI.`
-                );
-            const payload: AuthGrantWithActAs = {
-                name: account.name,
-                scope: account.scopes.join(' '),
-                ...(account.expiresAt
-                    ? { expiresAt: new Date(account.expiresAt).toISOString() }
-                    : {}),
-                ...(actAs !== undefined ? { actAs } : {}),
-            };
-            const grantId = await learnCard.invoke.addAuthGrant(payload);
-            const token = await learnCard.invoke.getAPITokenForAuthGrant(grantId);
-            await writeSecret(secretsOut, account.name, token);
-            out.log(`Token for "${account.name}" written to ${secretsOut}`);
-            serviceAccounts.push({ name: account.name, grantId, created: true });
-            changes.push({ resource: 'serviceAccount', name: account.name, action: 'created' });
+            continue;
         }
-    });
+        if (dryRun) {
+            changes.push({
+                resource: 'serviceAccount',
+                name: account.name,
+                action: 'would-create',
+            });
+            continue;
+        }
+        if (!secretsOut)
+            throw new Error(
+                `Pass --secrets-out ./secrets.env (any path; keep it beside .env and out of git) to create service account "${account.name}" — the token is written to this file and not stored elsewhere by the CLI.`
+            );
+        const payload: AuthGrantWithActAs = {
+            name: account.name,
+            scope: account.scopes.join(' '),
+            ...(account.expiresAt ? { expiresAt: new Date(account.expiresAt).toISOString() } : {}),
+            ...(actAs !== undefined ? { actAs } : {}),
+        };
+        const grantId = await learnCard.invoke.addAuthGrant(payload);
+        const token = await learnCard.invoke.getAPITokenForAuthGrant(grantId);
+        await writeSecret(secretsOut, account.name, token);
+        out.log(`Token for "${account.name}" written to ${secretsOut}`);
+        serviceAccounts.push({ name: account.name, grantId, created: true });
+        changes.push({ resource: 'serviceAccount', name: account.name, action: 'created' });
+    }
 };
 
 const applyWebhooks = async (
@@ -868,6 +799,13 @@ const planFreshOrg = (spec: OrgSpec, project: Project, changes: OrgChange[]): vo
                 });
         }
     }
+    for (const recipient of spec.referralRecipients ?? [])
+        changes.push({
+            resource: 'referralRecipient',
+            name: recipient.profileId,
+            action: 'would-create',
+        });
+    for (const program of spec.referralPrograms ?? []) planNewReferral(program, changes);
     for (const account of spec.serviceAccounts ?? [])
         changes.push({
             resource: 'serviceAccount',
@@ -925,9 +863,53 @@ export const applyOrg = async (
         managed
     );
 
-    await applyServiceAccounts(spec, learnCard, dryRun, opts.secretsOut, changes, serviceAccounts);
+    const referrals =
+        spec.referralPrograms?.length || spec.referralRecipients?.length
+            ? await withSecretsLock(dryRun ? undefined : opts.secretsOut, async () => {
+                  if (!opts.referrals) throw new Error('Missing referral setup connection.');
+                  return applyReferrals(
+                      spec,
+                      opts.referrals,
+                      dryRun,
+                      !!opts.allowReconsent,
+                      opts.secretsOut,
+                      managed,
+                      changes,
+                      (account, recipient) =>
+                          reconcileServiceAccounts(
+                              [account],
+                              recipient,
+                              dryRun,
+                              opts.secretsOut,
+                              changes,
+                              serviceAccounts
+                          )
+                  );
+              })
+            : undefined;
+    await withSecretsLock(
+        !dryRun && spec.serviceAccounts?.length ? opts.secretsOut : undefined,
+        () =>
+            reconcileServiceAccounts(
+                spec.serviceAccounts ?? [],
+                learnCard,
+                dryRun,
+                opts.secretsOut,
+                changes,
+                serviceAccounts
+            )
+    );
 
     await applyWebhooks(spec, project, opts.dryRun ?? false, changes);
 
-    return { changes, outputs: { issuerDid, managerDid, managed, serviceAccounts } };
+    return {
+        changes,
+        outputs: {
+            issuerDid,
+            managerDid,
+            managed,
+            serviceAccounts,
+            ...(referrals && { referrals }),
+        },
+    };
 };

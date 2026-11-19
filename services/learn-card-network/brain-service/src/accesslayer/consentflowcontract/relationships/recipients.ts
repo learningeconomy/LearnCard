@@ -145,3 +145,63 @@ export const removeRecipientFromContract = async (
     );
     return Number(result.records[0]?.get('count') ?? 0) > 0;
 };
+
+/** Replace the entire recipient set only while the contract has never had consent.
+ * The preview reads the identical state without taking a write lock.
+ */
+export const reconcileReferralAudience = async (
+    contractId: string,
+    owner: string,
+    recipients: string[],
+    dryRun: boolean
+) => {
+    const query = new QueryBuilder(
+        new BindParam({ contractId, owner, recipients: [...new Set(recipients)] })
+    );
+    query.raw(
+        `MATCH (contract:ConsentFlowContract {id: $contractId})-[:CREATED_BY]->(:Profile {profileId: $owner})`
+    );
+    if (!dryRun) query.raw('SET contract.audienceLock = coalesce(contract.audienceLock, 0) + 1');
+    query.raw(`
+        WITH contract, EXISTS { MATCH (:AppStoreListing)-[:HAS_CONSENT_CONTRACT]->(contract) } AS listing,
+             (coalesce(contract.hasConsented, false) OR EXISTS { MATCH (:ConsentFlowTerms)-[:CONSENTS_TO]->(contract) }) AS frozen,
+             [(contract)-[:CAN_WRITE]->(writer:Profile) | writer.profileId] AS writers
+        OPTIONAL MATCH (contract)-[edge:SHARES_DATA_WITH]->(current:Profile)
+        WITH contract, listing, frozen, writers, collect(edge) AS edges, collect(current.profileId) AS currentIds
+        OPTIONAL MATCH (wanted:Profile) WHERE wanted.profileId IN $recipients
+        WITH contract, listing, frozen, writers, edges, currentIds, collect(wanted) AS targets
+        WITH *, size(targets) = size($recipients) AND NOT $owner IN $recipients AS valid,
+             (size(currentIds) <> size($recipients) OR any(id IN currentIds WHERE NOT id IN $recipients)) AS changed
+    `);
+    if (!dryRun)
+        query.raw(`
+        FOREACH (_ IN CASE WHEN valid AND changed AND NOT listing AND NOT frozen THEN [1] ELSE [] END |
+            FOREACH (edge IN edges | DELETE edge)
+            FOREACH (target IN targets | CREATE (contract)-[:SHARES_DATA_WITH {addedAt: toString(datetime())}]->(target))
+            SET contract.audienceVersion = coalesce(contract.audienceVersion, 0) + 1)
+    `);
+    const result = await runAudienceMutation(
+        query.return('listing, valid, changed, frozen, writers')
+    );
+    const row = result.records[0];
+    if (!row)
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Owned referral contract not found' });
+    if (row.get('listing'))
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'An App Store listing contract cannot be used for a referral program.',
+        });
+    if (recipients.includes(owner) || (!dryRun && !row.get('valid')))
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Recipients must be existing profiles distinct from the owner.',
+        });
+    const changed = Boolean(row.get('changed'));
+    const frozen = Boolean(row.get('frozen'));
+    if (changed && frozen && !dryRun)
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Recipients are frozen after first consent. This needs a new contract.',
+        });
+    return { changed, frozen, writers: row.get('writers') as string[] };
+};

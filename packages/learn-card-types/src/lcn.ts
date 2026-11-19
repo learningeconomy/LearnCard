@@ -999,6 +999,20 @@ export const ConsentFlowContractChangesValidator = z.object({
 });
 export type ConsentFlowContractChanges = z.input<typeof ConsentFlowContractChangesValidator>;
 
+/** Owner-only inspection or atomic replacement of a referral's pre-consent audience. */
+export const ReferralAudienceInputValidator = z.object({
+    contractUri: z.string(),
+    recipients: z.array(z.string().min(1)).max(50),
+    dryRun: z.boolean().default(true),
+});
+export type ReferralAudienceInput = z.input<typeof ReferralAudienceInputValidator>;
+export const ReferralAudienceResultValidator = z.object({
+    changed: z.boolean(),
+    frozen: z.boolean(),
+    writers: z.array(z.string()),
+});
+export type ReferralAudienceResult = z.infer<typeof ReferralAudienceResultValidator>;
+
 export const ConsentFlowContractDetailsValidator = z.object({
     readableDeliveryRecipients: z
         .array(
@@ -1011,6 +1025,7 @@ export const ConsentFlowContractDetailsValidator = z.object({
             })
         )
         .optional(),
+    referralProgram: z.string().optional(),
     contract: ConsentFlowContractValidator,
     owner: LCNProfileValidator,
     name: z.string(),
