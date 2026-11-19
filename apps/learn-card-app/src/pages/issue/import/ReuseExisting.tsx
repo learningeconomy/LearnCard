@@ -51,6 +51,20 @@ interface ReuseExistingProps {
 type Step = 'list' | 'preview' | 'recipient' | 'success';
 
 const ENUM_VALUES = Object.values(BoostCategoryOptionsEnum);
+const AI_PASSPORT_CATEGORIES = new Set<string>(
+    [
+        BoostCategoryOptionsEnum.aiSummary,
+        BoostCategoryOptionsEnum.aiTopic,
+        BoostCategoryOptionsEnum.aiPathway,
+        BoostCategoryOptionsEnum.aiInsight,
+        BoostCategoryOptionsEnum.aiAssessment,
+    ].map(category => category.toLowerCase().replace(/ /g, ''))
+);
+
+// The stored name also identifies AI Passport boosts with a generic category.
+const isAIPassportBoost = ({ category, name }: BoostRecord): boolean =>
+    AI_PASSPORT_CATEGORIES.has(category?.toLowerCase().replace(/[\s-]/g, '') ?? '') ||
+    name?.trim().toLowerCase() === 'ai passport credential';
 
 const resolveCategory = (category?: string): BoostCategoryOptionsEnum => {
     if (!category) return BoostCategoryOptionsEnum.achievement;
@@ -132,8 +146,11 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
     const records = useMemo<BoostRecord[]>(() => {
         const all = (data?.pages ?? []).flatMap(page => (page?.records ?? []) as BoostRecord[]);
         const trimmed = query.trim().toLowerCase();
-        if (!trimmed) return all;
-        return all.filter(r => (r.name ?? '').toLowerCase().includes(trimmed));
+        return all.filter(
+            record =>
+                !isAIPassportBoost(record) &&
+                (!trimmed || (record.name ?? '').toLowerCase().includes(trimmed))
+        );
     }, [data, query]);
 
     const groups = useMemo(() => {
@@ -294,7 +311,7 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
         step === 'preview' ? resetToList : step === 'recipient' ? () => setStep('preview') : null;
 
     return (
-        <div className="font-poppins w-full max-w-[560px] mx-auto bg-white rounded-[20px] flex flex-col max-h-[85vh] overflow-hidden animate-fade-in-up">
+        <div className="font-poppins flex min-h-0 flex-auto flex-col">
             <div className="shrink-0 px-6 pt-6 pb-4 border-b border-grayscale-100">
                 <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2 min-w-0">
@@ -359,17 +376,18 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
                             <div className="flex items-center justify-center py-12 text-grayscale-400">
                                 <Loader2 className="w-6 h-6 animate-spin" />
                             </div>
-                        ) : records.length === 0 ? (
-                            <div className="text-center py-12">
-                                <RotateCcw className="w-8 h-8 text-grayscale-300 mx-auto mb-3" />
-                                <p className="text-sm text-grayscale-500">
-                                    {query
-                                        ? m['issueFlow.nothingMatches']({ query })
-                                        : m['issueFlow.noneIssued']()}
-                                </p>
-                            </div>
                         ) : (
                             <>
+                                {records.length === 0 && (query || !hasNextPage) && (
+                                    <div className="text-center py-12">
+                                        <RotateCcw className="w-8 h-8 text-grayscale-300 mx-auto mb-3" />
+                                        <p className="text-sm text-grayscale-500">
+                                            {query
+                                                ? m['issueFlow.nothingMatches']({ query })
+                                                : m['issueFlow.noneIssued']()}
+                                        </p>
+                                    </div>
+                                )}
                                 <div className="space-y-v3-5">
                                     {groups.map(({ label, items }) => (
                                         <div key={label}>

@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures/mocked-test';
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import type { IssueInboxCredentialBatch, InboxBatchStatus } from '@learncard/types';
 import type { TrpcMock, BrainOutputs } from './mocks/trpc';
 import { installNetwork } from './mocks/network';
@@ -21,6 +21,23 @@ const selectBadgeType = async (page: Page) => {
 };
 
 const fillName = (page: Page, name: string) => page.getByPlaceholder(NAME_PLACEHOLDER).fill(name);
+
+const expectPickerLayout = async (page: Page, picker: Locator, mobile: boolean) => {
+    const { width, height } = page.viewportSize()!;
+    await picker.evaluate(async section => {
+        await Promise.all(section.getAnimations().map(animation => animation.finished));
+    });
+    await expect
+        .poll(async () => {
+            const box = await picker.boundingBox();
+            if (!box) return false;
+            if (mobile) {
+                return box.x === 0 && box.y === 0 && box.width === width && box.height === height;
+            }
+            return box.y > 0 && Math.abs(2 * box.y + box.height - height) < 2;
+        })
+        .toBe(true);
+};
 
 const waitForIssueReady = async (page: Page): Promise<void> => {
     // A route change can finish while the account's key is still being restored.
@@ -157,6 +174,84 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         await page.getByRole('button', { name: 'JSON', exact: true }).click({ timeout: 30_000 });
         await expect(page.locator('textarea.font-mono')).toBeVisible({ timeout: 30_000 });
     });
+
+    for (const viewport of [
+        { name: 'desktop', width: 1280, height: 800, mobile: false },
+        { name: 'mobile', width: 390, height: 844, mobile: true },
+    ]) {
+        test(`keeps the credential type picker stable while searching on ${viewport.name}`, async ({
+            page,
+        }) => {
+            await page.setViewportSize(viewport);
+            await page.getByRole('button', { name: 'Browse all types' }).click();
+            const picker = page
+                .getByRole('heading', { name: 'Choose a credential type' })
+                .locator('xpath=ancestor::section[parent::aside]');
+            await expectPickerLayout(page, picker, viewport.mobile);
+            const initialBox = await picker.boundingBox();
+
+            const search = picker.getByPlaceholder('Search types…');
+            await search.fill('zzzz');
+            await expect(picker.getByText(/zzzz/)).toBeVisible();
+            expect(await picker.boundingBox()).toEqual(initialBox);
+            await search.fill('badge');
+            await picker.getByRole('button', { name: /^Badge A digital badge/ }).click();
+            await expect(page.getByPlaceholder(NAME_PLACEHOLDER)).toBeVisible();
+        });
+
+        test(`filters AI Passport credentials and keeps the reuse picker stable on ${viewport.name}`, async ({
+            page,
+        }) => {
+            await page.setViewportSize(viewport);
+            network.on('boost.getPaginatedBoosts', input => {
+                const cursor = (input as { cursor?: string } | undefined)?.cursor;
+                return {
+                    hasMore: !cursor,
+                    cursor: '2026-11-18T12:00:00.000Z',
+                    records: cursor
+                        ? [
+                              {
+                                  uri: 'boost:badge',
+                                  name: 'First Aid Badge',
+                                  category: 'Social Badge',
+                              },
+                              {
+                                  uri: 'boost:topic',
+                                  name: 'Personalized Session',
+                                  category: 'ai-topic',
+                              },
+                          ]
+                        : [
+                              {
+                                  uri: 'boost:ai',
+                                  name: 'AI Passport credential',
+                                  category: 'Achievement',
+                              },
+                          ],
+                } satisfies BrainOutputs['boost']['getPaginatedBoosts'];
+            });
+
+            await page.getByRole('button', { name: "Send one you've made" }).click();
+            const picker = page
+                .getByRole('heading', { name: "Reuse one you've made" })
+                .locator('xpath=ancestor::section[parent::aside]');
+            await expectPickerLayout(page, picker, viewport.mobile);
+            const initialBox = await picker.boundingBox();
+            const showMore = picker.getByRole('button', { name: 'Show more' });
+
+            await expect(showMore).toBeVisible();
+            await expect(picker.getByText('AI Passport credential', { exact: true })).toHaveCount(
+                0
+            );
+            await showMore.click();
+            await expect(picker.getByRole('button', { name: 'First Aid Badge' })).toBeVisible();
+            await expect(picker.getByText('Personalized Session', { exact: true })).toHaveCount(0);
+
+            await picker.getByPlaceholder('Search your credentials…').fill('AI Passport');
+            await expect(picker.getByText(/Nothing matches/)).toBeVisible();
+            expect(await picker.boundingBox()).toEqual(initialBox);
+        });
+    }
 
     test('rejects an excessive XLSX archive and then imports a real Google Sheets export through the browser worker', async ({
         page,
