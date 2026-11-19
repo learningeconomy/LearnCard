@@ -14,7 +14,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import { AuthCoordinator, createAuthCoordinator } from '../AuthCoordinator';
+import { AuthCoordinator, createAuthCoordinator, customTokenUid } from '../AuthCoordinator';
 import {
     createSSSStrategy,
     EscrowPinMismatchError,
@@ -5204,6 +5204,9 @@ describe('AuthCoordinator', () => {
 
 describe('AuthCoordinator LC-2409 escrow contact', () => {
     const personalUser: AuthUser = { ...mockUser, email: 'personal@example.com' };
+    /** An unsigned stand-in for a Firebase custom token with this `uid` claim. */
+    const tokenFor = (uid: string): string =>
+        `e30.${btoa(JSON.stringify({ uid })).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_')}.sig`;
 
     const ready = async (options: SetupOptions = {}) => {
         const result = setup({
@@ -5258,7 +5261,7 @@ describe('AuthCoordinator LC-2409 escrow contact', () => {
             const refreshing = coordinator
                 .refreshAccountContact({
                     expectedEmail: ' Personal@Example.com ',
-                    customToken: 'custom-token-T',
+                    customToken: tokenFor('user-1'),
                     primaryUid: 'user-1',
                 })
                 .then(result => {
@@ -5272,7 +5275,7 @@ describe('AuthCoordinator LC-2409 escrow contact', () => {
             finishEnroll();
             await expect(refreshing).resolves.toBe('ok');
 
-            expect(reauthenticateWithToken).toHaveBeenCalledWith('custom-token-T');
+            expect(reauthenticateWithToken).toHaveBeenCalledWith(tokenFor('user-1'));
             expect(order).toEqual(['enroll:none', 'reauth', 'enroll:personal@example.com']);
             const published = stateChanges.find(
                 state =>
@@ -5304,7 +5307,8 @@ describe('AuthCoordinator LC-2409 escrow contact', () => {
             await expect(
                 coordinator.refreshAccountContact({
                     expectedEmail: 'personal@example.com',
-                    customToken: 'custom-token-T',
+                    customToken: tokenFor('user-1'),
+                    primaryUid: 'user-1',
                 })
             ).resolves.toBe('mismatch');
             expect(coordinator.getState()).toBe(before);
@@ -5315,7 +5319,8 @@ describe('AuthCoordinator LC-2409 escrow contact', () => {
             await expect(
                 coordinator.refreshAccountContact({
                     expectedEmail: 'personal@example.com',
-                    customToken: 'custom-token-T',
+                    customToken: tokenFor('user-1'),
+                    primaryUid: 'user-1',
                 })
             ).resolves.toBe('mismatch');
             expect(coordinator.getState()).toBe(before);
@@ -5331,13 +5336,51 @@ describe('AuthCoordinator LC-2409 escrow contact', () => {
             await expect(
                 coordinator.refreshAccountContact({
                     expectedEmail: 'personal@example.com',
-                    customToken: 'custom-token-T',
+                    customToken: tokenFor('user-T'),
                     primaryUid: 'user-T',
                 })
             ).resolves.toBe('other-uid');
             expect(reauthenticateWithToken).not.toHaveBeenCalled();
             expect(authProvider.getCurrentUser).not.toHaveBeenCalled();
             expect(coordinator.getState()).toBe(before);
+        });
+
+        it('never signs in with a token for another uid, or one without primaryUid', async () => {
+            const reauthenticateWithToken = vi.fn().mockResolvedValue(personalUser);
+            const { coordinator } = await ready({ authProvider: { reauthenticateWithToken } });
+            const before = coordinator.getState();
+            // The session is user-1 (another login of the account), lca-api sends T's token.
+            await expect(
+                coordinator.refreshAccountContact({
+                    expectedEmail: 'personal@example.com',
+                    customToken: tokenFor('user-T'),
+                    primaryUid: 'user-1',
+                })
+            ).resolves.toBe('other-uid');
+            // A token always comes with the uid it is meant for.
+            await expect(
+                coordinator.refreshAccountContact({
+                    expectedEmail: 'personal@example.com',
+                    customToken: tokenFor('user-1'),
+                })
+            ).resolves.toBe('mismatch');
+            // An unreadable token is refused too.
+            await expect(
+                coordinator.refreshAccountContact({
+                    expectedEmail: 'personal@example.com',
+                    customToken: 'not-a-token',
+                    primaryUid: 'user-1',
+                })
+            ).resolves.toBe('mismatch');
+            expect(reauthenticateWithToken).not.toHaveBeenCalled();
+            expect(coordinator.getState()).toBe(before);
+        });
+
+        it('reads the uid of a JWT and of the E2E stand-in token', () => {
+            expect(customTokenUid(tokenFor('uid-1'))).toBe('uid-1');
+            expect(customTokenUid('e2e-custom-token-uid-2')).toBe('uid-2');
+            expect(customTokenUid('a.b')).toBeUndefined();
+            expect(customTokenUid('a.%%%.c')).toBeUndefined();
         });
 
         it('without a custom token reads the current user', async () => {

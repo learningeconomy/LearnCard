@@ -143,6 +143,33 @@ const CONFIRMED_CONTACT_STORAGE_PREFIX = 'lc.confirmedContact.';
 const normalizeContactEmail = (email: string | null | undefined): string | undefined =>
     email?.trim().toLowerCase() || undefined;
 
+/** lca-api's E2E stand-in for a Firebase custom token (`IS_E2E_TEST`). */
+const E2E_CUSTOM_TOKEN_PREFIX = 'e2e-custom-token-';
+
+/**
+ * LC-2409: the `uid` claim of a Firebase custom token (a JWT signed by lca-api's service
+ * account), read without verifying it, so `refreshAccountContact` never signs this device
+ * in as anyone but the session's own user. `undefined` when the token is not readable.
+ */
+export const customTokenUid = (token: string): string | undefined => {
+    if (token.startsWith(E2E_CUSTOM_TOKEN_PREFIX))
+        return token.slice(E2E_CUSTOM_TOKEN_PREFIX.length) || undefined;
+    const payload = token.split('.')[1];
+    if (!payload || token.split('.').length !== 3) return undefined;
+    try {
+        const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+        const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+        const binary = atob(padded);
+        const bytes = Uint8Array.from(binary, char => char.charCodeAt(0));
+        const claims: unknown = JSON.parse(new TextDecoder().decode(bytes));
+        const uid =
+            claims && typeof claims === 'object' && 'uid' in claims ? claims.uid : undefined;
+        return typeof uid === 'string' && uid ? uid : undefined;
+    } catch {
+        return undefined;
+    }
+};
+
 /** `localStorage` when this runtime has a working one; otherwise the guard is memory-only. */
 const defaultPinGuardStorage = (): PinChangeGuardStorage | null => {
     try {
@@ -1195,7 +1222,9 @@ export class AuthCoordinator {
      * - `other-uid`: `primaryUid` is given and this session is another login of the
      *   account. Nothing runs: that change did not touch (or sign out) this session.
      * - With `customToken` (the change revoked this login's sessions), signs back in with
-     *   it; otherwise reads the current user.
+     *   it; otherwise reads the current user. A token needs `primaryUid`, and its `uid` claim
+     *   is checked against the session's user before signing in (`other-uid` otherwise,
+     *   `mismatch` when unreadable), so the session never switches to another user.
      * - `mismatch`: the session's user is not this account's user any more, or its email
      *   is not `expectedEmail` (case-insensitive). The state is left unchanged; the caller
      *   shows an error and never calls an escrow method.
@@ -1210,6 +1239,8 @@ export class AuthCoordinator {
     }): Promise<'ok' | 'mismatch' | 'other-uid'> {
         const ready = this.state;
         if (ready.status !== 'ready') return 'mismatch';
+        // A custom token switches the Firebase session: only with the uid it is meant for.
+        if (params.customToken && params.primaryUid === undefined) return 'mismatch';
         if (params.primaryUid !== undefined && ready.authUser?.id !== params.primaryUid)
             return 'other-uid';
         const expected = normalizeContactEmail(params.expectedEmail);
@@ -1219,6 +1250,12 @@ export class AuthCoordinator {
         try {
             if (params.customToken) {
                 if (!authProvider.reauthenticateWithToken) return 'mismatch';
+                // Checked before signing in: a token for another uid (a session that is
+                // another login of the account, or a lying lca-api) never replaces this
+                // session's user.
+                const tokenUid = customTokenUid(params.customToken);
+                if (!tokenUid) return 'mismatch';
+                if (tokenUid !== ready.authUser.id) return 'other-uid';
                 user = await authProvider.reauthenticateWithToken(params.customToken);
             } else {
                 user = await authProvider.getCurrentUser();
