@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import { screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AuthProvider, UnifiedAuthState } from 'learn-card-base';
@@ -20,6 +20,12 @@ const mocks = vi.hoisted(() => ({
         setMigrationData: vi.fn(),
         fallBackToRecovery: vi.fn(),
         handleMigrationKeyError: vi.fn(),
+        runRecoverySetup: vi.fn(),
+        resetRecoverySetup: vi.fn(),
+        setEscrowPin: vi.fn(),
+        clearEscrowPin: vi.fn(),
+        refreshAuthSession: vi.fn(),
+        acknowledgePinSignIn: vi.fn(),
     },
     config: {
         authProvider: 'firebase',
@@ -148,6 +154,7 @@ vi.mock('@learncard/sss-key-manager', () => ({
     generateEd25519PrivateKey: vi.fn(),
     createAdaptiveStorage: vi.fn(),
     isPublicComputerMode: () => false,
+    isWebAuthnSupported: () => true,
 }));
 vi.mock('../auth/firebaseProviderInit', () => ({}));
 vi.mock('../config/bootstrapTenantConfig', () => ({
@@ -165,12 +172,22 @@ vi.mock('../components/debug/authDebugEvents', () => ({
 vi.mock('../components/recovery/RecoveryFlowModal', () => ({ RecoveryFlowModal: () => null }));
 vi.mock('../components/recovery/RecoverySetupModal', () => ({ RecoverySetupModal: () => null }));
 vi.mock('../components/auth/ReAuthOverlay', () => ({ default: () => null }));
+vi.mock('../components/recovery/PinSignInReviewSheet', () => ({
+    PinSignInReviewSheet: ({ onSecure }: { onSecure: () => void }) => (
+        <button onClick={onSecure}>Secure account</button>
+    ),
+}));
+vi.mock('../components/recovery/SecureAccountFlow', () => ({
+    SecureAccountFlow: () => <div data-testid="secure-flow" />,
+    SecureAccountSessionError: class extends Error {},
+}));
 vi.mock('../i18n', () => ({ useLocale: () => 'en' }));
 vi.mock('../i18n/preAuthEmail', () => ({ createPreAuthEmailPayload: vi.fn() }));
 vi.mock('../i18n/storage', () => ({ clearStoragePreservingLocale: vi.fn() }));
 vi.mock('../paraglide/messages.js', () => ({
     'auth.upgradeAcct': () => 'Upgrading account',
     'auth.upgradeDesc': () => 'Please wait.',
+    'recovery.verifyingSession': () => 'Verifying session...',
 }));
 
 import { AuthCoordinatorProvider, useAppAuth } from './AuthCoordinatorProvider';
@@ -197,8 +214,13 @@ const ready = (): UnifiedAuthState =>
         authUser: { id: 'synthetic-user' },
     }) as UnifiedAuthState;
 const Probe = () => {
-    const { wallet } = useAppAuth();
-    return <output data-testid="account">{wallet?.id.did() ?? 'signed-out'}</output>;
+    const { wallet, canUseAutomaticRecovery } = useAppAuth();
+    return (
+        <>
+            <output data-testid="account">{wallet?.id.did() ?? 'signed-out'}</output>
+            <output data-testid="escrow">{String(canUseAutomaticRecovery)}</output>
+        </>
+    );
 };
 // This workspace's Testing Library render uses React's legacy root. Use the
 // production React 18 root so StrictMode effect cleanup is exercised as well.
@@ -250,6 +272,75 @@ beforeEach(() => {
 afterEach(() => {
     unmounts.splice(0).forEach(unmount => unmount());
     vi.unstubAllGlobals();
+});
+
+describe('ScoutPass automatic recovery gating', () => {
+    it('accepts the secure action immediately after PIN sign-in before enrollment refresh', async () => {
+        mocks.getTenantEscrowStrategyConfig.mockReturnValue({ mode: 'nitro' });
+        mocks.authProvider = {
+            getIdToken: mocks.getIdToken,
+            getProviderType: () => 'firebase',
+            getCurrentUser: async () => null,
+            signOut: vi.fn(),
+        };
+        mocks.coordinator.refreshAuthSession.mockResolvedValue(true);
+        const state = ready();
+        if (state.status !== 'ready') throw new Error('Expected ready fixture');
+        mocks.coordinator.state = {
+            ...state,
+            pinSignIn: { mode: 'kept', pinRefreshed: true, newPinRequired: false },
+        };
+        mocks.build.mockResolvedValue(account(state.did));
+        mount();
+        await act(async () => {
+            fireEvent.click(screen.getByRole('button', { name: 'Secure account' }));
+        });
+        await waitFor(() => expect(screen.getByTestId('secure-flow')).toBeTruthy());
+        expect(mocks.coordinator.acknowledgePinSignIn).toHaveBeenCalledOnce();
+    });
+
+    it('retains confirmed availability during PIN mutations but not across accounts', () => {
+        mocks.getTenantEscrowStrategyConfig.mockReturnValue({ mode: 'nitro' });
+        const state = ready();
+        if (state.status !== 'ready') throw new Error('Expected ready fixture');
+        mocks.coordinator.state = {
+            ...state,
+            escrowEnrollment: 'enrolled',
+            escrowPin: { state: 'enabled', enabled: true, attemptsRemaining: 5 },
+        };
+        mocks.build.mockResolvedValue(account(state.did));
+        const update = mount();
+        update({ ...state, escrowEnrollment: undefined });
+        expect(screen.getByTestId('escrow').textContent).toBe('true');
+        update({ ...state, did: 'did:key:another', escrowEnrollment: undefined });
+        expect(screen.getByTestId('escrow').textContent).toBe('false');
+        update({ ...state, escrowEnrollment: 'disabled' });
+        expect(screen.getByTestId('escrow').textContent).toBe('false');
+    });
+
+    it.each([
+        [false, 'enrolled', false],
+        [true, 'disabled', false],
+        [true, undefined, false],
+        [true, 'enrolled', true],
+    ] as const)(
+        'configured=%s, server=%s exposes settings=%s',
+        (configured, enrollment, expected) => {
+            mocks.getTenantEscrowStrategyConfig.mockReturnValue(
+                configured ? { mode: 'nitro' } : undefined
+            );
+            const state = ready();
+            if (state.status !== 'ready') throw new Error('Expected ready fixture');
+            mocks.coordinator.state = {
+                ...state,
+                escrowEnrollment: enrollment,
+                escrowPin: { state: 'enabled', enabled: true, attemptsRemaining: 5 },
+            };
+            mocks.build.mockResolvedValue(account(state.did));
+            mount();
+            expect(screen.getByTestId('escrow').textContent).toBe(String(expected));
+        }
+    );
 });
 
 describe('ScoutPass archive-first account upgrade', () => {

@@ -47,6 +47,8 @@ import {
     getAuthConfig,
     getSSSConfig,
     getTenantEscrowStrategyConfig,
+    getEscrowEmailSender,
+    type EscrowEmailSenderNote,
     getLogger,
     useToast,
     ToastTypeEnum,
@@ -83,6 +85,7 @@ import {
     generateEd25519PrivateKey,
     createAdaptiveStorage,
     isPublicComputerMode,
+    isWebAuthnSupported,
 } from '@learncard/sss-key-manager';
 import type { RecoverySetupInput, RecoverySetupResult } from '@learncard/sss-key-manager';
 import useSQLiteStorage from 'learn-card-base/hooks/useSQLiteStorage';
@@ -105,6 +108,7 @@ import {
 } from '../components/debug/authDebugEvents';
 
 import { RecoveryFlowModal } from '../components/recovery/RecoveryFlowModal';
+import { clearAllPendingEscrowRecovery } from '../components/recovery/escrowRecoveryStorage';
 import { useLocale } from '../i18n';
 import { createPreAuthEmailPayload } from '../i18n/preAuthEmail';
 import { clearStoragePreservingLocale } from '../i18n/storage';
@@ -113,6 +117,29 @@ import { RecoverySetupModal } from '../components/recovery/RecoverySetupModal';
 import { peekResolvedTenantConfig } from '../config/bootstrapTenantConfig';
 import { countConfiguredRecoveryMethods } from 'learn-card-base';
 import ReAuthOverlay from '../components/auth/ReAuthOverlay';
+import { EscrowRecoveryHoldBanner } from '../components/recovery/EscrowRecoveryHoldBanner';
+import { RecoveryPinResetBanner } from '../components/recovery/RecoveryPinResetBanner';
+import { PinSignInReviewSheet } from '../components/recovery/PinSignInReviewSheet';
+import {
+    RecoveryPinSetupOverlay,
+    type RecoveryPinSetupReason,
+} from '../components/recovery/RecoveryPinSetupOverlay';
+import {
+    SecureAccountFlow,
+    SecureAccountSessionError,
+} from '../components/recovery/SecureAccountFlow';
+import {
+    readRecoveryPinPromptFlag,
+    writeRecoveryPinPromptFlag,
+} from '../components/recovery/recoveryPinPromptFlag';
+import {
+    decidePinPromptAfterReady,
+    settleEscrowRecoveryMarker,
+    secureFlowOffersPin,
+    pinChangePromptOpens,
+    type EscrowRecoveryKind,
+} from './authCoordinator.helpers';
+import { createRecoveryPinActions } from './recoveryPinActions';
 
 const log = getLogger('scouts/auth-coordinator');
 
@@ -280,6 +307,7 @@ registerKeyDerivationFactory('sss', () => {
         // `auth.sss.escrowSealEmailBrand` (same wiring as learn-card-app).
         escrow: getTenantEscrowStrategyConfig(sss, tenant),
         onEscrowError: err => log.warn('escrow.enrollment.failed', err),
+        onEscrowPinAutoCleared: event => log.warn('escrow.pin.auto_cleared', event),
         emailBranding: tenant?.email,
         // On native Capacitor (iOS/Android), use encrypted SQLite instead of
         // IndexedDB to avoid iOS WKWebView IndexedDB eviction issues.
@@ -289,6 +317,33 @@ registerKeyDerivationFactory('sss', () => {
         enableEmailBackupShare: sss.enableEmailBackupShare,
     });
 });
+
+/**
+ * Escrow (7-day hold / PIN) recovery is configured for this tenant. OFF by default for
+ * ScoutPass: with no escrow strategy config the recovery modal keeps its legacy picker.
+ */
+export const isEscrowRecoveryConfigured = (): boolean => {
+    try {
+        return !!getTenantEscrowStrategyConfig(
+            getSSSConfig(),
+            peekResolvedTenantConfig() ?? undefined
+        );
+    } catch {
+        return false;
+    }
+};
+
+/**
+ * When the escrow enclave brands its emails as another app, tell the user who they will
+ * hear from. `undefined` when the brands match (same as learn-card-app).
+ */
+const resolveEscrowEmailSender = (): EscrowEmailSenderNote | undefined => {
+    try {
+        return getEscrowEmailSender(peekResolvedTenantConfig() ?? {}, getSSSConfig());
+    } catch {
+        return undefined;
+    }
+};
 
 registerKeyDerivationFactory('web3auth', () => {
     const { providerConfig } = getAuthConfig();
@@ -323,6 +378,9 @@ export interface AppAuthContextValue extends AuthCoordinatorContextValue {
     deviceLinkModalVisible: boolean;
     recoveryMethodCount: number | null;
     openRecoverySetup: () => void;
+    /** Open "Secure my account": signs out every other device. Only shown while ready. */
+    openSecureAccount: () => void;
+    canUseAutomaticRecovery: boolean;
     authProvider: AuthProvider | null;
 }
 
@@ -513,11 +571,182 @@ const AuthSessionManager: React.FC<{
         }
     }, [coordinator.state.status]);
 
+    // --- Escrow / PIN (mirrors learn-card-app). Inert unless the tenant enables escrow
+    // (`auth.sss.escrowEnclaveMode`) and the server reports it: the coordinator then
+    // never publishes `escrowPin`, `escrowEnrollment`, `pinSignIn` or `pendingEscrowHold`.
+    // Unlike wasNewUserRef (cleared after wallet setup), stays set for the whole
+    // session so a new account is never also offered the returning-user prompt.
+    const sawNeedsSetupRef = useRef(false);
+    // Set when a PIN-based recovery just succeeded, proving the user had a PIN
+    // even on a new/forgotten device where the local prompt flag is absent.
+    const recoveredViaEscrowRef = useRef<EscrowRecoveryKind | null>(null);
+
+    // "Secure my account" (post-PIN-sign-in review, settings, emailed link)
+    const [secureAccountOpen, setSecureAccountOpen] = useState(false);
+    const [secureAfterPinSignIn, setSecureAfterPinSignIn] = useState(false);
+    const [secureNeedsNewPin, setSecureNeedsNewPin] = useState(false);
+    const [secureSessionValid, setSecureSessionValid] = useState<boolean | null>(null);
+
+    // PIN writes temporarily clear enrollment while refreshing server state. Retain
+    // the last confirmed availability for this account so the settings card keeps
+    // its pending/error state. A PIN sign-in itself also proves availability.
+    const escrowAvailabilityRef = useRef<{ did: string; available: boolean } | null>(null);
+    if (!isEscrowRecoveryConfigured() || coordinator.state.status !== 'ready') {
+        escrowAvailabilityRef.current = null;
+    } else {
+        const { did, escrowEnrollment, pinSignIn } = coordinator.state;
+        if (escrowEnrollment !== undefined) {
+            escrowAvailabilityRef.current = { did, available: escrowEnrollment !== 'disabled' };
+        } else if (pinSignIn) {
+            escrowAvailabilityRef.current = { did, available: true };
+        } else if (escrowAvailabilityRef.current?.did !== did) {
+            escrowAvailabilityRef.current = null;
+        }
+    }
+    const canUseAutomaticRecovery = escrowAvailabilityRef.current?.available === true;
+    const openSecureAccount = useCallback(() => {
+        if (canUseAutomaticRecovery) setSecureAccountOpen(true);
+    }, [canUseAutomaticRecovery]);
+
+    useEffect(() => {
+        if (!secureAccountOpen) {
+            setSecureAfterPinSignIn(false);
+            setSecureNeedsNewPin(false);
+        }
+    }, [secureAccountOpen]);
+
+    const [recoveryPinSetupReason, setRecoveryPinSetupReason] =
+        useState<RecoveryPinSetupReason | null>(null);
+    const [showRecoveryPinReset, setShowRecoveryPinReset] = useState(false);
+    const readyDid = coordinator.state.status === 'ready' ? coordinator.state.did : undefined;
+    const readyPinEnabled =
+        coordinator.state.status === 'ready' ? coordinator.state.escrowPin?.enabled : undefined;
+    const readyEnrollment =
+        coordinator.state.status === 'ready' ? coordinator.state.escrowEnrollment : undefined;
+    const readyPinResetRequired =
+        coordinator.state.status === 'ready' && coordinator.state.escrowPinResetRequired === true;
+    const readyPinSignIn =
+        coordinator.state.status === 'ready' ? coordinator.state.pinSignIn : undefined;
+    const readyPinChangeRequired =
+        coordinator.state.status === 'ready' && coordinator.state.escrowPinChangeRequired === true;
+    // "Choose a new PIN": latched so the prompt can show its own success step after
+    // the coordinator clears `escrowPinChangeRequired`.
+    const [pinChangeOpen, setPinChangeOpen] = useState(false);
+    useEffect(() => {
+        setPinChangeOpen(false);
+    }, [readyDid]);
+    useEffect(() => {
+        if (
+            pinChangePromptOpens({
+                did: readyDid,
+                changeRequired: readyPinChangeRequired,
+                pinSignInPending: !!readyPinSignIn,
+            })
+        ) {
+            setPinChangeOpen(true);
+        }
+    }, [readyDid, readyPinChangeRequired, readyPinSignIn]);
+    useEffect(() => {
+        if (secureAccountOpen) setPinChangeOpen(false);
+    }, [secureAccountOpen]);
+    // Once per DID per app start: a dismissal must not re-prompt on every refresh.
+    const pinResetPromptedRef = useRef<string | null>(null);
+
     // Track whether the user went through needs_setup (new user flow)
     useEffect(() => {
         if (coordinator.state.status === 'needs_setup') {
             wasNewUserRef.current = true;
+            sawNeedsSetupRef.current = true;
         }
+    }, [coordinator.state.status]);
+
+    useEffect(() => {
+        const did = readyDid;
+        if (!did) return;
+        const flag = readRecoveryPinPromptFlag(did);
+
+        // Never prompt a first-time setup for an account that already has a PIN.
+        if (
+            wasNewUserRef.current &&
+            !flag &&
+            readyEnrollment === 'enrolled' &&
+            readyPinEnabled !== true
+        ) {
+            setRecoveryPinSetupReason('first-time');
+        }
+
+        const prompt = decidePinPromptAfterReady({
+            recoveredVia: recoveredViaEscrowRef.current,
+            pinEnabled: readyPinEnabled,
+            enrollment: readyEnrollment,
+            promptFlag: flag,
+            pinResetRequired: readyPinResetRequired && pinResetPromptedRef.current !== did,
+            newUserThisSession: sawNeedsSetupRef.current,
+            pinSignInReview: !!readyPinSignIn,
+        });
+        // The review sheet renders from state; keep the marker until it is answered.
+        if (prompt.kind === 'pin-sign-in-review') return;
+        if (prompt.kind === 'pin-reset-required') {
+            pinResetPromptedRef.current = did;
+            setRecoveryPinSetupReason('pin-reset-required');
+            recoveredViaEscrowRef.current = null;
+        } else if (prompt.kind === 'after-recovery') {
+            writeRecoveryPinPromptFlag(did, 'set');
+            setRecoveryPinSetupReason('after-recovery');
+            recoveredViaEscrowRef.current = null;
+        } else if (prompt.kind === 'after-hold-recovery') {
+            setRecoveryPinSetupReason('after-hold-recovery');
+            recoveredViaEscrowRef.current = null;
+        } else if (prompt.kind === 'first-time') {
+            setRecoveryPinSetupReason(current => current ?? 'first-time');
+        } else if (prompt.kind === 'reset-banner') {
+            setShowRecoveryPinReset(true);
+        }
+
+        recoveredViaEscrowRef.current = settleEscrowRecoveryMarker(
+            recoveredViaEscrowRef.current,
+            readyPinEnabled
+        );
+    }, [
+        coordinator.state.status,
+        readyDid,
+        readyPinEnabled,
+        readyEnrollment,
+        readyPinResetRequired,
+        readyPinSignIn,
+    ]);
+
+    // --- Auth session check for "Secure my account" ---
+    useEffect(() => {
+        if (!secureAccountOpen || !authProvider) {
+            setSecureSessionValid(null);
+            return;
+        }
+
+        let cancelled = false;
+
+        const check = async () => {
+            if (await coordinator.refreshAuthSession()) {
+                if (!cancelled) setSecureSessionValid(true);
+                return;
+            }
+            try {
+                await authProvider.getIdToken();
+                if (!cancelled) setSecureSessionValid(true);
+            } catch {
+                if (!cancelled) setSecureSessionValid(false);
+            }
+        };
+
+        check();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [secureAccountOpen, authProvider, coordinator]);
+
+    useEffect(() => {
+        if (coordinator.state.status !== 'ready') setSecureAccountOpen(false);
     }, [coordinator.state.status]);
 
     // --- QR login device share pickup from sessionStorage ---
@@ -1015,6 +1244,17 @@ const AuthSessionManager: React.FC<{
 
     const showRecovery = status === 'needs_recovery' && !!authProvider;
 
+    // Tenant config is fixed after bootstrap: resolve once per open recovery overlay so the
+    // modal is not handed a new object every render.
+    const escrowRecoveryEnabled = useMemo(
+        () => (showRecovery ? isEscrowRecoveryConfigured() : false),
+        [showRecovery]
+    );
+    const escrowEmailSender = useMemo(
+        () => (showRecovery && escrowRecoveryEnabled ? resolveEscrowEmailSender() : undefined),
+        [showRecovery, escrowRecoveryEnabled]
+    );
+
     const showMigrationLoading = status === 'needs_migration' && !migrationStallVisible;
 
     const showStalledMigration =
@@ -1036,6 +1276,29 @@ const AuthSessionManager: React.FC<{
         setDeviceLinkVisible(true);
     }, []);
 
+    const { setEscrowPin, clearEscrowPin } = useMemo(
+        () =>
+            createRecoveryPinActions(
+                {
+                    runRecoverySetup: coordinator.runRecoverySetup,
+                    resetRecoverySetup: coordinator.resetRecoverySetup,
+                    setEscrowPin: coordinator.setEscrowPin,
+                    clearEscrowPin: coordinator.clearEscrowPin,
+                },
+                readyDid,
+                () => {
+                    recoveredViaEscrowRef.current = null;
+                }
+            ),
+        [
+            coordinator.runRecoverySetup,
+            coordinator.resetRecoverySetup,
+            coordinator.setEscrowPin,
+            coordinator.clearEscrowPin,
+            readyDid,
+        ]
+    );
+
     const enrichedValue: AppAuthContextValue = useMemo(
         () => ({
             ...coordinator,
@@ -1050,6 +1313,10 @@ const AuthSessionManager: React.FC<{
             deviceLinkModalVisible: deviceLinkVisible,
             recoveryMethodCount,
             openRecoverySetup: () => setShowRecoverySetup(true),
+            openSecureAccount,
+            canUseAutomaticRecovery,
+            setEscrowPin,
+            clearEscrowPin,
             authProvider: authProvider,
         }),
         [
@@ -1064,6 +1331,10 @@ const AuthSessionManager: React.FC<{
             showDeviceLinkModal,
             deviceLinkVisible,
             recoveryMethodCount,
+            openSecureAccount,
+            canUseAutomaticRecovery,
+            setEscrowPin,
+            clearEscrowPin,
             authProvider,
         ]
     );
@@ -1071,10 +1342,211 @@ const AuthSessionManager: React.FC<{
     return (
         <AppAuthContext.Provider value={enrichedValue}>
             {children}
+            {coordinator.state.status === 'ready' &&
+                (coordinator.state.pendingEscrowHold || showRecoveryPinReset) && (
+                    <div
+                        className="fixed inset-x-4 z-[10000] max-w-md mx-auto space-y-v3-2"
+                        style={{
+                            top: 'calc(1.5rem + var(--lc-overlay-inset-top, var(--ion-safe-area-top, 0px)))',
+                        }}
+                    >
+                        {coordinator.state.pendingEscrowHold && (
+                            <EscrowRecoveryHoldBanner
+                                key={coordinator.state.pendingEscrowHold.holdId}
+                                requestedAt={coordinator.state.pendingEscrowHold.requestedAt}
+                                releaseAfter={coordinator.state.pendingEscrowHold.releaseAfter}
+                                onCancel={coordinator.cancelEscrowRecovery}
+                            />
+                        )}
+                        {showRecoveryPinReset && (
+                            <RecoveryPinResetBanner
+                                onSetAgain={() => {
+                                    setShowRecoveryPinReset(false);
+                                    setRecoveryPinSetupReason('after-recovery');
+                                }}
+                                onDismiss={() => {
+                                    if (!readyDid) return;
+                                    writeRecoveryPinPromptFlag(readyDid, 'skipped');
+                                    setShowRecoveryPinReset(false);
+                                }}
+                            />
+                        )}
+                    </div>
+                )}
+
+            {/* ── Post-PIN-sign-in review (once; before any PIN prompt) ── */}
+            {coordinator.state.status === 'ready' &&
+                coordinator.state.pinSignIn &&
+                !secureAccountOpen && (
+                    <PinSignInReviewSheet
+                        priorWrongAttempts={coordinator.state.pinSignIn.priorWrongAttempts}
+                        newPinRequired={coordinator.state.pinSignIn.newPinRequired}
+                        onFine={coordinator.acknowledgePinSignIn}
+                        onChooseNewPin={() => {
+                            coordinator.acknowledgePinSignIn();
+                            setPinChangeOpen(true);
+                        }}
+                        onSecure={() => {
+                            const needsNewPin =
+                                coordinator.state.status === 'ready' &&
+                                coordinator.state.pinSignIn?.newPinRequired === true;
+                            coordinator.acknowledgePinSignIn();
+                            setSecureAfterPinSignIn(true);
+                            setSecureNeedsNewPin(needsNewPin);
+                            openSecureAccount();
+                        }}
+                    />
+                )}
+
+            {/* ── Secure my account / sign out of all other devices ── */}
+            {secureAccountOpen &&
+                authProvider &&
+                coordinator.state.status === 'ready' &&
+                (secureSessionValid === null ? (
+                    <Overlay
+                        aria-label={m['recovery.verifyingSession']()}
+                        onDismiss={() => setSecureAccountOpen(false)}
+                    >
+                        <div className="p-8 flex flex-col items-center">
+                            <div className="w-8 h-8 border-2 border-grayscale-200 border-t-emerald-600 rounded-full animate-spin mb-3" />
+                            <p className="text-sm text-grayscale-500">
+                                {m['recovery.verifyingSession']()}
+                            </p>
+                        </div>
+                    </Overlay>
+                ) : secureSessionValid === false ? (
+                    <Overlay onDismiss={() => setSecureAccountOpen(false)}>
+                        <ReAuthOverlay
+                            onSuccess={() => setSecureSessionValid(true)}
+                            onCancel={() => setSecureAccountOpen(false)}
+                        />
+                    </Overlay>
+                ) : (
+                    <SecureAccountFlow
+                        hasPin={secureFlowOffersPin({
+                            afterPinSignIn: secureAfterPinSignIn,
+                            pinEnabled: coordinator.state.escrowPin?.enabled,
+                            escrowEnrollment: coordinator.state.escrowEnrollment,
+                        })}
+                        newPinRequired={
+                            secureNeedsNewPin || coordinator.state.escrowPinChangeRequired === true
+                        }
+                        passkeyAvailable={!Capacitor.isNativePlatform() && isWebAuthnSupported()}
+                        onSecure={async pin => {
+                            if (
+                                !coordinator.authSessionValid &&
+                                !(await coordinator.refreshAuthSession())
+                            ) {
+                                throw new SecureAccountSessionError();
+                            }
+                            // A deliberate revoke supersedes any post-recovery PIN prompt.
+                            recoveredViaEscrowRef.current = null;
+                            const result = await coordinator.secureAccount({ pin });
+                            if (readyDid) {
+                                writeRecoveryPinPromptFlag(
+                                    readyDid,
+                                    pin !== null && result.pinKept ? 'set' : 'skipped'
+                                );
+                            }
+                            return result;
+                        }}
+                        onSetUpRecovery={() => {
+                            setSecureAccountOpen(false);
+                            setShowRecoverySetup(true);
+                        }}
+                        onClose={() => setSecureAccountOpen(false)}
+                    />
+                ))}
+
+            {/* ── Choose a new PIN (wrong entries recorded against the current PIN) ── */}
+            {pinChangeOpen &&
+                !recoveryPinSetupReason &&
+                coordinator.state.status === 'ready' &&
+                !coordinator.state.pinSignIn &&
+                !secureAccountOpen && (
+                    <RecoveryPinSetupOverlay
+                        setPin={setEscrowPin}
+                        reason="new-pin-required"
+                        onComplete={() => setPinChangeOpen(false)}
+                        onSkip={() => {
+                            coordinator.dismissEscrowPinChange();
+                            setPinChangeOpen(false);
+                        }}
+                    />
+                )}
+
+            {recoveryPinSetupReason &&
+                coordinator.state.status === 'ready' &&
+                !coordinator.state.pinSignIn &&
+                !secureAccountOpen && (
+                    <RecoveryPinSetupOverlay
+                        setPin={setEscrowPin}
+                        reason={recoveryPinSetupReason}
+                        onComplete={() => {
+                            if (!readyDid) return;
+                            writeRecoveryPinPromptFlag(readyDid, 'set');
+                            setRecoveryPinSetupReason(null);
+                        }}
+                        onSkip={() => {
+                            if (!readyDid) return;
+                            writeRecoveryPinPromptFlag(readyDid, 'skipped');
+                            setRecoveryPinSetupReason(null);
+                        }}
+                    />
+                )}
 
             {/* ── Recovery overlay ─────────────────────────────── */}
             {showRecovery && authProvider && (
                 <RecoveryFlowModal
+                    escrowRecovery={
+                        escrowRecoveryEnabled
+                            ? {
+                                  pinAvailable:
+                                      coordinator.state.status === 'needs_recovery' &&
+                                      coordinator.state.escrowPin?.enabled === true,
+                                  scope: JSON.stringify([
+                                      getSSSConfig().serverUrl,
+                                      coordinator.state.status === 'needs_recovery'
+                                          ? coordinator.state.authUser.id
+                                          : undefined,
+                                  ]),
+                                  emailSender: escrowEmailSender,
+                                  // The shared coordinator type leaves `releasePolicy`
+                                  // optional; a started recovery is always a 7-day hold.
+                                  onStart: async options => {
+                                      const started =
+                                          await coordinator.startEscrowRecovery(options);
+                                      return {
+                                          ...started,
+                                          releasePolicy: started.releasePolicy ?? 'hold',
+                                      };
+                                  },
+                                  onStatus: coordinator.getEscrowRecoveryStatus,
+                                  onConfirmCode: coordinator.confirmEscrowRecovery,
+                                  onResendCode: coordinator.resendEscrowRecoveryCode,
+                                  onRecover: async input => {
+                                      // Mark before `ready` renders: the first published PIN
+                                      // status consumes the marker, so it must not be set
+                                      // after that ready render has run.
+                                      const previous = recoveredViaEscrowRef.current;
+                                      if (input.method === 'escrow-pin') {
+                                          recoveredViaEscrowRef.current = 'pin';
+                                      } else if (input.method === 'escrow') {
+                                          recoveredViaEscrowRef.current = 'hold';
+                                      }
+                                      try {
+                                          await coordinator.recover(input);
+                                      } catch (error) {
+                                          recoveredViaEscrowRef.current = previous;
+                                          throw error;
+                                      }
+                                  },
+                                  canResumeCompleted: () =>
+                                      coordinator.keyDerivation.hasPendingIdentityRecovery?.() ??
+                                      false,
+                              }
+                            : undefined
+                    }
                     availableMethods={availableMethods}
                     recoveryReason={
                         coordinator.state.status === 'needs_recovery'
@@ -1431,6 +1903,28 @@ const AuthSessionManager: React.FC<{
                             }
                         >
                             <RecoverySetupModal
+                                automaticRecovery={
+                                    canUseAutomaticRecovery
+                                        ? {
+                                              onGetEscrowEnrollmentState:
+                                                  coordinator.getEscrowEnrollmentState,
+                                              onDisableEscrowRecovery:
+                                                  coordinator.disableEscrowRecovery,
+                                              onEnableEscrowRecovery:
+                                                  coordinator.enableEscrowRecovery,
+                                              onSetEscrowPin: setEscrowPin,
+                                              onClearEscrowPin: clearEscrowPin,
+                                          }
+                                        : undefined
+                                }
+                                onSecureAccount={
+                                    canUseAutomaticRecovery
+                                        ? () => {
+                                              setShowRecoverySetup(false);
+                                              openSecureAccount();
+                                          }
+                                        : undefined
+                                }
                                 registerCloseRequest={fn => {
                                     recoveryRequestCloseRef.current = fn;
                                 }}
@@ -1675,6 +2169,7 @@ const AuthCoordinatorSessionProvider: React.FC<ScoutsAuthCoordinatorProviderProp
             signDidAuthVp={signDidAuthVp}
             getCachedPrivateKey={getCachedPrivateKey}
             onLogout={handleAppLogout}
+            clearPendingEscrowRecovery={clearAllPendingEscrowRecovery}
             onDebugEvent={handleDebugEvent}
             legacyAccountThresholdMs={5 * 60 * 1000}
             // Always enabled — the tenant config selects the key derivation strategy.
