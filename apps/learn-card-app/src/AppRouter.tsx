@@ -78,6 +78,10 @@ import ReducedMotionManager from './components/accessibility/ReducedMotionManage
 import { observeDashboardLongTasks, useDashboardPathMark } from './helpers/dashboardPathMarks';
 import { useDashboardAsHome } from './pages/dashboard/hooks/useDashboardAsHome';
 import { isDashboardBootLanding } from './pages/dashboard/hooks/isDashboardBootLanding';
+import {
+    DASHBOARD_BOOT_PRELOAD_TIMEOUT_MS,
+    primeDashboardPageBounded,
+} from './pages/dashboard/hooks/primeDashboardPage';
 
 const log = getLogger('app-router');
 
@@ -135,12 +139,11 @@ const AppRouter: React.FC = () => {
         let cancelled = false;
         // Same wait-then-import as ROUTE_PRELOAD['/dashboard'], but started under
         // the boot loader so `/` redirects and direct `/dashboard` still page_direct.
-        import('./Routes')
-            .then(m => m.ROUTE_PRELOAD['/dashboard']())
-            .catch(() => undefined)
-            .finally(() => {
-                if (!cancelled) setDashboardImportReady(true);
-            });
+        // Bound the whole wait+import (not just waitForPrefetch) so a hung import()
+        // cannot leave LoginLoadingPage up forever — see DASHBOARD_BOOT_PRELOAD_TIMEOUT_MS.
+        void primeDashboardPageBounded(DASHBOARD_BOOT_PRELOAD_TIMEOUT_MS).finally(() => {
+            if (!cancelled) setDashboardImportReady(true);
+        });
         return () => {
             cancelled = true;
         };
