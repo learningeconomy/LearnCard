@@ -62,6 +62,7 @@ import {
     clearClassLinkIdentityPrimaryDid,
     findClassLinkIdentityByFirebaseUid,
     findClassLinkIdentityByIdentityKey,
+    getClassLinkIdentitiesCollection,
     upsertClassLinkIdentity,
     type MongoClassLinkIdentityType,
 } from '../models/ClassLinkIdentity';
@@ -147,6 +148,18 @@ const assertNoOtherClassLinkIdentity = async (
     const byAccount = userKey ? await findClassLinkIdentityForAccount(userKey) : null;
     if (byAccount && byAccount.identityKey !== identityKey) conflict(tenantId, 'other_school');
 };
+
+/** Whether a ClassLink identity other than `identityKey` signs in with `subject`. */
+const isSubjectOfOtherClassLinkIdentity = async (
+    subject: string,
+    identityKey: string
+): Promise<boolean> =>
+    Boolean(
+        await getClassLinkIdentitiesCollection().findOne(
+            { subject, identityKey: { $ne: identityKey } },
+            { projection: { _id: 1 } }
+        )
+    );
 
 /**
  * Fail closed when a known identity's Firebase uid was deliberately unlinked from its account.
@@ -314,9 +327,23 @@ export const classlinkRouter = t.router({
                     });
                 let subject = existing?.subject;
                 if (!subject) {
-                    const emailSubject = emailTrusted
+                    const found = emailTrusted
                         ? await findAuthSubjectByIdentityKey(`email:${email}`)
                         : null;
+                    // LC-2409: a promoted student's school address no longer sits on their
+                    // Firebase user, so the email-account guard above does not see it. A
+                    // recycled school address must not hand this new identity the previous
+                    // student's subject: reuse it only while no other ClassLink identity has it.
+                    const emailSubject =
+                        found &&
+                        (await isSubjectOfOtherClassLinkIdentity(found.subject, identityKey))
+                            ? null
+                            : found;
+                    if (found && !emailSubject)
+                        console.warn('classlink.email_subject.mismatch', {
+                            tenantId,
+                            reason: 'other_identity',
+                        });
                     subject = (
                         emailSubject
                             ? await getOrCreateAuthSubjectLinkedTo(
