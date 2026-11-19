@@ -9766,6 +9766,7 @@
         "searchCreds": "ابحث في شهاداتك…",
         "nothingMatches": "لا يوجد ما يطابق “{{query}}”.",
         "noneIssued": "لم تُصدر أي شهادات بعد.",
+        "lookForOlderCredentials": "اختر «عرض المزيد» للبحث عن شهادات أقدم يمكنك إرسالها.",
         "showMore": "عرض المزيد",
         "previewDesc": "هذا هو بالضبط ما سيستلمه المستلم.",
         "chooseRecip": "اختيار المستلم",
