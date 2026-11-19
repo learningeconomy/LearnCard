@@ -103,6 +103,11 @@ Signed-child exceptions must still qualify the summary, including same-publisher
 failures. Do not equate status-list presence with an active status or registry
 membership with signature validity.
 
+The app shows a compact publisher verdict first. Expand publisher or issuer
+details to see their IDs, registry evidence and verification methods; expand an
+issuer to inspect its individual record verdicts and checks. Registry evidence
+is shown once per issuer and does not change proof or lifecycle results.
+
 ## Regression coverage
 
 Run `vitest run src/helpers/credentials/clr` from `packages/learn-card-base`, and

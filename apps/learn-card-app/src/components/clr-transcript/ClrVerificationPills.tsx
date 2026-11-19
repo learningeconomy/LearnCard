@@ -12,7 +12,7 @@ import { VerificationStatusEnum } from '@learncard/types';
 import { formatClrDate } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const PILL_BASE =
-    'flex items-center gap-1 rounded-full px-2 py-1 font-poppins font-[500] text-[12px] leading-tight whitespace-nowrap';
+    'flex items-center gap-1 rounded-full px-2 py-1 font-poppins font-[500] text-[12px] leading-tight';
 
 const ClrVerificationPills: React.FC<{ boost: VC; verificationItems?: VerificationItem[] }> = ({
     boost,
@@ -72,7 +72,7 @@ const ClrVerificationPills: React.FC<{ boost: VC; verificationItems?: Verificati
         <div className="flex flex-wrap gap-2">
             {Boolean(boost.proof) && (
                 <div
-                    className={`${PILL_BASE} ${
+                    className={`${PILL_BASE} whitespace-nowrap ${
                         verified === null
                             ? 'bg-grayscale-100 text-grayscale-900'
                             : verified
@@ -105,7 +105,7 @@ export const ClrCredentialValidity = ({ boost }: { boost: VC }) => {
           : m['clrRenderer.doesNotExpire']();
     return (
         <div
-            className={`${PILL_BASE} ${expired ? 'bg-amber-100' : 'bg-emerald-100'} text-grayscale-900`}
+            className={`${PILL_BASE} w-fit max-w-full ${expired ? 'bg-amber-100' : 'bg-grayscale-100'} text-grayscale-900`}
         >
             {expired ? (
                 <WarningCircle className="h-4 w-4 shrink-0" />

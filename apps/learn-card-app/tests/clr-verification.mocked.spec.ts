@@ -122,7 +122,10 @@ for (const viewport of [
                     ...initial.rows.map((row, index) => [row, observed.rows[index]]),
                 ]) {
                     for (const metric of ['x', 'y', 'width', 'height'] as const)
-                        expect(Math.abs(before[metric] - after[metric])).toBeLessThanOrEqual(1);
+                        expect(
+                            Math.abs(before[metric] - after[metric]),
+                            `${metric}: ${JSON.stringify(before)} → ${JSON.stringify(after)}`
+                        ).toBeLessThanOrEqual(1);
                 }
             }
             expect(fixture.counters.didGets).toBe(3);
@@ -143,6 +146,18 @@ for (const viewport of [
             });
             await summary.scrollIntoViewIfNeeded();
 
+            const publisher = summary.locator('details').first();
+            await publisher.locator('summary').focus();
+            await page.keyboard.press('Enter');
+            await expect(publisher).toHaveAttribute('open', '');
+            await expect(publisher.getByText('Not listed', { exact: true })).toHaveCount(1);
+            const publisherBounds = await publisher.boundingBox();
+            expect(publisherBounds?.height).toBeLessThan(viewport.name === 'mobile' ? 300 : 235);
+            await publisher.screenshot({
+                path: testInfo.outputPath(`${viewport.name}-publisher-details.png`),
+            });
+            await publisher.locator('summary').press('Enter');
+
             const details = summary.locator('details[aria-label]').first();
             const disclosure = details.locator('summary').first();
             await disclosure.focus();
@@ -151,6 +166,24 @@ for (const viewport of [
             await expect(
                 details.getByText(fixture.issuerDids[0], { exact: false }).first()
             ).toBeVisible();
+            await expect(details.getByText('Not listed', { exact: true })).toHaveCount(1);
+            const issuerRows = await details.getByRole('listitem').all();
+            expect(issuerRows).toHaveLength(2);
+            for (const row of issuerRows)
+                expect((await row.boundingBox())?.height).toBeLessThan(110);
+            const clipped = await details.evaluate(element => {
+                const panel = element.getBoundingClientRect();
+                return [...element.querySelectorAll('p, li')].some(child => {
+                    const bounds = child.getBoundingClientRect();
+                    return (
+                        bounds.width > 0 && (bounds.left < panel.left || bounds.right > panel.right)
+                    );
+                });
+            });
+            expect(clipped).toBe(false);
+            await details.screenshot({
+                path: testInfo.outputPath(`${viewport.name}-compact-issuer.png`),
+            });
             await page.screenshot({
                 path: testInfo.outputPath(`${viewport.name}-issuer-details.png`),
                 fullPage: true,
