@@ -188,6 +188,30 @@ const isRegExpValue = (value: unknown): value is RegExpValue =>
     typeof value.flags === 'string';
 
 export const convertRegExpToNeo4j = ({ source, flags }: RegExp | RegExpValue): string => {
+    let pattern = source;
+
+    // Add case insensitive flag if needed
+    const prefix = flags.includes('i') ? '(?i)' : '';
+
+    // Respect anchors: only add leading wildcard when not anchored at start; only add trailing when not anchored at end
+    const anchoredStart = pattern.startsWith('^');
+    const anchoredEnd = pattern.endsWith('$');
+
+    const needsStartWildcard = !anchoredStart && !pattern.startsWith('.*');
+    const needsEndWildcard = !anchoredEnd && !pattern.endsWith('.*');
+
+    pattern = `${needsStartWildcard ? '.*' : ''}${pattern}${needsEndWildcard ? '.*' : ''}`;
+
+    // Keep legacy behavior expected by tests for empty patterns
+    if (pattern === '.*.*') {
+        return '.*.*';
+    }
+
+    return `${prefix}${pattern}`;
+};
+
+/** Apply substring matching to exclusion patterns without changing existing query semantics. */
+export const convertExclusionRegExpToNeo4j = ({ source, flags }: RegExp | RegExpValue): string => {
     // Cypher's =~ matches the entire string. Wrap the entire expression so that
     // alternatives and anchors retain their meaning when searching within a field.
     // The surrounding wildcards must cross line breaks even when the expression
@@ -197,7 +221,8 @@ export const convertRegExpToNeo4j = ({ source, flags }: RegExp | RegExpValue): s
     const leading = flags.includes('y') ? '' : '(?s:.*)';
 
     // Without multiline, Java's `$` also matches before a final line break,
-    // unlike JavaScript's. Use Java's strict end anchor outside character classes.
+    // unlike JavaScript's. Translate unescaped anchors outside JavaScript character
+    // classes. Neo4j still interprets the resulting expression using Java syntax.
     let pattern = '';
     let inCharacterClass = false;
     let escaped = false;

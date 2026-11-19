@@ -2,6 +2,7 @@ import { BindParam, Op, QueryBuilder } from 'neogma';
 
 import { getIdFromUri } from '@helpers/uri.helpers';
 import {
+    convertExclusionRegExpToNeo4j,
     convertObjectRegExpToNeo4j,
     convertQueryResultToPropertiesObjectArray,
     buildWhereForQueryBuilder,
@@ -34,6 +35,16 @@ export const getBoostsByUri = async (uris: string[]): Promise<BoostInstance[]> =
     return Boost.findMany({ where: { id: { [Op.in]: ids } } });
 };
 
+const convertBoostExclusions = (exclude: BoostExclusion) =>
+    Object.fromEntries(
+        Object.entries(exclude).map(([field, value]) => [
+            field,
+            typeof value === 'object' && '$regex' in value
+                ? { $regex: convertExclusionRegExpToNeo4j(value.$regex) }
+                : value,
+        ])
+    );
+
 export const getBoostsForProfile = async (
     profile: ProfileType,
     {
@@ -46,7 +57,7 @@ export const getBoostsForProfile = async (
     const { whereClause, params: queryParams } = buildWhereForQueryBuilder(
         'boost',
         convertObjectRegExpToNeo4j(matchQuery),
-        convertObjectRegExpToNeo4j(exclude)
+        convertBoostExclusions(exclude)
     );
 
     const _query = new QueryBuilder(new BindParam({ cursor, ...queryParams }))

@@ -15,6 +15,9 @@ export const isEncrypted = (item: unknown): item is JWE => {
 
 /**
  * tRPC data transformer that handles RegExp serialization/deserialization
+ *
+ * The managed-boost exclusion fields deliberately preserve exact strings and
+ * list entries. Existing routes keep decoding the legacy slash-delimited wire format.
  */
 export const RegExpTransformer: DataTransformer = {
     serialize(object) {
@@ -32,9 +35,6 @@ export const RegExpTransformer: DataTransformer = {
 
         const deserializeValue = (value: unknown, path: string[]): unknown => {
             if (typeof value === 'string') {
-                // Boost exclusions accept literal strings as well as $regex. Do not interpret
-                // exact values (including $in entries) as regexes merely because they have
-                // slashes; their wire representation is indistinguishable from a RegExp.
                 const isLiteralExclusion =
                     path[0] === 'exclude' &&
                     (path[1] === 'name' || path[1] === 'category') &&

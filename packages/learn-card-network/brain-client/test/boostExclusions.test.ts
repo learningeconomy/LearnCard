@@ -3,7 +3,7 @@ import { initTRPC } from '@trpc/server';
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
 import { BoostExclusionValidator, PaginationOptionsValidator } from '@learncard/types';
 
-import { RegExpTransformer } from '../../../learn-card-helpers/src';
+import { RegExpTransformer } from '@learncard/helpers';
 import { getApiTokenClient } from '../src';
 
 describe('boost exclusions over tRPC', () => {

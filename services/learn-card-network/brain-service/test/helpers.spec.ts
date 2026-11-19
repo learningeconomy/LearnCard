@@ -1,61 +1,64 @@
 import { describe, it, expect } from 'vitest';
 
 import {
+    convertExclusionRegExpToNeo4j,
     convertRegExpToNeo4j,
     convertObjectRegExpToNeo4j,
     buildWhereClause,
 } from '@helpers/neo4j.helpers';
 
-describe('convertRegExpToNeo4j', () => {
-    it('converts basic RegExp without flags', () => {
-        expect(convertRegExpToNeo4j(/test/)).toBe('(?s:.*)(?:test)(?s:.*)');
-        expect(convertRegExpToNeo4j(/[a-z]+/)).toBe('(?s:.*)(?:[a-z]+)(?s:.*)');
-        expect(convertRegExpToNeo4j(/\d{3}/)).toBe('(?s:.*)(?:\\d{3})(?s:.*)');
-    });
-
+describe('convertExclusionRegExpToNeo4j', () => {
     it('groups alternations and retains multiline and dotAll flags', () => {
-        expect(convertRegExpToNeo4j(/Passport|Resume/)).toBe('(?s:.*)(?:Passport|Resume)(?s:.*)');
-        expect(convertRegExpToNeo4j(/^Resume$/im)).toBe('(?im)(?s:.*)(?:^Resume$)(?s:.*)');
-        expect(convertRegExpToNeo4j(/first.second/s)).toBe('(?s)(?s:.*)(?:first.second)(?s:.*)');
-        expect(convertRegExpToNeo4j(/test/y)).toBe('(?:test)(?s:.*)');
+        expect(convertExclusionRegExpToNeo4j(/Passport|Resume/)).toBe(
+            '(?s:.*)(?:Passport|Resume)(?s:.*)'
+        );
+        expect(convertExclusionRegExpToNeo4j(/^Resume$/im)).toBe('(?im)(?s:.*)(?:^Resume$)(?s:.*)');
+        expect(convertExclusionRegExpToNeo4j(/first.second/s)).toBe(
+            '(?s)(?s:.*)(?:first.second)(?s:.*)'
+        );
+        expect(convertExclusionRegExpToNeo4j(/test/y)).toBe('(?:test)(?s:.*)');
     });
 
     it('uses strict end anchors without changing literal dollar signs', () => {
-        expect(convertRegExpToNeo4j(/^a$/)).toBe('(?s:.*)(?:^a\\z)(?s:.*)');
-        expect(convertRegExpToNeo4j(/[$]\$$/)).toBe('(?s:.*)(?:[$]\\$\\z)(?s:.*)');
-        expect(convertRegExpToNeo4j(/^a$/m)).toBe('(?m)(?s:.*)(?:^a$)(?s:.*)');
+        expect(convertExclusionRegExpToNeo4j(/^a$/)).toBe('(?s:.*)(?:^a\\z)(?s:.*)');
+        expect(convertExclusionRegExpToNeo4j(/[$]\$$/)).toBe('(?s:.*)(?:[$]\\$\\z)(?s:.*)');
+        expect(convertExclusionRegExpToNeo4j(/^a$/m)).toBe('(?m)(?s:.*)(?:^a$)(?s:.*)');
+    });
+});
+
+describe('convertRegExpToNeo4j', () => {
+    it('converts basic RegExp without flags', () => {
+        expect(convertRegExpToNeo4j(/test/)).toBe('.*test.*');
+        expect(convertRegExpToNeo4j(/[a-z]+/)).toBe('.*[a-z]+.*');
+        expect(convertRegExpToNeo4j(/\d{3}/)).toBe('.*\\d{3}.*');
     });
 
     it('handles case insensitive flag', () => {
-        expect(convertRegExpToNeo4j(/test/i)).toBe('(?i)(?s:.*)(?:test)(?s:.*)');
-        expect(convertRegExpToNeo4j(/[A-Z]+/i)).toBe('(?i)(?s:.*)(?:[A-Z]+)(?s:.*)');
+        expect(convertRegExpToNeo4j(/test/i)).toBe('(?i).*test.*');
+        expect(convertRegExpToNeo4j(/[A-Z]+/i)).toBe('(?i).*[A-Z]+.*');
     });
 
-    it('preserves explicit wildcards', () => {
-        expect(convertRegExpToNeo4j(/.*test/)).toBe('(?s:.*)(?:.*test)(?s:.*)');
-        expect(convertRegExpToNeo4j(/test.*/)).toBe('(?s:.*)(?:test.*)(?s:.*)');
-        expect(convertRegExpToNeo4j(/.*test.*/)).toBe('(?s:.*)(?:.*test.*)(?s:.*)');
+    it('avoids double wildcards', () => {
+        expect(convertRegExpToNeo4j(/.*test/)).toBe('.*test.*');
+        expect(convertRegExpToNeo4j(/test.*/)).toBe('.*test.*');
+        expect(convertRegExpToNeo4j(/.*test.*/)).toBe('.*test.*');
     });
 
     it('handles RegExpValue objects', () => {
-        expect(convertRegExpToNeo4j({ source: 'test', flags: '' })).toBe('(?s:.*)(?:test)(?s:.*)');
-        expect(convertRegExpToNeo4j({ source: 'test', flags: 'i' })).toBe(
-            '(?i)(?s:.*)(?:test)(?s:.*)'
-        );
-        expect(convertRegExpToNeo4j({ source: '.*test.*', flags: 'i' })).toBe(
-            '(?i)(?s:.*)(?:.*test.*)(?s:.*)'
-        );
+        expect(convertRegExpToNeo4j({ source: 'test', flags: '' })).toBe('.*test.*');
+        expect(convertRegExpToNeo4j({ source: 'test', flags: 'i' })).toBe('(?i).*test.*');
+        expect(convertRegExpToNeo4j({ source: '.*test.*', flags: 'i' })).toBe('(?i).*test.*');
     });
 
     it('preserves special regex characters', () => {
-        expect(convertRegExpToNeo4j(/\b\w+\b/)).toBe('(?s:.*)(?:\\b\\w+\\b)(?s:.*)');
-        expect(convertRegExpToNeo4j(/[^a-z]/i)).toBe('(?i)(?s:.*)(?:[^a-z])(?s:.*)');
-        expect(convertRegExpToNeo4j(/a{2,4}/)).toBe('(?s:.*)(?:a{2,4})(?s:.*)');
+        expect(convertRegExpToNeo4j(/\b\w+\b/)).toBe('.*\\b\\w+\\b.*');
+        expect(convertRegExpToNeo4j(/[^a-z]/i)).toBe('(?i).*[^a-z].*');
+        expect(convertRegExpToNeo4j(/a{2,4}/)).toBe('.*a{2,4}.*');
     });
 
     it('handles empty patterns', () => {
-        expect(convertRegExpToNeo4j(/(?:)/)).toBe('(?s:.*)(?:(?:))(?s:.*)');
-        expect(convertRegExpToNeo4j({ source: '', flags: '' })).toBe('(?s:.*)(?:)(?s:.*)');
+        expect(convertRegExpToNeo4j(/(?:)/)).toBe('.*(?:).*');
+        expect(convertRegExpToNeo4j({ source: '', flags: '' })).toBe('.*.*');
     });
 });
 
@@ -67,8 +70,8 @@ describe('convertObjectRegExpToNeo4j', () => {
             normal: 'string',
         };
         expect(convertObjectRegExpToNeo4j(input)).toEqual({
-            pattern1: '(?s:.*)(?:test)(?s:.*)',
-            pattern2: '(?i)(?s:.*)(?:test)(?s:.*)',
+            pattern1: '.*test.*',
+            pattern2: '(?i).*test.*',
             normal: 'string',
         });
     });
@@ -86,9 +89,9 @@ describe('convertObjectRegExpToNeo4j', () => {
         };
         expect(convertObjectRegExpToNeo4j(input)).toEqual({
             level1: {
-                pattern: '(?i)(?s:.*)(?:test)(?s:.*)',
+                pattern: '(?i).*test.*',
                 level2: {
-                    pattern: '(?s:.*)(?:nested)(?s:.*)',
+                    pattern: '.*nested.*',
                     normal: 42,
                 },
             },
@@ -102,8 +105,8 @@ describe('convertObjectRegExpToNeo4j', () => {
             mixed: [/pattern/, 'string', 42],
         };
         expect(convertObjectRegExpToNeo4j(input)).toEqual({
-            patterns: ['(?s:.*)(?:test)(?s:.*)', '(?i)(?s:.*)(?:example)(?s:.*)'],
-            mixed: ['(?s:.*)(?:pattern)(?s:.*)', 'string', 42],
+            patterns: ['.*test.*', '(?i).*example.*'],
+            mixed: ['.*pattern.*', 'string', 42],
         });
     });
 
@@ -115,9 +118,9 @@ describe('convertObjectRegExpToNeo4j', () => {
             },
         };
         expect(convertObjectRegExpToNeo4j(input)).toEqual({
-            pattern: '(?i)(?s:.*)(?:test)(?s:.*)',
+            pattern: '(?i).*test.*',
             nested: {
-                pattern: '(?s:.*)(?:.*nested.*)(?s:.*)',
+                pattern: '.*nested.*',
             },
         });
     });
@@ -147,14 +150,10 @@ describe('convertObjectRegExpToNeo4j', () => {
             },
         };
         expect(convertObjectRegExpToNeo4j(input)).toEqual({
-            empty: '(?s:.*)(?:(?:))(?s:.*)',
-            onlyWildcards: '(?s:.*)(?:.*)(?s:.*)',
+            empty: '.*(?:).*',
+            onlyWildcards: '.*',
             complexNested: {
-                array: [
-                    '(?i)(?s:.*)(?:.*test.*)(?s:.*)',
-                    '(?s:.*)(?:pattern)(?s:.*)',
-                    { nested: '(?s:.*)(?:deep)(?s:.*)' },
-                ],
+                array: ['(?i).*test.*', '.*pattern.*', { nested: '.*deep.*' }],
             },
         });
     });
