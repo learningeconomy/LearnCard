@@ -1,9 +1,16 @@
 export {
     createHcpMcpApp,
+    createConfiguredHcpMcpServer,
     HCP_MCP_PATH,
     HCP_MCP_SERVER_INFO,
     type CreateHcpMcpAppOptions,
 } from './app';
+export {
+    buildHcpConfiguration,
+    buildHcpMcpExtension,
+    HCP_MCP_EXTENSION_ID,
+    type HcpDiscoveryUrls,
+} from './discovery';
 export { createHcpMcpTools, HCP_MCP_TOOL_NAMES, type HcpMcpToolDeps } from './tools';
 export {
     createHcpVerifyAccessToken,

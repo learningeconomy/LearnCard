@@ -16,7 +16,7 @@ This unit ships:
 - Dynamic client registration, Authorization Code + PKCE, local consent HTML
 - RS probe `GET /hcp/oauth/v1/probe` (bearer to grant metadata; not an MCP tool)
 
-MCP tools ship in **Unit 2** (`../mcp/`). Do not claim `bindings:["mcp"]` / `conformsTo` until Unit 3.
+MCP tools + Unit 3 conformance live under `../mcp/`. Official `conformsTo` Part URIs remain unclaimed (see `../mcp/CONFORMANCE.md`).
 
 ## How do I test this
 
@@ -55,4 +55,4 @@ For Claude Code against real MCP tools, see `../mcp/README.md` (Unit 2). Unit 1 
 | Token alg                  | HS256 with `HCP_OAUTH_TOKEN_SECRET` for local Unit 1.                                                                        |
 | Q3 reportSharing           | Deferred to Unit 2 tools (expose real or not-implemented error; do not omit).                                                |
 | Q4 createEntry WritePolicy | Spec path default; LC `canWrite` stays a marked extension when tools land.                                                   |
-| Q7 conformsTo              | Claim only after Unit 3 conformance tests.                                                                                   |
+| Q7 conformsTo              | Unit 3 suite landed; official Part URIs still unclaimed (§18.1 / CONFORMANCE.md).                                            |

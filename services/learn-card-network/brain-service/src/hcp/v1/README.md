@@ -323,12 +323,25 @@ Not implemented yet (Draft 3 has them): Idempotency-Key (§9.6), onward sharing 
 `context.shared` (§5.2.8), standing rules and directives (§6.3, §6.4), confirmation
 (§3.8), recategorize and restrict purposes,
 hard delete and import (§5.4), narrowed grants (§6.1.5.1), the `provenance` action
-(§7.4.1), relationships and conflicts (§4.2.3, §4.7), VC evidence ingest (§14),
-OAuth AS + PRM live under `src/hcp/oauth/` (Unit 1) and MCP §10.3 tools under
-`src/hcp/mcp/` (Unit 2); do not claim `bindings:["mcp"]` / oauth-interop
-`conformsTo` until Unit 3 conformance tests pass. Onward-sharing audit
-(`hcp_reportSharing`) is registered but returns not-implemented. Relevance ordering is `lexical` (§7.3).
-`conformsTo` is not claimed: tRPC paths are not the Draft 3 HTTP binding.
+(§7.4.1), relationships and conflicts (§4.2.3, §4.7), VC evidence ingest (§14).
+Relevance ordering is `lexical` (§7.3).
+
+### MCP + OAuth (Units 1–3) - proven locally, official URIs unclaimed
+
+OAuth AS + PRM (`src/hcp/oauth/`) and MCP §10.3 tools + §10.2 extension
+(`src/hcp/mcp/`) are implemented and covered by `src/hcp/mcp/conformance.test.ts`
+(see `src/hcp/mcp/CONFORMANCE.md`). What is **proven**: six tools on Streamable
+HTTP, grant-bound bearer, PRM/AS metadata, `example.hcp/hcp` on initialize,
+LC-adapted `/.well-known/hcp-configuration`.
+
+What is **not** claimed (Draft 3 §18.1: a Part is claimed whole):
+
+- `conformsTo` Part URIs (`core/2.0`, `bindings/mcp/2.0`, `profiles/oauth-interop/2.0`)
+- `bindings:["mcp"]` on discovery or on tRPC `hcp.v1.meta` (meta still has neither field)
+- Agent Interop package (§18.2) - needs HTTP Binding + full OAuth Interop
+
+`hcp_reportSharing` stays registered and returns `not-implemented` until
+`context.shared` audit lands. tRPC paths are not the Draft 3 HTTP binding.
 
 ## Management UI (LC-2424)
 
@@ -467,7 +480,7 @@ Suggestions (LC-2423), with the same env:
    reads it; a second suggestion is dismissed; a grant with `canWrite: true` writes
    directly.
 2. Hand-test in the app: `suggest-link` prints a consent URL with `suggest=1`. Open it
-   signed in and Allow — the screen says the app can look and suggest additions. Copy
+   signed in and Allow - the screen says the app can look and suggest additions. Copy
    `grantId` from the `hcp.v1.grants.list` network response, then
    `suggest '<grantId>'` (optional text after the id; default "Practice fractions twice
    a week"). The JSON includes `suggested: true`. In My info the entry shows as
