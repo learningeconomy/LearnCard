@@ -122,6 +122,15 @@ describe('single inbox durable idempotency', () => {
             )
         ).toBe('OK');
     };
+    // Other files in the same CI run (e.g. credential-storage.neo4j.spec.ts) create
+    // profiles for these default-seed DIDs, so nothing may outlive this file.
+    const clearInboxGraph = async (): Promise<void> => {
+        for (const model of [Credential, InboxCredential, ContactMethod, Profile]) {
+            await model.delete({ detach: true, where: {} });
+        }
+        await neogma.queryRunner.run(`MATCH (n) WHERE n:InboxBatch OR n:InboxBatchItem
+            OR n:InboxBatchIssuer OR n:InboxBatchReplay DETACH DELETE n`);
+    };
     beforeAll(async () => {
         issuer = await getUser('a'.repeat(64));
         other = await getUser('c'.repeat(64));
@@ -137,11 +146,7 @@ describe('single inbox durable idempotency', () => {
         vi.spyOn(SQSClient.prototype, 'send').mockImplementation(async () => {
             throw new Error('Unexpected external queue call');
         });
-        for (const model of [Credential, InboxCredential, ContactMethod, Profile]) {
-            await model.delete({ detach: true, where: {} });
-        }
-        await neogma.queryRunner.run(`MATCH (n) WHERE n:InboxBatch OR n:InboxBatchItem
-            OR n:InboxBatchIssuer OR n:InboxBatchReplay DETACH DELETE n`);
+        await clearInboxGraph();
         await issuer.clients.fullAuth.profile.createProfile({ profileId: issuerId });
         await other.clients.fullAuth.profile.createProfile({ profileId: 'single-idem-other' });
         await holder.clients.fullAuth.profile.createProfile({ profileId: 'single-idem-holder' });
@@ -154,6 +159,7 @@ describe('single inbox durable idempotency', () => {
     });
     afterAll(async () => {
         console.log('SINGLE_INBOX_CONTENTION', JSON.stringify(counters));
+        await clearInboxGraph();
         await cache.redis?.quit();
         await neogma.driver.close();
     });
