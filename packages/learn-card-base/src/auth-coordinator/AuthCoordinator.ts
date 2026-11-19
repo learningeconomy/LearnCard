@@ -1226,14 +1226,16 @@ export class AuthCoordinator {
      *   is checked against the session's user before signing in (`other-uid` otherwise,
      *   `mismatch` when unreadable), so the session never switches to another user.
      * - `mismatch`: the session's user is not this account's user any more, or its email
-     *   is not `expectedEmail` (case-insensitive). The state is left unchanged; the caller
+     *   is not `expectedEmail` (case-insensitive). Without `expectedEmail` (after a removal,
+     *   whose restored address the client never typed) any email is accepted; it is not
+     *   device-confirmed, so a re-seal then asks the user to type it. The state is left unchanged; the caller
      *   shows an error and never calls an escrow method.
      * - `ok`: publishes the user, forgets a cached "no contact email" result, resets the
      *   published enrollment, and waits for the escrow refresh (whose enrollment, if any,
      *   seals the new email).
      */
     async refreshAccountContact(params: {
-        expectedEmail: string;
+        expectedEmail?: string;
         customToken?: string;
         primaryUid?: string;
     }): Promise<'ok' | 'mismatch' | 'other-uid'> {
@@ -1243,8 +1245,12 @@ export class AuthCoordinator {
         if (params.customToken && params.primaryUid === undefined) return 'mismatch';
         if (params.primaryUid !== undefined && ready.authUser?.id !== params.primaryUid)
             return 'other-uid';
-        const expected = normalizeContactEmail(params.expectedEmail);
-        if (!expected || !ready.authUser?.id) return 'mismatch';
+        const expected =
+            params.expectedEmail === undefined
+                ? undefined
+                : normalizeContactEmail(params.expectedEmail);
+        if ((params.expectedEmail !== undefined && !expected) || !ready.authUser?.id)
+            return 'mismatch';
         const authProvider = this.config.authProvider;
         let user: AuthUser | null;
         try {
@@ -1271,7 +1277,7 @@ export class AuthCoordinator {
             current.privateKey !== ready.privateKey ||
             !user ||
             user.id !== ready.authUser.id ||
-            normalizeContactEmail(user.email) !== expected
+            (expected !== undefined && normalizeContactEmail(user.email) !== expected)
         )
             return 'mismatch';
         this.escrowNoContactAccount = undefined;

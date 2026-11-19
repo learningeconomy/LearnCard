@@ -5383,6 +5383,20 @@ describe('AuthCoordinator LC-2409 escrow contact', () => {
             expect(customTokenUid('a.%%%.c')).toBeUndefined();
         });
 
+        it('without expectedEmail (after a removal) accepts the restored email unconfirmed', async () => {
+            const school: AuthUser = { ...mockUser, email: 'student@school.edu' };
+            const reauthenticateWithToken = vi.fn().mockResolvedValue(school);
+            const { coordinator } = await ready({ authProvider: { reauthenticateWithToken } });
+            await expect(
+                coordinator.refreshAccountContact({
+                    customToken: tokenFor('user-1'),
+                    primaryUid: 'user-1',
+                })
+            ).resolves.toBe('ok');
+            expect(coordinator.getState()).toMatchObject({ authUser: school });
+            expect(coordinator.getConfirmedContact()).toBeUndefined();
+        });
+
         it('without a custom token reads the current user', async () => {
             const { coordinator, authProvider } = await ready();
             vi.mocked(authProvider.getCurrentUser).mockResolvedValue(personalUser);

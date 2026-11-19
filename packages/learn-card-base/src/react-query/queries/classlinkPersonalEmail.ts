@@ -66,7 +66,7 @@ export const useVerifyPersonalEmail = () => {
                     email: input.email,
                     verified: true,
                 });
-                // Verifying can also set the recovery email, which moves the next step.
+                // The address is now the sign-in email, which moves the next step.
                 void queryClient.invalidateQueries({
                     queryKey: ['classlinkAccountContinuity', did],
                 });
@@ -75,7 +75,10 @@ export const useVerifyPersonalEmail = () => {
     });
 };
 
-/** Remove the personal email (its sign-in link, a matching recovery email and the record). */
+/**
+ * Remove the personal sign-in email: lca-api restores the previous sign-in email and contact
+ * and returns a custom token for the login it signed out (see `KeepAccountStep`).
+ */
 export const useRemovePersonalEmail = () => {
     const learnCard = walletStore.use.wallet();
     const queryClient = useQueryClient();
