@@ -29,9 +29,12 @@ export const preloadDashboardPage = (): Promise<void> => LazyDashboardPage.prelo
  * fetch() the chunk files into the HTTP cache only — never import() here. A failed
  * speculative import (e.g. 503 after a successful fetch warm under Cache-Control:
  * no-cache) poisons Firefox / some Chromium module maps, so the recovered server
- * still serves a failed module on the next open. Import stays on navigation via
- * ROUTE_PRELOAD['/dashboard'] → warmThenImport → preloadDashboardPage (LC-2415
- * page_direct still happens when the user selects dashboard).
+ * still serves a failed module on the next open.
+ *
+ * Import (LC-2415 page_direct) happens when the destination is confirmed:
+ * AppRouter calls preloadDashboardPage while the boot loader is still up for
+ * isDashboardBootLanding paths, and ROUTE_PRELOAD['/dashboard'] imports on
+ * in-app navigation.
  */
 export const warmDashboardPage = (): Promise<void> =>
     prefetchChunk('dashboard').then(() => undefined);

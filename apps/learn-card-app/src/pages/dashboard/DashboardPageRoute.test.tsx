@@ -116,6 +116,26 @@ describe('DashboardPageRoute', () => {
             expect(await screen.findByText('dashboard')).toBeTruthy();
         });
 
+        it('page_directs after fetch warm plus confirmed-destination preload (boot / nav path)', async () => {
+            warm.prefetch.mockResolvedValue(true);
+            const { DashboardPageRoute, warmDashboardPage, preloadDashboardPage } = await load();
+
+            await warmDashboardPage();
+            // Confirmed destination (AppRouter under LoginLoadingPage, or ROUTE_PRELOAD): import now.
+            await preloadDashboardPage();
+
+            renderRoute(DashboardPageRoute);
+
+            expect(screen.getByText('dashboard')).toBeTruthy();
+            expect(screen.queryByText('fallback')).toBeNull();
+            expect(marks.steps).toContain('page_direct');
+            expect(marks.steps.filter(step => step !== 'page_route_render')).toEqual([
+                'page_chunk_start',
+                'page_chunk_loaded',
+                'page_direct',
+            ]);
+        });
+
         it('does not import when the fetch warm fails, so a 503 cannot poison the module map', async () => {
             warm.prefetch.mockResolvedValue(false);
             const { DashboardPageRoute, warmDashboardPage } = await load();
