@@ -151,8 +151,8 @@ The LearnCard app picks the matching contract from its network URL
 staging app: a Fly secret with the same name takes precedence over `--env`, so the guard here would check one value while the app
 ran another. The staging role's trust policy must allow the staging Fly app's OIDC identity.
 
-Automatic production deploys from this repo run when `AIP_DEPLOY_ENABLED` is `true` (it is
-today) and ship to `lca-backend` only.
+Automatic production deploys from this repo run when `AIP_DEPLOY_ENABLED` is `true` and
+ship to `lca-backend` only.
 
 `fly.mcp.toml` (the MCP server) is deployed by the separate `deploy-ai-passport-mcp` job,
 not this backend job.
