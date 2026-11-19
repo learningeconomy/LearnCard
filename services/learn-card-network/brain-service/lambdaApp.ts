@@ -29,6 +29,7 @@ import { environment } from './src/config/environment';
 import { toServerlessApplication } from './src/helpers/serverlessApplication';
 import { runInboxMaintenance } from './src/helpers/inbox-maintenance.helpers';
 import { purgeExpiredIntegrationEvents } from './src/helpers/integration-events.helpers';
+import { expireContractRequestInvites } from './src/helpers/contract-request-invites.helpers';
 import {
     inboxBatchResponseMeta,
     withInboxBatchBodyLimit,
@@ -229,4 +230,12 @@ export const inboxMaintenanceHandler = Sentry.AWSLambda.wrapHandler(async (): Pr
 
     const counts = await runInboxMaintenance();
     console.log('Universal Inbox maintenance completed', counts);
+
+    // Same daily schedule. A failure here must not fail the inbox maintenance run.
+    try {
+        const expired = await expireContractRequestInvites();
+        console.log('Contract request invite expiry completed', { expired });
+    } catch {
+        console.warn('contract_request_invite: expiry_pending');
+    }
 });

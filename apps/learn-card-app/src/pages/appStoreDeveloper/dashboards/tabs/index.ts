@@ -4,6 +4,7 @@ export { ApiTokensTab } from './ApiTokensTab';
 export { EmbedCodeTab } from './EmbedCodeTab';
 export { EmbedConfigTab } from './EmbedConfigTab';
 export { ContractsTab } from './ContractsTab';
+export { WebhooksTab } from './WebhooksTab';
 export { ConnectionsTab } from './ConnectionsTab';
 export { SigningTab } from './SigningTab';
 export { BrandingTab } from './BrandingTab';

@@ -3100,6 +3100,10 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
                 return client.contracts.sendContractRequest.mutate(request);
             },
+            getContractRequest: async (_learnCard, contractUri, requestId) => {
+                await ensureUser();
+                return client.contracts.getContractRequest.query({ contractUri, requestId });
+            },
             denyContractRequest: async (_learnCard, contractUri) => {
                 await ensureUser();
                 return client.contracts.denyContractRequest.mutate({ contractUri });
@@ -3197,13 +3201,20 @@ export async function getLearnCardNetworkPlugin(
                 });
             },
 
-            cancelContractRequest: async (_learnCard, contractUri, targetProfileId) => {
+            cancelContractRequest: async (_learnCard, contractUri, target) => {
                 await ensureUser();
 
-                return client.contracts.cancelContractRequest.mutate({
-                    contractUri,
-                    targetProfileId,
-                });
+                return client.contracts.cancelContractRequest.mutate(
+                    typeof target === 'string'
+                        ? { contractUri, targetProfileId: target }
+                        : { contractUri, requestId: target.requestId }
+                );
+            },
+
+            getContractConnections: async (_learnCard, contractUri, options = {}) => {
+                await ensureUser();
+
+                return client.contracts.getContractConnections.query({ contractUri, ...options });
             },
 
             addDidMetadata: async (_learnCard, metadata) => {
@@ -3669,6 +3680,31 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
 
                 return client.integrations.deleteIntegration.mutate({ id });
+            },
+            setIntegrationWebhook: async (_learnCard, id, webhookUrl) => {
+                await ensureUser();
+
+                return client.integrations.setIntegrationWebhook.mutate({ id, webhookUrl });
+            },
+            getIntegrationWebhook: async (_learnCard, id) => {
+                await ensureUser();
+
+                return client.integrations.getIntegrationWebhook.query({ id });
+            },
+            rotateIntegrationWebhookSecret: async (_learnCard, id) => {
+                await ensureUser();
+
+                return client.integrations.rotateIntegrationWebhookSecret.mutate({ id });
+            },
+            sendIntegrationTestEvent: async (_learnCard, id) => {
+                await ensureUser();
+
+                return client.integrations.sendIntegrationTestEvent.mutate({ id });
+            },
+            getIntegrationEvents: async (_learnCard, id, options = {}) => {
+                await ensureUser();
+
+                return client.integrations.getIntegrationEvents.query({ id, ...options });
             },
 
             // App Store

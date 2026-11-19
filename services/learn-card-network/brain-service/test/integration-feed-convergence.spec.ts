@@ -74,6 +74,11 @@ const createFeedOnlyClient = (owner: Actor, integrationId: string, contractUri: 
         if (record.type === 'contract_retired') connections.clear();
         if (!profileId) return;
 
+        if (record.type === 'consent_updated' && record.reason === 'share_until_passed') {
+            // A category stopped being shared; the connection keeps whatever status it has.
+            return;
+        }
+
         if (record.type === 'consent_created' || record.type === 'consent_updated') {
             connections.set(profileId, 'live');
         } else if (record.type === 'consent_withdrawn' || record.type === 'consent_expired') {

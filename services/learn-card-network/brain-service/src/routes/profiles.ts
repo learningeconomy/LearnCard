@@ -95,6 +95,7 @@ import {
 } from '@helpers/profile-privacy.helpers';
 import { verifyAuthToken } from '@helpers/oidc-jwt.helpers';
 import { claimPendingGuardianLinksForProfile } from '@helpers/guardian-links.helpers';
+import { attachContractRequestInvitesForProfile } from '@helpers/contract-request-invites.helpers';
 import { createContactMethod } from '@accesslayer/contact-method/create';
 import { getContactMethodByValue } from '@accesslayer/contact-method/read';
 import { verifyContactMethod } from '@accesslayer/contact-method/update';
@@ -220,6 +221,10 @@ export const profilesRouter = t.router({
                                     err
                                 );
                             }
+
+                            // Turn pending contract request invites for this email into
+                            // requests. Never throws; a failure leaves the invite pending.
+                            await attachContractRequestInvitesForProfile(profile, ctx.domain);
                         }
                     } catch (e) {
                         console.error('Auto-verify email failed (non-fatal):', e);
