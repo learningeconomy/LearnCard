@@ -1,5 +1,6 @@
 {
     "_profileFieldsNote": "Pilot test configuration. Picklist values, field formats and requiredness await partner confirmation. Contracts request fields individually.",
+    "verifiableDataConsentNotice": "We ask for this information to help partners understand what resources you may need. You decide whether to share your answers and with whom. Unless we tell you otherwise, your answers will only be analyzed in aggregate.",
     "verifiableDataSchemas": {
         "military-profile": {
             "label": "Military profile",
@@ -24,8 +25,7 @@
                 "gender": {
                     "label": "Gender",
                     "type": "select",
-                    "values": ["Male", "Female"],
-                    "allowCustomValue": true
+                    "values": ["Man", "Woman", "Other", { "type": "custom" }, "Prefer not to say"]
                 },
                 "birthDate": {
                     "label": "Date of birth",

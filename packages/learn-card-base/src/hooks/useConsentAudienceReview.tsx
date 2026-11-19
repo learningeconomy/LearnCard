@@ -5,6 +5,7 @@ import { useModal } from '../components/modals/useModal';
 import { ModalTypes } from '../components/modals/types/Modals';
 import { FullCredentialDisclosure } from '../components/FullCredentialDisclosure';
 import { useT } from '../i18n';
+import { useOptionalTenantConfig } from '../config/TenantConfigProvider';
 
 const ConsentAudienceReview = ({
     contract,
@@ -20,6 +21,8 @@ const ConsentAudienceReview = ({
     onDismiss: () => void;
 }) => {
     const t = useT();
+    const tenant = useOptionalTenantConfig();
+    const notice = fieldReview ? tenant?.verifiableDataConsentNotice : undefined;
     const mounted = useRef(false);
     useEffect(() => {
         mounted.current = true;
@@ -59,6 +62,11 @@ const ConsentAudienceReview = ({
                     </li>
                 ))}
             </ul>
+            {notice && (
+                <p className="rounded-xl border border-grayscale-200 bg-grayscale-10 p-3 text-sm leading-relaxed text-grayscale-700">
+                    {notice}
+                </p>
+            )}
             {fieldReview ? (
                 <ConsentProfileFields
                     contract={contract}

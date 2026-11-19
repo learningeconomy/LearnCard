@@ -1,6 +1,7 @@
 {
     "_comment": "Local dev overrides for VetPass. Merged on top of config.json via deepMerge.",
     "_profileFieldsNote": "Local demonstration options. Confirm pilot choices with HHUSA before deployment.",
+    "verifiableDataConsentNotice": "We ask for this information to help partners understand what resources you may need. You decide whether to share your answers and with whom. Unless we tell you otherwise, your answers will only be analyzed in aggregate.",
     "verifiableDataSchemas": {
         "military-profile": {
             "label": "Military profile",
@@ -25,8 +26,7 @@
                 "gender": {
                     "label": "Gender",
                     "type": "select",
-                    "values": ["Male", "Female"],
-                    "allowCustomValue": true
+                    "values": ["Man", "Woman", "Other", { "type": "custom" }, "Prefer not to say"]
                 },
                 "birthDate": {
                     "label": "Date of birth",

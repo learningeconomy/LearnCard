@@ -539,6 +539,7 @@ export const tenantConfigSchema = z
         ecosystem: tenantEcosystemConfigSchema.optional(),
         verifiableDataKeysByCategory: z.record(z.string(), z.string().min(1)).optional(),
         verifiableDataSchemas: profileSchemasValidator.optional(),
+        verifiableDataConsentNotice: z.string().trim().min(1).optional(),
         // Parse an absent block so each registry field receives its declared default.
         registries: tenantRegistriesConfigSchema.prefault({}),
     })

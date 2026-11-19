@@ -12,8 +12,12 @@ export const profileFieldSchema = z.discriminatedUnion('type', [
     common.extend({ type: z.literal('date') }),
     common.extend({
         type: z.literal('select'),
-        values: z.array(z.string().trim().min(1)).min(1),
-        allowCustomValue: z.boolean().optional(),
+        values: z
+            .array(z.union([z.string().trim().min(1), z.object({ type: z.literal('custom') })]))
+            .min(1)
+            .refine(values => values.filter(value => typeof value !== 'string').length <= 1, {
+                message: 'A field can have only one custom option.',
+            }),
     }),
 ]);
 export type ProfileField = z.infer<typeof profileFieldSchema>;
@@ -43,7 +47,7 @@ export const resolveProfileField = (
 export const validProfileAnswer = (field: ProfileField, value: unknown): value is string => {
     if (typeof value !== 'string' || !value.trim() || value.length > 512) return false;
     if (field.type === 'select')
-        return field.allowCustomValue === true || field.values.includes(value);
+        return field.values.some(option => typeof option !== 'string' || option === value);
     if (field.type === 'date') return z.iso.date().safeParse(value).success;
     return true;
 };

@@ -33,13 +33,12 @@ describe.each([
         expect(validProfileAnswer(field, '2001-02-29')).toBe(false);
     });
 
-    it('offers Male and Female and accepts a self-described gender', () => {
+    it('configures the gender choices and accepts a self-described answer', () => {
         const fields = schemas['military-profile']!.fields;
         const gender = fields.gender!;
         expect(gender).toMatchObject({
             type: 'select',
-            values: ['Male', 'Female'],
-            allowCustomValue: true,
+            values: ['Man', 'Woman', 'Other', { type: 'custom' }, 'Prefer not to say'],
         });
         expect(validProfileAnswer(gender, 'Nonbinary')).toBe(true);
         expect(validProfileAnswer(gender, ' ')).toBe(false);
