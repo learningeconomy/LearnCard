@@ -248,7 +248,7 @@ describe('production Bedrock schema behavior', () => {
     )('keeps every Sol-owned schema blocked before provider serialization', entry => {
         const schemas = Array.isArray(entry.schema) ? entry.schema : [entry.schema];
         for (const schema of schemas)
-            expect(() => compileBedrockSchema(schema, 'us.openai.gpt-6.1-sol')).toThrow(
+            expect(() => compileBedrockSchema(schema, 'us.openai.gpt-6.2-sol')).toThrow(
                 AiProviderError
             );
     });
