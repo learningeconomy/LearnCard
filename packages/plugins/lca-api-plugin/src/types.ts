@@ -28,6 +28,12 @@ export type ClassLinkAccountContinuity = {
     emailVerified: boolean;
     maskedEmail?: string;
     recoveryEmailVerified: boolean;
+    /**
+     * Set only when the verified recovery email is a different address from the personal
+     * email (one the user verified earlier, which verify never replaces). Recovery codes go
+     * there, so the UI must name it rather than the personal email.
+     */
+    maskedRecoveryEmail?: string;
     /** Any confirmed recovery method, escrow included (what the server's recovery gate counts). */
     hasServerConfirmedMethod: boolean;
     /** A confirmed method the user holds: passkey, phrase, backup file or email backup. */

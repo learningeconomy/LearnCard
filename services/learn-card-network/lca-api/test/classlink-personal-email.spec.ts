@@ -443,6 +443,20 @@ describe('ClassLink personal email', () => {
             );
             expect(await verify(email)).toEqual({ success: true, recoveryEmailSet: false });
             expect((await userKey())?.recoveryEmail).toBe('chosen@example.com');
+            // Continuity names the address recovery codes actually go to.
+            const continuity = await caller().getAccountContinuity();
+            expect(continuity).toMatchObject({
+                emailVerified: true,
+                recoveryEmailVerified: true,
+                maskedRecoveryEmail: expect.stringContaining('@example.com'),
+            });
+            expect(continuity.maskedRecoveryEmail).not.toBe(continuity.maskedEmail);
+            expect(continuity.maskedRecoveryEmail).not.toContain('chosen');
+        });
+
+        it('omits maskedRecoveryEmail when recovery uses the personal email', async () => {
+            await verify(email);
+            expect(await caller().getAccountContinuity()).not.toHaveProperty('maskedRecoveryEmail');
         });
 
         it('never overwrites a recovery email verified after the plan', async () => {

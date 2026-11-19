@@ -268,6 +268,8 @@ export const personalEmailProcedures = {
      * the tenant ID, the policy or the date of birth. `nextStep`:
      * - `email`: no verified personal email, or no verified recovery email (also when it was
      *   skipped because another account uses that address).
+     * A verified recovery email that differs from the personal email (one the user chose
+     * before) still counts; `maskedRecoveryEmail` then names it, since codes go there.
      * - `done`: both emails, plus a confirmed method the user holds (passkey, phrase, backup)
      *   or a usable PIN on usable escrow (`pinRecoverable`): the emailed code then the PIN
      *   gets them back in.
@@ -285,6 +287,8 @@ export const personalEmailProcedures = {
                 emailVerified: z.boolean(),
                 maskedEmail: z.string().optional(),
                 recoveryEmailVerified: z.boolean(),
+                /** Masked verified recovery email, only when it differs from the personal one. */
+                maskedRecoveryEmail: z.string().optional(),
                 hasServerConfirmedMethod: z.boolean(),
                 hasUserRecoveryMethod: z.boolean(),
                 pinState: EscrowPinStatusValidator.shape.state,
@@ -306,6 +310,12 @@ export const personalEmailProcedures = {
             const recoveryEmailVerified = Boolean(
                 userKey.recoveryEmail && userKey.recoveryEmailVerifiedAt
             );
+            // Recovery codes go to the recovery email, which may be a different address the
+            // user verified themselves (verify never replaces it). Say which one, masked.
+            const recoveryAddress = userKey.recoveryEmail?.trim().toLowerCase();
+            const recoveryEmailDiffers =
+                recoveryEmailVerified &&
+                recoveryAddress !== identity.personalEmail?.trim().toLowerCase();
             const hasUserRecoveryMethod = confirmed.some(method => method.type !== 'escrow');
             const escrowUsable = hasUsableEscrow(userKey);
             const pin = getEscrowPinStatus(userKey);
@@ -325,6 +335,9 @@ export const personalEmailProcedures = {
                     ? { maskedEmail: maskEmail(identity.personalEmail) }
                     : {}),
                 recoveryEmailVerified,
+                ...(recoveryEmailDiffers && recoveryAddress
+                    ? { maskedRecoveryEmail: maskEmail(recoveryAddress) }
+                    : {}),
                 hasServerConfirmedMethod: confirmed.length > 0,
                 hasUserRecoveryMethod,
                 pinState: pin.state,
