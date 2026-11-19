@@ -30,8 +30,17 @@ export const RegExpTransformer: DataTransformer = {
         // backwards compat
         if (typeof object !== 'string') return object;
 
-        return JSON.parse(object, (_key, value) => {
+        const deserializeValue = (value: unknown, path: string[]): unknown => {
             if (typeof value === 'string') {
+                // Boost exclusions accept literal strings as well as $regex. Do not interpret
+                // exact values (including $in entries) as regexes merely because they have
+                // slashes; their wire representation is indistinguishable from a RegExp.
+                const isLiteralExclusion =
+                    path[0] === 'exclude' &&
+                    (path[1] === 'name' || path[1] === 'category') &&
+                    (path.length === 2 || (path.length === 4 && path[2] === '$in'));
+                if (isLiteralExclusion) return value;
+
                 const match = value.match(/^\/(.*)\/([gimsuy]*)$/);
 
                 if (match) {
@@ -43,8 +52,24 @@ export const RegExpTransformer: DataTransformer = {
                     }
                 }
             }
+
+            if (Array.isArray(value)) {
+                return value.map((item, index) => deserializeValue(item, [...path, String(index)]));
+            }
+
+            if (value !== null && typeof value === 'object') {
+                for (const [key, item] of Object.entries(value)) {
+                    (value as Record<string, unknown>)[key] = deserializeValue(item, [
+                        ...path,
+                        key,
+                    ]);
+                }
+            }
+
             return value;
-        });
+        };
+
+        return deserializeValue(JSON.parse(object), []);
     },
 };
 

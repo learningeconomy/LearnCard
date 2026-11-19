@@ -188,26 +188,40 @@ const isRegExpValue = (value: unknown): value is RegExpValue =>
     typeof value.flags === 'string';
 
 export const convertRegExpToNeo4j = ({ source, flags }: RegExp | RegExpValue): string => {
-    let pattern = source;
+    // Cypher's =~ matches the entire string. Wrap the entire expression so that
+    // alternatives and anchors retain their meaning when searching within a field.
+    // The surrounding wildcards must cross line breaks even when the expression
+    // itself does not use the dotAll flag.
+    const javaFlags = ['i', 'm', 's'].filter(flag => flags.includes(flag)).join('');
+    const prefix = javaFlags ? `(?${javaFlags})` : '';
+    const leading = flags.includes('y') ? '' : '(?s:.*)';
 
-    // Add case insensitive flag if needed
-    const prefix = flags.includes('i') ? '(?i)' : '';
-
-    // Respect anchors: only add leading wildcard when not anchored at start; only add trailing when not anchored at end
-    const anchoredStart = pattern.startsWith('^');
-    const anchoredEnd = pattern.endsWith('$');
-
-    const needsStartWildcard = !anchoredStart && !pattern.startsWith('.*');
-    const needsEndWildcard = !anchoredEnd && !pattern.endsWith('.*');
-
-    pattern = `${needsStartWildcard ? '.*' : ''}${pattern}${needsEndWildcard ? '.*' : ''}`;
-
-    // Keep legacy behavior expected by tests for empty patterns
-    if (pattern === '.*.*') {
-        return '.*.*';
+    // Without multiline, Java's `$` also matches before a final line break,
+    // unlike JavaScript's. Use Java's strict end anchor outside character classes.
+    let pattern = '';
+    let inCharacterClass = false;
+    let escaped = false;
+    for (const char of source) {
+        if (escaped) {
+            pattern += char;
+            escaped = false;
+        } else if (char === '\\') {
+            pattern += char;
+            escaped = true;
+        } else if (char === '[') {
+            inCharacterClass = true;
+            pattern += char;
+        } else if (char === ']' && inCharacterClass) {
+            inCharacterClass = false;
+            pattern += char;
+        } else if (char === '$' && !inCharacterClass && !flags.includes('m')) {
+            pattern += '\\z';
+        } else {
+            pattern += char;
+        }
     }
 
-    return `${prefix}${pattern}`;
+    return `${prefix}${leading}(?:${pattern})(?s:.*)`;
 };
 
 const isSlashDelimitedRegexString = (value: unknown): value is string =>

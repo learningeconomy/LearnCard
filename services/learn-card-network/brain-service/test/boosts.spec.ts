@@ -692,6 +692,48 @@ describe('Boosts', () => {
             expect(second.hasMore).toBe(false);
         });
 
+        it('should apply alternations and multiline regex flags when excluding names', async () => {
+            const client = userA.clients.fullAuth.boost;
+            const createNamedBoost = (name: string) =>
+                client.createBoost({ credential: testUnsignedBoost, name });
+
+            const passport = await createNamedBoost('My Passport credential');
+            const resume = await createNamedBoost('Recent Resume record');
+            const multiline = await createNamedBoost('Intro\nResume\nEnd');
+            const dotAll = await createNamedBoost('first\nsecond');
+            const ordinary = await createNamedBoost('Ordinary credential');
+            const exact = await createNamedBoost('a');
+            const trailingNewline = await createNamedBoost('a\n');
+
+            const alternation = await client.getPaginatedBoosts({
+                exclude: { name: { $regex: /Passport|Resume/ } },
+            });
+            expect(alternation.records.map(record => record.uri)).toEqual(
+                expect.arrayContaining([dotAll, ordinary])
+            );
+            expect(alternation.records.map(record => record.uri)).not.toContain(passport);
+            expect(alternation.records.map(record => record.uri)).not.toContain(resume);
+            expect(alternation.records.map(record => record.uri)).not.toContain(multiline);
+
+            const anchors = await client.getPaginatedBoosts({
+                exclude: { name: { $regex: /^Resume$/m } },
+            });
+            expect(anchors.records.map(record => record.uri)).not.toContain(multiline);
+            expect(anchors.records.map(record => record.uri)).toContain(resume);
+
+            const dotAllResult = await client.getPaginatedBoosts({
+                exclude: { name: { $regex: /first.second/s } },
+            });
+            expect(dotAllResult.records.map(record => record.uri)).not.toContain(dotAll);
+            expect(dotAllResult.records.map(record => record.uri)).toContain(ordinary);
+
+            const strictEnd = await client.getPaginatedBoosts({
+                exclude: { name: { $regex: /^a$/ } },
+            });
+            expect(strictEnd.records.map(record => record.uri)).not.toContain(exact);
+            expect(strictEnd.records.map(record => record.uri)).toContain(trailingNewline);
+        });
+
         it('should include meta', async () => {
             await userA.clients.fullAuth.boost.createBoost({
                 credential: testUnsignedBoost,
