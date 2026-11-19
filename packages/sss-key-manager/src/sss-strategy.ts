@@ -43,9 +43,12 @@ import {
     PinSignInStaleError,
 } from './types';
 import {
+    ESCROW_CONFIRM_WRONG_PIN_MESSAGE,
+    ESCROW_PIN_CHANGE_REQUIRED_MESSAGE,
     ESCROW_PIN_LOCKED_MESSAGE,
     ESCROW_PIN_MISMATCH_PATTERN,
     ESCROW_PIN_UNAVAILABLE_MESSAGE,
+    PinChangeRequiredError,
     type EscrowRecoveryExpectations,
 } from '@learncard/types';
 import {
@@ -70,6 +73,7 @@ import {
     verifyEscrowCodeDelivery,
     verifyEscrowHoldConfirmation,
     escrowAuthorityMeasurements,
+    type EscrowEnrollmentActionInput,
     type EscrowHoldRecordLike,
 } from './escrow-authority';
 import { getEscrowBlobIdentity } from './escrow-enrollment-intent';
@@ -1289,6 +1293,23 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     );
                 }
             }
+            // LC-2409 PIN confirm (`replace` + `keep`) on the enroll path: lca-api maps the
+            // enclave's PIN-match refusal to "Incorrect PIN." (no count: the confirm budget is
+            // lca-api's, not the enclave's) and its confirm limits to "choose a new PIN".
+            if (path === '' && (response.status === 403 || response.status === 412)) {
+                const body: unknown = await response.json().catch(() => undefined);
+                const message =
+                    body &&
+                    typeof body === 'object' &&
+                    'message' in body &&
+                    typeof body.message === 'string'
+                        ? body.message
+                        : undefined;
+                if (response.status === 403 && message === ESCROW_CONFIRM_WRONG_PIN_MESSAGE)
+                    throw new EscrowPinMismatchError(0);
+                if (response.status === 412 && message === ESCROW_PIN_CHANGE_REQUIRED_MESSAGE)
+                    throw new PinChangeRequiredError();
+            }
             throw new EscrowRequestError(response.status);
         }
         try {
@@ -1445,10 +1466,17 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         recoveryLanguage = '',
         // Same-PIN refresh after a PIN sign-in (E): the server writes only while the
         // current PIN still shows exactly these charges.
-        expectedPinCharges?: { attemptsRemaining: number; wrongAttempts: number }
+        expectedPinCharges?: { attemptsRemaining: number; wrongAttempts: number },
+        // LC-2409 confirm-current-PIN re-seal: the verifier of the typed PIN under the
+        // current salt. Sealed into the target blob with the intent's `confirm` input
+        // (`replace` + `keep`), and no `pinSalt` is sent; the enclave refuses the write
+        // unless it matches the current verifier. Nitro/authority mode only.
+        keepPinVerifier?: string
     ): Promise<void> => {
         if (!config.escrow?.enabled) throw new Error('Escrow enrollment is disabled');
         if (!signDidAuthVp) throw new Error('DID proof signing is required for escrow enrollment');
+        if (keepPinVerifier !== undefined && (pinMaterial || clearPin))
+            throw new Error('A PIN confirm cannot also set or clear the PIN.');
         const identity = verifiedKey ?? (await fetchVerifiedEnclaveKey());
         assertCurrent();
         const { publicKey, keyId } = identity;
@@ -1464,6 +1492,16 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                       assertCurrent
                   )
                 : undefined;
+        // lca-api cannot keep a PIN without a salt outside authority mode.
+        if (keepPinVerifier !== undefined && !authority)
+            throw new Error('Confirming a PIN needs verified automatic recovery.');
+        const actionInput: EscrowEnrollmentActionInput = pinMaterial
+            ? 'set'
+            : keepPinVerifier !== undefined
+              ? 'confirm'
+              : clearPin
+                ? 'clear'
+                : 'automatic';
         // P9.1 (attack C): calls the SAME `resolveEscrowEnrollmentAction` used
         // by `createEscrowEnrollmentIntent` below, so the blob PLAINTEXT built
         // here and the signed intent built later always agree on whether this
@@ -1471,16 +1509,14 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         // plaintext carries a non-null recoveryEmail/recoveryLanguage.
         const bindsRecoveryContact =
             !authority ||
-            resolveEscrowEnrollmentAction(
-                authority,
-                pinMaterial ? 'set' : clearPin ? 'clear' : 'automatic'
-            ).bindsRecoveryContact;
+            resolveEscrowEnrollmentAction(authority, actionInput).bindsRecoveryContact;
+        const pinVerifier = pinMaterial?.pinVerifier ?? keepPinVerifier;
         const envelope = await encryptEscrowBlob(
             {
                 recoveryShare: shares.recoveryShare,
                 did: primaryDid,
                 shareVersion,
-                ...(pinMaterial ? { pinVerifier: pinMaterial.pinVerifier } : {}),
+                ...(pinVerifier !== undefined ? { pinVerifier } : {}),
                 // D21: the brand is sealed exactly when the contact is, so a
                 // carry (whose target the enclave refuses if it claims one)
                 // never sends it; the enclave inherits the source's brand.
@@ -1508,7 +1544,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                   target: envelope,
                   shareVersion,
                   privateKey,
-                  pinAction: pinMaterial ? 'set' : clearPin ? 'clear' : 'automatic',
+                  pinAction: actionInput,
                   recoveryEmail,
                   recoveryLanguage,
               })
@@ -1593,7 +1629,13 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         params: Parameters<NonNullable<SSSKeyDerivationStrategy['ensureEscrowEnrollment']>>[0],
         storage: SSSStorageFunctions & { assertCurrent: () => void },
         forceRotate = false,
-        allowDisabledEnrollment = false
+        allowDisabledEnrollment = false,
+        // LC-2409 contact re-seal (`resealEscrowContact`): rotate even when enrolled, and
+        // only for an account that is already enrolled. With `pin`, a confirm-current-PIN
+        // (`replace` + `keep`, the enclave checks the PIN); without one (with
+        // `forceRotate`), the forced rotation of an account with no PIN, refused when the
+        // account has a PIN so it can never clear one.
+        reseal?: { pin?: string }
     ): Promise<EscrowEnrollmentResult> => {
         let clearPinForEnrollment = forceRotate || params.options?.clearPin === true;
         let autoClearedFrom: { authorityShareVersion: number | null } | undefined;
@@ -1610,9 +1652,31 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                         : 'Choose a PIN without trivial or sequential patterns.'
                 );
         }
+        const confirmPin = reseal?.pin;
+        if (reseal && (pin !== undefined || params.options?.clearPin))
+            throw new Error('A contact re-seal never sets or clears the PIN.');
+        if (confirmPin !== undefined) {
+            const validation = validatePin(confirmPin);
+            // No PIN of that length can exist, so it is simply wrong; refused here so it
+            // spends no confirm attempt and no share version.
+            if (!validation.ok && validation.reason === 'length')
+                throw new EscrowPinMismatchError(0);
+            // A PIN that fails today's rules cannot be confirmed: only a new PIN helps.
+            if (!validation.ok) throw new PinChangeRequiredError();
+            if (config.escrow.attestation.mode !== 'nitro')
+                throw new Error('Confirming a PIN needs verified automatic recovery.');
+        }
         const status = await self.fetchServerKeyStatus(params.token, params.providerType);
         storage.assertCurrent();
         if (status.escrowOptedOut) return { enrolled: false, reason: 'opted-out' };
+        // The confirm proves the current PIN under its current salt.
+        const confirmSalt = confirmPin !== undefined ? status.escrowPin?.salt : undefined;
+        if (confirmPin !== undefined) {
+            const pinState = status.escrowPin?.state;
+            if (pinState === 'locked' || pinState === 'stale') throw new PinChangeRequiredError();
+            if (pinState !== 'enabled' || !confirmSalt)
+                throw new Error('This account has no PIN to confirm.');
+        }
         let currentlyEnrolled =
             status.shareVersion !== null &&
             status.recoveryMethods.some(
@@ -1658,6 +1722,11 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 // Explicit enable without a new PIN clears the retired verifier.
                 clearPinForEnrollment ||= current.hasPin && pin === undefined;
             }
+            // A re-seal only moves the contact of an existing enrollment.
+            if (reseal && current.status !== 'active')
+                return { enrolled: false, reason: 'not-enrolled' };
+            if (confirmPin !== undefined && !current.hasPin)
+                throw new Error('This account has no PIN to confirm.');
             currentlyEnrolled =
                 currentlyEnrolled &&
                 current.status === 'active' &&
@@ -1727,6 +1796,16 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 return { enrolled: false, reason: 'pin-reset-required' };
             }
         }
+        if (reseal) {
+            // The forced rotation clears a PIN: never run it on an account that has one.
+            if (confirmPin === undefined && hasPin)
+                throw new Error('Enter your PIN to update the recovery contact.');
+            if (
+                config.escrow.attestation.mode !== 'nitro' &&
+                !status.recoveryMethods.some(method => method.type === 'escrow')
+            )
+                return { enrolled: false, reason: 'not-enrolled' };
+        }
         // A current, PIN-free enrollment already satisfies a clear request
         // (e.g. post-recovery repair after direct enrollment succeeded).
         if (
@@ -1743,12 +1822,19 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         // automatic attempt per session, so a still-unreachable enclave doesn't
         // retry on every ensureEscrowEnrollment call within the same session.
         const repairingStaleBlob =
+            !reseal &&
             pin === undefined &&
             !clearPinForEnrollment &&
             currentlyEnrolled &&
             !!status.escrowStale &&
             !staleEscrowReenrollAttempted;
-        if (!clearPinForEnrollment && pin === undefined && currentlyEnrolled && !repairingStaleBlob)
+        if (
+            !reseal &&
+            !clearPinForEnrollment &&
+            pin === undefined &&
+            currentlyEnrolled &&
+            !repairingStaleBlob
+        )
             // Automatic repair preserves current enrollment regardless of PIN status.
             // The enclave can carry an existing verifier when shares rotate.
             return { enrolled: true, changed: false };
@@ -1761,7 +1847,13 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             !recoveryEmail &&
             resolveEscrowEnrollmentAction(
                 authorityForContact,
-                pin !== undefined ? 'set' : clearPinForEnrollment ? 'clear' : 'automatic'
+                pin !== undefined
+                    ? 'set'
+                    : confirmPin !== undefined
+                      ? 'confirm'
+                      : clearPinForEnrollment
+                        ? 'clear'
+                        : 'automatic'
             ).bindsRecoveryContact
         )
             return { enrolled: false, reason: 'no-contact' };
@@ -1770,13 +1862,21 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         if (!params.signDidAuthVp) {
             throw new Error('DID proof signing is required for escrow enrollment');
         }
+        const keepPinVerifier =
+            confirmPin !== undefined && confirmSalt
+                ? await derivePinProof(confirmPin, confirmSalt)
+                : undefined;
+        storage.assertCurrent();
         try {
+            // A confirm retried in this session (e.g. after a wrong PIN) re-posts the same
+            // rotation instead of spending another share version (lca-api caps those).
             if (
                 !forceRotate &&
                 pin === undefined &&
                 unenrolledRotation &&
                 unenrolledRotation.shareVersion === status.shareVersion &&
-                unenrolledRotation.primaryDid === status.primaryDid
+                unenrolledRotation.primaryDid === status.primaryDid &&
+                (keepPinVerifier === undefined || !unenrolledRotation.clearPin)
             ) {
                 const retry = unenrolledRotation;
                 await enrollEscrow(
@@ -1792,7 +1892,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     clearPinForEnrollment || retry.clearPin,
                     storage.assertCurrent,
                     recoveryEmail,
-                    recoveryLanguage
+                    recoveryLanguage,
+                    undefined,
+                    keepPinVerifier
                 );
                 unenrolledRotation = undefined;
                 return withAutoClear(retry.shareVersion, autoClearedFrom);
@@ -1851,7 +1953,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 clearPinForEnrollment,
                 storage.assertCurrent,
                 recoveryEmail,
-                recoveryLanguage
+                recoveryLanguage,
+                undefined,
+                keepPinVerifier
             );
             unenrolledRotation = undefined;
             return withAutoClear(shareVersion, autoClearedFrom);
@@ -3195,6 +3299,44 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             if (!result.enrolled || !result.changed) {
                 throw new Error('Automatic recovery is not available for this account.');
             }
+        },
+
+        /** LC-2409: re-seal the current contact by proving the current PIN. */
+        async confirmEscrowPin({ pin, ...params }): Promise<void> {
+            return this.resealEscrowContact!({ ...params, pin });
+        },
+
+        /**
+         * LC-2409: re-seal the escrow backup to `options.recoveryEmail`. With `pin`, a
+         * confirm (`replace` + `keep` + the typed PIN's verifier, no new salt); a wrong PIN
+         * keeps this session's rotation for the retry. Without one, the existing forced
+         * rotation, only on an account with no PIN.
+         */
+        async resealEscrowContact({ pin, ...params }): Promise<void> {
+            const storage = guardedStorage();
+            const result = await withRotationLock(() =>
+                ensureEscrowEnrollmentUnguarded(
+                    this,
+                    {
+                        ...params,
+                        options: {
+                            recoveryEmail: params.options?.recoveryEmail,
+                            recoveryLanguage: params.options?.recoveryLanguage,
+                        },
+                    },
+                    storage,
+                    pin === undefined,
+                    false,
+                    { pin }
+                )
+            );
+            if (result.enrolled && result.changed) return;
+            // lca-api's PIN record no longer matches the authority: only a new PIN re-binds.
+            if (!result.enrolled && result.reason === 'pin-reset-required')
+                throw new PinChangeRequiredError();
+            if (!result.enrolled && result.reason === 'no-contact')
+                throw new Error('This account has no email to seal.');
+            throw new Error('Automatic recovery is not available for this account.');
         },
 
         /** Enroll missing/stale escrow material using the standard atomic rotation. */

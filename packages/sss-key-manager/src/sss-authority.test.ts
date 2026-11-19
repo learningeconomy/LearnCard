@@ -252,7 +252,15 @@ const setup = async (
         serverUpdating?: boolean;
         /** lca-api refuses the next PIN change (e.g. a concurrent compare): 409. */
         refusePinChange?: boolean;
+        /** LC-2409: /keys/auth-share reports the current PIN's status and salt. */
+        reportPin?: boolean;
+        /** LC-2409: with `reportPin`, report the PIN as locked or stale. */
+        pinState?: 'locked' | 'stale';
+        /** LC-2409: lca-api's confirm limits refuse the next confirm (412). */
+        refuseConfirm?: boolean;
     } = {};
+    /** LC-2409: the current PIN's salt, as lca-api stores it. */
+    let pinSalt: string | undefined;
     const signHold = async (record: EscrowHoldRecordLike): Promise<EscrowHoldRecordLike> => {
         const h = record.hold;
         const receipt = await sign('commit', {
@@ -345,7 +353,19 @@ const setup = async (
                                     wrongAttempts: faults.wrongPinAttempts,
                                 },
                             }
-                          : {}),
+                          : faults.reportPin
+                            ? {
+                                  escrowPin: state.hasPin
+                                      ? {
+                                            state: faults.pinState ?? 'enabled',
+                                            enabled: !faults.pinState,
+                                            attemptsRemaining: faults.pinState ? 0 : 10,
+                                            salt: pinSalt,
+                                            wrongAttempts: 0,
+                                        }
+                                      : { state: 'none', enabled: false, attemptsRemaining: 0 },
+                              }
+                            : {}),
                 });
             }
             if (path === '/keys/escrow/attestation') return response({ attestation: {} });
@@ -412,6 +432,20 @@ const setup = async (
                     // contact/brand, then inherit them (and the PIN) from the source.
                     if (violatesCarryContactRule(signed.intent.action, plaintext))
                         return response({ message: 'Carry target claims contact' }, 400);
+                    // LC-2409 confirm (replace + keep, no salt): lca-api's limits, then the
+                    // enclave's `same_pin` check, mapped to "Incorrect PIN.".
+                    if (
+                        signed.intent.action === 'replace' &&
+                        signed.intent.pinAction === 'keep' &&
+                        state.hasPin &&
+                        !body.pinSalt
+                    ) {
+                        if (faults.refuseConfirm)
+                            return response({ message: 'Choose a new PIN to continue.' }, 412);
+                        const source = await decryptEscrowBlob(state.envelope!, keys.privateKey);
+                        if (plaintext.pinVerifier !== source.pinVerifier)
+                            return response({ message: 'Incorrect PIN.' }, 403);
+                    }
                     if (signed.intent.action === 'carry') {
                         const source = await decryptEscrowBlob(state.envelope!, keys.privateKey);
                         plaintext.pinVerifier = source.pinVerifier;
@@ -436,6 +470,9 @@ const setup = async (
                     attemptsUsed: pinChange ? 0 : state.attemptsUsed,
                 };
                 if (pinChange) releaseCharges = 0;
+                if (pinChange)
+                    pinSalt =
+                        signed.intent.pinAction === 'clear' ? undefined : String(body.pinSalt);
                 enrolled = !!output;
                 const receipt = await sign('commit', {
                     commit: {
@@ -1950,5 +1987,145 @@ describe('Owner-sealed escrow email brand (D21)', () => {
         expect(f.enrollments.length).toBeGreaterThan(0);
         expect(f.enrollments.every(e => e.recoveryBrand === undefined)).toBe(true);
         expect(await f.sealed()).not.toHaveProperty('recoveryBrand');
+    });
+});
+
+describe('LC-2409 escrow contact re-seal', () => {
+    const PIN = '593827';
+    const personal = {
+        recoveryEmail: 'personal@example.com',
+        recoveryLanguage: 'en',
+    };
+    const puts = (f: Awaited<ReturnType<typeof setup>>): number =>
+        f.calls.filter(c => c === 'PUT:/keys/auth-share').length;
+    const withPin = async () => {
+        const f = await setup();
+        f.faults.reportPin = true;
+        await f.strategy.setEscrowPin!({ ...f.params, pin: PIN });
+        expect((await f.sealed())?.recoveryEmail).toBe('owner@example.com');
+        return f;
+    };
+
+    it('confirm re-seals the new contact as replace + keep with the current verifier and no salt', async () => {
+        const f = await withPin();
+        const pinGeneration = f.state().pinGeneration;
+        const before = await f.sealed();
+        await f.strategy.confirmEscrowPin!({ ...f.params, pin: PIN, options: personal });
+        expect(f.intents.at(-1)?.intent).toMatchObject({
+            action: 'replace',
+            pinAction: 'keep',
+            recoveryEmail: 'personal@example.com',
+        });
+        const posted = f.enrollments.at(-1)!;
+        expect(posted.pinSalt).toBeUndefined();
+        expect(posted.clearPin).toBeUndefined();
+        // The blob carries the typed PIN's verifier under the current salt (call sites 1-2).
+        expect(posted.pinVerifier).toBe(before?.pinVerifier);
+        expect(posted.recoveryEmail).toBe('personal@example.com');
+        expect((await f.sealed())?.recoveryEmail).toBe('personal@example.com');
+        expect(f.state()).toMatchObject({ hasPin: true, pinGeneration });
+    });
+
+    it('confirm reports no-contact (call site 3) before rotating or signing', async () => {
+        const f = await withPin();
+        const intents = f.intents.length;
+        const rotations = puts(f);
+        await expect(
+            f.strategy.confirmEscrowPin!({
+                ...f.params,
+                pin: PIN,
+                options: { recoveryLanguage: 'en' },
+            })
+        ).rejects.toThrow('This account has no email to seal.');
+        expect(f.intents).toHaveLength(intents);
+        expect(puts(f)).toBe(rotations);
+    });
+
+    it('a wrong PIN is EscrowPinMismatchError and the retry reuses the same rotation', async () => {
+        const f = await withPin();
+        const rotations = puts(f);
+        await expect(
+            f.strategy.confirmEscrowPin!({ ...f.params, pin: '824957', options: personal })
+        ).rejects.toMatchObject({ name: 'EscrowPinMismatchError', attemptsRemaining: 0 });
+        expect(puts(f)).toBe(rotations + 1);
+        expect((await f.sealed())?.recoveryEmail).toBe('owner@example.com');
+        await expect(
+            f.strategy.confirmEscrowPin!({ ...f.params, pin: '824957', options: personal })
+        ).rejects.toMatchObject({ name: 'EscrowPinMismatchError' });
+        await f.strategy.confirmEscrowPin!({ ...f.params, pin: PIN, options: personal });
+        // In-session retries re-post the pending rotation: one share version in total.
+        expect(puts(f)).toBe(rotations + 1);
+        expect((await f.sealed())?.recoveryEmail).toBe('personal@example.com');
+    });
+
+    it("lca-api's pin_change_required refusal is PinChangeRequiredError", async () => {
+        const f = await withPin();
+        f.faults.refuseConfirm = true;
+        await expect(
+            f.strategy.confirmEscrowPin!({ ...f.params, pin: PIN, options: personal })
+        ).rejects.toMatchObject({ name: 'PinChangeRequiredError' });
+        expect((await f.sealed())?.recoveryEmail).toBe('owner@example.com');
+    });
+
+    it('a locked or stale PIN, or one that fails the PIN rules, is PinChangeRequiredError before any rotation', async () => {
+        const f = await withPin();
+        const rotations = puts(f);
+        const intents = f.intents.length;
+        f.faults.pinState = 'locked';
+        await expect(
+            f.strategy.confirmEscrowPin!({ ...f.params, pin: PIN, options: personal })
+        ).rejects.toMatchObject({ name: 'PinChangeRequiredError' });
+        f.faults.pinState = 'stale';
+        await expect(
+            f.strategy.confirmEscrowPin!({ ...f.params, pin: PIN, options: personal })
+        ).rejects.toMatchObject({ name: 'PinChangeRequiredError' });
+        f.faults.pinState = undefined;
+        await expect(
+            f.strategy.confirmEscrowPin!({ ...f.params, pin: '123456', options: personal })
+        ).rejects.toMatchObject({ name: 'PinChangeRequiredError' });
+        // No PIN of that length exists: a plain mismatch, with no request at all.
+        const calls = f.calls.length;
+        await expect(
+            f.strategy.confirmEscrowPin!({ ...f.params, pin: '12', options: personal })
+        ).rejects.toMatchObject({ name: 'EscrowPinMismatchError' });
+        expect(f.calls).toHaveLength(calls);
+        expect(puts(f)).toBe(rotations);
+        expect(f.intents).toHaveLength(intents);
+    });
+
+    it('reseal without a PIN uses the forced rotation on a no-PIN account', async () => {
+        const f = await setup();
+        f.faults.reportPin = true;
+        await f.strategy.ensureEscrowEnrollment!(f.params);
+        expect(f.state()).toMatchObject({ status: 'active', hasPin: false });
+        await f.strategy.resealEscrowContact!({ ...f.params, options: personal });
+        expect(f.intents.at(-1)?.intent).toMatchObject({
+            action: 'replace',
+            pinAction: 'keep',
+            recoveryEmail: 'personal@example.com',
+        });
+        expect((await f.sealed())?.recoveryEmail).toBe('personal@example.com');
+    });
+
+    it('reseal without a PIN refuses on a PIN account and never clears the PIN', async () => {
+        const f = await withPin();
+        const rotations = puts(f);
+        const intents = f.intents.length;
+        await expect(
+            f.strategy.resealEscrowContact!({ ...f.params, options: personal })
+        ).rejects.toThrow('Enter your PIN to update the recovery contact.');
+        expect(puts(f)).toBe(rotations);
+        expect(f.intents).toHaveLength(intents);
+        expect(f.state().hasPin).toBe(true);
+    });
+
+    it('reseal never enrolls an account that is not enrolled', async () => {
+        const f = await setup();
+        f.faults.reportPin = true;
+        await expect(
+            f.strategy.resealEscrowContact!({ ...f.params, options: personal })
+        ).rejects.toThrow('Automatic recovery is not available for this account.');
+        expect(puts(f)).toBe(0);
+        expect(f.intents).toHaveLength(0);
     });
 });

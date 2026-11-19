@@ -187,7 +187,10 @@ describe('attested authority artifacts', () => {
             key
         );
         const target = parseEscrowEnvelope(golden.committed.envelope);
-        const create = (pinAction: 'automatic' | 'set' | 'clear' | 'disable', state = current) =>
+        const create = (
+            pinAction: 'automatic' | 'set' | 'clear' | 'disable' | 'confirm',
+            state = current
+        ) =>
             createEscrowEnrollmentIntent({
                 state,
                 target: pinAction === 'disable' ? null : target,
@@ -206,6 +209,16 @@ describe('attested authority artifacts', () => {
             enrollmentEpoch: 4,
         });
         expect((await create('set')).intent.pinAction).toBe('change');
+        // LC-2409: a confirm re-seals the contact and keeps the PIN.
+        expect((await create('confirm')).intent).toMatchObject({
+            action: 'replace',
+            pinAction: 'keep',
+            recoveryEmail: 'owner@example.com',
+            recoveryLanguage: 'en',
+        });
+        await expect(
+            create('confirm', { ...current, hasPin: false, attemptsUsed: 0 })
+        ).rejects.toThrow();
         expect((await create('clear')).intent.pinAction).toBe('clear');
         expect((await create('disable')).intent).toMatchObject({
             action: 'disable',
@@ -227,6 +240,7 @@ describe('attested authority artifacts', () => {
             pinGeneration: 0,
             attemptsUsed: 0,
         };
+        await expect(create('confirm', empty)).rejects.toThrow();
         expect((await create('automatic', empty)).intent).toMatchObject({
             action: 'enroll',
             pinAction: 'keep',
@@ -277,6 +291,10 @@ describe('resolveEscrowEnrollmentAction', () => {
             pinAction: 'keep',
             bindsRecoveryContact: false,
         });
+        // LC-2409 confirm-current-PIN re-seal.
+        expect(
+            resolveEscrowEnrollmentAction({ status: 'active', hasPin: true }, 'confirm')
+        ).toEqual({ action: 'replace', pinAction: 'keep', bindsRecoveryContact: true });
     });
 });
 
