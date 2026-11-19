@@ -12,6 +12,7 @@ import { canDeletePersonalEmailSubject } from '@helpers/classlinkDeletion.helper
 import { maskEmail } from '@helpers/maskEmail';
 import { isSyntheticEmail } from '@helpers/syntheticEmail.helpers';
 import { contactDigest } from '@helpers/escrowContactDigest';
+import { isEscrowConfirmBlocked } from '@helpers/escrowConfirmLimits';
 import { getAdminAuth } from '@helpers/firebaseAdminAuth.helpers';
 import {
     demotePersonalEmail,
@@ -313,6 +314,10 @@ export const personalEmailProcedures = {
      *   A UX hint from `escrowContactDigest`, never a security control.
      * - `canRemove`: false for a placeholder account with usable escrow (change only).
      *
+     * - `pinChangeRequired` (with `confirmPin` only): a confirm would be refused (the PIN's
+     *   confirm budget or the uncommitted-version cap is spent). Go straight to "choose a new
+     *   PIN" without rotating for a confirm.
+     *
      * `nextStep`: `confirmPin` (re-seal by entering the current PIN), `email`, `done`, `pin`
      * (create one; also for a promoted placeholder account), `method` (passkey or phrase).
      *
@@ -339,6 +344,7 @@ export const personalEmailProcedures = {
                 pinState: EscrowPinStatusValidator.shape.state,
                 pinRecoverable: z.boolean(),
                 nextStep: z.enum(['confirmPin', 'email', 'pin', 'method', 'done']),
+                pinChangeRequired: z.boolean(),
             })
         )
         .query(async ({ ctx }) => {
@@ -409,6 +415,10 @@ export const personalEmailProcedures = {
                         : !optedOut && (escrowUsable || emailPrimary)
                           ? ('pin' as const)
                           : ('method' as const);
+            // Before the client rotates for a confirm (which spends a share version): would
+            // `escrow.enroll` refuse it with `pin_change_required`?
+            const pinChangeRequired =
+                nextStep === 'confirmPin' && (await isEscrowConfirmBlocked(userKey.primaryDid));
             return {
                 personalEmail: decision,
                 emailVerified,
@@ -428,6 +438,7 @@ export const personalEmailProcedures = {
                 pinState: pin.state,
                 pinRecoverable,
                 nextStep,
+                pinChangeRequired,
             };
         }),
     startPersonalEmail: accountRoute

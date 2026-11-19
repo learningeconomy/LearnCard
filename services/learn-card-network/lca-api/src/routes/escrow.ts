@@ -26,6 +26,13 @@ import { t, openRoute, didAndChallengeRoute, type Context } from '@routes';
 import { createRecoverySession } from '@cache/recoverySessions';
 import { decryptAuthShare } from '@helpers/shareEncryption.helpers';
 import { contactDigest } from '@helpers/escrowContactDigest';
+import {
+    ESCROW_CONFIRM_HOURLY_LIMIT,
+    ESCROW_CONFIRM_LIFETIME_LIMIT,
+    ESCROW_CONFIRM_MAX_UNCOMMITTED_VERSIONS,
+    ESCROW_CONFIRM_TTL_SECONDS,
+    escrowConfirmKeys,
+} from '@helpers/escrowConfirmLimits';
 import { getSchoolNoticeRecipients } from '@helpers/classlinkPrimaryEmail.helpers';
 import { getDeliveryService, getFrom } from '../services/delivery';
 import {
@@ -148,28 +155,26 @@ const limitCancelLinkAttempts = async (clientIp: string | undefined): Promise<vo
 
 /**
  * LC-2409 confirm-current-PIN re-seal (`replace` + `pinAction:'keep'`, no `pinSalt`, on an
- * account with a PIN). The enclave enforces the PIN match (`same_pin`) but does not charge
+ * account with a PIN; limits in `@helpers/escrowConfirmLimits`). The enclave enforces the PIN match (`same_pin`) but does not charge
  * its attempt budget for it, so lca-api bounds the guesses: 5 per hour, 10 failed or
  * unresolved per PIN generation (then a new PIN is required), and at most 2 share versions
  * spent on uncommitted confirms since the last commit (keeps passkey and phrase methods
  * inside MAX_PREVIOUS_AUTH_SHARES). A successful confirm, or a new PIN generation, resets the
  * hourly and per-version counters (a successful confirm also refunds its own lifetime charge);
- * an automatic carry rotation does not. Bounded by lca-api only (no enclave change).
+ * an automatic carry rotation does not. The caps are checked here, after the client already
+ * rotated its auth share; `getAccountContinuity` (`pinChangeRequired`) reports them earlier so
+ * the client does not rotate for a confirm that would be refused. Bounded by lca-api only (no
+ * enclave change).
  */
-export const ESCROW_CONFIRM_HOURLY_LIMIT = 5;
-export const ESCROW_CONFIRM_LIFETIME_LIMIT = 10;
-export const ESCROW_CONFIRM_MAX_UNCOMMITTED_VERSIONS = 2;
+export {
+    ESCROW_CONFIRM_HOURLY_LIMIT,
+    ESCROW_CONFIRM_LIFETIME_LIMIT,
+    ESCROW_CONFIRM_MAX_UNCOMMITTED_VERSIONS,
+};
 /** Clients match this message (cause `reason: 'pin_change_required'`): offer "choose a new PIN". */
 export const ESCROW_PIN_CHANGE_REQUIRED_MESSAGE = 'Choose a new PIN to continue.';
 /** Mapped from the authority's policy refusal of a confirm (the PIN did not match). */
 export const ESCROW_CONFIRM_WRONG_PIN_MESSAGE = 'Incorrect PIN.';
-const CONFIRM_LIFETIME_TTL_SECONDS = 400 * 24 * 60 * 60;
-
-const confirmKeys = (did: string, pinGeneration: number) => ({
-    hourly: `escrow-confirm:${did}`,
-    lifetime: `escrow-confirm-fail:${did}:${pinGeneration}`,
-    versions: `escrow-confirm-versions:${did}`,
-});
 
 const pinChangeRequired = (): TRPCError =>
     new TRPCError({
@@ -185,27 +190,32 @@ const reserveEscrowConfirm = async (
     shareVersion: number
 ): Promise<void> => {
     const redis = cache.redis ?? cache.node;
-    const keys = confirmKeys(did, pinGeneration);
-    if (Number((await redis.get(keys.lifetime)) ?? 0) >= ESCROW_CONFIRM_LIFETIME_LIMIT)
+    const keys = escrowConfirmKeys(did, pinGeneration);
+    // Remembered per account so `getAccountContinuity` reports it before the next rotation.
+    const refuse = async (): Promise<never> => {
+        await redis.set(keys.blocked, '1', 'EX', ESCROW_CONFIRM_TTL_SECONDS).catch(() => null);
         throw pinChangeRequired();
+    };
+    if (Number((await redis.get(keys.lifetime)) ?? 0) >= ESCROW_CONFIRM_LIFETIME_LIMIT)
+        return refuse();
     const versionSpent = (await redis.sismember(keys.versions, String(shareVersion))) === 1;
     if (
         !versionSpent &&
         (await redis.scard(keys.versions)) >= ESCROW_CONFIRM_MAX_UNCOMMITTED_VERSIONS
     )
-        throw pinChangeRequired();
+        return refuse();
     const hourly = await redis.incr(keys.hourly);
     if (hourly === 1) await redis.expire(keys.hourly, 60 * 60);
     if (hourly > ESCROW_CONFIRM_HOURLY_LIMIT)
         throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: pinThrottledMessage });
     const lifetime = await redis.incr(keys.lifetime);
-    await redis.expire(keys.lifetime, CONFIRM_LIFETIME_TTL_SECONDS);
+    await redis.expire(keys.lifetime, ESCROW_CONFIRM_TTL_SECONDS);
     if (lifetime > ESCROW_CONFIRM_LIFETIME_LIMIT) {
         await redis.decr(keys.lifetime);
-        throw pinChangeRequired();
+        return refuse();
     }
     await redis.sadd(keys.versions, String(shareVersion));
-    await redis.expire(keys.versions, CONFIRM_LIFETIME_TTL_SECONDS);
+    await redis.expire(keys.versions, ESCROW_CONFIRM_TTL_SECONDS);
 };
 
 /**
@@ -218,9 +228,14 @@ const settleEscrowConfirm = async (
     pinGeneration: number,
     outcome: 'committed' | 'wrong-pin' | 'other'
 ): Promise<void> => {
-    if (outcome === 'wrong-pin') return;
     const redis = cache.redis ?? cache.node;
-    const keys = confirmKeys(did, pinGeneration);
+    const keys = escrowConfirmKeys(did, pinGeneration);
+    if (outcome === 'wrong-pin') {
+        // The last allowed guess on this PIN: report it before the client rotates again.
+        if (Number((await redis.get(keys.lifetime)) ?? 0) >= ESCROW_CONFIRM_LIFETIME_LIMIT)
+            await redis.set(keys.blocked, '1', 'EX', ESCROW_CONFIRM_TTL_SECONDS);
+        return;
+    }
     await redis.decr(keys.lifetime);
     if (outcome === 'committed') await redis.del(keys.hourly, keys.versions);
 };
@@ -233,8 +248,8 @@ const settleEscrowConfirm = async (
  */
 const resetEscrowConfirmCounters = async (did: string): Promise<void> => {
     const redis = cache.redis ?? cache.node;
-    const keys = confirmKeys(did, 0);
-    await redis.del(keys.hourly, keys.versions);
+    const keys = escrowConfirmKeys(did, 0);
+    await redis.del(keys.hourly, keys.versions, keys.blocked);
 };
 
 /** Delivery budget for the school-address reset notice. */

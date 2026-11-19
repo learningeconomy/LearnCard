@@ -962,6 +962,7 @@ describe('ClassLink personal email', () => {
                 pinState: 'none',
                 pinRecoverable: false,
                 nextStep: 'email',
+                pinChangeRequired: false,
             });
             const serialized = JSON.stringify(before);
             for (const secret of ['tenant-test', '2000-02-03', 'minimumAge', '13'])
@@ -1141,6 +1142,18 @@ describe('ClassLink personal email', () => {
                 nextStep: 'confirmPin',
                 // The client's same-session gate needs T even without a promotion.
                 primaryUid: 'uid-test',
+                pinChangeRequired: false,
+            });
+            // Once a confirm hit a cap, continuity says so before the client rotates again.
+            await cache.node.sadd(`escrow-confirm-versions:${did}`, '2', '3');
+            expect(await caller().getAccountContinuity()).toMatchObject({
+                nextStep: 'confirmPin',
+                pinChangeRequired: true,
+            });
+            await cache.node.del(`escrow-confirm-versions:${did}`);
+            await cache.node.set(`escrow-confirm-blocked:${did}`, '1');
+            expect(await caller().getAccountContinuity()).toMatchObject({
+                pinChangeRequired: true,
             });
         });
 

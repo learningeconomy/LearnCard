@@ -23,7 +23,9 @@ export type ClassLinkAccountContinuityReason =
     | 'approval_required';
 
 /**
- * Stable `cause.reason` codes on ClassLink sign-in email refusals (`PRECONDITION_FAILED`):
+ * Stable reason codes on ClassLink sign-in email refusals (`PRECONDITION_FAILED`), sent to
+ * clients as `error.data.reason` (lca-api copies the server's `cause.reason` there; the
+ * continuity refusals' `ClassLinkAccountContinuityReason` arrives the same way):
  * - `account_moved`: the school sign-in no longer opens this account (reconnect it).
  * - `busy`: another email change is in progress; retry.
  * - `placeholder_escrow`: the email cannot be removed from a placeholder account with escrow;
@@ -31,7 +33,7 @@ export type ClassLinkAccountContinuityReason =
  * - `pin_change_required`: the PIN cannot be confirmed any more; offer "choose a new PIN".
  *   Raised by `escrow.enroll` for a confirm-current-PIN re-seal (`replace` + `keep`, no
  *   `pinSalt`) after 10 failed confirms per PIN or 2 share versions spent without a commit.
- *   tRPC does not send `cause` to clients: match the message `Choose a new PIN to continue.`.
+ *   Older servers without `data.reason` send the message `Choose a new PIN to continue.`.
  *   A wrong PIN on that path is `FORBIDDEN` with the message `Incorrect PIN.`; more than 5
  *   confirms an hour is `TOO_MANY_REQUESTS`.
  */
@@ -78,6 +80,13 @@ export type ClassLinkAccountContinuity = {
      * - `done`: a new device can sign in to the account.
      */
     nextStep: 'confirmPin' | 'email' | 'pin' | 'method' | 'done';
+    /**
+     * With `confirmPin` only: a confirm would be refused (`pin_change_required`). Check it
+     * before rotating for a confirm (each fresh rotation spends a share version) and go straight
+     * to "choose a new PIN". After a `pin_change_required` refusal, never rotate again for a
+     * confirm; reuse the pending rotation for the new PIN.
+     */
+    pinChangeRequired?: boolean;
 };
 
 export type SchoolConnection = {

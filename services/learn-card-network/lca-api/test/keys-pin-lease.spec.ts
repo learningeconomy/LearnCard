@@ -46,6 +46,7 @@ import type {
 import type { ApplyEnrollmentInput } from '../src/services/escrow-enclave/types';
 import { runEscrowBlobRewrap } from '../src/jobs/escrowBlobRewrap';
 import { contactDigest } from '../src/helpers/escrowContactDigest';
+import { isEscrowConfirmBlocked } from '../src/helpers/escrowConfirmLimits';
 import {
     ESCROW_CONFIRM_HOURLY_LIMIT,
     ESCROW_CONFIRM_LIFETIME_LIMIT,
@@ -1410,8 +1411,26 @@ describe('LC-2409: confirm-current-PIN limits', () => {
         await expect(confirm(pinProof, 3)).rejects.toMatchObject({
             code: 'PRECONDITION_FAILED',
             message: ESCROW_PIN_CHANGE_REQUIRED_MESSAGE,
+            cause: { reason: 'pin_change_required' },
         });
         expect(applyCalls).toBe(0);
+        // Reported ahead of the next rotation, until a new PIN generation clears it.
+        expect(await isEscrowConfirmBlocked(did)).toBe(true);
+        const envelope = await sealPin(3);
+        await owner().escrow.enroll({
+            ...auth,
+            envelope,
+            shareVersion: 3,
+            enclaveKeyId: keyId,
+            pinSalt: refreshSalt,
+            signedIntent: await signedIntent(envelope, {
+                action: 'replace',
+                pinAction: 'change',
+                shareVersion: 3,
+            }),
+            sourceEnvelope: authority.envelope,
+        });
+        expect(await isEscrowConfirmBlocked(did)).toBe(false);
     });
 
     it('an automatic carry rotation does not reset the hourly or per-version counters', async () => {

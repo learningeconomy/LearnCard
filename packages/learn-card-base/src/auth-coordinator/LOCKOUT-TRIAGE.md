@@ -35,8 +35,8 @@ Use the user's symptoms and server-side `UserKey` fields to diagnose the issue.
 
 Triage checks:
 
-1. `ClassLinkIdentity.primaryEmail`: `state` (`active` = done, `pending` = an interrupted verify the next continuity check reconciles), `uid` (T, the login that holds the personal email), `prevFirebaseEmail` and `prevContactMethod` (what removal restores).
-2. `ClassLinkIdentity.demotePending`: a demote (after a rebind, revoke or School Connect move) that has not run yet. A personal-email sign-in to an orphaned T is refused with a generic error and never creates an empty wallet.
+1. `ClassLinkIdentity.primaryEmail`: `state` (`active` = done, `pending` = an interrupted verify the next continuity check reconciles), `uid` (T, the login that holds the personal email), `prevFirebaseEmail` and `prevContactMethod` (what removal restores), and on a `pending` address change `replacedEmail` (the earlier personal address T may still hold).
+2. `ClassLinkIdentity.demotePending`: a demote (after a rebind, revoke, School Connect move or account deletion) that has not run yet. A personal-email sign-in to an orphaned T is refused with a generic error, never creates an empty wallet, and retries the demote; the orphan cleanup script also finishes it.
 3. `UserKey.escrowContactDigest` versus the sign-in email (remote mode only): a mismatch, or no digest on a promoted account, means the backup still seals the old contact; the app shows "Enter your PIN" (`nextStep: 'confirmPin'`).
 4. The session uid versus `primaryUid` from `classlink.getAccountContinuity`: the PIN confirm only runs from T's session. Other devices (a PIN sign-in added another login) are asked to sign in with the personal email.
 5. A confirm refused with `Choose a new PIN to continue.` hit the lca-api limit (10 failed confirms per PIN, or 2 share versions spent without a commit): the student chooses a new PIN.
