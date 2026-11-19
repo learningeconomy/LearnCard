@@ -298,9 +298,11 @@ export const classlinkRouter = t.router({
                 };
                 const joined = !existing && otherEmailUser ? otherEmailUser.uid : undefined;
                 const uid = existingUid ?? joined ?? ownUid;
-                // The identity moved off its deterministic user, which still holds the school
-                // email: release it so the email resolves to no stale account.
-                if (auth && existing && uid !== ownUid && emailUser?.uid === ownUid)
+                // The identity moved off its deterministic user, which may still hold a real
+                // email (the school email, or a personal email promoted before the move):
+                // release it so neither address resolves to a stale account. A no-op when that
+                // user is gone or already synthetic.
+                if (auth && existing && uid !== ownUid)
                     await releaseClassLinkFirebaseEmail(auth, identityKey);
                 if (auth && uid !== joined)
                     await ensureClassLinkFirebaseUser(auth, uid, {
@@ -308,6 +310,7 @@ export const classlinkRouter = t.router({
                         trustedEmail: emailTrusted && !emailHeldElsewhere ? email : undefined,
                         // The deterministic user can outlive its identity row (deleteMyData).
                         isNew: !existing && emailUser?.uid !== ownUid,
+                        personalEmailPrimary: Boolean(existing?.primaryEmail),
                     });
                 let subject = existing?.subject;
                 if (!subject) {

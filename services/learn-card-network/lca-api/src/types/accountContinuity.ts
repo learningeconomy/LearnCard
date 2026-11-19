@@ -2,8 +2,7 @@ import { z } from 'zod';
 
 /**
  * Who may add a personal email to a ClassLink account so they can keep it after losing
- * school access (LC-2409). Verifying the email links it as a future sign-in and makes it the
- * account's recovery email.
+ * school access (LC-2409). Verifying the email makes it the account's sign-in email.
  *
  * - `personalEmail`: `off` (nobody), `nonStudents` (only accounts with no student identity),
  *   or `all` (students too, subject to `minimumAge` and `approval`).

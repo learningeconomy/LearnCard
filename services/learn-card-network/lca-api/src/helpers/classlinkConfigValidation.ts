@@ -4,6 +4,7 @@ import {
     type AccountContinuityPolicy,
 } from '../types/accountContinuity';
 import {
+    ClassLinkTenantConfigValidator,
     ClassLinkTenantsValidator,
     TranscriptIssuersValidator,
     type ClassLinkConfig,
@@ -48,6 +49,28 @@ export const parseTranscriptIssuers = (value?: string, nodeEnv?: string): Transc
     return issuers;
 };
 
+/** Names the entries whose `schoolEmailAliasMaxIdleDays` made the tenant map invalid. */
+const collectAliasIdleProblems = (value: string): string[] => {
+    let raw: unknown;
+    try {
+        raw = JSON.parse(value);
+    } catch {
+        return [];
+    }
+    if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return [];
+    const field = ClassLinkTenantConfigValidator.shape.schoolEmailAliasMaxIdleDays;
+    return Object.values(raw).flatMap((entry, index) =>
+        typeof entry === 'object' &&
+        entry !== null &&
+        'schoolEmailAliasMaxIdleDays' in entry &&
+        !field.safeParse((entry as Record<string, unknown>).schoolEmailAliasMaxIdleDays).success
+            ? [
+                  `CLASSLINK_TENANTS entry ${index + 1} has an invalid schoolEmailAliasMaxIdleDays (a whole number of days, 0-3650; 0 turns the school-email alias off).`,
+              ]
+            : []
+    );
+};
+
 /**
  * Offline deployment diagnostics. Never includes configuration values (including map keys)
  * or raw parser errors. Does not load service configuration or contact external services.
@@ -71,6 +94,7 @@ export const collectClassLinkConfigProblems = (
         tenants = parseClassLinkTenants(env.CLASSLINK_TENANTS);
     } catch {
         problems.push('CLASSLINK_TENANTS must be valid JSON matching the tenant schema.');
+        problems.push(...collectAliasIdleProblems(env.CLASSLINK_TENANTS));
     }
     try {
         issuers = parseTranscriptIssuers(env.TRANSCRIPT_ISSUERS, env.NODE_ENV);

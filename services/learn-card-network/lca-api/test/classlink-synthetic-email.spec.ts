@@ -11,6 +11,9 @@ import {
     syntheticEmailForUid,
 } from '../src/helpers/syntheticEmail.helpers';
 import { getClient, getUser } from './helpers/getClient';
+import { ensureClassLinkFirebaseUser } from '../src/helpers/classlinkFirebaseUser.helpers';
+import { createInMemoryAdminAuth } from '../src/helpers/firebaseAdminAuth.helpers';
+import { classLinkFirebaseUid } from '../src/helpers/classlinkPii.helpers';
 
 const { send } = vi.hoisted(() => ({ send: vi.fn() }));
 vi.mock('../src/services/delivery', async importOriginal => ({
@@ -91,6 +94,52 @@ describe('synthetic ClassLink account addresses', () => {
         await expect(
             getClient().firebase.verifyLoginCode({ email, code: '123456' })
         ).resolves.toMatchObject({ success: false, error: 'Invalid or expired code.' });
+    });
+});
+
+describe('ensureClassLinkFirebaseUser and a promoted personal email (LC-2409)', () => {
+    const identityKey = 'classlink:tenant-sync:v1:upgrade';
+    const uid = classLinkFirebaseUid(identityKey);
+    const school = 'student@example.edu';
+    const personal = 'personal@example.com';
+
+    it('upgrade branch re-reads and does not overwrite a promoted email', async () => {
+        const fake = createInMemoryAdminAuth();
+        fake.reset({ lazyUsers: false });
+        fake.setUser({ uid, email: syntheticEmailForUid(uid) });
+        const read = fake.auth.getUser;
+        let reads = 0;
+        // A verify promotes the personal email between the first read and the upgrade.
+        vi.spyOn(fake.auth, 'getUser').mockImplementation(async id => {
+            const user = await read(id);
+            if (++reads === 1) fake.setUser({ uid, email: personal, emailVerified: true });
+            return user;
+        });
+        await ensureClassLinkFirebaseUser(fake.auth as never, uid, {
+            identityKey,
+            trustedEmail: school,
+            isNew: false,
+        });
+        expect(fake.peek(uid)?.email).toBe(personal);
+
+        // Without the race, the synthetic address is still upgraded.
+        fake.setUser({ uid, email: syntheticEmailForUid(uid) });
+        await ensureClassLinkFirebaseUser(fake.auth as never, uid, {
+            identityKey,
+            trustedEmail: school,
+            isNew: false,
+        });
+        expect(fake.peek(uid)?.email).toBe(school);
+
+        // personalEmailPrimary never writes an email, even onto a synthetic address.
+        fake.setUser({ uid, email: syntheticEmailForUid(uid) });
+        await ensureClassLinkFirebaseUser(fake.auth as never, uid, {
+            identityKey,
+            trustedEmail: school,
+            isNew: false,
+            personalEmailPrimary: true,
+        });
+        expect(fake.peek(uid)?.email).toBe(syntheticEmailForUid(uid));
     });
 });
 

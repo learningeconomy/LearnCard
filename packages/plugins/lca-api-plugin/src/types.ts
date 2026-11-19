@@ -22,33 +22,51 @@ export type ClassLinkAccountContinuityReason =
     | 'age_unknown'
     | 'approval_required';
 
+/**
+ * Stable `cause.reason` codes on ClassLink sign-in email refusals (`PRECONDITION_FAILED`):
+ * - `account_moved`: the school sign-in no longer opens this account (reconnect it).
+ * - `busy`: another email change is in progress; retry.
+ * - `placeholder_escrow`: the email cannot be removed from a placeholder account with escrow;
+ *   offer "use a different email" only.
+ * - `pin_change_required`: the PIN cannot be confirmed any more; offer "choose a new PIN".
+ */
+export type ClassLinkSignInEmailRefusalReason =
+    'account_moved' | 'busy' | 'placeholder_escrow' | 'pin_change_required';
+
 /** `classlink.getAccountContinuity`; never includes the district, policy or date of birth. */
 export type ClassLinkAccountContinuity = {
     personalEmail: { allowed: boolean; reason?: ClassLinkAccountContinuityReason };
     emailVerified: boolean;
     maskedEmail?: string;
-    recoveryEmailVerified: boolean;
-    /**
-     * Set only when the verified recovery email is a different address from the personal
-     * email (one the user verified earlier, which verify never replaces). Recovery codes go
-     * there, so the UI must name it rather than the personal email.
-     */
-    maskedRecoveryEmail?: string;
+    /** The verified personal email is the account's sign-in email (T's Firebase email). */
+    emailPrimary: boolean;
+    /** T, the uid that signs in with the sign-in email; compare with the session uid. */
+    primaryUid?: string;
+    /** `personal`: promoted; `account`: T already signs in with its own real email. */
+    signInEmailSource?: 'personal' | 'account';
+    /** The school email still signs in (trusted domain, linked, not idle). */
+    hasSchoolEmail: boolean;
+    /** Remote escrow seals a different contact than the sign-in email (UX hint only). */
+    contactStale: boolean;
+    /** False on a placeholder account with escrow (change only). */
+    canRemove: boolean;
     /** Any confirmed recovery method, escrow included (what the server's recovery gate counts). */
     hasServerConfirmedMethod: boolean;
     /** A confirmed method the user holds: passkey, phrase, backup file or email backup. */
     hasUserRecoveryMethod: boolean;
     /** The escrow PIN's state (`getEscrowPinStatus().state`), even without usable escrow. */
     pinState: 'none' | 'enabled' | 'locked' | 'stale';
-    /** Usable escrow plus an enabled PIN: the emailed code then the PIN recovers the account. */
+    /** Usable escrow plus an enabled PIN: a new device signs in with the PIN. */
     pinRecoverable: boolean;
     /**
-     * - `email`: add (or re-verify) the personal email.
-     * - `pin`: escrow is usable but the PIN is missing, locked or stale (see `pinState`).
-     * - `method`: no usable escrow, so a passkey or recovery phrase is the only way back in.
-     * - `done`: the account can be recovered without the school login.
+     * - `confirmPin`: enter the current PIN to re-seal the backup to the sign-in email (only
+     *   actionable on a session whose uid is `primaryUid`).
+     * - `email`: add (or re-verify) the personal sign-in email.
+     * - `pin`: create a PIN (escrow is usable, or the email is primary and escrow can enroll).
+     * - `method`: no escrow possible (opted out or disabled): a passkey or recovery phrase.
+     * - `done`: a new device can sign in to the account.
      */
-    nextStep: 'email' | 'pin' | 'method' | 'done';
+    nextStep: 'confirmPin' | 'email' | 'pin' | 'method' | 'done';
 };
 
 export type SchoolConnection = {
@@ -391,17 +409,30 @@ export type LCAPluginMethods = {
     ) => Promise<{ success: boolean; message?: string; token?: string }>;
     classlinkGetPersonalEmail: () => Promise<{ email?: string; verified: boolean }>;
     classlinkStartPersonalEmail: (args: { email: string }) => Promise<{ success: boolean }>;
+    /**
+     * Prove the code and make the address the sign-in email. `primary: false` means T already
+     * signs in with its own email and the address was only linked. `customToken` (for
+     * `primaryUid`) must be used to sign back in before any other call: the change signed T's
+     * sessions out.
+     */
     classlinkVerifyPersonalEmail: (args: { email: string; code: string }) => Promise<{
-        success: boolean;
-        /** The address also became the account's recovery email. */
-        recoveryEmailSet: boolean;
-        /** Not set as the recovery email: another account already uses it for recovery. */
-        recoveryEmailSkipped?: 'shared';
+        success: true;
+        verified: true;
+        primary: boolean;
+        primaryUid?: string;
+        customToken?: string;
     }>;
     /** What a ClassLink account still needs to keep working after losing school access. */
     classlinkGetAccountContinuity: () => Promise<ClassLinkAccountContinuity>;
-    /** Remove the personal email (sign-in link, matching recovery email, identity fields). */
-    classlinkRemovePersonalEmail: () => Promise<{ success: boolean }>;
+    /**
+     * Remove the personal email; the previous sign-in email and contact come back. Refused with
+     * reason `placeholder_escrow` on a placeholder account with escrow. `customToken` as above.
+     */
+    classlinkRemovePersonalEmail: () => Promise<{
+        success: true;
+        removed: true;
+        customToken?: string;
+    }>;
     classlinkGetAuthorizeUrl: (args: {
         redirectUri: string;
         codeChallenge: string;

@@ -32,8 +32,29 @@ export interface MongoClassLinkIdentityType {
     isMinorHint?: boolean;
     personalEmail?: string;
     personalEmailVerifiedAt?: Date;
+    /**
+     * The personal email promoted to the account's sign-in email (LC-2409). `pending` is
+     * written before any Firebase write and `active` is the completion marker; demote, remove
+     * and the continuity reconcile act on both. `prev*` are what demote restores exactly.
+     */
+    primaryEmail?: ClassLinkPrimaryEmail;
+    /** A demote that could not run (busy lock or failure); the continuity reconcile retries it. */
+    demotePending?: { reason: string; at: Date };
     createdAt: Date;
     updatedAt: Date;
+}
+
+export interface ClassLinkPrimaryEmail {
+    /** The personal address, lowercased. */
+    email: string;
+    /** The Firebase uid that holds it (`identity.firebaseUid` at promotion, called T). */
+    uid: string;
+    /** T's Firebase email before the promotion (null: none). */
+    prevFirebaseEmail: string | null;
+    /** The account's contact method before the promotion. */
+    prevContactMethod?: { type: 'email' | 'phone'; value: string };
+    state: 'pending' | 'active';
+    at: Date;
 }
 
 type StateStudentIdField = 'stateStudentId' | 'stateStudentIdEnc' | 'stateStudentIdExpiresAt';
@@ -71,6 +92,12 @@ export const ensureClassLinkIdentityIndexes = (): Promise<void> => {
             getClassLinkIdentitiesCollection().createIndex({ firebaseUid: 1 }),
             getClassLinkIdentitiesCollection().createIndex({ subject: 1 }),
             getClassLinkIdentitiesCollection().createIndex({ primaryDid: 1 }, { sparse: true }),
+            // Login-time lookups: the orphan guard (by promoted uid) and the school-email alias.
+            getClassLinkIdentitiesCollection().createIndex(
+                { 'primaryEmail.uid': 1 },
+                { sparse: true }
+            ),
+            getClassLinkIdentitiesCollection().createIndex({ email: 1 }, { sparse: true }),
             getClassLinkIdentitiesCollection().createIndex(
                 { stateStudentIdExpiresAt: 1 },
                 { sparse: true }

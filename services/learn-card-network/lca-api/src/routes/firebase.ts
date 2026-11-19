@@ -4,15 +4,17 @@ import axios from 'axios';
 import crypto from 'crypto';
 
 import app from '@firebase';
-import admin from 'firebase-admin';
 import { VC } from '@learncard/types';
 import { t, openRoute, authorizedDidRoute } from '@routes';
 import {
     UserRecordSchema,
     UserRecordType,
+    createFirebaseTokenForKeycloakUser,
     verifyKeycloakToken,
     FirebaseCustomAuthResponseSchema,
 } from '@helpers/firebase.helpers';
+import { getAdminAuth } from '@helpers/firebaseAdminAuth.helpers';
+import { resolveOrCreateFirebaseUserByEmail } from '@helpers/classlinkPrimaryEmail.helpers';
 import cache from '@cache';
 import { checkRateLimit, clearRateLimit, decrementRateLimit } from '@helpers/rateLimit.helpers';
 import { TRPCError } from '@trpc/server';
@@ -77,49 +79,7 @@ const LOGIN_VERIFY_IP_WINDOW_SECONDS = 600; // 10 minutes
 export const CONTACT_METHOD_SESSION_PREFIX = 'contact_method_session:';
 
 async function createFirebaseToken(keycloakToken: string): Promise<string> {
-    const keycloakUser = await verifyKeycloakToken(keycloakToken);
-
-    let uid = keycloakUser.sub;
-    const email = keycloakUser.email || null;
-    const displayName = keycloakUser.name || null;
-    const emailVerified = keycloakUser.email_verified || false;
-    const roles = keycloakUser.roles || [];
-
-    let firebaseUser: any;
-
-    try {
-        if (email) {
-            const existingUsers = await admin.auth().getUsers([{ email }]);
-
-            if (existingUsers.users.length > 0) {
-                firebaseUser = existingUsers?.users?.[0];
-
-                if (firebaseUser?.uid !== uid) {
-                    // Link existing account to Keycloak UID
-                    await admin.auth().updateUser(firebaseUser.uid, {
-                        emailVerified,
-                        displayName,
-                    });
-
-                    uid = firebaseUser?.uid;
-                }
-            }
-        }
-
-        if (!firebaseUser) {
-            firebaseUser = await admin.auth().createUser({
-                uid,
-                email,
-                displayName,
-                emailVerified,
-            });
-        }
-    } catch (error) {
-        console.error('[createFirebaseToken] Firebase user creation or lookup failed:', error);
-        throw new Error('Firebase user creation or lookup failed');
-    }
-
-    return admin.auth().createCustomToken(uid, { email, name: displayName, roles });
+    return createFirebaseTokenForKeycloakUser(await verifyKeycloakToken(keycloakToken));
 }
 
 export const firebaseRouter = t.router({
@@ -403,20 +363,22 @@ export const firebaseRouter = t.router({
                 await clearRateLimit(emailAttemptKey);
                 await decrementRateLimit(ipAttemptKey);
 
-                // Get or create the Firebase user
-                let user;
-                try {
-                    user = await app?.auth().getUserByEmail(email);
-                } catch {
-                    user = await app?.auth().createUser({ email });
-                }
-
-                if (!user) {
+                // Get or create the Firebase user. A promoted ClassLink school email resolves
+                // to its account's user (alias); a moved or orphaned account gets the generic
+                // error and no user is created (see resolveOrCreateFirebaseUserByEmail).
+                const auth = getAdminAuth();
+                if (!auth) return { success: false, error: 'Unable to find or create user.' };
+                const resolved = await resolveOrCreateFirebaseUserByEmail(
+                    auth,
+                    email.trim().toLowerCase(),
+                    { allowCreate: true }
+                );
+                if (!('uid' in resolved)) {
                     return { success: false, error: 'Unable to find or create user.' };
                 }
 
                 // Create Firebase custom auth token
-                const token = await app?.auth().createCustomToken(user.uid);
+                const token = await auth.createCustomToken(resolved.uid);
 
                 return { success: true, token };
             } catch (err: any) {
@@ -499,32 +461,40 @@ export const firebaseRouter = t.router({
                         error: 'Invalid LCN token: contact method is required.',
                     };
 
-                // Get or Create the Firebase user based on email or phone
-                let user;
-                try {
-                    if (contactMethod.type === 'email') {
-                        user = await app?.auth().getUserByEmail(contactMethod.value);
-                    } else if (contactMethod.type === 'phone') {
+                // Get or Create the Firebase user based on email or phone. Email goes through
+                // the same resolution as email-code login (school-email alias, orphan guard).
+                let uid: string | undefined;
+                if (contactMethod.type === 'email') {
+                    const auth = getAdminAuth();
+                    const resolved = auth
+                        ? await resolveOrCreateFirebaseUserByEmail(
+                              auth,
+                              contactMethod.value.trim().toLowerCase(),
+                              { allowCreate: true }
+                          )
+                        : undefined;
+                    uid = resolved && 'uid' in resolved ? resolved.uid : undefined;
+                } else if (contactMethod.type === 'phone') {
+                    let user;
+                    try {
                         user = await app?.auth().getUserByPhoneNumber(contactMethod.value);
-                    } else {
-                        return { success: false, error: 'Invalid LCN token contact type.' };
-                    }
-                } catch {
-                    if (contactMethod.type === 'email') {
-                        user = await app?.auth().createUser({ email: contactMethod.value });
-                    } else if (contactMethod.type === 'phone') {
+                    } catch {
                         user = await app?.auth().createUser({ phoneNumber: contactMethod.value });
-                    } else {
-                        return { success: false, error: 'Invalid LCN token contact type.' };
                     }
+                    uid = user?.uid;
+                } else {
+                    return { success: false, error: 'Invalid LCN token contact type.' };
                 }
 
-                if (!user) {
+                if (!uid) {
                     return { success: false, error: 'Unable to find or create user.' };
                 }
 
                 // Create Firebase custom auth token
-                const token = await app?.auth().createCustomToken(user.uid);
+                const token =
+                    contactMethod.type === 'email'
+                        ? await getAdminAuth()?.createCustomToken(uid)
+                        : await app?.auth().createCustomToken(uid);
 
                 return { success: true, token };
             } catch (err) {

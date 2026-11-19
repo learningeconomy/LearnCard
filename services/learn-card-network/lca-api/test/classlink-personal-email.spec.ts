@@ -18,6 +18,9 @@ import {
 import { deleteClassLinkDataForAccount } from '../src/helpers/classlinkDeletion.helpers';
 import { getCurrentProfile } from '../src/helpers/currentProfile';
 import { updateClassLinkIdentity } from '../src/models/ClassLinkIdentity';
+import { e2eAdminAuth } from '../src/helpers/firebaseAdminAuth.helpers';
+import { isEscrowEnabled, isEscrowRemoteMode } from '../src/services/escrow-enclave';
+import { contactDigest } from '../src/helpers/escrowContactDigest';
 
 const { send } = vi.hoisted(() => ({ send: vi.fn() }));
 vi.mock('../src/services/delivery', () => ({
@@ -29,6 +32,11 @@ vi.mock('../src/helpers/classlink.config', async importOriginal => ({
     getClassLinkConfig: vi.fn(),
 }));
 vi.mock('../src/helpers/currentProfile', () => ({ getCurrentProfile: vi.fn() }));
+vi.mock('../src/services/escrow-enclave', async importOriginal => ({
+    ...(await importOriginal<typeof import('../src/services/escrow-enclave')>()),
+    isEscrowEnabled: vi.fn(() => true),
+    isEscrowRemoteMode: vi.fn(() => false),
+}));
 vi.mock('../src/models/ClassLinkIdentity', async importOriginal => {
     const actual = await importOriginal<typeof import('../src/models/ClassLinkIdentity')>();
     return { ...actual, updateClassLinkIdentity: vi.fn(actual.updateClassLinkIdentity) };
@@ -66,6 +74,15 @@ const key = `classlink-personal-email:${createHash('sha256')
     .update('classlink:tenant-test:source-1')
     .digest('hex')}`;
 const getCode = () => String(send.mock.calls.at(-1)?.[0].templateModel.verificationCode);
+const school = 'student@example.edu';
+/** What verify returns when it promotes the address on T (`uid-test`). */
+const promoted = {
+    success: true,
+    verified: true,
+    primary: true,
+    primaryUid: 'uid-test',
+    customToken: 'e2e-custom-token-uid-test',
+};
 
 beforeEach(async () => {
     send.mockReset().mockResolvedValue(undefined);
@@ -73,9 +90,17 @@ beforeEach(async () => {
     await mongodb.collection('userkeys').deleteMany({});
     await getClassLinkIdentitiesCollection().deleteMany({});
     await getAuthSubjectsCollection().deleteMany({});
-    await mongodb
-        .collection('userkeys')
-        .insertOne({ primaryDid: did, authProviders: [{ type: 'firebase', id: 'uid-test' }] });
+    await mongodb.collection('userkeys').insertOne({
+        primaryDid: did,
+        authProviders: [{ type: 'firebase', id: 'uid-test' }],
+        contactMethod: { type: 'email', value: school },
+        shareVersion: 1,
+    });
+    // T (`uid-test`) signs in with the trusted school email.
+    e2eAdminAuth.reset();
+    e2eAdminAuth.setUser({ uid: 'uid-test', email: school, emailVerified: true });
+    vi.mocked(isEscrowEnabled).mockReturnValue(true);
+    vi.mocked(isEscrowRemoteMode).mockReturnValue(false);
     await upsertClassLinkIdentity({
         identityKey: 'classlink:tenant-test:source-1',
         tenantId: 'tenant-test',
@@ -187,7 +212,7 @@ describe('ClassLink personal email', () => {
         ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
         expect(send).not.toHaveBeenCalled();
     });
-    it('still finds the identity by DID after a recovery rebind drops the Firebase provider', async () => {
+    it('uid not on account refuses (the identity is still found by DID after a rebind)', async () => {
         await getClassLinkIdentitiesCollection().updateOne(
             { firebaseUid: 'uid-test' },
             { $set: { primaryDid: did } }
@@ -199,10 +224,14 @@ describe('ClassLink personal email', () => {
                 { $set: { authProviders: [{ type: 'firebase', id: 'new-uid' }] } }
             );
         await expect(caller().startPersonalEmail({ email })).resolves.toEqual({ success: true });
-        expect(await caller().verifyPersonalEmail({ email, code: getCode() })).toEqual({
-            success: true,
-            recoveryEmailSet: true,
-        });
+        expect(await caller().getPersonalEmail()).toEqual({ verified: false });
+        // The identity is still found by DID, but its uid no longer opens the account.
+        const error = await caller()
+            .verifyPersonalEmail({ email, code: getCode() })
+            .catch((rejection: unknown) => rejection);
+        expect(error).toMatchObject({ code: 'PRECONDITION_FAILED' });
+        expect((error as { cause?: { reason?: string } }).cause?.reason).toBe('account_moved');
+        expect(e2eAdminAuth.peek('uid-test')?.email).toBe(school);
     });
     it('invalidates on the fifth incorrect attempt', async () => {
         await caller().startPersonalEmail({ email });
@@ -221,10 +250,7 @@ describe('ClassLink personal email', () => {
         expect(await cache.node.ttl(key)).toBeGreaterThan(295);
         expect(await cache.node.ttl(key)).toBeLessThanOrEqual(300);
         const code = getCode();
-        expect(await caller().verifyPersonalEmail({ email, code })).toEqual({
-            success: true,
-            recoveryEmailSet: true,
-        });
+        expect(await caller().verifyPersonalEmail({ email, code })).toEqual(promoted);
         expect(await caller().getPersonalEmail()).toEqual({ email, verified: true });
         expect(await findAuthSubjectByIdentityKey(`email:${email}`)).toMatchObject({
             subject: 'same-subject',
@@ -324,10 +350,9 @@ describe('ClassLink personal email', () => {
             await expect(
                 caller().verifyPersonalEmail({ email, code: '000000' })
             ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
-        await expect(caller().verifyPersonalEmail({ email, code: getCode() })).resolves.toEqual({
-            success: true,
-            recoveryEmailSet: true,
-        });
+        await expect(caller().verifyPersonalEmail({ email, code: getCode() })).resolves.toEqual(
+            promoted
+        );
     });
     describe('account continuity policy', () => {
         it('refuses everyone while the master switch is off, without sending', async () => {
@@ -410,28 +435,200 @@ describe('ClassLink personal email', () => {
         });
     });
 
-    describe('recovery email', () => {
+    describe('sign-in email (promotion)', () => {
         const verify = async (address: string) => {
             await caller().startPersonalEmail({ email: address });
             return caller().verifyPersonalEmail({ email: address, code: getCode() });
         };
+        const identity = () =>
+            getClassLinkIdentitiesCollection().findOne({ firebaseUid: 'uid-test' });
+        const firebaseEmail = (uid = 'uid-test') => e2eAdminAuth.peek(uid)?.email;
+        const lockKey = `classlink:lock:personal-email:${createHash('sha256')
+            .update(did)
+            .digest('hex')}`;
+        const errorOf = (promise: Promise<unknown>) =>
+            promise.then(
+                () => undefined,
+                (rejection: unknown) => rejection as { code?: string; cause?: { reason?: string } }
+            );
+        const makePlaceholder = async () => {
+            const synthetic = 'uid-test@users.classlink.invalid';
+            e2eAdminAuth.setUser({ uid: 'uid-test', email: synthetic });
+            await mongodb
+                .collection('userkeys')
+                .updateOne(
+                    { primaryDid: did },
+                    { $set: { contactMethod: { type: 'email', value: synthetic } } }
+                );
+            return synthetic;
+        };
+        const enrollEscrow = () =>
+            mongodb.collection('userkeys').updateOne(
+                { primaryDid: did },
+                {
+                    $set: {
+                        escrowBlob: { shareVersion: 1, blobHash: 'test-blob' },
+                        recoveryMethods: [
+                            {
+                                type: 'escrow',
+                                createdAt: new Date(),
+                                confirmedAt: new Date(),
+                                shareVersion: 1,
+                            },
+                        ],
+                    },
+                }
+            );
 
-        it('makes the verified address the recovery email', async () => {
-            expect(await verify(email)).toEqual({ success: true, recoveryEmailSet: true });
-            expect(await userKey()).toMatchObject({
-                recoveryEmail: email,
-                recoveryEmailVerifiedAt: expect.any(Date),
+        it('verify promotes Firebase email and contact method, returns a customToken for T', async () => {
+            expect(await verify(email)).toEqual(promoted);
+            expect(e2eAdminAuth.peek('uid-test')).toMatchObject({ email, emailVerified: true });
+            expect((await userKey())?.contactMethod).toEqual({ type: 'email', value: email });
+            expect((await identity())?.primaryEmail).toMatchObject({
+                state: 'active',
+                email,
+                uid: 'uid-test',
+                prevFirebaseEmail: school,
+                prevContactMethod: { type: 'email', value: school },
+            });
+            expect(await findAuthSubjectByIdentityKey(`email:${email}`)).toMatchObject({
+                subject: 'same-subject',
             });
         });
 
-        it('follows the personal email when it replaces it, and is idempotent', async () => {
-            await verify('first@example.com');
-            expect(await verify('second@example.com')).toMatchObject({ recoveryEmailSet: true });
-            expect((await userKey())?.recoveryEmail).toBe('second@example.com');
-            expect(await verify('second@example.com')).toMatchObject({ recoveryEmailSet: true });
+        it('verify writes the pending marker before Firebase; a crash after promote is reconciled', async () => {
+            const original = e2eAdminAuth.auth.updateUser;
+            let stateAtWrite: string | undefined;
+            vi.spyOn(e2eAdminAuth.auth, 'updateUser').mockImplementationOnce(async (...args) => {
+                stateAtWrite = (await identity())?.primaryEmail?.state;
+                return original(...args);
+            });
+            vi.mocked(updateClassLinkIdentity).mockRejectedValueOnce(new Error('crash'));
+            await expect(verify(email)).rejects.toThrow();
+            expect(stateAtWrite).toBe('pending');
+            expect(firebaseEmail()).toBe(email);
+            expect((await identity())?.primaryEmail?.state).toBe('pending');
+            // Remove (or the reconcile) still sees the pending record.
+            await getClassLinkIdentitiesCollection().updateOne(
+                { firebaseUid: 'uid-test' },
+                { $set: { 'primaryEmail.at': new Date(Date.now() - 11 * 60 * 1000) } }
+            );
+            expect(await caller().getAccountContinuity()).toMatchObject({
+                emailPrimary: false,
+                nextStep: 'email',
+            });
+            expect(firebaseEmail()).toBe(school);
+            expect((await userKey())?.contactMethod).toEqual({ type: 'email', value: school });
+            expect((await identity())?.primaryEmail).toBeUndefined();
         });
 
-        it('never replaces a different recovery email the user verified', async () => {
+        it('verify is idempotent on retry after a partial write', async () => {
+            vi.mocked(updateClassLinkIdentity).mockRejectedValueOnce(new Error('injected'));
+            await expect(verify(email)).rejects.toThrow();
+            expect(await caller().getPersonalEmail()).toEqual({ verified: false });
+            // Firebase already changed, so the retry has no session to revoke and no token.
+            const { customToken, ...rest } = promoted;
+            expect(customToken).toBeDefined();
+            expect(await verify(email)).toEqual(rest);
+            expect(await caller().getPersonalEmail()).toEqual({ email, verified: true });
+            expect((await identity())?.primaryEmail).toMatchObject({
+                state: 'active',
+                prevFirebaseEmail: school,
+            });
+            expect((await userKey())?.contactMethod).toEqual({ type: 'email', value: email });
+        });
+
+        it('CONFLICT from another user rolls back the AuthSubject and pending marker', async () => {
+            vi.spyOn(e2eAdminAuth.auth, 'updateUser').mockRejectedValueOnce(
+                Object.assign(new Error('taken'), { code: 'auth/email-already-exists' })
+            );
+            expect(await errorOf(verify(email))).toMatchObject({ code: 'CONFLICT' });
+            expect(await findAuthSubjectByIdentityKey(`email:${email}`)).toBeNull();
+            expect((await identity())?.primaryEmail).toBeUndefined();
+            expect(firebaseEmail()).toBe(school);
+            expect((await userKey())?.contactMethod).toEqual({ type: 'email', value: school });
+        });
+
+        it('contact CAS failure rolls back the Firebase email', async () => {
+            const original = e2eAdminAuth.auth.updateUser;
+            vi.spyOn(e2eAdminAuth.auth, 'updateUser').mockImplementationOnce(async (...args) => {
+                await mongodb
+                    .collection('userkeys')
+                    .updateOne(
+                        { primaryDid: did },
+                        { $set: { contactMethod: { type: 'email', value: 'moved@example.org' } } }
+                    );
+                return original(...args);
+            });
+            expect(await errorOf(verify(email))).toMatchObject({ code: 'CONFLICT' });
+            expect(firebaseEmail()).toBe(school);
+            expect(await findAuthSubjectByIdentityKey(`email:${email}`)).toBeNull();
+            expect((await identity())?.primaryEmail).toBeUndefined();
+            expect((await userKey())?.contactMethod).toEqual({
+                type: 'email',
+                value: 'moved@example.org',
+            });
+        });
+
+        it("another UserKey's contact gives CONFLICT", async () => {
+            await mongodb.collection('userkeys').insertOne({
+                primaryDid: 'did:key:sibling',
+                authProviders: [{ type: 'firebase', id: 'sibling' }],
+                contactMethod: { type: 'email', value: email },
+            });
+            expect(await errorOf(verify(email))).toMatchObject({ code: 'CONFLICT' });
+            expect(firebaseEmail()).toBe(school);
+            expect((await identity())?.primaryEmail).toBeUndefined();
+        });
+
+        it('address held by another uid of the same account is own-email', async () => {
+            await mongodb.collection('userkeys').updateOne(
+                { primaryDid: did },
+                {
+                    $set: {
+                        authProviders: [
+                            { type: 'firebase', id: 'uid-test' },
+                            { type: 'firebase', id: 'uid-two' },
+                        ],
+                    },
+                }
+            );
+            e2eAdminAuth.setUser({ uid: 'uid-two', email });
+            expect(await verify(email)).toEqual({ success: true, verified: true, primary: false });
+            expect(firebaseEmail()).toBe(school);
+            expect((await identity())?.primaryEmail).toBeUndefined();
+            expect(await caller().getPersonalEmail()).toEqual({ email, verified: true });
+        });
+
+        it('stray empty Firebase user is reclaimed; a user with a UserKey is not', async () => {
+            e2eAdminAuth.setUser({ uid: 'stray', email });
+            expect(await verify(email)).toEqual(promoted);
+            expect(e2eAdminAuth.peek('stray')).toBeUndefined();
+            expect(firebaseEmail()).toBe(email);
+
+            const other = 'other@example.com';
+            e2eAdminAuth.setUser({ uid: 'owned', email: other });
+            await mongodb.collection('userkeys').insertOne({
+                primaryDid: 'did:key:owned',
+                authProviders: [{ type: 'firebase', id: 'owned' }],
+                contactMethod: { type: 'phone', value: '+15555550100' },
+            });
+            expect(await errorOf(verify(other))).toMatchObject({ code: 'CONFLICT' });
+            expect(e2eAdminAuth.peek('owned')?.email).toBe(other);
+            expect(firebaseEmail()).toBe(email);
+        });
+
+        it('verify clears an equal recovery email and never sets one', async () => {
+            await mongodb
+                .collection('userkeys')
+                .updateOne(
+                    { primaryDid: did },
+                    { $set: { recoveryEmail: email, recoveryEmailVerifiedAt: new Date() } }
+                );
+            await verify(email);
+            expect(await userKey()).not.toHaveProperty('recoveryEmail');
+            expect(await userKey()).not.toHaveProperty('recoveryEmailVerifiedAt');
+            // A different recovery email the user chose is kept.
             await mongodb.collection('userkeys').updateOne(
                 { primaryDid: did },
                 {
@@ -441,95 +638,147 @@ describe('ClassLink personal email', () => {
                     },
                 }
             );
-            expect(await verify(email)).toEqual({ success: true, recoveryEmailSet: false });
+            await verify('second@example.com');
             expect((await userKey())?.recoveryEmail).toBe('chosen@example.com');
-            // Continuity names the address recovery codes actually go to.
-            const continuity = await caller().getAccountContinuity();
-            expect(continuity).toMatchObject({
+        });
+
+        it('own real Firebase email links alias only', async () => {
+            e2eAdminAuth.setUser({
+                uid: 'uid-test',
+                email: 'own@example.org',
                 emailVerified: true,
-                recoveryEmailVerified: true,
-                maskedRecoveryEmail: expect.stringContaining('@example.com'),
             });
-            expect(continuity.maskedRecoveryEmail).not.toBe(continuity.maskedEmail);
-            expect(continuity.maskedRecoveryEmail).not.toContain('chosen');
+            expect(await verify(email)).toEqual({ success: true, verified: true, primary: false });
+            expect(firebaseEmail()).toBe('own@example.org');
+            expect((await userKey())?.contactMethod).toEqual({ type: 'email', value: school });
+            expect(await findAuthSubjectByIdentityKey(`email:${email}`)).toMatchObject({
+                subject: 'same-subject',
+            });
+            expect(await caller().getAccountContinuity()).toMatchObject({
+                emailPrimary: false,
+                signInEmailSource: 'account',
+                primaryUid: 'uid-test',
+            });
         });
 
-        it('omits maskedRecoveryEmail when recovery uses the personal email', async () => {
-            await verify(email);
-            expect(await caller().getAccountContinuity()).not.toHaveProperty('maskedRecoveryEmail');
+        it('phone-only T restores the phone contact on remove (its Firebase email becomes the synthetic address)', async () => {
+            const phone = { type: 'phone', value: '+15555550123' };
+            e2eAdminAuth.setUser({ uid: 'uid-test', phoneNumber: phone.value });
+            await mongodb
+                .collection('userkeys')
+                .updateOne({ primaryDid: did }, { $set: { contactMethod: phone } });
+            expect(await verify(email)).toEqual(promoted);
+            expect((await identity())?.primaryEmail).toMatchObject({
+                prevFirebaseEmail: null,
+                prevContactMethod: phone,
+            });
+            expect(await caller().removePersonalEmail()).toEqual({
+                success: true,
+                removed: true,
+                customToken: 'e2e-custom-token-uid-test',
+            });
+            // Firebase Admin cannot remove an email, so T gets the reserved undeliverable one.
+            expect(e2eAdminAuth.peek('uid-test')).toMatchObject({
+                email: 'uid-test@users.classlink.invalid',
+                emailVerified: false,
+                phoneNumber: phone.value,
+            });
+            expect((await userKey())?.contactMethod).toEqual(phone);
         });
 
-        it('never overwrites a recovery email verified after the plan', async () => {
-            // Runs after the recovery-email plan and before its write.
+        it('an expired lock aborts before the next write', async () => {
             vi.mocked(getOrCreateAuthSubjectLinkedTo).mockImplementationOnce(async (...args) => {
-                await mongodb.collection('userkeys').updateOne(
-                    { primaryDid: did },
-                    {
-                        $set: {
-                            recoveryEmail: 'chosen@example.com',
-                            recoveryEmailVerifiedAt: new Date(),
-                        },
-                    }
-                );
+                await cache.node.del(lockKey);
                 const actual = await vi.importActual<typeof import('../src/models/AuthSubject')>(
                     '../src/models/AuthSubject'
                 );
                 return actual.getOrCreateAuthSubjectLinkedTo(...args);
             });
-            expect(await verify(email)).toEqual({ success: true, recoveryEmailSet: false });
-            expect((await userKey())?.recoveryEmail).toBe('chosen@example.com');
-            expect(await caller().getPersonalEmail()).toEqual({ email, verified: true });
+            expect(await errorOf(verify(email))).toMatchObject({ code: 'PRECONDITION_FAILED' });
+            expect(firebaseEmail()).toBe(school);
+            expect((await identity())?.primaryEmail).toBeUndefined();
+            expect((await userKey())?.contactMethod).toEqual({ type: 'email', value: school });
+            // The retry converges.
+            expect(await verify(email)).toEqual(promoted);
         });
 
-        it('replaces an unverified recovery email', async () => {
-            await mongodb
-                .collection('userkeys')
-                .updateOne({ primaryDid: did }, { $set: { recoveryEmail: 'typo@example.com' } });
-            expect(await verify(email)).toMatchObject({ recoveryEmailSet: true });
-            expect((await userKey())?.recoveryEmail).toBe(email);
-        });
-
-        it('skips an address another account recovers with, but still links sign-in', async () => {
-            await mongodb.collection('userkeys').insertOne({
-                primaryDid: 'did:key:sibling',
-                authProviders: [{ type: 'firebase', id: 'sibling' }],
-                recoveryEmail: email,
-                recoveryEmailVerifiedAt: new Date(),
+        it('changing the address releases the old subject after the contact moves', async () => {
+            await verify('first@example.com');
+            await verify('second@example.com');
+            expect(await findAuthSubjectByIdentityKey('email:first@example.com')).toBeNull();
+            expect(firebaseEmail()).toBe('second@example.com');
+            expect((await userKey())?.contactMethod).toEqual({
+                type: 'email',
+                value: 'second@example.com',
             });
-            expect(await verify(email)).toEqual({
+            // The original values are kept for demote.
+            expect((await identity())?.primaryEmail).toMatchObject({
+                email: 'second@example.com',
+                prevFirebaseEmail: school,
+                prevContactMethod: { type: 'email', value: school },
+            });
+        });
+
+        it('remove restores trusted school email / synthetic when untrusted, and restores the synthetic contact', async () => {
+            await verify(email);
+            expect(await caller().removePersonalEmail()).toEqual({
                 success: true,
-                recoveryEmailSet: false,
-                recoveryEmailSkipped: 'shared',
+                removed: true,
+                customToken: 'e2e-custom-token-uid-test',
             });
-            expect((await userKey())?.recoveryEmail).toBeUndefined();
-            expect(await caller().getPersonalEmail()).toEqual({ email, verified: true });
-            expect(await findAuthSubjectByIdentityKey(`email:${email}`)).toMatchObject({
-                subject: 'same-subject',
+            expect(e2eAdminAuth.peek('uid-test')).toMatchObject({
+                email: school,
+                emailVerified: true,
             });
+            expect((await userKey())?.contactMethod).toEqual({ type: 'email', value: school });
+
+            // The district no longer trusts the domain: T gets the synthetic address back.
+            await verify(email);
+            vi.mocked(getClassLinkConfig).mockReturnValue({
+                ...getClassLinkConfig()!,
+                tenants: {
+                    'tenant-test': {
+                        ...getClassLinkConfig()!.tenants['tenant-test']!,
+                        allowedEmailDomains: [],
+                    },
+                },
+            });
+            await caller().removePersonalEmail();
+            expect(firebaseEmail()).toBe('uid-test@users.classlink.invalid');
+            expect((await userKey())?.contactMethod).toEqual({ type: 'email', value: school });
+
+            // A placeholder account without escrow gets its synthetic contact back.
+            const synthetic = await makePlaceholder();
+            await verify(email);
+            await caller().removePersonalEmail();
+            expect(firebaseEmail()).toBe(synthetic);
+            expect((await userKey())?.contactMethod).toEqual({ type: 'email', value: synthetic });
+            expect((await identity())?.primaryEmail).toBeUndefined();
         });
 
-        it('converges on retry after a failure between writes', async () => {
-            vi.mocked(updateClassLinkIdentity).mockRejectedValueOnce(new Error('injected'));
-            await expect(verify(email)).rejects.toThrow();
-            // The sign-in link and recovery email were written; the identity was not.
-            expect(await caller().getPersonalEmail()).toEqual({ verified: false });
-            expect((await userKey())?.recoveryEmail).toBe(email);
-            expect(await verify(email)).toEqual({ success: true, recoveryEmailSet: true });
-            expect(await caller().getPersonalEmail()).toEqual({ email, verified: true });
-            expect(await findAuthSubjectByIdentityKey(`email:${email}`)).toMatchObject({
-                subject: 'same-subject',
-            });
-        });
-
-        it('removePersonalEmail clears all three stores, even when not allowed', async () => {
+        it('remove deletes email:personal', async () => {
             await verify(email);
             setContinuity({ enabled: false });
-            await expect(caller().removePersonalEmail()).resolves.toEqual({ success: true });
+            await caller().removePersonalEmail();
             expect(await findAuthSubjectByIdentityKey(`email:${email}`)).toBeNull();
-            expect(await userKey()).not.toHaveProperty('recoveryEmail');
-            expect(await userKey()).not.toHaveProperty('recoveryEmailVerifiedAt');
             expect(await caller().getPersonalEmail()).toEqual({ verified: false });
-            await expect(caller().removePersonalEmail()).resolves.toEqual({ success: true });
+            await expect(caller().removePersonalEmail()).resolves.toEqual({
+                success: true,
+                removed: true,
+            });
+        });
+
+        it('remove refuses placeholder with escrow', async () => {
+            await makePlaceholder();
+            await verify(email);
+            await enrollEscrow();
+            const error = await errorOf(caller().removePersonalEmail());
+            expect(error).toMatchObject({ code: 'PRECONDITION_FAILED' });
+            expect(error?.cause?.reason).toBe('placeholder_escrow');
+            expect(firebaseEmail()).toBe(email);
+            expect(await caller().getAccountContinuity()).toMatchObject({ canRemove: false });
+            // Changing the address still works.
+            expect(await verify('second@example.com')).toMatchObject({ primary: true });
         });
 
         it('serializes removal against a concurrent verification of a new address', async () => {
@@ -552,32 +801,20 @@ describe('ClassLink personal email', () => {
             });
             await expect(
                 caller().verifyPersonalEmail({ email: 'second@example.com', code: getCode() })
-            ).resolves.toMatchObject({ success: true, recoveryEmailSet: true });
-            // The removal was refused without writing, so B stays tracked in all three stores.
+            ).resolves.toMatchObject({ success: true, primary: true });
+            // The removal was refused without writing, so B stays tracked everywhere.
             expect(await removal).toMatchObject({ code: 'PRECONDITION_FAILED' });
             expect(await caller().getPersonalEmail()).toEqual({
                 email: 'second@example.com',
                 verified: true,
             });
-            expect((await userKey())?.recoveryEmail).toBe('second@example.com');
-            expect(await findAuthSubjectByIdentityKey('email:second@example.com')).toMatchObject({
-                subject: 'same-subject',
-            });
+            expect(firebaseEmail()).toBe('second@example.com');
             expect(await findAuthSubjectByIdentityKey('email:first@example.com')).toBeNull();
             // Once the lock is released, a retry removes B everywhere.
-            await expect(caller().removePersonalEmail()).resolves.toEqual({ success: true });
-            expect(await findAuthSubjectByIdentityKey('email:second@example.com')).toBeNull();
-            expect(await userKey()).not.toHaveProperty('recoveryEmail');
-            expect(await caller().getPersonalEmail()).toEqual({ verified: false });
-        });
-
-        it('removePersonalEmail keeps a different recovery email', async () => {
-            await verify(email);
-            await mongodb
-                .collection('userkeys')
-                .updateOne({ primaryDid: did }, { $set: { recoveryEmail: 'chosen@example.com' } });
             await caller().removePersonalEmail();
-            expect((await userKey())?.recoveryEmail).toBe('chosen@example.com');
+            expect(await findAuthSubjectByIdentityKey('email:second@example.com')).toBeNull();
+            expect(firebaseEmail()).toBe(school);
+            expect(await caller().getPersonalEmail()).toEqual({ verified: false });
         });
     });
 
@@ -601,11 +838,17 @@ describe('ClassLink personal email', () => {
             mongodb
                 .collection('userkeys')
                 .updateOne({ primaryDid: did }, { $set: { shareVersion: 1, ...fields } });
-        const verifyEmail = async () => {
+        const verifyEmail = async (address = email) => {
             setContinuity({ defaultPolicy: { personalEmail: 'all', approval: 'none' } });
-            await caller().startPersonalEmail({ email });
-            await caller().verifyPersonalEmail({ email, code: getCode() });
+            await caller().startPersonalEmail({ email: address });
+            await caller().verifyPersonalEmail({ email: address, code: getCode() });
         };
+        const escrowWithPin = () =>
+            setKey({
+                recoveryMethods: [confirmed('escrow')],
+                escrowBlob: blob(),
+                escrowPin: pin(),
+            });
 
         it('reports the next step without the district, policy or date of birth', async () => {
             setContinuity({
@@ -617,7 +860,10 @@ describe('ClassLink personal email', () => {
             expect(before).toEqual({
                 personalEmail: { allowed: true },
                 emailVerified: false,
-                recoveryEmailVerified: false,
+                emailPrimary: false,
+                hasSchoolEmail: false,
+                contactStale: false,
+                canRemove: false,
                 hasServerConfirmedMethod: false,
                 hasUserRecoveryMethod: false,
                 pinState: 'none',
@@ -633,8 +879,11 @@ describe('ClassLink personal email', () => {
             expect(await caller().getAccountContinuity()).toMatchObject({
                 emailVerified: true,
                 maskedEmail: 'p*******@example.com',
-                recoveryEmailVerified: true,
-                nextStep: 'method',
+                emailPrimary: true,
+                primaryUid: 'uid-test',
+                signInEmailSource: 'personal',
+                canRemove: true,
+                nextStep: 'pin',
             });
 
             // Escrow counts for the server's recovery gate but is not a method the user holds.
@@ -646,12 +895,7 @@ describe('ClassLink personal email', () => {
                 pinRecoverable: false,
                 nextStep: 'pin',
             });
-            await mongodb
-                .collection('userkeys')
-                .updateOne(
-                    { primaryDid: did },
-                    { $set: { recoveryMethods: [confirmed('escrow'), confirmed('passkey')] } }
-                );
+            await setKey({ recoveryMethods: [confirmed('escrow'), confirmed('passkey')] });
             expect(await caller().getAccountContinuity()).toMatchObject({
                 hasUserRecoveryMethod: true,
                 nextStep: 'done',
@@ -659,11 +903,7 @@ describe('ClassLink personal email', () => {
         });
 
         it('needs the email first, even with a usable PIN', async () => {
-            await setKey({
-                recoveryMethods: [confirmed('escrow')],
-                escrowBlob: blob(),
-                escrowPin: pin(),
-            });
+            await escrowWithPin();
             expect(await caller().getAccountContinuity()).toMatchObject({
                 pinState: 'enabled',
                 pinRecoverable: true,
@@ -703,19 +943,19 @@ describe('ClassLink personal email', () => {
                 expected: { pinState: 'enabled', pinRecoverable: false, nextStep: 'method' },
             },
             {
-                name: 'a confirmed escrow method without a stored copy needs a passkey or phrase',
+                name: 'a primary email without usable escrow (never enrolled) asks for a PIN',
                 fields: { escrowBlob: undefined, escrowPin: pin() },
-                expected: { pinRecoverable: false, nextStep: 'method' },
+                expected: { pinRecoverable: false, nextStep: 'pin' },
             },
             {
-                name: 'escrow confirmed only at an older copy version needs a passkey or phrase',
+                name: 'escrow confirmed only at an older copy version asks for a PIN',
                 fields: { escrowBlob: blob(2), escrowPin: pin() },
-                expected: { pinRecoverable: false, nextStep: 'method' },
+                expected: { pinRecoverable: false, nextStep: 'pin' },
             },
             {
-                name: 'no escrow (placeholder email) needs a passkey or phrase',
+                name: 'no escrow (placeholder email) asks for a PIN',
                 fields: { recoveryMethods: [], escrowBlob: undefined },
-                expected: { pinState: 'none', pinRecoverable: false, nextStep: 'method' },
+                expected: { pinState: 'none', pinRecoverable: false, nextStep: 'pin' },
             },
             {
                 name: 'a passkey is done even when the PIN is locked',
@@ -749,9 +989,167 @@ describe('ClassLink personal email', () => {
                     );
             expect(await caller().getAccountContinuity()).toMatchObject({
                 emailVerified: true,
-                recoveryEmailVerified: true,
+                emailPrimary: true,
                 ...expected,
             });
+        });
+
+        it('placeholder with no escrow gives pin', async () => {
+            const synthetic = 'uid-test@users.classlink.invalid';
+            e2eAdminAuth.setUser({ uid: 'uid-test', email: synthetic });
+            await setKey({ contactMethod: { type: 'email', value: synthetic } });
+            await verifyEmail();
+            expect(await caller().getAccountContinuity()).toMatchObject({
+                emailPrimary: true,
+                canRemove: true,
+                nextStep: 'pin',
+            });
+        });
+
+        it('opted-out gives method, and so does a disabled escrow authority', async () => {
+            await verifyEmail();
+            await setKey({ escrowOptedOutAt: new Date() });
+            expect((await caller().getAccountContinuity()).nextStep).toBe('method');
+            await mongodb
+                .collection('userkeys')
+                .updateOne({ primaryDid: did }, { $unset: { escrowOptedOutAt: '' } });
+            vi.mocked(isEscrowEnabled).mockReturnValue(false);
+            expect((await caller().getAccountContinuity()).nextStep).toBe('method');
+        });
+
+        it('a legacy absent digest with a primary email gives confirmPin in remote mode and is never stale in software mode', async () => {
+            await verifyEmail();
+            await escrowWithPin();
+            expect(await caller().getAccountContinuity()).toMatchObject({
+                contactStale: false,
+                nextStep: 'done',
+            });
+            vi.mocked(isEscrowRemoteMode).mockReturnValue(true);
+            expect(await caller().getAccountContinuity()).toMatchObject({
+                contactStale: true,
+                nextStep: 'confirmPin',
+            });
+        });
+
+        it('matching digest gives done; stale after removal gives confirmPin', async () => {
+            vi.mocked(isEscrowRemoteMode).mockReturnValue(true);
+            await verifyEmail();
+            await escrowWithPin();
+            await setKey({ escrowContactDigest: contactDigest(email) });
+            expect(await caller().getAccountContinuity()).toMatchObject({
+                contactStale: false,
+                nextStep: 'done',
+            });
+            await caller().removePersonalEmail();
+            // The sign-in email is the school email again; the copy still seals the personal one.
+            expect(await caller().getAccountContinuity()).toMatchObject({
+                emailPrimary: false,
+                contactStale: true,
+                nextStep: 'confirmPin',
+            });
+        });
+
+        it('no-PIN stale gives contactStale with done', async () => {
+            vi.mocked(isEscrowRemoteMode).mockReturnValue(true);
+            await verifyEmail();
+            await setKey({
+                recoveryMethods: [confirmed('escrow'), confirmed('passkey')],
+                escrowBlob: blob(),
+                escrowContactDigest: contactDigest(school),
+            });
+            expect(await caller().getAccountContinuity()).toMatchObject({
+                contactStale: true,
+                pinState: 'none',
+                nextStep: 'done',
+            });
+        });
+
+        it('own-email skips the email step', async () => {
+            e2eAdminAuth.setUser({ uid: 'uid-test', email: 'own@example.org' });
+            await setKey({ recoveryMethods: [confirmed('passkey')] });
+            expect(await caller().getAccountContinuity()).toMatchObject({
+                emailPrimary: false,
+                signInEmailSource: 'account',
+                nextStep: 'done',
+            });
+        });
+
+        it('drift reports emailPrimary false', async () => {
+            await verifyEmail();
+            e2eAdminAuth.setUser({ uid: 'uid-test', email: 'elsewhere@example.org' });
+            expect(await caller().getAccountContinuity()).toMatchObject({
+                emailVerified: true,
+                emailPrimary: false,
+                nextStep: 'email',
+            });
+        });
+
+        it('hasSchoolEmail follows the allowlist and the idle limit', async () => {
+            await getOrCreateAuthSubjectLinkedTo(`email:${school}`, 'same-subject', {
+                email: school,
+                emailVerified: true,
+            });
+            expect((await caller().getAccountContinuity()).hasSchoolEmail).toBe(true);
+            const config = getClassLinkConfig()!;
+            const tenant = config.tenants['tenant-test']!;
+            const withTenant = (overrides: Record<string, unknown>) =>
+                vi.mocked(getClassLinkConfig).mockReturnValue({
+                    ...config,
+                    tenants: { 'tenant-test': { ...tenant, ...overrides } },
+                });
+            withTenant({ allowedEmailDomains: [] });
+            expect((await caller().getAccountContinuity()).hasSchoolEmail).toBe(false);
+            withTenant({ schoolEmailAliasMaxIdleDays: 0 });
+            expect((await caller().getAccountContinuity()).hasSchoolEmail).toBe(false);
+            withTenant({ schoolEmailAliasMaxIdleDays: 30 });
+            expect((await caller().getAccountContinuity()).hasSchoolEmail).toBe(true);
+            await getClassLinkIdentitiesCollection().updateOne(
+                { firebaseUid: 'uid-test' },
+                { $set: { lastAuthTime: new Date(Date.now() - 31 * 24 * 60 * 60 * 1000) } }
+            );
+            expect((await caller().getAccountContinuity()).hasSchoolEmail).toBe(false);
+            // The default limit is 365 days.
+            withTenant({});
+            expect((await caller().getAccountContinuity()).hasSchoolEmail).toBe(true);
+        });
+
+        it('primaryUid is returned', async () => {
+            await verifyEmail();
+            expect((await caller().getAccountContinuity()).primaryUid).toBe('uid-test');
+        });
+
+        it('missing Admin app tolerated', async () => {
+            await verifyEmail();
+            const spy = vi
+                .spyOn(e2eAdminAuth.auth, 'getUser')
+                .mockRejectedValue(new Error('no app'));
+            try {
+                expect(await caller().getAccountContinuity()).toMatchObject({
+                    emailPrimary: true,
+                    nextStep: 'pin',
+                });
+            } finally {
+                spy.mockRestore();
+            }
+        });
+
+        it('demotePending is reconciled', async () => {
+            await verifyEmail();
+            await getClassLinkIdentitiesCollection().updateOne(
+                { firebaseUid: 'uid-test' },
+                { $set: { demotePending: { reason: 'rebind', at: new Date() } } }
+            );
+            expect(await caller().getAccountContinuity()).toMatchObject({
+                emailPrimary: false,
+                nextStep: 'email',
+            });
+            expect(e2eAdminAuth.peek('uid-test')?.email).toBe(school);
+            expect((await userKey())?.contactMethod).toEqual({ type: 'email', value: school });
+            const stored = await getClassLinkIdentitiesCollection().findOne({
+                firebaseUid: 'uid-test',
+            });
+            expect(stored?.primaryEmail).toBeUndefined();
+            expect(stored?.demotePending).toBeUndefined();
         });
 
         it('reports a refusal reason and keeps FORBIDDEN for non-ClassLink accounts', async () => {
@@ -801,12 +1199,25 @@ describe('ClassLink personal email', () => {
         it('leaves no email subject after deletion, and the old address can be added again', async () => {
             await verify(first);
             await verify(second);
+            // The deleted account's own cascade (deleteMyData without a UserKey).
             const account = await mongodb.collection('userkeys').findOne({ primaryDid: did });
-            await deleteClassLinkDataForAccount(account as never);
+            await mongodb.collection('userkeys').deleteOne({ primaryDid: did });
+            await deleteClassLinkDataForAccount({
+                authProviders: account?.authProviders,
+                primaryDid: did,
+                linkedDids: [],
+            } as never);
             expect(
                 await getAuthSubjectsCollection().countDocuments({ subject: 'same-subject' })
             ).toBe(0);
-            // A fresh ClassLink sign-in gets a new subject.
+            // A fresh ClassLink account (its Firebase user back on the school email) gets a new
+            // subject.
+            await mongodb.collection('userkeys').insertOne({
+                primaryDid: did,
+                authProviders: [{ type: 'firebase', id: 'uid-test' }],
+                contactMethod: { type: 'email', value: school },
+            });
+            e2eAdminAuth.setUser({ uid: 'uid-test', email: school, emailVerified: true });
             await upsertClassLinkIdentity({
                 identityKey: 'classlink:tenant-test:source-1',
                 tenantId: 'tenant-test',

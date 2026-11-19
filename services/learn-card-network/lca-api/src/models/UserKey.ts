@@ -151,6 +151,8 @@ export const EscrowEnrollmentLeaseValidator = z.object({
     /** The Mongo blob identity the operation replaces (null: none). */
     sourceBlobHash: z.string().nullable(),
     measurements: EscrowBlobValidator.shape.measurements,
+    /** `contactDigest` of the contact an `enroll`/`replace` seals (LC-2409); committed as `escrowContactDigest`. */
+    contactDigest: z.string().optional(),
 });
 export type EscrowEnrollmentLease = z.infer<typeof EscrowEnrollmentLeaseValidator>;
 
@@ -206,6 +208,12 @@ const MongoUserKeyBaseValidator = z.object({
     // excludes (see claimEscrowEnrollmentLease).
     escrowEnrollmentLease: EscrowEnrollmentLeaseValidator.optional(),
     escrowPinCompares: z.array(EscrowPinCompareValidator).optional(),
+    /**
+     * `contactDigest` (helpers/escrowContactDigest.ts) of the recovery contact the current
+     * escrow copy seals (remote mode only). A UX hint for `getAccountContinuity`, never a
+     * security control. Removed with the copy.
+     */
+    escrowContactDigest: z.string().optional(),
     _id: z.string().optional(),
 
     contactMethod: ContactMethodValidator,
@@ -556,25 +564,6 @@ export const findUniqueUserKeyByVerifiedRecoveryEmail = async (
         .toArray();
 
     return matches.length === 1 ? matches[0]! : null;
-};
-
-/**
- * Whether an account other than `userKeyId` holds this address as a verified recovery email.
- * Setting it here too would make `findUniqueUserKeyByVerifiedRecoveryEmail` ambiguous, so
- * recovery would fail closed for both accounts.
- */
-export const hasOtherVerifiedRecoveryEmailHolder = async (
-    email: string,
-    userKeyId: MongoUserKeyType['_id']
-): Promise<boolean> => {
-    const holder = await getUserKeysCollection().findOne(
-        {
-            ...verifiedRecoveryEmailFilter(email),
-            ...(userKeyId ? { _id: { $ne: userKeyId } } : {}),
-        },
-        { projection: { _id: 1 } }
-    );
-    return Boolean(holder);
 };
 
 /**
@@ -1815,37 +1804,6 @@ export const setRecoveryEmailByAuthProvider = async (
     });
 };
 
-/**
- * Set a verified recovery email on one account, but only while its current recovery email is
- * unset, unverified, or one of `replaces` (compare-and-set, so a recovery email verified after
- * the caller read the account is never overwritten). Idempotent. Returns whether it was set.
- */
-export const setRecoveryEmailByUserKeyId = async (
-    userKeyId: NonNullable<MongoUserKeyType['_id']>,
-    email: string,
-    replaces: string[]
-): Promise<boolean> => {
-    const result = await getUserKeysCollection().updateOne(
-        {
-            _id: userKeyId,
-            $or: [
-                // Unset (missing or null, as stored for an `undefined` insert) or replaceable.
-                { recoveryEmail: { $not: { $type: 'string' } } },
-                { recoveryEmail: { $in: replaces } },
-                { recoveryEmailVerifiedAt: { $not: { $type: 'date' } } },
-            ],
-        },
-        {
-            $set: {
-                recoveryEmail: email.trim().toLowerCase(),
-                recoveryEmailVerifiedAt: new Date(),
-                updatedAt: new Date(),
-            },
-        }
-    );
-    return result.matchedCount === 1;
-};
-
 /** Remove the account's recovery email only while it is still `email`. Idempotent. */
 export const clearRecoveryEmailIfUnchanged = async (
     userKeyId: NonNullable<MongoUserKeyType['_id']>,
@@ -1912,6 +1870,33 @@ export const upgradeContactMethodByAuthProvider = async (
     );
 
     return result.modifiedCount > 0;
+};
+
+/**
+ * Compare-and-set the contact method of one account by id: only while it still equals
+ * `expected` (undefined: no contact method). Returns true when the contact now equals `next` (already equal included).
+ */
+export const setContactMethodIfUnchanged = async (
+    userKeyId: NonNullable<MongoUserKeyType['_id']>,
+    expected: ContactMethod | undefined,
+    next: ContactMethod
+): Promise<boolean> => {
+    const result = await getUserKeysCollection().updateOne(
+        expected
+            ? {
+                  _id: userKeyId,
+                  'contactMethod.type': expected.type,
+                  'contactMethod.value': expected.value,
+              }
+            : { _id: userKeyId, contactMethod: { $exists: false } },
+        { $set: { contactMethod: next, updatedAt: new Date() } }
+    );
+    if (result.matchedCount > 0) return true;
+    const current = await getUserKeysCollection().findOne(
+        { _id: userKeyId },
+        { projection: { contactMethod: 1 } }
+    );
+    return current?.contactMethod?.type === next.type && current.contactMethod.value === next.value;
 };
 
 export const deleteUserKey = async (contactMethod: ContactMethod): Promise<void> => {

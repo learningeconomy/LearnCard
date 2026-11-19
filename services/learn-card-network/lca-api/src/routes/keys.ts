@@ -25,6 +25,7 @@ import { maskEmail } from '@helpers/maskEmail';
 import { isSyntheticEmail } from '@helpers/syntheticEmail.helpers';
 import { deleteClassLinkDataForAccount } from '@helpers/classlinkDeletion.helpers';
 import { pinClassLinkIdentitiesToAccount } from '@helpers/classlinkContext.helpers';
+import { demoteUnlinkedPrimaryEmails } from '@helpers/classlinkPrimaryEmail.helpers';
 import cache from '@cache';
 import { setValidChallengeForDid } from '@cache/challenges';
 import { checkRateLimit, clearRateLimit } from '@helpers/rateLimit.helpers';
@@ -782,6 +783,9 @@ export const keysRouter = t.router({
             // Fill-only re-pin for a ClassLink identity created on the old uid between the
             // pin above and the commit. Best effort: the pin before the commit is the guarantee.
             await pinClassLinkIdentitiesToAccount(oldUserKey).catch(() => undefined);
+            // The old login no longer opens the account: demote a personal email promoted on
+            // it (or record demotePending). Never throws.
+            await demoteUnlinkedPrimaryEmails(input.primaryDid, 'rebind');
 
             // Notification is intentionally fail-open after the security update commits.
             void notifyIdentityRebind(
@@ -1028,6 +1032,9 @@ export const keysRouter = t.router({
             // Fill-only re-pin for a ClassLink identity created on a removed uid between the pin
             // above and the commit. Best effort: the pin before the commit is the guarantee.
             await pinClassLinkIdentitiesToAccount(userKey).catch(() => undefined);
+            // Unlinked logins no longer open the account: demote a personal email promoted on
+            // one of them (or record demotePending). Never throws.
+            await demoteUnlinkedPrimaryEmails(input.primaryDid, 'revoke');
 
             // Clean-up only: pending holds already cannot release once the commit lands
             // (`/complete` needs a confirmed escrow at the hold's version, and escrow is

@@ -49,6 +49,35 @@ describe('offline ClassLink configuration diagnostics', () => {
         );
     });
 
+    it('accepts schoolEmailAliasMaxIdleDays, including 0 (alias off)', () => {
+        for (const days of [0, 30, 365, 3650])
+            expect(
+                collectClassLinkConfigProblems({
+                    ...validEnv(),
+                    CLASSLINK_TENANTS: JSON.stringify({
+                        example: { ...tenant, schoolEmailAliasMaxIdleDays: days },
+                    }),
+                })
+            ).toEqual([]);
+    });
+
+    it.each([-1, 1.5, 3651, '365', null])(
+        'names an invalid schoolEmailAliasMaxIdleDays (%s) without printing values',
+        days => {
+            const problems = collectClassLinkConfigProblems({
+                ...validEnv(),
+                CLASSLINK_TENANTS: JSON.stringify({
+                    'secret-district': { ...tenant, schoolEmailAliasMaxIdleDays: days },
+                }),
+            });
+            expect(problems).toEqual([
+                expect.stringContaining('CLASSLINK_TENANTS must be valid JSON'),
+                expect.stringContaining('entry 1 has an invalid schoolEmailAliasMaxIdleDays'),
+            ]);
+            expect(problems.join('\n')).not.toContain('secret-district');
+        }
+    );
+
     it.each(['{bad json', 'null', '[]', '{"default":{}}'])('rejects invalid issuers: %s', value => {
         expect(
             collectClassLinkConfigProblems({ ...validEnv(), TRANSCRIPT_ISSUERS: value })

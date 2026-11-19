@@ -120,6 +120,6 @@ export const loadAccountContinuity = async (
  * code and the policy hash.
  */
 export const logAccountContinuityEvent = (
-    event: 'denied' | 'verified' | 'recovery_email_set' | 'removed',
+    event: 'denied' | 'verified' | 'primary_set' | 'removed',
     detail: { tenantId?: string; reason?: string; policyHash?: string }
 ): void => console.info(`classlink.continuity.${event}`, detail);

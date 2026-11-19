@@ -89,7 +89,16 @@ export const ClassLinkTenantConfigValidator = z.object({
      * instead of failing the whole tenant map.
      */
     accountContinuity: z.unknown().optional(),
+    /**
+     * Days without a ClassLink sign-in after which the school email stops signing in (by
+     * email code) to an account whose sign-in email is a promoted personal email (LC-2409).
+     * Absent: `DEFAULT_SCHOOL_EMAIL_ALIAS_MAX_IDLE_DAYS`. `0` turns the alias off.
+     */
+    schoolEmailAliasMaxIdleDays: z.number().int().min(0).max(3650).optional(),
 });
+
+/** School-email alias idle limit for a district that does not set its own. */
+export const DEFAULT_SCHOOL_EMAIL_ALIAS_MAX_IDLE_DAYS = 365;
 
 export const ClassLinkTenantsValidator = z.record(z.string(), ClassLinkTenantConfigValidator);
 
