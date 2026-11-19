@@ -1031,3 +1031,44 @@ it.each(['', '   '])(
         );
     }
 );
+
+it('delivers a changed profile answer only to an existing live grant for that exact field', async () => {
+    const { saveVerifiableData } = await import('./useVerifiableData');
+    const category = 'VerifiableData:demo:profile:branch';
+    const id = `__verifiable_data_${category}__`;
+    const wallet = {
+        id: { did: () => 'did:example:claiming-account' },
+        invoke: { issueCredential: vi.fn(async credential => credential) },
+        index: { LearnCloud: { get: async () => [{ id, uri: 'old-answer' }], update: vi.fn() } },
+        store: { LearnCloud: { uploadEncrypted: async () => 'updated-answer' } },
+    };
+    await saveVerifiableData(wallet as never, category, { branch: 'North' }, { category });
+    const jobs = Object.values(pendingContractSyncStore.get.jobs());
+    expect(jobs).toHaveLength(1);
+    const job = jobs[0]!;
+    if (job.kind !== 'credential') throw new Error('Expected a credential sync job');
+    expect(job.record).toEqual({ id, uri: 'updated-answer', category });
+
+    const grant = (uri: string, key = category, shareAll = true) => ({
+        uri,
+        status: 'live',
+        contract: { uri: 'contract-' + uri, owner: { did: 'did:key:owner' } },
+        terms: { read: { credentials: { categories: { [key]: { sharing: true, shareAll } } } } },
+    });
+    mocks.getConsentedContracts.mockResolvedValue([
+        grant('keep-updated'),
+        grant('once', category, false),
+        grant('another-field', 'VerifiableData:demo:profile:gender'),
+        { ...grant('one-time-contract'), oneTime: true },
+        { ...grant('expired'), expiresAt: '2000-01-01T00:00:00Z' },
+        { ...grant('withdrawn'), status: 'withdrawn' },
+    ]);
+    await useWallet().syncCredentialToContracts(job);
+    expect(mocks.sharedUri).toHaveBeenCalledTimes(1);
+    expect(mocks.syncContract).toHaveBeenCalledExactlyOnceWith(
+        'keep-updated',
+        { [category]: ['shared-uri'] },
+        1,
+        true
+    );
+});

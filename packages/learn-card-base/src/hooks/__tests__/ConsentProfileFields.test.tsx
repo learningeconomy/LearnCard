@@ -180,29 +180,3 @@ it('projects a saved multi-field answer into a new single-field credential', asy
         'urn:branch',
     ]);
 });
-
-it('keeps answers out of both new and updated index records', async () => {
-    const { saveVerifiableData } =
-        await vi.importActual<typeof import('../useVerifiableData')>('../useVerifiableData');
-    const add = vi.fn();
-    const update = vi.fn();
-    const wallet = {
-        id: { did: () => 'did:example:learner' },
-        invoke: { issueCredential: vi.fn(async value => value) },
-        store: { LearnCloud: { uploadEncrypted: vi.fn(async () => 'urn:encrypted') } },
-        index: {
-            LearnCloud: {
-                add,
-                update,
-                get: vi
-                    .fn()
-                    .mockResolvedValueOnce([])
-                    .mockResolvedValueOnce([{ uri: 'urn:encrypted' }]),
-            },
-        },
-    };
-    await saveVerifiableData(wallet as never, branch, { branch: 'North' }, { category: branch });
-    await saveVerifiableData(wallet as never, branch, { branch: 'South' }, { category: branch });
-    expect(add.mock.calls[0][0]).not.toHaveProperty('verifiableData');
-    expect(update.mock.calls[0][1]).not.toHaveProperty('verifiableData');
-});

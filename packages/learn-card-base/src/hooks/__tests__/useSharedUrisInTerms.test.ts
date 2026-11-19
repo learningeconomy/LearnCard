@@ -575,3 +575,77 @@ describe('getOrCreateSharedUriForWallet', () => {
         expect(terms.terms.read.credentials.categories.Achievement.shared).toEqual(['cred:a1']);
     });
 });
+
+describe('reviewed profile field sharing', () => {
+    const category = 'VerifiableData:demo:profile:branch';
+    const indexId = `__verifiable_data_${category}__`;
+    const owner = 'did:example:owner';
+    const branch = { branch: 'North' };
+    const prepare = (id: string, dataKey: string, dataPayload: object, cached = false) => {
+        const record = {
+            id,
+            uri: 'credential:source',
+            sharedUris: cached ? { [getConsentAudienceCacheKey(owner)]: ['shared:cached'] } : {},
+        };
+        const credential = { credentialSubject: { dataKey, dataPayload } };
+        const upload = vi.fn().mockResolvedValue('shared:branch');
+        const update = vi.fn();
+        const wallet = {
+            id: { did: () => 'did:example:holder' },
+            index: { LearnCloud: { get: async () => [record], update } },
+            read: { get: async () => credential },
+            store: { LearnCloud: { uploadEncrypted: upload } },
+        } as unknown as TestWallet;
+        const terms = {
+            terms: {
+                read: {
+                    personal: {},
+                    credentials: {
+                        categories: {
+                            [category]: { sharing: true, shared: [record.uri] },
+                        },
+                    },
+                },
+                write: { personal: {}, credentials: { categories: {} } },
+            },
+        };
+        const result = getTermsWithSharedUrisForWallet(wallet, owner, new QueryClient(), terms);
+        return { result, credential, upload, update };
+    };
+
+    it('encrypts just the reviewed field for its recipient', async () => {
+        const { result, upload, credential } = prepare(indexId, category, branch);
+        expect((await result).terms.read.credentials.categories[category].shared).toEqual([
+            'shared:branch',
+        ]);
+        expect(upload).toHaveBeenCalledExactlyOnceWith(credential, { recipients: [owner] });
+    });
+
+    it.each([
+        {
+            name: 'wrong index ID',
+            id: '__verifiable_data_branch__',
+            key: category,
+            payload: branch,
+        },
+        {
+            name: 'another field key',
+            id: indexId,
+            key: 'VerifiableData:demo:profile:gender',
+            payload: branch,
+        },
+        {
+            name: 'additional answer',
+            id: indexId,
+            key: category,
+            payload: { ...branch, gender: 'Other' },
+        },
+    ])('rejects a $name even with a cached recipient copy', async ({ id, key, payload }) => {
+        for (const cached of [false, true]) {
+            const { result, upload, update } = prepare(id, key, payload, cached);
+            await expect(result).rejects.toThrow('A reviewed profile field could not be prepared');
+            expect(upload).not.toHaveBeenCalled();
+            expect(update).not.toHaveBeenCalled();
+        }
+    });
+});

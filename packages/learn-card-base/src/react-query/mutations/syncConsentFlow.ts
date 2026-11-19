@@ -5,7 +5,6 @@ import {
     useToast,
     useWallet,
     WalletSyncState,
-    CredentialCategory,
     contractCategoryNameToCategoryMetadata,
     syncProgressStore,
     walletStore,
@@ -130,7 +129,7 @@ export const useSyncConsentContractsMutation = () => {
         void,
         Error,
         {
-            recordsByCategory: Partial<Record<CredentialCategory, string[]>>;
+            recordsByCategory: Record<string, string[]>;
             allContracts: ConsentedContract[];
         }
     >({
@@ -183,47 +182,41 @@ export const useSyncConsentContractsMutation = () => {
                     throw new Error(msg);
                 }
 
-                const categoryMap: Partial<Record<CredentialCategory, string[]>> = {};
+                const categoryMap: Record<string, string[]> = {};
 
                 await Promise.all(
-                    (Object.entries(recordsByCategory) as [CredentialCategory, string[]][]).map(
-                        async ([category, credUris]) => {
-                            const { categoryInfo } = getCategoryInfoForTerms(
-                                contractTerms,
-                                category
+                    Object.entries(recordsByCategory).map(async ([category, credUris]) => {
+                        const { categoryInfo } = getCategoryInfoForTerms(contractTerms, category);
+
+                        if (
+                            categoryInfo &&
+                            categoryInfo.shareAll &&
+                            categoryInfo.sharing &&
+                            (!categoryInfo.shareUntil ||
+                                categoryInfo.shareUntil > new Date().toISOString())
+                        ) {
+                            const sharedUris = await Promise.all(
+                                credUris.map(uri =>
+                                    getOrCreateSharedUriForWallet(
+                                        learnCard,
+                                        audience.recipients,
+                                        queryClient,
+                                        uri,
+                                        contractCategoryNameToCategoryMetadata(category)
+                                            ?.credentialType ?? category
+                                    )
+                                )
+                            );
+                            const validUris = sharedUris.filter(
+                                (uri): uri is string =>
+                                    Boolean(uri) && !categoryInfo.shared?.includes(uri as string)
                             );
 
-                            if (
-                                categoryInfo &&
-                                categoryInfo.shareAll &&
-                                categoryInfo.sharing &&
-                                (!categoryInfo.shareUntil ||
-                                    categoryInfo.shareUntil > new Date().toISOString())
-                            ) {
-                                const sharedUris = await Promise.all(
-                                    credUris.map(uri =>
-                                        getOrCreateSharedUriForWallet(
-                                            learnCard,
-                                            audience.recipients,
-                                            queryClient,
-                                            uri,
-                                            contractCategoryNameToCategoryMetadata(category)
-                                                ?.credentialType ?? category
-                                        )
-                                    )
-                                );
-                                const validUris = sharedUris.filter(
-                                    (uri): uri is string =>
-                                        Boolean(uri) &&
-                                        !categoryInfo.shared?.includes(uri as string)
-                                );
-
-                                if (validUris.length) {
-                                    categoryMap[category] = validUris;
-                                }
+                            if (validUris.length) {
+                                categoryMap[category] = validUris;
                             }
                         }
-                    )
+                    })
                 );
 
                 if (Object.keys(categoryMap).length) {
@@ -234,7 +227,7 @@ export const useSyncConsentContractsMutation = () => {
                     try {
                         await learnCard.invoke.syncCredentialsToContract(
                             termsUri,
-                            categoryMap as Record<string, string[]>,
+                            categoryMap,
                             audience.audienceVersion,
                             true
                         );

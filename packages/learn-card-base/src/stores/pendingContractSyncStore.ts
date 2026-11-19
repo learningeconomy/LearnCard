@@ -1,9 +1,13 @@
 import type { LCR } from '../types/credential-records';
-import type { CredentialCategory } from '../types/credentials';
 import { createStore } from '@udecode/zustood';
 import { getLogger } from '../logging/logger';
 
 export type PendingContractSyncStatus = 'queued' | 'running' | 'done' | 'error';
+
+export type CredentialSyncSource = {
+    record: Omit<LCR, 'category'> & { category: string };
+    category: string;
+};
 
 type PendingContractSyncInput =
     | {
@@ -15,12 +19,9 @@ type PendingContractSyncInput =
           record?: never;
           category?: never;
       }
-    | {
+    | (CredentialSyncSource & {
           kind: 'credential';
           profileDid: string;
-          /** Retry discovery as well as delivery when the consent lookup itself failed. */
-          record: LCR;
-          category: CredentialCategory;
           /** Terms mutations acknowledged before a partial failure or reload. */
           syncedTermsUris?: string[];
           /** Destinations that failed in the latest completed discovery pass. */
@@ -28,7 +29,7 @@ type PendingContractSyncInput =
           contractUri?: never;
           termsUri?: never;
           ownerDid?: never;
-      };
+      });
 
 export type PendingContractSyncJob = PendingContractSyncInput & {
     id: string;

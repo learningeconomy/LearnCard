@@ -79,3 +79,58 @@ it('invalidates cached terms even when a later contract fails after an earlier u
     expect(get).toHaveBeenCalledTimes(2);
     client.clear();
 });
+
+it('syncs the exact live profile field and rejects normalized aliases in both directions', async () => {
+    const category = 'VerifiableData:demo:profile:birthDate';
+    const alias = 'verifiabledata-demo-profile-birth-date';
+    const { getOrCreateSharedUriForWallet } =
+        await import('learn-card-base/hooks/useSharedUrisInTerms');
+    vi.mocked(getOrCreateSharedUriForWallet).mockResolvedValue('shared:date');
+    const sync = vi.fn();
+    host.wallet = {
+        id: { did: () => 'holder' },
+        index: { LearnCloud: { getPage: async () => ({ records: [], hasMore: false }) } },
+        invoke: {
+            getContract: async () => ({ owner: { did: 'owner' }, audienceVersion: 1 }),
+            syncCredentialsToContract: sync,
+        },
+    } as unknown as BespokeLearnCard;
+    const client = new QueryClient();
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+        <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    );
+    const { result } = renderHook(useSyncConsentContractsMutation, { wrapper });
+    const grant = (key: string): ConsentedContract =>
+        ({
+            uri: 'terms-live',
+            contract: { uri: 'contract', owner: { did: 'owner' } },
+            terms: {
+                read: { credentials: { categories: { [key]: { sharing: true, shareAll: true } } } },
+            },
+        }) as ConsentedContract;
+    await act(async () => {
+        await result.current.mutateAsync({
+            recordsByCategory: { [category]: ['cred:date'] },
+            allContracts: [grant(alias)],
+        });
+        await result.current.mutateAsync({
+            recordsByCategory: { [alias]: ['cred:alias'] },
+            allContracts: [grant(category)],
+        });
+    });
+    expect(getOrCreateSharedUriForWallet).not.toHaveBeenCalled();
+    expect(sync).not.toHaveBeenCalled();
+    await act(async () => {
+        await result.current.mutateAsync({
+            recordsByCategory: { [category]: ['cred:date'] },
+            allContracts: [grant(category)],
+        });
+    });
+    expect(sync).toHaveBeenCalledExactlyOnceWith(
+        'terms-live',
+        { [category]: ['shared:date'] },
+        1,
+        true
+    );
+    client.clear();
+});

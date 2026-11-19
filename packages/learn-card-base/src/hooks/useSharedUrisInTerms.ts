@@ -152,9 +152,8 @@ const getOrCreateSharedUriFromCategoryRecords = async (
         const existingSharedUris =
             mainRecord.sharedUris?.[audienceKey] ??
             (legacyOwnerKey ? mainRecord.sharedUris?.[legacyOwnerKey] : undefined);
-        if (existingSharedUris?.length) {
-            return { sharedUri: existingSharedUris.at(-1) ?? false, status: 'reused' };
-        }
+        const cachedUri = existingSharedUris?.at(-1);
+        if (cachedUri && !isField) return { sharedUri: cachedUri, status: 'reused' };
 
         const vc = await wallet.read.get(mainRecord.uri);
         if (!vc) {
@@ -173,6 +172,8 @@ const getOrCreateSharedUriFromCategoryRecords = async (
                 return { sharedUri: false, status: 'missing' };
             }
         }
+
+        if (cachedUri) return { sharedUri: cachedUri, status: 'reused' };
 
         const newUri = await wallet.store.LearnCloud.uploadEncrypted?.(vc, {
             recipients: getConsentAudienceRecipients(contractOwnerDid),

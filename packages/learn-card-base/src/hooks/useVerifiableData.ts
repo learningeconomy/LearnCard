@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { enqueuePendingContractSyncSafely } from '../stores/pendingContractSyncStore';
 import { useWallet } from './useWallet';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { LCR } from 'learn-card-base/types/credential-records';
@@ -30,7 +31,8 @@ export type VerifiableDataOptions = {
     description?: string;
 };
 
-type VerifiableDataRecord<T> = LCR & {
+type VerifiableDataRecord<T> = Omit<LCR, 'category'> & {
+    category: string;
     verifiableData?: T;
     issuanceDate?: string;
 };
@@ -132,6 +134,16 @@ const storeVerifiableData = async <T>(
             hidden: true,
             ...indexPayload,
             issuanceDate,
+        });
+    }
+
+    if (category === key && key.startsWith('VerifiableData:')) {
+        // These self-issued answers are absent from the incoming ConsentFlow credential feed.
+        await enqueuePendingContractSyncSafely({
+            kind: 'credential',
+            profileDid: wallet.id.did(),
+            record: { id: indexId, uri, category },
+            category,
         });
     }
 
