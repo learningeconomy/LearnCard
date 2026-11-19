@@ -89,6 +89,13 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
         needsActivation,
         runRecoverySetup,
         resetRecoverySetup,
+        canUseAutomaticRecovery,
+        getEscrowEnrollmentState,
+        disableEscrowRecovery,
+        enableEscrowRecovery,
+        setEscrowPin,
+        clearEscrowPin,
+        openSecureAccount,
     } = useAppAuth();
     const { currentLCNUser, refetch } = useGetCurrentLCNUser();
 
@@ -456,6 +463,25 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
                 };
                 modalRef.token = newModalWithToken(
                     <RecoverySetupModal
+                        automaticRecovery={
+                            canUseAutomaticRecovery
+                                ? {
+                                      onGetEscrowEnrollmentState: getEscrowEnrollmentState,
+                                      onDisableEscrowRecovery: disableEscrowRecovery,
+                                      onEnableEscrowRecovery: enableEscrowRecovery,
+                                      onSetEscrowPin: setEscrowPin,
+                                      onClearEscrowPin: clearEscrowPin,
+                                  }
+                                : undefined
+                        }
+                        onSecureAccount={
+                            canUseAutomaticRecovery
+                                ? () => {
+                                      closeRecoveryModal();
+                                      openSecureAccount();
+                                  }
+                                : undefined
+                        }
                         registerCloseRequest={fn => {
                             requestClose = fn;
                         }}
