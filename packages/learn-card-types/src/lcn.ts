@@ -1155,7 +1155,25 @@ export const ConsentFlowTermValidator = z.object({
 });
 export type ConsentFlowTerm = z.infer<typeof ConsentFlowTermValidator>;
 
+/** Opaque external consent reference; it never grants additional network permissions. */
+export const ConsentFlowExternalGrantValidator = z.strictObject({
+    issuer: z.string().min(1).max(2048).regex(/^\S+$/),
+    ref: z.string().min(1).max(2048).regex(/^\S+$/),
+    revision: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+    hash: z.string().min(1).max(512).regex(/^\S+$/),
+});
+export type ConsentFlowExternalGrant = z.infer<typeof ConsentFlowExternalGrantValidator>;
+
+export const ConsentFlowExternalGrantExpectationValidator = ConsentFlowExternalGrantValidator.pick({
+    revision: true,
+    hash: true,
+});
+export type ConsentFlowExternalGrantExpectation = z.infer<
+    typeof ConsentFlowExternalGrantExpectationValidator
+>;
+
 export const ConsentFlowTermsValidator = z.object({
+    externalGrant: ConsentFlowExternalGrantValidator.optional(),
     read: z
         .object({
             anonymize: z.boolean().optional(),
