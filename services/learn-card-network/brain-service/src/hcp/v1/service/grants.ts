@@ -6,8 +6,8 @@
  */
 import { requireSubject, settleGrantExpiry } from '../auth';
 import type { StoredGrant } from '../store/port';
+import { scopesForAccess } from '../scopes';
 import {
-    isRegisteredCategory,
     orderCategories,
     type AccessDetail,
     type ContractGrantInput,
@@ -38,27 +38,13 @@ export const normalizeAccess = (access: AccessDetail[]): AccessDetail[] =>
         ),
     }));
 
-/**
- * Draft 3 §6.1.1: `hcp:{category}:{action}`, derived from `access`, never wider.
- * Custom categories are URIs whose colons would make a scope ambiguous, so they
- * appear only in `access`, never here.
- */
-const scopesFor = (access: AccessDetail[]): string[] =>
-    unique(
-        access.flatMap(detail =>
-            detail.categories
-                .filter(isRegisteredCategory)
-                .flatMap(category => detail.actions.map(action => `hcp:${category}:${action}`))
-        )
-    ).sort();
-
 export const toGrant = (grant: StoredGrant): Grant => ({
     grantId: grant.grantId,
     subject: { id: grant.subjectDid },
     authorizingPrincipal: { id: grant.subjectDid },
     client: grant.client,
     access: grant.access,
-    scopes: scopesFor(grant.access),
+    scopes: scopesForAccess(grant.access),
     grantType: grant.grantType,
     issuedAt: grant.issuedAt,
     expiresAt: grant.expiresAt,

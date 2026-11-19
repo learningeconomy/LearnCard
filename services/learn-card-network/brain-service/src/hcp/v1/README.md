@@ -324,7 +324,9 @@ Not implemented yet (Draft 3 has them): Idempotency-Key (§9.6), onward sharing 
 (§3.8), recategorize and restrict purposes,
 hard delete and import (§5.4), narrowed grants (§6.1.5.1), the `provenance` action
 (§7.4.1), relationships and conflicts (§4.2.3, §4.7), VC evidence ingest (§14),
-the MCP binding. Relevance ordering is `lexical` (§7.3).
+the MCP binding tools (Unit 2). OAuth AS + PRM + RS probe for Agent Interop live
+under `src/hcp/oauth/` (Unit 1); do not claim `bindings:["mcp"]` / oauth-interop
+`conformsTo` until conformance tests pass. Relevance ordering is `lexical` (§7.3).
 `conformsTo` is not claimed: tRPC paths are not the Draft 3 HTTP binding.
 
 ## Management UI (LC-2424)
