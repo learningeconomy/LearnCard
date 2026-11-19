@@ -380,13 +380,15 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
                             </div>
                         ) : (
                             <>
-                                {records.length === 0 && (query || !hasNextPage) && (
+                                {records.length === 0 && (
                                     <div className="text-center py-12">
                                         <RotateCcw className="w-8 h-8 text-grayscale-300 mx-auto mb-3" />
                                         <p className="text-sm text-grayscale-500">
                                             {query
                                                 ? m['issueFlow.nothingMatches']({ query })
-                                                : m['issueFlow.noneIssued']()}
+                                                : hasNextPage
+                                                  ? m['issueFlow.lookForOlderCredentials']()
+                                                  : m['issueFlow.noneIssued']()}
                                         </p>
                                     </div>
                                 )}

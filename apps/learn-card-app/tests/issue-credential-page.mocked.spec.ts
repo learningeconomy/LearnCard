@@ -247,13 +247,18 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
             await expectPickerLayout(page, picker, viewport.mobile);
             const initialBox = await picker.boundingBox();
             const showMore = picker.getByRole('button', { name: 'Show more' });
+            const moreHint = picker.getByText(
+                'Select “Show more” to look for older credentials to send.'
+            );
 
+            await expect(moreHint).toBeVisible();
             await expect(showMore).toBeVisible();
             await expect(picker.getByText('AI Passport credential', { exact: true })).toHaveCount(
                 0
             );
             await showMore.click();
             await expect(picker.getByRole('button', { name: 'First Aid Badge' })).toBeVisible();
+            await expect(moreHint).toHaveCount(0);
             await expect(picker.getByText('Personalized Session', { exact: true })).toHaveCount(0);
 
             await picker.getByPlaceholder('Search your credentials…').fill('AI Passport');
