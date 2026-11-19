@@ -1,7 +1,7 @@
 /**
  * Local HCP OAuth AS + MCP tools for Claude Code / curl.
  *
- * Does not bind 4319/3319. Seeds a memory grant (read+write) and prints ids.
+ * Does not bind 4319/3319. Seeds a memory grant (all PRM scopes) + one entry; prints ids.
  *
  *   bun --conditions=development src/hcp/mcp/dev-server.ts
  *   bun --conditions=development src/hcp/mcp/dev-server.ts 18766
@@ -9,9 +9,11 @@
 import { createServer } from 'node:http';
 
 import { createGrant } from '../v1/service/grants';
+import { createEntry } from '../v1/service/entries';
 import {
     CLIENT_DID,
     SUBJECT_DID,
+    entryInput,
     grantInput,
     makeHarness,
     subject,
@@ -30,10 +32,19 @@ if (!Number.isFinite(port) || port <= 0) {
 
 const main = async () => {
     const harness = makeHarness();
+    // Claude Code requests every PRM scope on login; seed must cover them all.
     const grant = await createGrant(
         harness.deps,
         subject,
-        grantInput({ actions: ['read', 'write'] })
+        grantInput({
+            actions: ['read', 'write'],
+            categories: ['general_preferences', 'health_context', 'education_learner_profile'],
+        })
+    );
+    await createEntry(
+        harness.deps,
+        subject,
+        entryInput({ value: 'Prefers concise answers and dark mode' })
     );
     const baseUrl = `http://127.0.0.1:${port}`;
     const app = createHcpMcpApp({
@@ -63,6 +74,9 @@ const main = async () => {
                 clientDid: CLIENT_DID,
                 grantId: grant.grantId,
                 claudeMcpAdd: `claude mcp add --transport http hcp-local ${baseUrl}${HCP_MCP_PATH}`,
+                claudeMcpLogin: 'claude mcp login hcp-local',
+                consentHint:
+                    'On the local consent HTML, paste subjectDid + grantId from this JSON (local only).',
                 curlPrm: `curl -s ${baseUrl}/.well-known/oauth-protected-resource | jq .`,
             },
             null,
