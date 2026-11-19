@@ -7,7 +7,7 @@ import AnonymousIcon from '../../components/svgs/AnonymousIcon';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 import Mail from 'learn-card-base/svgs/Mail';
 import { ProfilePicture } from 'learn-card-base';
-import { getInfoFromContractKey } from '../../helpers/contract.helpers';
+import { useContractCategoryInfo } from '../../hooks/useContractCategoryInfo';
 import {
     contractAnonImageSrc,
     isSupportedPersonalField,
@@ -50,7 +50,7 @@ const ConsentFlowWriteSharingItem: React.FC<ConsentFlowWriteSharingItemProps> = 
         title: categoryTitle,
         iconClassName,
         iconCircleClass,
-    } = category ? getInfoFromContractKey(category) : {};
+    } = useContractCategoryInfo(category ?? '');
     let title = categoryTitle;
 
     const isName = category?.toLowerCase() === 'name'; // special case

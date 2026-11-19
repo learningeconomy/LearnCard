@@ -5,7 +5,7 @@ import * as m from '../../paraglide/messages.js';
 
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 
-import { getInfoFromContractKey } from '../../helpers/contract.helpers';
+import { useContractCategoryInfo } from '../../hooks/useContractCategoryInfo';
 import { legacyProfileDataKeys } from 'learn-card-base/config/profileFields';
 import { useOptionalTenantConfig } from 'learn-card-base/config/TenantConfigProvider';
 import {
@@ -33,7 +33,7 @@ const ConsentFlowVerifiableDataSharingItem: React.FC<ConsentFlowVerifiableDataSh
     onModeChange,
 }) => {
     const { IconComponent, iconSrc, title, iconClassName, iconCircleClass } =
-        getInfoFromContractKey(category);
+        useContractCategoryInfo(category);
 
     const tenant = useOptionalTenantConfig();
     const isLiveSync = Boolean(term.sharing && term.shareAll);

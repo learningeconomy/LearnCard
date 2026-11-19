@@ -6,7 +6,7 @@ import { IonRippleEffect } from '@ionic/react';
 import { useGetCredentialCount, CredentialCategory, ModalTypes, useModal } from 'learn-card-base';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 import ConsentFlowReadSharingModal from './ConsentFlowReadSharingModal';
-import { getInfoFromContractKey } from '../../helpers/contract.helpers';
+import { useContractCategoryInfo } from '../../hooks/useContractCategoryInfo';
 import * as m from '../../paraglide/messages.js';
 import { localizeCategoryTitle } from '../../i18n/categoryTitle';
 
@@ -39,7 +39,7 @@ const ConsentFlowReadSharingItem: React.FC<ConsentFlowReadSharingItemProps> = ({
     });
 
     const { IconComponent, iconSrc, title, iconClassName, iconCircleClass } =
-        getInfoFromContractKey(category);
+        useContractCategoryInfo(category);
 
     const { data: count } = useGetCredentialCount(category as CredentialCategory);
 
@@ -83,8 +83,8 @@ const ConsentFlowReadSharingItem: React.FC<ConsentFlowReadSharingItemProps> = ({
                 {/* <section className="flex flex-col flex-1 items-start"> */}
                 {/* <ConsentFlowReadSharingStatus term={term} /> */}
 
-                <div className="flex flex-col flex-1 items-start">
-                    <h4 className="text-[17px] text-grayscale-900 font-notoSans font-[600] leading-[24px] tracking-[0.25px] line-clamp-1 grow text-left">
+                <div className="flex flex-col flex-1 min-w-0 items-start">
+                    <h4 className="w-full break-words text-[17px] text-grayscale-900 font-notoSans font-[600] leading-[24px] tracking-[0.25px] grow text-left">
                         {/* TODO pluralize for everything except Work History */}
                         {titleOverride ?? localizeCategoryTitle(title)}
                     </h4>

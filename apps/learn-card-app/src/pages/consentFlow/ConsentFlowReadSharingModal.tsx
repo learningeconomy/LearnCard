@@ -25,7 +25,7 @@ import {
 } from 'learn-card-base';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import Calendar from '../../components/svgs/Calendar';
-import { getInfoFromContractKey } from '../../helpers/contract.helpers';
+import { useContractCategoryInfo } from '../../hooks/useContractCategoryInfo';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarnedCard';
@@ -60,7 +60,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
     const [onContinue, setOnContinue] = useState(() => () => {});
     const [formerSharedUris, setFormerSharedUris] = useState<string[]>();
 
-    const { IconComponent, plural, title } = getInfoFromContractKey(category);
+    const { IconComponent, plural, title } = useContractCategoryInfo(category);
 
     const presentDatePicker = () => {
         newModal(

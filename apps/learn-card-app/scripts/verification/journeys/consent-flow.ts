@@ -169,6 +169,10 @@ export const consentFlowFeature: FeatureDefinition = {
             await dialog.getByRole('button', { name: 'Privacy & Data', exact: true }).click();
             const privacy = page.getByTestId('consent-privacy-and-data');
             await expect(privacy).toBeVisible({ timeout: UI_TIMEOUT });
+            await expect(
+                privacy.getByRole('heading', { name: 'Demo branch', exact: true })
+            ).toBeVisible();
+            await expect(privacy.getByText(fieldCategory, { exact: false })).toHaveCount(0);
             // This IonToggle has no label association; scope it to its actual labelled row.
             const anonymizeToggle = privacy
                 .getByText('Anonymize', { exact: true })
