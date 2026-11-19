@@ -4329,6 +4329,8 @@
             "once": "Permitir una vez",
             "live": "Mantener actualizado",
             "choose": "Elige una opción",
+            "selfDescribe": "Describirme",
+            "enterAnswer": "Escribe tu respuesta",
             "error": "Algo salió mal. Inténtalo de nuevo.",
             "retry": "Reintentar",
             "loading": "Cargando…",

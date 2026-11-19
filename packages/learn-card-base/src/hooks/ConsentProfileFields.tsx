@@ -26,6 +26,7 @@ interface Answer {
     required: boolean;
     mode: 'once' | 'live' | 'off';
     value: string;
+    custom?: boolean;
     saved?: { value: string; uri: string };
 }
 
@@ -92,9 +93,13 @@ export const ConsentProfileFields = ({
                         const age = Date.now() - Date.parse(stored.issuanceDate ?? '');
                         if (field.maxAgeDays && !(age >= 0 && age <= field.maxAgeDays * 86400000))
                             return answer;
-                        if (Object.keys(stored.data ?? {}).length !== 1)
-                            return { ...answer, value };
-                        return { ...answer, value, saved: { value, uri: stored.uri } };
+                        const storedAnswer = {
+                            ...answer,
+                            value,
+                            custom: field.type === 'select' && !field.values.includes(value),
+                        };
+                        if (Object.keys(stored.data ?? {}).length !== 1) return storedAnswer;
+                        return { ...storedAnswer, saved: { value, uri: stored.uri } };
                     })
             );
         void load()
@@ -161,7 +166,7 @@ export const ConsentProfileFields = ({
     };
     return (
         <form className="flex flex-col gap-5" onSubmit={submit}>
-            {answers.map(({ field, category, mode, required, value }) => (
+            {answers.map(({ field, category, mode, required, value, custom }) => (
                 <fieldset key={category} disabled={saving} className="min-w-0">
                     <legend className="mb-2 text-sm font-semibold text-grayscale-900">
                         {field?.label ?? t('profileFields.unavailable')}
@@ -181,19 +186,72 @@ export const ConsentProfileFields = ({
                             </ProfileSelect>
                             {mode !== 'off' &&
                                 (field.type === 'select' ? (
-                                    <ProfileSelect
-                                        aria-label={field.label}
-                                        required
-                                        value={value}
-                                        onChange={e => update(category, { value: e.target.value })}
-                                    >
-                                        <option value="">{t('profileFields.choose')}</option>
-                                        {field.values.map(choice => (
-                                            <option key={choice} value={choice}>
-                                                {choice}
-                                            </option>
-                                        ))}
-                                    </ProfileSelect>
+                                    <>
+                                        <ProfileSelect
+                                            aria-label={field.label}
+                                            required
+                                            value={
+                                                custom
+                                                    ? 'custom'
+                                                    : value && field.allowCustomValue
+                                                      ? `preset:${value}`
+                                                      : value
+                                            }
+                                            onChange={e => {
+                                                const selection = e.target.value;
+                                                if (
+                                                    field.allowCustomValue &&
+                                                    selection === 'custom'
+                                                ) {
+                                                    update(category, { custom: true, value: '' });
+                                                    return;
+                                                }
+                                                update(category, {
+                                                    custom: false,
+                                                    value: field.allowCustomValue
+                                                        ? selection.replace(/^preset:/, '')
+                                                        : selection,
+                                                });
+                                            }}
+                                        >
+                                            <option value="">{t('profileFields.choose')}</option>
+                                            {field.values.map(choice => (
+                                                <option
+                                                    key={choice}
+                                                    value={
+                                                        field.allowCustomValue
+                                                            ? `preset:${choice}`
+                                                            : choice
+                                                    }
+                                                >
+                                                    {choice}
+                                                </option>
+                                            ))}
+                                            {field.allowCustomValue && (
+                                                <option value="custom">
+                                                    {t('profileFields.selfDescribe')}
+                                                </option>
+                                            )}
+                                        </ProfileSelect>
+                                        {custom && (
+                                            <input
+                                                aria-label={
+                                                    field.label +
+                                                    ' — ' +
+                                                    t('profileFields.selfDescribe')
+                                                }
+                                                placeholder={t('profileFields.enterAnswer')}
+                                                className={inputClass}
+                                                required
+                                                maxLength={512}
+                                                type="text"
+                                                value={value}
+                                                onChange={e =>
+                                                    update(category, { value: e.target.value })
+                                                }
+                                            />
+                                        )}
+                                    </>
                                 ) : (
                                     <input
                                         aria-label={field.label}

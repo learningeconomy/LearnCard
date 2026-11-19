@@ -48,6 +48,8 @@ export const EN_DEFAULTS: Record<string, string> = {
     'profileFields.once': 'Allow once',
     'profileFields.live': 'Keep updated',
     'profileFields.choose': 'Choose an option',
+    'profileFields.selfDescribe': 'Self-describe',
+    'profileFields.enterAnswer': 'Enter your answer',
     'profileFields.error': 'Something went wrong. Please try again.',
     'profileFields.retry': 'Try again',
     'profileFields.loading': 'Loading…',

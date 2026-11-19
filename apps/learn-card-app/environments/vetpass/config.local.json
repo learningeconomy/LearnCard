@@ -24,7 +24,9 @@
                 },
                 "gender": {
                     "label": "Gender",
-                    "type": "text"
+                    "type": "select",
+                    "values": ["Male", "Female"],
+                    "allowCustomValue": true
                 },
                 "birthDate": {
                     "label": "Date of birth",

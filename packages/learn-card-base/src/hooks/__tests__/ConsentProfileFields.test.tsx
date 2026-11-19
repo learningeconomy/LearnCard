@@ -20,10 +20,17 @@ const schemas = {
         fields: {
             branch: { label: 'Branch', type: 'select', values: ['North', 'South'], maxAgeDays: 1 },
             birthDate: { label: 'Birthday', type: 'date' },
+            gender: {
+                label: 'Gender',
+                type: 'select',
+                values: ['Male', 'Female'],
+                allowCustomValue: true,
+            },
         },
     },
 } as const;
 const branch = 'VerifiableData:demo:profile:branch';
+const gender = 'VerifiableData:demo:profile:gender';
 const renderFields = (
     categories = requestProfileFields('demo', 'profile', schemas, ['branch'], true),
     tenantId = 'demo'
@@ -79,6 +86,50 @@ it('requires a new answer once its configured age has elapsed', async () => {
     expect(
         ((await screen.findByLabelText('Branch', { exact: true })) as HTMLSelectElement).value
     ).toBe('');
+});
+it('offers preset genders and stores the text entered through Self-describe', async () => {
+    storage.getVerifiableData.mockResolvedValue({});
+    storage.saveVerifiableData.mockResolvedValue('urn:local:gender');
+    const confirm = renderFields(
+        requestProfileFields('demo', 'profile', schemas, ['gender'], true)
+    );
+    const select = await screen.findByRole('combobox', { name: 'Gender', exact: true });
+    expect(screen.getByRole('option', { name: 'Male' })).toBeTruthy();
+    expect(screen.getByRole('option', { name: 'Female' })).toBeTruthy();
+
+    fireEvent.change(select, { target: { value: 'custom' } });
+    const input = screen.getByRole<HTMLInputElement>('textbox', { name: 'Gender — Self-describe' });
+    expect(input.required).toBe(true);
+    fireEvent.change(input, { target: { value: 'Nonbinary' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm Sharing' }));
+
+    await waitFor(() => expect(confirm).toHaveBeenCalledOnce());
+    expect(storage.saveVerifiableData).toHaveBeenCalledWith(
+        {},
+        gender,
+        { gender: 'Nonbinary' },
+        { category: gender, name: 'Gender' }
+    );
+});
+
+it('prefills an earlier free-text gender answer and reuses its credential', async () => {
+    storage.getVerifiableData.mockResolvedValue({
+        data: { gender: 'Nonbinary' },
+        uri: 'urn:old',
+    });
+    const confirm = renderFields(
+        requestProfileFields('demo', 'profile', schemas, ['gender'], true)
+    );
+    const input = await screen.findByRole<HTMLInputElement>('textbox', {
+        name: 'Gender — Self-describe',
+    });
+    expect(input.value).toBe('Nonbinary');
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm Sharing' }));
+    await waitFor(() => expect(confirm).toHaveBeenCalledOnce());
+    expect(storage.saveVerifiableData).not.toHaveBeenCalled();
+    expect(confirm.mock.calls[0][0].read.credentials.categories[gender].shared).toEqual([
+        'urn:old',
+    ]);
 });
 it('declining an optional field publishes no credential', async () => {
     storage.getVerifiableData.mockResolvedValue({

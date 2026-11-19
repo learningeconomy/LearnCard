@@ -10,7 +10,11 @@ const common = z.object({
 export const profileFieldSchema = z.discriminatedUnion('type', [
     common.extend({ type: z.literal('text') }),
     common.extend({ type: z.literal('date') }),
-    common.extend({ type: z.literal('select'), values: z.array(z.string().trim().min(1)).min(1) }),
+    common.extend({
+        type: z.literal('select'),
+        values: z.array(z.string().trim().min(1)).min(1),
+        allowCustomValue: z.boolean().optional(),
+    }),
 ]);
 export type ProfileField = z.infer<typeof profileFieldSchema>;
 export const profileSchemasValidator = z.record(
@@ -38,7 +42,8 @@ export const resolveProfileField = (
 
 export const validProfileAnswer = (field: ProfileField, value: unknown): value is string => {
     if (typeof value !== 'string' || !value.trim() || value.length > 512) return false;
-    if (field.type === 'select') return field.values.includes(value);
+    if (field.type === 'select')
+        return field.allowCustomValue === true || field.values.includes(value);
     if (field.type === 'date') return z.iso.date().safeParse(value).success;
     return true;
 };

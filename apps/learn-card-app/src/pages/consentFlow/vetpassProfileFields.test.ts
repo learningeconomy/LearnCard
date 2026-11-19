@@ -32,4 +32,17 @@ describe.each([
         expect(validProfileAnswer(field, '2000-02-29')).toBe(true);
         expect(validProfileAnswer(field, '2001-02-29')).toBe(false);
     });
+
+    it('offers Male and Female and accepts a self-described gender', () => {
+        const fields = schemas['military-profile']!.fields;
+        const gender = fields.gender!;
+        expect(gender).toMatchObject({
+            type: 'select',
+            values: ['Male', 'Female'],
+            allowCustomValue: true,
+        });
+        expect(validProfileAnswer(gender, 'Nonbinary')).toBe(true);
+        expect(validProfileAnswer(gender, ' ')).toBe(false);
+        expect(validProfileAnswer(fields.branch!, 'Unlisted branch')).toBe(false);
+    });
 });

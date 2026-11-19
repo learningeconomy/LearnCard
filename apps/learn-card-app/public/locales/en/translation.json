@@ -4381,6 +4381,8 @@
             "once": "Allow once",
             "live": "Keep updated",
             "choose": "Choose an option",
+            "selfDescribe": "Self-describe",
+            "enterAnswer": "Enter your answer",
             "error": "Something went wrong. Please try again.",
             "retry": "Try again",
             "loading": "Loading…",
