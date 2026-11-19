@@ -111,20 +111,19 @@ export const buildWhereClause = (
 ): { whereClause: string; params: Record<string, any> } => {
     paramCounter = 0; // Reset counter for each query
     const params: Record<string, any> = {};
-    const buildConditions = (fields: QueryCondition) =>
-        Object.entries(fields).map(([field, value]) =>
-            buildFieldCondition(identifier, field, value, params)
-        );
-
     let conditions: string[];
     if ('$or' in query && Array.isArray(query.$or)) {
         const alternatives = (query.$or as QueryCondition[]).map(fields => {
-            const terms = buildConditions(fields);
+            const terms = Object.entries(fields).map(([field, value]) =>
+                buildFieldCondition(identifier, field, value, params)
+            );
             return terms.length > 1 ? `(${terms.join(' AND ')})` : terms[0];
         });
         conditions = [`(${alternatives.join(' OR ')})`];
     } else {
-        conditions = buildConditions(query);
+        conditions = Object.entries(query).map(([field, value]) =>
+            buildFieldCondition(identifier, field, value, params)
+        );
     }
 
     for (const [field, value] of Object.entries(exclude)) {
