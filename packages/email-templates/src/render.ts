@@ -58,6 +58,8 @@ import {
     getEscrowPinSignInSubject,
     AccountSecured,
     getAccountSecuredSubject,
+    EscrowResetStarted,
+    getEscrowResetStartedSubject,
     ContractRequestInvite,
     getContractRequestInviteSubject,
 } from './templates';
@@ -84,6 +86,7 @@ import type {
     EscrowPinLockedProps,
     EscrowPinSignInProps,
     AccountSecuredProps,
+    EscrowResetStartedProps,
     ContractRequestInviteProps,
 } from './templates';
 import { localeProp } from './i18n';
@@ -218,6 +221,9 @@ export interface TemplateDataMap {
     /** lca-api: "Secure my account" signed out every other device and login */
     'account-secured': AccountSecuredData;
 
+    /** lca-api: a PIN reset (waiting-period recovery) started; to the ClassLink school address (LC-2409) */
+    'escrow-reset-started': EscrowResetStartedData;
+
     /** brain-service: contract-request-invites.helpers.ts — invite to an email with no account */
     'contract-request-invite': ContractRequestInviteData;
 }
@@ -341,6 +347,11 @@ export interface EscrowPinSignInData {
 
 export interface AccountSecuredData {
     securedAt: string;
+}
+
+export interface EscrowResetStartedData {
+    requestedAt: string;
+    releaseAfter: string;
 }
 
 export interface ContractRequestInviteData {
@@ -653,6 +664,21 @@ function buildElement(
             return {
                 element: React.createElement(AccountSecured, props),
                 subject: getAccountSecuredSubject(branding, locale),
+            };
+        }
+
+        case 'escrow-reset-started': {
+            const d = data as EscrowResetStartedData;
+            const props: EscrowResetStartedProps = {
+                branding,
+                requestedAt: d.requestedAt,
+                releaseAfter: d.releaseAfter,
+                ...localeProp(locale),
+            };
+
+            return {
+                element: React.createElement(EscrowResetStarted, props),
+                subject: getEscrowResetStartedSubject(branding, locale),
             };
         }
 

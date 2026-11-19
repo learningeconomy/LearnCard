@@ -137,6 +137,10 @@ const FIXTURES: { [K in TemplateId]: TemplateDataMap[K] } = {
         secureUrl: 'https://learncard.app/account/secure',
     },
     'account-secured': { securedAt: 'October 2, 2026, 3:00 PM' },
+    'escrow-reset-started': {
+        requestedAt: 'September 25, 2026, 3:00 PM',
+        releaseAfter: 'October 2, 2026, 3:00 PM',
+    },
 };
 
 const ALL_TEMPLATE_IDS = Object.keys(FIXTURES) as TemplateId[];
@@ -180,6 +184,7 @@ describe('i18n — non-EN locales localize content', () => {
         'escrow-hold-started',
         'escrow-hold-cancelled',
         'account-secured',
+        'escrow-reset-started',
     ];
 
     for (const templateId of SAMPLES) {
