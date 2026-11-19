@@ -230,6 +230,59 @@ describe('Consent external grant issuance fence', () => {
         await expectNoDelivery(fixture.termsUri);
     });
 
+    it('skips withdrawn terms when pruning and drops stale shared URIs on re-consent', async () => {
+        const fixture = await setupConsent();
+        const termsWithShared = (shared: string[]) => ({
+            ...normalFullTerms,
+            read: {
+                ...normalFullTerms.read,
+                credentials: {
+                    ...normalFullTerms.read.credentials,
+                    categories: {
+                        ...normalFullTerms.read.credentials.categories,
+                        Achievement: { sharing: true, shared },
+                    },
+                },
+            },
+        });
+        await userB.clients.fullAuth.contracts.updateConsentedContractTerms({
+            uri: fixture.termsUri,
+            terms: termsWithShared(['deleted-uri', 'other-uri', 'kept-uri']),
+        });
+        await userB.clients.fullAuth.contracts.withdrawConsent({ uri: fixture.termsUri });
+
+        // Maintenance leaves non-live consent untouched.
+        await expect(
+            userB.clients.fullAuth.contracts.deleteCredentialFromAllContracts({
+                deletedUris: ['deleted-uri'],
+            })
+        ).resolves.toEqual({ contractsUpdated: 0, removedSharedUris: 0 });
+        const withdrawn = (await getContractTermsByUri(fixture.termsUri))!.terms;
+        expect(withdrawn.status).toBe('withdrawn');
+        expect(withdrawn.terms.read.credentials.categories.Achievement?.shared).toEqual([
+            'deleted-uri',
+            'other-uri',
+            'kept-uri',
+        ]);
+
+        // Going live again replaces the stored terms; stale indexes must not survive.
+        await userB.clients.fullAuth.contracts.consentToContract({
+            contractUri: fixture.contractUri,
+            terms: termsWithShared(['kept-uri']),
+        });
+        const relive = (await getContractTermsByUri(fixture.termsUri))!.terms;
+        expect(relive.status).toBe('live');
+        expect(relive.terms.read.credentials.categories.Achievement?.shared).toEqual(['kept-uri']);
+        const stale = await neogma.queryRunner.run(
+            `MATCH (terms:ConsentFlowTerms {id:$id})
+             RETURN [key IN keys(terms)
+                     WHERE key STARTS WITH 'terms.read.credentials.categories.Achievement.shared'
+                     | terms[key]] AS shared`,
+            { id: relive.id }
+        );
+        expect(stale.records[0]!.get('shared')).toEqual(['kept-uri']);
+    });
+
     it.each(['missing', 'invalid-sharing', 'invalid-grant'] as const)(
         'leaves %s stored terms untouched during pruning',
         async shape => {
