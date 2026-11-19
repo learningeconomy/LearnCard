@@ -76,12 +76,7 @@ export type CreateEntryToolArgs = {
     dimension?: string | null;
     confidence?: 'high' | 'medium' | 'low' | null;
     assertedBy?: string;
-    basis?: {
-        drawnFrom?: string[];
-        task?: string;
-        setting?: string;
-        rationale?: string;
-    };
+    basis?: NonNullable<CreateEntryInput['assertion']['basis']>;
     permittedPurposes?: string[];
 };
 

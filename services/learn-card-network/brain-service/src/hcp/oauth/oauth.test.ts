@@ -1,7 +1,7 @@
 import { createServer, type Server } from 'node:http';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import type { AccessDetail } from '../v1/schemas';
+import { CONTEXT_ACCESS_DETAIL_TYPE, type AccessDetail } from '../v1/schemas';
 import type { HcpV1Store } from '../v1/store/port';
 import { createGrant, revokeGrant } from '../v1/service/grants';
 import {
@@ -325,6 +325,7 @@ describe('HCP OAuth Unit 1 (AS + PRM + RS probe)', () => {
 
         accessOverrides.set(wide.grantId, [
             {
+                type: CONTEXT_ACCESS_DETAIL_TYPE,
                 actions: ['read'],
                 categories: ['general_preferences'],
                 purposes: [{ code: 'https://purpose.example/assist', description: 'Help me' }],

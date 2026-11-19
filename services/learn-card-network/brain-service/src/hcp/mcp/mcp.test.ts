@@ -18,7 +18,7 @@ import { createCodeChallenge, createCodeVerifier } from '../oauth/pkce';
 import { createHcpMcpApp, HCP_MCP_PATH } from './app';
 import { authInfoFromResolved, narrowAccessToScopes } from './auth-bridge';
 import { HCP_MCP_TOOL_NAMES, createHcpMcpTools } from './tools';
-import type { AccessDetail } from '../v1/schemas';
+import { CONTEXT_ACCESS_DETAIL_TYPE, type AccessDetail } from '../v1/schemas';
 import { resolveBearerToGrant } from '../oauth/rs';
 import type { TokenSignerConfig } from '../oauth/tokens';
 
@@ -142,6 +142,7 @@ const mcpCall = async (
 describe('narrowAccessToScopes', () => {
     const access: AccessDetail[] = [
         {
+            type: CONTEXT_ACCESS_DETAIL_TYPE,
             actions: ['read', 'write'],
             categories: ['general_preferences'],
             purposes: [{ code: PURPOSE, description: 'Help' }],
