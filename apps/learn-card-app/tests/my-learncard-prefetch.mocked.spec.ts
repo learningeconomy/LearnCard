@@ -57,4 +57,53 @@ test.describe('My LearnCard prefetch @mocked', () => {
             await page.evaluate(() => (window as unknown as { __noReload?: boolean }).__noReload)
         ).toBe(true);
     });
+
+    // Opening the modal while the prefetch is still downloading used to start the same
+    // requests again alongside it (goblincore saw 32 requests for 16 files). The open now
+    // waits for the prefetch, so its import reads the HTTP cache. page.route turns the
+    // browser's HTTP cache off, so here every file still shows two requests; what we can
+    // check is that the second never starts while the first is still downloading.
+    test('opening during the prefetch waits for it instead of downloading again', async ({
+        page,
+    }) => {
+        test.setTimeout(180_000);
+        await installNetwork(page);
+
+        const inFlight = new Map<string, number>();
+        const overlapping: string[] = [];
+        let requests = 0;
+        await page.route(MODAL_CHUNK, async route => {
+            const path = new URL(route.request().url()).pathname;
+            if (inFlight.get(path)) overlapping.push(path);
+            inFlight.set(path, (inFlight.get(path) ?? 0) + 1);
+            requests += 1;
+            try {
+                const response = await route.fetch();
+                // Hold the first download (the prefetch) long enough to click during it.
+                if (requests === 1) await new Promise(resolve => setTimeout(resolve, 2_000));
+                await route.fulfill({ response });
+            } finally {
+                inFlight.set(path, inFlight.get(path)! - 1);
+            }
+        });
+
+        await waitForAuthenticatedState(page, {
+            path: '/dashboard',
+            nextPath: '/dashboard',
+            profileId: TEST_USER_PROFILE_ID,
+            waitUntil: 'commit',
+        });
+        await expect(page.getByRole('button', { name: /^Open your / })).toBeVisible({
+            timeout: 90_000,
+        });
+
+        // The idle prefetch has started and is held; open now.
+        await expect.poll(() => requests, { timeout: 30_000 }).toBeGreaterThan(0);
+        await page.getByRole('button', { name: 'Open profile', exact: true }).click();
+
+        await expect(page.getByRole('button', { name: 'Data Sharing', exact: true })).toBeVisible({
+            timeout: 30_000,
+        });
+        expect(overlapping).toEqual([]);
+    });
 });

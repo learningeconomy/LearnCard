@@ -4,6 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // `warmed` counts HTTP-cache prefetches; `imported` counts imports of the modal module.
 const calls = { warmed: 0, imported: 0 };
+// What the open waits on before importing: a prefetch still downloading, or nothing.
+let prefetchDone: Promise<void> = Promise.resolve();
 
 /** A fresh copy of the modal module and the first-screen signal it waits on. */
 const loadModal = async () => {
@@ -15,6 +17,10 @@ const loadModal = async () => {
             expect(key).toBe('my-learncard');
             calls.warmed += 1;
             return Promise.resolve(true);
+        },
+        waitForPrefetch: (key: string) => {
+            expect(key).toBe('my-learncard');
+            return prefetchDone;
         },
     }));
     vi.doMock('./MyLearnCardModalContent', () => {
@@ -97,6 +103,23 @@ describe('My LearnCard modal prefetch', () => {
         await new Promise(resolve => setTimeout(resolve, 250));
 
         expect(calls.warmed).toBe(1);
+    });
+
+    it('lets a running prefetch finish before importing, so the files download once', async () => {
+        let finishPrefetch!: () => void;
+        prefetchDone = new Promise(resolve => {
+            finishPrefetch = resolve;
+        });
+        const { default: Modal } = await loadModal();
+
+        render(<Modal branding={'learncard' as never} />);
+        await settle();
+        expect(calls.imported).toBe(0);
+
+        finishPrefetch();
+        expect(await screen.findByText('My LearnCard body')).toBeTruthy();
+        expect(calls.imported).toBe(1);
+        prefetchDone = Promise.resolve();
     });
 
     it.each(['pointerEnter', 'focus', 'pointerDown', 'touchStart'] as const)(

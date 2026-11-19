@@ -1,11 +1,16 @@
 import { afterFirstScreen } from 'learn-card-base/helpers/firstScreen';
 
 import { lazyModalContent } from '../generic/lazyModalContent';
-import { prefetchChunk } from '../../helpers/prefetchChunk';
+import { prefetchChunk, waitForPrefetch } from '../../helpers/prefetchChunk';
 
 // Loads on first render (opened from the dashboard avatar and deep links), not at app start: statically importing this subtree from the
 // dashboard and AppRouter put it on the startup path.
-const MyLearnCardModal = lazyModalContent(() => import('./MyLearnCardModalContent'));
+// If the prefetch is still downloading, let it finish first so the import reads the cache
+// rather than requesting the same files again in parallel.
+const MyLearnCardModal = lazyModalContent(async () => {
+    await waitForPrefetch('my-learncard');
+    return import('./MyLearnCardModalContent');
+});
 
 /**
  * Download the My LearnCard modal's files now, so opening it doesn't wait on the network. Only
