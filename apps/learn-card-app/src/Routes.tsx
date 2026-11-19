@@ -19,6 +19,8 @@ import { environment } from './config/environment';
 import * as Sentry from '@sentry/react';
 
 import GenericErrorBoundary from './components/generic/GenericErrorBoundary';
+import { prefetchChunk, waitForPrefetch } from './helpers/prefetchChunk';
+import { ROUTE_WARM_KEYS, type PrefetchChunkKey } from './buildPlugins/chunkPrefetchList';
 
 const CampaignsPage = lazyWithRetry(() => import('./pages/campaigns/CampaignsPage'));
 const WalletPage = lazyWithRetry(() => import('./pages/wallet/WalletPage'));
@@ -506,50 +508,61 @@ const AI_GATED_PATHS = new Set([
 ]);
 
 /**
- * Path-keyed preload map for routes reachable from the wallet, side menu, and
+ * Path-keyed navigation helper for routes reachable from the wallet, side menu, and
  * mobile nav. Consumers (WalletPage's category handler, PreloadingLink, etc.)
- * await the matching preload before calling history.push, which keeps the
- * current page mounted (no Suspense fallback flash) until the destination
- * chunk is in memory.
+ * await the matching entry before calling history.push: it waits for any in-flight
+ * fetch() warm-up, then import()s so the current page stays mounted (no Suspense
+ * fallback flash). Speculative warm-up uses warmRoute / prefetchRoutes instead.
  */
+/**
+ * Wait for any in-flight fetch() warm-up, then import the route module. Used right before
+ * navigation so the Suspense fallback doesn't flash. Speculative warm-up never calls this —
+ * see warmRoute / prefetchRoutes, which only fetch().
+ */
+const warmThenImport =
+    (key: PrefetchChunkKey, preload: () => Promise<void>) => async (): Promise<void> => {
+        await waitForPrefetch(key);
+        await preload();
+    };
+
 export const ROUTE_PRELOAD: Record<string, () => Promise<void>> = {
-    '/dashboard': preloadDashboardPage,
+    '/dashboard': warmThenImport('dashboard', preloadDashboardPage),
     // Wallet (Passport) — same chunk for all three aliases.
-    '/passport': () => WalletPage.preload(),
-    '/wallet': () => WalletPage.preload(),
-    '/home': () => WalletPage.preload(),
+    '/passport': warmThenImport('wallet', () => WalletPage.preload()),
+    '/wallet': warmThenImport('wallet', () => WalletPage.preload()),
+    '/home': warmThenImport('wallet', () => WalletPage.preload()),
     // Wallet category routes (also rendered as squares on /wallet).
-    '/skills': () => SkillsPage.preload(),
-    '/socialBadges': () => SocialBadgesPage.preload(),
-    '/achievements': () => AchievementsPage.preload(),
-    '/qualifications': () => QualificationsPage.preload(),
-    '/learninghistory': () => LearningHistoryPage.preload(),
-    '/accomplishments': () => AccomplishmentsPage.preload(),
-    '/accommodations': () => AccommodationsPage.preload(),
-    '/workhistory': () => WorkHistoryPage.preload(),
-    '/families': () => FamilyPage.preload(),
-    '/school-connect': () => SchoolConnectPage.preload(),
-    '/ids': () => IdsPage.preload(),
-    '/memberships': () => MembershipPage.preload(),
-    '/currencies': () => CurrenciesPage.preload(),
+    '/skills': warmThenImport('skills', () => SkillsPage.preload()),
+    '/socialBadges': warmThenImport('social-badges', () => SocialBadgesPage.preload()),
+    '/achievements': warmThenImport('achievements', () => AchievementsPage.preload()),
+    '/qualifications': warmThenImport('qualifications', () => QualificationsPage.preload()),
+    '/learninghistory': warmThenImport('learning-history', () => LearningHistoryPage.preload()),
+    '/accomplishments': warmThenImport('accomplishments', () => AccomplishmentsPage.preload()),
+    '/accommodations': warmThenImport('accommodations', () => AccommodationsPage.preload()),
+    '/workhistory': warmThenImport('work-history', () => WorkHistoryPage.preload()),
+    '/families': warmThenImport('families', () => FamilyPage.preload()),
+    '/school-connect': warmThenImport('school-connect', () => SchoolConnectPage.preload()),
+    '/ids': warmThenImport('ids', () => IdsPage.preload()),
+    '/memberships': warmThenImport('memberships', () => MembershipPage.preload()),
+    '/currencies': warmThenImport('currencies', () => CurrenciesPage.preload()),
     // AI routes — gated by the AI feature flag in prefetchRoutes.
-    '/ai/assistant': () => MyAssistantPage.preload(),
-    '/ai/insights': () => AiInsights.preload(),
-    '/ai/pathways': () => AiPathways.preload(),
-    '/ai/topics': () => AiSessionTopicsContainer.preload(),
-    '/ai/sessions': () => AiSessionsContainer.preload(),
+    '/ai/assistant': warmThenImport('ai-assistant', () => MyAssistantPage.preload()),
+    '/ai/insights': warmThenImport('ai-insights', () => AiInsights.preload()),
+    '/ai/pathways': warmThenImport('ai-pathways', () => AiPathways.preload()),
+    '/ai/topics': warmThenImport('ai-topics', () => AiSessionTopicsContainer.preload()),
+    '/ai/sessions': warmThenImport('ai-sessions', () => AiSessionsContainer.preload()),
     // Side menu root links.
-    '/launchpad': () => MyAppsLanding.preload(),
-    '/launchpad/browse': () => LaunchPad.preload(),
-    '/contacts': () => AddressBook.preload(),
-    '/notifications': () => NotificationsPage.preload(),
+    '/launchpad': warmThenImport('launchpad', () => MyAppsLanding.preload()),
+    '/launchpad/browse': warmThenImport('launchpad-browse', () => LaunchPad.preload()),
+    '/contacts': warmThenImport('contacts', () => AddressBook.preload()),
+    '/notifications': warmThenImport('notifications', () => NotificationsPage.preload()),
     // Mobile navbar / wallet header.
-    '/boost': () => BoostCMS.preload(),
-    '/issue': () => IssueCredentialPage.preload(),
-    '/boost-a-friend': () => BoostAFriendPage.preload(),
+    '/boost': warmThenImport('boost', () => BoostCMS.preload()),
+    '/issue': warmThenImport('issue', () => IssueCredentialPage.preload()),
+    '/boost-a-friend': warmThenImport('boost-a-friend', () => BoostAFriendPage.preload()),
     // Other commonly side-menu-linked routes.
-    '/privacy-and-data': () => PrivacySettingsPage.preload(),
-    '/resume-builder': () => ResumeBuilderPage.preload(),
+    '/privacy-and-data': warmThenImport('privacy-and-data', () => PrivacySettingsPage.preload()),
+    '/resume-builder': warmThenImport('resume-builder', () => ResumeBuilderPage.preload()),
 };
 
 interface PrefetchOptions {
@@ -558,9 +571,20 @@ interface PrefetchOptions {
 }
 
 /**
- * Idle-prefetch routes in ROUTE_PRELOAD so first-time navigation from anywhere
- * (wallet squares, side menu, mobile nav, deep links) lands on a warm chunk
- * cache and the Suspense fallback never fires. AI routes are skipped when the
+ * Warm a route's files into the HTTP cache with fetch() only — never import(). Safe to call
+ * speculatively (idle, accept-screen, early boot). The first import() happens on real
+ * navigation via ROUTE_PRELOAD / the lazy route.
+ */
+export const warmRoute = (path: string): void => {
+    const key = ROUTE_WARM_KEYS[path];
+    if (key) void prefetchChunk(key);
+};
+
+/**
+ * Idle-warm routes in ROUTE_WARM_KEYS so first-time navigation from anywhere
+ * (wallet squares, side menu, mobile nav, deep links) lands on a warm HTTP
+ * cache and the Suspense fallback never fires. Uses fetch(), not import(), so a
+ * failed warm-up can't poison the module map. AI routes are skipped when the
  * caller indicates the user doesn't have AI access.
  */
 export const prefetchRoutes = ({ aiEnabled = true }: PrefetchOptions = {}): void => {
@@ -568,9 +592,12 @@ export const prefetchRoutes = ({ aiEnabled = true }: PrefetchOptions = {}): void
     const schedule = (cb: () => void) => (ric ? ric(cb, { timeout: 2000 }) : setTimeout(cb, 200));
 
     schedule(() => {
-        Object.entries(ROUTE_PRELOAD).forEach(([path, fn]) => {
+        const warmed = new Set<PrefetchChunkKey>();
+        Object.entries(ROUTE_WARM_KEYS).forEach(([path, key]) => {
             if (!aiEnabled && AI_GATED_PATHS.has(path)) return;
-            fn();
+            if (warmed.has(key)) return;
+            warmed.add(key);
+            void prefetchChunk(key);
         });
     });
 };

@@ -430,8 +430,9 @@ const AppRouter: React.FC = () => {
     }, [enablePrefetch]);
 
     // Warm the landing chunks immediately — while the boot loader or login
-    // form is still up, before auth resolves. The post-login redirect
-    // (→ /dashboard) and the post-boot mount of the refreshed route would
+    // form is still up, before auth resolves. Uses fetch() only (warmRoute), not
+    // import(), so a 503 can't poison the module map before the real navigation.
+    // The post-login redirect (→ /dashboard) and the post-boot mount would
     // otherwise only START downloading their chunk after navigation, leaving
     // a white Suspense gap between the loader and the app on a cold cache.
     // The full prefetch above stays gated on login; this is just the entry
@@ -443,9 +444,10 @@ const AppRouter: React.FC = () => {
         preloadRoutes().catch(() => undefined);
         import('./Routes')
             .then(m => {
-                void m.ROUTE_PRELOAD['/dashboard']?.();
-                void m.ROUTE_PRELOAD['/wallet']?.();
-                void m.ROUTE_PRELOAD[initialPathRef.current]?.();
+                // fetch() only — import() here would poison the module map on a 503.
+                m.warmRoute('/dashboard');
+                m.warmRoute('/wallet');
+                m.warmRoute(initialPathRef.current);
             })
             .catch(() => undefined);
     }, []);

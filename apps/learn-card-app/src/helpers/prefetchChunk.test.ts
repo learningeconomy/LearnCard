@@ -36,14 +36,23 @@ describe('prefetchChunk', () => {
         expect(fetched()).toEqual(FILES);
     });
 
-    it('forgets a failed download, so the next prefetch asks the server again', async () => {
-        fetchMock.mockImplementationOnce(async () => new Response('', { status: 503 }));
-        const { prefetchChunk } = await loadHelper();
+    it('forgets a failed download after the cooldown, so a later prefetch asks again', async () => {
+        vi.useFakeTimers();
+        try {
+            fetchMock.mockImplementationOnce(async () => new Response('', { status: 503 }));
+            const { prefetchChunk, PREFETCH_FAIL_COOLDOWN_MS } = await loadHelper();
 
-        await expect(prefetchChunk('my-learncard')).resolves.toBe(false);
-        await expect(prefetchChunk('my-learncard')).resolves.toBe(true);
+            await expect(prefetchChunk('my-learncard')).resolves.toBe(false);
+            // Still in cooldown: no new fetch.
+            await expect(prefetchChunk('my-learncard')).resolves.toBe(false);
+            expect(fetched()).toEqual(FILES);
 
-        expect(fetched()).toEqual([...FILES, ...FILES]);
+            await vi.advanceTimersByTimeAsync(PREFETCH_FAIL_COOLDOWN_MS);
+            await expect(prefetchChunk('my-learncard')).resolves.toBe(true);
+            expect(fetched()).toEqual([...FILES, ...FILES]);
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it('resolves false on a network error instead of throwing', async () => {
@@ -72,6 +81,42 @@ describe('prefetchChunk', () => {
 
         await expect(prefetchChunk('my-learncard')).resolves.toBe(false);
         expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('passes an AbortSignal so a hung fetch can be cancelled', async () => {
+        const { prefetchChunk, PREFETCH_FETCH_TIMEOUT_MS } = await loadHelper();
+        await prefetchChunk('my-learncard');
+
+        expect(PREFETCH_FETCH_TIMEOUT_MS).toBe(30_000);
+        for (const [, init] of fetchMock.mock.calls) {
+            expect(init?.signal).toBeInstanceOf(AbortSignal);
+        }
+    });
+
+    it('drops a hung fetch after the timeout and allows a later retry past cooldown', async () => {
+        vi.useFakeTimers();
+        try {
+            fetchMock.mockImplementation((_url: string, init?: RequestInit) => {
+                return new Promise((_resolve, reject) => {
+                    init?.signal?.addEventListener('abort', () => {
+                        reject(new DOMException('The operation was aborted.', 'AbortError'));
+                    });
+                });
+            });
+            const { prefetchChunk, PREFETCH_FETCH_TIMEOUT_MS, PREFETCH_FAIL_COOLDOWN_MS } =
+                await loadHelper();
+
+            const first = prefetchChunk('my-learncard');
+            await vi.advanceTimersByTimeAsync(PREFETCH_FETCH_TIMEOUT_MS);
+            await expect(first).resolves.toBe(false);
+
+            fetchMock.mockImplementation(async () => ok());
+            await vi.advanceTimersByTimeAsync(PREFETCH_FAIL_COOLDOWN_MS);
+            await expect(prefetchChunk('my-learncard')).resolves.toBe(true);
+            expect(fetched().length).toBeGreaterThan(FILES.length);
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     describe('waitForPrefetch', () => {
