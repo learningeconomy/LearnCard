@@ -1,3 +1,8 @@
+import {
+    prepareReviewedFields,
+    commitAcceptedFields,
+    type ReviewedProfileFields,
+} from './reviewedProfileFields';
 import { ConsentFlowTerms, ConsentFlowContractDetails } from '@learncard/types';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { switchedProfileStore, useWallet } from 'learn-card-base';
@@ -45,6 +50,7 @@ export const useUpdateTerms = (
                 if (!record) throw new Error('Could not find sharing settings.');
                 resolvedContractUri = record.contract.uri;
             }
+            let changes: ReviewedProfileFields['changes'] = [];
             const audience = await loadContractAudience(wallet, resolvedContractUri);
             if (
                 Object.keys(audience.contract.contract?.read.credentials.categories ?? {}).some(
@@ -56,7 +62,8 @@ export const useUpdateTerms = (
                     terms: submission.terms,
                 });
                 if (!reviewed) throw new Error('Profile field review was interrupted.');
-                submission.terms = reviewed;
+                submission.terms = reviewed.terms;
+                changes = reviewed.changes;
             } else {
                 await reviewAudience(audience.contract);
             }
@@ -68,20 +75,26 @@ export const useUpdateTerms = (
                 shareAllCategories
             );
 
+            const fields = await prepareReviewedFields(
+                wallet,
+                audience.recipients,
+                terms.terms,
+                changes
+            );
             await beforeSubmit?.();
-
-            if (acceptVersion !== undefined) {
-                return wallet.invoke.acceptContractUpdate(termsUri, {
-                    version: acceptVersion,
-                    terms: terms.terms,
-                    audienceVersion: audience.audienceVersion,
-                });
-            }
-
-            return wallet.invoke.updateContractTerms(termsUri, {
-                ...terms,
-                audienceVersion: audience.audienceVersion,
-            });
+            const accepted =
+                acceptVersion !== undefined
+                    ? await wallet.invoke.acceptContractUpdate(termsUri, {
+                          version: acceptVersion,
+                          terms: terms.terms,
+                          audienceVersion: audience.audienceVersion,
+                      })
+                    : await wallet.invoke.updateContractTerms(termsUri, {
+                          ...terms,
+                          audienceVersion: audience.audienceVersion,
+                      });
+            if (accepted) await commitAcceptedFields(wallet, fields);
+            return accepted;
         },
         onSuccess: data => {
             if (data) {

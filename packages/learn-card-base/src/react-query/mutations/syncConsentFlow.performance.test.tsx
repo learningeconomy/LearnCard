@@ -63,7 +63,18 @@ it('invalidates cached terms even when a later contract fails after an earlier u
         uri: 'terms-a',
         contract: { uri: 'contract-a', owner: { did: 'owner-a' } },
         terms: {
-            read: { credentials: { categories: { Achievement: { shared: ['deleted-uri'] } } } },
+            read: {
+                credentials: {
+                    categories: {
+                        Achievement: { shared: ['deleted-uri'] },
+                        'VerifiableData:demo:profile:branch': {
+                            shareAll: false,
+                            sharing: true,
+                            shared: ['previously-approved-answer'],
+                        },
+                    },
+                },
+            },
         },
     } as unknown as ConsentedContract;
     await act(async () => {
@@ -75,6 +86,25 @@ it('invalidates cached terms even when a later contract fails after an earlier u
         ).rejects.toThrow('offline');
     });
     expect(update).toHaveBeenCalledTimes(1);
+    expect(update).toHaveBeenCalledWith(
+        'terms-a',
+        expect.objectContaining({
+            terms: {
+                read: {
+                    credentials: {
+                        categories: {
+                            Achievement: { shared: [] },
+                            'VerifiableData:demo:profile:branch': {
+                                shareAll: false,
+                                sharing: true,
+                                shared: ['previously-approved-answer'],
+                            },
+                        },
+                    },
+                },
+            },
+        })
+    );
     expect(await client.fetchQuery(options)).toEqual([updated]);
     expect(get).toHaveBeenCalledTimes(2);
     client.clear();

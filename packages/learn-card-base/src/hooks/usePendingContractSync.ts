@@ -4,6 +4,7 @@ import { ConsentFlowTerms } from '@learncard/types';
 
 import { useWallet } from './useWallet';
 import { getOrCreateSharedUriForWallet } from './useSharedUrisInTerms';
+import { indexAcceptedField } from './reviewedProfileFields';
 import { loadContractAudience } from './consentAudience';
 import { getOrFetchConsentedContracts } from './useConsentedContracts';
 import { contractCategoryNameToCategoryMetadata } from '../types/boostAndCredentialMetadata';
@@ -224,6 +225,13 @@ export const usePendingContractSync = (enabled = true): void => {
                     refetchType: 'none',
                 });
                 if (job.kind === 'credential') {
+                    if (job.acceptedField) {
+                        assertAttemptActive();
+                        await indexAcceptedField(wallet, {
+                            ...job,
+                            acceptedField: job.acceptedField,
+                        });
+                    }
                     const source = job.record;
                     const records = await wallet.index.LearnCloud.get({ id: source.id });
                     const current = records.find(record => record.uri === source.uri);

@@ -56,23 +56,20 @@ const renderFields = (
     );
     return onConfirm;
 };
-it('saves only the requested field and submits only its selected URI', async () => {
+it('confirms only the requested answer without writing or publishing it', async () => {
     storage.getVerifiableData.mockResolvedValue({});
-    storage.saveVerifiableData.mockResolvedValue('urn:local:branch');
     const confirm = renderFields();
     const input = await screen.findByLabelText('Branch', { exact: true });
     expect(screen.queryByLabelText('Birthday')).toBeNull();
     fireEvent.change(input, { target: { value: 'North' } });
     fireEvent.click(screen.getByRole('button', { name: 'Confirm Sharing' }));
     await waitFor(() => expect(confirm).toHaveBeenCalledOnce());
-    expect(storage.saveVerifiableData).toHaveBeenCalledWith(
-        {},
-        branch,
-        { branch: 'North' },
-        { category: branch, name: 'Branch' }
-    );
-    expect(confirm.mock.calls[0][0].read.credentials.categories).toEqual({
-        [branch]: { sharing: true, shareAll: false, shared: ['urn:local:branch'] },
+    expect(storage.saveVerifiableData).not.toHaveBeenCalled();
+    expect(confirm.mock.calls[0][0].changes).toEqual([
+        { category: branch, label: 'Branch', value: 'North' },
+    ]);
+    expect(confirm.mock.calls[0][0].terms.read.credentials.categories).toEqual({
+        [branch]: { sharing: true, shareAll: false, shared: [] },
     });
 });
 it('requires a new answer once its configured age has elapsed', async () => {
@@ -88,7 +85,6 @@ it('requires a new answer once its configured age has elapsed', async () => {
 });
 it('offers preset genders and stores the text entered through Prefer to self-describe', async () => {
     storage.getVerifiableData.mockResolvedValue({});
-    storage.saveVerifiableData.mockResolvedValue('urn:local:gender');
     const confirm = renderFields(
         requestProfileFields('demo', 'profile', schemas, ['gender'], true)
     );
@@ -111,12 +107,10 @@ it('offers preset genders and stores the text entered through Prefer to self-des
     fireEvent.click(screen.getByRole('button', { name: 'Confirm Sharing' }));
 
     await waitFor(() => expect(confirm).toHaveBeenCalledOnce());
-    expect(storage.saveVerifiableData).toHaveBeenCalledWith(
-        {},
-        gender,
-        { gender: 'Nonbinary' },
-        { category: gender, name: 'Gender' }
-    );
+    expect(confirm.mock.calls[0][0].changes).toEqual([
+        { category: gender, label: 'Gender', value: 'Nonbinary' },
+    ]);
+    expect(storage.saveVerifiableData).not.toHaveBeenCalled();
 });
 
 it('prefills an earlier free-text gender answer and reuses its credential', async () => {
@@ -134,7 +128,7 @@ it('prefills an earlier free-text gender answer and reuses its credential', asyn
     fireEvent.click(screen.getByRole('button', { name: 'Confirm Sharing' }));
     await waitFor(() => expect(confirm).toHaveBeenCalledOnce());
     expect(storage.saveVerifiableData).not.toHaveBeenCalled();
-    expect(confirm.mock.calls[0][0].read.credentials.categories[gender].shared).toEqual([
+    expect(confirm.mock.calls[0][0].terms.read.credentials.categories[gender].shared).toEqual([
         'urn:old',
     ]);
 });
@@ -149,7 +143,7 @@ it('declining an optional field publishes no credential', async () => {
     fireEvent.click(screen.getByRole('button', { name: 'Confirm Sharing' }));
     await waitFor(() => expect(confirm).toHaveBeenCalledOnce());
     expect(storage.saveVerifiableData).not.toHaveBeenCalled();
-    expect(confirm.mock.calls[0][0].read.credentials.categories[branch]).toEqual({
+    expect(confirm.mock.calls[0][0].terms.read.credentials.categories[branch]).toEqual({
         sharing: false,
         shareAll: false,
         shared: [],
@@ -170,13 +164,26 @@ it('projects a saved multi-field answer into a new single-field credential', asy
         uri: 'urn:combined',
         issuanceDate: new Date().toISOString(),
     });
-    storage.saveVerifiableData.mockResolvedValue('urn:branch');
     const confirm = renderFields();
     await screen.findByLabelText('Branch', { exact: true });
     fireEvent.click(screen.getByRole('button', { name: 'Confirm Sharing' }));
     await waitFor(() => expect(confirm).toHaveBeenCalledOnce());
-    expect(storage.saveVerifiableData.mock.calls[0][2]).toEqual({ branch: 'North' });
-    expect(confirm.mock.calls[0][0].read.credentials.categories[branch].shared).toEqual([
-        'urn:branch',
+    expect(confirm.mock.calls[0][0].changes).toEqual([
+        { category: branch, label: 'Branch', value: 'North' },
     ]);
+    expect(confirm.mock.calls[0][0].terms.read.credentials.categories[branch].shared).toEqual([]);
+});
+
+it('discards a valid first answer when another required answer is missing or the learner cancels', async () => {
+    storage.getVerifiableData.mockResolvedValue({});
+    const confirm = renderFields(
+        requestProfileFields('demo', 'profile', schemas, ['branch', 'gender'], true)
+    );
+    const branchInput = await screen.findByLabelText('Branch', { exact: true });
+    fireEvent.change(branchInput, { target: { value: 'North' } });
+    fireEvent.submit(branchInput.closest('form')!);
+    expect(await screen.findByRole('alert')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(confirm).not.toHaveBeenCalled();
+    expect(storage.saveVerifiableData).not.toHaveBeenCalled();
 });

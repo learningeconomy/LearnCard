@@ -14,7 +14,8 @@ import {
 import { useTenantConfig } from '../config/TenantConfigProvider';
 import { useT } from '../i18n';
 import type { BespokeLearnCard } from '../types/learn-card';
-import { getVerifiableData, saveVerifiableData } from './useVerifiableData';
+import type { ReviewedProfileFields } from './reviewedProfileFields';
+import { getVerifiableData } from './useVerifiableData';
 
 export interface FieldReview {
     wallet: BespokeLearnCard;
@@ -114,14 +115,13 @@ export const ConsentProfileFields = ({
 }: {
     contract: ConsentFlowContractDetails;
     review: FieldReview;
-    onConfirm: (terms: ConsentFlowTerms) => void;
+    onConfirm: (review: ReviewedProfileFields) => void;
     onCancel: () => void;
 }) => {
     const config = useTenantConfig();
     const t = useT();
     const [answers, setAnswers] = useState<Answer[]>([]);
     const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
     const [error, setError] = useState(false);
     const [attempt, setAttempt] = useState(0);
     useEffect(() => {
@@ -182,10 +182,10 @@ export const ConsentProfileFields = ({
         setAnswers(rows =>
             rows.map(row => (row.category === category ? { ...row, ...patch } : row))
         );
-    const submit = async (event: React.FormEvent) => {
+    const submit = (event: React.FormEvent) => {
         event.preventDefault();
-        if (loading || saving || !answers.length) return;
-        setSaving(true);
+        if (loading || !answers.length) return;
+        const changes: ReviewedProfileFields['changes'] = [];
         setError(false);
         try {
             const terms = structuredClone(review.terms);
@@ -200,16 +200,8 @@ export const ConsentProfileFields = ({
                 }
                 const shared: string[] = [];
                 if (enabled && field) {
-                    const uri =
-                        answer.saved?.value === value
-                            ? answer.saved.uri
-                            : await saveVerifiableData(
-                                  review.wallet,
-                                  category,
-                                  { [category.split(':').at(-1)!]: value },
-                                  { category, name: field.label }
-                              );
-                    shared.push(uri);
+                    if (answer.saved?.value === value) shared.push(answer.saved.uri);
+                    else changes.push({ category, label: field.label, value });
                     terms.read.credentials.sharing = true;
                 }
                 terms.read.credentials.categories[category] = {
@@ -219,17 +211,15 @@ export const ConsentProfileFields = ({
                     shared,
                 };
             }
-            onConfirm(terms);
+            onConfirm({ terms, changes });
         } catch {
             setError(true);
-        } finally {
-            setSaving(false);
         }
     };
     return (
         <form className="flex flex-col gap-5" onSubmit={submit}>
             {answers.map(({ field, category, mode, required, value, custom }) => (
-                <fieldset key={category} disabled={saving} className="min-w-0">
+                <fieldset key={category} className="min-w-0">
                     <legend className="mb-2 text-sm font-semibold text-grayscale-900">
                         {field?.label ?? t('profileFields.unavailable')}
                     </legend>
@@ -297,24 +287,17 @@ export const ConsentProfileFields = ({
                 <button
                     type="submit"
                     disabled={
-                        loading ||
-                        saving ||
-                        !answers.length ||
-                        answers.some(a => a.required && !a.field)
+                        loading || !answers.length || answers.some(a => a.required && !a.field)
                     }
                     className="flex items-center justify-center gap-2 rounded-[20px] bg-grayscale-900 px-3 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                    {(loading || saving) && (
+                    {loading && (
                         <span
                             aria-hidden="true"
                             className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-white/30 border-t-white"
                         />
                     )}
-                    {loading
-                        ? t('profileFields.loading')
-                        : saving
-                          ? t('profileFields.saving')
-                          : t('consentAudience.confirm')}
+                    {loading ? t('profileFields.loading') : t('consentAudience.confirm')}
                 </button>
             </div>
         </form>

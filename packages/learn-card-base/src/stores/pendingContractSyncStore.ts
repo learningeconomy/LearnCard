@@ -1,11 +1,11 @@
-import type { LCR } from '../types/credential-records';
+import type { CredentialRecord } from '@learncard/types';
 import { createStore } from '@udecode/zustood';
 import { getLogger } from '../logging/logger';
 
 export type PendingContractSyncStatus = 'queued' | 'running' | 'done' | 'error';
 
 export type CredentialSyncSource = {
-    record: Omit<LCR, 'category'> & { category: string };
+    record: CredentialRecord<{ category: string }>;
     category: string;
 };
 
@@ -22,6 +22,8 @@ type PendingContractSyncInput =
     | (CredentialSyncSource & {
           kind: 'credential';
           profileDid: string;
+          /** Encrypted copies prepared for an accepted field review. Retry indexing before delivery. */
+          acceptedField?: { issuanceDate: string; audienceKey: string; sharedUri: string };
           /** Terms mutations acknowledged before a partial failure or reload. */
           syncedTermsUris?: string[];
           /** Destinations that failed in the latest completed discovery pass. */

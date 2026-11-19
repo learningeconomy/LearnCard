@@ -1,5 +1,5 @@
 import React from 'react';
-import { ConsentFlowTerms } from '@learncard/types';
+import { VERIFIABLE_DATA_FIELD_PREFIX, ConsentFlowTerms } from '@learncard/types';
 import { Updater } from 'use-immer';
 import { IonRippleEffect } from '@ionic/react';
 
@@ -45,7 +45,11 @@ const ConsentFlowReadSharingItem: React.FC<ConsentFlowReadSharingItemProps> = ({
 
     const totalCount = typeof count === 'number' ? count : '?';
 
-    const disabled = required && term.sharing === true && term.shareAll === true;
+    const disabled =
+        !category.startsWith(VERIFIABLE_DATA_FIELD_PREFIX) &&
+        required &&
+        term.sharing === true &&
+        term.shareAll === true;
 
     return (
         <li className="border-b border-solid border-grayscale-200 last:border-none text-black transition-colors">

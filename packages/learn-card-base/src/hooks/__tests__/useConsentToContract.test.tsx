@@ -8,13 +8,19 @@ const mocks = vi.hoisted(() => ({
     review: vi.fn(),
     materialize: vi.fn(),
     did: 'did:example:holder',
+    upload: vi.fn(),
+    add: vi.fn(),
+    enqueue: vi.fn(),
 }));
 vi.mock('learn-card-base', () => ({
     switchedProfileStore: { get: { switchedDid: () => 'learner' } },
     useWallet: () => ({
         initWallet: async () => ({
             id: { did: () => mocks.did },
+            store: { LearnCloud: { uploadEncrypted: mocks.upload } },
+            index: { LearnCloud: { get: async () => [], add: mocks.add } },
             invoke: {
+                issueCredential: async (credential: unknown) => credential,
                 getContract: mocks.getContract,
                 consentToContract: mocks.consent,
             },
@@ -29,7 +35,13 @@ vi.mock('@tanstack/react-query', () => ({
     }),
 }));
 vi.mock('../useConsentAudienceReview', () => ({ useConsentAudienceReview: () => mocks.review }));
-vi.mock('../useSharedUrisInTerms', () => ({ getTermsWithSharedUrisForWallet: mocks.materialize }));
+vi.mock('../useSharedUrisInTerms', async importOriginal => ({
+    ...(await importOriginal<typeof import('../useSharedUrisInTerms')>()),
+    getTermsWithSharedUrisForWallet: mocks.materialize,
+}));
+vi.mock('../../stores/pendingContractSyncStore', () => ({
+    enqueuePendingContractSyncSafely: mocks.enqueue,
+}));
 import { useConsentToContract } from '../useConsentToContract';
 
 type ConsentSubmission = Parameters<ReturnType<typeof useConsentToContract>['mutate']>[0];
@@ -260,5 +272,84 @@ describe('interactive consent audience boundary', () => {
         );
         expect(mocks.consent.mock.calls[1]).toEqual(mocks.consent.mock.calls[0]);
         await vi.waitFor(() => expect(hook.result.current.publicationRetryAvailable).toBe(false));
+    });
+});
+
+describe('profile answers are committed only after the complete review is accepted', () => {
+    const first = 'VerifiableData:demo:profile:branch';
+    const second = 'VerifiableData:demo:profile:gender';
+    const submit = () => {
+        const terms = structuredClone(selection.terms);
+        terms.read.credentials.categories = {
+            [first]: { sharing: true, shared: [] },
+            [second]: { sharing: true, shared: [] },
+        };
+        mocks.review.mockResolvedValue({
+            terms,
+            changes: [
+                { category: first, label: 'Branch', value: 'North' },
+                { category: second, label: 'Gender', value: 'Other' },
+            ],
+        });
+        mocks.getContract.mockResolvedValue({
+            ...contract,
+            contract: { read: { credentials: { categories: { [first]: {}, [second]: {} } } } },
+        });
+        mocks.materialize.mockResolvedValue({ terms });
+        mocks.upload.mockImplementation(
+            async (vc, recipients) =>
+                (recipients ? 'shared:' : 'private:') + vc.credentialSubject.dataKey
+        );
+        mocks.add.mockResolvedValue(true);
+        const hook = renderHook(() => useConsentToContract('contract', 'owner'));
+        return (hook.result.current as unknown as MutationHarness).mutationFn;
+    };
+    beforeEach(() => vi.resetAllMocks());
+    afterEach(cleanup);
+
+    it('leaves existing grants and the wallet untouched when a later field fails', async () => {
+        const mutate = submit();
+        mocks.upload
+            .mockResolvedValueOnce('private:first')
+            .mockResolvedValueOnce('shared:first')
+            .mockRejectedValueOnce(new Error('upload failed'));
+        await expect(mutate(selection)).rejects.toThrow('upload failed');
+        expect(mocks.consent).not.toHaveBeenCalled();
+        expect(mocks.add).not.toHaveBeenCalled();
+        expect(mocks.enqueue).not.toHaveBeenCalled();
+    });
+    it('leaves accepted answers untouched when the contract rejects the review', async () => {
+        const mutate = submit();
+        mocks.consent.mockRejectedValue(new Error('audience changed'));
+        await expect(mutate(selection)).rejects.toThrow('audience changed');
+        expect(mocks.add).not.toHaveBeenCalled();
+        expect(mocks.enqueue).not.toHaveBeenCalled();
+    });
+    it('publishes both reviewed answers in one consent and only then updates existing grants', async () => {
+        const mutate = submit();
+        mocks.consent.mockImplementation(async (_uri, submission) => {
+            expect(mocks.add).not.toHaveBeenCalled();
+            expect(mocks.enqueue).not.toHaveBeenCalled();
+            expect(submission.terms.read.credentials.categories).toEqual({
+                [first]: { sharing: true, shared: ['shared:' + first] },
+                [second]: { sharing: true, shared: ['shared:' + second] },
+            });
+            return { termsUri: 'accepted' };
+        });
+        await mutate(selection);
+        expect(mocks.add).toHaveBeenCalledTimes(2);
+        expect(mocks.enqueue).toHaveBeenCalledTimes(2);
+        expect(JSON.stringify(mocks.enqueue.mock.calls)).not.toContain('North');
+    });
+    it('keeps accepted consent successful and queues reindexing if local persistence fails', async () => {
+        const mutate = submit();
+        mocks.consent.mockResolvedValue({ termsUri: 'accepted' });
+        mocks.add.mockRejectedValueOnce(new Error('index offline'));
+        await expect(mutate(selection)).resolves.toEqual({ termsUri: 'accepted' });
+        expect(mocks.enqueue.mock.calls[0]![0]).toMatchObject({
+            category: first,
+            acceptedField: { sharedUri: 'shared:' + first },
+        });
+        expect(mocks.enqueue.mock.calls[1]![0]).not.toHaveProperty('acceptedField');
     });
 });

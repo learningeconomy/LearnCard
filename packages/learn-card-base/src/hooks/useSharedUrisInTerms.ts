@@ -4,6 +4,7 @@ import { switchedProfileStore, useWallet } from 'learn-card-base';
 import { LCR } from 'learn-card-base/types/credential-records';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { cloneDeep } from 'lodash';
+import { getVerifiableDataIndexId } from './createVerifiableDataCredential';
 import { getLogger } from '../logging/logger';
 
 const log = getLogger('use-shared-uris-in-terms');
@@ -141,7 +142,7 @@ const getOrCreateSharedUriFromCategoryRecords = async (
 
     if (mainRecord) {
         const isField = category.startsWith('VerifiableData:');
-        if (isField && mainRecord.id !== `__verifiable_data_${category}__`) {
+        if (isField && mainRecord.id !== getVerifiableDataIndexId(category)) {
             return { sharedUri: false, status: 'missing' };
         }
         // Legacy owner-keyed copies are safe only when their complete effective

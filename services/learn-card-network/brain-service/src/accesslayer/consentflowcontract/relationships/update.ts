@@ -828,18 +828,18 @@ export const syncCredentialsToContract = async (
             };
         }
 
-        // Make sure shared array exists
-        if (!updatedTerms.read.credentials.categories[category].shared) {
-            updatedTerms.read.credentials.categories[category].shared = [];
+        const grant = updatedTerms.read.credentials.categories[category];
+        if (category.startsWith('VerifiableData:')) {
+            if (credentialUris.length !== 1) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Expected one answer per profile field.',
+                });
+            }
+            grant.shared = credentialUris;
+        } else {
+            grant.shared = [...new Set([...(grant.shared ?? []), ...credentialUris])];
         }
-
-        // Add the credential URIs to the shared array of the category
-        updatedTerms.read.credentials.categories[category].shared = [
-            ...new Set([
-                ...(updatedTerms.read.credentials.categories[category].shared || []),
-                ...credentialUris,
-            ]),
-        ];
     }
 
     // Use flattenObject for both the query params and transaction properties to handle Neo4j limitations

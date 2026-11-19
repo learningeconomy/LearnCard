@@ -82,7 +82,9 @@ const pruneStaleSharedUris = (terms: ConsentFlowTerms, validSharedUris: Set<stri
     const nextTerms = JSON.parse(JSON.stringify(terms)) as ConsentFlowTerms;
     let removed = 0;
 
-    Object.values(nextTerms.read.credentials.categories).forEach(categoryInfo => {
+    Object.entries(nextTerms.read.credentials.categories).forEach(([category, categoryInfo]) => {
+        // The agreed field snapshot outlives replacement of the holder's current answer.
+        if (category.startsWith('VerifiableData:')) return;
         const previous = categoryInfo.shared ?? [];
         const pruned = previous.filter(uri => validSharedUris.has(uri));
         removed += previous.length - pruned.length;

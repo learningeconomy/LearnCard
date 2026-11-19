@@ -3,18 +3,20 @@ import { enqueuePendingContractSyncSafely } from '../stores/pendingContractSyncS
 import { useWallet } from './useWallet';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { LCR } from 'learn-card-base/types/credential-records';
-import type { UnsignedVC } from '@learncard/types';
+import {
+    createVerifiableDataCredential,
+    getVerifiableDataIndexId,
+    VERIFIABLE_DATA_INDEX_PREFIX,
+} from './createVerifiableDataCredential';
 import { getLogger } from '../logging/logger';
 const log = getLogger('use-verifiable-data');
 
 const VERIFIABLE_DATA_CATEGORY = 'VerifiableData';
 
-/** Prefix used for the LearnCloud index `id` of every verifiable-data record. */
-export const VERIFIABLE_DATA_INDEX_PREFIX = '__verifiable_data_';
-
-/** Builds the canonical index `id` for a verifiable-data key. */
-export const getVerifiableDataIndexId = (key: string): string =>
-    `${VERIFIABLE_DATA_INDEX_PREFIX}${key}__`;
+export {
+    getVerifiableDataIndexId,
+    VERIFIABLE_DATA_INDEX_PREFIX,
+} from './createVerifiableDataCredential';
 
 /** True when a credential record is internal verifiable-data plumbing (not a user-facing credential). */
 export const isVerifiableDataRecord = (record?: { id?: string } | null): boolean =>
@@ -35,50 +37,6 @@ type VerifiableDataRecord<T> = Omit<LCR, 'category'> & {
     category: string;
     verifiableData?: T;
     issuanceDate?: string;
-};
-
-/**
- * Inline JSON-LD context for VerifiableData credentials.
- * Uses @json type so the payload is preserved as a native JSON literal
- * without needing to stringify/parse.
- */
-const VERIFIABLE_DATA_CONTEXT = {
-    VerifiableData: 'https://docs.learncard.com/schemas/credentials/verifiable-data#VerifiableData',
-    dataKey: 'https://docs.learncard.com/schemas/credentials/verifiable-data#dataKey',
-    dataPayload: {
-        '@id': 'https://docs.learncard.com/schemas/credentials/verifiable-data#dataPayload',
-        '@type': '@json',
-    },
-} as const;
-
-/**
- * Creates a simple self-issued VC v2 credential containing arbitrary data.
- * The data is stored as a native JSON literal via the @json-typed dataPayload field.
- */
-const createVerifiableDataCredential = async <T>(
-    wallet: BespokeLearnCard,
-    key: string,
-    data: T,
-    options?: Pick<VerifiableDataOptions, 'name' | 'description'>
-) => {
-    const did = wallet.id.did();
-    const validFrom = new Date().toISOString();
-
-    const unsignedCredential: UnsignedVC = {
-        '@context': ['https://www.w3.org/ns/credentials/v2', VERIFIABLE_DATA_CONTEXT],
-        type: ['VerifiableCredential', 'VerifiableData'],
-        issuer: did,
-        validFrom,
-        ...(options?.name && { name: options.name }),
-        ...(options?.description && { description: options.description }),
-        credentialSubject: {
-            id: did,
-            dataKey: key,
-            dataPayload: data,
-        },
-    };
-
-    return wallet.invoke.issueCredential(unsignedCredential);
 };
 
 /**

@@ -883,6 +883,61 @@ describe('ConsentFlow E2E Tests', () => {
             termsUri = _termsUri;
         });
 
+        it('replaces the active profile field without changing another contract’s one-time snapshot', async () => {
+            const field = 'VerifiableData:demo:profile:branch';
+            const create = async (owner: LearnCard, live: boolean) => {
+                const uri = await owner.invoke.createContract({
+                    name: 'Profile field',
+                    contract: {
+                        ...normalContract,
+                        read: {
+                            personal: {},
+                            credentials: { categories: { [field]: { required: true } } },
+                        },
+                    },
+                });
+                const { termsUri } = await b.invoke.consentToContract(uri, {
+                    terms: {
+                        ...normalNoTerms,
+                        read: {
+                            personal: {},
+                            credentials: {
+                                sharing: true,
+                                categories: {
+                                    [field]: {
+                                        sharing: true,
+                                        shareAll: live,
+                                        shared: ['credential:old'],
+                                    },
+                                },
+                            },
+                        },
+                    },
+                });
+                return { uri, termsUri };
+            };
+            const once = await create(a, false);
+            const live = await create(c, true);
+            await b.invoke.syncCredentialsToContract(
+                live.termsUri,
+                { [field]: ['credential:new'] },
+                undefined,
+                true
+            );
+            await expect(
+                b.invoke.syncCredentialsToContract(
+                    live.termsUri,
+                    { [field]: ['credential:new', 'credential:extra'] },
+                    undefined,
+                    true
+                )
+            ).rejects.toThrow();
+            const onceData = await a.invoke.getConsentFlowData(once.uri);
+            const liveData = await c.invoke.getConsentFlowData(live.uri);
+            expect(onceData.records[0]?.credentials.categories[field]).toEqual(['credential:old']);
+            expect(liveData.records[0]?.credentials.categories[field]).toEqual(['credential:new']);
+        });
+
         it('should allow syncing credentials to a contract in a single category', async () => {
             const testCredentials = ['credential:abc123', 'credential:def456'];
 

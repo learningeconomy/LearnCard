@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { ConsentProfileFields, type FieldReview } from './ConsentProfileFields';
-import type { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
+import type { ConsentFlowContractDetails } from '@learncard/types';
+import type { ReviewedProfileFields } from './reviewedProfileFields';
 import { useModal } from '../components/modals/useModal';
 import { ModalTypes } from '../components/modals/types/Modals';
 import { FullCredentialDisclosure } from '../components/FullCredentialDisclosure';
@@ -16,7 +17,7 @@ const ConsentAudienceReview = ({
 }: {
     contract: ConsentFlowContractDetails;
     fieldReview?: FieldReview;
-    onConfirm: (terms?: ConsentFlowTerms) => void;
+    onConfirm: (review?: ReviewedProfileFields) => void;
     onCancel: () => void;
     onDismiss: () => void;
 }) => {
@@ -113,7 +114,7 @@ export const useConsentAudienceReview = () => {
     return async (
         contract: ConsentFlowContractDetails,
         fieldReview?: FieldReview
-    ): Promise<ConsentFlowTerms | undefined> => {
+    ): Promise<ReviewedProfileFields | undefined> => {
         if (
             !fieldReview &&
             !(contract.audienceVersion ?? 0) &&
@@ -123,7 +124,7 @@ export const useConsentAudienceReview = () => {
             )
         )
             return;
-        let result: ConsentFlowTerms | undefined;
+        let result: ReviewedProfileFields | undefined;
         const accepted = await new Promise<boolean>(resolve => {
             let settled = false;
             const settle = (value: boolean) => {
