@@ -1,3 +1,4 @@
+import { useContractProfileFieldLabel } from '../../../hooks/useContractProfileFieldLabel';
 import React, { useEffect, useState, useCallback } from 'react';
 import * as m from '../../../paraglide/messages.js';
 import { mDynamic } from '../../../i18n/mDynamic';
@@ -38,6 +39,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
     onPreview,
     fieldsOnly = false,
 }) => {
+    const getProfileFieldLabel = useContractProfileFieldLabel();
     const [selectedContract, setSelectedContract] = useState<ConsentFlowContractDetails | null>(
         null
     );
@@ -354,7 +356,8 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                                         {metadata?.IconWithShape && (
                                                             <metadata.IconWithShape className="w-4 h-4" />
                                                         )}
-                                                        {metadata?.title || category}
+                                                        {getProfileFieldLabel(category) ??
+                                                            (metadata?.title || category)}
                                                     </span>
                                                 );
                                             })}
@@ -394,7 +397,8 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                                         {metadata?.IconWithShape && (
                                                             <metadata.IconWithShape className="w-4 h-4" />
                                                         )}
-                                                        {metadata?.title || category}
+                                                        {getProfileFieldLabel(category) ??
+                                                            (metadata?.title || category)}
                                                     </span>
                                                 );
                                             })}

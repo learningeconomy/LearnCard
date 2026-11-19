@@ -367,6 +367,30 @@ describe('canonical contract preview scope copy', () => {
             previewScope({ area: 'read', type: 'credential', key: 'Custom Scope', required: false })
         ).toMatchObject({ label: 'Custom Scope', subtitle: '' });
     });
+
+    it('uses a configured profile label in preview copy and a generic label without tenant context', () => {
+        const scope: ConsentFlowContractScope = {
+            area: 'read',
+            type: 'credential',
+            key: 'VerifiableData:vetpass:military-profile:branch',
+            required: true,
+        };
+        const input = {
+            name: 'Acme',
+            kind: 'requires_consent' as const,
+            diff: { added: [scope], removed: [], changed: [] },
+        };
+        const fallback = buildContractUpdatePreview(input);
+        expect(fallback.headline).toBe('Acme is asking to see your profile information');
+        expect(fallback.rows[0]).toMatchObject({ scope, label: 'profile information' });
+
+        const labeled = buildContractUpdatePreview({
+            ...input,
+            getCredentialLabel: key => (key === scope.key ? 'Branch of service' : undefined),
+        });
+        expect(labeled.headline).toBe('Acme is asking to see your Branch of service');
+        expect(labeled.rows[0]).toMatchObject({ scope, label: 'Branch of service' });
+    });
 });
 
 describe('ConsentFlowContractChangesValidator', () => {

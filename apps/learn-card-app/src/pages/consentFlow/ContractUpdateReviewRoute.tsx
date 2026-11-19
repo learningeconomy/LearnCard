@@ -1,3 +1,4 @@
+import { useContractProfileFieldLabel } from '../../hooks/useContractProfileFieldLabel';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { IonSpinner } from '@ionic/react';
@@ -28,6 +29,7 @@ const ContractUpdateReviewRoute: React.FC = () => {
     const location = useLocation();
     const history = useHistory();
     const uri = new URLSearchParams(location.search).get('uri') ?? '';
+    const getProfileFieldLabel = useContractProfileFieldLabel();
     const locale = useLocale();
     const readerDid = walletStore.use.wallet()?.id.did();
     const walletReady = Boolean(readerDid);
@@ -84,8 +86,9 @@ const ContractUpdateReviewRoute: React.FC = () => {
             diff: latestUpdate.diff,
             ...(statusQuery.data?.status === 'suspended' ? { status: 'suspended' as const } : {}),
             translate: mDynamic,
+            getCredentialLabel: getProfileFieldLabel,
         });
-    }, [contract?.name, latestUpdate, statusQuery.data?.status, locale]);
+    }, [contract?.name, latestUpdate, statusQuery.data?.status, locale, getProfileFieldLabel]);
     const unchangedRows = useMemo(() => {
         if (!contract || !latestUpdate) return [];
         const unchangedScopes = getUnchangedAccessScopes(
@@ -98,9 +101,10 @@ const ContractUpdateReviewRoute: React.FC = () => {
             kind: 'requires_consent',
             diff: { added: unchangedScopes, removed: [], changed: [] },
             translate: mDynamic,
+            getCredentialLabel: getProfileFieldLabel,
         }).rows;
         return localizedRows.map(row => ({ area: row.scope.area, label: row.label }));
-    }, [contract, latestUpdate, record?.terms, locale]);
+    }, [contract, latestUpdate, record?.terms, locale, getProfileFieldLabel]);
     const hasExistingAccess = useMemo(() => {
         const terms = record?.terms;
         if (!contract || !terms) return false;

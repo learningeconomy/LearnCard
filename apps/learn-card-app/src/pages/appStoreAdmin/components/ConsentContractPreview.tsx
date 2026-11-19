@@ -1,3 +1,4 @@
+import { useContractProfileFieldLabel } from '../../../hooks/useContractProfileFieldLabel';
 import React from 'react';
 import { Loader2, ShieldAlert, BookOpen, PenTool, Eye } from 'lucide-react';
 import { getLogger } from 'learn-card-base';
@@ -21,6 +22,7 @@ interface ConsentContractPreviewProps {
 }
 
 export const ConsentContractPreview: React.FC<ConsentContractPreviewProps> = ({ contractUri }) => {
+    const getProfileFieldLabel = useContractProfileFieldLabel();
     const { newModal } = useModal();
     const { initWallet } = useWallet();
 
@@ -138,7 +140,8 @@ export const ConsentContractPreview: React.FC<ConsentContractPreviewProps> = ({ 
                                             {metadata?.IconWithShape && (
                                                 <metadata.IconWithShape className="w-3.5 h-3.5" />
                                             )}
-                                            {metadata?.title || category}
+                                            {getProfileFieldLabel(category) ??
+                                                (metadata?.title || category)}
                                         </span>
                                     );
                                 })}
@@ -173,7 +176,8 @@ export const ConsentContractPreview: React.FC<ConsentContractPreviewProps> = ({ 
                                             {metadata?.IconWithShape && (
                                                 <metadata.IconWithShape className="w-3.5 h-3.5" />
                                             )}
-                                            {metadata?.title || category}
+                                            {getProfileFieldLabel(category) ??
+                                                (metadata?.title || category)}
                                         </span>
                                     );
                                 })}

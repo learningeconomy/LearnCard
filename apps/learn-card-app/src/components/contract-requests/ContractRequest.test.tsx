@@ -5,6 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ContractRequest, PendingContractRequests } from './ContractRequest';
 import FullScreenConsentFlow from '../../pages/consentFlow/FullScreenConsentFlow';
 import { setLocale } from '../../paraglide/runtime.js';
+import { TenantConfigProvider } from 'learn-card-base/config/TenantConfigProvider';
+import { DEFAULT_LEARNCARD_TENANT_CONFIG } from 'learn-card-base/config/tenantDefaults';
 
 const state = vi.hoisted(() => ({
     status: {
@@ -105,7 +107,10 @@ vi.mock('learn-card-base', () => ({
 vi.mock('launchdarkly-react-client-sdk', () => ({
     useFlags: () => ({ enableContractRequests: state.flags }),
 }));
-vi.mock('learn-card-base/config/TenantConfigProvider', () => ({ useBrandingConfig: () => ({}) }));
+vi.mock('learn-card-base/config/TenantConfigProvider', async importOriginal => ({
+    ...(await importOriginal<typeof import('learn-card-base/config/TenantConfigProvider')>()),
+    useBrandingConfig: () => ({}),
+}));
 vi.mock('../../pages/consentFlow/FullScreenConsentFlow', () => ({
     default: (props: { beforeSubmit?: () => Promise<void> }) => {
         state.beforeSubmit = props.beforeSubmit;
@@ -366,6 +371,42 @@ describe('referral actions', () => {
         expect(screen.getByText(/Custom Partner Category/)).toHaveTextContent('Logros');
         expect(screen.getByText(/Custom Partner Category/)).not.toHaveTextContent('Achievement');
         expect(screen.getByText(/Custom Partner Category/)).not.toHaveTextContent('image');
+    });
+    it('shows tenant field labels in invitation details with a safe fallback', async () => {
+        const key = 'VerifiableData:vetpass:military-profile:branch';
+        state.getContract.mockResolvedValue({
+            ...state.contract,
+            contract: {
+                ...state.contract.contract,
+                read: {
+                    personal: {},
+                    credentials: {
+                        categories: {
+                            [key]: {},
+                            'VerifiableData:vetpass:military-profile:old': {},
+                        },
+                    },
+                },
+            },
+        });
+        show(
+            <TenantConfigProvider
+                config={{
+                    ...DEFAULT_LEARNCARD_TENANT_CONFIG,
+                    tenantId: 'vetpass',
+                    verifiableDataSchemas: {
+                        'military-profile': {
+                            label: 'Military profile',
+                            fields: { branch: { label: 'Branch of service', type: 'text' } },
+                        },
+                    },
+                }}
+            >
+                <ContractRequest contractUri={state.contract.uri} requestId="req-1" details />
+            </TenantConfigProvider>
+        );
+        expect(await screen.findByText('Branch of service and Field unavailable')).toBeVisible();
+        expect(screen.queryByText(/VerifiableData:/)).toBeNull();
     });
     it('fails closed on status read errors and supports retry', async () => {
         state.getStatus.mockRejectedValueOnce(new Error('private technical error'));

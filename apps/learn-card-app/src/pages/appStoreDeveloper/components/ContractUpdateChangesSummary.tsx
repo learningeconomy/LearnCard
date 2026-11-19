@@ -1,3 +1,4 @@
+import { useContractProfileFieldLabel } from '../../../hooks/useContractProfileFieldLabel';
 import React from 'react';
 import type { classifyContractChange } from '@learncard/helpers';
 import type { ConsentFlowContract, ConsentFlowContractChanges } from '@learncard/types';
@@ -83,6 +84,7 @@ const Group: React.FC<{ title: string; rows: React.ReactElement[] }> = ({ title,
 
 /** Summarizes only the draft patch; it never changes or publishes the request. */
 const ContractUpdateChangesSummary: React.FC<Props> = ({ baseline, value, changes, kind }) => {
+    const getProfileFieldLabel = useContractProfileFieldLabel();
     const rows: Record<'request' | 'read' | 'write', React.ReactElement[]> = {
         request: [],
         read: [],
@@ -107,7 +109,9 @@ const ContractUpdateChangesSummary: React.FC<Props> = ({ baseline, value, change
                         ? key
                         : labelKey
                           ? mDynamic(labelKey)
-                          : (contractCategoryNameToCategoryMetadata(key)?.title ?? key);
+                          : (getProfileFieldLabel(key) ??
+                            contractCategoryNameToCategoryMetadata(key)?.title ??
+                            key);
                 rows[area].push(
                     <ChangeRow
                         key={`${type}-${key}`}

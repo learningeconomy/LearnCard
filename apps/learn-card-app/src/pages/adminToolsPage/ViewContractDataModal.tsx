@@ -1,3 +1,4 @@
+import { useContractProfileFieldLabel } from '../../hooks/useContractProfileFieldLabel';
 import React from 'react';
 import moment from 'moment';
 
@@ -75,7 +76,8 @@ const getPermissionModeClassName = (config: EntryConfig) => {
 
 const renderCategoryPermissions = (
     entries: Record<string, EntryConfig> | undefined,
-    emptyLabel: string
+    emptyLabel: string,
+    getProfileFieldLabel: (category: string) => string | undefined
 ) => {
     const entryList = Object.entries(entries ?? {});
 
@@ -86,6 +88,7 @@ const renderCategoryPermissions = (
     return (
         <div className="grid gap-2">
             {entryList.map(([key, config]) => {
+                const profileFieldLabel = getProfileFieldLabel(key);
                 const { IconComponent, title } = getInfoFromContractKey(key);
                 const metadata = contractCategoryNameToCategoryMetadata(key);
                 const CategoryIcon = metadata?.IconWithShape;
@@ -105,9 +108,11 @@ const renderCategoryPermissions = (
 
                         <div className="min-w-0 space-y-v3-1">
                             <p className="text-sm font-medium text-grayscale-900 wrap-break-word leading-snug">
-                                {title}
+                                {profileFieldLabel ?? title}
                             </p>
-                            <p className="text-xs text-grayscale-500 break-all">{key}</p>
+                            {profileFieldLabel === undefined && (
+                                <p className="text-xs text-grayscale-500 break-all">{key}</p>
+                            )}
                             <span
                                 className={`inline-flex w-fit rounded-full px-2 py-1 text-[11px] font-medium ${getPermissionModeClassName(
                                     config
@@ -196,6 +201,7 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
     onCreateSuccess,
 }) => {
     const { newModal, closeModal } = useModal();
+    const getProfileFieldLabel = useContractProfileFieldLabel();
     const [isConsentRecordsOpen, setIsConsentRecordsOpen] = React.useState(false);
     const [didInput, setDidInput] = React.useState('');
     const [activeDidFilter, setActiveDidFilter] = React.useState('');
@@ -543,7 +549,8 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
                         </p>
                         {renderCategoryPermissions(
                             contractDefinition.read.credentials.categories,
-                            'No credential read categories defined'
+                            'No credential read categories defined',
+                            getProfileFieldLabel
                         )}
                     </div>
                 </article>
@@ -567,7 +574,8 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
                         </p>
                         {renderCategoryPermissions(
                             contractDefinition.write.credentials.categories,
-                            'No credential write categories defined'
+                            'No credential write categories defined',
+                            getProfileFieldLabel
                         )}
                     </div>
                 </article>
