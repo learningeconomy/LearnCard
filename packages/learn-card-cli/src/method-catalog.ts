@@ -288,6 +288,7 @@ export const STATIC_INVOKE_METHODS: readonly string[] = [
     'keyToDid',
     'keyToVerificationMethod',
     'learnCloudBatchResolve',
+    'learnCloudCompareAndSwapIndexRecord',
     'learnCloudCount',
     'learnCloudCreate',
     'learnCloudCreateMany',

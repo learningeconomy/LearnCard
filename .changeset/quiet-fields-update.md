@@ -1,4 +1,5 @@
 ---
+'@learncard/cli': patch
 '@learncard/learn-cloud-plugin': minor
 '@learncard/learn-cloud-client': minor
 '@learncard/learn-cloud-service': minor
