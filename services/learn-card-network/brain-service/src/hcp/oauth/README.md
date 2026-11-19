@@ -16,7 +16,7 @@ This unit ships:
 - Dynamic client registration, Authorization Code + PKCE, local consent HTML
 - RS probe `GET /hcp/oauth/v1/probe` (bearer to grant metadata; not an MCP tool)
 
-MCP tools are **Unit 2**. Do not claim `bindings:["mcp"]` / `conformsTo` yet.
+MCP tools ship in **Unit 2** (`../mcp/`). Do not claim `bindings:["mcp"]` / `conformsTo` until Unit 3.
 
 ## How do I test this
 
@@ -42,7 +42,7 @@ curl -s http://127.0.0.1:18765/.well-known/oauth-authorization-server | jq .
 # Browser consent: open the authorize URL your client gets, paste subjectDid + grantId.
 ```
 
-Claude Code end-to-end against real MCP tools is **Unit 2**. Unit 1 only proves PRM, AS, token, and probe.
+For Claude Code against real MCP tools, see `../mcp/README.md` (Unit 2). Unit 1 proves PRM, AS, token, and probe.
 
 ## Decisions (Unit 1)
 

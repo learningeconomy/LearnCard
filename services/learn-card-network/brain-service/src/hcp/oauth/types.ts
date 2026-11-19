@@ -66,6 +66,8 @@ export type ResolvedHcpGrantAuth = {
     oauthClientId: string;
     scopes: string[];
     tokenJti: string;
+    /** JWT `exp` (unix seconds). Required by MCP requireBearerAuth AuthInfo. */
+    expiresAt: number;
 };
 
 export type HcpOAuthUrls = {

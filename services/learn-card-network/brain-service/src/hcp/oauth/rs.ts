@@ -55,6 +55,7 @@ export const resolveBearerToGrant = async (
             oauthClientId: verified.claims.client_id,
             scopes,
             tokenJti: verified.claims.jti,
+            expiresAt: verified.claims.exp,
         },
     };
 };
