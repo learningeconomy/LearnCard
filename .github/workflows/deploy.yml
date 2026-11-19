@@ -399,10 +399,9 @@ jobs:
                   echo "needed=$needed" >> "$GITHUB_OUTPUT"
                   echo "Native DIDKit plugin needed: $needed"
 
-            # AI Passport backend deploys (Fly). Automatic legs stay off until
-            # the repo var AIP_DEPLOY_ENABLED is 'true', so merging this workflow doesn't race
-            # the AI-Passport repo's own deploy-fly.yml. Flip the var when that repo is frozen.
-            # Manual dispatch ignores the var so ops can prove staging first.
+            # AI Passport backend deploys (Fly). Automatic legs need the repo var
+            # AIP_DEPLOY_ENABLED='true'. Production pins lca-backend only; ai-passport is retired.
+            # Manual dispatch ignores the var so ops can still ship staging or lca-backend.
             - name: Determine AI Passport Deployments
               id: aip-env
               env:
@@ -414,10 +413,9 @@ jobs:
                   AFFECTED: ${{ steps.affected.outputs.affected }}
                   AIP_DEPLOY_ENABLED: ${{ vars.AIP_DEPLOY_ENABLED }}
               run: |
-                  # Production Fly app names are pinned here; staging reads FLY_APP_NAME from
-                  # its GitHub Environment because ops hasn't created that app yet.
+                  # Production pins lca-backend only; the ai-passport Fly app is retired.
+                  # Staging reads FLY_APP_NAME from its GitHub Environment.
                   BE_STAGING='{"name":"AI Passport API Staging","environment":"ai-passport-api-staging","stage":"staging","fly_app":""}'
-                  BE_PRODUCTION='{"name":"AI Passport API Production","environment":"ai-passport-api-production","stage":"production","fly_app":"ai-passport"}'
                   BE_LCA_PRODUCTION='{"name":"LCA Backend Production","environment":"ai-passport-lca-backend-production","stage":"production","fly_app":"lca-backend"}'
 
                   set_matrix() {
@@ -447,7 +445,7 @@ jobs:
                         ;;
                       production)
                         if [[ "$DEPLOY_BACKEND" == 'true' ]]; then
-                          BE_LEGS+=("$BE_PRODUCTION" "$BE_LCA_PRODUCTION")
+                          BE_LEGS+=("$BE_LCA_PRODUCTION")
                         fi
                         ;;
                       *)
@@ -460,7 +458,7 @@ jobs:
                     echo "Automatic AI Passport deploys are off (repo var AIP_DEPLOY_ENABLED != 'true')."
                   elif [[ "$IS_RELEASE" == 'true' ]]; then
                     if [[ "$BACKEND_CHANGED" == 'true' ]]; then
-                      BE_LEGS+=("$BE_PRODUCTION" "$BE_LCA_PRODUCTION")
+                      BE_LEGS+=("$BE_LCA_PRODUCTION")
                     fi
                   else
                     if is_affected ai-passport-backend; then
@@ -2625,9 +2623,19 @@ jobs:
                   FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
                   FLY_APP: ${{ steps.fly-target.outputs.app }}
               run: |
+                  set -euo pipefail
+                  # List first and fail on auth/API errors so they can't look like missing names.
+                  # A compound list in command substitution can keep going after flyctl exits
+                  # unauthorized, which is what happened on the retired ai-passport app:
+                  # https://github.com/learningeconomy/LearnCard/actions/runs/44586993630/job/135783405007
+                  secrets_json=$(flyctl secrets list --app "$FLY_APP" --json) || {
+                    status=$?
+                    echo "::error::flyctl failed to list secrets for app $FLY_APP (exit $status). If the error above is unauthorized, the FLY_API_TOKEN for this environment cannot access that app. This is not a missing-secrets failure."
+                    exit "$status"
+                  }
                   present=$(
                     {
-                      flyctl secrets list --app "$FLY_APP" --json | jq -r '.[] | (.Name // .name)'
+                      jq -r '.[] | (.Name // .name)' <<< "$secrets_json"
                       sed -n '/^\[env\]/,/^\[/s/^ *\([A-Z0-9_]*\) *=.*/\1/p' services/ai-passport-backend/fly.toml
                     } | sort -u
                   )
@@ -2796,8 +2804,14 @@ jobs:
                   FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
                   FLY_APP: ${{ steps.fly-target.outputs.app }}
               run: |
-                  # Separate assignment preserves API failure (the later config read must not mask it).
-                  secret_names=$(flyctl secrets list --app "$FLY_APP" --json | jq -r '.[] | (.Name // .name)')
+                  set -euo pipefail
+                  # List first and fail on auth/API errors so they can't look like missing names.
+                  secrets_json=$(flyctl secrets list --app "$FLY_APP" --json) || {
+                    status=$?
+                    echo "::error::flyctl failed to list secrets for app $FLY_APP (exit $status). If the error above is unauthorized, the FLY_API_TOKEN for this environment cannot access that app. This is not a missing-secrets failure."
+                    exit "$status"
+                  }
+                  secret_names=$(jq -r '.[] | (.Name // .name)' <<< "$secrets_json")
                   present=$(
                     {
                       printf '%s\n' "$secret_names"
