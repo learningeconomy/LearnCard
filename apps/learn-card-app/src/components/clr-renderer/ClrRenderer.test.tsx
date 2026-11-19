@@ -22,6 +22,7 @@ const mocks = vi.hoisted(() => ({
     close: vi.fn(),
     modal: vi.fn(),
     verify: vi.fn(),
+    getProfile: vi.fn(),
 }));
 vi.mock('learn-card-base/helpers/walletHelpers', () => ({
     getBespokeLearnCard: async () => ({ invoke: { verifyCredential: mocks.verify } }),
@@ -33,6 +34,7 @@ vi.mock('learn-card-base', () => ({
     },
     ModalTypes: { Right: 'right' },
     CredentialCategoryEnum: { learningHistory: 'learningHistory' },
+    useGetProfile: mocks.getProfile,
     isSkillCompetencyAlignment: () => false,
     SkillCompetencyCard: () => null,
 }));
@@ -76,10 +78,32 @@ beforeEach(() => {
     mocks.close.mockClear();
     mocks.modal.mockReset();
     mocks.verify.mockReset().mockResolvedValue({ checks: ['proof'], warnings: [], errors: [] });
+    mocks.getProfile.mockReset().mockReturnValue({ data: undefined });
     setLocale('en', { reload: false });
 });
 
 describe('shared CLR renderer', () => {
+    it('shows the matching LCN display name in place of the transcript subject DID', () => {
+        const did = 'did:web:localhost%3A4000:users:learner';
+        const boost = {
+            ...clrMixedCareerRecord.credential,
+            credentialSubject: {
+                ...clrMixedCareerRecord.credential.credentialSubject,
+                id: did,
+                identifier: undefined,
+            },
+        };
+        const model = normalizeClrTranscriptDisplayModel(boost);
+        const view = render(<ClrRenderer model={model} options={options} />);
+        const header = screen.getByRole('banner');
+        expect(within(header).getByText(did)).toBeInTheDocument();
+
+        mocks.getProfile.mockReturnValue({ data: { did, displayName: 'Avery Jordan' } });
+        view.rerender(<ClrRenderer model={model} options={options} />);
+        expect(within(header).getByText('Avery Jordan')).toBeInTheDocument();
+        expect(within(header).queryByText(did)).not.toBeInTheDocument();
+    });
+
     it.each([clrMixedCareerRecord, clrMilitaryComprehensiveRecord])(
         'uses supplied outer evidence without rechecking, preserving expiration for $id',
         fixture => {

@@ -13,6 +13,7 @@ vi.mock('learn-card-base', () => ({
     useModal: () => modal,
     ModalTypes: { Right: 'right' },
     CredentialCategoryEnum: { learningHistory: 'learningHistory' },
+    useGetProfile: () => ({ data: undefined }),
     isSkillCompetencyAlignment: () => false,
     SkillCompetencyCard: () => null,
 }));

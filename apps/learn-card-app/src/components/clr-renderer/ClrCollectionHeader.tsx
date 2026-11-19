@@ -13,6 +13,7 @@ import type { ClrLayoutKind } from 'learn-card-base/helpers/credentials/clr/layo
 import * as m from '../../paraglide/messages.js';
 import type { ClrVerificationSnapshot } from 'learn-card-base/helpers/credentials/clr/verification.types';
 import { ClrVerificationSummary } from '../clr-transcript/ClrVerificationSummary';
+import { useClrLearnerIdentity } from '../clr-transcript/useClrLearnerIdentity';
 
 import { getClrLayoutLabel, getClrSectionLabel } from './labels';
 export const ClrCollectionHeader = ({
@@ -38,6 +39,8 @@ export const ClrCollectionHeader = ({
 }) => {
     const military = layout === 'military';
     const collection = model.canonical.collection;
+    const learnerName = model.header.learnerName?.value;
+    const learner = useClrLearnerIdentity(learnerName);
     const publisher = collection.publisher;
     const publisherName = publisher?.name?.value ?? publisher?.id?.value ?? publisher?.url?.value;
     const dates = [
@@ -77,13 +80,13 @@ export const ClrCollectionHeader = ({
                         >
                             {collection.name?.value || getClrLayoutLabel(layout)}
                         </h2>
-                        {model.header.learnerName && (
+                        {learnerName && (
                             <p
-                                className={`wrap-break-word text-sm ${
+                                className={`wrap-anywhere text-sm ${
                                     military ? 'text-grayscale-200' : 'text-grayscale-700'
                                 }`}
                             >
-                                {model.header.learnerName.value}
+                                {learner.displayName}
                             </p>
                         )}
                     </div>

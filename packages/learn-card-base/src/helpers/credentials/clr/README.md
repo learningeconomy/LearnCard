@@ -108,6 +108,10 @@ details to see their IDs, registry evidence and verification methods; expand an
 issuer to inspect its individual record verdicts and checks. Registry evidence
 is shown once per issuer and does not change proof or lifecycle results.
 
+When the learner label falls back to an LCN DID, the app can display the name
+of the exact matching profile. This does not change signed claims or the
+identifier used for learner binding.
+
 ## Regression coverage
 
 Run `vitest run src/helpers/credentials/clr` from `packages/learn-card-base`, and
