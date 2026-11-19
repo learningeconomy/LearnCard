@@ -17,6 +17,7 @@ import {
     getTermsWithSharedUrisForWallet,
     getConsentAudienceCacheKey,
     getConsentAudienceRecipients,
+    getProfileFieldAudienceCacheKey,
 } from '../useSharedUrisInTerms';
 
 type TestWallet = Parameters<typeof getOrCreateSharedUriForWallet>[0];
@@ -581,17 +582,29 @@ describe('reviewed profile field sharing', () => {
     const indexId = `__verifiable_data_${category}__`;
     const owner = 'did:example:owner';
     const branch = { branch: 'North' };
-    const prepare = (id: string, dataKey: string, dataPayload: object, cached = false) => {
+    const prepare = (
+        id: string,
+        dataKey: string,
+        dataPayload: object,
+        cached: false | true | 'bound' = false
+    ) => {
         const record = {
             id,
             uri: 'credential:source',
-            sharedUris: cached ? { [getConsentAudienceCacheKey(owner)]: ['shared:cached'] } : {},
+            sharedUris: cached
+                ? {
+                      [cached === 'bound'
+                          ? getProfileFieldAudienceCacheKey(owner, 'credential:source')
+                          : getConsentAudienceCacheKey(owner)]: ['shared:cached'],
+                  }
+                : {},
         };
         const credential = { credentialSubject: { dataKey, dataPayload } };
         const upload = vi.fn().mockResolvedValue('shared:branch');
-        const update = vi.fn();
+        const update = vi.fn().mockResolvedValue(true);
         const wallet = {
             id: { did: () => 'did:example:holder' },
+            invoke: { learnCloudCompareAndSwapIndexRecord: update },
             index: { LearnCloud: { get: async () => [record], update } },
             read: { get: async () => credential },
             store: { LearnCloud: { uploadEncrypted: upload } },
@@ -612,6 +625,20 @@ describe('reviewed profile field sharing', () => {
         const result = getTermsWithSharedUrisForWallet(wallet, owner, new QueryClient(), terms);
         return { result, credential, upload, update };
     };
+
+    it.each([
+        [true, 'shared:branch', 1],
+        ['bound', 'shared:cached', 0],
+    ] as const)(
+        'only reuses a copy bound to its source answer (%s)',
+        async (cache, uri, uploads) => {
+            const { result, upload } = prepare(indexId, category, branch, cache);
+            expect((await result).terms.read.credentials.categories[category].shared).toEqual([
+                uri,
+            ]);
+            expect(upload).toHaveBeenCalledTimes(uploads);
+        }
+    );
 
     it('encrypts just the reviewed field for its recipient', async () => {
         const { result, upload, credential } = prepare(indexId, category, branch);
@@ -647,5 +674,89 @@ describe('reviewed profile field sharing', () => {
             expect(upload).not.toHaveBeenCalled();
             expect(update).not.toHaveBeenCalled();
         }
+    });
+});
+
+describe('concurrent field updates', () => {
+    const field = 'VerifiableData:demo:profile:branch';
+    const id = `__verifiable_data_${field}__`;
+    const audience = 'did:example:partner';
+    type RecordState = {
+        id: string;
+        uri: string;
+        category: string;
+        issuanceDate: string;
+        sharedUris: Record<string, string[]>;
+    };
+    const record = (uri: string, issuanceDate: string): RecordState => ({
+        id,
+        uri,
+        category: field,
+        issuanceDate,
+        sharedUris: {},
+    });
+    const first = record('answer:a', '2026-01-01T00:00:00Z');
+    const second = record('answer:b', '2026-02-01T00:00:00Z');
+    const third = record('answer:c', '2026-03-01T00:00:00Z');
+
+    const setup = () => {
+        let current = structuredClone(first);
+        const swap = vi.fn(async (expected: RecordState, next: RecordState) => {
+            if (JSON.stringify(expected) !== JSON.stringify(current)) return false;
+            current = structuredClone(next);
+            return true;
+        });
+        const upload = vi.fn(async (vc: { id: string }) => 'shared:' + vc.id);
+        const wallet = {
+            id: { did: () => 'did:example:holder' },
+            invoke: { learnCloudCompareAndSwapIndexRecord: swap },
+            index: { LearnCloud: { get: async () => [structuredClone(current)] } },
+            read: {
+                get: async (uri: string) => ({
+                    id: uri,
+                    credentialSubject: { dataKey: field, dataPayload: { branch: uri } },
+                }),
+            },
+            store: { LearnCloud: { uploadEncrypted: upload } },
+        } as unknown as TestWallet;
+        return { wallet, upload, swap, current: () => current };
+    };
+    it('discards an older ciphertext when replacement finishes during encryption', async () => {
+        const { wallet, upload, current } = setup();
+        const { indexLatestProfileField } = await import('../profileFieldIndex');
+        let resume!: () => void;
+        upload.mockImplementationOnce(
+            async () =>
+                new Promise(resolve => {
+                    resume = () => resolve('shared:a');
+                })
+        );
+        const share = (uri: string) =>
+            getOrCreateSharedUriForWallet(wallet, audience, new QueryClient(), uri, field);
+        const earlier = share(first.uri);
+        await vi.waitFor(() => expect(upload).toHaveBeenCalledOnce());
+        await indexLatestProfileField(wallet, second);
+        resume();
+        expect(await earlier).toBe(false);
+        expect(current()).toEqual(second);
+        expect(await share(second.uri)).toBe('shared:answer:b');
+    });
+    it('rechecks issuance order when two clients read the same original answer', async () => {
+        const { wallet, current, swap } = setup();
+        const { indexLatestProfileField } = await import('../profileFieldIndex');
+        const compareAndSwap = swap.getMockImplementation()!;
+        let resume!: () => void;
+        swap.mockImplementationOnce(async (expected, next) => {
+            await new Promise<void>(resolve => {
+                resume = resolve;
+            });
+            return compareAndSwap(expected, next);
+        });
+        const older = indexLatestProfileField(wallet, second);
+        await vi.waitFor(() => expect(swap).toHaveBeenCalledOnce());
+        await indexLatestProfileField(wallet, third);
+        resume();
+        expect((await older)?.uri).toBe(third.uri);
+        expect(current()).toEqual(third);
     });
 });

@@ -3,6 +3,9 @@ const identifier = z.string().regex(/^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/);
 const fieldCategory =
     /^VerifiableData:([a-zA-Z][a-zA-Z0-9_-]{0,63}):([a-zA-Z][a-zA-Z0-9_-]{0,63}):([a-zA-Z][a-zA-Z0-9_-]{0,63})$/;
 
+export const isProfileFieldCategory = (value: unknown): value is string =>
+    typeof value === 'string' && fieldCategory.test(value);
+
 const common = z.object({
     label: z.string().trim().min(1),
     maxAgeDays: z.number().int().positive().optional(),

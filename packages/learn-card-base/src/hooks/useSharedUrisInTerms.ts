@@ -1,3 +1,4 @@
+import { updateProfileFieldIndex } from './profileFieldIndex';
 import { ConsentFlowTerms } from '@learncard/types';
 import { InfiniteData, QueryClient, useQueryClient } from '@tanstack/react-query';
 import { switchedProfileStore, useWallet } from 'learn-card-base';
@@ -58,6 +59,10 @@ export const getConsentAudienceRecipients = (audience: ConsentDataAudience): str
     ].sort();
 export const getConsentAudienceCacheKey = (audience: ConsentDataAudience): string =>
     `audience:${JSON.stringify(getConsentAudienceRecipients(audience))}`;
+
+/** Bind field copies to both their original answer and their effective audience. */
+export const getProfileFieldAudienceCacheKey = (audience: ConsentDataAudience, uri: string) =>
+    `audience:${JSON.stringify([uri, getConsentAudienceRecipients(audience)])}`;
 
 const syncCachedCategoryRecords = (
     queryClient: QueryClient,
@@ -133,7 +138,6 @@ const getOrCreateSharedUriFromCategoryRecords = async (
     records: LCR[],
     category: string
 ): Promise<SharedUriResolution> => {
-    const audienceKey = getConsentAudienceCacheKey(contractOwnerDid);
     const mainRecord = records.find(
         record =>
             record.uri === credUri ||
@@ -147,9 +151,15 @@ const getOrCreateSharedUriFromCategoryRecords = async (
         }
         // Legacy owner-keyed copies are safe only when their complete effective
         // audience (including SmartResume servers) matches the current audience.
-        const legacyOwnerKey = Object.keys(mainRecord.sharedUris ?? {}).find(
-            key => !key.startsWith('audience:') && getConsentAudienceCacheKey(key) === audienceKey
-        );
+        const audienceKey = isField
+            ? getProfileFieldAudienceCacheKey(contractOwnerDid, mainRecord.uri)
+            : getConsentAudienceCacheKey(contractOwnerDid);
+        const legacyOwnerKey =
+            !isField &&
+            Object.keys(mainRecord.sharedUris ?? {}).find(
+                key =>
+                    !key.startsWith('audience:') && getConsentAudienceCacheKey(key) === audienceKey
+            );
         const existingSharedUris =
             mainRecord.sharedUris?.[audienceKey] ??
             (legacyOwnerKey ? mainRecord.sharedUris?.[legacyOwnerKey] : undefined);
@@ -182,6 +192,19 @@ const getOrCreateSharedUriFromCategoryRecords = async (
 
         if (!newUri) {
             return { sharedUri: false, status: 'missing' };
+        }
+
+        if (isField) {
+            const current = await updateProfileFieldIndex(wallet, mainRecord.id, latest => {
+                if (latest?.uri !== mainRecord.uri || latest.sharedUris?.[audienceKey]?.length)
+                    return;
+                return { ...latest, sharedUris: { ...latest.sharedUris, [audienceKey]: [newUri] } };
+            });
+            const sharedUri =
+                current?.uri === mainRecord.uri && current.sharedUris?.[audienceKey]?.at(-1);
+            if (!sharedUri) return { sharedUri: false, status: 'missing' };
+            mainRecord.sharedUris = current.sharedUris;
+            return { sharedUri, status: sharedUri === newUri ? 'created' : 'reused' };
         }
 
         const newSharedUris = mainRecord.sharedUris
@@ -218,10 +241,13 @@ export const getOrCreateSharedUriForWallet = async (
     category: string
 ): Promise<string | false> => {
     const didWeb = wallet.id.did();
-    const credentialKey = JSON.stringify([didWeb, credUri]);
-    const inFlightKey = [didWeb, credUri, getConsentAudienceCacheKey(contractOwnerDid)]
-        .filter(Boolean)
-        .join('|');
+    const credentialKey = JSON.stringify([didWeb, category, credUri]);
+    const inFlightKey = JSON.stringify([
+        didWeb,
+        category,
+        credUri,
+        getConsentAudienceCacheKey(contractOwnerDid),
+    ]);
     const inFlight = inFlightSharedUriCreations.get(inFlightKey);
     if (inFlight) return inFlight;
 
@@ -256,7 +282,7 @@ const createSharedUriForWallet = async (
         ? cache.pages.flatMap(page => page?.records ?? [])
         : [];
 
-    if (cachedRecords.length > 0) {
+    if (!category.startsWith('VerifiableData:') && cachedRecords.length > 0) {
         const cachedResult = await getOrCreateSharedUriFromCategoryRecords(
             wallet,
             contractOwnerDid,

@@ -1,3 +1,4 @@
+import { indexLatestProfileField } from './profileFieldIndex';
 import type { ConsentFlowTerms } from '@learncard/types';
 import type { BespokeLearnCard } from '../types/learn-card';
 import {
@@ -9,7 +10,10 @@ import {
     createVerifiableDataCredential,
     getVerifiableDataIndexId,
 } from './createVerifiableDataCredential';
-import { getConsentAudienceCacheKey, getConsentAudienceRecipients } from './useSharedUrisInTerms';
+import {
+    getProfileFieldAudienceCacheKey,
+    getConsentAudienceRecipients,
+} from './useSharedUrisInTerms';
 import { getLogger } from '../logging/logger';
 
 const log = getLogger('reviewed-profile-fields');
@@ -50,7 +54,7 @@ export const prepareReviewedFields = async (
             record: { id: getVerifiableDataIndexId(category), uri, category },
             acceptedField: {
                 issuanceDate: vc.validFrom ?? new Date().toISOString(),
-                audienceKey: getConsentAudienceCacheKey(audience),
+                audienceKey: getProfileFieldAudienceCacheKey(audience, uri),
                 sharedUri,
             },
         });
@@ -65,22 +69,13 @@ export const indexAcceptedField = async (
     wallet: BespokeLearnCard,
     { record, acceptedField }: FieldJob
 ) => {
-    const [current] = await wallet.index.LearnCloud.get<{ issuanceDate?: string }>({
-        id: record.id,
-    });
-    if (current?.uri === record.uri) return;
-    if (current?.issuanceDate && current.issuanceDate > acceptedField.issuanceDate) return;
-    const metadata = {
+    await indexLatestProfileField(wallet, {
         ...record,
         title: `VerifiableData: ${record.category}`,
         hidden: true,
         issuanceDate: acceptedField.issuanceDate,
         sharedUris: { [acceptedField.audienceKey]: [acceptedField.sharedUri] },
-    };
-    const indexed = current
-        ? await wallet.index.LearnCloud.update(record.id, metadata)
-        : await wallet.index.LearnCloud.add(metadata);
-    if (!indexed) throw new Error('Unable to index the accepted field.');
+    });
 };
 
 /** Only called after the network acknowledges the complete consent decision. */

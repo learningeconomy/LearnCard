@@ -22,7 +22,10 @@ import {
     createCredentialRecords,
 } from '@accesslayer/credential-record/create';
 import { TRPCError } from '@trpc/server';
-import { updateCredentialRecord } from '@accesslayer/credential-record/update';
+import {
+    replaceCredentialRecordIfCurrent,
+    updateCredentialRecord,
+} from '@accesslayer/credential-record/update';
 import {
     deleteCredentialRecordById,
     deleteCredentialRecordsForDid,
@@ -308,6 +311,58 @@ export const indexRouter = t.router({
                 });
             }
 
+            return true;
+        }),
+    // Separate route so an older service cannot silently ignore the write precondition.
+    replaceIfCurrent: didAndChallengeRoute
+        .input(
+            z.object({
+                id: z.string(),
+                expectedCiphertext: z.string().min(1).nullable(),
+                record: JWEValidator,
+            })
+        )
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { did } = ctx.user;
+            const record = EncryptedCredentialRecordValidator.parse({
+                ...(await decryptObject<EncryptedCredentialRecord>(input.record)),
+                id: input.id,
+            });
+            if (
+                Object.keys(record).some(
+                    key =>
+                        ['did', '_id', 'cursor', 'created', 'modified'].includes(key) ||
+                        key.startsWith('$') ||
+                        key.includes('.')
+                )
+            ) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid index metadata key' });
+            }
+            const dids = await getAllDidsForDid(did);
+            if (input.expectedCiphertext === null) {
+                // Linked identities read one index. Use the same owner for concurrent inserts
+                // and respect records originally created under an associated identity.
+                if (dids.length > 1 && (await countCredentialRecordsForDid(did, { id: input.id })))
+                    return false;
+                try {
+                    if (!(await createCredentialRecord(dids[0] ?? did, record)))
+                        throw new Error('Could not create index record');
+                } catch (error) {
+                    if (error instanceof TRPCError && error.code === 'CONFLICT') return false;
+                    throw error;
+                }
+            } else {
+                if (
+                    !(await replaceCredentialRecordIfCurrent(
+                        dids,
+                        record,
+                        input.expectedCiphertext
+                    ))
+                )
+                    return false;
+            }
+            await flushIndexCacheForDid(did);
             return true;
         }),
     remove: didAndChallengeRoute

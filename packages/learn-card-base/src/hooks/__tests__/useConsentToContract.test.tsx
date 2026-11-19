@@ -21,6 +21,7 @@ vi.mock('learn-card-base', () => ({
             index: { LearnCloud: { get: async () => [], add: mocks.add } },
             invoke: {
                 issueCredential: async (credential: unknown) => credential,
+                learnCloudCompareAndSwapIndexRecord: mocks.add,
                 getContract: mocks.getContract,
                 consentToContract: mocks.consent,
             },

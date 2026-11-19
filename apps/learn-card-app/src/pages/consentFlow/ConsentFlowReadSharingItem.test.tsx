@@ -5,6 +5,7 @@ import { TenantConfigProvider } from 'learn-card-base/config/TenantConfigProvide
 import type { TenantConfig } from 'learn-card-base/config/tenantConfig';
 
 import local from '../../../environments/vetpass/config.local.json';
+import { useContractProfileFieldLabel } from '../../hooks/useContractProfileFieldLabel';
 import { useContractCategoryInfo } from '../../hooks/useContractCategoryInfo';
 import ConsentFlowReadSharingItem from './ConsentFlowReadSharingItem';
 
@@ -101,4 +102,14 @@ it.each(['Achievement', 'Goals'])('preserves ordinary category labels for %s', c
     expect(
         screen.getByRole('heading', { name: category === 'Achievement' ? 'Achievements' : 'Goals' })
     ).toBeInTheDocument();
+});
+
+it('identifies unresolved admin fields while keeping configured labels readable', () => {
+    const { result } = renderHook(
+        () => useContractProfileFieldLabel({ includeUnresolvedKey: true }),
+        { wrapper }
+    );
+    const unknown = categoryFor('unknown');
+    expect(result.current(unknown)).toBe(`Field unavailable (${unknown})`);
+    expect(result.current(categoryFor('branch'))).toBe('Branch of service');
 });

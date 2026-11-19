@@ -1,4 +1,4 @@
-import { chunk } from 'lodash';
+import { chunk, isEqual } from 'lodash';
 import { getClient, LearnCloudClient } from '@learncard/learn-cloud-client';
 import { LearnCard } from '@learncard/core';
 import { isEncrypted, resolveStorageReadResult } from '@learncard/helpers';
@@ -206,6 +206,43 @@ export const getLearnCloudPlugin = async (
         displayName: 'LearnCloud',
         description: 'LearnCloud Integration',
         methods: {
+            learnCloudCompareAndSwapIndexRecord: async (_learnCard, expected, next) => {
+                const currentClient = await updateLearnCard(_learnCard);
+                const cloudDid = await getLearnCloudDid(currentClient);
+                let expectedCiphertext: string | null = null;
+                if (expected) {
+                    if (expected.id !== next.id)
+                        throw new Error('Cannot change the index record ID');
+                    const page = await currentClient.index.get.query({
+                        query: await generateJWE(
+                            _learnCard,
+                            cloudDid,
+                            await generateIndexQuery(_learnCard, { id: next.id }, unencryptedFields)
+                        ),
+                        limit: 2,
+                    });
+                    const { records } = isEncrypted(page)
+                        ? await decryptJWE<PaginatedEncryptedCredentialRecordsType>(
+                              _learnCard,
+                              page
+                          )
+                        : page;
+                    const current = records[0];
+                    if (records.length !== 1 || !current) return false;
+                    if (!isEqual(await decryptJWE(_learnCard, current.encryptedRecord), expected))
+                        return false;
+                    expectedCiphertext = current.encryptedRecord.ciphertext;
+                }
+                return currentClient.index.replaceIfCurrent.mutate({
+                    id: await hash(_learnCard, next.id),
+                    expectedCiphertext,
+                    record: await generateJWE(
+                        _learnCard,
+                        cloudDid,
+                        await generateEncryptedRecord(_learnCard, next, unencryptedFields)
+                    ),
+                });
+            },
             learnCloudCreate: async (_learnCard, document) => {
                 const currentClient = await updateLearnCard(_learnCard);
 

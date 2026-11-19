@@ -201,7 +201,7 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
     onCreateSuccess,
 }) => {
     const { newModal, closeModal } = useModal();
-    const getProfileFieldLabel = useContractProfileFieldLabel();
+    const getProfileFieldLabel = useContractProfileFieldLabel({ includeUnresolvedKey: true });
     const [isConsentRecordsOpen, setIsConsentRecordsOpen] = React.useState(false);
     const [didInput, setDidInput] = React.useState('');
     const [activeDidFilter, setActiveDidFilter] = React.useState('');

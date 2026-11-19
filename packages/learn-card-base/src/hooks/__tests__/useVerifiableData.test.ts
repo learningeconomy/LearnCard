@@ -53,7 +53,10 @@ const createMockWallet = () => {
 
     return {
         id: { did: () => TEST_DID },
-        invoke: { issueCredential },
+        invoke: {
+            issueCredential,
+            learnCloudCompareAndSwapIndexRecord: vi.fn().mockResolvedValue(true),
+        },
         store: { LearnCloud: { uploadEncrypted } },
         index: {
             LearnCloud: { get: indexGet, add: indexAdd, update: indexUpdate, remove: indexRemove },
@@ -153,12 +156,11 @@ describe('saveVerifiableData', () => {
     it('keeps profile answers out of both new and updated index records', async () => {
         const category = 'VerifiableData:demo:profile:branch';
         await saveVerifiableData(wallet as never, category, { branch: 'North' }, { category });
-        wallet.index.LearnCloud.get.mockResolvedValueOnce([{ uri: 'lc:cloud:test-uri-123' }]);
+        wallet.index.LearnCloud.get.mockResolvedValueOnce([{ uri: 'lc:old' }]);
         await saveVerifiableData(wallet as never, category, { branch: 'South' }, { category });
-        expect(wallet.index.LearnCloud.add.mock.calls[0][0]).not.toHaveProperty('verifiableData');
-        expect(wallet.index.LearnCloud.update.mock.calls[0][1]).not.toHaveProperty(
-            'verifiableData'
-        );
+        const writes = wallet.invoke.learnCloudCompareAndSwapIndexRecord.mock.calls;
+        expect(writes).toHaveLength(2);
+        for (const [, record] of writes) expect(record).not.toHaveProperty('verifiableData');
     });
 
     it('uses a custom category when provided', async () => {

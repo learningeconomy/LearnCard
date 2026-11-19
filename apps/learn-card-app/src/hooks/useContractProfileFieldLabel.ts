@@ -9,7 +9,8 @@ import * as m from '../paraglide/messages.js';
 /** Resolve profile scope labels while leaving ordinary credential categories to their caller. */
 const getContractProfileFieldLabel = (
     category: string,
-    tenant: Pick<TenantConfig, 'tenantId' | 'verifiableDataSchemas'> | null
+    tenant: Pick<TenantConfig, 'tenantId' | 'verifiableDataSchemas'> | null,
+    includeUnresolvedKey: boolean
 ): string | undefined => {
     if (!category.startsWith(VERIFIABLE_DATA_FIELD_PREFIX)) return undefined;
 
@@ -17,14 +18,18 @@ const getContractProfileFieldLabel = (
         ? resolveProfileField(category, tenant.tenantId, tenant.verifiableDataSchemas ?? {})
         : undefined;
 
-    return field?.label ?? m['base.profileFields.unavailable']();
+    if (field) return field.label;
+    const unavailable = m['base.profileFields.unavailable']();
+    return includeUnresolvedKey ? `${unavailable} (${category})` : unavailable;
 };
 
 /** Resolve labels for a list of contract categories in the active tenant. */
-export const useContractProfileFieldLabel = (): ((category: string) => string | undefined) => {
+export const useContractProfileFieldLabel = ({ includeUnresolvedKey = false } = {}): ((
+    category: string
+) => string | undefined) => {
     const tenant = useOptionalTenantConfig();
     return useCallback(
-        (category: string) => getContractProfileFieldLabel(category, tenant),
-        [tenant]
+        (category: string) => getContractProfileFieldLabel(category, tenant, includeUnresolvedKey),
+        [tenant, includeUnresolvedKey]
     );
 };

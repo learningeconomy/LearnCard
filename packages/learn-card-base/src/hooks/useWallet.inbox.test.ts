@@ -1038,7 +1038,10 @@ it('delivers a changed profile answer only to an existing live grant for that ex
     const id = `__verifiable_data_${category}__`;
     const wallet = {
         id: { did: () => 'did:example:claiming-account' },
-        invoke: { issueCredential: vi.fn(async credential => credential) },
+        invoke: {
+            learnCloudCompareAndSwapIndexRecord: vi.fn().mockResolvedValue(true),
+            issueCredential: vi.fn(async credential => credential),
+        },
         index: { LearnCloud: { get: async () => [{ id, uri: 'old-answer' }], update: vi.fn() } },
         store: { LearnCloud: { uploadEncrypted: async () => 'updated-answer' } },
     };

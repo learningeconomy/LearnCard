@@ -4,6 +4,7 @@ import { isEncrypted } from '@learncard/helpers';
 import { getClient, getUser } from './helpers/getClient';
 import { CredentialRecords } from '@accesslayer/credential-record';
 import { Users } from '@accesslayer/user';
+import { encryptObject } from '@helpers/encryption.helpers';
 import { testRecordA, testRecordB, testRecordC } from './helpers/records';
 import { client } from '@mongo';
 import cache from '@cache';
@@ -694,6 +695,35 @@ describe('Index', () => {
             })) as PaginatedEncryptedCredentialRecordsType;
 
             expect(newRecords.records).toHaveLength(1);
+        });
+    });
+
+    describe('replaceIfCurrent', () => {
+        it('allows one insert and one replacement for each encrypted version', async () => {
+            const index = userA.clients.fullAuth.index;
+            const id = 'compare-and-swap';
+            const write = async (expectedCiphertext: string | null, ciphertext: string) => {
+                const record = await encryptObject(
+                    {
+                        ...testRecordA,
+                        id,
+                        encryptedRecord: { ...testRecordA.encryptedRecord, ciphertext },
+                    },
+                    'localhost%3A3000'
+                );
+                return index.replaceIfCurrent({ id, expectedCiphertext, record });
+            };
+            const created = await Promise.all([write(null, 'a'), write(null, 'b')]);
+            expect(created.filter(Boolean)).toHaveLength(1);
+            const original = created[0] ? 'a' : 'b';
+            const updated = await Promise.all([write(original, 'c'), write(original, 'd')]);
+            expect(updated.filter(Boolean)).toHaveLength(1);
+            expect(await write(original, 'stale')).toBe(false);
+            const page = await index.get({ encrypt: false });
+            if (isEncrypted(page)) throw new Error('Expected a plaintext index page');
+            expect(page.records.find(record => record.id === id)?.encryptedRecord.ciphertext).toBe(
+                updated[0] ? 'c' : 'd'
+            );
         });
     });
 

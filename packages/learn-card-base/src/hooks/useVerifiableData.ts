@@ -1,3 +1,4 @@
+import { indexLatestProfileField } from './profileFieldIndex';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { enqueuePendingContractSyncSafely } from '../stores/pendingContractSyncStore';
 import { useWallet } from './useWallet';
@@ -55,10 +56,10 @@ const storeVerifiableData = async <T>(
     // Profile answers belong only in the encrypted credential, never in index metadata.
     const indexPayload = key.startsWith('VerifiableData:') ? {} : { verifiableData: data };
 
-    // Check whether an index record already exists for this key
-    const existingRecords = await wallet.index.LearnCloud.get<VerifiableDataRecord<T>>({
-        id: indexId,
-    });
+    const isProfileField = category === key && key.startsWith('VerifiableData:');
+    const existingRecords = isProfileField
+        ? []
+        : await wallet.index.LearnCloud.get<VerifiableDataRecord<T>>({ id: indexId });
 
     // Create and sign the credential
     const credential = await createVerifiableDataCredential(wallet, key, data, options);
@@ -70,6 +71,27 @@ const storeVerifiableData = async <T>(
 
     // Use the credential's own validFrom as the canonical timestamp
     const issuanceDate = credential.validFrom ?? new Date().toISOString();
+
+    if (isProfileField) {
+        const current = await indexLatestProfileField(wallet, {
+            id: indexId,
+            uri,
+            category,
+            title: `VerifiableData: ${key}`,
+            hidden: true,
+            issuanceDate,
+            sharedUris: {},
+        });
+        if (current?.uri !== uri) throw new Error('The profile answer has been superseded.');
+        // These self-issued answers are absent from the incoming ConsentFlow credential feed.
+        await enqueuePendingContractSyncSafely({
+            kind: 'credential',
+            profileDid: wallet.id.did(),
+            record: { id: indexId, uri, category },
+            category,
+        });
+        return uri;
+    }
 
     if (existingRecords?.length > 0) {
         // Update the existing index record in place
@@ -92,16 +114,6 @@ const storeVerifiableData = async <T>(
             hidden: true,
             ...indexPayload,
             issuanceDate,
-        });
-    }
-
-    if (category === key && key.startsWith('VerifiableData:')) {
-        // These self-issued answers are absent from the incoming ConsentFlow credential feed.
-        await enqueuePendingContractSyncSafely({
-            kind: 'credential',
-            profileDid: wallet.id.did(),
-            record: { id: indexId, uri, category },
-            category,
         });
     }
 

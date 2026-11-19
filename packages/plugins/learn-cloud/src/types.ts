@@ -1,5 +1,6 @@
 import type { Filter } from '@learncard/learn-cloud-client';
 import {
+    CredentialRecord,
     JWE,
     JWKWithPrivateKey,
     UnsignedVC,
@@ -26,6 +27,11 @@ export type LearnCloudPluginDependentMethods = {
 
 /** @group LearnCloud Plugin */
 export type LearnCloudPluginMethods = {
+    /** Atomically replace the exact record read, or insert if absent. False means another writer won. */
+    learnCloudCompareAndSwapIndexRecord: (
+        expected: CredentialRecord | null,
+        next: CredentialRecord
+    ) => Promise<boolean>;
     learnCloudCreate: <Document extends Record<string, any>>(
         document: Document
     ) => Promise<boolean>;

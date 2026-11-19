@@ -22,7 +22,7 @@ interface ConsentContractPreviewProps {
 }
 
 export const ConsentContractPreview: React.FC<ConsentContractPreviewProps> = ({ contractUri }) => {
-    const getProfileFieldLabel = useContractProfileFieldLabel();
+    const getProfileFieldLabel = useContractProfileFieldLabel({ includeUnresolvedKey: true });
     const { newModal } = useModal();
     const { initWallet } = useWallet();
 
