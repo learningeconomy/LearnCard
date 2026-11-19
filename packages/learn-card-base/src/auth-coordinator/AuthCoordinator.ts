@@ -220,6 +220,15 @@ export class AuthCoordinator {
      * a placeholder-email account is not retried (and re-verified) on every refresh.
      */
     private escrowNoContactAccount?: { did: string; userId?: string };
+    /**
+     * LC-2409: a sign-in email change whose custom token this device has not applied yet
+     * (lca-api already revoked this login's sessions). Kept here, not in a component, so
+     * any surface can retry it after a remount; cleared once applied.
+     */
+    private pendingAccountContact?: {
+        did: string;
+        params: { expectedEmail?: string; customToken: string; primaryUid: string };
+    };
     private escrowOperations = new Set<Promise<unknown>>();
     private endingSession = false;
     private destroyed = false;
@@ -1106,8 +1115,21 @@ export class AuthCoordinator {
      * Set or change a PIN by rotating escrow material with an owner proof. After a PIN
      * sign-in whose PIN has recorded wrong entries, the PIN just used is rejected with
      * SameEscrowPinError before anything changes.
+     *
+     * LC-2409: with `contact` (a new PIN chosen to re-seal the backup to the sign-in email,
+     * e.g. "Forgot it? Choose a new PIN" on the PIN confirm), the same gates as
+     * `confirmEscrowPin` run first (`assertContactConfirmable`): only from the login that
+     * holds the sign-in email, and only to an address confirmed on this device or re-typed.
      */
-    async setEscrowPin(pin: string): Promise<void> {
+    async setEscrowPin(
+        pin: string,
+        contact?: { primaryUid: string; retypedEmail?: string }
+    ): Promise<void> {
+        if (contact) {
+            if (this.state.status !== 'ready')
+                throw new Error('Sign in on a trusted device to manage recovery');
+            this.assertContactConfirmable(this.state, contact);
+        }
         // Only awaits while a PIN-change guard exists for this account, so ordinary PIN
         // changes still clear the published status synchronously.
         if (this.state.status === 'ready' && this.readPinGuard(this.state.did))
@@ -1245,6 +1267,43 @@ export class AuthCoordinator {
         if (params.customToken && params.primaryUid === undefined) return 'mismatch';
         if (params.primaryUid !== undefined && ready.authUser?.id !== params.primaryUid)
             return 'other-uid';
+        if (params.customToken && params.primaryUid !== undefined) {
+            this.pendingAccountContact = {
+                did: ready.did,
+                params: {
+                    ...(params.expectedEmail !== undefined
+                        ? { expectedEmail: params.expectedEmail }
+                        : {}),
+                    customToken: params.customToken,
+                    primaryUid: params.primaryUid,
+                },
+            };
+        }
+        const result = await this.applyAccountContact(ready, params);
+        // Applied, or meant for another login (this session was never signed out): done.
+        if (result !== 'mismatch' && this.pendingAccountContact?.did === ready.did)
+            this.pendingAccountContact = undefined;
+        return result;
+    }
+
+    /**
+     * LC-2409: the sign-in email change this device still has to apply (its custom token
+     * was not used yet, so this login's revoked session cannot make escrow calls). Retry it
+     * with `refreshAccountContact(pending)`. `undefined` when nothing is pending for the
+     * ready account.
+     */
+    getPendingAccountContact():
+        { expectedEmail?: string; customToken: string; primaryUid: string } | undefined {
+        const pending = this.pendingAccountContact;
+        if (!pending || this.state.status !== 'ready' || this.state.did !== pending.did)
+            return undefined;
+        return { ...pending.params };
+    }
+
+    private async applyAccountContact(
+        ready: Extract<UnifiedAuthState, { status: 'ready' }>,
+        params: { expectedEmail?: string; customToken?: string; primaryUid?: string }
+    ): Promise<'ok' | 'mismatch' | 'other-uid'> {
         const expected =
             params.expectedEmail === undefined
                 ? undefined
@@ -2798,6 +2857,7 @@ export class AuthCoordinator {
         this.endingSession = true;
         this.pinAttemptBaseline = undefined;
         this.excusedPinTypos = undefined;
+        this.pendingAccountContact = undefined;
         // An in-flight PIN sign-in is abandoned; a completed one's persisted guard stays.
         this.abandonSignInPin(this.signInPinDigest?.did);
         this.escrowPinChangeDismissed = undefined;
@@ -2854,6 +2914,7 @@ export class AuthCoordinator {
         this.forgetPinGuard('did' in this.state ? this.state.did : undefined);
         this.forgetConfirmedContact('did' in this.state ? this.state.did : undefined);
         this.signInPinDigest = undefined;
+        this.pendingAccountContact = undefined;
         this.escrowPinChangeDismissed = undefined;
         this.stopEscrowPolling?.();
         this.recoveryGeneration++;

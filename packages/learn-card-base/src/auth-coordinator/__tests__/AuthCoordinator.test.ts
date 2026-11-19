@@ -5397,6 +5397,39 @@ describe('AuthCoordinator LC-2409 escrow contact', () => {
             expect(coordinator.getConfirmedContact()).toBeUndefined();
         });
 
+        it('keeps an unapplied custom token for a retry, and forgets it once applied', async () => {
+            const reauthenticateWithToken = vi
+                .fn()
+                .mockRejectedValueOnce(new Error('network'))
+                .mockResolvedValue(personalUser);
+            const { coordinator } = await ready({ authProvider: { reauthenticateWithToken } });
+            expect(coordinator.getPendingAccountContact()).toBeUndefined();
+            const params = {
+                expectedEmail: 'personal@example.com',
+                customToken: tokenFor('user-1'),
+                primaryUid: 'user-1',
+            };
+            await expect(coordinator.refreshAccountContact(params)).resolves.toBe('mismatch');
+            // Any surface (a remounted step, a reopened sheet) can retry it.
+            expect(coordinator.getPendingAccountContact()).toEqual(params);
+            await expect(
+                coordinator.refreshAccountContact(coordinator.getPendingAccountContact()!)
+            ).resolves.toBe('ok');
+            expect(coordinator.getPendingAccountContact()).toBeUndefined();
+        });
+
+        it('logout forgets an unapplied custom token', async () => {
+            const reauthenticateWithToken = vi.fn().mockRejectedValue(new Error('network'));
+            const { coordinator } = await ready({ authProvider: { reauthenticateWithToken } });
+            await coordinator.refreshAccountContact({
+                customToken: tokenFor('user-1'),
+                primaryUid: 'user-1',
+            });
+            expect(coordinator.getPendingAccountContact()).toBeDefined();
+            await coordinator.logout();
+            expect(coordinator.getPendingAccountContact()).toBeUndefined();
+        });
+
         it('without a custom token reads the current user', async () => {
             const { coordinator, authProvider } = await ready();
             vi.mocked(authProvider.getCurrentUser).mockResolvedValue(personalUser);
@@ -5551,6 +5584,39 @@ describe('AuthCoordinator LC-2409 escrow contact', () => {
             const call = methods.resealEscrowContact.mock.calls[0]![0];
             expect(call).not.toHaveProperty('pin');
             expect(call.options).toMatchObject({ recoveryEmail: 'personal@example.com' });
+        });
+
+        it('a new PIN for the re-seal (setEscrowPin with contact) runs the same gates', async () => {
+            const setEscrowPin = vi.fn().mockResolvedValue(undefined);
+            const { coordinator } = await ready({
+                authProvider: { getCurrentUser: vi.fn().mockResolvedValue(personalUser) },
+                keyDerivation: { setEscrowPin },
+            });
+            // Not confirmed on this device: refused before anything changes.
+            await expect(
+                coordinator.setEscrowPin('593827', { primaryUid: 'user-1' })
+            ).rejects.toMatchObject({
+                name: 'EscrowContactNotConfirmedError',
+                reason: 'unconfirmed',
+            });
+            await expect(
+                coordinator.setEscrowPin('593827', {
+                    primaryUid: 'user-1',
+                    retypedEmail: 'attacker@example.com',
+                })
+            ).rejects.toMatchObject({ reason: 'unconfirmed' });
+            coordinator.rememberConfirmedContact('personal@example.com');
+            await expect(
+                coordinator.setEscrowPin('593827', { primaryUid: 'user-T' })
+            ).rejects.toMatchObject({ reason: 'other-uid' });
+            expect(setEscrowPin).not.toHaveBeenCalled();
+            await coordinator.setEscrowPin('593827', { primaryUid: 'user-1' });
+            expect(setEscrowPin).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    pin: '593827',
+                    options: expect.objectContaining({ recoveryEmail: 'personal@example.com' }),
+                })
+            );
         });
 
         it('keeps the confirmed address per DID in storage, and forgetDevice drops it', async () => {

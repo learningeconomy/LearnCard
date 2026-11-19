@@ -103,6 +103,8 @@ export interface AuthCoordinatorContextValue {
     rememberConfirmedContact: AuthCoordinator['rememberConfirmedContact'];
     /** LC-2409: the device-confirmed sign-in address for the ready account, if any. */
     getConfirmedContact: AuthCoordinator['getConfirmedContact'];
+    /** LC-2409: a sign-in email change whose custom token this device has not applied. */
+    getPendingAccountContact: AuthCoordinator['getPendingAccountContact'];
     getEscrowEnrollmentState: AuthCoordinator['getEscrowEnrollmentState'];
     beginIdentityRecovery: () => void;
     sendIdentityRecoveryCode: (email: string) => Promise<void>;
@@ -577,10 +579,15 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         if (!coordinatorRef.current) throw new Error('Auth coordinator is not initialized');
         return coordinatorRef.current.enableEscrowRecovery();
     }, []);
-    const setEscrowPin = useCallback(async (pin: string) => {
-        if (!coordinatorRef.current) throw new Error('Auth coordinator is not initialized');
-        return coordinatorRef.current.setEscrowPin(pin);
-    }, []);
+    const setEscrowPin = useCallback(
+        async (pin: string, contact?: Parameters<AuthCoordinator['setEscrowPin']>[1]) => {
+            if (!coordinatorRef.current) throw new Error('Auth coordinator is not initialized');
+            return contact
+                ? coordinatorRef.current.setEscrowPin(pin, contact)
+                : coordinatorRef.current.setEscrowPin(pin);
+        },
+        []
+    );
     const clearEscrowPin = useCallback(async () => {
         if (!coordinatorRef.current) throw new Error('Auth coordinator is not initialized');
         return coordinatorRef.current.clearEscrowPin();
@@ -624,6 +631,10 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
     }, []);
     const getConfirmedContact = useCallback(
         (did?: string) => coordinatorRef.current?.getConfirmedContact(did),
+        []
+    );
+    const getPendingAccountContact = useCallback(
+        () => coordinatorRef.current?.getPendingAccountContact(),
         []
     );
     const getEscrowEnrollmentState = useCallback(async () => {
@@ -791,6 +802,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             resealEscrowContact,
             rememberConfirmedContact,
             getConfirmedContact,
+            getPendingAccountContact,
             getEscrowEnrollmentState,
             beginIdentityRecovery,
             sendIdentityRecoveryCode,
@@ -848,6 +860,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             resealEscrowContact,
             rememberConfirmedContact,
             getConfirmedContact,
+            getPendingAccountContact,
             getEscrowEnrollmentState,
             beginIdentityRecovery,
             sendIdentityRecoveryCode,
