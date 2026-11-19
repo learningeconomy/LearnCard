@@ -58,6 +58,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ vm }) => {
                         shortBio={header.shortBio}
                         professionalTitle={header.professionalTitle}
                         onAvatarClick={header.onAvatarClick}
+                        onAvatarIntent={header.onAvatarIntent}
                         onNotificationsClick={header.onNotificationsClick}
                         unreadCount={header.unreadCount}
                         roleSwitcher={header.roleSwitcher}
