@@ -118,10 +118,22 @@ describe('school-email alias (resolveOrCreateFirebaseUserByEmail)', () => {
     });
 
     it('an existing user for the address wins', async () => {
-        fake.setUser({ uid: 'google-user', email: school });
+        fake.setUser({ uid: 'google-user', email: school, emailVerified: true });
         await expect(
             resolveOrCreateFirebaseUserByEmail(auth, school, { allowCreate: true })
         ).resolves.toEqual({ status: 'found', uid: 'google-user' });
+    });
+
+    it('an unverified holder of the school address never beats the alias', async () => {
+        fake.setUser({ uid: 'unverified-holder', email: school, emailVerified: false });
+        await expect(
+            resolveOrCreateFirebaseUserByEmail(auth, school, { allowCreate: true })
+        ).resolves.toEqual({ status: 'alias', uid: T });
+        // Without a live alias the existing user is still found.
+        setTenant({ allowedEmailDomains: [] });
+        await expect(
+            resolveOrCreateFirebaseUserByEmail(auth, school, { allowCreate: true })
+        ).resolves.toEqual({ status: 'found', uid: 'unverified-holder' });
     });
 
     it('an untrusted domain gives no alias', async () => {

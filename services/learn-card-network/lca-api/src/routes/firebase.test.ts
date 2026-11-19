@@ -184,9 +184,8 @@ describe('Keycloak bridge (LC-2409)', () => {
             auth as never
         );
         expect(mocks.resolveOrCreate).not.toHaveBeenCalled();
-        expect(auth.createUser).toHaveBeenCalledWith(
-            expect.objectContaining({ uid: 'kc-sub', emailVerified: false })
-        );
+        // The unverified address is never written to Firebase.
+        expect(auth.createUser).toHaveBeenCalledWith({ uid: 'kc-sub', displayName: null });
         expect(auth.updateUser).not.toHaveBeenCalled();
         expect(auth.createCustomToken).toHaveBeenCalledWith('kc-sub', expect.anything());
     });

@@ -606,7 +606,8 @@ export type FirebaseUserResolution =
  * network hand-off, Keycloak bridge):
  *
  * 1. an existing user with the address wins, unless it is a promoted uid that no longer holds
- *    its identity's account (orphan guard: `'blocked'`, and the identity gets `demotePending`);
+ *    its identity's account (orphan guard: `'blocked'`, and the identity gets `demotePending`),
+ *    or it never verified the address and a school-email alias resolves for it;
  * 2. otherwise the school-email alias (`resolveClassLinkAliasUid`), `'moved'` included;
  * 3. otherwise a new user when `allowCreate` (`create` overrides the request).
  */
@@ -637,6 +638,17 @@ export const resolveOrCreateFirebaseUserByEmail = async (
                     )
                 );
                 return { status: 'blocked' };
+            }
+        }
+        // A user that holds the address without having verified it (e.g. one made by the
+        // Keycloak bridge before it stopped writing unverified emails) never beats a live
+        // school-email alias: the alias owner proved this inbox through ClassLink.
+        if (!found.emailVerified) {
+            const alias = await resolveClassLinkAliasUid(email);
+            if (alias === 'moved') return { status: 'moved' };
+            if (alias && alias !== found.uid) {
+                console.warn('classlink.alias.unverified_holder');
+                return { status: 'alias', uid: alias };
             }
         }
         return { status: 'found', uid: found.uid };

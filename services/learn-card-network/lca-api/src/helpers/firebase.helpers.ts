@@ -103,8 +103,8 @@ export type KeycloakBridgeUser = {
  * Only an email Keycloak marks `email_verified: true` maps by email, through
  * `resolveOrCreateFirebaseUserByEmail` (so the ClassLink school-email alias and the orphan
  * guard apply; a moved or orphaned account fails). Any other user signs in as the Keycloak
- * subject's own uid and is never matched to an existing user by email. `emailVerified: false`
- * is never written onto a matched user.
+ * subject's own uid, is never matched to an existing user by email, and its unverified email
+ * is never written to Firebase. `emailVerified: false` is never written onto a matched user.
  */
 export const createFirebaseTokenForKeycloakUser = async (
     keycloakUser: KeycloakBridgeUser,
@@ -132,13 +132,9 @@ export const createFirebaseTokenForKeycloakUser = async (
                 if ((error as { code?: unknown })?.code === 'auth/user-not-found') return undefined;
                 throw error;
             });
-            if (!existing)
-                await auth.createUser({
-                    uid: sub,
-                    ...(email ? { email } : {}),
-                    displayName,
-                    emailVerified: false,
-                });
+            // An unverified email is never written: it would claim the address in Firebase
+            // (email-code login and the school-email alias would then find this user).
+            if (!existing) await auth.createUser({ uid: sub, displayName });
         }
     } catch (error) {
         console.error('Error checking or creating Firebase user:', error);
