@@ -43,6 +43,7 @@ import {
     PinSignInStaleError,
 } from './types';
 import {
+    ESCROW_CONFIRM_THROTTLED_MESSAGE,
     ESCROW_CONFIRM_WRONG_PIN_MESSAGE,
     ESCROW_PIN_CHANGE_REQUIRED_MESSAGE,
     ESCROW_PIN_LOCKED_MESSAGE,
@@ -1295,8 +1296,12 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             }
             // LC-2409 PIN confirm (`replace` + `keep`) on the enroll path: lca-api maps the
             // enclave's PIN-match refusal to "Incorrect PIN." (no count: the confirm budget is
-            // lca-api's, not the enclave's) and its confirm limits to "choose a new PIN".
-            if (path === '' && (response.status === 403 || response.status === 412)) {
+            // lca-api's, not the enclave's), its confirm limits to "choose a new PIN" and its
+            // hourly confirm limit to "try again later".
+            if (
+                path === '' &&
+                (response.status === 403 || response.status === 412 || response.status === 429)
+            ) {
                 const body: unknown = await response.json().catch(() => undefined);
                 const message =
                     body &&
@@ -1309,6 +1314,8 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     throw new EscrowPinMismatchError(0);
                 if (response.status === 412 && message === ESCROW_PIN_CHANGE_REQUIRED_MESSAGE)
                     throw new PinChangeRequiredError();
+                if (response.status === 429 && message === ESCROW_CONFIRM_THROTTLED_MESSAGE)
+                    throw new EscrowPinThrottledError();
             }
             throw new EscrowRequestError(response.status);
         }
@@ -1471,7 +1478,12 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         // current salt. Sealed into the target blob with the intent's `confirm` input
         // (`replace` + `keep`), and no `pinSalt` is sent; the enclave refuses the write
         // unless it matches the current verifier. Nitro/authority mode only.
-        keepPinVerifier?: string
+        keepPinVerifier?: string,
+        // LC-2409 no-PIN contact re-seal: the caller checked "no PIN" on an earlier read,
+        // and this call clears the PIN (the forced rotation). Refused here, on the
+        // authority state the signed intent is built from (its expected enrollment version
+        // then fences the commit), if a PIN was set since, so the re-seal never clears one.
+        refuseExistingPin = false
     ): Promise<void> => {
         if (!config.escrow?.enabled) throw new Error('Escrow enrollment is disabled');
         if (!signDidAuthVp) throw new Error('DID proof signing is required for escrow enrollment');
@@ -1492,6 +1504,8 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                       assertCurrent
                   )
                 : undefined;
+        if (refuseExistingPin && authority?.hasPin)
+            throw new Error('Enter your PIN to update the recovery contact.');
         // lca-api cannot keep a PIN without a salt outside authority mode.
         if (keepPinVerifier !== undefined && !authority)
             throw new Error('Confirming a PIN needs verified automatic recovery.');
@@ -1653,6 +1667,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 );
         }
         const confirmPin = reseal?.pin;
+        const resealWithoutPin = !!reseal && confirmPin === undefined;
         if (reseal && (pin !== undefined || params.options?.clearPin))
             throw new Error('A contact re-seal never sets or clears the PIN.');
         if (confirmPin !== undefined) {
@@ -1869,9 +1884,11 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         storage.assertCurrent();
         try {
             // A confirm retried in this session (e.g. after a wrong PIN) re-posts the same
-            // rotation instead of spending another share version (lca-api caps those).
+            // rotation instead of spending another share version (lca-api caps those). So
+            // does a no-PIN re-seal retried after a failure past its rotation: it only
+            // needs a new blob with the new contact, not new shares.
             if (
-                !forceRotate &&
+                (!forceRotate || resealWithoutPin) &&
                 pin === undefined &&
                 unenrolledRotation &&
                 unenrolledRotation.shareVersion === status.shareVersion &&
@@ -1894,7 +1911,8 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     recoveryEmail,
                     recoveryLanguage,
                     undefined,
-                    keepPinVerifier
+                    keepPinVerifier,
+                    resealWithoutPin
                 );
                 unenrolledRotation = undefined;
                 return withAutoClear(retry.shareVersion, autoClearedFrom);
@@ -1955,7 +1973,8 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 recoveryEmail,
                 recoveryLanguage,
                 undefined,
-                keepPinVerifier
+                keepPinVerifier,
+                resealWithoutPin
             );
             unenrolledRotation = undefined;
             return withAutoClear(shareVersion, autoClearedFrom);

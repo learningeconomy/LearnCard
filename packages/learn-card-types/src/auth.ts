@@ -361,6 +361,8 @@ export const ESCROW_PIN_MISMATCH_PATTERN = /^Incorrect PIN\. (\d+) attempts left
 export const ESCROW_PIN_CHANGE_REQUIRED_MESSAGE = 'Choose a new PIN to continue.';
 /** LC-2409: lca-api's answer to a PIN confirm whose PIN did not match (no count). */
 export const ESCROW_CONFIRM_WRONG_PIN_MESSAGE = 'Incorrect PIN.';
+/** LC-2409: lca-api's hourly limit on PIN confirms (`TOO_MANY_REQUESTS`); try again later. */
+export const ESCROW_CONFIRM_THROTTLED_MESSAGE = 'Please wait before trying again.';
 export const escrowPinMismatchMessage = (attemptsRemaining: number): string =>
     `Incorrect PIN. ${attemptsRemaining} attempts left.`;
 

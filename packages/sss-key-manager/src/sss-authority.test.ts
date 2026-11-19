@@ -258,6 +258,8 @@ const setup = async (
         pinState?: 'locked' | 'stale';
         /** LC-2409: lca-api's confirm limits refuse the next confirm (412). */
         refuseConfirm?: boolean;
+        /** LC-2409: lca-api's hourly confirm limit refuses the next confirm (429). */
+        throttleConfirm?: boolean;
     } = {};
     /** LC-2409: the current PIN's salt, as lca-api stores it. */
     let pinSalt: string | undefined;
@@ -442,6 +444,8 @@ const setup = async (
                     ) {
                         if (faults.refuseConfirm)
                             return response({ message: 'Choose a new PIN to continue.' }, 412);
+                        if (faults.throttleConfirm)
+                            return response({ message: 'Please wait before trying again.' }, 429);
                         const source = await decryptEscrowBlob(state.envelope!, keys.privateKey);
                         if (plaintext.pinVerifier !== source.pinVerifier)
                             return response({ message: 'Incorrect PIN.' }, 403);
@@ -2117,6 +2121,57 @@ describe('LC-2409 escrow contact re-seal', () => {
         expect(puts(f)).toBe(rotations);
         expect(f.intents).toHaveLength(intents);
         expect(f.state().hasPin).toBe(true);
+    });
+
+    it("lca-api's hourly confirm limit is EscrowPinThrottledError", async () => {
+        const f = await withPin();
+        f.faults.throttleConfirm = true;
+        await expect(
+            f.strategy.confirmEscrowPin!({ ...f.params, pin: PIN, options: personal })
+        ).rejects.toMatchObject({ name: 'EscrowPinThrottledError' });
+        expect((await f.sealed())?.recoveryEmail).toBe('owner@example.com');
+    });
+
+    it('reseal without a PIN never clears a PIN set on another device after its first read', async () => {
+        const f = await setup();
+        f.faults.reportPin = true;
+        await f.strategy.ensureEscrowEnrollment!(f.params);
+        expect(f.state()).toMatchObject({ status: 'active', hasPin: false });
+        // Another device sets a PIN between the re-seal's first authority read and the
+        // read its signed intent is built from.
+        let snapshots = 0;
+        f.faults.beforeSnapshot = async () => {
+            snapshots += 1;
+            if (snapshots !== 2) return;
+            const state = f.state();
+            state.enrollmentVersion += 1;
+            state.pinGeneration += 1;
+            state.hasPin = true;
+        };
+        const intents = f.intents.length;
+        await expect(
+            f.strategy.resealEscrowContact!({ ...f.params, options: personal })
+        ).rejects.toThrow('Enter your PIN to update the recovery contact.');
+        expect(snapshots).toBeGreaterThanOrEqual(2);
+        expect(f.intents).toHaveLength(intents);
+        expect(f.state().hasPin).toBe(true);
+    });
+
+    it('reseal without a PIN retried after a failure past its rotation reuses that rotation', async () => {
+        const f = await setup();
+        f.faults.reportPin = true;
+        await f.strategy.ensureEscrowEnrollment!(f.params);
+        const rotations = puts(f);
+        f.faults.failEnrollment = true;
+        await expect(
+            f.strategy.resealEscrowContact!({ ...f.params, options: personal })
+        ).rejects.toThrow();
+        expect(puts(f)).toBe(rotations + 1);
+        f.faults.failEnrollment = false;
+        await f.strategy.resealEscrowContact!({ ...f.params, options: personal });
+        // One share version for both attempts.
+        expect(puts(f)).toBe(rotations + 1);
+        expect((await f.sealed())?.recoveryEmail).toBe('personal@example.com');
     });
 
     it('reseal never enrolls an account that is not enrolled', async () => {
