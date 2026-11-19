@@ -578,9 +578,8 @@ interface PrefetchOptions {
  * Warm a route's files into the HTTP cache with fetch() — never a speculative import()
  * that could poison the module map. Safe for idle, accept-screen, and early boot.
  *
- * `/dashboard` is special (LC-2415): after a *successful* fetch() warm we import() so
- * `loadedDashboardPage` is set and the next mount can render directly without React.lazy
- * suspending. A failed warm still skips import().
+ * `/dashboard` uses warmDashboardPage, which is also fetch-only. Import (and LC-2415
+ * page_direct) happens only when dashboard is selected for navigation via ROUTE_PRELOAD.
  */
 export const warmRoute = (path: string): void => {
     if (path === '/dashboard') {

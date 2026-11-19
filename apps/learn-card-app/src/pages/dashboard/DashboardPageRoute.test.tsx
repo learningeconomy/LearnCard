@@ -2,6 +2,8 @@ import React, { Suspense } from 'react';
 import { act, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { PrefetchChunkKey } from '../../helpers/prefetchChunk';
+
 vi.mock('learn-card-base', async () => {
     const { lazyWithRetry } = await import('learn-card-base/helpers/lazyWithRetry');
     return { lazyWithRetry };
@@ -12,10 +14,10 @@ vi.mock('../../helpers/dashboardPathMarks', () => ({
 }));
 
 const warm = vi.hoisted(() => ({
-    prefetch: vi.fn(async (): Promise<boolean> => true),
+    prefetch: vi.fn(async (_key: PrefetchChunkKey): Promise<boolean> => true),
 }));
 vi.mock('../../helpers/prefetchChunk', () => ({
-    prefetchChunk: (...args: unknown[]) => warm.prefetch(...args),
+    prefetchChunk: (key: PrefetchChunkKey) => warm.prefetch(key),
 }));
 
 const page = vi.hoisted(() => ({ mounts: 0 }));
@@ -96,24 +98,22 @@ describe('DashboardPageRoute', () => {
     });
 
     describe('warmDashboardPage', () => {
-        it('imports after a successful fetch warm so page_direct fires on the next mount (LC-2415)', async () => {
+        it('fetch-warms only — does not import or prime page_direct on the next mount', async () => {
             warm.prefetch.mockResolvedValue(true);
             const { DashboardPageRoute, warmDashboardPage } = await load();
 
             await warmDashboardPage();
 
             expect(warm.prefetch).toHaveBeenCalledWith('dashboard');
+            // Speculative warm must not import(); page_chunk_start stays quiet.
+            expect(marks.steps).toEqual([]);
+
             renderRoute(DashboardPageRoute);
 
-            expect(screen.getByText('dashboard')).toBeTruthy();
-            expect(screen.queryByText('fallback')).toBeNull();
-            // Measured: cold-boot-style mount after a successful warm hits page_direct.
-            expect(marks.steps).toContain('page_direct');
-            expect(marks.steps.filter(step => step !== 'page_route_render')).toEqual([
-                'page_chunk_start',
-                'page_chunk_loaded',
-                'page_direct',
-            ]);
+            // Still the lazy/Suspense path: warm alone does not set loadedDashboardPage.
+            expect(screen.getByText('fallback')).toBeTruthy();
+            expect(marks.steps).not.toContain('page_direct');
+            expect(await screen.findByText('dashboard')).toBeTruthy();
         });
 
         it('does not import when the fetch warm fails, so a 503 cannot poison the module map', async () => {

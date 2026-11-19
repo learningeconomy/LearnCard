@@ -49,7 +49,8 @@ describe('prefetchChunk', () => {
 
             await vi.advanceTimersByTimeAsync(PREFETCH_FAIL_COOLDOWN_MS);
             await expect(prefetchChunk('my-learncard')).resolves.toBe(true);
-            expect(fetched()).toEqual([...FILES, ...FILES]);
+            // Only the failed URL is re-fetched; the successful sibling stays in downloadsByUrl.
+            expect(fetched()).toEqual([...FILES, FILES[0]]);
         } finally {
             vi.useRealTimers();
         }
@@ -74,6 +75,40 @@ describe('prefetchChunk', () => {
         await prefetchChunk('my-learncard');
 
         expect(fetched()).toEqual([FILES[0]]);
+    });
+
+    it('shares one in-flight fetch when two keys list the same asset URL', async () => {
+        const shared = '/assets/CredentialPage-shared.js';
+        const uniqueA = '/assets/AchievementsPage-aaa.js';
+        const uniqueB = '/assets/QualificationsPage-bbb.js';
+        const deferred = () => {
+            let settle!: (response: Response | Error) => void;
+            const promise = new Promise<Response>((resolve, reject) => {
+                settle = r => (r instanceof Error ? reject(r) : resolve(r));
+            });
+            return { promise, settle };
+        };
+        const pending = new Map<string, ReturnType<typeof deferred>>();
+        fetchMock.mockImplementation((url: string) => {
+            const d = deferred();
+            pending.set(url, d);
+            return d.promise;
+        });
+        const { prefetchChunk } = await loadHelper({
+            achievements: [uniqueA, shared],
+            qualifications: [uniqueB, shared],
+        });
+
+        const a = prefetchChunk('achievements' as never);
+        const b = prefetchChunk('qualifications' as never);
+
+        // Both route attempts start sync; shared URL must be fetched once.
+        expect(fetched().sort()).toEqual([shared, uniqueA, uniqueB].sort());
+        expect(fetched().filter(url => url === shared)).toHaveLength(1);
+
+        for (const d of pending.values()) d.settle(ok());
+        await expect(a).resolves.toBe(true);
+        await expect(b).resolves.toBe(true);
     });
 
     it('does nothing without a chunk list', async () => {
