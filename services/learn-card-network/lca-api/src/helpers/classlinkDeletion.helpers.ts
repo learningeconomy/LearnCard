@@ -19,7 +19,7 @@ import {
 import {
     demotePersonalEmail,
     markDemotePending,
-    withEmailChangeLock,
+    withEmailChangeLockRetry,
 } from './classlinkPrimaryEmail.helpers';
 import { getAdminAuth } from './firebaseAdminAuth.helpers';
 
@@ -68,9 +68,10 @@ export const canDeletePersonalEmailSubject = async (
 /**
  * LC-2409: put each promoted identity's Firebase user (T) and the account's contact back
  * before the identity (and its `primaryEmail` record) is deleted, so T does not keep a minor's
- * personal address. Returns the identity keys that could not be demoted (busy lock, no
- * Firebase Admin, Firebase error): those are kept, with `demotePending`, so the orphan guard
- * keeps blocking the address and a later `deleteMyData` can finish.
+ * personal address. A busy lock is retried briefly. Returns the identity keys that still could
+ * not be demoted (busy lock, no Firebase Admin, Firebase error): those are kept, with
+ * `demotePending`, so the orphan guard keeps blocking the address; the orphan guard's own
+ * demote at the next login with the address, or `cleanupOrphanClassLinkData`, finishes it.
  */
 const demoteBeforeDeletion = async (
     account: ClassLinkDeletionAccount,
@@ -83,7 +84,8 @@ const demoteBeforeDeletion = async (
     const auth = getAdminAuth();
     for (const identity of promoted) {
         try {
-            await withEmailChangeLock(
+            // Retried briefly while busy: once the account is deleted no route can finish it.
+            await withEmailChangeLockRetry(
                 account.primaryDid || identity.primaryDid || identity.identityKey,
                 async lock => {
                     const fresh = await getClassLinkIdentitiesCollection().findOne({

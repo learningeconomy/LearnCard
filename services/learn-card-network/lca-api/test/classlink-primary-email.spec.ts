@@ -205,8 +205,8 @@ describe('school-email alias (resolveOrCreateFirebaseUserByEmail)', () => {
         });
     });
 
-    it('the orphan guard blocks a stale primaryEmail.uid and records demotePending', async () => {
-        // A rebind removed T from the account, and the demote could not run.
+    it('the orphan guard blocks a stale primaryEmail.uid and finishes the demote', async () => {
+        // A rebind removed T from the account, and the demote could not run then.
         await mongodb
             .collection('userkeys')
             .updateOne(
@@ -216,6 +216,29 @@ describe('school-email alias (resolveOrCreateFirebaseUserByEmail)', () => {
         await expect(
             resolveOrCreateFirebaseUserByEmail(auth, personal, { allowCreate: true })
         ).resolves.toEqual({ status: 'blocked' });
+        const demoted = await getClassLinkIdentitiesCollection().findOne({ identityKey });
+        expect(demoted?.primaryEmail).toBeUndefined();
+        expect(fake.peek(T)?.email).toBe(school);
+        expect(
+            (await mongodb.collection('userkeys').findOne({ primaryDid: did }))?.contactMethod
+        ).toEqual({ type: 'email', value: school });
+    });
+
+    it('the orphan guard records demotePending when the demote cannot run', async () => {
+        await mongodb
+            .collection('userkeys')
+            .updateOne(
+                { primaryDid: did },
+                { $set: { authProviders: [{ type: 'firebase', id: 'new-uid' }] } }
+            );
+        vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        const updateUser = vi
+            .spyOn(auth, 'updateUser')
+            .mockRejectedValue(Object.assign(new Error('down'), { code: 'auth/internal-error' }));
+        await expect(
+            resolveOrCreateFirebaseUserByEmail(auth, personal, { allowCreate: true })
+        ).resolves.toEqual({ status: 'blocked' });
+        updateUser.mockRestore();
         expect(
             (await getClassLinkIdentitiesCollection().findOne({ identityKey }))?.demotePending
         ).toMatchObject({ reason: 'orphaned_login' });

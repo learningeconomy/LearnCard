@@ -577,6 +577,63 @@ export const demoteUnlinkedPrimaryEmails = async (
     }
 };
 
+const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
+
+const isBusy = (error: unknown): boolean =>
+    error instanceof TRPCError &&
+    (error.cause as { reason?: unknown } | undefined)?.reason === 'busy';
+
+/**
+ * `withEmailChangeLock`, retried briefly while the lock is busy (a verify or remove holds it
+ * for seconds). For paths with no later caller to retry them: account deletion, the login
+ * orphan guard and the orphan cleanup.
+ */
+export const withEmailChangeLockRetry = async <T>(
+    accountKey: string,
+    fn: (lock: EmailChangeLock) => Promise<T>,
+    delaysMs: readonly number[] = [250, 750, 1500]
+): Promise<T> => {
+    for (let attempt = 0; ; attempt += 1) {
+        try {
+            return await withEmailChangeLock(accountKey, fn);
+        } catch (error) {
+            const delay = delaysMs[attempt];
+            if (delay === undefined || !isBusy(error)) throw error;
+            await sleep(delay);
+        }
+    }
+};
+
+/**
+ * Demote a promotion whose uid no longer holds the identity's account (deleted, or T unlinked
+ * by a rebind or revoke), under the lock keyed by that account. On failure the identity keeps
+ * (or gets) `demotePending`, so the orphan guard keeps blocking the address. Returns whether the
+ * demote ran. Never throws.
+ */
+export const demoteOrphanedPrimaryEmail = async (
+    auth: AdminAuth | undefined,
+    identity: Pick<MongoClassLinkIdentityType, 'identityKey' | 'primaryDid'>,
+    reason: string
+): Promise<boolean> => {
+    try {
+        const lockKey = identity.primaryDid
+            ? await getEmailChangeLockKey(identity.primaryDid)
+            : identity.identityKey;
+        await withEmailChangeLockRetry(lockKey, async lock => {
+            const fresh = await getClassLinkIdentitiesCollection().findOne({
+                identityKey: identity.identityKey,
+            });
+            if (fresh?.primaryEmail)
+                await demotePersonalEmail({ auth, identity: fresh, reason, lock });
+        });
+        return true;
+    } catch {
+        console.warn('classlink.primary_email.demote_deferred', { reason });
+        await markDemotePending(identity.identityKey, reason).catch(() => undefined);
+        return false;
+    }
+};
+
 // ---------------------------------------------------------------------------------------
 // Login-time resolution
 // ---------------------------------------------------------------------------------------
@@ -652,11 +709,10 @@ export const resolveOrCreateFirebaseUserByEmail = async (
             );
             if (orphaned.length) {
                 console.warn('classlink.primary_email.orphan_blocked');
-                await Promise.all(
-                    orphaned.map(identity =>
-                        markDemotePending(identity.identityKey, 'orphaned_login')
-                    )
-                );
+                // Finish the demote here when possible: once the account is deleted (or T was
+                // unlinked from it), no account route can, and T must not keep the address.
+                for (const identity of orphaned)
+                    await demoteOrphanedPrimaryEmail(auth, identity, 'orphaned_login');
                 return { status: 'blocked' };
             }
         }

@@ -1,4 +1,6 @@
+import { createHash } from 'node:crypto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import cache from '@cache';
 
 vi.mock('@environment', () => ({
     environment: { NODE_ENV: 'test', IS_E2E_TEST: false },
@@ -455,6 +457,66 @@ describe('ClassLink account cleanup', () => {
                         identityKey: `email:${personal}`,
                     })
                 ).toBe(1);
+            });
+
+            it('account deletion waits briefly for a busy email-change lock', async () => {
+                const redis = cache.redis ?? cache.node;
+                const lockKey = `classlink:lock:personal-email:${createHash('sha256')
+                    .update(did)
+                    .digest('hex')}`;
+                await redis.set(lockKey, 'someone-else', 'EX', 30);
+                setTimeout(() => void redis.del(lockKey), 300);
+                await getUserKeysCollection().deleteMany({ primaryDid: did });
+
+                await deleteClassLinkDataForAccount(deletedAccount, { accountDeleted: true });
+
+                expect(fake.peek(uid)?.email).toBe(syntheticEmailForUid(uid));
+                expect(await getClassLinkIdentitiesCollection().countDocuments({})).toBe(0);
+            });
+
+            it('the orphan cleanup finishes a pending demote before deleting the identity', async () => {
+                const { cleanupOrphanClassLinkData } =
+                    await import('../src/helpers/classlinkCleanup.helpers');
+                vi.mocked(getAdminAuth).mockReturnValue(undefined);
+                vi.spyOn(console, 'warn').mockImplementation(() => {});
+                await getUserKeysCollection().deleteMany({ primaryDid: did });
+                await getClassLinkIdentitiesCollection().updateOne(
+                    { identityKey: 'classlink:cleanup:identity' },
+                    { $set: { primaryDid: did } }
+                );
+                await deleteClassLinkDataForAccount(deletedAccount, { accountDeleted: true });
+                const old = new Date(Date.now() - 31 * 86_400_000);
+                await getClassLinkIdentitiesCollection().updateOne(
+                    { identityKey: 'classlink:cleanup:identity' },
+                    { $set: { createdAt: old, updatedAt: old } }
+                );
+
+                // Still no Firebase Admin: the identity is kept for the next run.
+                await cleanupOrphanClassLinkData({ apply: true });
+                expect(
+                    await getClassLinkIdentitiesCollection().countDocuments({
+                        identityKey: 'classlink:cleanup:identity',
+                    })
+                ).toBe(1);
+                expect(fake.peek(uid)?.email).toBe(personal);
+
+                vi.mocked(getAdminAuth).mockReturnValue(fake.auth);
+                await getClassLinkIdentitiesCollection().updateOne(
+                    { identityKey: 'classlink:cleanup:identity' },
+                    { $set: { updatedAt: old } }
+                );
+                await cleanupOrphanClassLinkData({ apply: true });
+                expect(fake.peek(uid)?.email).toBe(syntheticEmailForUid(uid));
+                expect(
+                    await getAuthSubjectsCollection().countDocuments({
+                        identityKey: `email:${personal}`,
+                    })
+                ).toBe(0);
+                expect(
+                    await getClassLinkIdentitiesCollection().countDocuments({
+                        identityKey: 'classlink:cleanup:identity',
+                    })
+                ).toBe(0);
             });
 
             it('canDeletePersonalEmailSubject skips the contact check only for a deleted account', async () => {
