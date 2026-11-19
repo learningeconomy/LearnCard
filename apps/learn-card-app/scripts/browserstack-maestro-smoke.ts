@@ -313,14 +313,31 @@ const downloadVideo = async (
     username: string,
     accessKey: string
 ): Promise<void> => {
-    const authed = await fetch(videoUrl, {
-        headers: { Authorization: authHeader(username, accessKey) },
-    });
-    const response = authed.ok ? authed : await fetch(videoUrl);
-    if (!response.ok) {
-        throw new Error(`video download failed (HTTP ${response.status})`);
+    const url = new URL(videoUrl);
+    const browserStackHost = [
+        'app-automate.browserstack.com',
+        'api-cloud.browserstack.com',
+        'api.browserstack.com',
+    ].includes(url.hostname);
+
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+        let response = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+        if ([401, 403].includes(response.status) && url.protocol === 'https:' && browserStackHost) {
+            response = await fetch(url, {
+                headers: { Authorization: authHeader(username, accessKey) },
+                signal: AbortSignal.timeout(30_000),
+            });
+        }
+        if (response.ok) {
+            await writeFile(destination, Buffer.from(await response.arrayBuffer()));
+            return;
+        }
+        if (response.status !== 404 || attempt === 2) {
+            throw new Error(`video download failed (HTTP ${response.status})`);
+        }
+        // Video rendering can lag behind the terminal session status.
+        await Bun.sleep(5_000);
     }
-    await writeFile(destination, Buffer.from(await response.arrayBuffer()));
 };
 
 const saveSampleVideos = async (): Promise<void> => {
@@ -355,8 +372,13 @@ const saveSampleVideos = async (): Promise<void> => {
             continue;
         }
         const destination = join(directory, `${prefix}-${label}.mp4`);
-        await downloadVideo(videoUrl, destination, username, accessKey);
-        console.log(`saved ${destination}`);
+        try {
+            await downloadVideo(videoUrl, destination, username, accessKey);
+            console.log(`saved ${destination}`);
+        } catch (error) {
+            const detail = error instanceof Error ? error.message : String(error);
+            console.warn(`Could not save ${prefix} ${label} session video: ${detail}`);
+        }
     }
 };
 
