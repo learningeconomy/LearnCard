@@ -40,7 +40,12 @@ const continuity = (
 ): ClassLinkAccountContinuity => ({
     personalEmail: allowed ? { allowed } : { allowed, reason: 'district_off' },
     emailVerified: nextStep !== 'email',
-    recoveryEmailVerified: nextStep !== 'email',
+    emailPrimary: nextStep !== 'email',
+    primaryUid: 'uid-t',
+    signInEmailSource: nextStep !== 'email' ? 'personal' : undefined,
+    hasSchoolEmail: true,
+    contactStale: nextStep === 'confirmPin',
+    canRemove: true,
     hasServerConfirmedMethod: nextStep === 'done' || nextStep === 'pin',
     hasUserRecoveryMethod: false,
     pinState: nextStep === 'done' ? 'enabled' : 'none',
