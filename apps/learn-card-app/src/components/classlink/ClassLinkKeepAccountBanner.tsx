@@ -6,10 +6,11 @@ import * as m from '../../paraglide/messages.js';
 
 export type ClassLinkKeepAccountBannerProps = {
     /**
-     * What is left: a personal email; then a PIN (escrow accounts) or a passkey or
-     * recovery phrase (`method`: accounts that cannot have escrow).
+     * What is left: a personal email; then a PIN (escrow accounts), the current PIN once so
+     * the backup follows the new sign-in email (`confirmPin`), or a passkey or recovery
+     * phrase (`method`: accounts that cannot have escrow here).
      */
-    step: 'email' | 'pin' | 'method';
+    step: 'email' | 'pin' | 'confirmPin' | 'method';
     /** `pin` only: the PIN is locked, so the ask is for a new one. */
     pinLocked?: boolean;
     /** `method` only: a recovery phrase, where this device cannot make a passkey. */
@@ -22,7 +23,8 @@ export type ClassLinkKeepAccountBannerProps = {
 
 /**
  * Dashboard banner inviting a ClassLink user to keep their account after school: add a
- * personal email, then create a PIN or add a passkey / recovery phrase if the account
+ * personal email to sign in with, then create a PIN, enter the current PIN once (so the
+ * backup follows the new sign-in email) or add a passkey / recovery phrase if the account
  * still needs one. Shown in the recovery banner's slot (and instead of it) while the
  * server says there is a step left; the host owns visibility and the snooze. The PIN ask
  * uses the recovery banner's keypad icon and words, so the same ask always looks the same.
@@ -37,7 +39,10 @@ export const ClassLinkKeepAccountBanner: React.FC<ClassLinkKeepAccountBannerProp
 }) => {
     let body: string;
     let action: string;
-    if (step === 'pin') {
+    if (step === 'confirmPin') {
+        body = m['classlinkKeepAccount.banner.confirmPinBody']();
+        action = m['classlinkKeepAccount.banner.confirmPinAction']();
+    } else if (step === 'pin') {
         body = pinLocked
             ? m['classlinkKeepAccount.banner.pinLockedBody']()
             : m['classlinkKeepAccount.banner.pinBody']();
@@ -69,7 +74,9 @@ export const ClassLinkKeepAccountBanner: React.FC<ClassLinkKeepAccountBannerProp
             >
                 <span className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 bg-emerald-50 group-hover:bg-emerald-100 transition-colors">
                     <IonIcon
-                        icon={step === 'pin' ? keypadOutline : shieldOutline}
+                        icon={
+                            step === 'pin' || step === 'confirmPin' ? keypadOutline : shieldOutline
+                        }
                         className="text-lg text-emerald-600"
                     />
                 </span>

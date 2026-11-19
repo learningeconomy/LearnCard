@@ -6,6 +6,9 @@ import type { ClassLinkAccountContinuity } from '@learncard/lca-api-plugin';
 const mocks = vi.hoisted(() => ({
     features: {} as Record<string, boolean>,
     status: 'ready',
+    uid: 'uid-t',
+    escrowEnrollment: 'enrolled' as string | undefined,
+    escrowMode: 'nitro',
     classlink: true,
     continuity: undefined as unknown,
     isLoading: false,
@@ -15,6 +18,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('learn-card-base', () => ({
     useFeatureConfig: () => mocks.features,
+    getSSSConfig: () => ({ escrowEnclaveMode: mocks.escrowMode }),
     useClassLinkAccountContinuity: (options: { enabled: boolean }) => {
         mocks.continuityHook(options);
         return options.enabled
@@ -23,14 +27,24 @@ vi.mock('learn-card-base', () => ({
     },
 }));
 vi.mock('../../providers/AuthCoordinatorProvider', () => ({
-    useAppAuth: () => ({ state: { status: mocks.status } }),
+    useAppAuth: () => ({
+        state: {
+            status: mocks.status,
+            authUser: { id: mocks.uid },
+            escrowEnrollment: mocks.escrowEnrollment,
+        },
+    }),
 }));
 vi.mock('../../auth/classlink/classlinkProfileDefaults', () => ({
     getClassLinkSession: mocks.getSession,
 }));
 
 import { isKeepAccountEnabled } from './keepAccountFlags';
-import { needsKeepAccount, useKeepAccountOffer } from './useKeepAccountOffer';
+import {
+    needsKeepAccount,
+    resolveKeepAccountStep,
+    useKeepAccountOffer,
+} from './useKeepAccountOffer';
 
 const ALL_ON = { classlinkSso: true, classlinkPersonalEmail: true, classlinkKeepAccount: true };
 
@@ -70,6 +84,9 @@ beforeEach(() => {
     vi.clearAllMocks();
     mocks.features = { ...ALL_ON };
     mocks.status = 'ready';
+    mocks.uid = 'uid-t';
+    mocks.escrowEnrollment = 'enrolled';
+    mocks.escrowMode = 'nitro';
     mocks.classlink = true;
     mocks.continuity = continuity('email');
     mocks.isLoading = false;
@@ -105,6 +122,27 @@ describe('needsKeepAccount', () => {
         expect(needsKeepAccount(continuity('method'))).toBe(true);
     });
 
+    it('offers the PIN confirm only on the login that holds the sign-in email', () => {
+        expect(needsKeepAccount(continuity('confirmPin'), { sessionUid: 'uid-t' })).toBe(true);
+        expect(needsKeepAccount(continuity('confirmPin'), { sessionUid: 'uid-other' })).toBe(false);
+        expect(needsKeepAccount(continuity('confirmPin'))).toBe(false);
+        expect(resolveKeepAccountStep(continuity('confirmPin'), { sessionUid: 'uid-other' })).toBe(
+            'otherUid'
+        );
+    });
+
+    it('asks for a passkey or phrase instead of a PIN where escrow cannot enroll', () => {
+        for (const escrowEnrollment of ['not-enrolled', 'opted-out', 'disabled']) {
+            expect(resolveKeepAccountStep(continuity('pin'), { escrowEnrollment })).toBe('method');
+        }
+        expect(resolveKeepAccountStep(continuity('pin'), { escrowOff: true })).toBe('method');
+        // Unknown yet, or enrolled: the PIN.
+        expect(resolveKeepAccountStep(continuity('pin'), {})).toBe('pin');
+        expect(resolveKeepAccountStep(continuity('pin'), { escrowEnrollment: 'enrolled' })).toBe(
+            'pin'
+        );
+    });
+
     it('offers nothing once done or without an answer', () => {
         expect(needsKeepAccount(continuity('done'))).toBe(false);
         expect(needsKeepAccount(undefined)).toBe(false);
@@ -118,6 +156,7 @@ describe('useKeepAccountOffer', () => {
             offer: true,
             pending: false,
             continuity: continuity('email'),
+            step: 'email',
         });
     });
 
@@ -125,7 +164,12 @@ describe('useKeepAccountOffer', () => {
         mocks.features = { ...ALL_ON, [flag]: false };
         const { result } = await renderOffer();
 
-        expect(result.current).toEqual({ offer: false, pending: false, continuity: undefined });
+        expect(result.current).toEqual({
+            offer: false,
+            pending: false,
+            continuity: undefined,
+            step: undefined,
+        });
         expect(queried()).toBe(false);
         expect(mocks.getSession).not.toHaveBeenCalled();
     });
@@ -141,7 +185,12 @@ describe('useKeepAccountOffer', () => {
     it('never asks the server for a non-ClassLink session', async () => {
         mocks.classlink = false;
         const { result } = await renderOffer();
-        expect(result.current).toEqual({ offer: false, pending: false, continuity: undefined });
+        expect(result.current).toEqual({
+            offer: false,
+            pending: false,
+            continuity: undefined,
+            step: undefined,
+        });
         expect(queried()).toBe(false);
     });
 
@@ -149,6 +198,13 @@ describe('useKeepAccountOffer', () => {
         const { result } = await renderOffer(false);
         expect(result.current.offer).toBe(false);
         expect(queried()).toBe(false);
+    });
+
+    it('hides the PIN confirm on another login of the account', async () => {
+        mocks.continuity = continuity('confirmPin');
+        mocks.uid = 'uid-other';
+        const { result } = await renderOffer();
+        expect(result.current).toMatchObject({ offer: false, step: 'otherUid' });
     });
 
     it('is pending until the session and the server answer are known', async () => {

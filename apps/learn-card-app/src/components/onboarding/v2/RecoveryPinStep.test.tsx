@@ -191,6 +191,32 @@ describe('RecoveryPinStep', () => {
         expect(mockOnComplete).not.toHaveBeenCalled();
     });
 
+    it('starts over with the host message for an error another PIN fixes, without counting it', async () => {
+        const same = Object.assign(new Error('same'), { name: 'SameEscrowPinError' });
+        mockSetPin.mockRejectedValue(same);
+        render(
+            <RecoveryPinStep
+                onComplete={mockOnComplete}
+                onSkip={mockOnSkip}
+                setPin={mockSetPin}
+                saveErrorMessage={err =>
+                    err instanceof Error && err.name === 'SameEscrowPinError'
+                        ? 'Choose a new PIN to finish.'
+                        : undefined
+                }
+            />
+        );
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+            enterPin('147258');
+            enterPin('147258');
+            expect(await screen.findByText('Choose a new PIN to finish.')).toBeInTheDocument();
+            // Back at the first entry, never offering the skip.
+            expect(screen.queryByText('Confirm your PIN')).not.toBeInTheDocument();
+        }
+        expect(screen.queryByText('Skip for now')).not.toBeInTheDocument();
+        expect(mockOnComplete).not.toHaveBeenCalled();
+    });
+
     it('announces a failed save and puts focus back on the PIN boxes', async () => {
         mockSetPin.mockRejectedValue(new Error('enclave unavailable'));
         renderComponent();

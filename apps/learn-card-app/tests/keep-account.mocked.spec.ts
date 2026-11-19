@@ -27,26 +27,35 @@ const typePin = async (page: Page, pin: string): Promise<void> => {
 };
 
 test.describe('Keep your account @mocked', () => {
-    test('email, code, then done for a PIN account: no passkey or phrase asked', async ({
+    test('PIN account: email, code, enter PIN, sealed with the personal email', async ({
         page,
     }) => {
         await page.goto(`${HARNESS}?step=email`);
         await expect(
             page.getByRole('heading', { name: 'Keep your account after school' })
         ).toBeVisible();
-        await expect(page.getByText(/your PIN gets you back in/)).toBeVisible();
-        await expect(
-            page.getByText(/We only use this email to help you get back in/)
-        ).toBeVisible();
+        await expect(page.getByText('Add a personal email to sign in with.')).toBeVisible();
+        await expect(page.getByText("You'll sign in with this email.")).toBeVisible();
         await expect(submit(page)).toBeDisabled();
-        await expect(page.getByText(/sign in with/i)).toHaveCount(0);
         await page.screenshot({ path: `${SHOTS}/email.png`, fullPage: true });
 
         await verifyEmail(page);
-        await expect(step(page)).toHaveAttribute('data-step', 'done');
-        await expect(page.getByText(/I lost access to my school email or login/)).toBeVisible();
+        // Signed back in with the custom token before anything else.
+        await expect(step(page)).toHaveAttribute('data-step', 'confirmPin');
+        expect(await page.evaluate(() => window.keepAccountHarness.reauths)).toBe(1);
+        await expect(page.getByRole('heading', { name: 'Enter your PIN' })).toBeVisible();
         await expect(
-            page.getByText(/s\*\*\*@example\.org\u2069?, then enter your PIN/)
+            page.getByText(/If you forget it, we'll email \u2068?student@example\.org/)
+        ).toBeVisible();
+        // A single entry: no "confirm your PIN" second round.
+        await page.screenshot({ path: `${SHOTS}/confirm-pin.png`, fullPage: true });
+        await typePin(page, '593827');
+        await expect(step(page)).toHaveAttribute('data-step', 'done');
+        expect(await page.evaluate(() => window.keepAccountHarness.sealedContacts)).toEqual([
+            'student@example.org',
+        ]);
+        await expect(
+            page.getByText(/Sign in with \u2068?s\*\*\*@example\.org\u2069? anytime/)
         ).toBeVisible();
         expect(await page.evaluate(() => window.keepAccountHarness.setupOptions)).toHaveLength(0);
         // Nothing to undo on the success screen: removing lives in School Connect.
@@ -57,10 +66,59 @@ test.describe('Keep your account @mocked', () => {
         await expect(page.locator('body')).toHaveAttribute('data-done', '1');
     });
 
+    test('a wrong PIN keeps the entry open', async ({ page }) => {
+        await page.goto(`${HARNESS}?step=confirmPin&pinMismatch=1`);
+        await typePin(page, '111222');
+        await expect(page.getByText("That PIN didn't match. Try again.")).toBeVisible();
+        await expect(step(page)).toHaveAttribute('data-step', 'confirmPin');
+        await typePin(page, '593827');
+        await expect(step(page)).toHaveAttribute('data-step', 'done');
+    });
+
+    test('same PIN refused asks for a new one', async ({ page }) => {
+        await page.goto(`${HARNESS}?step=confirmPin&sameReject=1`);
+        await page.getByTestId('keep-account-confirm-new-instead').click();
+        await expect(page.getByTestId('keep-account-confirm-new-pin')).toBeVisible();
+        await typePin(page, '593827');
+        await typePin(page, '593827');
+        await expect(page.getByText('Choose a new PIN to finish.').first()).toBeVisible();
+        await typePin(page, '864213');
+        await typePin(page, '864213');
+        await expect(step(page)).toHaveAttribute('data-step', 'done');
+        expect(await page.evaluate(() => window.keepAccountHarness.pinsSet)).toBe(1);
+    });
+
+    test('other uid: no confirm, sign in with the sign-in email instead', async ({ page }) => {
+        await page.goto(`${HARNESS}?step=confirmPin&otherUid=1`);
+        await expect(step(page)).toHaveAttribute('data-step', 'otherUid');
+        await expect(page.getByTestId('keep-account-other-uid')).toHaveText(
+            /To finish, sign in with \u2068?s\*\*\*@example\.org\u2069? on this device\./
+        );
+        await expect(page.getByLabel('PIN digit 1')).toHaveCount(0);
+        expect(await page.evaluate(() => window.keepAccountHarness.confirms)).toBe(0);
+    });
+
+    test('placeholder: email, then Create PIN, never a passkey', async ({ page }) => {
+        await page.goto(`${HARNESS}?step=email&placeholder=1`);
+        await verifyEmail(page);
+        await expect(step(page)).toHaveAttribute('data-step', 'pin');
+        await expect(page.getByRole('heading', { name: 'Create a PIN' })).toBeVisible();
+        await typePin(page, '135790');
+        await typePin(page, '135790');
+        await expect(step(page)).toHaveAttribute('data-step', 'done');
+        expect(await page.evaluate(() => window.keepAccountHarness.setupOptions)).toHaveLength(0);
+        expect((await page.evaluate(() => window.keepAccountHarness.sealedContacts)).at(-1)).toBe(
+            'student@example.org'
+        );
+    });
+
     test('creates the PIN in place when escrow has none, then done', async ({ page }) => {
         await page.goto(`${HARNESS}?step=email&pin=none`);
         await verifyEmail(page);
         await expect(step(page)).toHaveAttribute('data-step', 'pin');
+        await expect(
+            page.getByText("You'll enter this PIN when you sign in on a new device.")
+        ).toBeVisible();
         await expect(page.getByRole('heading', { name: 'Create a PIN' })).toBeVisible();
         // The boxes take focus as the screen swaps in.
         await expect(page.getByLabel('PIN digit 1')).toBeFocused();
@@ -87,10 +145,10 @@ test.describe('Keep your account @mocked', () => {
         await expect(step(page)).toHaveAttribute('data-step', 'done');
     });
 
-    test('without escrow: email, code, passkey or phrase started directly, then done', async ({
+    test('escrow off: email, code, passkey or phrase started directly, then done', async ({
         page,
     }) => {
-        await page.goto(`${HARNESS}?step=email&escrow=0`);
+        await page.goto(`${HARNESS}?step=email&escrowOff=1`);
         await verifyEmail(page);
         await expect(step(page)).toHaveAttribute('data-step', 'method');
         await page.screenshot({ path: `${SHOTS}/method.png`, fullPage: true });
@@ -106,7 +164,9 @@ test.describe('Keep your account @mocked', () => {
             { initialMethod: expect.stringMatching(/^(passkey|phrase)$/), autoStart: true },
         ]);
         await expect(step(page)).toHaveAttribute('data-step', 'done');
-        await expect(page.getByText(/to get you back in/)).toBeVisible();
+        await expect(
+            page.getByText(/you'll also use your passkey or recovery phrase/)
+        ).toBeVisible();
     });
 
     test('refuses a school address by error code, then accepts a personal one', async ({
@@ -122,17 +182,19 @@ test.describe('Keep your account @mocked', () => {
         );
         await page.screenshot({ path: `${SHOTS}/email-error.png`, fullPage: true });
         await verifyEmail(page);
-        await expect(step(page)).toHaveAttribute('data-step', 'done');
+        await expect(step(page)).toHaveAttribute('data-step', 'confirmPin');
     });
 
-    test('asks for another address when it already recovers a different account', async ({
+    test('asks for another address when another LearnCard account already uses it', async ({
         page,
     }) => {
         await page.goto(`${HARNESS}?step=email&shared=1`);
         await verifyEmail(page);
         // Like any other email error: under the field, with the address kept.
         await expect(step(page)).toHaveAttribute('data-step', 'email');
-        await expect(page.getByRole('alert')).toHaveText(/Another account already uses this email/);
+        await expect(page.getByRole('alert')).toHaveText(
+            'That email is already used by another LearnCard account. Try a different one.'
+        );
         await expect(page.getByLabel('Personal email')).toHaveValue('student@example.org');
         await expect(page.getByLabel('Personal email')).toHaveAttribute('aria-invalid', 'true');
         await page.screenshot({ path: `${SHOTS}/shared.png`, fullPage: true });
@@ -152,15 +214,15 @@ test.describe('Keep your account @mocked', () => {
         await expect(page.getByLabel('Personal email')).toHaveCount(0);
     });
 
-    test('removes the personal email after a confirm that names it', async ({ page }) => {
+    test('removes the sign-in email after a confirm that names it', async ({ page }) => {
         await page.goto(`${HARNESS}?step=done&variant=inline`);
         await expect(
-            page.getByText(/s\*\*\*@example\.org\u2069? · Can get you back in/)
+            page.getByText(/s\*\*\*@example\.org\u2069? · School email also works/)
         ).toBeVisible();
         await page.getByTestId('keep-account-remove').click();
         const alert = page.locator('ion-alert');
         await expect(alert).toContainText(
-            /Remove \u2068?s\*\*\*@example\.org\u2069?\? You won't be able to use it/
+            /Stop signing in with \u2068?s\*\*\*@example\.org\u2069?\? You'll sign in with your school login instead/
         );
         await expect(page.getByTestId('keep-account-remove-confirm')).toBeVisible();
         await page.waitForTimeout(400); // Let the alert finish animating in for the shot.
@@ -173,7 +235,21 @@ test.describe('Keep your account @mocked', () => {
         await page.getByTestId('keep-account-remove-confirm').click();
         await expect(step(page)).toHaveAttribute('data-step', 'email');
         expect(await page.evaluate(() => window.keepAccountHarness.removed)).toBe(1);
+        // Signed back in with the restored school email.
+        expect(await page.evaluate(() => window.keepAccountHarness.reauths)).toBe(1);
         await expect(page.getByTestId('keep-account-add')).toBeVisible();
+    });
+
+    test('a placeholder account with escrow can change the address but not remove it', async ({
+        page,
+    }) => {
+        await page.goto(`${HARNESS}?step=done&placeholder=1&variant=inline`);
+        await expect(page.getByTestId('keep-account-remove')).toHaveCount(0);
+        await expect(
+            page.getByText(/This is how you sign in\. You can switch to a different email\./)
+        ).toBeVisible();
+        await page.getByTestId('keep-account-change').click();
+        await expect(page.getByLabel('Personal email')).toBeFocused();
     });
 
     test('code step: names the address, checks itself, resends after a countdown', async ({
@@ -211,7 +287,7 @@ test.describe('Keep your account @mocked', () => {
 
         await page.getByLabel('Code digit 1').click();
         await page.keyboard.type('123456');
-        await expect(step(page)).toHaveAttribute('data-step', 'done');
+        await expect(step(page)).toHaveAttribute('data-step', 'confirmPin');
     });
 
     test('code step: Use a different email goes back with the address kept', async ({ page }) => {
@@ -221,7 +297,7 @@ test.describe('Keep your account @mocked', () => {
         await expect(page.getByLabel('Personal email')).toBeFocused();
         await expect(page.getByLabel('Personal email')).toHaveValue('studnet@example.org');
         await verifyEmail(page);
-        await expect(step(page)).toHaveAttribute('data-step', 'done');
+        await expect(step(page)).toHaveAttribute('data-step', 'confirmPin');
     });
 
     test('onboarding: frosted card, sticky button, a brief Saved check, then hands back', async ({
@@ -275,7 +351,7 @@ test.describe('Keep your account @mocked', () => {
     });
 
     test('mirrors in Arabic, with the email and code left to right', async ({ page }) => {
-        await page.goto(`${HARNESS}?step=method&lang=ar`);
+        await page.goto(`${HARNESS}?step=method&escrowOff=1&lang=ar`);
         await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
         await expect(page.getByRole('heading', { name: 'خطوة أخيرة' })).toBeVisible();
         await page.screenshot({ path: `${SHOTS}/method-ar.png`, fullPage: true });

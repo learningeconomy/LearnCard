@@ -8,13 +8,17 @@ type Continuity = {
     personalEmail: { allowed: boolean; reason?: string };
     emailVerified: boolean;
     maskedEmail?: string;
-    maskedRecoveryEmail?: string;
-    recoveryEmailVerified: boolean;
+    emailPrimary: boolean;
+    primaryUid?: string;
+    hasSchoolEmail: boolean;
+    contactStale: boolean;
+    canRemove: boolean;
     hasServerConfirmedMethod: boolean;
     hasUserRecoveryMethod: boolean;
     pinState: 'none' | 'enabled' | 'locked' | 'stale';
     pinRecoverable: boolean;
-    nextStep: 'email' | 'pin' | 'method' | 'done';
+    nextStep: 'confirmPin' | 'email' | 'pin' | 'method' | 'done';
+    pinChangeRequired?: boolean;
 };
 type SetupOptions = {
     initialMethod: string;
@@ -31,6 +35,7 @@ type PinStepProps = {
     onComplete: () => void;
     onSkip: () => void;
     onStepChange?: (step: 'enter' | 'confirm' | 'saving' | 'success') => void;
+    saveErrorMessage?: (error: unknown) => string | undefined;
 };
 
 const mocks = vi.hoisted(() => ({
@@ -51,6 +56,14 @@ const mocks = vi.hoisted(() => ({
     webAuthn: true,
     loading: false,
     presentAlert: vi.fn(),
+    uid: 'uid-t',
+    sessionEmail: 'me@example.org' as string | undefined,
+    escrowEnrollment: 'enrolled' as string | undefined,
+    confirmedContact: 'me@example.org' as string | undefined,
+    refreshAccountContact: vi.fn(),
+    resealEscrowContact: vi.fn(),
+    rememberConfirmedContact: vi.fn(),
+    confirmEscrowPin: vi.fn(),
 }));
 
 type AlertOptions = {
@@ -80,13 +93,28 @@ vi.mock('learn-card-base', () => ({
     useStartPersonalEmail: () => ({ mutateAsync: mocks.start, isPending: false }),
     useVerifyPersonalEmail: () => ({ mutateAsync: mocks.verify, isPending: false }),
     useRemovePersonalEmail: () => ({ mutateAsync: mocks.remove, isPending: false }),
+    getSSSConfig: () => ({ escrowEnclaveMode: 'nitro' }),
+    isSameEscrowPinError: (error: unknown) =>
+        error instanceof Error && error.name === 'SameEscrowPinError',
+    isEscrowContactNotConfirmedError: (error: unknown) =>
+        error instanceof Error && error.name === 'EscrowContactNotConfirmedError',
 }));
 vi.mock('../../providers/AuthCoordinatorProvider', () => ({
     useAppAuth: () => ({
-        state: { status: 'ready', did: 'did:key:z6MkKeep' },
+        state: {
+            status: 'ready',
+            did: 'did:key:z6MkKeep',
+            authUser: { id: mocks.uid, email: mocks.sessionEmail },
+            escrowEnrollment: mocks.escrowEnrollment,
+        },
         openRecoverySetup: mocks.openRecoverySetup,
         openPinSetup: mocks.openPinSetup,
         setEscrowPin: mocks.setEscrowPin,
+        refreshAccountContact: mocks.refreshAccountContact,
+        resealEscrowContact: mocks.resealEscrowContact,
+        rememberConfirmedContact: mocks.rememberConfirmedContact,
+        confirmEscrowPin: mocks.confirmEscrowPin,
+        getConfirmedContact: () => mocks.confirmedContact,
     }),
 }));
 vi.mock('../recovery/recoveryPinPromptFlag', () => ({
@@ -115,6 +143,7 @@ vi.mock('@analytics', () => ({
 import {
     KeepAccountStep,
     KEEP_ACCOUNT_SAVED_MS,
+    resetKeepAccountSilentReseal,
     type KeepAccountStepProps,
 } from './KeepAccountStep';
 import { RESEND_COOLDOWN_SECONDS, isolateLtr } from './PersonalEmailForm';
@@ -122,7 +151,11 @@ import { RESEND_COOLDOWN_SECONDS, isolateLtr } from './PersonalEmailForm';
 const state = (overrides: Partial<Continuity> = {}): Continuity => ({
     personalEmail: { allowed: true },
     emailVerified: false,
-    recoveryEmailVerified: false,
+    emailPrimary: false,
+    primaryUid: 'uid-t',
+    hasSchoolEmail: true,
+    contactStale: false,
+    canRemove: true,
     hasServerConfirmedMethod: false,
     hasUserRecoveryMethod: false,
     pinState: 'enabled',
@@ -132,8 +165,8 @@ const state = (overrides: Partial<Continuity> = {}): Continuity => ({
 });
 const VERIFIED = {
     emailVerified: true,
+    emailPrimary: true,
     maskedEmail: 'm***@example.org',
-    recoveryEmailVerified: true,
 };
 /** No escrow (e.g. a placeholder-email account): a passkey or phrase is the only way. */
 const METHOD = state({
@@ -152,6 +185,33 @@ const PIN = state({
 /** Escrow + an enabled PIN: email code + PIN recovers it. */
 const DONE = state({ ...VERIFIED, hasServerConfirmedMethod: true, nextStep: 'done' });
 const DONE_METHOD = { ...METHOD, hasUserRecoveryMethod: true, nextStep: 'done' as const };
+/** A PIN account whose backup still names the old contact. */
+const CONFIRM = state({
+    ...VERIFIED,
+    hasServerConfirmedMethod: true,
+    contactStale: true,
+    nextStep: 'confirmPin',
+});
+const VERIFY_RESULT = {
+    success: true,
+    verified: true,
+    primary: true,
+    primaryUid: 'uid-t',
+    customToken: 'token-t',
+};
+const named = (name: string, extra: Record<string, unknown> = {}): Error =>
+    Object.assign(new Error(name), { name, ...extra });
+
+/** Types a whole PIN into the confirm's boxes (the last digit submits). */
+const enterPin = async (pin: string): Promise<void> => {
+    await act(async () => {
+        for (let i = 0; i < pin.length; i += 1) {
+            fireEvent.change(screen.getByLabelText(`PIN digit ${i + 1}`), {
+                target: { value: pin[i] },
+            });
+        }
+    });
+};
 
 const renderStep = (props: Partial<KeepAccountStepProps> = {}) => {
     const callbacks = {
@@ -196,10 +256,18 @@ beforeEach(() => {
     mocks.pinStep = undefined;
     mocks.fetching = false;
     mocks.isStudent = true;
+    mocks.uid = 'uid-t';
+    mocks.sessionEmail = 'me@example.org';
+    mocks.escrowEnrollment = 'enrolled';
+    mocks.confirmedContact = 'me@example.org';
     mocks.refetch.mockResolvedValue(undefined);
     mocks.start.mockResolvedValue({ success: true });
-    mocks.verify.mockResolvedValue({ success: true, recoveryEmailSet: true });
-    mocks.remove.mockResolvedValue({ success: true });
+    mocks.verify.mockResolvedValue(VERIFY_RESULT);
+    mocks.remove.mockResolvedValue({ success: true, removed: true, customToken: 'token-r' });
+    mocks.refreshAccountContact.mockResolvedValue('ok');
+    mocks.resealEscrowContact.mockResolvedValue(undefined);
+    mocks.confirmEscrowPin.mockResolvedValue(undefined);
+    resetKeepAccountSilentReseal();
 });
 afterEach(cleanup);
 
@@ -212,8 +280,8 @@ describe('KeepAccountStep', () => {
         expect(document.querySelector('form')?.contains(note)).toBe(true);
         // Not a live region: the resend countdown must not be read out every second.
         expect(screen.getByTestId('keep-account-step').getAttribute('aria-live')).toBeNull();
-        // Recovery framing only: no promise of signing in with this email.
-        expect(screen.queryByText(/sign in with/i)).toBeNull();
+        // The address becomes the sign-in email, and the copy says so.
+        expect(screen.getByText(m['classlinkKeepAccount.body']())).toBeTruthy();
         expect(mocks.track).toHaveBeenCalledWith('shown', { source: 'dashboard', step: 'email' });
     });
 
@@ -229,12 +297,10 @@ describe('KeepAccountStep', () => {
         expect(JSON.stringify(mocks.track.mock.calls)).not.toContain('me@example.org');
     });
 
-    it('asks for a different email when another account already recovers with it', async () => {
-        mocks.verify.mockResolvedValue({
-            success: true,
-            recoveryEmailSet: false,
-            recoveryEmailSkipped: 'shared',
-        });
+    it('asks for a different email when another LearnCard account already uses it', async () => {
+        mocks.verify.mockRejectedValueOnce(
+            Object.assign(new Error('x'), { data: { code: 'CONFLICT' } })
+        );
         renderStep();
         await verifyEmail();
         // Like any other email error: under the field, with the address kept.
@@ -247,13 +313,59 @@ describe('KeepAccountStep', () => {
         expect(document.activeElement).toBe(input);
     });
 
-    it('explains the PIN path while adding the email, or just the code without escrow', () => {
+    it('shows Finishing… and signs back in with the custom token before anything else', async () => {
+        let settle: (value: 'ok') => void = () => undefined;
+        mocks.refreshAccountContact.mockReturnValueOnce(
+            new Promise<'ok'>(resolve => (settle = resolve))
+        );
+        mocks.continuity = state();
+        const { rerender } = renderStep();
+        await verifyEmail();
+        // The address is remembered as confirmed on this device first.
+        expect(mocks.rememberConfirmedContact).toHaveBeenCalledWith('me@example.org');
+        expect(mocks.refreshAccountContact).toHaveBeenCalledWith({
+            expectedEmail: 'me@example.org',
+            customToken: 'token-t',
+            primaryUid: 'uid-t',
+        });
+        expect(screen.getByTestId('keep-account-step').dataset.step).toBe('finishing');
+        expect(
+            screen.getByRole('heading', { name: m['classlinkKeepAccount.finishing']() })
+        ).toBeTruthy();
+        // The server's next answer is in, but no PIN screen until the session is back.
+        mocks.continuity = PIN;
+        rerender(<KeepAccountStep variant="sheet" source="dashboard" />);
+        expect(screen.queryByTestId('pin-step')).toBeNull();
+        expect(mocks.refetch).not.toHaveBeenCalled();
+        await act(async () => settle('ok'));
+        expect(mocks.refetch).toHaveBeenCalledWith({ queryKey: ['classlinkAccountContinuity'] });
+        expect(screen.getByTestId('pin-step')).toBeTruthy();
+    });
+
+    it('a mismatch after verify shows the error with Try again, and never an escrow call', async () => {
+        mocks.refreshAccountContact.mockResolvedValueOnce('mismatch');
         renderStep();
-        expect(screen.getByText(m['classlinkKeepAccount.body']())).toBeTruthy();
-        cleanup();
-        mocks.continuity = state({ pinState: 'none', pinRecoverable: false });
+        await verifyEmail();
+        expect(screen.getByTestId('keep-account-step').dataset.step).toBe('finishFailed');
+        expect(screen.getByTestId('keep-account-finish-failed').textContent).toBe(
+            m['classlinkPersonalEmail.error']()
+        );
+        expect(mocks.refetch).not.toHaveBeenCalled();
+        expect(mocks.setEscrowPin).not.toHaveBeenCalled();
+        expect(mocks.resealEscrowContact).not.toHaveBeenCalled();
+        await act(async () => {
+            fireEvent.click(screen.getByTestId('keep-account-finish-retry'));
+        });
+        expect(mocks.refreshAccountContact).toHaveBeenCalledTimes(2);
+        expect(screen.getByTestId('keep-account-step').dataset.step).not.toBe('finishFailed');
+    });
+
+    it('does not sign another login of the account back in after verify', async () => {
+        mocks.uid = 'uid-other';
         renderStep();
-        expect(screen.getByText(m['classlinkKeepAccount.bodyNoPin']())).toBeTruthy();
+        await verifyEmail();
+        expect(mocks.refreshAccountContact).not.toHaveBeenCalled();
+        expect(mocks.refetch).toHaveBeenCalled();
     });
 
     it('asks for a PIN in place after the email when escrow has none, never a passkey', async () => {
@@ -350,43 +462,139 @@ describe('KeepAccountStep', () => {
         expect(mocks.openRecoverySetup.mock.calls[0][0].initialMethod).toBe('phrase');
     });
 
-    it('says codes go to a different recovery email the user verified earlier', () => {
-        mocks.continuity = { ...DONE, maskedRecoveryEmail: 'c***@example.net' };
+    it('asks for a passkey or phrase instead of a PIN where escrow cannot enroll', () => {
+        mocks.continuity = PIN;
+        mocks.escrowEnrollment = 'not-enrolled';
         renderStep();
-        expect(
-            screen.getByText(
-                m['classlinkKeepAccount.doneBody']({
-                    option: m['recovery.identity.lostSchoolLogin'](),
-                    email: isolateLtr('c***@example.net'),
-                })
-            )
-        ).toBeTruthy();
+        expect(screen.getByTestId('keep-account-step').dataset.step).toBe('method');
+        expect(screen.queryByTestId('pin-step')).toBeNull();
     });
 
-    it('names a different recovery email on the PIN step', () => {
-        mocks.continuity = { ...PIN, maskedRecoveryEmail: 'c***@example.net' };
+    describe('confirm the current PIN', () => {
+        it('is a single PIN entry naming the session address; a wrong PIN keeps it open', async () => {
+            mocks.continuity = CONFIRM;
+            renderStep();
+            expect(screen.getByTestId('keep-account-step').dataset.step).toBe('confirmPin');
+            expect(
+                screen.getByRole('heading', { name: m['classlinkKeepAccount.confirmPinTitle']() })
+            ).toBeTruthy();
+            expect(
+                screen.getByText(
+                    m['classlinkKeepAccount.confirmPinBody']({
+                        email: isolateLtr('me@example.org'),
+                    })
+                )
+            ).toBeTruthy();
+            // The device already confirmed the address: no re-type.
+            expect(screen.queryByTestId('keep-account-confirm-email')).toBeNull();
+            mocks.confirmEscrowPin.mockRejectedValueOnce(named('EscrowPinMismatchError'));
+            await enterPin('482915');
+            expect(mocks.confirmEscrowPin).toHaveBeenCalledWith({
+                pin: '482915',
+                primaryUid: 'uid-t',
+                pinChangeRequired: false,
+            });
+            expect(screen.getByText(m['classlinkKeepAccount.pinMismatch']())).toBeTruthy();
+            expect(screen.getByTestId('keep-account-confirm-pin')).toBeTruthy();
+            expect(mocks.pinStep).toBeUndefined();
+
+            await enterPin('593827');
+            expect(mocks.confirmEscrowPin).toHaveBeenCalledTimes(2);
+            expect(mocks.track).toHaveBeenCalledWith('completed', {
+                source: 'dashboard',
+                step: 'confirmPin',
+            });
+            expect(mocks.invalidate).toHaveBeenCalledWith({
+                queryKey: ['classlinkAccountContinuity'],
+            });
+        });
+
+        it('choose a new PIN sets one with setEscrowPin, and the same PIN asks again', async () => {
+            mocks.continuity = CONFIRM;
+            renderStep();
+            fireEvent.click(screen.getByTestId('keep-account-confirm-new-instead'));
+            expect(screen.getByTestId('keep-account-confirm-new-pin')).toBeTruthy();
+            expect(mocks.pinStep?.setPin).toBe(mocks.setEscrowPin);
+            expect(mocks.pinStep?.saveErrorMessage?.(named('SameEscrowPinError'))).toBe(
+                m['classlinkKeepAccount.samePinRejected']()
+            );
+            expect(mocks.pinStep?.saveErrorMessage?.(new Error('down'))).toBeUndefined();
+            act(() => mocks.pinStep?.onComplete());
+            expect(mocks.writeFlag).toHaveBeenCalledWith('did:key:z6MkKeep', 'set');
+        });
+
+        it('a PIN that can no longer be confirmed goes straight to a new PIN', async () => {
+            mocks.continuity = CONFIRM;
+            renderStep();
+            mocks.confirmEscrowPin.mockRejectedValueOnce(named('PinChangeRequiredError'));
+            await enterPin('593827');
+            expect(screen.getByTestId('keep-account-confirm-new-pin')).toBeTruthy();
+            cleanup();
+            mocks.continuity = { ...CONFIRM, pinChangeRequired: true };
+            renderStep();
+            expect(screen.getByTestId('keep-account-confirm-new-pin')).toBeTruthy();
+        });
+
+        it('asks to re-type the sign-in email when this device never confirmed it', async () => {
+            mocks.continuity = CONFIRM;
+            mocks.confirmedContact = undefined;
+            renderStep();
+            const email = screen.getByTestId('keep-account-confirm-email');
+            expect(email.getAttribute('dir')).toBe('ltr');
+            fireEvent.change(email, { target: { value: 'Me@Example.org' } });
+            await enterPin('593827');
+            expect(mocks.confirmEscrowPin).toHaveBeenCalledWith({
+                pin: '593827',
+                primaryUid: 'uid-t',
+                retypedEmail: 'Me@Example.org',
+                pinChangeRequired: false,
+            });
+        });
+
+        it('says the hourly limit was reached', async () => {
+            mocks.continuity = CONFIRM;
+            renderStep();
+            mocks.confirmEscrowPin.mockRejectedValueOnce(named('EscrowPinThrottledError'));
+            await enterPin('593827');
+            expect(screen.getByText(m['classlinkKeepAccount.confirmPinThrottled']())).toBeTruthy();
+        });
+
+        it('on another login of the account, asks to sign in with the sign-in email instead', () => {
+            mocks.continuity = CONFIRM;
+            mocks.uid = 'uid-other';
+            renderStep();
+            expect(screen.getByTestId('keep-account-step').dataset.step).toBe('otherUid');
+            expect(screen.getByTestId('keep-account-other-uid').textContent).toBe(
+                m['classlinkKeepAccount.finishOnSignInEmail']({ email: MASKED })
+            );
+            expect(screen.queryByTestId('keep-account-confirm-pin')).toBeNull();
+            expect(mocks.confirmEscrowPin).not.toHaveBeenCalled();
+        });
+    });
+
+    it('re-seals an account without a PIN silently, once per session, on the sign-in login only', () => {
+        mocks.continuity = { ...DONE, pinState: 'none', contactStale: true };
+        const { rerender } = renderStep();
+        expect(mocks.resealEscrowContact).toHaveBeenCalledWith({ primaryUid: 'uid-t' });
+        rerender(<KeepAccountStep variant="sheet" source="dashboard" />);
+        cleanup();
         renderStep();
-        expect(
-            screen.getByText(
-                m['classlinkKeepAccount.pinBodyRecoveryEmail']({
-                    email: isolateLtr('c***@example.net'),
-                })
-            )
-        ).toBeTruthy();
+        expect(mocks.resealEscrowContact).toHaveBeenCalledTimes(1);
+
+        resetKeepAccountSilentReseal();
+        cleanup();
+        mocks.uid = 'uid-other';
+        renderStep();
+        expect(mocks.resealEscrowContact).toHaveBeenCalledTimes(1);
     });
 
     it('is done only when the server says so, with nothing to undo on the success screen', () => {
         mocks.continuity = DONE;
         const { onComplete } = renderStep();
         expect(screen.getByTestId('keep-account-step').dataset.step).toBe('done');
-        // Names where the code goes and that the PIN follows.
+        // Names the sign-in email and that the PIN follows on a new device.
         expect(
-            screen.getByText(
-                m['classlinkKeepAccount.doneBody']({
-                    option: m['recovery.identity.lostSchoolLogin'](),
-                    email: MASKED,
-                })
-            )
+            screen.getByText(m['classlinkKeepAccount.doneBody']({ email: MASKED }))
         ).toBeTruthy();
 
         fireEvent.click(screen.getByTestId('keep-account-continue'));
@@ -402,12 +610,7 @@ describe('KeepAccountStep', () => {
         mocks.continuity = DONE_METHOD;
         renderStep();
         expect(
-            screen.getByText(
-                m['classlinkKeepAccount.doneBodyMethod']({
-                    option: m['recovery.identity.lostSchoolLogin'](),
-                    email: MASKED,
-                })
-            )
+            screen.getByText(m['classlinkKeepAccount.doneBodyMethod']({ email: MASKED }))
         ).toBeTruthy();
     });
 
@@ -491,6 +694,7 @@ describe('KeepAccountStep', () => {
         ['done', DONE],
         ['pin', PIN],
         ['method', METHOD],
+        ['confirmPin', CONFIRM],
     ] as const)(
         'hands back to an email-only host once the email is verified (%s)',
         (_, continuity) => {
@@ -619,11 +823,9 @@ describe('KeepAccountStep', () => {
         });
 
         it('keeps a shared address in onboarding, with the reason under the field', async () => {
-            mocks.verify.mockResolvedValue({
-                success: true,
-                recoveryEmailSet: false,
-                recoveryEmailSkipped: 'shared',
-            });
+            mocks.verify.mockRejectedValueOnce(
+                Object.assign(new Error('x'), { data: { code: 'CONFLICT' } })
+            );
             const { onComplete } = renderStep({ variant: 'onboarding', emailOnly: true });
             await verifyEmail();
             expect(screen.getByTestId('keep-account-step').dataset.step).toBe('email');
@@ -684,11 +886,11 @@ describe('KeepAccountStep', () => {
             expect(screen.queryByTestId('classlink-email-input')).toBeNull();
         });
 
-        it('shows the saved address as a compact row with Remove', async () => {
+        it('shows the sign-in address as a compact row with Remove', async () => {
             mocks.continuity = DONE;
             renderStep({ variant: 'inline' });
             expect(
-                screen.getByText(`${MASKED} · ${m['classlinkKeepAccount.rowStatus']()}`)
+                screen.getByText(`${MASKED} · ${m['classlinkKeepAccount.rowSchoolAlsoWorks']()}`)
             ).toBeTruthy();
             expect(screen.queryByTestId('keep-account-continue')).toBeNull();
 
@@ -705,26 +907,70 @@ describe('KeepAccountStep', () => {
                 alert.buttons[1].handler?.();
             });
             expect(mocks.remove).toHaveBeenCalledTimes(1);
-            expect(mocks.invalidate).toHaveBeenCalled();
+            // Signed back in with the restored address, which this device never typed.
+            expect(mocks.refreshAccountContact).toHaveBeenCalledWith({
+                customToken: 'token-r',
+                primaryUid: 'uid-t',
+            });
+            expect(mocks.rememberConfirmedContact).not.toHaveBeenCalled();
+            expect(mocks.refetch).toHaveBeenCalledWith({
+                queryKey: ['classlinkAccountContinuity'],
+            });
         });
 
-        it('names a different recovery email, since codes go there', () => {
-            mocks.continuity = { ...DONE, maskedRecoveryEmail: 'c***@example.net' };
+        it('leaves out "school email also works" without a school email', () => {
+            mocks.continuity = { ...DONE, hasSchoolEmail: false };
             renderStep({ variant: 'inline' });
-            const other = isolateLtr('c***@example.net');
+            expect(screen.getByText(MASKED)).toBeTruthy();
+            expect(
+                screen.queryByText(m['classlinkKeepAccount.rowSchoolAlsoWorks'](), {
+                    exact: false,
+                })
+            ).toBeNull();
+        });
+
+        it('offers only a different email when the address cannot be removed', () => {
+            mocks.continuity = { ...DONE, hasSchoolEmail: false, canRemove: false };
+            renderStep({ variant: 'inline' });
+            expect(screen.queryByTestId('keep-account-remove')).toBeNull();
             expect(
                 screen.getByText(
-                    `${MASKED} · ${m['classlinkKeepAccount.rowCodesTo']({ email: other })}`
+                    `${MASKED} · ${m['classlinkKeepAccount.cannotRemovePlaceholder']()}`
                 )
             ).toBeTruthy();
-            expect(
-                screen.queryByText(m['classlinkKeepAccount.rowStatus'](), { exact: false })
-            ).toBeNull();
+            fireEvent.click(screen.getByTestId('keep-account-change'));
+            expect(screen.getByTestId('classlink-email-input')).toBeTruthy();
+        });
+
+        it('explains a placeholder refusal instead of a generic error', async () => {
+            mocks.continuity = DONE;
+            mocks.remove.mockRejectedValueOnce(
+                Object.assign(new Error('x'), {
+                    data: { code: 'PRECONDITION_FAILED', reason: 'placeholder_escrow' },
+                })
+            );
+            renderStep({ variant: 'inline' });
+            fireEvent.click(screen.getByTestId('keep-account-remove'));
+            await act(async () => {
+                lastAlert().buttons[1].handler?.();
+            });
+            expect(screen.getByRole('alert').textContent).toBe(
+                m['classlinkKeepAccount.cannotRemovePlaceholder']()
+            );
+        });
+
+        it('opens the PIN confirm in place', () => {
+            mocks.continuity = CONFIRM;
+            renderStep({ variant: 'inline' });
+            expect(screen.queryByTestId('keep-account-confirm-pin')).toBeNull();
+            fireEvent.click(screen.getByTestId('keep-account-confirm'));
+            expect(screen.getByTestId('keep-account-confirm-pin')).toBeTruthy();
+            expect(mocks.openPinSetup).not.toHaveBeenCalled();
         });
 
         it.each([
             [
-                'shared with another account',
+                'no longer the sign-in email',
                 state({ emailVerified: true, maskedEmail: 'm***@example.org' }),
             ],
             [
@@ -746,7 +992,7 @@ describe('KeepAccountStep', () => {
         ])('keeps a stored address removable when %s', async (_label, continuity) => {
             mocks.continuity = continuity;
             renderStep({ variant: 'inline', onDismiss: undefined });
-            expect(screen.getByText(MASKED)).toBeTruthy();
+            expect(screen.getByText(MASKED, { exact: false })).toBeTruthy();
             fireEvent.click(screen.getByTestId('keep-account-remove'));
             await act(async () => {
                 lastAlert().buttons[1].handler?.();
@@ -754,7 +1000,7 @@ describe('KeepAccountStep', () => {
             expect(mocks.remove).toHaveBeenCalledTimes(1);
         });
 
-        it('offers a different address when the stored one could not be the recovery email', () => {
+        it('offers a different address when the stored one is not the sign-in email', () => {
             mocks.continuity = state({ emailVerified: true, maskedEmail: 'm***@example.org' });
             renderStep({ variant: 'inline', onDismiss: undefined });
             expect(screen.getByText(m['classlinkKeepAccount.rowDifferent']())).toBeTruthy();

@@ -1745,6 +1745,12 @@ const AuthSessionManager: React.FC<{
                         coordinator.finishIdentityRecovery();
                     }}
                     schoolLoginRecovery={isSchoolLoginTenant()}
+                    // The personal email is the sign-in email: back to the login page, where
+                    // the email form signs in with it.
+                    onSignInWithEmail={() => {
+                        if (coordinator.state.status === 'identity_recovery')
+                            coordinator.cancelIdentityRecovery();
+                    }}
                     identityKeptAccount={
                         coordinator.state.status === 'identity_recovery_success' &&
                         !!coordinator.state.pinSignIn

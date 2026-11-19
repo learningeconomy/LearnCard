@@ -99,6 +99,9 @@ export const LoginContent: React.FC = () => {
             : LoginTypesEnum.phone
     );
     const [showQrLogin, setShowQrLogin] = useState(false);
+    // LC-2409: the ClassLink hint asks for the email form's field to take focus once shown.
+    const emailFormRef = useRef<HTMLDivElement>(null);
+    const [focusEmailField, setFocusEmailField] = useState(false);
     const [qrApproved, setQrApproved] = useState(false);
     const [showLinkedBanner, setShowLinkedBanner] = useState(false);
     const [accountHint, setAccountHint] = useState<string | null>(null);
@@ -354,6 +357,22 @@ export const LoginContent: React.FC = () => {
         }
         return outcome === 'started';
     };
+
+    // A ClassLink user who left school signs in with the personal email they added.
+    const showPersonalEmailHint =
+        features.classlinkSso === true &&
+        coordinatorState.status === 'idle' &&
+        (adapter.capabilities.emailOtp || adapter.capabilities.emailLink);
+    const usePersonalEmail = (): void => {
+        setShowSocialLogins(true);
+        setActiveLoginType(LoginTypesEnum.email);
+        setFocusEmailField(true);
+    };
+    useEffect(() => {
+        if (!focusEmailField) return;
+        setFocusEmailField(false);
+        emailFormRef.current?.querySelector<HTMLInputElement>('input[type="email"]')?.focus();
+    }, [focusEmailField]);
 
     // custom logins associated with the app
     const extraSocialLogins = [
@@ -646,25 +665,39 @@ export const LoginContent: React.FC = () => {
                                 />
                             )}
                         </GenericErrorBoundary>
+                        {showPersonalEmailHint && (
+                            <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mt-1">
+                                <button
+                                    type="button"
+                                    data-testid="login-classlink-personal-email-hint"
+                                    onClick={usePersonalEmail}
+                                    className="min-h-[44px] px-2 text-center text-sm text-white underline underline-offset-2 hover:opacity-90"
+                                >
+                                    {m['login.classlink.personalEmailHint']()}
+                                </button>
+                            </IonRow>
+                        )}
                         <IonRow className="w-full max-w-[500px] flex items-center justify-center">
-                            <GenericErrorBoundary hideGoHome>
-                                {activeLoginType === LoginTypesEnum.email &&
-                                    (adapter.capabilities.emailOtp ||
-                                        adapter.capabilities.emailLink) && (
-                                        <EmailForm
-                                            suppressRedirect
-                                            setShowSocialLogins={setShowSocialLogins}
-                                            showSocialLogins={showSocialLogins}
-                                        />
-                                    )}
-                                {activeLoginType === LoginTypesEnum.phone &&
-                                    adapter.capabilities.phoneOtp && (
-                                        <PhoneForm
-                                            setShowSocialLogins={setShowSocialLogins}
-                                            showSocialLogins={showSocialLogins}
-                                        />
-                                    )}
-                            </GenericErrorBoundary>
+                            <div ref={emailFormRef} className="contents">
+                                <GenericErrorBoundary hideGoHome>
+                                    {activeLoginType === LoginTypesEnum.email &&
+                                        (adapter.capabilities.emailOtp ||
+                                            adapter.capabilities.emailLink) && (
+                                            <EmailForm
+                                                suppressRedirect
+                                                setShowSocialLogins={setShowSocialLogins}
+                                                showSocialLogins={showSocialLogins}
+                                            />
+                                        )}
+                                    {activeLoginType === LoginTypesEnum.phone &&
+                                        adapter.capabilities.phoneOtp && (
+                                            <PhoneForm
+                                                setShowSocialLogins={setShowSocialLogins}
+                                                showSocialLogins={showSocialLogins}
+                                            />
+                                        )}
+                                </GenericErrorBoundary>
+                            </div>
                         </IonRow>
                     </IonRow>
 

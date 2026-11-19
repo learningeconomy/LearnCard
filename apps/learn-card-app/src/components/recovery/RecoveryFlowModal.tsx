@@ -52,6 +52,12 @@ interface RecoveryFlowModalProps {
      * code comes.
      */
     schoolLoginRecovery?: boolean;
+    /**
+     * With `schoolLoginRecovery`: leave the lost-login recovery for the email sign-in, for
+     * a user who added a personal email (it is their sign-in email; this recovery only
+     * finds a separate recovery email).
+     */
+    onSignInWithEmail?: () => void;
     onCancel: () => void;
 }
 
@@ -120,6 +126,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
     onFinishIdentityRecovery,
     identityKeptAccount = false,
     schoolLoginRecovery = false,
+    onSignInWithEmail,
     onCancel,
 }) => {
     const hasMethod = (type: string) => availableMethods.some(m => m.type === type);
@@ -407,6 +414,22 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                 >
                     {m['common.cancel']()}
                 </button>
+                {schoolLoginRecovery && onSignInWithEmail && (
+                    <div className="mt-5 pt-4 border-t border-grayscale-200 text-center">
+                        <p className="text-sm text-grayscale-600 leading-relaxed">
+                            {m['recovery.identity.signInInsteadSchool']()}
+                        </p>
+                        <button
+                            type="button"
+                            data-testid="recovery-identity-sign-in-with-email"
+                            onClick={onSignInWithEmail}
+                            disabled={loading}
+                            className="mt-2 inline-flex items-center min-h-[44px] px-1 text-sm font-medium text-grayscale-800 underline underline-offset-2 hover:text-grayscale-900 disabled:opacity-40"
+                        >
+                            {m['login.email.button']()}
+                        </button>
+                    </div>
+                )}
             </div>
         );
         return <Overlay onDismiss={loading ? undefined : onCancel}>{content}</Overlay>;

@@ -36,8 +36,9 @@ export const getTrpcCode = (error: unknown): string | undefined =>
  */
 export const personalEmailErrorMessage = (error: unknown, step: 'email' | 'code'): string => {
     switch (getTrpcCode(error)) {
+        // Another LearnCard account already signs in with (or recovers by) the address.
         case 'CONFLICT':
-            return m['classlinkPersonalEmail.conflictError']();
+            return m['classlinkKeepAccount.sharedEmail']();
         case 'TOO_MANY_REQUESTS':
             return m['classlinkPersonalEmail.limitError']();
         case 'FORBIDDEN':
@@ -65,12 +66,6 @@ export type PersonalEmailFormLayout = (parts: {
 export type PersonalEmailFormProps = {
     /** Called after the code is accepted, with the server's result and the address. */
     onVerified: (result: PersonalEmailVerifyResult, email: string) => void;
-    /**
-     * A verified address the host still cannot use (e.g. it already recovers another
-     * account): return the message, and the form goes back to the email field with the
-     * address kept and the message under it, like any other email error.
-     */
-    verifiedEmailError?: (result: PersonalEmailVerifyResult) => string | undefined;
     /** Shown right under the email field (e.g. what the address is used for). */
     emailNote?: React.ReactNode;
     /** Called once a code has been sent to a newly entered address (not on resend). */
@@ -117,7 +112,6 @@ const Spinner: React.FC<{ light?: boolean }> = ({ light = false }) => (
  */
 export const PersonalEmailForm: React.FC<PersonalEmailFormProps> = ({
     onVerified,
-    verifiedEmailError,
     emailNote,
     onCodeSent,
     onForbidden,
@@ -205,14 +199,7 @@ export const PersonalEmailForm: React.FC<PersonalEmailFormProps> = ({
         try {
             const result = await verify.mutateAsync({ email: sentTo, code: value });
             if (!result.success) throw new Error();
-            const unusable = verifiedEmailError?.(result);
             onVerified(result, sentTo);
-            if (unusable) {
-                setCode('');
-                setStep('email');
-                setError({ field: 'email', message: unusable });
-                focusNextRef.current = 'email';
-            }
         } catch (err) {
             // Clear the boxes so the next code can be typed (or autofilled) straight in.
             setCode('');

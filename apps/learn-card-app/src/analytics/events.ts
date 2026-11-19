@@ -56,8 +56,14 @@ export type InviteSurface = 'empty_state' | 'menu';
 export type KeepAccountSource =
     'onboarding' | 'transcript_onboarding' | 'transcript_modal' | 'school_connect' | 'dashboard';
 
-/** Which "keep your account" step an event is about (`code` = the emailed code). */
-export type KeepAccountAnalyticsStep = 'email' | 'code' | 'pin' | 'method' | 'done' | 'blocked';
+/**
+ * Which "keep your account" step an event is about (`code` = the emailed code).
+ * - `confirmPin`: enter the current PIN to re-seal the backup to the sign-in email.
+ * - `otherUid`: the setup must be finished on the login that holds the sign-in email.
+ * - `remove`: the sign-in email was removed (`KEEP_ACCOUNT_STEP_COMPLETED` only).
+ */
+export type KeepAccountAnalyticsStep =
+    'email' | 'code' | 'pin' | 'confirmPin' | 'method' | 'done' | 'blocked' | 'otherUid' | 'remove';
 
 export type KeepAccountEventPayload = {
     source: KeepAccountSource;

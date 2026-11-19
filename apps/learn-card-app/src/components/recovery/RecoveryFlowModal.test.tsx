@@ -328,6 +328,31 @@ describe('RecoveryFlowModal', () => {
         ).toBeInTheDocument();
     });
 
+    it('offers school-login tenants to sign in with the personal email instead', () => {
+        const onSignInWithEmail = vi.fn();
+        const { rerender } = render(
+            <RecoveryFlowModal
+                {...defaultProps}
+                identityPhase="enter_email"
+                onSignInWithEmail={onSignInWithEmail}
+            />
+        );
+        expect(screen.queryByTestId('recovery-identity-sign-in-with-email')).toBeNull();
+        rerender(
+            <RecoveryFlowModal
+                {...defaultProps}
+                schoolLoginRecovery
+                identityPhase="enter_email"
+                onSignInWithEmail={onSignInWithEmail}
+            />
+        );
+        expect(screen.getByText(m['recovery.identity.signInInsteadSchool']())).toBeInTheDocument();
+        const button = screen.getByTestId('recovery-identity-sign-in-with-email');
+        expect(button).toHaveTextContent(m['login.email.button']());
+        fireEvent.click(button);
+        expect(onSignInWithEmail).toHaveBeenCalledTimes(1);
+    });
+
     it('renders identity new_login phase', () => {
         render(<RecoveryFlowModal {...defaultProps} identityPhase="new_login" />);
         expect(screen.getByRole('heading', { name: /Account Verified/i })).toBeInTheDocument();

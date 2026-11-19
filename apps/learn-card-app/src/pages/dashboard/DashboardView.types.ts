@@ -149,10 +149,11 @@ export type DashboardRecoveryPromptViewModel = {
 /** The ClassLink "keep your account" banner; present only while it should show. */
 export type DashboardKeepAccountViewModel = {
     /**
-     * What is left: a personal email; then a PIN (escrow accounts) or a passkey or
-     * recovery phrase (`method`: accounts that cannot have escrow).
+     * What is left: a personal email; then a PIN (escrow accounts), the current PIN once so
+     * the backup follows the new sign-in email (`confirmPin`), or a passkey or recovery
+     * phrase (`method`: accounts that cannot have escrow here).
      */
-    step: 'email' | 'pin' | 'method';
+    step: 'email' | 'pin' | 'confirmPin' | 'method';
     /** `pin` only: the PIN is locked, so the ask is for a new one. */
     pinLocked?: boolean;
     /** `method` only: a recovery phrase, where this device cannot make a passkey. */

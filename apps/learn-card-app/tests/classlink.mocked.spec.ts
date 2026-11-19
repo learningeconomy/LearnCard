@@ -128,6 +128,44 @@ test.describe('ClassLink sign-in hand-off @mocked', () => {
     });
 });
 
+test.describe('ClassLink login hint @mocked', () => {
+    const withClassLinkSso = async (page: import('@playwright/test').Page, on: boolean) => {
+        await page.route('**/tenant-config.json', async route => {
+            const response = await route.fetch();
+            const json = await response.json();
+            await route.fulfill({
+                status: response.status(),
+                headers: response.headers(),
+                contentType: 'application/json',
+                body: JSON.stringify({
+                    ...json,
+                    features: { ...json.features, classlinkSso: on },
+                }),
+            });
+        });
+    };
+
+    test('a ClassLink tenant points people who left school to their personal email', async ({
+        page,
+    }) => {
+        await installNetwork(page);
+        await withClassLinkSso(page, true);
+        await page.goto('/login');
+        const hint = page.getByTestId('login-classlink-personal-email-hint');
+        await expect(hint).toHaveText('Left your school? Sign in with your personal email.');
+        await hint.click();
+        await expect(page.locator('input[type="email"]').first()).toBeFocused();
+    });
+
+    test('no hint without ClassLink', async ({ page }) => {
+        await installNetwork(page);
+        await withClassLinkSso(page, false);
+        await page.goto('/login');
+        await expect(page.locator('input[type="email"]').first()).toBeVisible();
+        await expect(page.getByTestId('login-classlink-personal-email-hint')).toHaveCount(0);
+    });
+});
+
 test.describe('ClassLink signed-in states @mocked', () => {
     // The mocked tier has no signed-in boot for a ClassLink account, so the rendered transcript
     // card and personal-email prompt states are UNVERIFIED here; verify them on staging.

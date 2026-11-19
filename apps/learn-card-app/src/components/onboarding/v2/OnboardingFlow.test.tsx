@@ -35,6 +35,7 @@ const mocks = vi.hoisted(() => ({
     showPin: false,
     keepAccountNextStep: undefined as 'email' | 'pin' | 'method' | 'done' | undefined,
     keepAccountPinRecoverable: true,
+    keepAccountHasSchoolEmail: true,
     keepAccountPending: false,
     // Bumped to re-render the offer hook after its answer changes.
     keepAccountVersion: 0,
@@ -228,25 +229,36 @@ vi.mock('../../classlink/useKeepAccountOffer', () => ({
         return {
             offer: nextStep === 'email' || nextStep === 'pin' || nextStep === 'method',
             pending: enabled && mocks.keepAccountPending,
-            continuity: nextStep ? { nextStep, personalEmail: { allowed: true } } : undefined,
+            continuity: nextStep
+                ? {
+                      nextStep,
+                      personalEmail: { allowed: true },
+                      hasSchoolEmail: mocks.keepAccountHasSchoolEmail,
+                  }
+                : undefined,
+            step: nextStep,
         };
     },
 }));
 vi.mock('../../classlink/KeepAccountStep', () => ({
     KeepAccountStep: (props: {
         onComplete: (continuity: { pinRecoverable: boolean }) => void;
+        onDismiss: () => void;
         emailOnly?: boolean;
         source: string;
     }) => {
         mocks.keepAccountStep(props);
         return (
-            <button
-                onClick={() =>
-                    props.onComplete({ pinRecoverable: mocks.keepAccountPinRecoverable })
-                }
-            >
-                Finish keep account
-            </button>
+            <>
+                <button
+                    onClick={() =>
+                        props.onComplete({ pinRecoverable: mocks.keepAccountPinRecoverable })
+                    }
+                >
+                    Finish keep account
+                </button>
+                <button onClick={() => props.onDismiss()}>Not now keep account</button>
+            </>
         );
     },
 }));
@@ -291,6 +303,7 @@ beforeEach(() => {
     mocks.showPin = false;
     mocks.keepAccountNextStep = undefined;
     mocks.keepAccountPinRecoverable = true;
+    mocks.keepAccountHasSchoolEmail = true;
     mocks.keepAccountPending = false;
     mocks.refetchQueries.mockReset().mockResolvedValue(undefined);
 });
@@ -798,36 +811,56 @@ describe('ClassLink transcript onboarding step', () => {
             fireEvent.click(await screen.findByTestId('onboarding-transcript-step'));
         };
 
-        it('asks for the PIN, then the email, once the transcript arrived', async () => {
+        it('asks for the email, then the PIN, once the transcript arrived', async () => {
             mocks.transcriptArrived = true;
             mocks.showPin = true;
             mocks.keepAccountNextStep = 'email';
             await finishTranscript();
 
-            // The PIN comes first; the email step only after it.
-            fireEvent.click(await screen.findByTestId('onboarding-pin-step'));
+            // The email comes first, so the PIN's backup is sealed to it.
             await screen.findByTestId('onboarding-keep-account-step');
             expect(screen.queryByTestId('onboarding-pin-step')).not.toBeInTheDocument();
-            // Onboarding asked for the PIN itself, so the step only needs the email.
+            // Onboarding asks for the PIN itself, so the step only needs the email.
             expect(mocks.keepAccountStep).toHaveBeenCalledWith(
                 expect.objectContaining({ source: 'transcript_onboarding', emailOnly: true })
             );
             fireEvent.click(screen.getByText('Finish keep account'));
+            fireEvent.click(await screen.findByTestId('onboarding-pin-step'));
             await screen.findByText(m['classlinkKeepAccount.celebrateBody']());
             expect(mocks.markOnboardingFinished).toHaveBeenCalled();
         });
 
-        it('re-reads the answer once the PIN is saved, so the step opens with the PIN copy', async () => {
+        it('says the personal email signs in even when no PIN step follows', async () => {
+            mocks.transcriptArrived = true;
+            mocks.keepAccountNextStep = 'email';
+            await finishTranscript();
+
+            fireEvent.click(await screen.findByText('Finish keep account'));
+            await screen.findByText(m['classlinkKeepAccount.celebrateBody']());
+            expect(screen.queryByTestId('onboarding-pin-step')).not.toBeInTheDocument();
+        });
+
+        it('"Not now" still asks a school-email account for its PIN', async () => {
             mocks.transcriptArrived = true;
             mocks.showPin = true;
             mocks.keepAccountNextStep = 'email';
             await finishTranscript();
 
+            fireEvent.click(await screen.findByText('Not now keep account'));
             fireEvent.click(await screen.findByTestId('onboarding-pin-step'));
-            await screen.findByTestId('onboarding-keep-account-step');
-            expect(mocks.refetchQueries).toHaveBeenCalledWith({
-                queryKey: ['classlinkAccountContinuity'],
-            });
+            await screen.findByText(m['onboarding.transcript.onItsWay']());
+        });
+
+        it('"Not now" on a placeholder account goes straight to celebrate', async () => {
+            mocks.transcriptArrived = true;
+            mocks.showPin = true;
+            mocks.keepAccountNextStep = 'email';
+            mocks.keepAccountHasSchoolEmail = false;
+            await finishTranscript();
+
+            fireEvent.click(await screen.findByText('Not now keep account'));
+            await screen.findByText(m['onboarding.transcript.onItsWay']());
+            expect(screen.queryByTestId('onboarding-pin-step')).not.toBeInTheDocument();
         });
 
         it('waits while the answer is pending, and shows the step once it arrives in time', async () => {
@@ -837,40 +870,28 @@ describe('ClassLink transcript onboarding step', () => {
             mocks.keepAccountPending = true;
             await finishTranscript();
 
-            fireEvent.click(await screen.findByTestId('onboarding-pin-step'));
             await new Promise(resolve => setTimeout(resolve, 300));
-            // Still on the PIN step's exit: neither the step nor celebrate yet.
+            // Still deciding: neither the step, the PIN nor celebrate yet.
             expect(screen.queryByTestId('onboarding-keep-account-step')).not.toBeInTheDocument();
+            expect(screen.queryByTestId('onboarding-pin-step')).not.toBeInTheDocument();
             expect(screen.queryByText(m['onboarding.transcript.onItsWay']())).toBeNull();
 
             act(() => setKeepAccountAnswer(false, 'email'));
             await screen.findByTestId('onboarding-keep-account-step');
         });
 
-        it('moves on to celebrate when the answer is still pending after the wait', async () => {
+        it('moves on when the answer is still pending after the wait', async () => {
             mocks.transcriptArrived = true;
-            mocks.showPin = true;
             mocks.keepAccountNextStep = 'email';
             mocks.keepAccountPending = true;
+            const started = Date.now();
             await finishTranscript();
 
-            const started = Date.now();
-            fireEvent.click(await screen.findByTestId('onboarding-pin-step'));
             await screen.findByText(m['onboarding.transcript.onItsWay'](), undefined, {
                 timeout: 4000,
             });
             expect(Date.now() - started).toBeGreaterThanOrEqual(KEEP_ACCOUNT_DECISION_WAIT_MS - 50);
             expect(screen.queryByTestId('onboarding-keep-account-step')).not.toBeInTheDocument();
-        });
-
-        it('keeps the usual celebrate copy when no PIN gets the account back', async () => {
-            mocks.transcriptArrived = true;
-            mocks.keepAccountNextStep = 'email';
-            mocks.keepAccountPinRecoverable = false;
-            await finishTranscript();
-
-            fireEvent.click(await screen.findByText('Finish keep account'));
-            await screen.findByText(m['onboarding.transcript.onItsWay']());
         });
 
         it.each([
@@ -905,17 +926,18 @@ describe('ClassLink transcript onboarding step', () => {
     });
 
     describe('for ClassLink accounts without the transcript step (adults)', () => {
-        it('asks for the email after the PIN when the server offers it', async () => {
+        it('asks for the email before the PIN when the server offers it', async () => {
             mocks.showPin = true;
             mocks.keepAccountNextStep = 'email';
             await createProfile();
 
-            fireEvent.click(await screen.findByTestId('onboarding-pin-step'));
             await screen.findByTestId('onboarding-keep-account-step');
+            expect(screen.queryByTestId('onboarding-pin-step')).not.toBeInTheDocument();
             expect(mocks.keepAccountStep).toHaveBeenCalledWith(
                 expect.objectContaining({ source: 'onboarding', emailOnly: true })
             );
             fireEvent.click(screen.getByText('Finish keep account'));
+            fireEvent.click(await screen.findByTestId('onboarding-pin-step'));
             await screen.findByText(m['classlinkKeepAccount.celebrateBody']());
         });
 

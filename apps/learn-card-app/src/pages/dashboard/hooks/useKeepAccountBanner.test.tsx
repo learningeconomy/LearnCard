@@ -11,7 +11,8 @@ const mocks = vi.hoisted(() => ({
     activationPending: false,
     publicComputer: false,
     offerEnabled: vi.fn(),
-    nextStep: 'email' as 'email' | 'pin' | 'method' | 'done',
+    nextStep: 'email' as 'email' | 'pin' | 'confirmPin' | 'method' | 'done',
+    sessionStep: undefined as string | undefined,
     pinState: 'none' as 'none' | 'enabled' | 'locked' | 'stale',
     did: 'did:key:z6MkKeepAccount',
     escrowEnrollment: 'enrolled' as string | undefined,
@@ -77,6 +78,8 @@ vi.mock('../../../components/classlink/useKeepAccountOffer', () => ({
                       personalEmail: { allowed: true },
                   }
                 : undefined,
+            // The step this session can act on (`otherUid` for a confirm on another login).
+            step: enabled ? (mocks.sessionStep ?? mocks.nextStep) : undefined,
         };
     },
 }));
@@ -119,6 +122,7 @@ beforeEach(() => {
     mocks.activationPending = false;
     mocks.publicComputer = false;
     mocks.nextStep = 'email';
+    mocks.sessionStep = undefined;
     mocks.pinState = 'enabled';
     mocks.did = 'did:key:z6MkKeepAccount';
     mocks.escrowEnrollment = 'enrolled';
@@ -351,5 +355,26 @@ describe('useKeepAccountBanner', () => {
         expect(mocks.closeModal).toHaveBeenCalledTimes(1);
         step.props.onOverlayComplete();
         expect(mocks.newModal).toHaveBeenCalledTimes(2);
+    });
+
+    it('asks to confirm the PIN in the sheet, even while the recovery banner is snoozed', () => {
+        mocks.nextStep = 'confirmPin';
+        mocks.recoverySnoozedUntil = Date.now() + 60_000;
+        const { banner } = render().result.current;
+        expect(banner?.step).toBe('confirmPin');
+        act(() => banner?.onStart());
+        expect(mocks.newModal).toHaveBeenCalledTimes(1);
+        expect(mocks.openPinSetup).not.toHaveBeenCalled();
+        expect(mocks.openRecoverySetup).not.toHaveBeenCalled();
+        // Its own snooze never quiets the recovery banner (that one never asks for it).
+        act(() => banner?.onSnooze());
+        expect(mocks.setRecoverySnoozedUntil).not.toHaveBeenCalled();
+    });
+
+    it('never asks to confirm the PIN on another login of the account', () => {
+        mocks.nextStep = 'confirmPin';
+        mocks.sessionStep = 'otherUid';
+        mocks.offer = false;
+        expect(render().result.current.banner).toBeUndefined();
     });
 });

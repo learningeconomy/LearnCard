@@ -86,7 +86,7 @@ test.describe('School Connect @mocked', () => {
         await page.goto(`${HARNESS}?state=connected&keepAccount=real&step=email`);
         const section = page.getByTestId('keep-account-step');
         await expect(
-            section.getByRole('heading', { level: 3, name: 'Personal email' })
+            section.getByRole('heading', { level: 3, name: 'Sign-in email' })
         ).toBeVisible();
         await expect(page.getByLabel('Personal email')).toHaveCount(0);
         await page.screenshot({ path: `${SHOTS}/keep-account-add.png`, fullPage: true });
@@ -99,7 +99,7 @@ test.describe('School Connect @mocked', () => {
 
         await page.goto(`${HARNESS}?state=connected&keepAccount=real&step=done`);
         await expect(
-            section.getByText(/s\*\*\*@example\.org\u2069? · Can get you back in/)
+            section.getByText(/s\*\*\*@example\.org\u2069? · School email also works/)
         ).toBeVisible();
         await expect(section.getByRole('button', { name: 'Remove' })).toBeVisible();
         // A compact row, not a hero card.
@@ -107,7 +107,9 @@ test.describe('School Connect @mocked', () => {
         await page.screenshot({ path: `${SHOTS}/keep-account-done.png`, fullPage: true });
 
         await section.getByRole('button', { name: 'Remove' }).click();
-        await expect(page.locator('ion-alert')).toContainText(/Remove \u2068?s\*\*\*@example\.org/);
+        await expect(page.locator('ion-alert')).toContainText(
+            /Stop signing in with \u2068?s\*\*\*@example\.org/
+        );
         await expect(page.getByTestId('keep-account-remove-confirm')).toBeVisible();
         await page.waitForTimeout(400); // Let the alert finish animating in for the shot.
         await page.screenshot({ path: `${SHOTS}/keep-account-remove.png`, fullPage: true });
@@ -128,10 +130,30 @@ test.describe('School Connect @mocked', () => {
         await expect(page.getByTestId('keep-account-saved')).toBeFocused();
         await page.screenshot({ path: `${SHOTS}/keep-account-saved.png`, fullPage: true });
         await page.clock.runFor(1_000);
-        await expect(section).toHaveAttribute('data-step', 'done');
+        // A PIN account: the backup still names the school email, so the PIN confirm row.
+        await expect(section).toHaveAttribute('data-step', 'confirmPin');
         await expect(
-            section.getByRole('heading', { level: 3, name: 'Personal email' })
+            section.getByRole('heading', { level: 3, name: 'Sign-in email' })
         ).toBeFocused();
+    });
+
+    test('keep-account row: the PIN confirm opens in place and seals the sign-in email', async ({
+        page,
+    }) => {
+        await page.setViewportSize({ width: 390, height: 844 });
+        await page.goto(`${HARNESS}?state=connected&keepAccount=real&step=confirmPin`);
+        const section = page.getByTestId('keep-account-step');
+        await expect(
+            section.getByRole('heading', { level: 3, name: 'Enter your PIN' })
+        ).toBeVisible();
+        await section.getByTestId('keep-account-confirm').click();
+        await page.getByLabel('PIN digit 1').click();
+        await page.keyboard.type('593827');
+        await expect(section).toHaveAttribute('data-step', 'done');
+        expect(await page.evaluate(() => window.keepAccountHarness.sealedContacts)).toEqual([
+            'student@example.org',
+        ]);
+        await page.screenshot({ path: `${SHOTS}/keep-account-confirm-done.png`, fullPage: true });
     });
 
     test('keep-account row: a missing date of birth offers to add it', async ({ page }) => {

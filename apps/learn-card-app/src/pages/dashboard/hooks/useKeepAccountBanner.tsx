@@ -60,9 +60,12 @@ const readSnooze = (did: string | undefined): SnoozeState => {
  * empty instead of showing the recovery banner first.
  *
  * Driven by the server (`getAccountContinuity`): it invites the user to add a personal
- * email (`email`), then, once the email is in, to create a PIN (`pin`, escrow accounts)
- * or add a passkey / recovery phrase (`method`, accounts that cannot have escrow). The
- * PIN and passkey asks open their overlay straight away (no sheet in between). It never
+ * email to sign in with (`email`), then, once the email is in, to create a PIN (`pin`,
+ * escrow accounts), to enter the current PIN once so the backup follows the new sign-in
+ * email (`confirmPin`, only on the login that holds it; the recovery banner's snooze and
+ * tier never hide it) or add a passkey / recovery phrase (`method`, accounts that cannot
+ * have escrow here). The PIN and passkey asks open their overlay straight away; the
+ * email and the PIN confirm open the step in a sheet. It never
  * takes the slot from the recovery banner's urgent prompt (activation pending, public
  * computer) or its "create a PIN" tier (it waits for the escrow state that decides that
  * tier), never shows in a session that already asked (onboarding, the transcript sheet),
@@ -86,9 +89,12 @@ export const useKeepAccountBanner = (): {
     } = useAppAuth();
     const urgentRecovery = recoveryActivationPending || isPublicComputerMode();
     const askedThisSession = useKeepAccountAskedThisSession();
-    const { offer, pending, continuity } = useKeepAccountOffer(
-        !urgentRecovery && !askedThisSession
-    );
+    const {
+        offer,
+        pending,
+        continuity,
+        step: sessionStep,
+    } = useKeepAccountOffer(!urgentRecovery && !askedThisSession);
     const keepAccountTitle = useKeepAccountTitle(offer);
     const did = state.status === 'ready' ? state.did : undefined;
     const { track } = useAnalytics();
@@ -128,19 +134,22 @@ export const useKeepAccountBanner = (): {
     // Until the method count is known, the recovery banner may still claim the slot.
     const methodCountPending = capabilities.recovery && recoveryMethodCount === null;
 
-    if (!offer || !continuity || !did) return { pending };
+    if (!offer || !continuity || !sessionStep || !did) return { pending };
+    // `done` and `otherUid` never reach here (`offer` is false); this narrows the type.
+    if (sessionStep === 'done' || sessionStep === 'otherUid') return { pending: false };
+    const step = sessionStep;
+    // The PIN confirm is this banner's own ask (the recovery banner never makes it): its
+    // slot, snooze and tier never hide it, only its own snooze does.
+    const confirming = step === 'confirmPin';
     if (methodCountPending || keepAccountTitle.pending) return { pending: true };
-    if (escrowUnknown && !escrowWaitOver) return { pending: true };
-    if (pinFirstEligible && !recoverySnoozed) return { pending: false };
+    if (!confirming && escrowUnknown && !escrowWaitOver) return { pending: true };
+    if (!confirming && pinFirstEligible && !recoverySnoozed) return { pending: false };
     if (snooze.count >= KEEP_ACCOUNT_MAX_SNOOZES || snooze.until > Date.now()) {
         return { pending: false };
     }
-
-    const step = continuity.nextStep;
-    // `done` never reaches here (`offer` is false); this narrows the type.
-    if (step === 'done') return { pending: false };
     // The recovery banner asks for the same PIN or passkey: one snooze quiets both.
-    if (step !== 'email' && (pinFirstEligible || recoverySnoozed)) return { pending: false };
+    if (step !== 'email' && !confirming && (pinFirstEligible || recoverySnoozed))
+        return { pending: false };
 
     const refresh = (): void => {
         void queryClient.invalidateQueries({ queryKey: ['classlinkAccountContinuity'] });
@@ -167,7 +176,9 @@ export const useKeepAccountBanner = (): {
 
     // The banner already asked; its overlay opens straight away.
     const start = (): void => {
-        if (step === 'email') {
+        // The email and the PIN confirm are asked in the sheet (the confirm needs no
+        // overlay: it is a single PIN entry, with "choose a new PIN" inside).
+        if (step === 'email' || step === 'confirmPin') {
             openSheet();
             return;
         }
@@ -205,7 +216,8 @@ export const useKeepAccountBanner = (): {
                 /* Still snoozed for this session when storage is unavailable. */
             }
             // The same ask in the recovery banner stays quiet for as long.
-            if (step !== 'email') firstStartupStore.set.recoveryPromptSnoozedUntil(next.until);
+            if (step !== 'email' && step !== 'confirmPin')
+                firstStartupStore.set.recoveryPromptSnoozedUntil(next.until);
             setSnooze(next);
             track(AnalyticsEvents.KEEP_ACCOUNT_DISMISSED, { source: 'dashboard', step });
         },

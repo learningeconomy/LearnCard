@@ -36,6 +36,12 @@ type RecoveryPinStepProps = {
     autoFocus?: boolean;
     /** Called whenever the step moves on (enter, confirm, saving, success). */
     onStepChange?: (step: RecoveryPinStepState) => void;
+    /**
+     * A save error the user can fix by choosing another PIN (e.g. the same PIN refused):
+     * return its message, and the step starts over at the first entry with it, without
+     * counting it as a failed save.
+     */
+    saveErrorMessage?: (error: unknown) => string | undefined;
 };
 
 export type RecoveryPinStepState = 'enter' | 'confirm' | 'saving' | 'success';
@@ -59,6 +65,7 @@ export const RecoveryPinStep: React.FC<RecoveryPinStepProps> = ({
     headingLevel = 'h1',
     autoFocus = false,
     onStepChange,
+    saveErrorMessage,
 }) => {
     const Heading = headingLevel;
     const [step, setStep] = useState<StepState>('enter');
@@ -123,7 +130,15 @@ export const RecoveryPinStep: React.FC<RecoveryPinStepProps> = ({
             try {
                 await saveRequiredPin(setPin, value, saveTimeoutMs);
                 setStep('success');
-            } catch {
+            } catch (err) {
+                const retype = saveErrorMessage?.(err);
+                if (retype) {
+                    setError(retype);
+                    setPinValue('');
+                    setConfirmPin('');
+                    setStep('enter');
+                    return;
+                }
                 const failures = saveErrors + 1;
                 setSaveErrors(failures);
                 // Once the skip is offered, say so in the (announced) error itself.

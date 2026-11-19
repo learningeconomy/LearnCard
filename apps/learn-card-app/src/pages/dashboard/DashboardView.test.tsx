@@ -109,7 +109,7 @@ describe('DashboardView guardian approval and recovery banner slot', () => {
 
 describe('DashboardView ClassLink keep-account banner', () => {
     const keepAccount = (
-        step: 'email' | 'pin' | 'method' = 'email',
+        step: 'email' | 'pin' | 'confirmPin' | 'method' = 'email',
         extra: { pinLocked?: boolean; phrase?: boolean } = {}
     ) => ({
         step,
@@ -161,6 +161,14 @@ describe('DashboardView ClassLink keep-account banner', () => {
             <DashboardView vm={buildVm({ keepAccount: keepAccount('method', { phrase: true }) })} />
         );
         expect(screen.getByText(m['classlinkKeepAccount.addPhrase']())).toBeInTheDocument();
+
+        rerender(<DashboardView vm={buildVm({ keepAccount: keepAccount('confirmPin') })} />);
+        expect(
+            screen.getByText(m['classlinkKeepAccount.banner.confirmPinBody']())
+        ).toBeInTheDocument();
+        expect(
+            screen.getByText(m['classlinkKeepAccount.banner.confirmPinAction']())
+        ).toBeInTheDocument();
     });
 
     it('shows neither banner while the keep-account check is pending', () => {

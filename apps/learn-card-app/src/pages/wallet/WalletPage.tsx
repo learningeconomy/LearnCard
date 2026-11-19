@@ -37,10 +37,6 @@ import ScanIcon from 'learn-card-base/svgs/ScanIcon';
 import AddToPassportMenu from '../../components/add-to-passport/AddToPassportMenu';
 import NewCredentialsPill from '../../components/main-subheader/NewCredentialsPill';
 import PassportSharingMenu from './PassportSharingMenu';
-import {
-    PersonalEmailPrompt,
-    isPersonalEmailPromptEnabled,
-} from '../../components/classlink/PersonalEmailPrompt';
 import { TranscriptOptInCard } from '../../components/classlink/TranscriptOptInCard';
 
 import { useTheme } from '../../theme/hooks/useTheme';
@@ -68,10 +64,9 @@ const WalletPage: React.FC = () => {
 
     const { isAiEnabled, reason } = useAiFeatureGate();
     // ClassLink cards mount only for tenants that enable them, so other tenants never
-    // run their queries (each is a DID-authenticated lca-api call). With "keep your
-    // account" on, the email card stays off: that flow asks for the email elsewhere.
+    // run their queries (each is a DID-authenticated lca-api call). The personal email is
+    // asked by "keep your account" (onboarding, dashboard, School Connect), not here.
     const features = useFeatureConfig();
-    const showPersonalEmailPrompt = isPersonalEmailPromptEnabled(features);
     const showTranscriptOptIn = features.classlinkSso && features.classlinkTranscriptOptIn;
     const { presentToast } = useToast();
 
@@ -201,7 +196,6 @@ const WalletPage: React.FC = () => {
                     }
                 >
                     <div className="px-[20px] pt-[16px] pb-[32px] md:pt-[24px] md:pb-[48px]">
-                        {showPersonalEmailPrompt && <PersonalEmailPrompt />}
                         <div className="flex flex-col max-w-[840px] mx-auto">
                             {showTranscriptOptIn && (
                                 <TranscriptOptInCard source="wallet" variant="banner" />
