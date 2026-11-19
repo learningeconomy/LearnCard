@@ -15,7 +15,7 @@ const config = z.object({
 export const loadReferralInputs = async (
     spec: OrgSpec,
     configs: string[] = [],
-    env = process.env
+    env: Record<string, string | undefined> = process.env
 ) => {
     const tenants: TenantSchemas = Object.create(null);
     for (const source of configs) {

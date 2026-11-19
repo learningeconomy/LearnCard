@@ -761,7 +761,12 @@ const applyWebhooks = async (
     }
 };
 
-const planFreshOrg = (spec: OrgSpec, project: Project, changes: OrgChange[]): void => {
+const planFreshOrg = (
+    spec: OrgSpec,
+    project: Project,
+    changes: OrgChange[],
+    referrals?: ReferralContext
+): void => {
     const note = 'after the issuer profile is created';
     changes.push({
         resource: 'signingAuthority',
@@ -805,7 +810,8 @@ const planFreshOrg = (spec: OrgSpec, project: Project, changes: OrgChange[]): vo
             name: recipient.profileId,
             action: 'would-create',
         });
-    for (const program of spec.referralPrograms ?? []) planNewReferral(program, changes);
+    for (const program of spec.referralPrograms ?? [])
+        planNewReferral(program, changes, referrals?.contracts.get(program.name));
     for (const account of spec.serviceAccounts ?? [])
         changes.push({
             resource: 'serviceAccount',
@@ -840,7 +846,7 @@ export const applyOrg = async (
     const issuerDid = resolveIssuerDid(learnCard);
 
     if (!issuerExists) {
-        planFreshOrg(spec, project, changes);
+        planFreshOrg(spec, project, changes, opts.referrals);
         return {
             changes,
             outputs: { issuerDid, managerDid: undefined, managed: [], serviceAccounts: [] },

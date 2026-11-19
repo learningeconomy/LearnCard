@@ -3,7 +3,11 @@ import type { LCALearnCard } from '@learncard/lca-api-plugin';
 import type { ConsentFlowContract } from '@learncard/types';
 import type { GrantCard, OrgChange } from './apply';
 import type { OrgServiceAccountSpec, OrgSpec, ReferralProgram } from './schema';
-import { applyReferralContract, type ReferralCard } from './referral-contract';
+import {
+    describeReferralScopes,
+    applyReferralContract,
+    type ReferralCard,
+} from './referral-contract';
 import { hasSecret, writeSecret } from './secrets';
 
 export interface ReferralHandoff {
@@ -30,12 +34,16 @@ export interface ReferralContext {
     provisionReadable: (profileId: string, displayName: string, requestId: string) => Promise<void>;
 }
 
-export const planNewReferral = (p: ReferralProgram, changes: OrgChange[]) => {
+export const planNewReferral = (
+    p: ReferralProgram,
+    changes: OrgChange[],
+    contract?: ConsentFlowContract
+) => {
     changes.push({
         resource: 'referralContract',
         name: p.name,
         action: 'would-create',
-        detail: `owner ${p.partner}, writer ${p.outcomes.issuer}, recipients ${p.referrers.join(', ')} (fixed after first consent)`,
+        detail: `owner ${p.partner}, writer ${p.outcomes.issuer}, recipients ${p.referrers.join(', ')} (fixed after first consent)${contract ? '; ' + describeReferralScopes(contract) : ''}`,
     });
     for (const name of p.referrers) {
         if (p.delivery?.readable)
@@ -181,7 +189,7 @@ export const applyReferrals = async (
                   : undefined;
         if (!owner && !dryRun) throw new Error(`Missing managed partner ${p.partner}.`);
         if (!owner) {
-            planNewReferral(p, changes);
+            planNewReferral(p, changes, ctx.contracts.get(p.name));
             continue;
         }
         const contract = ctx.contracts.get(p.name);

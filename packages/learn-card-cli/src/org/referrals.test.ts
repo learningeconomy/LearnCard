@@ -124,3 +124,109 @@ describe('referral setup', () => {
         expect(methods.updateContract.mock.calls.at(-1)?.[2].dryRun).toBeUndefined();
     });
 });
+
+it('provisions delegated delivery before registering a webhook and minting the recipient token', async () => {
+    const { applyReferrals } = await import('./referrals');
+    const fs = await import('node:fs/promises');
+    const { tmpdir } = await import('node:os');
+    const { parseEnv } = await import('../project');
+    const spec = OrgSpecValidator.parse({
+        issuer: {
+            profileId: 'partner',
+            displayName: 'Partner',
+            signingAuthority: { type: 'learncard-hosted', name: 'outcomes' },
+        },
+        referralPrograms: [
+            {
+                ...program,
+                outcomes: { ...program.outcomes, issuer: 'partner' },
+                delivery: { readable: true, webhook: 'https://example.org/events' },
+            },
+        ],
+    });
+    const p = spec.referralPrograms![0]!;
+    const { methods } = mockOwner();
+    methods.getContracts.mockResolvedValue({ hasMore: false, records: [] });
+    const order: string[] = [];
+    const root = {
+        invoke: {
+            ...methods,
+            getManagedServiceProfiles: vi.fn().mockResolvedValue({
+                records: [
+                    {
+                        profileId: 'recipient',
+                        type: 'organization',
+                        did: 'did:web:local:recipient',
+                        displayName: 'Recipient',
+                    },
+                ],
+            }),
+        },
+    };
+    const recipient = {
+        invoke: {
+            getIntegrations: vi.fn().mockResolvedValue({ hasMore: false, records: [] }),
+            addIntegration: vi.fn().mockResolvedValue('integration-id'),
+            setIntegrationWebhook: vi.fn(async () => {
+                order.push('webhook');
+                return { secret: 'unit-test-secret' };
+            }),
+        },
+    };
+    const provisionReadable = vi.fn(
+        async (_profileId: string, _displayName: string, _requestId: string) => {
+            order.push('delivery');
+        }
+    );
+    const ctx = {
+        root,
+        asProfile: vi.fn().mockResolvedValue(recipient),
+        contracts: new Map([[p.name, referralContract(p, {})]]),
+        endpoints: new Map([[p.name, p.delivery!.webhook!]]),
+        network: 'local',
+        provisionReadable,
+    } as unknown as import('./referrals').ReferralContext;
+    const directory = await fs.mkdtemp(path.join(tmpdir(), 'lc-referral-test-'));
+    try {
+        const file = path.join(directory, 'handoff.env');
+        const changes: OrgChange[] = [];
+        const mint = vi.fn(async () => {
+            order.push('token');
+        });
+        const [handoff] = await applyReferrals(spec, ctx, false, false, file, [], changes, mint);
+        expect(order).toEqual(['delivery', 'webhook', 'token']);
+        expect(provisionReadable).toHaveBeenCalledWith(
+            'recipient',
+            'Recipient',
+            expect.stringMatching(/^[a-f0-9-]{36}$/)
+        );
+        expect(mint).toHaveBeenCalledWith(
+            expect.objectContaining({ scopes: expect.arrayContaining(['contracts-data:decrypt']) }),
+            recipient
+        );
+        expect((await fs.stat(file)).mode & 0o777).toBe(0o600);
+        expect(parseEnv(await fs.readFile(file, 'utf8'))[handoff!.webhookSecretKey!]).toBe(
+            'unit-test-secret'
+        );
+        expect(JSON.stringify({ handoff, changes })).not.toContain('unit-test-secret');
+        recipient.invoke.getIntegrations.mockResolvedValue({
+            hasMore: false,
+            records: [{ name: 'Referral: ' + p.name, id: 'integration-id' }],
+        });
+        Object.assign(recipient.invoke, {
+            getIntegrationWebhook: vi.fn().mockResolvedValue({
+                hasSecret: true,
+                webhookUrl: p.delivery!.webhook,
+                contractEventsEnabledAt: '2026-01-01',
+            }),
+        });
+        await fs.writeFile(file, '');
+        await expect(applyReferrals(spec, ctx, false, false, file, [], [], mint)).rejects.toThrow(
+            /Restore/
+        );
+        expect(recipient.invoke.setIntegrationWebhook).toHaveBeenCalledTimes(1);
+        expect(mint).toHaveBeenCalledTimes(1);
+    } finally {
+        await fs.rm(directory, { recursive: true, force: true });
+    }
+});

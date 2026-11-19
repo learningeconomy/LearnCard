@@ -59,6 +59,17 @@ export const referralContract = (
     };
 };
 
+export const describeReferralScopes = (contract: ConsentFlowContract): string => {
+    const list = (scopes: ConsentFlowContract['read']['personal']) =>
+        Object.entries(scopes)
+            .map(([key, scope]) => key + (scope.required ? ' (required)' : ''))
+            .join(', ');
+    return [
+        'read ' + list({ ...contract.read.personal, ...contract.read.credentials.categories }),
+        'write ' + list(contract.write.credentials.categories),
+    ].join('; ');
+};
+
 type Scopes = ConsentFlowContract['read']['personal'];
 const patchScopes = (current: Scopes, wanted: Scopes) =>
     Object.fromEntries(
@@ -104,7 +115,7 @@ export const applyReferralContract = async (
     if (!uri) {
         record(
             dryRun ? 'would-create' : 'created',
-            `owner ${partner}, writers ${writers.join(', ') || partner}, recipients ${recipients.join(', ')} (fixed after first consent)`
+            `owner ${partner}, writers ${writers.join(', ') || partner}, recipients ${recipients.join(', ')} (fixed after first consent); ${describeReferralScopes(contract)}`
         );
         return dryRun
             ? undefined
@@ -157,7 +168,8 @@ export const applyReferralContract = async (
     const reconsent = preview?.kind === 'requires_consent';
     const detail = [
         audience.changed && 'change recipients before first consent',
-        needsUpdate && 'update categories, personal fields or writers',
+        needsUpdate &&
+            `writers ${writers.join(', ') || partner}; ${describeReferralScopes(contract)}`,
         reconsent && `requires re-consent for ${preview.affectedUsers} users (--allow-reconsent)`,
     ]
         .filter(Boolean)
