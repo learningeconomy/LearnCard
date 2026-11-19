@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
+import isEqual from 'lodash-es/isEqual';
 
 import { IonPage } from '@ionic/react';
 import { getVCDisplayCardVariant, VCDisplayCard2 } from '@learncard/react';
@@ -95,17 +96,28 @@ export type BoostPreviewProps = {
 };
 
 export const useVerification = (credential: VC, enabled = true) => {
+    const [verificationCredential, setVerificationCredential] = useState(credential);
     const [vcVerifications, setVCVerifications] = useState<VerificationItem[]>([]);
     const { initWallet } = useWallet();
+
+    // A reissued or modified payload can keep the same ID and proof.
+    if (enabled && !isEqual(credential, verificationCredential)) {
+        setVerificationCredential(credential);
+    }
+
     useEffect(() => {
         if (!enabled) return;
         const verify = async () => {
             const wallet = await initWallet();
-            const verifications = await wallet?.invoke?.verifyCredential(credential, {}, true);
+            const verifications = await wallet?.invoke?.verifyCredential(
+                verificationCredential,
+                {},
+                true
+            );
             setVCVerifications(prettifyVerificationItems(verifications ?? []));
         };
         verify();
-    }, [credential, enabled]);
+    }, [verificationCredential, enabled]);
     return vcVerifications;
 };
 

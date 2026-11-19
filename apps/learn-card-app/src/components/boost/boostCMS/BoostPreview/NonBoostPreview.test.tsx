@@ -538,9 +538,18 @@ it('verifies an earned Boost once on open and again only when its signed credent
     expect(mocks.displayCard.mock.lastCall?.[0].credential.name).toBe('New display title');
     expect(mocks.verify).toHaveBeenCalledTimes(1);
 
+    await act(async () => rerender(preview(structuredClone(signedCredential))));
+    expect(mocks.verify).toHaveBeenCalledTimes(1);
+
     mocks.verify.mockResolvedValueOnce(failed);
     await act(async () => rerender(preview(updatedCredential)));
     expect(mocks.verify).toHaveBeenCalledTimes(2);
     expect(mocks.verify.mock.calls[1][0]).toBe(updatedCredential);
     expect(mocks.displayCard.mock.lastCall?.[0].verificationItems).toEqual(failed);
+
+    const changedClaim = { ...updatedCredential, description: 'A changed signed claim' };
+    mocks.verify.mockResolvedValueOnce(failed);
+    await act(async () => rerender(preview(changedClaim)));
+    expect(mocks.verify).toHaveBeenCalledTimes(3);
+    expect(mocks.verify.mock.calls[2][0]).toBe(changedClaim);
 });
