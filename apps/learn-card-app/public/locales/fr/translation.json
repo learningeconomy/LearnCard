@@ -387,6 +387,12 @@
             "itemCountOther": "{{count}} éléments",
             "record": "Dossier",
             "recordDetails": "Détails du dossier",
+            "credentialIdentifiers": "Identifiants de l’attestation",
+            "copyIdentifier": "Copier — {{label}}",
+            "verificationDetails": "Détails de la vérification",
+            "issuerDid": "DID de l’émetteur",
+            "verificationMethod": "Méthode de vérification",
+            "checksCompleted": "Vérifications effectuées",
             "closeRecordDetails": "Fermer les détails du dossier"
         }
     },

@@ -387,6 +387,12 @@
             "itemCountOther": "{{count}} عناصر",
             "record": "سجل",
             "recordDetails": "تفاصيل السجل",
+            "credentialIdentifiers": "معرّفات الوثيقة",
+            "copyIdentifier": "نسخ {{label}}",
+            "verificationDetails": "تفاصيل التحقق",
+            "issuerDid": "معرّف DID للجهة المصدرة",
+            "verificationMethod": "طريقة التحقق",
+            "checksCompleted": "عمليات التحقق المكتملة",
             "closeRecordDetails": "إغلاق تفاصيل السجل"
         }
     },

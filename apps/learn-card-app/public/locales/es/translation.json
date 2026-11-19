@@ -387,6 +387,12 @@
             "itemCountOther": "{{count}} elementos",
             "record": "Registro",
             "recordDetails": "Detalles del registro",
+            "credentialIdentifiers": "Identificadores de la credencial",
+            "copyIdentifier": "Copiar {{label}}",
+            "verificationDetails": "Detalles de la verificación",
+            "issuerDid": "DID del emisor",
+            "verificationMethod": "Método de verificación",
+            "checksCompleted": "Comprobaciones realizadas",
             "closeRecordDetails": "Cerrar detalles del registro"
         }
     },

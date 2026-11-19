@@ -1,11 +1,12 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
+import { Clipboard } from '@capacitor/clipboard';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { normalizeClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 import { setLocale } from '../../paraglide/runtime.js';
 import * as m from '../../paraglide/messages.js';
 import ClrGenericRecordDetailPanel from './ClrGenericRecordDetailPanel';
-import { clrMixedCareerRecord } from '@learncard/credential-library';
+import { clrMixedCareerRecord, clrMultiIssuerVerification } from '@learncard/credential-library';
 import { ClrOtherRecordsSection } from './ClrOtherRecordsSection';
 const closeModal = vi.hoisted(() => vi.fn());
 vi.mock('learn-card-base', () => ({
@@ -14,6 +15,7 @@ vi.mock('learn-card-base', () => ({
     SkillCompetencyCard: () => null,
 }));
 vi.mock('./ClrTranscriptEvidenceList', () => ({ default: () => null }));
+vi.mock('@capacitor/clipboard', () => ({ Clipboard: { write: vi.fn() } }));
 const credential = {
     type: ['ClrCredential'],
     credentialSubject: {
@@ -85,6 +87,27 @@ describe('generic CLR record details', () => {
         expect(screen.getByText('License')).toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', { name: 'Close record details' }));
         expect(closeModal).toHaveBeenCalledOnce();
+    });
+
+    it('copies the selected course identifier and reports clipboard failures', async () => {
+        const model = normalizeClrTranscriptDisplayModel(clrMultiIssuerVerification.credential);
+        vi.mocked(Clipboard.write).mockResolvedValue(undefined);
+        render(<ClrGenericRecordDetailPanel model={model} record={model.courses[0]} />);
+
+        const identifiers = screen.getByText('Credential identifiers').closest('details')!;
+        expect(identifiers).toHaveAttribute('open');
+        fireEvent.click(within(identifiers).getByRole('button', { name: 'Copy Achievement ID' }));
+        expect(await within(identifiers).findByText('Copied to clipboard')).toBeInTheDocument();
+        expect(Clipboard.write).toHaveBeenLastCalledWith({
+            string: 'urn:uuid:clr-valid-record#achievement',
+        });
+
+        vi.mocked(Clipboard.write).mockRejectedValueOnce(new Error('Clipboard denied'));
+        fireEvent.click(within(identifiers).getByRole('button', { name: 'Copy Learner ID' }));
+        expect(Clipboard.write).toHaveBeenLastCalledWith({
+            string: 'did:example:clr-verification-learner',
+        });
+        expect(await within(identifiers).findByText('Unable to copy to clipboard')).toBeVisible();
     });
 });
 

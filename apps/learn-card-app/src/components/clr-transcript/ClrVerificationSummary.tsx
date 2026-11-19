@@ -24,6 +24,7 @@ import type {
     ClrVerificationSnapshot,
     ClrCredentialVerification,
 } from 'learn-card-base/helpers/credentials/clr/verification.types';
+import { ClrRecordDrawerSection } from './ClrRecordDrawerSection';
 
 /** Signature, lifecycle and learner binding are separate facts, even when several fail. */
 const statusText = (node: ClrCredentialVerification): string => {
@@ -70,7 +71,7 @@ const VerificationMark = ({
     children,
 }: ReturnType<typeof verificationTheme> & { children: React.ReactNode }) => (
     <span
-        className={`inline-flex max-w-full items-start gap-1.5 rounded-lg px-2 py-0.5 text-xs font-medium leading-4 ${tone}`}
+        className={`inline-flex max-w-full items-start gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium leading-4 ${tone}`}
     >
         <IonIcon aria-hidden="true" icon={icon} className="h-4 w-4 shrink-0" />
         <span className="min-w-0 wrap-anywhere">{children}</span>
@@ -100,6 +101,7 @@ export interface ClrRecordVerificationProps {
     recordId: string;
     recordName?: string;
     publisherDid?: string;
+    drawer?: boolean;
 }
 
 /** An existing row owns the record name; its status retains the same footprint while checking. */
@@ -108,6 +110,7 @@ export const ClrRecordVerification = ({
     recordId,
     recordName,
     publisherDid,
+    drawer = false,
 }: ClrRecordVerificationProps) => {
     if (!node) return null;
     const descendants: ClrCredentialVerification[] = [];
@@ -124,7 +127,8 @@ export const ClrRecordVerification = ({
         : m['clrRenderer.includedRecordAttention']();
     const quiet =
         (node.proof === 'unsigned' && !descendantIssue) ||
-        (Boolean(publisherDid) &&
+        (!drawer &&
+            Boolean(publisherDid) &&
             node.issuerDid === publisherDid &&
             (node.proof === 'checking' || isClrRecordConfirmed(node)));
     const label =
@@ -155,48 +159,130 @@ export const ClrRecordVerification = ({
     );
 };
 
+const VerificationField = ({
+    icon,
+    label,
+    children,
+}: {
+    icon: string;
+    label: string;
+    children: React.ReactNode;
+}) => (
+    <div className="relative min-w-0 ps-8 wrap-anywhere">
+        <dt className="font-semibold">
+            <IonIcon
+                aria-hidden="true"
+                icon={icon}
+                className="absolute start-0 top-0.5 size-5 text-grayscale-600"
+            />
+            {label}
+        </dt>
+        <dd className="mt-0.5">{children}</dd>
+    </div>
+);
+
+const hasSignedOccurrence = (node: ClrCredentialVerification): boolean =>
+    node.proof !== 'unsigned' || node.descendants.some(hasSignedOccurrence);
+
 /** Detail-only evidence; never substitute a descendant's signer for the containing record. */
 export const ClrRecordVerificationDetails = (props: ClrRecordVerificationProps) => {
-    const { node, recordId } = props;
+    if (!props.node) return null;
+    const evidence = <RecordVerificationEvidence {...props} showVerdict={!props.drawer} />;
+    if (!props.drawer) return evidence;
+    if (!hasSignedOccurrence(props.node)) return null;
+
+    return (
+        <ClrRecordDrawerSection title={m['clrTranscript.details.verificationDetails']()}>
+            {evidence}
+        </ClrRecordDrawerSection>
+    );
+};
+
+const RecordVerificationEvidence = (
+    props: ClrRecordVerificationProps & { showVerdict: boolean }
+) => {
+    const { node, recordId, drawer, showVerdict } = props;
     if (!node) return null;
     const visible =
         node.proof !== 'unsigned' &&
-        !(node.issuerDid === props.publisherDid && isClrRecordConfirmed(node));
+        (drawer || !(node.issuerDid === props.publisherDid && isClrRecordConfirmed(node)));
     return (
-        <div className="flex flex-col gap-2 text-xs leading-relaxed text-grayscale-700">
+        <div
+            className={
+                drawer
+                    ? 'space-y-3 text-sm text-grayscale-900'
+                    : 'flex flex-col gap-2 text-xs leading-relaxed text-grayscale-700'
+            }
+        >
             {visible && (
                 <>
-                    <ClrRecordVerification {...props} />
+                    {showVerdict && <ClrRecordVerification {...props} />}
                     {node.proof === 'invalid' && (
                         <p>{m['clrRenderer.signatureCheckFailedExplanation']()}</p>
                     )}
                     {(node.proof === 'unavailable' || node.lifecycle === 'unavailable') && (
                         <p>{m['clrRenderer.verificationIncompleteExplanation']()}</p>
                     )}
-                    <EvidenceLine icon={businessOutline}>
-                        {m['clrRenderer.issuerDid']({
-                            did: node.issuerDid ?? m['clrRenderer.issuerUnknown'](),
-                        })}
-                    </EvidenceLine>
-                    {node.verificationMethods.map(method => (
-                        <EvidenceLine key={method} icon={keyOutline}>
-                            {m['clrRenderer.verificationMethod']({ method })}
-                        </EvidenceLine>
-                    ))}
-                    {node.checks.length > 0 && (
-                        <EvidenceLine icon={shieldOutline}>
-                            {m['clrRenderer.checksRun']({ checks: node.checks.join(', ') })}
-                        </EvidenceLine>
+                    {drawer ? (
+                        <dl className="space-y-3">
+                            <VerificationField
+                                icon={businessOutline}
+                                label={m['clrTranscript.details.issuerDid']()}
+                            >
+                                {node.issuerDid ? (
+                                    <bdi>{node.issuerDid}</bdi>
+                                ) : (
+                                    m['clrRenderer.issuerUnknown']()
+                                )}
+                            </VerificationField>
+                            {node.verificationMethods.map(method => (
+                                <VerificationField
+                                    key={method}
+                                    icon={keyOutline}
+                                    label={m['clrTranscript.details.verificationMethod']()}
+                                >
+                                    <bdi>{method}</bdi>
+                                </VerificationField>
+                            ))}
+                            {node.checks.length > 0 && (
+                                <VerificationField
+                                    icon={shieldOutline}
+                                    label={m['clrTranscript.details.checksCompleted']()}
+                                >
+                                    {node.checks.join(', ')}
+                                </VerificationField>
+                            )}
+                        </dl>
+                    ) : (
+                        <>
+                            <EvidenceLine icon={businessOutline}>
+                                {m['clrRenderer.issuerDid']({
+                                    did: node.issuerDid ?? m['clrRenderer.issuerUnknown'](),
+                                })}
+                            </EvidenceLine>
+                            {node.verificationMethods.map(method => (
+                                <EvidenceLine key={method} icon={keyOutline}>
+                                    {m['clrRenderer.verificationMethod']({ method })}
+                                </EvidenceLine>
+                            ))}
+                            {node.checks.length > 0 && (
+                                <EvidenceLine icon={shieldOutline}>
+                                    {m['clrRenderer.checksRun']({ checks: node.checks.join(', ') })}
+                                </EvidenceLine>
+                            )}
+                        </>
                     )}
                 </>
             )}
             {node.descendants.map(child => (
-                <ClrRecordVerificationDetails
+                <RecordVerificationEvidence
                     key={child.occurrencePath}
                     node={child}
                     recordId={`${recordId}::${child.occurrencePath}`}
                     recordName={m['clrRenderer.includedRecord']()}
                     publisherDid={props.publisherDid}
+                    drawer={drawer}
+                    showVerdict
                 />
             ))}
         </div>

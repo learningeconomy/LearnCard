@@ -1,4 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Clipboard } from '@capacitor/clipboard';
+import { IonIcon } from '@ionic/react';
+import { checkmarkOutline, copyOutline } from 'ionicons/icons';
 import * as m from '../../paraglide/messages.js';
 
 import { formatClrDate } from 'learn-card-base/helpers/credentials/clr/renderer';
@@ -6,6 +9,7 @@ import type {
     ClrIdentifierModel,
     ClrNormalizedRecord,
 } from 'learn-card-base/helpers/credentials/clr/types';
+import { ClrRecordDrawerSection } from './ClrRecordDrawerSection';
 
 const safeWebUrl = (value?: string): string | undefined => {
     if (!value) return undefined;
@@ -25,6 +29,46 @@ const DetailRow = ({ label, children }: { label: string; children: React.ReactNo
         </dd>
     </div>
 );
+
+const CopyableIdentifier = ({ label, value }: { label: string; value: string }) => {
+    const [result, setResult] = useState<'copied' | 'failed'>();
+
+    const copy = async () => {
+        try {
+            await Clipboard.write({ string: value });
+            setResult('copied');
+        } catch {
+            setResult('failed');
+        }
+    };
+
+    return (
+        <DetailRow label={label}>
+            <span className="flex items-center gap-2">
+                <bdi className="min-w-0 flex-1 wrap-anywhere">{value}</bdi>
+                <button
+                    type="button"
+                    aria-label={m['clrTranscript.details.copyIdentifier']({ label })}
+                    onClick={() => void copy()}
+                    className="flex size-11 shrink-0 items-center justify-center rounded-[20px] text-grayscale-700 hover:bg-grayscale-100 focus-visible:outline-2 focus-visible:outline-emerald-600"
+                >
+                    <IonIcon
+                        aria-hidden="true"
+                        icon={result === 'copied' ? checkmarkOutline : copyOutline}
+                        className="size-5"
+                    />
+                </button>
+            </span>
+            <span
+                role="status"
+                className={result === 'failed' ? 'block text-xs text-red-700' : 'sr-only'}
+            >
+                {result === 'copied' && m['toasts.copied']()}
+                {result === 'failed' && m['toasts.copyFailed']()}
+            </span>
+        </DetailRow>
+    );
+};
 
 const IdentifierRows = ({ identifiers }: { identifiers: ClrIdentifierModel[] }) => (
     <dl className="space-y-v3-3">
@@ -51,15 +95,33 @@ const IdentifierRows = ({ identifiers }: { identifiers: ClrIdentifierModel[] }) 
     </dl>
 );
 
+const IdentifierGroup = ({
+    title,
+    identifiers,
+}: {
+    title: string;
+    identifiers: ClrIdentifierModel[];
+}) =>
+    identifiers.length > 0 && (
+        <section className="space-y-2">
+            <h4 className="text-sm font-semibold text-grayscale-900">{title}</h4>
+            <IdentifierRows identifiers={identifiers} />
+        </section>
+    );
+
 /** Displays supplied child-record facts without borrowing claims from its transcript publisher. */
 export const ClrRecordDetails = ({
     record,
     prominentFields = false,
+    drawer = false,
+    verification,
 }: {
     record?: ClrNormalizedRecord;
     prominentFields?: boolean;
+    drawer?: boolean;
+    verification?: React.ReactNode;
 }) => {
-    if (!record) return null;
+    if (!record) return verification ?? null;
 
     const profiles = [
         { label: m['clrTranscript.details.issuedBy'](), profile: record.provenance.issuer },
@@ -91,14 +153,20 @@ export const ClrRecordDetails = ({
     const subjectIdentifiers = record.subjectIdentifiers.filter(
         identifier => identifier.identifier?.value || identifier.identityHash?.value
     );
-    const hasAdditional = Boolean(
-        metadata.length ||
-        record.tags.length ||
-        (!prominentFields && achievementIdentifiers.length) ||
-        subjectIdentifiers.length ||
-        record.subjectId?.value ||
-        record.achievementId?.value
-    );
+    const ids = [
+        { label: m['clrTranscript.details.achievementId'](), value: record.achievementId?.value },
+        { label: m['clrTranscript.details.learnerId'](), value: record.subjectId?.value },
+    ];
+    const hasIds = ids.some(({ value }) => Boolean(value));
+    const hasIdentifiers =
+        hasIds || achievementIdentifiers.length > 0 || subjectIdentifiers.length > 0;
+    const hasAdditional =
+        metadata.length > 0 ||
+        record.tags.length > 0 ||
+        (!drawer &&
+            (hasIds ||
+                subjectIdentifiers.length > 0 ||
+                (!prominentFields && achievementIdentifiers.length > 0)));
     const criteria = record.criteria;
     const criteriaUrl = safeWebUrl(criteria?.id?.value);
     const hasCriteria = Boolean(criteria?.narrative?.value || criteria?.id?.value);
@@ -107,14 +175,21 @@ export const ClrRecordDetails = ({
         !profiles.length &&
         !dates.length &&
         !hasCriteria &&
+        !verification &&
         !hasAdditional &&
         !primaryFields.length &&
-        !achievementIdentifiers.length
+        !hasIdentifiers
     )
         return null;
 
     return (
-        <div className="space-y-v3-5 rounded-2xl border border-grayscale-200 bg-white p-4 font-poppins">
+        <div
+            className={
+                drawer
+                    ? 'min-w-0 space-y-5'
+                    : 'space-y-v3-5 rounded-2xl border border-grayscale-200 bg-white p-4 font-poppins'
+            }
+        >
             {prominentFields && primaryFields.length > 0 && (
                 <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     {primaryFields.map(({ label, field }) => (
@@ -124,16 +199,14 @@ export const ClrRecordDetails = ({
                     ))}
                 </dl>
             )}
-            {prominentFields && achievementIdentifiers.length > 0 && (
-                <section className="space-y-v3-2">
-                    <h4 className="text-sm font-semibold text-grayscale-900">
-                        {m['clrTranscript.details.achievementIdentifiers']()}
-                    </h4>
-                    <IdentifierRows identifiers={achievementIdentifiers} />
-                </section>
+            {prominentFields && !drawer && (
+                <IdentifierGroup
+                    title={m['clrTranscript.details.achievementIdentifiers']()}
+                    identifiers={achievementIdentifiers}
+                />
             )}
             {profiles.length > 0 && (
-                <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <dl className={drawer ? 'grid gap-3' : 'grid grid-cols-1 gap-4 sm:grid-cols-2'}>
                     {profiles.map(({ label, profile }) => {
                         const name =
                             profile?.name?.value ?? profile?.id?.value ?? profile?.url?.value;
@@ -159,13 +232,41 @@ export const ClrRecordDetails = ({
                 </dl>
             )}
             {dates.length > 0 && (
-                <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <dl className={drawer ? 'grid gap-3' : 'grid grid-cols-1 gap-4 sm:grid-cols-2'}>
                     {dates.map(({ label, date }) => (
                         <DetailRow key={label} label={label}>
                             {date && <time dateTime={date.value}>{formatClrDate(date.value)}</time>}
                         </DetailRow>
                     ))}
                 </dl>
+            )}
+            {verification}
+            {drawer && hasIdentifiers && (
+                <ClrRecordDrawerSection title={m['clrTranscript.details.credentialIdentifiers']()}>
+                    <div className="space-y-4">
+                        {hasIds && (
+                            <dl className="grid gap-3">
+                                {ids.map(({ label, value }) =>
+                                    value ? (
+                                        <CopyableIdentifier
+                                            key={label}
+                                            label={label}
+                                            value={value}
+                                        />
+                                    ) : null
+                                )}
+                            </dl>
+                        )}
+                        <IdentifierGroup
+                            title={m['clrTranscript.details.achievementIdentifiers']()}
+                            identifiers={achievementIdentifiers}
+                        />
+                        <IdentifierGroup
+                            title={m['clrTranscript.details.learnerIdentifiers']()}
+                            identifiers={subjectIdentifiers}
+                        />
+                    </div>
+                </ClrRecordDrawerSection>
             )}
             {hasCriteria && (
                 <section className="space-y-v3-2">
@@ -221,32 +322,26 @@ export const ClrRecordDetails = ({
                                     </span>
                                 </DetailRow>
                             )}
-                            {record.achievementId?.value && (
-                                <DetailRow label={m['clrTranscript.details.achievementId']()}>
-                                    {record.achievementId.value}
-                                </DetailRow>
-                            )}
-                            {record.subjectId?.value && (
-                                <DetailRow label={m['clrTranscript.details.learnerId']()}>
-                                    {record.subjectId.value}
-                                </DetailRow>
-                            )}
+                            {!drawer &&
+                                ids.map(({ label, value }) =>
+                                    value ? (
+                                        <DetailRow key={label} label={label}>
+                                            {value}
+                                        </DetailRow>
+                                    ) : null
+                                )}
                         </dl>
-                        {!prominentFields && achievementIdentifiers.length > 0 && (
-                            <section className="space-y-v3-2">
-                                <h4 className="text-sm font-semibold text-grayscale-900">
-                                    {m['clrTranscript.details.achievementIdentifiers']()}
-                                </h4>
-                                <IdentifierRows identifiers={achievementIdentifiers} />
-                            </section>
+                        {!drawer && !prominentFields && (
+                            <IdentifierGroup
+                                title={m['clrTranscript.details.achievementIdentifiers']()}
+                                identifiers={achievementIdentifiers}
+                            />
                         )}
-                        {subjectIdentifiers.length > 0 && (
-                            <section className="space-y-v3-2">
-                                <h4 className="text-sm font-semibold text-grayscale-900">
-                                    {m['clrTranscript.details.learnerIdentifiers']()}
-                                </h4>
-                                <IdentifierRows identifiers={subjectIdentifiers} />
-                            </section>
+                        {!drawer && (
+                            <IdentifierGroup
+                                title={m['clrTranscript.details.learnerIdentifiers']()}
+                                identifiers={subjectIdentifiers}
+                            />
                         )}
                     </div>
                 </details>
