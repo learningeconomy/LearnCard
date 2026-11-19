@@ -2,43 +2,52 @@
 # demo@learningeconomy.io short-circuits in EmailForm.handleDemoLogin (no OTP).
 appId: com.learncard.app
 androidWebViewHierarchy: devtools
+env:
+    EMAIL_LABEL: '(?i)^(Email address|Email|Dirección de correo|Correo electrónico|Adresse e-mail|E-mail|عنوان البريد الإلكتروني|البريد الإلكتروني)$'
+    SUBMIT_LABEL: '(?i)^(Sign in with Email|Iniciar sesión con correo|Se connecter par e-mail|تسجيل الدخول بالبريد الإلكتروني)$'
+    PASSPORT_LABEL: '(?i)^(My Passport|Passport|Pasaporte|Passeport|جواز السفر)$'
 ---
 - launchApp:
       clearState: true
-- extendedWaitUntil:
-      visible: '(?i)sign in with email'
-      timeout: 90000
-- runFlow:
-      when:
-          visible:
-              id: login-email
-      commands:
-          - tapOn:
-                id: login-email
-- runFlow:
-      when:
-          notVisible:
-              id: login-email
-      commands:
-          - tapOn: 'Email address|Email'
-- inputText: demo@learningeconomy.io
-- tapOn: '(?i)sign in with email'
-- extendedWaitUntil:
-      visible: Passport
-      timeout: 120000
 - runFlow:
       when:
           platform: Android
       commands:
           - extendedWaitUntil:
                 visible:
+                    id: login-email
+                timeout: 90000
+          - tapOn:
+                id: login-email
+          - inputText: demo@learningeconomy.io
+          - tapOn:
+                id: login-email-submit
+          - extendedWaitUntil:
+                visible:
+                    id: wallet-heading
+                timeout: 120000
+          # Passport category preferences can put Recently Added below the fold.
+          - scrollUntilVisible:
+                element:
                     id: 'credential-card-.*'
-                timeout: 30000
+                direction: DOWN
+                timeout: 60000
 - runFlow:
       when:
           platform: iOS
       commands:
+          # WKWebView exposes the form through its accessible names.
           - extendedWaitUntil:
-                visible: 'Credential card'
-                timeout: 30000
+                visible: ${EMAIL_LABEL}
+                timeout: 90000
+          - tapOn: ${EMAIL_LABEL}
+          - inputText: demo@learningeconomy.io
+          - tapOn: ${SUBMIT_LABEL}
+          - extendedWaitUntil:
+                visible: ${PASSPORT_LABEL}
+                timeout: 120000
+          - scrollUntilVisible:
+                element: 'Credential card'
+                direction: DOWN
+                timeout: 60000
 - takeScreenshot: wallet-loaded

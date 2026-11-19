@@ -286,7 +286,10 @@ describe('smoke flow', () => {
         expect(flow).toContain('clearState: true');
         expect(flow).toContain('id: login-email');
         expect(flow).toContain('demo@learningeconomy.io');
-        expect(flow).toContain('(?i)sign in with email');
+        expect(flow).toContain('id: login-email-submit');
+        expect(flow).toContain('id: wallet-heading');
+        expect(flow).toContain("id: 'credential-card-.*'");
+        expect(flow).toContain('Sign in with Email');
         expect(flow).toContain('Passport');
         expect(flow).toContain('Credential card');
     });
