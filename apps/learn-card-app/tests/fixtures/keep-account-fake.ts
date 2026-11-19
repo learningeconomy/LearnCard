@@ -30,6 +30,7 @@ import type {
  * - `sameReject`: 1 to refuse the first new PIN as the same PIN (`SameEscrowPinError`)
  * - `pinMismatch`: 1 to refuse the first PIN confirm as a wrong PIN
  * - `otherUid`: 1 when this session is another login of the account (not `uid-t`)
+ * - `method`: 1 when the account also holds a passkey or phrase (with escrow too)
  * Every seal is recorded in `window.keepAccountHarness.sealedContacts`.
  */
 declare global {
@@ -99,7 +100,8 @@ export const installKeepAccountFake = (
             !placeholder &&
             !escrowOff &&
             (params.get('escrow') ?? (startStep === 'method' ? '0' : '1')) === '1',
-        method: startStep === 'done' && params.get('escrow') === '0',
+        method:
+            (startStep === 'done' && params.get('escrow') === '0') || params.get('method') === '1',
         pin: 'none' as ClassLinkAccountContinuity['pinState'],
         /** The contact the escrow backup is sealed to. */
         sealed: undefined as string | undefined,
@@ -117,6 +119,16 @@ export const installKeepAccountFake = (
         email: sessionUid === PRIMARY_UID ? signInEmail() : 'other-login@example.net',
         confirmed: hasPersonal ? STARTING_PERSONAL_EMAIL : undefined,
     };
+    /** The coordinator's gate: only an address confirmed on this device, or re-typed now. */
+    const confirmable = (retypedEmail?: string): void => {
+        const unconfirmed = (): Error =>
+            Object.assign(named('EscrowContactNotConfirmedError'), { reason: 'unconfirmed' });
+        if (retypedEmail !== undefined) {
+            if (retypedEmail.trim().toLowerCase() !== session.email) throw unconfirmed();
+            session.confirmed = session.email;
+        }
+        if (session.confirmed !== session.email) throw unconfirmed();
+    };
     const seal = (contact: string): void => {
         server.sealed = contact;
         window.keepAccountHarness.sealedContacts.push(contact);
@@ -126,8 +138,11 @@ export const installKeepAccountFake = (
     const continuity = (): ClassLinkAccountContinuity => {
         const emailPrimary = Boolean(server.email);
         const pinRecoverable = server.escrow && server.pin === 'enabled';
+        // lca-api: a recorded seal that differs from the sign-in email is stale (after a
+        // removal too); with none recorded, only a promoted email is.
         const contactStale =
-            server.escrow && (server.sealed ?? '') !== signInEmail() && emailPrimary;
+            server.escrow &&
+            (server.sealed !== undefined ? server.sealed !== signInEmail() : emailPrimary);
         return {
             personalEmail: reason ? { allowed: false, reason } : { allowed: true },
             emailVerified: emailPrimary,
@@ -231,7 +246,12 @@ export const installKeepAccountFake = (
             seal(session.email);
             options.onComplete?.();
         },
-        setEscrowPin: async () => {
+        setEscrowPin: async (
+            _pin: string,
+            contact?: { primaryUid: string; retypedEmail?: string }
+        ) => {
+            // A new PIN that re-seals (the PIN confirm's "choose a new PIN") runs the gates.
+            if (contact) confirmable(contact.retypedEmail);
             if (sameReject) {
                 sameReject = false;
                 throw named('SameEscrowPinError');
@@ -255,27 +275,18 @@ export const installKeepAccountFake = (
             session.confirmed = email.trim().toLowerCase();
         },
         getConfirmedContact: () => session.confirmed,
+        getPendingAccountContact: () => undefined,
         confirmEscrowPin: async ({ pin, retypedEmail }: { pin: string; retypedEmail?: string }) => {
             window.keepAccountHarness.confirms += 1;
-            if (retypedEmail !== undefined) {
-                if (retypedEmail.trim().toLowerCase() !== session.email)
-                    throw Object.assign(named('EscrowContactNotConfirmedError'), {
-                        reason: 'unconfirmed',
-                    });
-                session.confirmed = session.email;
-            }
-            if (session.confirmed !== session.email)
-                throw Object.assign(named('EscrowContactNotConfirmedError'), {
-                    reason: 'unconfirmed',
-                });
+            confirmable(retypedEmail);
             if (pinMismatch || pin.length !== 6) {
                 pinMismatch = false;
                 throw named('EscrowPinMismatchError');
             }
             seal(session.email);
         },
-        resealEscrowContact: async () => {
-            if (session.confirmed !== session.email) throw named('EscrowContactNotConfirmedError');
+        resealEscrowContact: async ({ retypedEmail }: { retypedEmail?: string } = {}) => {
+            confirmable(retypedEmail);
             seal(session.email);
         },
     } as unknown as AppAuthContextValue;

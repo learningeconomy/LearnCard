@@ -24,7 +24,7 @@
         "notNow": "Pas maintenant",
         "notAllowed": "Vous ne pouvez pas ajouter d’adresse e-mail personnelle pour le moment.",
         "emailRejected": "Utilisez une adresse personnelle où vous recevez vos e-mails, pas celle de votre école.",
-        "sharedEmail": "Cette adresse est déjà utilisée par un autre compte LearnCard. Essayez-en une autre.",
+        "sharedEmail": "Cette adresse est déjà utilisée par un autre compte. Essayez-en une autre.",
         "methodTitle": "Encore une étape",
         "methodBody": "Ajoutez une clé d’accès pour vous connecter sur un nouvel appareil.",
         "addPasskey": "Ajouter une clé d’accès",
@@ -33,7 +33,7 @@
         "doneBody": "Connectez-vous avec {{email}} à tout moment. Sur un nouvel appareil, vous saisirez aussi votre code PIN. D’autres appareils peuvent vous demander de vous reconnecter.",
         "remove": "Supprimer",
         "removeConfirm": "Ne plus vous connecter avec {{email}} ? Vous vous connecterez avec votre connexion scolaire, et d’autres appareils peuvent vous demander de vous reconnecter.",
-        "removeAction": "Supprimer",
+        "removeAction": "Ne plus l’utiliser",
         "removing": "Suppression…",
         "sectionTitle": "Votre compte",
         "banner": {
@@ -45,7 +45,8 @@
             "pinAction": "Créer un code PIN",
             "pinLockedBody": "Votre code PIN est verrouillé. Choisissez-en un nouveau pour vous connecter sur un nouvel appareil.",
             "confirmPinBody": "Saisissez votre code PIN pour finir de configurer votre adresse de connexion.",
-            "confirmPinAction": "Saisir le code PIN"
+            "confirmPinAction": "Saisir le code PIN",
+            "confirmEmailBody": "Confirmez votre adresse de connexion pour finaliser sa configuration."
         },
         "reason": {
             "disabled": "L’ajout d’une adresse e-mail personnelle n’est pas encore disponible.",
@@ -58,7 +59,7 @@
         },
         "pinTitle": "Créez un code PIN",
         "pinBody": "Vous saisirez ce code PIN quand vous vous connecterez sur un nouvel appareil.",
-        "doneBodyMethod": "Connectez-vous avec {{email}} à tout moment. Sur un nouvel appareil, vous utiliserez aussi votre clé d’accès ou votre phrase de récupération. D’autres appareils peuvent vous demander de vous reconnecter.",
+        "doneBodyMethod": "Connectez-vous avec {{email}} à tout moment. Sur un nouvel appareil, vous utiliserez aussi votre méthode de récupération. D’autres appareils peuvent vous demander de vous reconnecter.",
         "done": "Terminé",
         "celebrateBody": "Vous pouvez maintenant vous connecter avec votre adresse e-mail personnelle.",
         "titleTranscript": "Conservez votre relevé de notes après votre diplôme",
@@ -83,7 +84,16 @@
         "finishOnSignInEmail": "Pour terminer, connectez-vous avec {{email}} sur cet appareil.",
         "rowSchoolAlsoWorks": "L’adresse scolaire fonctionne aussi",
         "finishing": "Finalisation…",
-        "cannotRemovePlaceholder": "C’est avec cette adresse que vous vous connectez. Vous pouvez passer à une autre adresse."
+        "cannotRemovePlaceholder": "C’est avec cette adresse que vous vous connectez. Vous pouvez passer à une autre adresse.",
+        "finishRowTitle": "Finalisez votre adresse de connexion",
+        "confirmPinBodyRetype": "Saisissez votre code PIN pour terminer.",
+        "newPinBody": "Choisissez un nouveau code PIN pour terminer. Si vous l’oubliez, nous écrirons à {{email}}.",
+        "useCurrentPin": "Utiliser mon code PIN actuel",
+        "finishFailed": "Votre adresse de connexion a été modifiée, mais nous n’avons pas pu terminer votre connexion sur cet appareil. Réessayez.",
+        "signOut": "Se déconnecter",
+        "confirmEmailTitle": "Confirmez votre adresse de connexion",
+        "confirmEmailBody": "Saisissez l’adresse avec laquelle vous vous connectez pour finaliser sa configuration.",
+        "confirmEmailAction": "Confirmer"
     },
     "transcriptOptIn": {
         "title": "Obtenez votre relevé de notes de {{state}}",
@@ -2731,7 +2741,7 @@
             "lostSchoolLogin": "Je n’ai plus accès à mon adresse scolaire ou à ma connexion",
             "title": "Restaurer votre compte",
             "emailDescription": "Saisissez l’adresse personnelle de récupération vérifiée auparavant.",
-            "emailDescriptionSchool": "Saisissez l’e-mail de récupération que vous avez ajouté. Si vous avez ajouté une adresse personnelle pour vous connecter, connectez-vous plutôt avec elle.",
+            "emailDescriptionSchool": "Saisissez l’e-mail de récupération que vous avez ajouté.",
             "recoveryEmailLabel": "Adresse de récupération",
             "recoveryEmailPlaceholder": "vous@exemple.com",
             "sendCode": "Envoyer le code de récupération",

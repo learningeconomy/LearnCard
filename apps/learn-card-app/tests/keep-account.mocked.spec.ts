@@ -91,8 +91,9 @@ test.describe('Keep your account @mocked', () => {
     test('other uid: no confirm, sign in with the sign-in email instead', async ({ page }) => {
         await page.goto(`${HARNESS}?step=confirmPin&otherUid=1`);
         await expect(step(page)).toHaveAttribute('data-step', 'otherUid');
+        // This device typed the address, so it is named in full (else the masked one).
         await expect(page.getByTestId('keep-account-other-uid')).toHaveText(
-            /To finish, sign in with \u2068?s\*\*\*@example\.org\u2069? on this device\./
+            /To finish, sign in with \u2068?student@example\.org\u2069? on this device\./
         );
         await expect(page.getByLabel('PIN digit 1')).toHaveCount(0);
         expect(await page.evaluate(() => window.keepAccountHarness.confirms)).toBe(0);
@@ -164,9 +165,7 @@ test.describe('Keep your account @mocked', () => {
             { initialMethod: expect.stringMatching(/^(passkey|phrase)$/), autoStart: true },
         ]);
         await expect(step(page)).toHaveAttribute('data-step', 'done');
-        await expect(
-            page.getByText(/you'll also use your passkey or recovery phrase/)
-        ).toBeVisible();
+        await expect(page.getByText(/you'll also use your recovery method/)).toBeVisible();
     });
 
     test('refuses a school address by error code, then accepts a personal one', async ({
@@ -185,15 +184,13 @@ test.describe('Keep your account @mocked', () => {
         await expect(step(page)).toHaveAttribute('data-step', 'confirmPin');
     });
 
-    test('asks for another address when another LearnCard account already uses it', async ({
-        page,
-    }) => {
+    test('asks for another address when another account already uses it', async ({ page }) => {
         await page.goto(`${HARNESS}?step=email&shared=1`);
         await verifyEmail(page);
         // Like any other email error: under the field, with the address kept.
         await expect(step(page)).toHaveAttribute('data-step', 'email');
         await expect(page.getByRole('alert')).toHaveText(
-            'That email is already used by another LearnCard account. Try a different one.'
+            'That email is already used by another account. Try a different one.'
         );
         await expect(page.getByLabel('Personal email')).toHaveValue('student@example.org');
         await expect(page.getByLabel('Personal email')).toHaveAttribute('aria-invalid', 'true');
@@ -233,11 +230,42 @@ test.describe('Keep your account @mocked', () => {
 
         await page.getByTestId('keep-account-remove').click();
         await page.getByTestId('keep-account-remove-confirm').click();
-        await expect(step(page)).toHaveAttribute('data-step', 'email');
+        // The backup still names the removed address: confirm the PIN to re-seal it to the
+        // restored school email, which this device never typed (so it is typed first).
+        await expect(step(page)).toHaveAttribute('data-step', 'confirmPin');
         expect(await page.evaluate(() => window.keepAccountHarness.removed)).toBe(1);
         // Signed back in with the restored school email.
         expect(await page.evaluate(() => window.keepAccountHarness.reauths)).toBe(1);
+        await page.getByTestId('keep-account-confirm').click();
+        await page.getByTestId('keep-account-confirm-email').fill('student@school.example');
+        await page.getByLabel('PIN digit 1').click();
+        await page.keyboard.type('593827');
+        await expect(step(page)).toHaveAttribute('data-step', 'email');
+        expect(await page.evaluate(() => window.keepAccountHarness.sealedContacts)).toEqual([
+            'student@school.example',
+        ]);
         await expect(page.getByTestId('keep-account-add')).toBeVisible();
+    });
+
+    test('no PIN: after a removal, the restored email is typed once to re-seal the backup', async ({
+        page,
+    }) => {
+        await page.goto(`${HARNESS}?step=done&pin=none&method=1&variant=inline`);
+        await page.getByTestId('keep-account-remove').click();
+        await page.getByTestId('keep-account-remove-confirm').click();
+        // Never a silent failure: the row asks for the sign-in email.
+        await expect(step(page)).toHaveAttribute('data-step', 'confirmEmail');
+        expect(await page.evaluate(() => window.keepAccountHarness.sealedContacts)).toEqual([]);
+        await page.getByTestId('keep-account-confirm-email-open').click();
+        await page.getByTestId('keep-account-confirm-email').fill('someone@else.example');
+        await page.getByTestId('keep-account-confirm-email-submit').click();
+        await expect(page.getByText("That isn't your sign-in email.")).toBeVisible();
+        await page.getByTestId('keep-account-confirm-email').fill('student@school.example');
+        await page.getByTestId('keep-account-confirm-email-submit').click();
+        await expect(step(page)).toHaveAttribute('data-step', 'email');
+        expect(await page.evaluate(() => window.keepAccountHarness.sealedContacts)).toEqual([
+            'student@school.example',
+        ]);
     });
 
     test('a placeholder account with escrow can change the address but not remove it', async ({
@@ -245,9 +273,10 @@ test.describe('Keep your account @mocked', () => {
     }) => {
         await page.goto(`${HARNESS}?step=done&placeholder=1&variant=inline`);
         await expect(page.getByTestId('keep-account-remove')).toHaveCount(0);
+        // The "Use a different email" pill says it; no sentence repeating it in the row.
         await expect(
             page.getByText(/This is how you sign in\. You can switch to a different email\./)
-        ).toBeVisible();
+        ).toHaveCount(0);
         await page.getByTestId('keep-account-change').click();
         await expect(page.getByLabel('Personal email')).toBeFocused();
     });

@@ -371,6 +371,34 @@ describe('useKeepAccountBanner', () => {
         expect(mocks.setRecoverySnoozedUntil).not.toHaveBeenCalled();
     });
 
+    it('snoozes spent on the other asks never hide the PIN confirm', () => {
+        // The email ask was snoozed to the limit, and is still snoozed.
+        localStorage.setItem(getKeepAccountSnoozeKey(mocks.did), String(Date.now() + 60_000));
+        localStorage.setItem(getKeepAccountSnoozeCountKey(mocks.did), '2');
+        expect(render().result.current.banner).toBeUndefined();
+        mocks.nextStep = 'confirmPin';
+        const { result } = render();
+        expect(result.current.banner?.step).toBe('confirmPin');
+        // Its own snooze uses its own count, and leaves the other asks' count alone.
+        act(() => result.current.banner?.onSnooze());
+        expect(result.current.banner).toBeUndefined();
+        expect(localStorage.getItem(getKeepAccountSnoozeCountKey(mocks.did, 'confirm'))).toBe('1');
+        expect(localStorage.getItem(getKeepAccountSnoozeCountKey(mocks.did))).toBe('2');
+    });
+
+    it('asks to type the sign-in email of an account without a PIN in the sheet', () => {
+        mocks.nextStep = 'done';
+        mocks.sessionStep = 'confirmEmail';
+        mocks.recoverySnoozedUntil = Date.now() + 60_000;
+        const { banner } = render().result.current;
+        expect(banner?.step).toBe('confirmEmail');
+        act(() => banner?.onStart());
+        expect(mocks.newModal).toHaveBeenCalledTimes(1);
+        expect(mocks.openPinSetup).not.toHaveBeenCalled();
+        act(() => banner?.onSnooze());
+        expect(mocks.setRecoverySnoozedUntil).not.toHaveBeenCalled();
+    });
+
     it('never asks to confirm the PIN on another login of the account', () => {
         mocks.nextStep = 'confirmPin';
         mocks.sessionStep = 'otherUid';

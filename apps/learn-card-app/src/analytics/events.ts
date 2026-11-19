@@ -59,11 +59,21 @@ export type KeepAccountSource =
 /**
  * Which "keep your account" step an event is about (`code` = the emailed code).
  * - `confirmPin`: enter the current PIN to re-seal the backup to the sign-in email.
+ * - `confirmEmail`: type the sign-in email to re-seal the backup of an account without a PIN.
  * - `otherUid`: the setup must be finished on the login that holds the sign-in email.
  * - `remove`: the sign-in email was removed (`KEEP_ACCOUNT_STEP_COMPLETED` only).
  */
 export type KeepAccountAnalyticsStep =
-    'email' | 'code' | 'pin' | 'confirmPin' | 'method' | 'done' | 'blocked' | 'otherUid' | 'remove';
+    | 'email'
+    | 'code'
+    | 'pin'
+    | 'confirmPin'
+    | 'confirmEmail'
+    | 'method'
+    | 'done'
+    | 'blocked'
+    | 'otherUid'
+    | 'remove';
 
 export type KeepAccountEventPayload = {
     source: KeepAccountSource;

@@ -136,6 +136,7 @@ import {
 } from './authCoordinator.helpers';
 import { getTenantHeaders, getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
 import { createRecoveryPinActions } from './recoveryPinActions';
+import { requestPersonalEmailSignIn } from '../pages/login/personalEmailSignIn';
 import {
     createMigrationIdentityVerifier,
     deriveLegacyMigrationKey,
@@ -1745,9 +1746,10 @@ const AuthSessionManager: React.FC<{
                         coordinator.finishIdentityRecovery();
                     }}
                     schoolLoginRecovery={isSchoolLoginTenant()}
-                    // The personal email is the sign-in email: back to the login page, where
-                    // the email form signs in with it.
+                    // The personal email is the sign-in email: back to the login page, which
+                    // switches to the email form and focuses its field.
                     onSignInWithEmail={() => {
+                        requestPersonalEmailSignIn();
                         if (coordinator.state.status === 'identity_recovery')
                             coordinator.cancelIdentityRecovery();
                     }}

@@ -157,6 +157,25 @@ test.describe('ClassLink login hint @mocked', () => {
         await expect(page.locator('input[type="email"]').first()).toBeFocused();
     });
 
+    test('no hint while the email form asks for its code', async ({ page }) => {
+        await installNetwork(page);
+        await withClassLinkSso(page, true);
+        // The email form opens on its code step; the social buttons (and the hint) are hidden.
+        await page.goto('/login?verifyCode=1');
+        await expect(page.getByLabel(/digit 1/i).first()).toBeVisible();
+        await expect(page.getByTestId('login-classlink-personal-email-hint')).toHaveCount(0);
+    });
+
+    test('"Sign in with Email" in the lost-login sheet opens the email form', async ({ page }) => {
+        await installNetwork(page);
+        await withClassLinkSso(page, true);
+        await page.goto('/login');
+        await page.getByText('I lost access to my school email or login').click();
+        await page.getByTestId('recovery-identity-sign-in-with-email').click();
+        await expect(page.getByTestId('recovery-identity-sign-in-with-email')).toHaveCount(0);
+        await expect(page.locator('input[type="email"]').first()).toBeFocused();
+    });
+
     test('no hint without ClassLink', async ({ page }) => {
         await installNetwork(page);
         await withClassLinkSso(page, false);

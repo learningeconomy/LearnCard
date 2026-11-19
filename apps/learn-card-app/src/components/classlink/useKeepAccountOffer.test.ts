@@ -131,6 +131,31 @@ describe('needsKeepAccount', () => {
         );
     });
 
+    it('asks to type the sign-in email when a no-PIN backup is stale and this device never confirmed it', () => {
+        const stale = { ...continuity('done'), pinState: 'none' as const, contactStale: true };
+        expect(
+            resolveKeepAccountStep(stale, { sessionUid: 'uid-t', contactConfirmed: false })
+        ).toBe('confirmEmail');
+        expect(needsKeepAccount(stale, { sessionUid: 'uid-t', contactConfirmed: false })).toBe(
+            true
+        );
+        // Confirmed here: the step re-seals silently. Another login, or unknown: done.
+        expect(resolveKeepAccountStep(stale, { sessionUid: 'uid-t', contactConfirmed: true })).toBe(
+            'done'
+        );
+        expect(
+            resolveKeepAccountStep(stale, { sessionUid: 'uid-other', contactConfirmed: false })
+        ).toBe('done');
+        expect(resolveKeepAccountStep(stale, { sessionUid: 'uid-t' })).toBe('done');
+        // After a removal lca-api answers `email`: the old address is cut off first.
+        expect(
+            resolveKeepAccountStep(
+                { ...stale, emailPrimary: false, nextStep: 'email' },
+                { sessionUid: 'uid-t', contactConfirmed: false }
+            )
+        ).toBe('confirmEmail');
+    });
+
     it('asks for a passkey or phrase instead of a PIN where escrow cannot enroll', () => {
         for (const escrowEnrollment of ['not-enrolled', 'opted-out', 'disabled']) {
             expect(resolveKeepAccountStep(continuity('pin'), { escrowEnrollment })).toBe('method');

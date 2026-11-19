@@ -36,6 +36,9 @@ type PinStepProps = {
     onSkip: () => void;
     onStepChange?: (step: 'enter' | 'confirm' | 'saving' | 'success') => void;
     saveErrorMessage?: (error: unknown) => string | undefined;
+    allowSkip?: boolean;
+    beforeInput?: React.ReactNode;
+    inputDisabled?: boolean;
 };
 
 const mocks = vi.hoisted(() => ({
@@ -64,6 +67,9 @@ const mocks = vi.hoisted(() => ({
     resealEscrowContact: vi.fn(),
     rememberConfirmedContact: vi.fn(),
     confirmEscrowPin: vi.fn(),
+    pendingContact: undefined as
+        { expectedEmail?: string; customToken: string; primaryUid: string } | undefined,
+    logout: vi.fn(),
 }));
 
 type AlertOptions = {
@@ -115,7 +121,11 @@ vi.mock('../../providers/AuthCoordinatorProvider', () => ({
         rememberConfirmedContact: mocks.rememberConfirmedContact,
         confirmEscrowPin: mocks.confirmEscrowPin,
         getConfirmedContact: () => mocks.confirmedContact,
+        getPendingAccountContact: () => mocks.pendingContact,
     }),
+}));
+vi.mock('../../hooks/useLogout', () => ({
+    default: () => ({ handleLogout: mocks.logout }),
 }));
 vi.mock('../recovery/recoveryPinPromptFlag', () => ({
     writeRecoveryPinPromptFlag: mocks.writeFlag,
@@ -127,6 +137,7 @@ vi.mock('../onboarding/v2/RecoveryPinStep', () => ({
             <div data-testid="pin-step">
                 <h2>{props.title}</h2>
                 <p>{props.body}</p>
+                {props.beforeInput}
             </div>
         );
     },
@@ -260,6 +271,7 @@ beforeEach(() => {
     mocks.sessionEmail = 'me@example.org';
     mocks.escrowEnrollment = 'enrolled';
     mocks.confirmedContact = 'me@example.org';
+    mocks.pendingContact = undefined;
     mocks.refetch.mockResolvedValue(undefined);
     mocks.start.mockResolvedValue({ success: true });
     mocks.verify.mockResolvedValue(VERIFY_RESULT);
@@ -297,7 +309,7 @@ describe('KeepAccountStep', () => {
         expect(JSON.stringify(mocks.track.mock.calls)).not.toContain('me@example.org');
     });
 
-    it('asks for a different email when another LearnCard account already uses it', async () => {
+    it('asks for a different email when another account already uses it', async () => {
         mocks.verify.mockRejectedValueOnce(
             Object.assign(new Error('x'), { data: { code: 'CONFLICT' } })
         );
@@ -332,6 +344,8 @@ describe('KeepAccountStep', () => {
         expect(
             screen.getByRole('heading', { name: m['classlinkKeepAccount.finishing']() })
         ).toBeTruthy();
+        // Still working: a spinner, not a check mark.
+        expect(screen.getByTestId('keep-account-busy-icon')).toBeTruthy();
         // The server's next answer is in, but no PIN screen until the session is back.
         mocks.continuity = PIN;
         rerender(<KeepAccountStep variant="sheet" source="dashboard" />);
@@ -347,9 +361,12 @@ describe('KeepAccountStep', () => {
         renderStep();
         await verifyEmail();
         expect(screen.getByTestId('keep-account-step').dataset.step).toBe('finishFailed');
+        // Says the change was made, and offers no "Not now": this login was signed out.
         expect(screen.getByTestId('keep-account-finish-failed').textContent).toBe(
-            m['classlinkPersonalEmail.error']()
+            m['classlinkKeepAccount.finishFailed']()
         );
+        expect(screen.queryByTestId('keep-account-not-now')).toBeNull();
+        expect(screen.getByTestId('keep-account-finish-sign-out')).toBeTruthy();
         expect(mocks.refetch).not.toHaveBeenCalled();
         expect(mocks.setEscrowPin).not.toHaveBeenCalled();
         expect(mocks.resealEscrowContact).not.toHaveBeenCalled();
@@ -407,7 +424,8 @@ describe('KeepAccountStep', () => {
         expect(
             screen.getByRole('heading', { name: m['recovery.pin.pinLocked.title']() })
         ).toBeTruthy();
-        expect(screen.getByText(m['recovery.pin.pinLocked.body']())).toBeTruthy();
+        // The banner's words: the PIN is for signing in on a new device.
+        expect(screen.getByText(m['classlinkKeepAccount.banner.pinLockedBody']())).toBeTruthy();
         expect(screen.getByTestId('keep-account-pin-reset').textContent).toBe(
             m['recovery.pin.pinLocked.action']()
         );
@@ -498,15 +516,20 @@ describe('KeepAccountStep', () => {
             expect(screen.getByTestId('keep-account-confirm-pin')).toBeTruthy();
             expect(mocks.pinStep).toBeUndefined();
 
+            let settle: () => void = () => undefined;
+            mocks.refetch.mockReturnValueOnce(new Promise<void>(resolve => (settle = resolve)));
             await enterPin('593827');
             expect(mocks.confirmEscrowPin).toHaveBeenCalledTimes(2);
             expect(mocks.track).toHaveBeenCalledWith('completed', {
                 source: 'dashboard',
                 step: 'confirmPin',
             });
-            expect(mocks.invalidate).toHaveBeenCalledWith({
+            expect(mocks.refetch).toHaveBeenCalledWith({
                 queryKey: ['classlinkAccountContinuity'],
             });
+            // Until the server's next answer is in, the filled boxes stay disabled.
+            expect((screen.getByLabelText('PIN digit 1') as HTMLInputElement).disabled).toBe(true);
+            await act(async () => settle());
         });
 
         it('choose a new PIN sets one with setEscrowPin, and the same PIN asks again', async () => {
@@ -514,13 +537,68 @@ describe('KeepAccountStep', () => {
             renderStep();
             fireEvent.click(screen.getByTestId('keep-account-confirm-new-instead'));
             expect(screen.getByTestId('keep-account-confirm-new-pin')).toBeTruthy();
-            expect(mocks.pinStep?.setPin).toBe(mocks.setEscrowPin);
+            // Names the address the new PIN's backup is sealed to.
+            expect(mocks.pinStep?.body).toBe(
+                m['classlinkKeepAccount.newPinBody']({ email: isolateLtr('me@example.org') })
+            );
+            // The new PIN runs the same gates as the confirm (T's session, confirmed address).
+            await act(async () => {
+                await mocks.pinStep?.setPin('111111');
+            });
+            expect(mocks.setEscrowPin).toHaveBeenCalledWith('111111', { primaryUid: 'uid-t' });
+            // The same PIN is refused with the reason, not the body again.
             expect(mocks.pinStep?.saveErrorMessage?.(named('SameEscrowPinError'))).toBe(
-                m['classlinkKeepAccount.samePinRejected']()
+                m['recovery.pin.samePin']()
             );
             expect(mocks.pinStep?.saveErrorMessage?.(new Error('down'))).toBeUndefined();
+            // "Skip for now" would only go back: the way back is its own action.
+            expect(mocks.pinStep?.allowSkip).toBe(false);
             act(() => mocks.pinStep?.onComplete());
             expect(mocks.writeFlag).toHaveBeenCalledWith('did:key:z6MkKeep', 'set');
+        });
+
+        it('choose a new PIN can go back to the current PIN, and hides "Not now" once typing', () => {
+            mocks.continuity = CONFIRM;
+            renderStep();
+            fireEvent.click(screen.getByTestId('keep-account-confirm-new-instead'));
+            expect(screen.getByTestId('keep-account-not-now')).toBeTruthy();
+            act(() => mocks.pinStep?.onStepChange?.('confirm'));
+            expect(screen.queryByTestId('keep-account-not-now')).toBeNull();
+            fireEvent.click(screen.getByTestId('keep-account-confirm-use-current'));
+            expect(screen.getByTestId('keep-account-confirm-pin')).toBeTruthy();
+            // A PIN that can no longer be confirmed has no way back.
+            cleanup();
+            mocks.continuity = { ...CONFIRM, pinChangeRequired: true };
+            renderStep();
+            expect(screen.getByTestId('keep-account-confirm-new-pin')).toBeTruthy();
+            expect(screen.queryByTestId('keep-account-confirm-use-current')).toBeNull();
+        });
+
+        it('choose a new PIN asks for the sign-in email first when this device never confirmed it', async () => {
+            mocks.continuity = { ...CONFIRM, pinChangeRequired: true };
+            mocks.confirmedContact = undefined;
+            renderStep();
+            // The address is not shown: the user types it.
+            expect(mocks.pinStep?.body).toBe(m['classlinkKeepAccount.samePinRejected']());
+            expect(screen.queryByText('me@example.org', { exact: false })).toBeNull();
+            const email = screen.getByTestId('keep-account-confirm-email');
+            expect(document.activeElement).toBe(email);
+            expect(mocks.pinStep?.inputDisabled).toBe(true);
+            fireEvent.change(email, { target: { value: 'Me@Example.org' } });
+            expect(mocks.pinStep?.inputDisabled).toBe(false);
+            await act(async () => {
+                await mocks.pinStep?.setPin('111111');
+            });
+            expect(mocks.setEscrowPin).toHaveBeenCalledWith('111111', {
+                primaryUid: 'uid-t',
+                retypedEmail: 'Me@Example.org',
+            });
+            // A wrong address is refused by the coordinator and said so.
+            expect(
+                mocks.pinStep?.saveErrorMessage?.(
+                    named('EscrowContactNotConfirmedError', { reason: 'unconfirmed' })
+                )
+            ).toBe(m['classlinkKeepAccount.confirmRetypeEmailMismatch']());
         });
 
         it('a PIN that can no longer be confirmed goes straight to a new PIN', async () => {
@@ -562,6 +640,7 @@ describe('KeepAccountStep', () => {
         it('on another login of the account, asks to sign in with the sign-in email instead', () => {
             mocks.continuity = CONFIRM;
             mocks.uid = 'uid-other';
+            mocks.confirmedContact = undefined;
             renderStep();
             expect(screen.getByTestId('keep-account-step').dataset.step).toBe('otherUid');
             expect(screen.getByTestId('keep-account-other-uid').textContent).toBe(
@@ -569,6 +648,35 @@ describe('KeepAccountStep', () => {
             );
             expect(screen.queryByTestId('keep-account-confirm-pin')).toBeNull();
             expect(mocks.confirmEscrowPin).not.toHaveBeenCalled();
+        });
+
+        it('names the full sign-in email on another login when this device typed it', () => {
+            mocks.continuity = CONFIRM;
+            mocks.uid = 'uid-other';
+            mocks.confirmedContact = 'me@example.org';
+            renderStep({ variant: 'inline' });
+            expect(screen.getByTestId('keep-account-other-uid').textContent).toBe(
+                m['classlinkKeepAccount.finishOnSignInEmail']({
+                    email: isolateLtr('me@example.org'),
+                })
+            );
+            // The row's title says what it finishes, not "Enter your PIN".
+            expect(screen.getByText(m['classlinkKeepAccount.finishRowTitle']())).toBeTruthy();
+            expect(screen.queryByText(m['classlinkKeepAccount.confirmPinTitle']())).toBeNull();
+        });
+
+        it('leaves the address out of the body while it must be typed, and waits for it', async () => {
+            mocks.continuity = CONFIRM;
+            mocks.confirmedContact = undefined;
+            renderStep();
+            expect(screen.getByText(m['classlinkKeepAccount.confirmPinBodyRetype']())).toBeTruthy();
+            expect(screen.queryByText('me@example.org', { exact: false })).toBeNull();
+            const email = screen.getByTestId('keep-account-confirm-email');
+            expect(document.activeElement).toBe(email);
+            // The PIN boxes wait for the email.
+            expect((screen.getByLabelText('PIN digit 1') as HTMLInputElement).disabled).toBe(true);
+            fireEvent.change(email, { target: { value: 'me@example.org' } });
+            expect((screen.getByLabelText('PIN digit 1') as HTMLInputElement).disabled).toBe(false);
         });
     });
 
@@ -586,6 +694,147 @@ describe('KeepAccountStep', () => {
         mocks.uid = 'uid-other';
         renderStep();
         expect(mocks.resealEscrowContact).toHaveBeenCalledTimes(1);
+    });
+
+    it('re-seals silently again when the sign-in email changes', () => {
+        mocks.continuity = { ...DONE, pinState: 'none', contactStale: true };
+        renderStep();
+        expect(mocks.resealEscrowContact).toHaveBeenCalledTimes(1);
+        cleanup();
+        mocks.sessionEmail = 'new@example.org';
+        mocks.confirmedContact = 'new@example.org';
+        renderStep();
+        expect(mocks.resealEscrowContact).toHaveBeenCalledTimes(2);
+    });
+
+    describe('no PIN, and this device never confirmed the sign-in email', () => {
+        // After a removal: the school email is back, but this device never typed it.
+        const STALE_NO_PIN = {
+            ...DONE,
+            pinState: 'none' as const,
+            pinRecoverable: false,
+            hasUserRecoveryMethod: true,
+            contactStale: true,
+        };
+
+        beforeEach(() => {
+            mocks.sessionEmail = 'student@school.edu';
+            mocks.confirmedContact = 'me@example.org';
+        });
+
+        it('asks to type the sign-in email instead of failing silently', async () => {
+            mocks.continuity = STALE_NO_PIN;
+            const { rerender } = renderStep();
+            expect(screen.getByTestId('keep-account-step').dataset.step).toBe('confirmEmail');
+            expect(mocks.resealEscrowContact).not.toHaveBeenCalled();
+            // The address is never shown: the user types it.
+            expect(screen.queryByText('student@school.edu', { exact: false })).toBeNull();
+            const input = screen.getByTestId('keep-account-confirm-email');
+            expect(document.activeElement).toBe(input);
+
+            mocks.resealEscrowContact.mockRejectedValueOnce(
+                named('EscrowContactNotConfirmedError', { reason: 'unconfirmed' })
+            );
+            fireEvent.change(input, { target: { value: 'me@example.org' } });
+            await act(async () => {
+                fireEvent.click(screen.getByTestId('keep-account-confirm-email-submit'));
+            });
+            expect(mocks.resealEscrowContact).toHaveBeenCalledWith({
+                primaryUid: 'uid-t',
+                retypedEmail: 'me@example.org',
+            });
+            expect(screen.getByRole('alert').textContent).toBe(
+                m['classlinkKeepAccount.confirmRetypeEmailMismatch']()
+            );
+
+            fireEvent.change(input, { target: { value: 'Student@School.edu' } });
+            await act(async () => {
+                fireEvent.click(screen.getByTestId('keep-account-confirm-email-submit'));
+            });
+            expect(mocks.resealEscrowContact).toHaveBeenLastCalledWith({
+                primaryUid: 'uid-t',
+                retypedEmail: 'Student@School.edu',
+            });
+            // Now confirmed on this device, but no second (silent) rotation follows.
+            mocks.confirmedContact = 'student@school.edu';
+            mocks.continuity = { ...STALE_NO_PIN };
+            rerender(<KeepAccountStep variant="sheet" source="dashboard" />);
+            expect(mocks.resealEscrowContact).toHaveBeenCalledTimes(2);
+            expect(mocks.track).toHaveBeenCalledWith('completed', {
+                source: 'dashboard',
+                step: 'confirmEmail',
+            });
+            expect(mocks.refetch).toHaveBeenCalledWith({
+                queryKey: ['classlinkAccountContinuity'],
+            });
+        });
+
+        it('after a removal in School Connect, the row asks for the restored address', async () => {
+            mocks.sessionEmail = 'me@example.org';
+            mocks.continuity = DONE;
+            const { rerender } = renderStep({ variant: 'inline' });
+            fireEvent.click(screen.getByTestId('keep-account-remove'));
+            mocks.sessionEmail = 'student@school.edu';
+            // lca-api's answer after a removal: the email step, with the backup still
+            // sealed to the removed address.
+            mocks.continuity = {
+                ...STALE_NO_PIN,
+                emailVerified: false,
+                emailPrimary: false,
+                maskedEmail: undefined,
+                canRemove: false,
+                nextStep: 'email',
+            };
+            await act(async () => {
+                lastAlert().buttons[1].handler?.();
+            });
+            rerender(<KeepAccountStep variant="inline" source="dashboard" />);
+            expect(screen.getByTestId('keep-account-step').dataset.step).toBe('confirmEmail');
+            expect(mocks.resealEscrowContact).not.toHaveBeenCalled();
+            fireEvent.click(screen.getByTestId('keep-account-confirm-email-open'));
+            fireEvent.change(screen.getByTestId('keep-account-confirm-email'), {
+                target: { value: 'student@school.edu' },
+            });
+            await act(async () => {
+                fireEvent.click(screen.getByTestId('keep-account-confirm-email-submit'));
+            });
+            expect(mocks.resealEscrowContact).toHaveBeenCalledWith({
+                primaryUid: 'uid-t',
+                retypedEmail: 'student@school.edu',
+            });
+        });
+
+        it('is not asked on another login of the account', () => {
+            mocks.continuity = STALE_NO_PIN;
+            mocks.uid = 'uid-other';
+            renderStep();
+            expect(screen.getByTestId('keep-account-step').dataset.step).toBe('done');
+        });
+    });
+
+    it('a sign-in email change this device has not applied yet can be retried after a remount', async () => {
+        mocks.pendingContact = {
+            expectedEmail: 'me@example.org',
+            customToken: 'token-t',
+            primaryUid: 'uid-t',
+        };
+        mocks.continuity = PIN;
+        const { onDismiss } = renderStep({ variant: 'onboarding', emailOnly: true });
+        // No PIN on a signed-out login: only Try again or Sign out.
+        expect(screen.getByTestId('keep-account-step').dataset.step).toBe('finishFailed');
+        expect(screen.queryByTestId('pin-step')).toBeNull();
+        expect(screen.queryByTestId('keep-account-not-now')).toBeNull();
+        fireEvent.click(screen.getByTestId('keep-account-finish-sign-out'));
+        expect(mocks.logout).toHaveBeenCalledTimes(1);
+        expect(onDismiss).not.toHaveBeenCalled();
+        await act(async () => {
+            fireEvent.click(screen.getByTestId('keep-account-finish-retry'));
+        });
+        expect(mocks.refreshAccountContact).toHaveBeenCalledWith({
+            expectedEmail: 'me@example.org',
+            customToken: 'token-t',
+            primaryUid: 'uid-t',
+        });
     });
 
     it('is done only when the server says so, with nothing to undo on the success screen', () => {
@@ -606,7 +855,7 @@ describe('KeepAccountStep', () => {
         expect(screen.queryByTestId('keep-account-remove')).toBeNull();
     });
 
-    it('describes the passkey or phrase path when done without a PIN', () => {
+    it('names the recovery method when done without a PIN', () => {
         mocks.continuity = DONE_METHOD;
         renderStep();
         expect(
@@ -933,11 +1182,13 @@ describe('KeepAccountStep', () => {
             mocks.continuity = { ...DONE, hasSchoolEmail: false, canRemove: false };
             renderStep({ variant: 'inline' });
             expect(screen.queryByTestId('keep-account-remove')).toBeNull();
+            // The pill already says it can only be changed: no sentence repeating it.
+            expect(screen.getByText(MASKED)).toBeTruthy();
             expect(
-                screen.getByText(
-                    `${MASKED} · ${m['classlinkKeepAccount.cannotRemovePlaceholder']()}`
-                )
-            ).toBeTruthy();
+                screen.queryByText(m['classlinkKeepAccount.cannotRemovePlaceholder'](), {
+                    exact: false,
+                })
+            ).toBeNull();
             fireEvent.click(screen.getByTestId('keep-account-change'));
             expect(screen.getByTestId('classlink-email-input')).toBeTruthy();
         });
@@ -962,10 +1213,34 @@ describe('KeepAccountStep', () => {
         it('opens the PIN confirm in place', () => {
             mocks.continuity = CONFIRM;
             renderStep({ variant: 'inline' });
+            // Says what it finishes once; "Enter PIN" is the action.
+            expect(screen.getByText(m['classlinkKeepAccount.finishRowTitle']())).toBeTruthy();
+            expect(
+                screen.queryByText(m['classlinkKeepAccount.banner.confirmPinBody']())
+            ).toBeNull();
             expect(screen.queryByTestId('keep-account-confirm-pin')).toBeNull();
             fireEvent.click(screen.getByTestId('keep-account-confirm'));
             expect(screen.getByTestId('keep-account-confirm-pin')).toBeTruthy();
             expect(mocks.openPinSetup).not.toHaveBeenCalled();
+        });
+
+        it('confirms Saved in place after the PIN confirm', async () => {
+            vi.useFakeTimers({ shouldAdvanceTime: false });
+            mocks.continuity = CONFIRM;
+            const { rerender } = renderStep({ variant: 'inline' });
+            fireEvent.click(screen.getByTestId('keep-account-confirm'));
+            await enterPin('593827');
+            expect(screen.getByTestId('keep-account-step').dataset.step).toBe('saved');
+            expect(screen.getByTestId('keep-account-saved').textContent).toBe(
+                m['classlinkKeepAccount.saved']()
+            );
+            mocks.continuity = DONE;
+            act(() => {
+                vi.advanceTimersByTime(KEEP_ACCOUNT_SAVED_MS);
+            });
+            rerender(<KeepAccountStep variant="inline" source="dashboard" />);
+            expect(screen.getByTestId('keep-account-step').dataset.step).toBe('done');
+            vi.useRealTimers();
         });
 
         it.each([

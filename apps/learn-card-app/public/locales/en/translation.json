@@ -24,7 +24,7 @@
         "notNow": "Not now",
         "notAllowed": "You can't add a personal email right now.",
         "emailRejected": "Use a personal email you can get mail at, not your school email.",
-        "sharedEmail": "That email is already used by another LearnCard account. Try a different one.",
+        "sharedEmail": "That email is already used by another account. Try a different one.",
         "methodTitle": "One more step",
         "methodBody": "Add a passkey so you can sign in on a new device.",
         "addPasskey": "Add a passkey",
@@ -33,7 +33,7 @@
         "doneBody": "Sign in with {{email}} anytime. On a new device, you'll also enter your PIN. Other devices may ask you to sign in again.",
         "remove": "Remove",
         "removeConfirm": "Stop signing in with {{email}}? You'll sign in with your school login instead, and other devices may ask you to sign in again.",
-        "removeAction": "Remove",
+        "removeAction": "Stop using",
         "removing": "Removing…",
         "sectionTitle": "Your account",
         "banner": {
@@ -45,7 +45,8 @@
             "pinAction": "Create PIN",
             "pinLockedBody": "Your PIN is locked. Set a new one so you can sign in on a new device.",
             "confirmPinBody": "Enter your PIN to finish setting up your sign-in email.",
-            "confirmPinAction": "Enter PIN"
+            "confirmPinAction": "Enter PIN",
+            "confirmEmailBody": "Confirm your sign-in email to finish setting it up."
         },
         "reason": {
             "disabled": "Adding a personal email isn't available yet.",
@@ -58,7 +59,7 @@
         },
         "pinTitle": "Create a PIN",
         "pinBody": "You'll enter this PIN when you sign in on a new device.",
-        "doneBodyMethod": "Sign in with {{email}} anytime. On a new device, you'll also use your passkey or recovery phrase. Other devices may ask you to sign in again.",
+        "doneBodyMethod": "Sign in with {{email}} anytime. On a new device, you'll also use your recovery method. Other devices may ask you to sign in again.",
         "done": "Done",
         "celebrateBody": "You can now sign in with your personal email.",
         "titleTranscript": "Keep your transcript after you graduate",
@@ -83,7 +84,16 @@
         "finishOnSignInEmail": "To finish, sign in with {{email}} on this device.",
         "rowSchoolAlsoWorks": "School email also works",
         "finishing": "Finishing…",
-        "cannotRemovePlaceholder": "This is how you sign in. You can switch to a different email."
+        "cannotRemovePlaceholder": "This is how you sign in. You can switch to a different email.",
+        "finishRowTitle": "Finish your sign-in email",
+        "confirmPinBodyRetype": "Enter your PIN to finish.",
+        "newPinBody": "Choose a new PIN to finish. If you forget it, we'll email {{email}}.",
+        "useCurrentPin": "Use my current PIN",
+        "finishFailed": "Your sign-in email was changed, but we couldn't finish signing you in on this device. Try again.",
+        "signOut": "Sign out",
+        "confirmEmailTitle": "Confirm your sign-in email",
+        "confirmEmailBody": "Type the email you sign in with to finish setting it up.",
+        "confirmEmailAction": "Confirm"
     },
     "transcriptOptIn": {
         "title": "Get your {{state}} transcript",
@@ -2753,7 +2763,7 @@
             "lostSchoolLogin": "I lost access to my school email or login",
             "title": "Restore Your Account",
             "emailDescription": "Enter the personal recovery email you verified earlier.",
-            "emailDescriptionSchool": "Enter the recovery email you added. If you added a personal email to sign in with, sign in with it instead.",
+            "emailDescriptionSchool": "Enter the recovery email you added.",
             "recoveryEmailLabel": "Recovery Email",
             "recoveryEmailPlaceholder": "you@example.com",
             "sendCode": "Send Recovery Code",

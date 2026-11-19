@@ -18,8 +18,10 @@ import {
 } from '@analytics';
 import * as m from '../../paraglide/messages.js';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
+import useLogout from '../../hooks/useLogout';
 import { RecoveryPinStep, type RecoveryPinStepState } from '../onboarding/v2/RecoveryPinStep';
 import { writeRecoveryPinPromptFlag } from '../recovery/recoveryPinPromptFlag';
+import { ConfirmEmailForm } from './ConfirmEmailForm';
 import { ConfirmPinForm } from './ConfirmPinForm';
 import { PersonalEmailForm, isolateLtr } from './PersonalEmailForm';
 import {
@@ -108,7 +110,15 @@ const getRecommendedMethod = (): 'passkey' | 'phrase' =>
     !Capacitor.isNativePlatform() && isWebAuthnSupported() ? 'passkey' : 'phrase';
 
 type KeepAccountView =
-    'email' | 'pin' | 'confirmPin' | 'otherUid' | 'method' | 'done' | 'blocked' | 'hidden';
+    | 'email'
+    | 'pin'
+    | 'confirmPin'
+    | 'confirmEmail'
+    | 'otherUid'
+    | 'method'
+    | 'done'
+    | 'blocked'
+    | 'hidden';
 
 /** Which screen the server state puts this session on (see `resolveKeepAccountStep`). */
 const getView = (
@@ -123,8 +133,9 @@ const getView = (
 };
 
 /**
- * Accounts (DIDs) whose silent no-PIN re-seal was already tried in this app session: it
- * runs at most once per session, so a failing re-seal never retries on every render.
+ * Silent no-PIN re-seals already tried in this app session, per account (DID) and sign-in
+ * email: each runs at most once, so a failing re-seal never retries on every render, and
+ * a later change of the sign-in email gets its own try.
  */
 const silentResealTried = new Set<string>();
 
@@ -142,8 +153,8 @@ const StoredNote: React.FC = () => (
     </p>
 );
 
-type IconKind = 'mail' | 'check' | 'lock' | 'shield' | 'info';
-const ICONS: Record<IconKind, typeof Mail> = {
+type IconKind = 'mail' | 'check' | 'lock' | 'shield' | 'info' | 'busy';
+const ICONS: Record<Exclude<IconKind, 'busy'>, typeof Mail> = {
     mail: Mail,
     check: CheckCircle2,
     lock: Lock,
@@ -153,8 +164,26 @@ const ICONS: Record<IconKind, typeof Mail> = {
 
 /** The round icon above a title, at the onboarding PIN step's size or the sheet's. */
 const StepIcon: React.FC<{ kind: IconKind; large: boolean }> = ({ kind, large }) => {
+    const neutral = kind === 'info' || kind === 'busy';
+    if (kind === 'busy') {
+        // Work in progress: a spinner, never a check before the work is done.
+        return (
+            <div
+                data-testid="keep-account-busy-icon"
+                className={`mx-auto rounded-full flex items-center justify-center shadow-xs border bg-grayscale-100 border-grayscale-200 ${
+                    large ? 'w-16 h-16 mb-6' : 'w-12 h-12 mb-4'
+                }`}
+            >
+                <span
+                    aria-hidden="true"
+                    className={`border-2 border-grayscale-200 border-t-grayscale-600 rounded-full animate-spin ${
+                        large ? 'w-8 h-8' : 'w-6 h-6'
+                    }`}
+                />
+            </div>
+        );
+    }
     const Icon = ICONS[kind];
-    const neutral = kind === 'info';
     return (
         <div
             className={`mx-auto rounded-full flex items-center justify-center shadow-xs border ${
@@ -267,7 +296,7 @@ const StepShell: React.FC<ShellProps> = ({
 
 /** A compact row of School Connect's "Your account" card, like its privacy rows. */
 const Row: React.FC<{
-    icon: IconKind;
+    icon: Exclude<IconKind, 'busy'>;
     title: string;
     titleRef?: React.RefObject<HTMLElement>;
     subtitle?: React.ReactNode;
@@ -355,6 +384,24 @@ const RemoveFailed: React.FC<{ reason: 'error' | 'placeholder' }> = ({ reason })
     </div>
 );
 
+/**
+ * "Sign out" on the screen where signing this device back in failed: its own component, so
+ * the app's logout (and what it needs) only loads there.
+ */
+const FinishSignOutButton: React.FC = () => {
+    const { handleLogout } = useLogout();
+    return (
+        <button
+            type="button"
+            data-testid="keep-account-finish-sign-out"
+            className={QUIET_BUTTON_CLASS}
+            onClick={() => void handleLogout()}
+        >
+            {m['classlinkKeepAccount.signOut']()}
+        </button>
+    );
+};
+
 /** What the step does right after lca-api changed the sign-in email (verify or remove). */
 type FinishParams = {
     kind: 'verify' | 'remove';
@@ -400,6 +447,8 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
         refreshAccountContact,
         resealEscrowContact,
         rememberConfirmedContact,
+        getConfirmedContact,
+        getPendingAccountContact,
     } = useAppAuth();
     const sessionContext = useKeepAccountSessionContext();
     const sessionUid = sessionContext.sessionUid;
@@ -421,9 +470,30 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
     // only until the server's next answer is in (sheet).
     const [saved, setSaved] = useState<'no' | 'showing' | 'shown'>('no');
     const [savedEmail, setSavedEmail] = useState('');
+    // A sign-in email change this device has not applied yet (its token is kept by the
+    // coordinator, so a remount, a reopened sheet or another surface can still retry it).
+    const [pendingFinish] = useState<FinishParams | undefined>(() => {
+        const pending = getPendingAccountContact?.();
+        return pending
+            ? {
+                  kind: pending.expectedEmail ? 'verify' : 'remove',
+                  email: pending.expectedEmail,
+                  customToken: pending.customToken,
+                  primaryUid: pending.primaryUid,
+              }
+            : undefined;
+    });
     // Signing this device back in after the sign-in email changed.
-    const [finish, setFinish] = useState<'idle' | 'running' | 'failed'>('idle');
-    const finishParamsRef = useRef<FinishParams>();
+    const [finish, setFinish] = useState<'idle' | 'running' | 'failed'>(
+        pendingFinish ? 'failed' : 'idle'
+    );
+    const finishParamsRef = useRef<FinishParams | undefined>(pendingFinish);
+    // The PIN confirm asks the user to type the sign-in email (so the body must not show it).
+    const [confirmRetype, setConfirmRetype] = useState(false);
+    // "Choose a new PIN" on the confirm: its own step ("Not now" only before typing).
+    const [confirmPinStep, setConfirmPinStep] = useState<RecoveryPinStepState>('enter');
+    // Inline: a brief "Saved" after the PIN confirm (or the email re-type) re-sealed.
+    const [resealSaved, setResealSaved] = useState(false);
     // The embedded PIN step's own step: "Not now" shows only before the PIN is typed.
     const [pinStep, setPinStep] = useState<RecoveryPinStepState>('enter');
     const headingRef = useRef<HTMLElement>(null);
@@ -436,6 +506,7 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
     const pastEmail =
         view === 'pin' ||
         view === 'confirmPin' ||
+        view === 'confirmEmail' ||
         view === 'otherUid' ||
         view === 'method' ||
         view === 'done';
@@ -447,7 +518,8 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
         (saved === 'no' ? pastEmail : saved === 'shown' && !continuity.isFetching);
     const awaitingNext = saved === 'shown' && view === 'email' && continuity.isFetching;
     const savedView = emailOnly ? saved !== 'no' && !handOff : variant === 'sheet' && awaitingNext;
-    const inlineSaved = variant === 'inline' && (saved === 'showing' || awaitingNext);
+    const inlineSaved =
+        variant === 'inline' && (saved === 'showing' || awaitingNext || resealSaved);
     const screen =
         finish === 'running'
             ? 'finishing'
@@ -544,6 +616,12 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
         return () => clearTimeout(timer);
     }, [saved]);
 
+    useEffect(() => {
+        if (!resealSaved) return;
+        const timer = setTimeout(() => setResealSaved(false), KEEP_ACCOUNT_SAVED_MS);
+        return () => clearTimeout(timer);
+    }, [resealSaved]);
+
     // Once past the email, "Saved" is spent (a later removal starts over).
     useEffect(() => {
         if (!emailOnly && saved === 'shown' && view !== 'email') setSaved('no');
@@ -556,22 +634,30 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
     }, [handOff, data, onComplete]);
 
     // An account without a PIN whose backup still names the old contact: re-seal it to the
-    // sign-in email silently, from the login that holds it, once per app session.
+    // sign-in email silently, from the login that holds it, once per app session and
+    // sign-in email. Only when this device confirmed that address: otherwise the step asks
+    // the user to type it (`confirmEmail`) instead of failing silently.
+    const confirmedContact = did ? getConfirmedContact?.(did) : undefined;
+    const normalizedSessionEmail = sessionEmail?.trim().toLowerCase();
     const needsSilentReseal =
         finish === 'idle' &&
         !!data &&
         data.contactStale &&
         data.pinState === 'none' &&
         onPrimarySession &&
-        !!did;
+        !!did &&
+        !!normalizedSessionEmail &&
+        confirmedContact === normalizedSessionEmail;
+    const silentResealKey = `${did ?? ''}\u0000${normalizedSessionEmail ?? ''}`;
     useEffect(() => {
-        if (!needsSilentReseal || !did || !data?.primaryUid || silentResealTried.has(did)) return;
-        silentResealTried.add(did);
+        if (!needsSilentReseal || !data?.primaryUid || silentResealTried.has(silentResealKey))
+            return;
+        silentResealTried.add(silentResealKey);
         void resealEscrowContact({ primaryUid: data.primaryUid })
             .then(refresh)
             .catch(() => undefined);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [needsSilentReseal, did, data?.primaryUid]);
+    }, [needsSilentReseal, silentResealKey, data?.primaryUid]);
 
     // Move focus to each new screen's title, so keyboard and screen-reader users land on
     // it instead of the page. Not on the first screen (the host placed focus), and not on
@@ -582,6 +668,8 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
         screenRef.current = screen;
         if (previous === screen || previous === undefined || previous === 'hidden') return;
         if (screen === 'pin' && variant !== 'inline' && !pinLocked) return;
+        // The PIN confirm and the email re-type focus their own first field.
+        if ((screen === 'confirmPin' || screen === 'confirmEmail') && variant !== 'inline') return;
         headingRef.current?.focus();
     }, [screen, variant, pinLocked]);
 
@@ -679,9 +767,22 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
         if (how === 'newPin' && state.status === 'ready')
             writeRecoveryPinPromptFlag(state.did, 'set');
         track(AnalyticsEvents.KEEP_ACCOUNT_STEP_COMPLETED, { source, step: 'confirmPin' });
-        setConfirmExpanded(false);
-        setConfirmMode('confirm');
-        refresh();
+        // Inline, say so before the row folds away (the sheet moves on to "You're all set").
+        if (variant === 'inline') setResealSaved(true);
+        // The form stays disabled until the server's next answer is in.
+        refetchThen(() => {
+            setConfirmExpanded(false);
+            setConfirmMode('confirm');
+        });
+    };
+
+    const emailConfirmed = (): void => {
+        // Just re-sealed to this address: the silent re-seal (now unblocked, since the
+        // address is confirmed) must not rotate again before the server's answer is in.
+        silentResealTried.add(silentResealKey);
+        track(AnalyticsEvents.KEEP_ACCOUNT_STEP_COMPLETED, { source, step: 'confirmEmail' });
+        if (variant === 'inline') setResealSaved(true);
+        refetchThen(() => setConfirmExpanded(false));
     };
 
     // The PIN overlay: a new PIN for a locked one, or (inline, where there is no sheet to
@@ -708,7 +809,24 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
             autoFocus
             headingLevel={variant === 'inline' ? 'h3' : heading}
             onModeChange={setConfirmMode}
+            onRetypeChange={setConfirmRetype}
+            onNewPinStepChange={setConfirmPinStep}
             onDone={pinConfirmed}
+        />
+    );
+    // Names the address the backup will be sealed to, unless the user must type it.
+    const confirmBody = confirmRetype
+        ? m['classlinkKeepAccount.confirmPinBodyRetype']()
+        : m['classlinkKeepAccount.confirmPinBody']({ email: confirmEmail });
+
+    const confirmEmailForm = (
+        <ConfirmEmailForm
+            primaryUid={data.primaryUid ?? ''}
+            autoFocus
+            submitClassName={
+                variant === 'onboarding' ? ONBOARDING_PRIMARY_BUTTON_CLASS : PRIMARY_BUTTON_CLASS
+            }
+            onDone={emailConfirmed}
         />
     );
 
@@ -775,6 +893,8 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
         />
     );
 
+    const signOutButton = <FinishSignOutButton />;
+
     const retryButton = (className: string): React.ReactNode => (
         <button
             type="button"
@@ -796,9 +916,11 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
         getRecommendedMethod() === 'passkey'
             ? m['classlinkKeepAccount.methodBody']()
             : m['classlinkKeepAccount.methodBodyPhrase']();
+    // The full address when this device typed or proved it; else the server's masked one.
     const finishOnSignInEmail = m['classlinkKeepAccount.finishOnSignInEmail']({
-        email: maskedEmail,
+        email: confirmedContact ? isolateLtr(confirmedContact) : maskedEmail,
     });
+    const lockedBody = m['classlinkKeepAccount.banner.pinLockedBody']();
 
     let content: React.ReactNode;
     if (variant === 'inline') {
@@ -827,10 +949,10 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
                 </button>
             )
         );
+        // The "Use a different email" pill already says it can only be changed.
         const subtitleParts = [
             maskedEmail,
             ...(data.hasSchoolEmail ? [m['classlinkKeepAccount.rowSchoolAlsoWorks']()] : []),
-            ...(!data.canRemove ? [m['classlinkKeepAccount.cannotRemovePlaceholder']()] : []),
         ];
         // The sign-in address, and whether the school email still signs in too.
         const emailRow = (
@@ -880,7 +1002,7 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
                         >
                             {screen === 'finishing'
                                 ? m['classlinkKeepAccount.finishing']()
-                                : m['classlinkPersonalEmail.error']()}
+                                : m['classlinkKeepAccount.finishFailed']()}
                         </p>
                         {screen === 'finishFailed' && retryButton(ROW_ACTION_CLASS)}
                     </div>
@@ -893,7 +1015,7 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
                     <Row
                         icon="mail"
                         title={m['classlinkKeepAccount.rowLabel']()}
-                        subtitle={isolateLtr(savedEmail)}
+                        subtitle={resealSaved ? maskedEmail : isolateLtr(savedEmail)}
                     />
                     <div className="p-4 animate-fade-in-up">
                         <p
@@ -949,8 +1071,7 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
                     {changeForm}
                     <Row
                         icon="lock"
-                        title={m['classlinkKeepAccount.confirmPinTitle']()}
-                        subtitle={m['classlinkKeepAccount.banner.confirmPinBody']()}
+                        title={m['classlinkKeepAccount.finishRowTitle']()}
                         action={
                             !confirmExpanded && (
                                 <button
@@ -968,9 +1089,7 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
                         <div className="p-4 space-y-3">
                             {confirmMode === 'confirm' && (
                                 <p className="text-sm text-grayscale-600 text-start">
-                                    {m['classlinkKeepAccount.confirmPinBody']({
-                                        email: confirmEmail,
-                                    })}
+                                    {confirmBody}
                                 </p>
                             )}
                             {confirmForm}
@@ -989,6 +1108,45 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
                     {removeFailed}
                 </>
             );
+        } else if (view === 'confirmEmail') {
+            // After a removal there is no personal address left to list.
+            content = (
+                <>
+                    {storedEmail && emailRow}
+                    {storedEmail && changeForm}
+                    <Row
+                        icon="mail"
+                        title={m['classlinkKeepAccount.finishRowTitle']()}
+                        titleRef={storedEmail ? undefined : headingRef}
+                        subtitle={m['classlinkKeepAccount.confirmEmailBody']()}
+                        action={
+                            !confirmExpanded && (
+                                <button
+                                    type="button"
+                                    data-testid="keep-account-confirm-email-open"
+                                    className={ROW_ACTION_CLASS}
+                                    onClick={() => setConfirmExpanded(true)}
+                                >
+                                    {m['classlinkKeepAccount.confirmEmailAction']()}
+                                </button>
+                            )
+                        }
+                    />
+                    {confirmExpanded && (
+                        <div className="p-4 space-y-3">
+                            {confirmEmailForm}
+                            <button
+                                type="button"
+                                className={QUIET_BUTTON_CLASS}
+                                onClick={() => setConfirmExpanded(false)}
+                            >
+                                {m['common.cancel']()}
+                            </button>
+                        </div>
+                    )}
+                    {removeFailed}
+                </>
+            );
         } else if (view === 'otherUid') {
             content = (
                 <>
@@ -996,7 +1154,7 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
                     {changeForm}
                     <Row
                         icon="info"
-                        title={m['classlinkKeepAccount.confirmPinTitle']()}
+                        title={m['classlinkKeepAccount.finishRowTitle']()}
                         subtitle={
                             <span data-testid="keep-account-other-uid">{finishOnSignInEmail}</span>
                         }
@@ -1008,9 +1166,7 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
             const pinTitle = pinLocked
                 ? m['recovery.pin.pinLocked.title']()
                 : m['classlinkKeepAccount.pinTitle']();
-            const pinBody = pinLocked
-                ? m['recovery.pin.pinLocked.body']()
-                : m['classlinkKeepAccount.pinBody']();
+            const pinBody = pinLocked ? lockedBody : m['classlinkKeepAccount.pinBody']();
             content = (
                 <>
                     {emailRow}
@@ -1089,7 +1245,7 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
                 variant={shellVariant}
                 heading={heading}
                 headingRef={headingRef}
-                icon="check"
+                icon="busy"
                 title={m['classlinkKeepAccount.finishing']()}
                 body={
                     <span role="status" data-testid="keep-account-finishing">
@@ -1108,13 +1264,15 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
                 title={stepTitle}
                 body={
                     <span role="alert" data-testid="keep-account-finish-failed">
-                        {m['classlinkPersonalEmail.error']()}
+                        {m['classlinkKeepAccount.finishFailed']()}
                     </span>
                 }
+                // No "Not now": this login was signed out by the change, so nothing else
+                // (a PIN, escrow) can work until it signs back in.
                 actions={
                     <>
                         {retryButton(PRIMARY_BUTTON_CLASS)}
-                        {notNow}
+                        {signOutButton}
                     </>
                 }
             />
@@ -1136,7 +1294,12 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
         // "Choose a new PIN" shows its own title; the confirm names the sealed address.
         content =
             confirmMode === 'new' ? (
-                <StepShell variant={shellVariant} heading={heading} actions={notNow || undefined}>
+                // One way out at a time: once the new PIN is typed, "Start over" is the only one.
+                <StepShell
+                    variant={shellVariant}
+                    heading={heading}
+                    actions={(confirmPinStep === 'enter' && notNow) || undefined}
+                >
                     {confirmForm}
                 </StepShell>
             ) : (
@@ -1146,12 +1309,26 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
                     headingRef={headingRef}
                     icon="lock"
                     title={m['classlinkKeepAccount.confirmPinTitle']()}
-                    body={m['classlinkKeepAccount.confirmPinBody']({ email: confirmEmail })}
+                    body={confirmBody}
                     actions={notNow || undefined}
                 >
                     {confirmForm}
                 </StepShell>
             );
+    } else if (view === 'confirmEmail') {
+        content = (
+            <StepShell
+                variant={shellVariant}
+                heading={heading}
+                headingRef={headingRef}
+                icon="mail"
+                title={m['classlinkKeepAccount.confirmEmailTitle']()}
+                body={m['classlinkKeepAccount.confirmEmailBody']()}
+                actions={notNow || undefined}
+            >
+                {confirmEmailForm}
+            </StepShell>
+        );
     } else if (view === 'otherUid') {
         content = (
             <StepShell
@@ -1206,7 +1383,7 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
                 headingRef={headingRef}
                 icon="lock"
                 title={m['recovery.pin.pinLocked.title']()}
-                body={m['recovery.pin.pinLocked.body']()}
+                body={lockedBody}
                 actions={
                     <>
                         <button

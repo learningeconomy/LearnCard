@@ -42,6 +42,15 @@ type RecoveryPinStepProps = {
      * counting it as a failed save.
      */
     saveErrorMessage?: (error: unknown) => string | undefined;
+    /**
+     * Offer "Skip for now" after repeated save failures (default). A host with its own
+     * way out (e.g. back to entering the current PIN) turns it off.
+     */
+    allowSkip?: boolean;
+    /** Shown above the first PIN entry (e.g. a field the save also needs). */
+    beforeInput?: React.ReactNode;
+    /** Keep the first PIN entry disabled (e.g. until `beforeInput` is filled in). */
+    inputDisabled?: boolean;
 };
 
 export type RecoveryPinStepState = 'enter' | 'confirm' | 'saving' | 'success';
@@ -66,6 +75,9 @@ export const RecoveryPinStep: React.FC<RecoveryPinStepProps> = ({
     autoFocus = false,
     onStepChange,
     saveErrorMessage,
+    allowSkip = true,
+    beforeInput,
+    inputDisabled = false,
 }) => {
     const Heading = headingLevel;
     const [step, setStep] = useState<StepState>('enter');
@@ -74,7 +86,7 @@ export const RecoveryPinStep: React.FC<RecoveryPinStepProps> = ({
     const [error, setError] = useState('');
     // Failed saves only; typing mistakes (trivial PIN, mismatch) never unlock the skip.
     const [saveErrors, setSaveErrors] = useState(0);
-    const canSkip = canSkipRequiredPin(saveErrors);
+    const canSkip = allowSkip && canSkipRequiredPin(saveErrors);
     // The PIN boxes unmount while saving and between steps; put focus back on the
     // first box whenever they return, so keyboard and screen-reader users are not
     // left on <body> after a failed save.
@@ -143,7 +155,7 @@ export const RecoveryPinStep: React.FC<RecoveryPinStepProps> = ({
                 setSaveErrors(failures);
                 // Once the skip is offered, say so in the (announced) error itself.
                 setError(
-                    canSkipRequiredPin(failures)
+                    allowSkip && canSkipRequiredPin(failures)
                         ? m['onboarding.v2.pin.saveFailedSkip']()
                         : m['recovery.pin.saveFailed']()
                 );
@@ -197,6 +209,7 @@ export const RecoveryPinStep: React.FC<RecoveryPinStepProps> = ({
                 </p>
             </div>
 
+            {step === 'enter' && beforeInput}
             <div
                 ref={inputAreaRef}
                 className={`w-full flex flex-col items-center px-2 md:px-4 ${
@@ -207,7 +220,7 @@ export const RecoveryPinStep: React.FC<RecoveryPinStepProps> = ({
                     <RecoveryPinInput
                         value={pin}
                         onChange={handlePinChange}
-                        disabled={false}
+                        disabled={inputDisabled}
                         error={!!error}
                     />
                 )}

@@ -24,7 +24,7 @@
         "notNow": "Ahora no",
         "notAllowed": "Ahora mismo no puedes añadir un correo personal.",
         "emailRejected": "Usa un correo personal en el que recibas mensajes, no el de tu escuela.",
-        "sharedEmail": "Otra cuenta de LearnCard ya usa ese correo. Prueba con otro.",
+        "sharedEmail": "Otra cuenta ya usa ese correo. Prueba con otro.",
         "methodTitle": "Un paso más",
         "methodBody": "Añade una llave de acceso para iniciar sesión en un dispositivo nuevo.",
         "addPasskey": "Añade una llave de acceso",
@@ -33,7 +33,7 @@
         "doneBody": "Inicia sesión con {{email}} cuando quieras. En un dispositivo nuevo, también introducirás tu PIN. Es posible que otros dispositivos te pidan iniciar sesión de nuevo.",
         "remove": "Eliminar",
         "removeConfirm": "¿Dejar de iniciar sesión con {{email}}? Iniciarás sesión con tu inicio de sesión escolar, y es posible que otros dispositivos te pidan iniciar sesión de nuevo.",
-        "removeAction": "Eliminar",
+        "removeAction": "Dejar de usarlo",
         "removing": "Eliminando…",
         "sectionTitle": "Tu cuenta",
         "banner": {
@@ -45,7 +45,8 @@
             "pinAction": "Crear PIN",
             "pinLockedBody": "Tu PIN está bloqueado. Crea uno nuevo para iniciar sesión en un dispositivo nuevo.",
             "confirmPinBody": "Introduce tu PIN para terminar de configurar tu correo de inicio de sesión.",
-            "confirmPinAction": "Introducir PIN"
+            "confirmPinAction": "Introducir PIN",
+            "confirmEmailBody": "Confirma tu correo de inicio de sesión para terminar de configurarlo."
         },
         "reason": {
             "disabled": "Todavía no se puede añadir un correo personal.",
@@ -58,7 +59,7 @@
         },
         "pinTitle": "Crea un PIN",
         "pinBody": "Introducirás este PIN cuando inicies sesión en un dispositivo nuevo.",
-        "doneBodyMethod": "Inicia sesión con {{email}} cuando quieras. En un dispositivo nuevo, también usarás tu llave de acceso o tu frase de recuperación. Es posible que otros dispositivos te pidan iniciar sesión de nuevo.",
+        "doneBodyMethod": "Inicia sesión con {{email}} cuando quieras. En un dispositivo nuevo, también usarás tu método de recuperación. Es posible que otros dispositivos te pidan iniciar sesión de nuevo.",
         "done": "Listo",
         "celebrateBody": "Ahora puedes iniciar sesión con tu correo personal.",
         "titleTranscript": "Conserva tu expediente académico después de graduarte",
@@ -83,7 +84,16 @@
         "finishOnSignInEmail": "Para terminar, inicia sesión con {{email}} en este dispositivo.",
         "rowSchoolAlsoWorks": "El correo escolar también funciona",
         "finishing": "Terminando…",
-        "cannotRemovePlaceholder": "Así es como inicias sesión. Puedes cambiar a otro correo."
+        "cannotRemovePlaceholder": "Así es como inicias sesión. Puedes cambiar a otro correo.",
+        "finishRowTitle": "Termina de configurar tu correo de inicio de sesión",
+        "confirmPinBodyRetype": "Introduce tu PIN para terminar.",
+        "newPinBody": "Elige un PIN nuevo para terminar. Si lo olvidas, te escribiremos a {{email}}.",
+        "useCurrentPin": "Usar mi PIN actual",
+        "finishFailed": "Se cambió tu correo de inicio de sesión, pero no pudimos terminar de iniciar sesión en este dispositivo. Inténtalo de nuevo.",
+        "signOut": "Cerrar sesión",
+        "confirmEmailTitle": "Confirma tu correo de inicio de sesión",
+        "confirmEmailBody": "Escribe el correo con el que inicias sesión para terminar de configurarlo.",
+        "confirmEmailAction": "Confirmar"
     },
     "transcriptOptIn": {
         "title": "Obtén tu expediente académico de {{state}}",
@@ -2731,7 +2741,7 @@
             "lostSchoolLogin": "Perdí el acceso a mi correo escolar o inicio de sesión",
             "title": "Restaura tu cuenta",
             "emailDescription": "Ingresa el correo personal de recuperación que verificaste anteriormente.",
-            "emailDescriptionSchool": "Introduce el correo de recuperación que agregaste. Si agregaste un correo personal para iniciar sesión, inicia sesión con él.",
+            "emailDescriptionSchool": "Introduce el correo de recuperación que agregaste.",
             "recoveryEmailLabel": "Correo de recuperación",
             "recoveryEmailPlaceholder": "tu@ejemplo.com",
             "sendCode": "Enviar código de recuperación",

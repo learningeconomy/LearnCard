@@ -7,10 +7,11 @@ import * as m from '../../paraglide/messages.js';
 export type ClassLinkKeepAccountBannerProps = {
     /**
      * What is left: a personal email; then a PIN (escrow accounts), the current PIN once so
-     * the backup follows the new sign-in email (`confirmPin`), or a passkey or recovery
-     * phrase (`method`: accounts that cannot have escrow here).
+     * the backup follows the new sign-in email (`confirmPin`; `confirmEmail` without a PIN:
+     * type the sign-in email), or a passkey or recovery phrase (`method`: accounts that
+     * cannot have escrow here).
      */
-    step: 'email' | 'pin' | 'confirmPin' | 'method';
+    step: 'email' | 'pin' | 'confirmPin' | 'confirmEmail' | 'method';
     /** `pin` only: the PIN is locked, so the ask is for a new one. */
     pinLocked?: boolean;
     /** `method` only: a recovery phrase, where this device cannot make a passkey. */
@@ -39,7 +40,10 @@ export const ClassLinkKeepAccountBanner: React.FC<ClassLinkKeepAccountBannerProp
 }) => {
     let body: string;
     let action: string;
-    if (step === 'confirmPin') {
+    if (step === 'confirmEmail') {
+        body = m['classlinkKeepAccount.banner.confirmEmailBody']();
+        action = m['classlinkKeepAccount.confirmEmailAction']();
+    } else if (step === 'confirmPin') {
         body = m['classlinkKeepAccount.banner.confirmPinBody']();
         action = m['classlinkKeepAccount.banner.confirmPinAction']();
     } else if (step === 'pin') {

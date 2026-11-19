@@ -853,7 +853,8 @@ describe('ClassLink transcript onboarding step', () => {
 
         it('"Not now" on a placeholder account goes straight to celebrate', async () => {
             mocks.transcriptArrived = true;
-            mocks.showPin = true;
+            // Without the email a placeholder account is never enrolled: no PIN step.
+            mocks.showPin = false;
             mocks.keepAccountNextStep = 'email';
             mocks.keepAccountHasSchoolEmail = false;
             await finishTranscript();
@@ -861,6 +862,18 @@ describe('ClassLink transcript onboarding step', () => {
             fireEvent.click(await screen.findByText('Not now keep account'));
             await screen.findByText(m['onboarding.transcript.onItsWay']());
             expect(screen.queryByTestId('onboarding-pin-step')).not.toBeInTheDocument();
+        });
+
+        it('leaving the step with the answer unknown still asks an enrolled account for its PIN', async () => {
+            mocks.transcriptArrived = true;
+            mocks.showPin = true;
+            mocks.keepAccountNextStep = 'email';
+            // e.g. the step left on its own: the check failed, or the switch turned off.
+            mocks.keepAccountHasSchoolEmail = undefined as unknown as boolean;
+            await finishTranscript();
+
+            fireEvent.click(await screen.findByText('Not now keep account'));
+            await screen.findByTestId('onboarding-pin-step');
         });
 
         it('waits while the answer is pending, and shows the step once it arrives in time', async () => {

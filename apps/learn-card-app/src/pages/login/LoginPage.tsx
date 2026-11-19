@@ -48,6 +48,7 @@ import { getConfigCapabilities } from 'learn-card-base/config/authConfig';
 
 import { IonContent, IonGrid, IonPage, IonRow } from '@ionic/react';
 import EmailForm from './forms/EmailForm';
+import { consumePersonalEmailSignIn, subscribePersonalEmailSignIn } from './personalEmailSignIn';
 import PhoneForm from './forms/PhoneForm';
 import LoginFooter from './LoginFooter';
 import { LanguagePickerCompact } from '../../components/sidemenu/LanguagePicker';
@@ -358,16 +359,31 @@ export const LoginContent: React.FC = () => {
         return outcome === 'started';
     };
 
-    // A ClassLink user who left school signs in with the personal email they added.
+    // A ClassLink user who left school signs in with the personal email they added. Only
+    // next to the ClassLink button: not while the email or phone form asks for its code.
     const showPersonalEmailHint =
         features.classlinkSso === true &&
         coordinatorState.status === 'idle' &&
+        showSocialLogins &&
         (adapter.capabilities.emailOtp || adapter.capabilities.emailLink);
     const usePersonalEmail = (): void => {
         setShowSocialLogins(true);
         setActiveLoginType(LoginTypesEnum.email);
         setFocusEmailField(true);
     };
+    // The lost-login modal's "Sign in with Email" does the same (`requestPersonalEmailSignIn`).
+    const canUseEmailForm = adapter.capabilities.emailOtp || adapter.capabilities.emailLink;
+    useEffect(() => {
+        if (!canUseEmailForm) return;
+        const apply = (): void => {
+            if (!consumePersonalEmailSignIn()) return;
+            setShowSocialLogins(true);
+            setActiveLoginType(LoginTypesEnum.email);
+            setFocusEmailField(true);
+        };
+        apply();
+        return subscribePersonalEmailSignIn(apply);
+    }, [canUseEmailForm]);
     useEffect(() => {
         if (!focusEmailField) return;
         setFocusEmailField(false);

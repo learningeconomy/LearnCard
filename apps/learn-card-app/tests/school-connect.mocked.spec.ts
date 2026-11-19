@@ -133,7 +133,7 @@ test.describe('School Connect @mocked', () => {
         // A PIN account: the backup still names the school email, so the PIN confirm row.
         await expect(section).toHaveAttribute('data-step', 'confirmPin');
         await expect(
-            section.getByRole('heading', { level: 3, name: 'Sign-in email' })
+            section.getByRole('heading', { level: 3, name: 'Sign-in email', exact: true })
         ).toBeFocused();
     });
 
@@ -144,7 +144,7 @@ test.describe('School Connect @mocked', () => {
         await page.goto(`${HARNESS}?state=connected&keepAccount=real&step=confirmPin`);
         const section = page.getByTestId('keep-account-step');
         await expect(
-            section.getByRole('heading', { level: 3, name: 'Enter your PIN' })
+            section.getByRole('heading', { level: 3, name: 'Finish your sign-in email' })
         ).toBeVisible();
         await section.getByTestId('keep-account-confirm').click();
         await page.getByLabel('PIN digit 1').click();

@@ -32,27 +32,43 @@ const SNOOZE_COUNT_KEY_PREFIX = 'classlink_keep_account_snooze_count_';
 const hashDid = (did: string): number =>
     Array.from(did).reduce((hash, char) => (Math.imul(31, hash) + char.charCodeAt(0)) | 0, 0);
 
+/**
+ * Which snooze an ask uses: `confirm` (the PIN confirm and the email re-type that finish a
+ * sign-in email change) has its own, so snoozes spent on the other asks never hide it.
+ */
+export type KeepAccountSnoozeKind = 'ask' | 'confirm';
+
+const snoozeSuffix = (kind: KeepAccountSnoozeKind): string =>
+    kind === 'confirm' ? '_confirm' : '';
+
 /** Per-account key for when the snooze ends. */
-export const getKeepAccountSnoozeKey = (did: string): string =>
-    `${SNOOZE_KEY_PREFIX}${hashDid(did)}`;
+export const getKeepAccountSnoozeKey = (did: string, kind: KeepAccountSnoozeKind = 'ask'): string =>
+    `${SNOOZE_KEY_PREFIX}${hashDid(did)}${snoozeSuffix(kind)}`;
 
 /** Per-account key for how many times the banner was snoozed. */
-export const getKeepAccountSnoozeCountKey = (did: string): string =>
-    `${SNOOZE_COUNT_KEY_PREFIX}${hashDid(did)}`;
+export const getKeepAccountSnoozeCountKey = (
+    did: string,
+    kind: KeepAccountSnoozeKind = 'ask'
+): string => `${SNOOZE_COUNT_KEY_PREFIX}${hashDid(did)}${snoozeSuffix(kind)}`;
 
 type SnoozeState = { until: number; count: number };
+type SnoozeStates = Record<KeepAccountSnoozeKind, SnoozeState>;
 
-const readSnooze = (did: string | undefined): SnoozeState => {
-    if (!did) return { until: 0, count: 0 };
+const readOneSnooze = (did: string, kind: KeepAccountSnoozeKind): SnoozeState => {
     try {
         return {
-            until: Number(localStorage.getItem(getKeepAccountSnoozeKey(did))) || 0,
-            count: Number(localStorage.getItem(getKeepAccountSnoozeCountKey(did))) || 0,
+            until: Number(localStorage.getItem(getKeepAccountSnoozeKey(did, kind))) || 0,
+            count: Number(localStorage.getItem(getKeepAccountSnoozeCountKey(did, kind))) || 0,
         };
     } catch {
         return { until: 0, count: 0 };
     }
 };
+
+const readSnooze = (did: string | undefined): SnoozeStates =>
+    did
+        ? { ask: readOneSnooze(did, 'ask'), confirm: readOneSnooze(did, 'confirm') }
+        : { ask: { until: 0, count: 0 }, confirm: { until: 0, count: 0 } };
 
 /**
  * The dashboard's ClassLink "keep your account" banner. `banner` is set only while it
@@ -62,8 +78,8 @@ const readSnooze = (did: string | undefined): SnoozeState => {
  * Driven by the server (`getAccountContinuity`): it invites the user to add a personal
  * email to sign in with (`email`), then, once the email is in, to create a PIN (`pin`,
  * escrow accounts), to enter the current PIN once so the backup follows the new sign-in
- * email (`confirmPin`, only on the login that holds it; the recovery banner's snooze and
- * tier never hide it) or add a passkey / recovery phrase (`method`, accounts that cannot
+ * email (`confirmPin`, only on the login that holds it; `confirmEmail` without a PIN: type
+ * the sign-in email; the recovery banner's snooze and tier never hide these) or add a passkey / recovery phrase (`method`, accounts that cannot
  * have escrow here). The PIN and passkey asks open their overlay straight away; the
  * email and the PIN confirm open the step in a sheet. It never
  * takes the slot from the recovery banner's urgent prompt (activation pending, public
@@ -71,7 +87,8 @@ const readSnooze = (did: string | undefined): SnoozeState => {
  * tier), never shows in a session that already asked (onboarding, the transcript sheet),
  * and stops after two snoozes.
  *
- * Snoozing uses its own per-account key. Snoozing the PIN or passkey ask also snoozes the
+ * Snoozing uses its own per-account key; the confirm asks have their own count, so
+ * snoozes spent on the other asks never hide them. Snoozing the PIN or passkey ask also snoozes the
  * recovery banner, and a snoozed recovery banner hides those asks, so snoozing either one
  * never reveals the other asking for the same thing.
  */
@@ -138,13 +155,15 @@ export const useKeepAccountBanner = (): {
     // `done` and `otherUid` never reach here (`offer` is false); this narrows the type.
     if (sessionStep === 'done' || sessionStep === 'otherUid') return { pending: false };
     const step = sessionStep;
-    // The PIN confirm is this banner's own ask (the recovery banner never makes it): its
-    // slot, snooze and tier never hide it, only its own snooze does.
-    const confirming = step === 'confirmPin';
+    // The PIN confirm and the email re-type are this banner's own asks (the recovery banner
+    // never makes them): its slot, snooze and tier never hide them, only their own snooze.
+    const confirming = step === 'confirmPin' || step === 'confirmEmail';
+    const snoozeKind: KeepAccountSnoozeKind = confirming ? 'confirm' : 'ask';
+    const stepSnooze = snooze[snoozeKind];
     if (methodCountPending || keepAccountTitle.pending) return { pending: true };
     if (!confirming && escrowUnknown && !escrowWaitOver) return { pending: true };
     if (!confirming && pinFirstEligible && !recoverySnoozed) return { pending: false };
-    if (snooze.count >= KEEP_ACCOUNT_MAX_SNOOZES || snooze.until > Date.now()) {
+    if (stepSnooze.count >= KEEP_ACCOUNT_MAX_SNOOZES || stepSnooze.until > Date.now()) {
         return { pending: false };
     }
     // The recovery banner asks for the same PIN or passkey: one snooze quiets both.
@@ -176,9 +195,9 @@ export const useKeepAccountBanner = (): {
 
     // The banner already asked; its overlay opens straight away.
     const start = (): void => {
-        // The email and the PIN confirm are asked in the sheet (the confirm needs no
-        // overlay: it is a single PIN entry, with "choose a new PIN" inside).
-        if (step === 'email' || step === 'confirmPin') {
+        // The email and the confirms are asked in the sheet (a confirm needs no overlay: a
+        // single PIN entry, with "choose a new PIN" inside, or the email typed once).
+        if (step === 'email' || confirming) {
             openSheet();
             return;
         }
@@ -208,17 +227,23 @@ export const useKeepAccountBanner = (): {
         title: keepAccountTitle.title,
         onStart: start,
         onSnooze: () => {
-            const next = { until: Date.now() + KEEP_ACCOUNT_SNOOZE_MS, count: snooze.count + 1 };
+            const next = {
+                until: Date.now() + KEEP_ACCOUNT_SNOOZE_MS,
+                count: stepSnooze.count + 1,
+            };
             try {
-                localStorage.setItem(getKeepAccountSnoozeKey(did), String(next.until));
-                localStorage.setItem(getKeepAccountSnoozeCountKey(did), String(next.count));
+                localStorage.setItem(getKeepAccountSnoozeKey(did, snoozeKind), String(next.until));
+                localStorage.setItem(
+                    getKeepAccountSnoozeCountKey(did, snoozeKind),
+                    String(next.count)
+                );
             } catch {
                 /* Still snoozed for this session when storage is unavailable. */
             }
             // The same ask in the recovery banner stays quiet for as long.
-            if (step !== 'email' && step !== 'confirmPin')
+            if (step !== 'email' && !confirming)
                 firstStartupStore.set.recoveryPromptSnoozedUntil(next.until);
-            setSnooze(next);
+            setSnooze(previous => ({ ...previous, [snoozeKind]: next }));
             track(AnalyticsEvents.KEEP_ACCOUNT_DISMISSED, { source: 'dashboard', step });
         },
     };

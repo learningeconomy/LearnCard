@@ -34,14 +34,20 @@ export const createRecoveryPinActions = (
     attempts.set(coordinator.runRecoverySetup, attempt);
 
     return {
-        setEscrowPin: async (pin: string): Promise<void> => {
+        /** `contact`: the LC-2409 re-seal gates (see the coordinator's `setEscrowPin`). */
+        setEscrowPin: async (
+            pin: string,
+            contact?: Parameters<PinCoordinator['setEscrowPin']>[1]
+        ): Promise<void> => {
             if (attempt.clearing) throw new Error('Please wait for PIN removal to finish.');
             if (attempt.pendingPin !== undefined && attempt.pendingPin !== pin) {
                 coordinator.resetRecoverySetup('pin');
             }
             onPinChange?.();
             attempt.pendingPin = pin;
-            await coordinator.runRecoverySetup('pin', () => coordinator.setEscrowPin(pin));
+            await coordinator.runRecoverySetup('pin', () =>
+                contact ? coordinator.setEscrowPin(pin, contact) : coordinator.setEscrowPin(pin)
+            );
             attempt.pendingPin = undefined;
             if (did) writeRecoveryPinPromptFlag(did, 'set');
         },

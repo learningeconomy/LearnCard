@@ -1554,13 +1554,11 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                             setKeptAccountEmail(true);
                             void goToPinStep();
                         }}
-                        // "Not now": a school-email account still creates its PIN; a
-                        // placeholder account cannot have one without the email.
-                        onDismiss={() => {
-                            if (keepAccountRef.current.continuity?.hasSchoolEmail)
-                                void goToPinStep();
-                            else setStep('celebrate');
-                        }}
+                        // "Not now" (or nothing to show: a failed check, the switch turned
+                        // off): the PIN step decides from the escrow state. A school-email
+                        // account is enrolled and creates its PIN; a placeholder account
+                        // without the email is never enrolled, so it goes to celebrate.
+                        onDismiss={() => void goToPinStep()}
                     />
                 </div>
             )}
