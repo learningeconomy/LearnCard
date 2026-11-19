@@ -6,11 +6,14 @@ import {
     DeleteMessageCommand,
 } from '@aws-sdk/client-sqs';
 import { TRPCError } from '@trpc/server';
+import { TRPC_ERROR_CODES_BY_KEY } from '@trpc/server/rpc';
+import { IssueInboxCredentialResponseValidator } from '@learncard/types';
 import type {
     InboxBatchReceipt,
     InboxBatchStatus,
     IssueInboxCredentialBatch,
     IssueInboxCredentialBatchItemResult,
+    IssueInboxCredentialType,
 } from '@learncard/types';
 import { getInboxBatchRuntimeEnvironment } from '@environment';
 import type { Context } from '@routes';
@@ -24,12 +27,19 @@ import {
     finishBatchItem,
     markBatchIssuanceStarted,
     readBatchJob,
+    readBatchReplay,
     recoverInboxJobs,
     takeInboxDispatches,
 } from '@accesslayer/inbox-batch/store';
 import { acknowledgeInboxDispatches, deadLetterBatchItem } from '@accesslayer/inbox-batch/store';
 import { encryptInboxCredential, decryptInboxCredential } from './inbox-encryption.helpers';
-import { fingerprint, issueInboxBatch } from './inbox-batch.helpers';
+import {
+    fingerprint,
+    issueInboxBatch,
+    inboxItemReplayKey,
+    inboxItemRequestHash,
+    replayResult,
+} from './inbox-batch.helpers';
 import { INBOX_BATCH_MAX_BYTES } from './inbox-batch-http.helpers';
 import { getInboxBatchState } from './inbox-batch-status.helpers';
 
@@ -86,7 +96,7 @@ export const submitInboxBatch = async (
                 replayKey:
                     item.idempotencyKey === undefined
                         ? `internal:${randomUUID()}`
-                        : `client:${fingerprint([profile.profileId, item.idempotencyKey])}`,
+                        : inboxItemReplayKey(profile.profileId, item.idempotencyKey),
             };
         })
     );
@@ -172,7 +182,7 @@ export const getInboxBatch = async (issuer: string, batchId: string): Promise<In
 };
 
 /** SQS is at-least-once. Ownership and issuance checkpoints, not delivery count, control execution. */
-export const processInboxQueueMessage = async (body: string): Promise<void> => {
+export const processInboxQueueMessage = async (body: string, inline = false): Promise<void> => {
     const message: unknown = JSON.parse(body);
     if (
         !message ||
@@ -182,7 +192,9 @@ export const processInboxQueueMessage = async (body: string): Promise<void> => {
     )
         throw new Error('Invalid inbox queue message');
     const owner = randomUUID();
-    const claimed = await claimBatchItem(message.itemId, owner);
+    const claimed = inline
+        ? await claimBatchItem(message.itemId, owner, true)
+        : await claimBatchItem(message.itemId, owner);
     if (!claimed) return;
     const { job, item } = claimed;
     const fail = (code: string, text: string): IssueInboxCredentialBatchItemResult => ({
@@ -243,6 +255,68 @@ export const processInboxQueueMessage = async (body: string): Promise<void> => {
         success: result.results[0]!.success,
         queueAgeMs: Date.now() - Number(job.createdAt),
     });
+};
+
+/**
+ * Single-request adapter over the existing durable batch lifecycle. A concurrent
+ * queue worker and this request compete for the same item lease, never two sends.
+ */
+export const issueKeyedInboxCredential = async (
+    profile: ProfileType,
+    input: IssueInboxCredentialType,
+    ctx: Context
+): Promise<ReturnType<typeof IssueInboxCredentialResponseValidator.parse>> => {
+    if (!input.idempotencyKey || input.refresh) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'An ordinary issuance key is required.',
+        });
+    }
+    const receipt = await submitInboxBatch(
+        profile,
+        {
+            // Namespace admission replay without changing the shared issuer/item-key identity.
+            requestId: `inbox.issue:${fingerprint(input.idempotencyKey)}`,
+            items: [input],
+        },
+        ctx
+    );
+    // A separate job's IN_PROGRESS snapshot is not authoritative once its owner
+    // commits the shared receipt. Validate the live record before trusting that job.
+    const stored = await readBatchReplay(
+        inboxItemReplayKey(profile.profileId, input.idempotencyKey)
+    );
+    if (stored !== null) {
+        return IssueInboxCredentialResponseValidator.parse(
+            replayResult(stored, inboxItemRequestHash(input), 0)
+        );
+    }
+    await processInboxQueueMessage(JSON.stringify({ itemId: `${receipt.batchId}:0` }), true);
+    const batch = await getInboxBatch(profile.profileId, receipt.batchId);
+    const result = batch.items[0]?.result;
+    if (!result) {
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message:
+                'Issuance is in progress. Retry this same idempotency key; do not issue with a new key.',
+        });
+    }
+    if (!result.success) {
+        const code = Object.prototype.hasOwnProperty.call(
+            TRPC_ERROR_CODES_BY_KEY,
+            result.error.code
+        )
+            ? (result.error.code as keyof typeof TRPC_ERROR_CODES_BY_KEY)
+            : 'INTERNAL_SERVER_ERROR';
+        throw new TRPCError({
+            code,
+            message: result.issuanceId
+                ? `${result.error.message} Issuance ID: ${result.issuanceId}.`
+                : result.error.message,
+        });
+    }
+    // Strip batch-only metadata so first response and replay have the single-route shape.
+    return IssueInboxCredentialResponseValidator.parse(result);
 };
 
 export const processInboxDeadLetter = async (body: string): Promise<void> => {

@@ -11,6 +11,7 @@ export default createVitestConfig(serviceIntegrationPreset, {
         include: [
             'test/inbox-security.e2e.ts',
             'test/inbox-batch.spec.ts',
+            'test/inbox-single-idempotency.spec.ts',
             'test/atomic-counter.e2e.ts',
             'test/credential-storage.neo4j.spec.ts',
             'test/app-credential-delivery.neo4j.spec.ts',

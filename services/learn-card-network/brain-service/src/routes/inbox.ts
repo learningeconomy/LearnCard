@@ -1,5 +1,9 @@
 import { trace } from '@tracing';
-import { submitInboxBatch, getInboxBatch } from '@helpers/inbox-queue.helpers';
+import {
+    submitInboxBatch,
+    getInboxBatch,
+    issueKeyedInboxCredential,
+} from '@helpers/inbox-queue.helpers';
 import {
     assertInboxRefreshEnabled,
     inboxRefreshRequestDigest,
@@ -621,6 +625,10 @@ export const inboxRouter = t.router({
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
             const { recipient, configuration } = input;
+
+            if (input.idempotencyKey && !input.refresh) {
+                return issueKeyedInboxCredential(profile, input, ctx);
+            }
 
             const refreshDigest = input.refresh ? inboxRefreshRequestDigest(input) : undefined;
             if (input.refresh) {

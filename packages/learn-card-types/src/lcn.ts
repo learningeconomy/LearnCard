@@ -1781,7 +1781,14 @@ export const IssueInboxCredentialValidator = z
             .describe(
                 'Allocate managed refresh before signing. Requires unsigned content and a registered signing authority; binds the holder on claim.'
             ),
-        idempotencyKey: z.string().min(1).max(200).optional(),
+        idempotencyKey: z
+            .string()
+            .min(1)
+            .max(200)
+            .optional()
+            .describe(
+                'Issuer-scoped replay key. Ordinary issuance uses the durable inbox queue: confirmed results replay for 24 hours; uncertain outcomes remain blocked for reconciliation. Managed refresh retains its existing lifecycle.'
+            ),
         // === OPTIONAL FEATURES ===
         // Add major, distinct features at the top level.
         //consentRequest: ConsentRequestValidator.optional(),
@@ -1902,9 +1909,6 @@ export const IssueInboxCredentialValidator = z
             .describe(
                 'Configuration for the credential issuance. If not provided, the default configuration will be used.'
             ),
-    })
-    .refine(data => !data.idempotencyKey || data.refresh === true, {
-        message: 'idempotencyKey requires refresh: true.',
     })
     .refine(data => data.credential || data.templateUri, {
         message: 'Either credential or templateUri must be provided.',
