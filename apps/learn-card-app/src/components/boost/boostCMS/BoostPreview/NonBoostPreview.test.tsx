@@ -490,14 +490,17 @@ it('verifies an earned Boost once on open and again only when its signed credent
     const signedCredential: VC = {
         ...credential,
         name: 'Signed title',
-        boostId: 'lc:network:example.test:boost:example',
+        boostId: 'lc:network:untrusted.example/trpc:boost:example',
         proof,
     };
     const updatedCredential: VC = {
         ...signedCredential,
         proof: { ...proof, proofValue: 'updated-proof' },
     };
-    const verified = [{ check: 'proof', status: VerificationStatusEnum.Success }];
+    const validProofWithUntrustedNetwork: VerificationItem[] = [
+        { check: 'Boost Authenticity', status: VerificationStatusEnum.Error },
+        { check: 'proof', status: VerificationStatusEnum.Success },
+    ];
     const failed = [{ check: 'proof', status: VerificationStatusEnum.Failed }];
     const initialVerification = Promise.withResolvers<VerificationItem[]>();
     // A duplicate call stays pending so the old verification loop fails by count.
@@ -521,12 +524,14 @@ it('verifies an earned Boost once on open and again only when its signed credent
     );
 
     const { rerender } = render(preview(signedCredential));
-    await act(async () => initialVerification.resolve(verified));
+    await act(async () => initialVerification.resolve(validProofWithUntrustedNetwork));
 
     expect(mocks.verify).toHaveBeenCalledTimes(1);
     expect(mocks.verify.mock.calls[0][0]).toBe(signedCredential);
     expect(mocks.displayCard.mock.lastCall?.[0].credential.name).toBe('Edited title');
-    expect(mocks.displayCard.mock.lastCall?.[0].verificationItems).toEqual(verified);
+    expect(mocks.displayCard.mock.lastCall?.[0].verificationItems).toEqual(
+        validProofWithUntrustedNetwork
+    );
 
     mocks.boostDisplayName.mockReturnValue('New display title');
     await act(async () => rerender(preview(signedCredential)));
