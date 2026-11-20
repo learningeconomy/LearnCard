@@ -1,9 +1,10 @@
 # LC-2362 AWS Device Farm smoke of the LearnCard
 # Capacitor app. This workflow does not gate release, deploy, or Capgo promotion.
 #
-# Runs daily and on demand from main. Both apps are built for staging. The
-# devicefarm-smoke-staging environment supplies development signing and an
-# OIDC role scoped to the pilot project. See infra/aws/devicefarm-smoke.
+# Runs Monday, Wednesday, and Friday at 9:17 a.m. Eastern and on demand from main.
+# Both apps are built for staging. The devicefarm-smoke-staging environment
+# supplies development signing and an OIDC role scoped to the pilot project.
+# See infra/aws/devicefarm-smoke.
 #
 # Android `android_framework` chooses espresso, maestro, or both (default espresso).
 # Maestro uses a custom Appium Node host because Device Farm has no Maestro
@@ -21,13 +22,13 @@
 # Video capture is on. ListArtifacts --type FILE returns artifact type VIDEO.
 # The summary links that presigned URL and the console page for the job.
 #
-# The separate Slack job posts daily failures and all manual results.
+# The separate Slack job posts scheduled failures and all manual results.
 
 name: Native smoke (AWS Device Farm)
 
 on:
     schedule:
-        - cron: '17 9 * * *'
+        - cron: '17 9 * * MON,WED,FRI'
           timezone: America/New_York
     workflow_dispatch:
         inputs:
