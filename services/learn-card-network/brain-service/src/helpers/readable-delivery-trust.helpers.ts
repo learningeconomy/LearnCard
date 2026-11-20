@@ -55,6 +55,7 @@ export const verifyDeliveryOutcome = async (
     const belongsToLearner = subjects.some(
         subject => typeof subject?.id === 'string' && context.learnerDids.has(subject.id)
     );
+    if (!belongsToLearner) return { ...checks, label: 'unverified' };
     const expected = Boolean(issuer && context.expectedIssuers.has(issuer));
     let timer: ReturnType<typeof setTimeout> | undefined;
     let recognized: string | undefined;
@@ -77,11 +78,7 @@ export const verifyDeliveryOutcome = async (
         clearTimeout(timer);
     }
     const issuerName = recognized ? { issuerName: recognized } : {};
-    if (
-        !belongsToLearner ||
-        checks.dates !== 'valid' ||
-        !['valid', 'not_applicable'].includes(checks.status)
-    )
+    if (checks.dates !== 'valid' || !['valid', 'not_applicable'].includes(checks.status))
         return { ...checks, ...issuerName, label: 'unverified' };
     if (expected) return { ...checks, ...issuerName, label: 'verified' };
     if (recognized) return { ...checks, ...issuerName, label: 'recognized_issuer' };

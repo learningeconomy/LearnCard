@@ -907,6 +907,35 @@ describe('consented data boundaries', () => {
     });
 
     it.each([
+        { kind: 'unsupported scheme', uri: 'urn:encrypted:legacy-outcome' },
+        { kind: 'oversized reference', uri: `legacy:${'a'.repeat(2050)}` },
+    ])('allows only the learner to remove a legacy outcome reference ($kind)', async ({ uri }) => {
+        const { contractUri, termsUri } = await consent();
+        await neogma.queryRunner.run(
+            'MATCH (terms:ConsentFlowTerms {id:$id}) SET terms.`terms.outcomes` = [$uri]',
+            { id: termsUri.split(':').at(-1)!, uri }
+        );
+        await expect(
+            owner.clients.fullAuth.contracts.updateReferralOutcome({
+                termsUri,
+                uri,
+                remove: true,
+            })
+        ).rejects.toThrow('Profile does not own these terms');
+        expect(
+            await learner.clients.fullAuth.contracts.updateReferralOutcome({
+                termsUri,
+                uri,
+                remove: true,
+            })
+        ).toBe(true);
+        for (const response of await readAll(contractUri)) {
+            expect(response.records).toHaveLength(1);
+            expect(JSON.stringify(response.records[0])).not.toContain(uri);
+        }
+    });
+
+    it.each([
         'urn:encrypted:outcome',
         'lc:cloud:cloud.learncard.com:profile:wrong',
         'lc:cloud:cloud.learncard.com:credential:bad/id',

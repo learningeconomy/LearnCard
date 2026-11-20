@@ -127,11 +127,21 @@ describe('readable outcome trust labels', () => {
         [[{ id: 'did:key:foreign' }, { id: 'did:key:learner' }], 'verified'],
         [[{ id: 'did:key:foreign' }, {}], 'unverified'],
     ])('binds subjects %j to the learner', async (credentialSubject, label) => {
+        mocks.registry.mockResolvedValue({
+            matchingIssuers: [
+                { issuer: { federation_entity: { organization_name: 'Example College' } } },
+            ],
+            uncheckedRegistries: [],
+        });
         const result = await verifyDeliveryOutcome(
             { ...credential, credentialSubject } as UnsignedVC,
             context
         );
         expect(result.label).toBe(label);
+        if (label === 'unverified') {
+            expect(result).not.toHaveProperty('issuerName');
+            expect(mocks.registry).not.toHaveBeenCalled();
+        }
     });
     it.each([
         { proof: 'unavailable' },

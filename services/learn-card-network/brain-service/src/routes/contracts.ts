@@ -2049,12 +2049,17 @@ export const contractsRouter = t.router({
             requiredScope: 'contracts-data:write',
         })
         .input(
-            z.object({
-                termsUri: z.string(),
-                uri: z.string().max(2048).refine(isReferralOutcomeUri, 'Invalid credential URI'),
-                audienceVersion: z.number().int().nonnegative().optional(),
-                remove: z.boolean().default(false),
-            })
+            z
+                .object({
+                    termsUri: z.string(),
+                    uri: z.string(),
+                    audienceVersion: z.number().int().nonnegative().optional(),
+                    remove: z.boolean().default(false),
+                })
+                .refine(input => input.remove || isReferralOutcomeUri(input.uri), {
+                    message: 'Invalid credential URI',
+                    path: ['uri'],
+                })
         )
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {

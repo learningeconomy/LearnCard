@@ -75,17 +75,21 @@ Choose **Add an outcome** on an accepted referral card or open its connection in
 
 For SDK integrations, encrypt the credential for the contract owner and recipients using the current audience, then call `learnCard.invoke.attachReferralOutcome(termsUri, encryptedUri, audienceVersion)`. Use `detachReferralOutcome` with the same arguments to remove it. Pass the version the learner reviewed; omitting it snapshots the server's current audience, not a prior client review. Both require the learner's current consent and authorization; neither changes category sharing. Only bounded `lc:network:...:credential:...` and `lc:cloud:...:credential:...` storage references are accepted. An already attached URI or already absent removal returns `false` without creating another transaction/event or increasing the term mutation version. Audit transactions and event payloads describe the delta in `outcomeChange: { uri, remove }`, not a pre-lock snapshot. Recipient data exposes selections with `category: "Outcome"` and respects category query filters even when broad category sharing is off.
 
+New attachments must use the supported storage-reference format above. Removal also accepts an existing legacy reference that no longer passes attachment validation; it only removes that exact selection and does not fetch or validate its content.
+
 Use `verification.label` as a signal, not as an authorization decision. Positive labels require a valid proof and a credential subject matching a known DID of the consenting learner. A valid credential for someone else is `unverified`, even when its issuer is expected. `verified` also requires applicable status/date checks and an expected issuer for this contract; it does not establish that the outcome meets a program's substantive criteria. HHUSA determines and documents its own acceptance policy for each label, including whether any `unverified` or `self_reported` outcomes may be considered. Registry recognition alone never makes an issuer expected for the referral.
+
+Subject matching uses the request's learner DID and the learner's current stored and network DIDs. It does not resolve historical or rotated `did:key` identities, holder-continuity history, or other identifiers. A credential issued before a key migration may therefore remain `unverified` despite a valid proof and an expected issuer. This fails closed; HHUSA's acceptance policy must account for these cases rather than treating the label as proof that the credential is fraudulent.
 
 The API limits full credential content to 2 MiB per page. Follow the returned cursor even if fewer records than requested are returned. The summary includes available name, types, issuer, dates, and boost URI. Each summary has a `verification` object:
 
-| Field        | Values / meaning                                                                                        |
-| ------------ | ------------------------------------------------------------------------------------------------------- |
-| `proof`      | `valid`, `invalid`, or `unavailable`                                                                    |
-| `status`     | `valid`, `invalid`, `unavailable`, or `not_applicable` when the credential declares no status mechanism |
-| `dates`      | `valid` or `invalid`; expiry and not-before dates are checked                                           |
-| `label`      | The outcome label below                                                                                 |
-| `issuerName` | Registry display name only for a valid proof from a recognized, non-learner signer                      |
+| Field        | Values / meaning                                                                                                   |
+| ------------ | ------------------------------------------------------------------------------------------------------------------ |
+| `proof`      | `valid`, `invalid`, or `unavailable`                                                                               |
+| `status`     | `valid`, `invalid`, `unavailable`, or `not_applicable` when the credential declares no status mechanism            |
+| `dates`      | `valid` or `invalid`; expiry and not-before dates are checked                                                      |
+| `label`      | The outcome label below                                                                                            |
+| `issuerName` | Registry display name only for a valid proof from a recognized, non-learner signer with a matching learner subject |
 
 | Label                   | Meaning                                                                                                                                                                               |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

@@ -611,6 +611,7 @@ const matchesConsentedDataQuery = (
         ([key, required]) => required === (term.terms.read.personal?.[key] != null)
     ) &&
     Object.entries(query.credentials?.categories ?? {}).every(([name, required]) => {
+        // Outcome covers both native selections and the legacy category with that name.
         if (name === 'Outcome' && term.terms.outcomes?.length) return required;
         const category = term.terms.read.credentials.categories[name];
         const shared =
