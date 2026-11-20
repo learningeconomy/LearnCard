@@ -30,7 +30,7 @@ import {
     classLinkExchangeInput,
     classLinkNonce,
     classLinkRedirectUri,
-    hasClassLinkRole,
+    hasRecognizedClassLinkRole,
     isClassLinkStudent,
     requireClassLinkConfig,
     verifyClassLinkExchange,
@@ -382,8 +382,8 @@ export const classlinkRouter = t.router({
                     lastAuthTime,
                     // Preferences require a DID; apply this hint when the account first binds one.
                     isMinorHint: isStudent,
-                    // Whether that hint rests on a role claim (continuity fails closed otherwise).
-                    studentStatusKnown: isStudent || hasClassLinkRole(claims),
+                    // Whether that hint rests on a recognized role (continuity fails closed otherwise).
+                    studentStatusKnown: isStudent || hasRecognizedClassLinkRole(claims),
                 });
                 const hintChanged = !existing || existing.isMinorHint !== isStudent;
                 // A recorded DID that no live account holds: its owner was deleted and the

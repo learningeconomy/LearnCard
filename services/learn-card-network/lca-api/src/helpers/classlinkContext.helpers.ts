@@ -11,6 +11,7 @@ import {
 } from '../models/ClassLinkIdentity';
 import { getTranscriptRequestsCollection } from '../models/TranscriptRequest';
 import { hasExpiredStateStudentId } from '@helpers/classlinkPii.helpers';
+import { classifyClassLinkRole } from '@helpers/classlinkRole.helpers';
 import { getClassLinkConfig, getClassLinkTenant } from '@helpers/classlink.config';
 import { maybeClearExpiredStateStudentIds } from '@helpers/classlinkCleanup.helpers';
 import type { ClassLinkTenantConfig } from 'types/classlink';
@@ -269,18 +270,28 @@ export const getMatchedStudentStatus = (
         : 'not_student';
 
 /**
+ * Whether an identity that is not a student is a confirmed non-student: its stored role (the
+ * latest sign-in's claim, recorded since ClassLink SSO) is a known non-student role
+ * (`classifyClassLinkRole`). Rows written before `studentStatusKnown` existed are judged by
+ * that role alone; `studentStatusKnown: false` (the latest sign-in had no recognized role)
+ * always stays unknown.
+ */
+const isConfirmedNonStudent = (identity: MongoClassLinkIdentityType): boolean =>
+    identity.studentStatusKnown !== false && classifyClassLinkRole(identity.role) === 'not_student';
+
+/**
  * Student status for account continuity (LC-2409), failing closed: any student identity gives
- * `student`; otherwise any identity whose role was not recognized at its latest sign-in (no
- * role claim, `studentStatusKnown: false`) or that predates the field gives `unknown`; only
- * when every identity carried a non-student role, `not_student`. The privacy lock keeps using
- * `getMatchedStudentStatus` (it only knows `isMinorHint`).
+ * `student`; otherwise any identity without a recognized non-student role (no role claim, a
+ * blank or unlisted role such as `guest`, or `studentStatusKnown: false`) gives `unknown`;
+ * only when every identity has a known non-student role, `not_student`. The privacy lock keeps
+ * using `getMatchedStudentStatus` (it only knows `isMinorHint`).
  */
 export const getContinuityStudentStatus = (
     matched: AccountClassLinkIdentities
 ): 'student' | 'not_student' | 'unknown' => {
     const identities = getAllMatchedIdentities(matched);
     if (identities.some(identity => identity.isMinorHint === true)) return 'student';
-    if (identities.some(identity => identity.studentStatusKnown !== true)) return 'unknown';
+    if (!identities.every(isConfirmedNonStudent)) return 'unknown';
     return 'not_student';
 };
 

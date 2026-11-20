@@ -40,11 +40,13 @@ export interface MongoClassLinkIdentityType {
     isMinorHint?: boolean;
     /**
      * Whether `isMinorHint` rests on a recognized role (LC-2409): true when a sign-in found a
-     * student (sticky with the hint) or its verified id_token carried a role claim; false when
-     * the latest one carried no role, so `isMinorHint: false` only means "not known to be a
-     * student". Absent on identities written before this field. Account continuity treats
-     * false or absent as an unknown status (`getContinuityStudentStatus`); the student privacy
-     * lock still reads only `isMinorHint`.
+     * student (sticky with the hint) or its verified id_token carried a recognized role
+     * (`classifyClassLinkRole`); false when the latest one carried none, so `isMinorHint: false`
+     * only means "not known to be a student". Absent on identities written before this field;
+     * those still have `role` (recorded since ClassLink SSO). Account continuity
+     * (`getContinuityStudentStatus`) counts a non-student as confirmed only when `role` is a
+     * known non-student role and this is not false; the student privacy lock still reads only
+     * `isMinorHint`.
      */
     studentStatusKnown?: boolean;
     personalEmail?: string;

@@ -447,9 +447,16 @@ describe('ClassLink personal email', () => {
                 { $set: { studentStatusKnown: false } } as UpdateFilter<MongoClassLinkIdentityType>,
             ],
             [
-                'a legacy identity without the hint',
+                'a legacy identity without the hint or a role',
                 {
+                    $set: { role: '' },
                     $unset: { isMinorHint: '', studentStatusKnown: '' },
+                } as UpdateFilter<MongoClassLinkIdentityType>,
+            ],
+            [
+                'an unlisted role recorded as recognized',
+                {
+                    $set: { role: 'Guest', studentStatusKnown: true },
                 } as UpdateFilter<MongoClassLinkIdentityType>,
             ],
         ])(
@@ -470,6 +477,21 @@ describe('ClassLink personal email', () => {
                 ).resolves.toMatchObject({ success: true });
             }
         );
+
+        it('allows a legacy non-student identity by its stored role under nonStudents (LC-2409 review)', async () => {
+            // Written before `studentStatusKnown` existed: role recorded, no field.
+            await getClassLinkIdentitiesCollection().updateOne(
+                { firebaseUid: 'uid-test' },
+                { $unset: { studentStatusKnown: '' } }
+            );
+            await expect(caller().getAccountContinuity()).resolves.toMatchObject({
+                personalEmail: { allowed: true },
+            });
+            await caller().startPersonalEmail({ email });
+            await expect(
+                caller().verifyPersonalEmail({ email, code: getCode() })
+            ).resolves.toMatchObject({ success: true });
+        });
 
         it('applies the most restrictive district when the person has several', async () => {
             await upsertClassLinkIdentity({

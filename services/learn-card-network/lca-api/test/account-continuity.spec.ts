@@ -6,6 +6,7 @@ import {
     resolveAccountContinuityPolicy,
 } from '../src/helpers/accountContinuity.helpers';
 import { getCurrentProfile } from '../src/helpers/currentProfile';
+import { classifyClassLinkRole } from '../src/helpers/classlinkRole.helpers';
 import type { AccountContinuityPolicy } from '../src/types/accountContinuity';
 import {
     getContinuityStudentStatus,
@@ -209,8 +210,12 @@ describe('loadAccountContinuity', () => {
         tenant: { id: 'learncard', resolvedVia: 'default' as const, emailBranding: {} },
         user: { did: 'did:key:z', isChallengeValid: true },
     };
-    const identity = (tenantId: string, isMinorHint = false, studentStatusKnown = true) =>
-        ({ tenantId, isMinorHint, studentStatusKnown }) as never;
+    const identity = (
+        tenantId: string,
+        isMinorHint = false,
+        studentStatusKnown = true,
+        role = isMinorHint ? 'student' : 'teacher'
+    ) => ({ tenantId, isMinorHint, studentStatusKnown, role }) as never;
     const matched = (owned: never[], heldElsewhere: never[] = []) => ({
         identities: owned,
         heldElsewhere,
@@ -245,11 +250,17 @@ describe('loadAccountContinuity', () => {
     describe('a ClassLink role that was not recognized fails closed (LC-2409 review)', () => {
         /** A sign-in whose token had no role (isMinorHint false, role not recognized). */
         const roleless = (tenantId: string) => identity(tenantId, false, false);
-        /** An identity written before `studentStatusKnown` existed (no hint either). */
-        const legacy = (tenantId: string) => ({ tenantId }) as never;
+        /** An identity written before `studentStatusKnown` existed (no hint, no role). */
+        const legacy = (tenantId: string) => ({ tenantId, role: '' }) as never;
+        /** A role outside the known set, even if an earlier build stored it as recognized. */
+        const unlisted = (tenantId: string) => identity(tenantId, false, true, 'Guest');
+        /** A legacy row whose stored role is not a known non-student role. */
+        const legacyUnlisted = (tenantId: string) => ({ tenantId, role: 'other' }) as never;
         const cases = [
             ['a token without a role', roleless],
             ['a legacy identity without the hint', legacy],
+            ['an unlisted role', unlisted],
+            ['a legacy identity with an unlisted role', legacyUnlisted],
         ] as const;
 
         it.each(cases)('%s is an unknown status', (_label, make) => {
@@ -311,6 +322,38 @@ describe('loadAccountContinuity', () => {
                 loadAccountContinuity(ctx, matched([identity('a')]))
             ).resolves.toMatchObject({ decision: { allowed: true } });
             expect(getCurrentProfile).not.toHaveBeenCalled();
+        });
+
+        it('a legacy identity is judged by its stored role', async () => {
+            const legacyTeacher = { tenantId: 'a', isMinorHint: false, role: 'Teacher' } as never;
+            expect(getContinuityStudentStatus(matched([legacyTeacher]))).toBe('not_student');
+            await expect(
+                loadAccountContinuity(ctx, matched([legacyTeacher]))
+            ).resolves.toMatchObject({ decision: { allowed: true } });
+            // A recorded "no recognized role" stays unknown whatever the stored role says.
+            expect(getContinuityStudentStatus(matched([identity('a', false, false)]))).toBe(
+                'unknown'
+            );
+        });
+    });
+
+    describe('classifyClassLinkRole (LC-2409 review)', () => {
+        it.each([
+            ['student', 'student'],
+            [' Student ', 'student'],
+            ['STUDENT', 'student'],
+            ['Teacher', 'not_student'],
+            [' teacher', 'not_student'],
+            ['Tenant  Administrator', 'not_student'],
+            ['Parent', 'not_student'],
+            [undefined, 'unknown'],
+            ['', 'unknown'],
+            ['   ', 'unknown'],
+            ['Guest', 'unknown'],
+            ['Other', 'unknown'],
+            ['students', 'unknown'],
+        ] as const)('%j is %s', (role, expected) => {
+            expect(classifyClassLinkRole(role)).toBe(expected);
         });
     });
 

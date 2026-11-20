@@ -39,7 +39,7 @@ export const resolveAccountContinuityPolicy = (
  * Whether one district's policy lets this caller add a personal email. Pure.
  *
  * Fails closed: a student status other than `not_student` (`unknown` included: a ClassLink
- * token without a role, or an identity from before roles were recorded) counts as a student
+ * identity whose role is missing, blank or not a known non-student role) counts as a student
  * for every restriction (`nonStudents` gives `status_unknown`), and when
  * `minimumAge` applies, a missing profile or a missing, future or unreadable date of birth
  * gives `age_unknown` (the opposite of the analytics rule, where a missing DOB is an adult).
@@ -96,7 +96,7 @@ export const loadAccountContinuity = async (
     matched: AccountClassLinkIdentities
 ): Promise<AccountContinuityResult> => {
     const config = getClassLinkConfig();
-    // Tri-state: an identity whose role ClassLink did not send is `unknown`, never a non-student.
+    // Tri-state: an identity without a recognized role is `unknown`, never a non-student.
     const studentStatus = getContinuityStudentStatus(matched);
     const districts = [
         ...new Set(getAllMatchedIdentities(matched).map(identity => identity.tenantId)),

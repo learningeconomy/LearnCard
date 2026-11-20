@@ -786,7 +786,10 @@ describe('ClassLink sign-in broker', () => {
         ['without a role claim', undefined, false, 'unknown'],
         ['with a blank role claim', '  ', false, 'unknown'],
         ['with a non-student role', 'teacher', true, 'not_student'],
+        ['with a padded non-student role', ' Teacher ', true, 'not_student'],
+        ['with an unlisted role', 'Guest', false, 'unknown'],
         ['with the student role', 'student', true, 'student'],
+        ['with a padded student role', ' Student ', true, 'student'],
     ] as const)(
         'records whether the role was recognized: a sign-in %s (LC-2409 review)',
         async (_label, role, known, continuity) => {
@@ -795,7 +798,7 @@ describe('ClassLink sign-in broker', () => {
             await caller().exchangeCode(exchange);
             const stored = await findClassLinkIdentityByIdentityKey(identityKey);
             expect(stored).toMatchObject({
-                isMinorHint: role === 'student',
+                isMinorHint: continuity === 'student',
                 studentStatusKnown: known,
             });
             expect(

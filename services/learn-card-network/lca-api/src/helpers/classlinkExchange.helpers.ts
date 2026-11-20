@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { getClassLinkConfig, getClassLinkTenant } from '@helpers/classlink.config';
 import { exchangeClassLinkCode, verifyClassLinkIdToken } from '@helpers/classlink.helpers';
 import { classLinkSubjectDigest } from '@helpers/classlinkPii.helpers';
+import { classifyClassLinkRole } from '@helpers/classlinkRole.helpers';
 import type { ClassLinkClaims, ClassLinkConfig, ClassLinkTenantConfig } from 'types/classlink';
 
 export const classLinkRedirectUri = z.string().min(1).max(2048);
@@ -83,11 +84,13 @@ export const verifyClassLinkExchange = async (
 };
 
 export const isClassLinkStudent = (claims: ClassLinkClaims): boolean =>
-    claims.classLink_role?.toLowerCase() === 'student';
+    classifyClassLinkRole(claims.classLink_role) === 'student';
 
 /**
- * Whether the verified id_token says what role the person has (the claim is optional). Without
- * it, `isClassLinkStudent` is false but the person may still be a student.
+ * Whether the verified id_token carries a recognized role (`student` or a known non-student
+ * role; `classifyClassLinkRole`). The claim is optional, and an unrecognized value (`guest`, a
+ * typo) is not a role we can rely on: `isClassLinkStudent` is false but the person may still be
+ * a student.
  */
-export const hasClassLinkRole = (claims: ClassLinkClaims): boolean =>
-    Boolean(claims.classLink_role?.trim());
+export const hasRecognizedClassLinkRole = (claims: ClassLinkClaims): boolean =>
+    classifyClassLinkRole(claims.classLink_role) !== 'unknown';

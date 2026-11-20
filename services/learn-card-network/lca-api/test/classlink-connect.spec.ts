@@ -301,17 +301,19 @@ describe('School Connect', () => {
     });
 
     it.each([
-        ['without a role claim', undefined, false],
-        ['with a non-student role', 'teacher', true],
-        ['with the student role', 'student', true],
+        ['without a role claim', undefined, false, false],
+        ['with a non-student role', 'teacher', true, false],
+        ['with an unlisted role', 'Guest', false, false],
+        ['with the student role', 'student', true, true],
+        ['with a padded student role', ' Student ', true, true],
     ] as const)(
         'records whether the role was recognized: a connect %s (LC-2409 review)',
-        async (_label, role, known) => {
+        async (_label, role, known, student) => {
             if (role === undefined) delete claims.classLink_role;
             else claims.classLink_role = role;
             await caller().connect(exchange);
             expect(await findClassLinkIdentityByIdentityKey(identityKey)).toMatchObject({
-                isMinorHint: role === 'student',
+                isMinorHint: student,
                 studentStatusKnown: known,
             });
         }
