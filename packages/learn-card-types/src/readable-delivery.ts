@@ -34,7 +34,7 @@ export const ReadableDeliveryReadInputValidator = z.object({
     limit: z.number().int().min(1).max(25).default(10),
     cursor: z
         .string()
-        .regex(/^\d{1,7}$/)
+        .regex(/^(?:\d{1,7}|rd1\.\d{1,9}\.[A-Za-z0-9_-]{43})$/)
         .optional(),
 });
 export type ReadableDeliveryReadInput = z.input<typeof ReadableDeliveryReadInputValidator>;

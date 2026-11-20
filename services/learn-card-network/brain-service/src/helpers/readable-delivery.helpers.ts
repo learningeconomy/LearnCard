@@ -1,4 +1,4 @@
-import { randomBytes, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { TRPCError } from '@trpc/server';
 import {
     JWKWithPrivateKeyValidator,
@@ -190,6 +190,53 @@ const requireEnabled = async (recipient: string, domain: string): Promise<Delive
     return record;
 };
 
+const staleCursor = (): TRPCError =>
+    new TRPCError({
+        code: 'CONFLICT',
+        message: 'READABLE_DELIVERY_CURSOR_STALE: Restart this read without a cursor.',
+    });
+
+const pageBudgetExceeded = (): TRPCError =>
+    new TRPCError({
+        code: 'SERVICE_UNAVAILABLE',
+        message: 'READABLE_DELIVERY_PAGE_TIMEOUT: Retry this read with the same cursor.',
+    });
+
+const compareText = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+
+const orderedCredentials = (grant: ConsentFlowContractDataForDid) =>
+    [...grant.credentials].sort(
+        (a, b) => compareText(a.category, b.category) || compareText(a.uri, b.uri)
+    );
+
+const cursorFingerprint = (
+    recipient: string,
+    domain: string,
+    input: ReadableDeliveryReadInput,
+    delivery: DeliveryRecord,
+    grant: ConsentFlowContractDataForDid,
+    trust: Awaited<ReturnType<typeof getDeliveryTrustContext>>
+): string =>
+    createHash('sha256')
+        .update(
+            JSON.stringify([
+                recipient,
+                domain,
+                input.contractUri,
+                input.did,
+                delivery.agentDid,
+                delivery.disclosureVersion,
+                grant.termsUri,
+                grant.contractUpdatedAt,
+                orderedCredentials(grant).map(({ category, uri }) => [category, uri]),
+                [...trust.expectedIssuers].sort(),
+                [...trust.learnerDids].sort(),
+            ])
+        )
+        .digest('base64url');
+
+const encodeCursor = (start: number, fingerprint: string): string => `rd1.${start}.${fingerprint}`;
+
 /** Return only a bounded projection of current consent; plaintext never leaves request memory except in the response. */
 export const readReadableDelivery = async (
     recipient: string,
@@ -199,9 +246,20 @@ export const readReadableDelivery = async (
     const keys = custody();
     const delivery = await requireEnabled(recipient, domain);
     const grant = await readGrant(recipient, domain, input);
-    const start = Number(input.cursor ?? 0);
+    const trust = await getDeliveryTrustContext(input.contractUri, input.did, domain);
+    const fingerprint = cursorFingerprint(recipient, domain, input, delivery, grant, trust);
+    const credentials = orderedCredentials(grant);
+    const start = input.cursor === undefined ? 0 : Number(input.cursor.split('.')[1]);
+    if (
+        input.cursor !== undefined &&
+        (!Number.isSafeInteger(start) ||
+            start <= 0 ||
+            start >= credentials.length ||
+            input.cursor !== encodeCursor(start, fingerprint))
+    )
+        throw staleCursor();
     const limit = input.limit ?? 10;
-    const selected = grant.credentials.slice(start, start + limit);
+    const selected = credentials.slice(start, start + limit);
     const wallet = await getEmptyLearnCard();
     let key;
     try {
@@ -210,7 +268,6 @@ export const readReadableDelivery = async (
     } catch {
         throw unavailable();
     }
-    const trust = await getDeliveryTrustContext(input.contractUri, input.did, domain);
     const localOrigin = isLocalDeliveryRuntime()
         ? `http://${domain.replace(/%3a/gi, ':')}`
         : undefined;
@@ -220,6 +277,7 @@ export const readReadableDelivery = async (
     let payloadBytes = 0;
     const signal = AbortSignal.timeout(12_000);
     for (const item of selected) {
+        if (signal.aborted) break;
         let ciphertext;
         try {
             ciphertext = await readDeliveryCiphertext(item.uri, {
@@ -230,16 +288,20 @@ export const readReadableDelivery = async (
                 signal,
             });
         } catch {
+            if (signal.aborted) break;
             records.push({ ...item, status: 'unavailable' });
             continue;
         }
+        if (signal.aborted) break;
         let plaintext: unknown;
         try {
             plaintext = await wallet.invoke.decryptDagJwe(ciphertext, [key]);
         } catch {
+            if (signal.aborted) break;
             records.push({ ...item, status: 'unreadable' });
             continue;
         }
+        if (signal.aborted) break;
         if (!plaintext) {
             records.push({ ...item, status: 'unreadable' });
             continue;
@@ -274,6 +336,8 @@ export const readReadableDelivery = async (
             localOrigin,
             signal
         );
+        // An abort is not evidence about this outcome. Do not advance past it.
+        if (signal.aborted) break;
         const text = (value: unknown): string | undefined =>
             typeof value === 'string' ? value.slice(0, 2048) : undefined;
         records.push({
@@ -294,7 +358,7 @@ export const readReadableDelivery = async (
         });
     }
     // Decryption/fetch may have taken time. Reauthorize before releasing any result.
-    await requireEnabled(recipient, domain);
+    const currentDelivery = await requireEnabled(recipient, domain);
     const current = await readGrant(recipient, domain, input);
     const currentTrust = await getDeliveryTrustContext(input.contractUri, input.did, domain);
     if (
@@ -311,6 +375,13 @@ export const readReadableDelivery = async (
         )
     )
         throw denied();
-    const hasMore = start + records.length < grant.credentials.length;
-    return { records, hasMore, ...(hasMore ? { cursor: String(start + records.length) } : {}) };
+    if (
+        fingerprint !==
+        cursorFingerprint(recipient, domain, input, currentDelivery, current, currentTrust)
+    )
+        throw staleCursor();
+    if (signal.aborted && selected.length && !records.length) throw pageBudgetExceeded();
+    const next = start + records.length;
+    const hasMore = next < credentials.length;
+    return { records, hasMore, ...(hasMore ? { cursor: encodeCursor(next, fingerprint) } : {}) };
 };
