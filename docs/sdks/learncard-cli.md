@@ -490,3 +490,13 @@ There is a ton of functionality exposed through the CLI. Explore the Usage Examp
 {% content-ref url="learncard-core/construction.md" %}
 [construction.md](learncard-core/construction.md)
 {% endcontent-ref %}
+
+### Run the referral handoff end-to-end test
+
+From a fresh checkout of the referral stack, with the repo's Node and Bun versions, dependencies installed with `bun install --frozen-lockfile`, and Docker running, run:
+
+```bash
+npm run test:referral-org
+```
+
+Run this against an unused local Docker test stack. Stop any existing services on the E2E Compose ports first: the harness resets its test databases. The test builds the CLI, starts its disposable services, provisions synthetic profiles, applies a referral YAML, and sends and accepts a referral through the SDK. It issues a hosted-signed outcome, verifies the intended recipient's exact version 2 credential readback, and checks signed events on its own receiver. It does not click through VetPass or use Salesforce, staging, or live KMS.
