@@ -6,14 +6,17 @@ import { formatDidDisplayName, isDid } from '@learncard/react';
 import { middleTruncate } from 'learn-card-base/helpers/stringHelpers';
 import * as m from '../../paraglide/messages.js';
 
+const LABEL_LENGTH = 36;
+
 const identifierLabel = (value: string): string => {
-    if (!isDid(value)) return middleTruncate(value, 36);
+    if (!isDid(value)) return middleTruncate(value, LABEL_LENGTH);
 
     // Format the DID, not the DID URL: the key fragment distinguishes verification methods.
     const suffixStart = value.search(/[/?#]/);
     const did = suffixStart === -1 ? value : value.slice(0, suffixStart);
     const suffix = suffixStart === -1 ? '' : middleTruncate(value.slice(suffixStart), 16);
-    return middleTruncate(formatDidDisplayName(did).replaceAll(/%3a/gi, ':'), 36) + suffix;
+    const name = formatDidDisplayName(did).replaceAll(/%3a/gi, ':');
+    return middleTruncate(name, LABEL_LENGTH - suffix.length) + suffix;
 };
 
 /** Display a compact label while keeping the signed identifier intact for inspection and copy. */
