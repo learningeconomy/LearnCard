@@ -636,6 +636,26 @@ export const useWallet = () => {
         let returnUri: string | undefined;
         let stage = 'initialize';
 
+        // Both save paths (including Partner Connect's skipLCNUser) must refresh the
+        // profile-scoped list, count, skills, and ID caches, or 5-min staleTime hides the save.
+        const cacheSavedRecord = async (
+            record: CredentialRecord<CredentialMetadata>,
+            category: CredentialCategory
+        ) => {
+            const batchRecords = context.batchRecords;
+            if (batchRecords) {
+                const records = batchRecords.get(category) ?? [];
+                records.push(record);
+                batchRecords.set(category, records);
+                return;
+            }
+            await refreshCredentialCaches(
+                new Map([[category, [record]]]),
+                context.profileDid,
+                context.readerDid
+            );
+        };
+
         try {
             const wallet = context.wallet;
 
@@ -678,6 +698,10 @@ export const useWallet = () => {
                 result = await wallet.index[location].add(record);
                 returnUri = uri2;
                 if (result) void recordCredentialClaim(wallet, uri2, vc, category);
+
+                stage = 'cache';
+                if (result) await cacheSavedRecord(record, category);
+
                 if (result && !deferContractSync) {
                     // Persist before returning; the singleton worker owns network delivery.
                     await enqueuePendingContractSyncSafely({
@@ -711,20 +735,7 @@ export const useWallet = () => {
                 if (result) void recordCredentialClaim(wallet, uri, vc, category);
 
                 stage = 'cache';
-                if (result) {
-                    const batchRecords = context.batchRecords;
-                    if (batchRecords) {
-                        const records = batchRecords.get(category) ?? [];
-                        records.push(record);
-                        batchRecords.set(category, records);
-                    } else {
-                        await refreshCredentialCaches(
-                            new Map([[category, [record]]]),
-                            context.profileDid,
-                            context.readerDid
-                        );
-                    }
-                }
+                if (result) await cacheSavedRecord(record, category);
 
                 if (result && !deferContractSync) {
                     stage = 'sync';

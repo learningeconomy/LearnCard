@@ -901,6 +901,92 @@ it('bumps an unmounted cached category count but lets the next observer refetch 
     }
 });
 
+it('refreshes profile-scoped caches after a Partner Connect (skipLCNUser) save', async () => {
+    // goblincore r4646873435: savePartnerCredential saves with skipLCNUser: true.
+    const reader = 'did:example:claiming-account';
+    const countFn = vi.fn().mockResolvedValueOnce(20).mockResolvedValue(21);
+    const skillsFn = vi.fn().mockResolvedValue([]);
+    const idsFn = vi.fn().mockResolvedValue([]);
+    const listFn = vi.fn().mockResolvedValue({ hasMore: false, records: [] });
+    const observers = [
+        new QueryObserver(mocks.queryClient!, {
+            queryKey: claimingCategoryCountKey,
+            queryFn: countFn,
+            staleTime: CREDENTIAL_INDEX_STALE_TIME,
+        }),
+        new QueryObserver(mocks.queryClient!, {
+            queryKey: ['useGetSkills', ''],
+            queryFn: skillsFn,
+            staleTime: CREDENTIAL_INDEX_STALE_TIME,
+        }),
+        new QueryObserver(mocks.queryClient!, {
+            queryKey: ['useGetIDs', ''],
+            queryFn: idsFn,
+            staleTime: CREDENTIAL_INDEX_STALE_TIME,
+        }),
+    ];
+    const list = new InfiniteQueryObserver(mocks.queryClient!, {
+        queryKey: ['useGetCredentialList', '', 'Achievement', reader],
+        queryFn: listFn,
+        initialPageParam: undefined,
+        getNextPageParam: () => undefined,
+        staleTime: CREDENTIAL_INDEX_STALE_TIME,
+    });
+    const unsubscribes = [...observers, list].map(observer => observer.subscribe(() => undefined));
+    try {
+        await vi.waitFor(() => {
+            expect(countFn).toHaveBeenCalledTimes(1);
+            expect(skillsFn).toHaveBeenCalledTimes(1);
+            expect(idsFn).toHaveBeenCalledTimes(1);
+            expect(listFn).toHaveBeenCalledTimes(1);
+        });
+
+        const saved = await useWallet().storeAndAddVCToWallet(
+            credential,
+            { title: 'Partner badge' },
+            'LearnCloud',
+            true
+        );
+        expect(saved).toMatchObject({ result: true, credentialUri: 'encrypted-uri' });
+
+        await vi.waitFor(() => {
+            expect(countFn).toHaveBeenCalledTimes(2);
+            expect(skillsFn).toHaveBeenCalledTimes(2);
+            expect(idsFn).toHaveBeenCalledTimes(2);
+            expect(listFn).toHaveBeenCalledTimes(2);
+        });
+        await vi.waitFor(() => expect(observers[0].getCurrentResult().data).toBe(21));
+    } finally {
+        unsubscribes.forEach(unsubscribe => unsubscribe());
+        [...observers, list].forEach(observer => observer.destroy());
+        await Promise.all(
+            Object.keys(pendingContractSyncStore.get.jobs()).map(clearPendingContractSyncJob)
+        );
+    }
+});
+
+it('does not refresh caches when a Partner Connect (skipLCNUser) index write fails', async () => {
+    const skillsFn = vi.fn().mockResolvedValue([]);
+    const observer = new QueryObserver(mocks.queryClient!, {
+        queryKey: ['useGetSkills', ''],
+        queryFn: skillsFn,
+        staleTime: CREDENTIAL_INDEX_STALE_TIME,
+    });
+    const unsubscribe = observer.subscribe(() => undefined);
+    try {
+        await vi.waitFor(() => expect(skillsFn).toHaveBeenCalledTimes(1));
+        mocks.add.mockResolvedValueOnce(false);
+        await expect(
+            useWallet().storeAndAddVCToWallet(credential, {}, 'LearnCloud', true)
+        ).resolves.toMatchObject({ result: false });
+        await new Promise(resolve => setTimeout(resolve, 20));
+        expect(skillsFn).toHaveBeenCalledTimes(1);
+    } finally {
+        unsubscribe();
+        observer.destroy();
+    }
+});
+
 it('retries failed contracts without repeating acknowledged contract mutations', async () => {
     const contracts = ['terms-a', 'terms-b'].map(uri => ({
         uri,
