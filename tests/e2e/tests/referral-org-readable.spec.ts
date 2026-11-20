@@ -14,7 +14,6 @@ import { tmpdir } from 'node:os';
 import { join, resolve as resolvePath } from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 import {
-    ACT_AS_HEADER,
     IntegrationEventValidator,
     ReadableDeliveryPageValidator,
     VCValidator,
@@ -218,7 +217,7 @@ referralPrograms:
                 [seed, token, webhookSecret].some(value => JSON.stringify(output).includes(value))
             ).toBe(false);
 
-            stage = 'persisted contract and version 2 disclosure';
+            stage = 'disposable actor initialization';
             const partner = await getLearnCard(seed);
             const writerDid = `did:web:localhost%3A4000:users:${writerId}`;
             const writer = await getLearnCard(seed, writerDid);
@@ -230,6 +229,7 @@ referralPrograms:
                 ),
             });
             const learner = await getLearnCard(randomBytes(32).toString('hex'));
+            stage = 'learner profile creation';
             await learner.invoke.createProfile({
                 profileId: learnerId,
                 displayName: 'Referral E2E Learner',
@@ -237,9 +237,11 @@ referralPrograms:
                 shortBio: '',
             });
             const learnerDid = `did:web:localhost%3A4000:users:${learnerId}`;
+            stage = 'persisted contract fetch';
             const contract = await learner.invoke.getContract(contractUri);
             expect(contract.owner.profileId).toBe(partnerId);
-            expect(contract.writers?.some(profile => profile.profileId === writerId)).toBe(true);
+            // getContract does not publish writer membership. Actual issuance below proves it.
+            stage = 'persisted version 2 disclosure';
             expect(contract.readableDeliveryRecipients).toContainEqual(
                 expect.objectContaining({
                     profileId: recipientId,
@@ -247,11 +249,13 @@ referralPrograms:
                     disclosureVersion: '2',
                 })
             );
+            stage = 'persisted outcome category';
             expect(contract.contract.read.credentials.categories['Work History']).toBeDefined();
             expect(contract.contract.write.credentials.categories['Work History']).toBeDefined();
 
             stage = 'recipient request and real learner approval';
             const externalReferenceId = `referral-case-${suffix}`;
+            stage = 'recipient token sends referral request';
             const request = await recipient.invoke.sendContractRequest({
                 contractUri,
                 targetProfileId: learnerId,
@@ -259,6 +263,7 @@ referralPrograms:
             });
             expect(request.status).toBe('pending');
             expect(await partner.invoke.verifyConsent(contractUri, learnerId)).toBe(false);
+            stage = 'learner accepts the pending request';
             const { termsUri } = await learner.invoke.consentToContract(contractUri, {
                 audienceVersion: contract.audienceVersion,
                 expectedRequestId: request.requestId,
@@ -284,6 +289,7 @@ referralPrograms:
             expect(authority?.relationship.name).toBe('outcomes');
             expect(authority?.signingAuthority.endpoint).toBe('http://localhost:5200/api');
             if (!authority) throw new Error('Configured signer missing');
+            stage = 'configured outcome Boost creation';
             const boostUri = await writer.invoke.createBoost(
                 {
                     ...testUnsignedBoost,
@@ -298,6 +304,7 @@ referralPrograms:
                 },
                 { category: 'Work History', name: `Referral outcome ${suffix}` }
             );
+            stage = 'configured outcome issuance';
             const client = await writer.invoke.getLCNClient();
             const issuedUri =
                 await client.contracts.writeCredentialToContractViaSigningAuthority.mutate({
@@ -309,6 +316,7 @@ referralPrograms:
                         endpoint: authority.signingAuthority.endpoint,
                     },
                 });
+            stage = 'learner receives configured outcome';
             const delivered = await learner.invoke.getCredentialsForContract(termsUri);
             expect(
                 delivered.records.some(
@@ -317,6 +325,7 @@ referralPrograms:
                 )
             ).toBe(true);
             // Preserve the original response, including every issuer field and proof.
+            stage = 'learner resolves original signed outcome';
             const original = await learner.read.get(issuedUri);
             const credential = VCValidator.parse(original);
             expect(credential.proof).toBeDefined();
@@ -338,6 +347,7 @@ referralPrograms:
                 { 'Work History': [sharedUri] },
                 contract.audienceVersion
             );
+            stage = 'direct recipient token reads exact credential';
             const response = await fetch(`${API}/readable-delivery/data`, {
                 method: 'POST',
                 redirect: 'error',
@@ -345,11 +355,12 @@ referralPrograms:
                 headers: {
                     Authorization: `Bearer ${token}`,
                     'Content-Type': 'application/json',
-                    [ACT_AS_HEADER]: recipientId,
                 },
                 body: JSON.stringify({ contractUri, did: learnerDid, limit: 1 }),
             });
+            stage = `readable delivery HTTP ${response.status}`;
             expect(response.status).toBe(200);
+            stage = 'recipient version 2 fullCredential equality';
             const page = ReadableDeliveryPageValidator.parse(await response.json());
             expect(page.records.length).toBe(1);
             expect(page.hasMore).toBe(false);
