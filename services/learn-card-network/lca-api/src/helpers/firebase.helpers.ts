@@ -6,7 +6,10 @@ import forge from 'node-forge';
 import admin from 'firebase-admin';
 
 import type { AdminAuth } from '@helpers/firebaseAdminAuth.helpers';
-import { resolveOrCreateFirebaseUserByEmail } from '@helpers/classlinkPrimaryEmail.helpers';
+import {
+    resolveOrCreateFirebaseUserByEmail,
+    type FirebaseUserResolution,
+} from '@helpers/classlinkPrimaryEmail.helpers';
 
 const KEYCLOAK_ISSUER = 'https://sso.scout.org/auth/realms/wsb';
 const JWKS_URI = 'https://sso.scout.org/auth/realms/wsb/protocol/openid-connect/certs';
@@ -97,6 +100,40 @@ export type KeycloakBridgeUser = {
     roles?: string[];
 };
 
+const errorCode = (error: unknown): unknown => (error as { code?: unknown } | null)?.code;
+
+/**
+ * The verified branch's resolution when it would create `sub` but a Firebase user with that
+ * uid already exists (an earlier unverified sign-in made it with no email). Resolution found
+ * no user with the address and no school-email alias, so the address is free: attach it,
+ * verified, to the existing `sub` user (Firebase refuses it if another user took it meanwhile,
+ * and that holder is then resolved under the usual rules). A `sub` user that already holds
+ * another address (a real or a synthetic placeholder) keeps it and signs in as itself: the
+ * bridge never replaces a sign-in email.
+ */
+const attachVerifiedEmailToSubUser = async (
+    auth: AdminAuth,
+    sub: string,
+    email: string,
+    displayName: string | null
+): Promise<FirebaseUserResolution> => {
+    const existing = await auth.getUser(sub);
+    const held = existing.email?.trim().toLowerCase();
+    if (held && held !== email) {
+        console.warn('keycloak.bridge.sub_email_kept');
+        return { status: 'found', uid: sub };
+    }
+    try {
+        await auth.updateUser(sub, { email, emailVerified: true, displayName });
+    } catch (error) {
+        if (errorCode(error) !== 'auth/email-already-exists') throw error;
+        // Another user took the address after resolution: resolve it again, without creating.
+        return resolveOrCreateFirebaseUserByEmail(auth, email, { allowCreate: false });
+    }
+    console.info('keycloak.bridge.email_attached');
+    return { status: 'found', uid: sub };
+};
+
 /**
  * Map a verified Keycloak user to a Firebase user and mint its custom token.
  *
@@ -105,6 +142,9 @@ export type KeycloakBridgeUser = {
  * guard apply; a moved or orphaned account fails). Any other user signs in as the Keycloak
  * subject's own uid, is never matched to an existing user by email, and its unverified email
  * is never written to Firebase. `emailVerified: false` is never written onto a matched user.
+ * When a verified address resolves to nobody but the subject's own uid already exists (an
+ * earlier unverified sign-in), the address is attached to that user instead of creating one
+ * (`attachVerifiedEmailToSubUser`).
  * The custom token carries no `email` claim (see below).
  */
 export const createFirebaseTokenForKeycloakUser = async (
@@ -122,6 +162,9 @@ export const createFirebaseTokenForKeycloakUser = async (
             const resolved = await resolveOrCreateFirebaseUserByEmail(auth, email, {
                 allowCreate: true,
                 create: { uid: sub, email, displayName, emailVerified: true },
+            }).catch((error: unknown) => {
+                if (errorCode(error) !== 'auth/uid-already-exists') throw error;
+                return attachVerifiedEmailToSubUser(auth, sub, email, displayName);
             });
             if (!('uid' in resolved)) throw new Error(`Bridge mapping refused: ${resolved.status}`);
             uid = resolved.uid;

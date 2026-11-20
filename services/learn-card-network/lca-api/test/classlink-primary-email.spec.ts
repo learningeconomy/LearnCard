@@ -7,6 +7,7 @@ import {
     resolveOrCreateFirebaseUserByEmail,
 } from '../src/helpers/classlinkPrimaryEmail.helpers';
 import { createInMemoryAdminAuth } from '../src/helpers/firebaseAdminAuth.helpers';
+import { createFirebaseTokenForKeycloakUser } from '../src/helpers/firebase.helpers';
 import {
     getClassLinkIdentitiesCollection,
     upsertClassLinkIdentity,
@@ -308,5 +309,79 @@ describe('school-channel notice recipients (getSchoolNoticeRecipients)', () => {
             getSchoolNoticeRecipients({ primaryDid: 'did:key:someone-else', linkedDids: [] })
         ).resolves.toEqual([]);
         await expect(getSchoolNoticeRecipients(null)).resolves.toEqual([]);
+    });
+});
+
+describe('Keycloak bridge: a verified email after an unverified sign-in (LC-2409 review)', () => {
+    const sub = 'kc-sub';
+    const address = 'scout@example.org';
+    const unverifiedThenVerified = async (verifiedEmail: string) => {
+        await createFirebaseTokenForKeycloakUser(
+            { sub, email: 'unconfirmed@example.org', email_verified: false, name: 'Scout' },
+            auth
+        );
+        expect(fake.peek(sub)).toBeDefined();
+        expect(fake.peek(sub)?.email).toBeUndefined();
+        return createFirebaseTokenForKeycloakUser(
+            { sub, email: verifiedEmail, email_verified: true, name: 'Scout' },
+            auth
+        );
+    };
+
+    it('attaches an unused verified address to the existing subject user', async () => {
+        expect(await unverifiedThenVerified('Scout@Example.org')).toBe(`e2e-custom-token-${sub}`);
+        expect(fake.peek(sub)).toMatchObject({ email: address, emailVerified: true });
+        // Email-code login with the address now resolves to the same user.
+        expect(await resolveOrCreateFirebaseUserByEmail(auth, address)).toEqual({
+            status: 'found',
+            uid: sub,
+        });
+        // A repeat verified sign-in is stable.
+        expect(
+            await createFirebaseTokenForKeycloakUser(
+                { sub, email: address, email_verified: true },
+                auth
+            )
+        ).toBe(`e2e-custom-token-${sub}`);
+    });
+
+    it('a verified address another user holds keeps mapping to that user, unchanged', async () => {
+        fake.setUser({ uid: 'holder', email: address, emailVerified: true });
+        expect(await unverifiedThenVerified(address)).toBe('e2e-custom-token-holder');
+        expect(fake.peek(sub)?.email).toBeUndefined();
+        expect(fake.peek('holder')).toMatchObject({ email: address, emailVerified: true });
+    });
+
+    it('never replaces an address the subject user already holds', async () => {
+        fake.setUser({ uid: sub, email: 'kept@example.org', emailVerified: true });
+        expect(
+            await createFirebaseTokenForKeycloakUser(
+                { sub, email: address, email_verified: true },
+                auth
+            )
+        ).toBe(`e2e-custom-token-${sub}`);
+        expect(fake.peek(sub)?.email).toBe('kept@example.org');
+        expect(
+            await resolveOrCreateFirebaseUserByEmail(auth, address, { allowCreate: false })
+        ).toEqual({ status: 'missing' });
+    });
+
+    it('an address taken between resolution and the attach resolves to its holder', async () => {
+        await createFirebaseTokenForKeycloakUser({ sub, email_verified: false }, auth);
+        const spy = vi.spyOn(auth, 'updateUser').mockImplementationOnce(async () => {
+            fake.setUser({ uid: 'racer', email: address, emailVerified: true });
+            throw Object.assign(new Error('taken'), { code: 'auth/email-already-exists' });
+        });
+        try {
+            expect(
+                await createFirebaseTokenForKeycloakUser(
+                    { sub, email: address, email_verified: true },
+                    auth
+                )
+            ).toBe('e2e-custom-token-racer');
+        } finally {
+            spy.mockRestore();
+        }
+        expect(fake.peek(sub)?.email).toBeUndefined();
     });
 });
