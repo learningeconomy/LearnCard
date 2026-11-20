@@ -64,6 +64,11 @@ export type ClassLinkAccountContinuity = {
      * verified address is the email of another login of the same account.
      */
     signInEmailSource?: 'personal' | 'account';
+    /**
+     * T's real (non-synthetic) Firebase email, masked: the address this account signs in with
+     * now. Absent for a placeholder account (or from older servers).
+     */
+    maskedSignInEmail?: string;
     /** The school email still signs in (trusted domain, linked, not idle). */
     hasSchoolEmail: boolean;
     /** Remote escrow seals a different contact than the sign-in email (UX hint only). */
@@ -95,9 +100,10 @@ export type ClassLinkAccountContinuity = {
      */
     pinChangeRequired?: boolean;
     /**
-     * An interrupted or deferred sign-in email change waits to be undone: call
-     * `classlinkReconcilePersonalEmail` (it may change the sign-in email and sign this session
-     * out). Older servers reconciled inside this query and omit it.
+     * An interrupted or deferred sign-in email change waits to be undone, or the sign-in email
+     * drifted from what the server recorded: call `classlinkReconcilePersonalEmail` (it may
+     * change the sign-in email and sign this session out). Older servers reconciled inside this
+     * query and omit it.
      */
     reconcilePending?: boolean;
 };

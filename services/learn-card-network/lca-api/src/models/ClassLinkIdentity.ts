@@ -48,6 +48,18 @@ export interface MongoClassLinkIdentityType {
     primaryEmail?: ClassLinkPrimaryEmail;
     /** A demote that could not run (busy lock or failure); the continuity reconcile retries it. */
     demotePending?: { reason: string; at: Date };
+    /**
+     * The last completed demote (LC-2409): the uid it restored, the promoted addresses it took
+     * off that uid and the recorded previous Firebase email. With no `primaryEmail`, a uid that
+     * holds one of `emails` again (a promote write that outlived the lock) is drift, repaired by
+     * the continuity reconcile back to `prevFirebaseEmail` (`resolveRestoredEmail` rules).
+     */
+    demotedPrimaryEmail?: {
+        uid: string;
+        emails: string[];
+        prevFirebaseEmail: string | null;
+        at: Date;
+    };
     createdAt: Date;
     updatedAt: Date;
 }

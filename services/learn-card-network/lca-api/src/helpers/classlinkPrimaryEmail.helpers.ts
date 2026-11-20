@@ -388,16 +388,60 @@ export const getSchoolNoticeRecipients = async (
                 'primaryEmail.state': 'active',
             })
             .toArray();
-        const recipients = new Set<string>();
-        for (const identity of identities) {
-            const school = normalize(identity.email);
-            if (school && (await hasLiveSchoolEmailAlias(identity, now))) recipients.add(school);
-        }
-        return [...recipients];
+        const schools = identities
+            .map(identity => normalize(identity.email))
+            .filter((school): school is string => Boolean(school));
+        return await filterNoticeRecipients(schools, userKey, now);
     } catch {
         console.warn('classlink.school_notice.lookup_failed');
         return [];
     }
+};
+
+/**
+ * The one eligibility rule for every account security notice recipient (LC-2409), so the
+ * school notices and the previous-address list cannot drift apart. Drops empty and synthetic
+ * addresses, and any address that is a known school address (the email of any ClassLink
+ * identity, lowercased) unless exactly one identity has it (`findSoleSchoolEmailIdentity`), that
+ * identity belongs to the account and its alias is live (`hasLiveSchoolEmailAlias`). A recycled
+ * school inbox therefore never hears, whether it comes in as a school recipient or as a
+ * previous sign-in email (a promotion can replace T's school email). Other real addresses (a
+ * previous personal email) pass. Deduplicated, in order. Throws on a lookup failure (callers
+ * treat that as "send nothing to the unverified addresses").
+ */
+export const filterNoticeRecipients = async (
+    addresses: ReadonlyArray<string | null | undefined>,
+    userKey: Pick<MongoUserKeyType, 'primaryDid' | 'linkedDids'> | null | undefined,
+    now = new Date()
+): Promise<string[]> => {
+    const accountDids = userKey?.primaryDid ? getAccountDids(userKey) : [];
+    const unique = [
+        ...new Set(
+            addresses
+                .map(normalize)
+                .filter((address): address is string => Boolean(address))
+                .filter(address => !isSyntheticEmail(address))
+        ),
+    ];
+    const eligible: string[] = [];
+    for (const address of unique) {
+        const holders = await getClassLinkIdentitiesCollection()
+            .find({ email: address })
+            .limit(2)
+            .toArray();
+        if (!holders.length) {
+            eligible.push(address);
+            continue;
+        }
+        const sole = holders.length === 1 ? holders[0] : undefined;
+        if (
+            sole?.primaryDid &&
+            accountDids.includes(sole.primaryDid) &&
+            (await hasLiveSchoolEmailAlias(sole, now))
+        )
+            eligible.push(address);
+    }
+    return eligible;
 };
 
 // ---------------------------------------------------------------------------------------
@@ -582,6 +626,16 @@ export const promotePersonalEmail = async ({
             throw error;
         }
         firebaseChanged = true;
+        // The write may have outlived the lock: undo it if another change took over.
+        await settleFirebaseEmailWrite({
+            auth,
+            lock,
+            identityKey: identity.identityKey,
+            uid: plan.uid,
+            wrote: plan.email,
+            stillOurs: stored => isSameRecord(stored, record),
+            fallback: record,
+        });
     }
     // Firebase has no compare-and-set: re-read to make sure the write is the one that stuck.
     const after = await getFirebaseUserOrUndefined(auth, plan.uid);
@@ -614,8 +668,8 @@ export const rollbackPrimaryEmailRecord = async (
 /** The Firebase email demote puts back on T (see `demotePersonalEmail`). */
 const resolveRestoredEmail = async (
     auth: AdminAuth,
-    identity: MongoClassLinkIdentityType,
-    record: ClassLinkPrimaryEmail
+    identity: Pick<MongoClassLinkIdentityType, 'tenantId' | 'email' | 'lastAuthTime'>,
+    record: Pick<ClassLinkPrimaryEmail, 'uid' | 'prevFirebaseEmail'>
 ): Promise<{ email: string; emailVerified: boolean }> => {
     const synthetic = { email: syntheticEmailForUid(record.uid), emailVerified: false };
     const previous = normalize(record.prevFirebaseEmail);
@@ -626,6 +680,228 @@ const resolveRestoredEmail = async (
     if (holder && holder.uid !== record.uid) return synthetic;
     if (previous === normalize(identity.email) && !isTrustedSchoolEmail(identity)) return synthetic;
     return { email: previous, emailVerified: true };
+};
+
+/** Whether `stored` is the record `mine` (same uid, address, state and `at`). */
+export const isSameRecord = (
+    stored: Pick<ClassLinkPrimaryEmail, 'uid' | 'email' | 'state' | 'at'> | undefined,
+    mine: Pick<ClassLinkPrimaryEmail, 'uid' | 'email' | 'state' | 'at'>
+): boolean =>
+    Boolean(
+        stored &&
+        stored.uid === mine.uid &&
+        normalize(stored.email) === normalize(mine.email) &&
+        stored.state === mine.state &&
+        new Date(stored.at).getTime() === new Date(mine.at).getTime()
+    );
+
+export type ExpectedSignInEmail = { email: string; emailVerified: boolean };
+
+/**
+ * What `uid`'s Firebase email should be under the committed state of `identity` (LC-2409), or
+ * undefined when that cannot be told safely:
+ *
+ * - an `active` record on `uid`: its address;
+ * - a `pending` record (a change in flight, or one left for the reconcile), or a record on
+ *   another uid: undefined (the change, its retry or the reconcile settles it);
+ * - no record: the previous Firebase email of the last demote of `uid`
+ *   (`demotedPrimaryEmail`), else of `fallback` (the record the caller wrote or demoted), under
+ *   the demote's rules (`resolveRestoredEmail`: synthetic when empty, held elsewhere, or an
+ *   untrusted school email).
+ */
+export const expectedSignInEmail = async (
+    auth: AdminAuth,
+    identity: MongoClassLinkIdentityType | null | undefined,
+    uid: string,
+    fallback?: Pick<ClassLinkPrimaryEmail, 'uid' | 'prevFirebaseEmail'>
+): Promise<ExpectedSignInEmail | undefined> => {
+    if (!identity) return undefined;
+    const record = identity.primaryEmail;
+    if (record) {
+        if (record.uid !== uid || record.state !== 'active') return undefined;
+        return { email: normalize(record.email) as string, emailVerified: true };
+    }
+    const demoted =
+        identity.demotedPrimaryEmail?.uid === uid
+            ? identity.demotedPrimaryEmail
+            : fallback?.uid === uid
+              ? fallback
+              : undefined;
+    if (!demoted) return undefined;
+    return resolveRestoredEmail(auth, identity, {
+        uid,
+        prevFirebaseEmail: demoted.prevFirebaseEmail,
+    });
+};
+
+/**
+ * Compensation for a Firebase email write (Firebase has no compare-and-set, and a write in
+ * flight can outlive the lock). Call right after each `updateUser` of a sign-in email made
+ * under the lock. Returns when this call still holds the lock and the identity's record still
+ * reflects its intent (`stillOurs`, on a fresh read). Otherwise, best effort, puts `uid` back on
+ * what the committed state expects (`expectedSignInEmail`), and only while `uid` still holds
+ * the value this call wrote (read, compare, then write, so a newer writer is not clobbered),
+ * then throws `PRECONDITION_FAILED` (reason `busy`). Never throws anything else. What it
+ * cannot settle is left for `findSignInEmailDrift` and the continuity reconcile.
+ */
+export const settleFirebaseEmailWrite = async ({
+    auth,
+    lock,
+    identityKey,
+    uid,
+    wrote,
+    stillOurs,
+    fallback,
+}: {
+    auth: AdminAuth;
+    lock: EmailChangeLock;
+    identityKey: string;
+    uid: string;
+    wrote: string;
+    stillOurs: (record: ClassLinkPrimaryEmail | undefined) => boolean;
+    fallback?: Pick<ClassLinkPrimaryEmail, 'uid' | 'prevFirebaseEmail'>;
+}): Promise<void> => {
+    let held = true;
+    try {
+        await lock.assertHeld();
+    } catch {
+        held = false;
+    }
+    let fresh: MongoClassLinkIdentityType | null | undefined;
+    try {
+        fresh = await getClassLinkIdentitiesCollection().findOne({ identityKey });
+    } catch {
+        // Cannot tell: while still held, the compare-and-set writes that follow decide.
+        if (held) return;
+        fresh = undefined;
+    }
+    if (held && fresh && stillOurs(fresh.primaryEmail)) return;
+    try {
+        const expected = await expectedSignInEmail(auth, fresh, uid, fallback);
+        const written = normalize(wrote);
+        if (!expected) {
+            console.warn('classlink.primary_email.compensate_skipped');
+        } else if (expected.email !== written) {
+            const current = await getFirebaseUserOrUndefined(auth, uid);
+            if (current && normalize(current.email) === written) {
+                await auth.updateUser(uid, expected);
+                console.warn('classlink.primary_email.compensated');
+            }
+        }
+    } catch {
+        console.warn('classlink.primary_email.compensate_failed');
+    }
+    lockBusy();
+};
+
+export type SignInEmailDrift = { uid: string; current: string; expected: ExpectedSignInEmail };
+
+/**
+ * Whether `identity`'s promoted uid holds a real Firebase email the committed state does not
+ * expect (LC-2409; e.g. a promote or demote write that outlived the lock and landed after
+ * another change): an `active` record on T whose address T does not hold, or, with no record,
+ * the uid of the last demote holding one of the addresses that demote took off it. Never for a
+ * `pending` record (a verify in progress, or an interrupted one `needsReconcile` demotes), a
+ * `demotePending`, a uid that is not a Firebase login of the account, or an account whose T
+ * signs in with its own email and was never demoted (`signInEmailSource` `account`, an
+ * alias-only verify). Undefined when the expected value cannot be told safely (logged).
+ */
+export const findSignInEmailDrift = async (
+    auth: AdminAuth | undefined,
+    identity: MongoClassLinkIdentityType,
+    userKey: Pick<MongoUserKeyType, 'authProviders'> | null | undefined
+): Promise<SignInEmailDrift | undefined> => {
+    if (!auth || identity.demotePending) return undefined;
+    const record = identity.primaryEmail;
+    const demoted = identity.demotedPrimaryEmail;
+    let uid: string;
+    if (record) {
+        if (record.state !== 'active' || record.uid !== identity.firebaseUid) return undefined;
+        uid = record.uid;
+    } else if (demoted?.uid) {
+        uid = demoted.uid;
+    } else return undefined;
+    if (!hasFirebaseProvider(userKey, uid)) return undefined;
+    try {
+        const user = await getFirebaseUserOrUndefined(auth, uid);
+        const current = normalize(user?.email);
+        if (!user || !current || isSyntheticEmail(current)) return undefined;
+        if (record) {
+            if (current === normalize(record.email)) return undefined;
+        } else if (!(demoted?.emails ?? []).map(normalize).includes(current)) return undefined;
+        const expected = await expectedSignInEmail(auth, identity, uid);
+        if (!expected) {
+            console.warn('classlink.primary_email.drift_unresolved', {
+                tenantId: identity.tenantId,
+            });
+            return undefined;
+        }
+        if (expected.email === current) return undefined;
+        if (expected.emailVerified) {
+            // Never move T onto an address another Firebase user now holds.
+            const holder = await getFirebaseUserByEmailOrUndefined(auth, expected.email);
+            if (holder && holder.uid !== uid) {
+                console.warn('classlink.primary_email.drift_unresolved', {
+                    tenantId: identity.tenantId,
+                });
+                return undefined;
+            }
+        }
+        console.warn('classlink.primary_email.drift', { tenantId: identity.tenantId });
+        return { uid, current, expected };
+    } catch {
+        console.warn('classlink.primary_email.drift_unresolved', { tenantId: identity.tenantId });
+        return undefined;
+    }
+};
+
+/**
+ * Repair a `findSignInEmailDrift` under the lock (the continuity reconcile): re-read inside the
+ * lock, put the uid back on the expected email (only while it still holds the drifted value),
+ * settle the write like any other (`settleFirebaseEmailWrite`), and release the reservations an
+ * abandoned verify left on the subject. Returns whether Firebase changed and the uid.
+ */
+export const repairSignInEmailDrift = async ({
+    auth,
+    identityKey,
+    userKey,
+    lock,
+}: {
+    auth: AdminAuth;
+    identityKey: string;
+    userKey: Pick<MongoUserKeyType, 'authProviders'> | null | undefined;
+    lock: EmailChangeLock;
+}): Promise<{ changed: boolean; uid?: string }> => {
+    const fresh = await getClassLinkIdentitiesCollection().findOne({ identityKey });
+    if (!fresh) return { changed: false };
+    const drift = await findSignInEmailDrift(auth, fresh, userKey);
+    if (!drift) return { changed: false };
+    const before = fresh.primaryEmail;
+    await lock.assertHeld();
+    const current = await getFirebaseUserOrUndefined(auth, drift.uid);
+    if (normalize(current?.email) !== drift.current) lockBusy();
+    await auth.updateUser(drift.uid, drift.expected);
+    await settleFirebaseEmailWrite({
+        auth,
+        lock,
+        identityKey,
+        uid: drift.uid,
+        wrote: drift.expected.email,
+        stillOurs: record =>
+            before
+                ? record?.uid === before.uid &&
+                  new Date(record.at).getTime() === new Date(before.at).getTime() &&
+                  record.state === before.state
+                : !record,
+    });
+    await lock.assertHeld();
+    await releaseAbandonedEmailReservations(fresh.subject, [
+        drift.expected.email,
+        before?.email,
+        fresh.personalEmailVerifiedAt ? fresh.personalEmail : undefined,
+    ]);
+    console.info('classlink.primary_email.drift_repaired', { tenantId: fresh.tenantId });
+    return { changed: true, uid: drift.uid };
 };
 
 /**
@@ -683,6 +959,18 @@ export const demotePersonalEmail = async ({
         await auth.updateUser(record.uid, restored);
         firebaseChanged = true;
         restoredEmail = restored.email;
+        if (lock)
+            await settleFirebaseEmailWrite({
+                auth,
+                lock,
+                identityKey: identity.identityKey,
+                uid: record.uid,
+                wrote: restored.email,
+                stillOurs: stored =>
+                    stored?.uid === record.uid &&
+                    new Date(stored.at).getTime() === new Date(record.at).getTime(),
+                fallback: record,
+            });
     }
 
     const account =
@@ -725,7 +1013,19 @@ export const demotePersonalEmail = async ({
             'primaryEmail.uid': record.uid,
             'primaryEmail.at': record.at,
         },
-        { $unset: { primaryEmail: '', demotePending: '' }, $set: { updatedAt: new Date() } }
+        {
+            $unset: { primaryEmail: '', demotePending: '' },
+            $set: {
+                // What `findSignInEmailDrift` checks once no record tracks the uid.
+                demotedPrimaryEmail: {
+                    uid: record.uid,
+                    emails: promotedEmails.map(value => normalize(value) as string),
+                    prevFirebaseEmail: record.prevFirebaseEmail,
+                    at: new Date(),
+                },
+                updatedAt: new Date(),
+            },
+        }
     );
     console.info('classlink.primary_email.demoted', { reason });
 

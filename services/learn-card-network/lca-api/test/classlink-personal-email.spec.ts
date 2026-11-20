@@ -17,6 +17,7 @@ import {
 } from '../src/models/AuthSubject';
 import { deleteClassLinkDataForAccount } from '../src/helpers/classlinkDeletion.helpers';
 import {
+    demotePersonalEmail,
     recordEmailCodeSignIn,
     recordFirebaseSignIn,
     resolveClassLinkAliasUid,
@@ -815,6 +816,86 @@ describe('ClassLink personal email', () => {
                 expect((await userKey())?.contactMethod).toEqual({ type: 'email', value: school });
             });
 
+            describe('a Firebase write that outlives the lock is compensated (LC-2409 review)', () => {
+                /** Inside T's promote write: the lock expires and another holder demotes. */
+                const demoteDuringPromoteWrite = (after?: () => Promise<void>) => {
+                    const original = e2eAdminAuth.auth.updateUser;
+                    vi.spyOn(e2eAdminAuth.auth, 'updateUser').mockImplementationOnce(
+                        async (...args) => {
+                            await cache.node.set(lockKey, 'another-holder');
+                            const pending = await identity();
+                            await demotePersonalEmail({
+                                auth: e2eAdminAuth.auth,
+                                identity: pending!,
+                                reason: 'removed',
+                            });
+                            // Then the slow promote write lands.
+                            const result = await original(...args);
+                            await after?.();
+                            return result;
+                        }
+                    );
+                };
+
+                it('a promote write that lands after another holder demoted is reverted', async () => {
+                    demoteDuringPromoteWrite();
+                    expect(await errorOf(verify(email))).toMatchObject({
+                        code: 'PRECONDITION_FAILED',
+                        cause: { reason: 'busy' },
+                    });
+                    expect(firebaseEmail()).toBe(school);
+                    expect((await identity())?.primaryEmail).toBeUndefined();
+                    expect(await findAuthSubjectByIdentityKey(`email:${email}`)).toBeNull();
+                    expect((await caller().getAccountContinuity()).reconcilePending).toBe(false);
+                });
+
+                it('never clobbers a newer write', async () => {
+                    demoteDuringPromoteWrite(async () => {
+                        e2eAdminAuth.setUser({
+                            uid: 'uid-test',
+                            email: 'newer@example.org',
+                            emailVerified: true,
+                        });
+                    });
+                    expect(await errorOf(verify(email))).toMatchObject({
+                        code: 'PRECONDITION_FAILED',
+                        cause: { reason: 'busy' },
+                    });
+                    expect(firebaseEmail()).toBe('newer@example.org');
+                });
+
+                it('a promote write that lands after another holder committed a change is put on its address', async () => {
+                    await verify('first@example.com');
+                    const original = e2eAdminAuth.auth.updateUser;
+                    vi.spyOn(e2eAdminAuth.auth, 'updateUser').mockImplementationOnce(
+                        async (...args) => {
+                            // Another holder commits `first` again as the active record.
+                            await cache.node.set(lockKey, 'another-holder');
+                            const pending = await identity();
+                            await getClassLinkIdentitiesCollection().updateOne(
+                                { firebaseUid: 'uid-test' },
+                                {
+                                    $set: {
+                                        primaryEmail: {
+                                            ...pending!.primaryEmail!,
+                                            email: 'first@example.com',
+                                            state: 'active',
+                                            at: new Date(Date.now() + 1000),
+                                        },
+                                    },
+                                }
+                            );
+                            return original(...args);
+                        }
+                    );
+                    expect(await errorOf(verify('second@example.com'))).toMatchObject({
+                        code: 'PRECONDITION_FAILED',
+                        cause: { reason: 'busy' },
+                    });
+                    expect(firebaseEmail()).toBe('first@example.com');
+                });
+            });
+
             it('the completion write is a compare-and-set: a stale write after a takeover does not land', async () => {
                 const actual = await vi.importActual<
                     typeof import('../src/models/ClassLinkIdentity')
@@ -1201,6 +1282,7 @@ describe('ClassLink personal email', () => {
                     .map(([message]) => message);
 
             it('a first promotion tells the previous sign-in email, never the new one', async () => {
+                await linkSchoolEmail();
                 await verify(email);
                 expect(noticeRecipients()).toEqual([school]);
                 expect(notices()[0]?.templateModel).toMatchObject({
@@ -1216,6 +1298,49 @@ describe('ClassLink personal email', () => {
                 await verify('second@example.com');
                 expect(noticeRecipients()).toEqual(['first@example.com', school]);
                 expect(noticeRecipients()).not.toContain('second@example.com');
+            });
+
+            describe('previous addresses pass the school-notice rules (LC-2409 review)', () => {
+                const shareSchoolEmail = async () => {
+                    const own = await identity();
+                    const { _id, ...rest } = own!;
+                    await getClassLinkIdentitiesCollection().insertOne({
+                        ...rest,
+                        identityKey: 'classlink:tenant-test:recycled',
+                        firebaseUid: 'other-uid',
+                        subject: 'other-subject',
+                        primaryDid: 'did:key:other-student',
+                    } as typeof own & {});
+                };
+
+                it('a recycled school inbox replaced by the promotion hears nothing', async () => {
+                    await linkSchoolEmail();
+                    // Record the account's DID on the identity first (as any account call does).
+                    await caller().getAccountContinuity();
+                    await shareSchoolEmail();
+                    await verify(email);
+                    expect(firebaseEmail()).toBe(email);
+                    expect(noticeRecipients()).toEqual([]);
+                });
+
+                it('an eligible school inbox replaced by the promotion is told', async () => {
+                    await linkSchoolEmail();
+                    await verify(email);
+                    expect(noticeRecipients()).toEqual([school]);
+                });
+
+                it('a school inbox without a live alias hears nothing', async () => {
+                    // No verified `email:<school>` subject linked to the identity.
+                    await verify(email);
+                    expect(noticeRecipients()).toEqual([]);
+                });
+
+                it('a previous personal sign-in email is still told', async () => {
+                    await verify('first@example.com');
+                    send.mockClear();
+                    await verify('second@example.com');
+                    expect(noticeRecipients()).toEqual(['first@example.com']);
+                });
             });
 
             it('re-verifying the active address sends nothing', async () => {
@@ -1492,6 +1617,7 @@ describe('ClassLink personal email', () => {
             expect(before).toEqual({
                 personalEmail: { allowed: true },
                 emailVerified: false,
+                maskedSignInEmail: 's******@example.edu',
                 emailPrimary: false,
                 primaryUid: 'uid-test',
                 hasSchoolEmail: false,
@@ -1803,6 +1929,131 @@ describe('ClassLink personal email', () => {
             } finally {
                 spy.mockRestore();
             }
+        });
+
+        describe('drift repair (LC-2409 review)', () => {
+            it('T holding an address a completed demote took off it is reported and repaired', async () => {
+                await verifyEmail();
+                await caller().removePersonalEmail();
+                expect(e2eAdminAuth.peek('uid-test')?.email).toBe(school);
+                expect((await caller().getAccountContinuity()).reconcilePending).toBe(false);
+                // A promote write that outlived the lock lands after the demote, and its
+                // reservation was abandoned.
+                e2eAdminAuth.setUser({ uid: 'uid-test', email, emailVerified: true });
+                await getAuthSubjectsCollection().insertOne({
+                    identityKey: `email:${email}`,
+                    subject: 'same-subject',
+                    email,
+                    emailVerified: true,
+                    createdAt: new Date(),
+                    lastLoginAt: new Date(),
+                    reservedBy: 'abandoned',
+                } as never);
+                expect(await caller().getAccountContinuity()).toMatchObject({
+                    reconcilePending: true,
+                });
+                expect(e2eAdminAuth.peek('uid-test')?.email).toBe(email);
+                expect(await caller().reconcilePersonalEmail()).toEqual({
+                    changed: true,
+                    customToken: 'e2e-custom-token-uid-test',
+                });
+                expect(e2eAdminAuth.peek('uid-test')?.email).toBe(school);
+                expect(await findAuthSubjectByIdentityKey(`email:${email}`)).toBeNull();
+                expect((await caller().getAccountContinuity()).reconcilePending).toBe(false);
+                expect(await caller().reconcilePersonalEmail()).toEqual({ changed: false });
+            });
+
+            it('an active record whose address T lost is repaired to it', async () => {
+                await verifyEmail();
+                // A demote write that outlived the lock lands after the promotion committed.
+                e2eAdminAuth.setUser({ uid: 'uid-test', email: school, emailVerified: true });
+                expect(await caller().getAccountContinuity()).toMatchObject({
+                    emailPrimary: false,
+                    reconcilePending: true,
+                });
+                expect(await caller().reconcilePersonalEmail()).toEqual({
+                    changed: true,
+                    customToken: 'e2e-custom-token-uid-test',
+                });
+                expect(e2eAdminAuth.peek('uid-test')?.email).toBe(email);
+                expect(await caller().getAccountContinuity()).toMatchObject({
+                    emailPrimary: true,
+                    reconcilePending: false,
+                });
+            });
+
+            it('an account that signs in with its own email is not drift', async () => {
+                e2eAdminAuth.setUser({ uid: 'uid-test', email: 'own@example.org' });
+                expect(await caller().getAccountContinuity()).toMatchObject({
+                    signInEmailSource: 'account',
+                    reconcilePending: false,
+                });
+                expect(await caller().reconcilePersonalEmail()).toEqual({ changed: false });
+                expect(e2eAdminAuth.peek('uid-test')?.email).toBe('own@example.org');
+            });
+
+            it('an own email set after a demote is not drift', async () => {
+                await verifyEmail();
+                await caller().removePersonalEmail();
+                e2eAdminAuth.setUser({ uid: 'uid-test', email: 'own@example.org' });
+                expect((await caller().getAccountContinuity()).reconcilePending).toBe(false);
+                expect(await caller().reconcilePersonalEmail()).toEqual({ changed: false });
+                expect(e2eAdminAuth.peek('uid-test')?.email).toBe('own@example.org');
+            });
+
+            it('an alias-only verify is not drift', async () => {
+                e2eAdminAuth.setUser({ uid: 'uid-test', email: 'own@example.org' });
+                await verifyEmail();
+                expect(await caller().getAccountContinuity()).toMatchObject({
+                    emailVerified: true,
+                    signInEmailSource: 'account',
+                    reconcilePending: false,
+                });
+                expect(await caller().reconcilePersonalEmail()).toEqual({ changed: false });
+                expect(e2eAdminAuth.peek('uid-test')?.email).toBe('own@example.org');
+            });
+
+            it('a fresh pending verify is not drift', async () => {
+                vi.mocked(updateClassLinkIdentity).mockRejectedValueOnce(new Error('crash'));
+                await expect(verifyEmail()).rejects.toThrow();
+                expect(e2eAdminAuth.peek('uid-test')?.email).toBe(email);
+                expect(
+                    (await getClassLinkIdentitiesCollection().findOne({ firebaseUid: 'uid-test' }))
+                        ?.primaryEmail?.state
+                ).toBe('pending');
+                expect((await caller().getAccountContinuity()).reconcilePending).toBe(false);
+                expect(await caller().reconcilePersonalEmail()).toEqual({ changed: false });
+                expect(e2eAdminAuth.peek('uid-test')?.email).toBe(email);
+            });
+        });
+
+        describe('maskedSignInEmail', () => {
+            it("is T's own real email for an account with no personal email", async () => {
+                e2eAdminAuth.setUser({ uid: 'uid-test', email: 'own@example.org' });
+                const continuity = await caller().getAccountContinuity();
+                expect(continuity).toMatchObject({
+                    signInEmailSource: 'account',
+                    maskedSignInEmail: 'o**@example.org',
+                });
+                expect(continuity.maskedEmail).toBeUndefined();
+            });
+
+            it('is the promoted address once primary', async () => {
+                await verifyEmail();
+                expect((await caller().getAccountContinuity()).maskedSignInEmail).toBe(
+                    'p*******@example.com'
+                );
+            });
+
+            it('is absent for a placeholder account', async () => {
+                e2eAdminAuth.setUser({
+                    uid: 'uid-test',
+                    email: 'uid-test@users.classlink.invalid',
+                });
+                expect(await caller().getAccountContinuity()).not.toHaveProperty(
+                    'maskedSignInEmail'
+                );
+            });
         });
 
         it('demotePending is reconciled', async () => {
