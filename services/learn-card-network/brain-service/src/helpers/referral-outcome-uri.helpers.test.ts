@@ -7,6 +7,9 @@ describe('referral outcome storage URI validation', () => {
         'lc:network:localhost:4000/brain/trpc:credential:abc',
         'lc:network:localhost%3A4000/trpc:credential:abc',
         'lc:cloud:cloud.example.org:credential:abc',
+        'lc:cloud:cloud.example.org/trpc:credential:abc',
+        'lc:cloud:localhost%3A4000/trpc:credential:abc',
+        'lc:cloud:localhost:4000/trpc:credential:abc',
         'lc:cloud:localhost%3A4000:credential:abc',
     ])('accepts %s', uri => {
         expect(isReferralOutcomeUri(uri)).toBe(true);
