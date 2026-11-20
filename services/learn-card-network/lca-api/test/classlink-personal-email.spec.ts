@@ -19,6 +19,8 @@ import { deleteClassLinkDataForAccount } from '../src/helpers/classlinkDeletion.
 import {
     demotePersonalEmail,
     recordEmailCodeSignIn,
+    resolveOrCreateFirebaseUserByEmail,
+    withEmailChangeLock,
     recordFirebaseSignIn,
     resolveClassLinkAliasUid,
 } from '../src/helpers/classlinkPrimaryEmail.helpers';
@@ -1512,6 +1514,139 @@ describe('ClassLink personal email', () => {
             expect(firebaseEmail()).toBe(synthetic);
             expect((await userKey())?.contactMethod).toEqual({ type: 'email', value: synthetic });
             expect((await identity())?.primaryEmail).toBeUndefined();
+        });
+
+        describe('a restored school address passes the school rules (LC-2409 review)', () => {
+            const DAY = 24 * 60 * 60 * 1000;
+            const setIdentity = (fields: Record<string, unknown>) =>
+                getClassLinkIdentitiesCollection().updateOne(
+                    { firebaseUid: 'uid-test' },
+                    { $set: fields }
+                );
+            /** Who an email-code sign-in with `address` would reach (no new user is made). */
+            const loginUid = async (address: string) => {
+                const result = await resolveOrCreateFirebaseUserByEmail(
+                    e2eAdminAuth.auth,
+                    address,
+                    {
+                        allowCreate: false,
+                    }
+                );
+                return 'uid' in result ? result.uid : result.status;
+            };
+            const addRecycledIdentity = async () => {
+                const own = await identity();
+                const { _id, ...rest } = own!;
+                await getClassLinkIdentitiesCollection().insertOne({
+                    ...rest,
+                    identityKey: 'classlink:tenant-test:recycled',
+                    firebaseUid: 'other-uid',
+                    subject: 'other-subject',
+                    primaryDid: 'did:key:other-student',
+                    primaryEmail: undefined,
+                } as typeof own & {});
+            };
+
+            it('an eligible school address is restored and still signs in to T', async () => {
+                await verify(email);
+                await caller().removePersonalEmail();
+                expect(e2eAdminAuth.peek('uid-test')).toMatchObject({
+                    email: school,
+                    emailVerified: true,
+                });
+                expect(await loginUid(school)).toBe('uid-test');
+            });
+
+            it('a recycled school address (two identities) is not restored', async () => {
+                await verify(email);
+                await addRecycledIdentity();
+                await caller().removePersonalEmail();
+                expect(firebaseEmail()).toBe(syntheticEmailForUid('uid-test'));
+                expect(await loginUid(school)).toBe('missing');
+                // The synthetic restore is not drift.
+                expect(await caller().reconcilePersonalEmail()).toEqual({ changed: false });
+            });
+
+            it('a recycled school address is not restored by a demote either', async () => {
+                await verify(email);
+                await addRecycledIdentity();
+                await withEmailChangeLock(did, async lock =>
+                    demotePersonalEmail({
+                        auth: e2eAdminAuth.auth,
+                        identity: (await identity())!,
+                        reason: 'test',
+                        lock,
+                    })
+                );
+                expect(firebaseEmail()).toBe(syntheticEmailForUid('uid-test'));
+                expect(await loginUid(school)).toBe('missing');
+            });
+
+            it('an expired school address (idle beyond the limit) is not restored', async () => {
+                await verify(email);
+                // Still a recent sign-in to T, but no ClassLink sign-in for over a year.
+                await setIdentity({
+                    lastAuthTime: new Date(Date.now() - 400 * DAY),
+                    lastFirebaseSignIn: { uid: 'uid-test', at: new Date() },
+                });
+                await caller().removePersonalEmail();
+                expect(firebaseEmail()).toBe(syntheticEmailForUid('uid-test'));
+                expect(await loginUid(school)).toBe('missing');
+                expect(await caller().reconcilePersonalEmail()).toEqual({ changed: false });
+            });
+
+            it('a changed school address (no longer the identity email, school domain) is not restored', async () => {
+                await verify(email);
+                // The district renamed the student's address; the old one may be reissued.
+                await setIdentity({ email: 'renamed@example.edu' });
+                await caller().removePersonalEmail();
+                expect(firebaseEmail()).toBe(syntheticEmailForUid('uid-test'));
+                expect(await loginUid(school)).toBe('missing');
+            });
+
+            it('a changed school address now on another ClassLink identity (domain no longer listed) is not restored', async () => {
+                await verify(email);
+                await addRecycledIdentity();
+                await setIdentity({ email: 'renamed@district.example' });
+                vi.mocked(getClassLinkConfig).mockReturnValue({
+                    ...getClassLinkConfig()!,
+                    tenants: {
+                        'tenant-test': {
+                            ...getClassLinkConfig()!.tenants['tenant-test']!,
+                            allowedEmailDomains: ['district.example'],
+                        },
+                    },
+                });
+                await caller().removePersonalEmail();
+                expect(firebaseEmail()).toBe(syntheticEmailForUid('uid-test'));
+                expect(await loginUid(school)).toBe('missing');
+            });
+
+            it('a personal previous address is still restored', async () => {
+                await verify(email);
+                await getClassLinkIdentitiesCollection().updateOne(
+                    { firebaseUid: 'uid-test' },
+                    { $set: { 'primaryEmail.prevFirebaseEmail': 'own@example.org' } }
+                );
+                await caller().removePersonalEmail();
+                expect(e2eAdminAuth.peek('uid-test')).toMatchObject({
+                    email: 'own@example.org',
+                    emailVerified: true,
+                });
+                expect(await loginUid('own@example.org')).toBe('uid-test');
+            });
+
+            it('a restored school address that later becomes ineligible is not repaired away', async () => {
+                await verify(email);
+                await caller().removePersonalEmail();
+                expect(firebaseEmail()).toBe(school);
+                await setIdentity({
+                    lastAuthTime: new Date(Date.now() - 400 * DAY),
+                    lastFirebaseSignIn: { uid: 'uid-test', at: new Date() },
+                });
+                expect(await caller().reconcilePersonalEmail()).toEqual({ changed: false });
+                expect(firebaseEmail()).toBe(school);
+            });
         });
 
         it('remove deletes email:personal', async () => {

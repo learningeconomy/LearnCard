@@ -665,10 +665,44 @@ export const rollbackPrimaryEmailRecord = async (
     );
 };
 
-/** The Firebase email demote puts back on T (see `demotePersonalEmail`). */
+/**
+ * Whether `address` is (or may be) a school address: the identity's school email, any ClassLink
+ * identity's email, or on any district's `allowedEmailDomains`. Such an address can be recycled
+ * by the district, so it is never restored as a sign-in email unless it passes the school rules.
+ */
+const isSchoolAddress = async (
+    identity: Pick<MongoClassLinkIdentityType, 'email'>,
+    address: string
+): Promise<boolean> => {
+    if (address === normalize(identity.email)) return true;
+    const domain = address.split('@')[1];
+    const tenants = Object.values(getClassLinkConfig()?.tenants ?? {});
+    if (
+        tenants.some(tenant =>
+            (tenant?.allowedEmailDomains ?? []).some(allowed => allowed.toLowerCase() === domain)
+        )
+    )
+        return true;
+    return Boolean(await getClassLinkIdentitiesCollection().findOne({ email: address }));
+};
+
+/**
+ * The Firebase email demote puts back on T (see `demotePersonalEmail`), under the rules
+ * email-code login trusts a Firebase holder with:
+ *
+ * - a school address (`isSchoolAddress`) only while it is still this identity's (the one
+ *   identity with it, `findSoleSchoolEmailIdentity`), its domain is trusted and the identity
+ *   signed in through ClassLink within the district's idle limit (`isSchoolEmailAliasLive`), so
+ *   a recycled, changed or expired school inbox never signs in to the former student's account;
+ * - any other (personal) address while no other Firebase user holds it;
+ * - otherwise (and for an empty previous email) the reserved, undeliverable synthetic address.
+ */
 const resolveRestoredEmail = async (
     auth: AdminAuth,
-    identity: Pick<MongoClassLinkIdentityType, 'tenantId' | 'email' | 'lastAuthTime'>,
+    identity: Pick<
+        MongoClassLinkIdentityType,
+        'tenantId' | 'email' | 'lastAuthTime' | 'identityKey'
+    >,
     record: Pick<ClassLinkPrimaryEmail, 'uid' | 'prevFirebaseEmail'>
 ): Promise<{ email: string; emailVerified: boolean }> => {
     const synthetic = { email: syntheticEmailForUid(record.uid), emailVerified: false };
@@ -676,9 +710,14 @@ const resolveRestoredEmail = async (
     // Firebase Admin cannot remove an email: an empty previous email becomes the reserved,
     // undeliverable synthetic address (the contact method is restored exactly).
     if (!previous || isSyntheticEmail(previous)) return synthetic;
+    if (await isSchoolAddress(identity, previous)) {
+        if (previous !== normalize(identity.email) || !isSchoolEmailAliasLive(identity))
+            return synthetic;
+        const sole = await findSoleSchoolEmailIdentity(previous);
+        if (sole?.identityKey !== identity.identityKey) return synthetic;
+    }
     const holder = await getFirebaseUserByEmailOrUndefined(auth, previous);
     if (holder && holder.uid !== record.uid) return synthetic;
-    if (previous === normalize(identity.email) && !isTrustedSchoolEmail(identity)) return synthetic;
     return { email: previous, emailVerified: true };
 };
 
@@ -706,8 +745,9 @@ export type ExpectedSignInEmail = { email: string; emailVerified: boolean };
  *   another uid: undefined (the change, its retry or the reconcile settles it);
  * - no record: the previous Firebase email of the last demote of `uid`
  *   (`demotedPrimaryEmail`), else of `fallback` (the record the caller wrote or demoted), under
- *   the demote's rules (`resolveRestoredEmail`: synthetic when empty, held elsewhere, or an
- *   untrusted school email).
+ *   the demote's rules (`resolveRestoredEmail`: synthetic when empty, held elsewhere, or a
+ *   school address that is no longer this identity's live school email). Evaluated now, so a
+ *   drift repair never moves T onto a school address that has since become ineligible.
  */
 export const expectedSignInEmail = async (
     auth: AdminAuth,
