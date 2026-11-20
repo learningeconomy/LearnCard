@@ -9,6 +9,14 @@ export type AdminAuth = Pick<
     'getUser' | 'getUserByEmail' | 'updateUser' | 'createUser' | 'deleteUser' | 'createCustomToken'
 >;
 
+/** A verified Firebase ID token's sign-in: who, when (`auth_time`) and how. */
+export type VerifiedFirebaseSignIn = {
+    uid: string;
+    authTime: Date;
+    /** `firebase.sign_in_provider`: `password`, `google.com`, `phone`, `custom`, … */
+    signInProvider?: string;
+};
+
 type FakeUser = {
     uid: string;
     email?: string;
@@ -31,6 +39,7 @@ const toRecord = (user: FakeUser): admin.auth.UserRecord =>
  */
 export const createInMemoryAdminAuth = () => {
     const users = new Map<string, FakeUser>();
+    const idTokens = new Map<string, VerifiedFirebaseSignIn>();
     const state = { lazyUsers: true };
     const byEmail = (email: string) =>
         [...users.values()].find(user => user.email === email.trim().toLowerCase());
@@ -95,8 +104,16 @@ export const createInMemoryAdminAuth = () => {
                 ...(user.email ? { email: user.email.toLowerCase() } : {}),
             }),
         peek: (uid: string): FakeUser | undefined => users.get(uid),
+        /** An ID token `verifyFirebaseSignIn` accepts for this sign-in (tests). */
+        issueIdToken: (signIn: VerifiedFirebaseSignIn): string => {
+            const token = `e2e-id-token-${idTokens.size + 1}`;
+            idTokens.set(token, signIn);
+            return token;
+        },
+        verifyIdToken: (token: string): VerifiedFirebaseSignIn | undefined => idTokens.get(token),
         reset: (options: { lazyUsers?: boolean } = {}) => {
             users.clear();
+            idTokens.clear();
             state.lazyUsers = options.lazyUsers ?? true;
         },
     };
@@ -111,3 +128,25 @@ export const e2eAdminAuth = createInMemoryAdminAuth();
  */
 export const getAdminAuth = (): AdminAuth | undefined =>
     environment.IS_E2E_TEST ? e2eAdminAuth.auth : app?.auth();
+
+/**
+ * Verify a Firebase ID token (signature, expiry, and not revoked) and return its sign-in, or
+ * undefined when it does not verify or no Admin app is configured. Under `IS_E2E_TEST`, only
+ * tokens issued by `e2eAdminAuth.issueIdToken` verify.
+ */
+export const verifyFirebaseSignIn = async (
+    idToken: string
+): Promise<VerifiedFirebaseSignIn | undefined> => {
+    if (environment.IS_E2E_TEST) return e2eAdminAuth.verifyIdToken(idToken);
+    if (!app) return undefined;
+    try {
+        const decoded = await app.auth().verifyIdToken(idToken, true);
+        return {
+            uid: decoded.uid,
+            authTime: new Date(decoded.auth_time * 1000),
+            signInProvider: decoded.firebase?.sign_in_provider,
+        };
+    } catch {
+        return undefined;
+    }
+};

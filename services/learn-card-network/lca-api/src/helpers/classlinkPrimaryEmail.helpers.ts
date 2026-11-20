@@ -7,7 +7,11 @@ import { getClassLinkConfig, getClassLinkTenant } from '@helpers/classlink.confi
 import { getAccountDids } from '@helpers/classlinkContext.helpers';
 import { firebaseErrorCode } from '@helpers/classlinkFirebaseUser.helpers';
 import { isSyntheticEmail, syntheticEmailForUid } from '@helpers/syntheticEmail.helpers';
-import { getAdminAuth, type AdminAuth } from '@helpers/firebaseAdminAuth.helpers';
+import {
+    getAdminAuth,
+    type AdminAuth,
+    type VerifiedFirebaseSignIn,
+} from '@helpers/firebaseAdminAuth.helpers';
 import { DEFAULT_SCHOOL_EMAIL_ALIAS_MAX_IDLE_DAYS } from 'types/classlink';
 import { findAuthSubjectByIdentityKey, getAuthSubjectsCollection } from '../models/AuthSubject';
 import {
@@ -209,20 +213,26 @@ const isRecent = (value: unknown, now: Date): value is Date =>
     now.getTime() - value.getTime() <= RECENT_SIGN_IN_MAX_AGE_MS;
 
 /**
- * Whether the account signed in recently enough to change its sign-in email: a ClassLink
- * sign-in (`identity.lastAuthTime`, the id_token's `iat`) within `RECENT_SIGN_IN_MAX_AGE_MS`, or
- * an email-code sign-in with the identity's **active** promoted address (its `email:` subject,
- * linked to the identity, with `lastLoginAt` within the window and after the promotion, so the
- * verify that linked the address does not count as a sign-in).
+ * Whether the account signed in recently enough to change its sign-in email, within
+ * `RECENT_SIGN_IN_MAX_AGE_MS`: a ClassLink sign-in (`identity.lastAuthTime`, the id_token's
+ * `iat`); a fresh sign-in to T itself (`identity.lastFirebaseSignIn` on `identity.firebaseUid`:
+ * an email-code sign-in with T's own email, or a client-side email-link, Google, Apple or phone
+ * sign-in reported by `recordFirebaseSignIn`), so an account that signs in with its own email,
+ * or one whose promotion was removed, can still prove it; or an email-code sign-in with the
+ * identity's **active** promoted address (its `email:` subject, linked to the identity, with
+ * `lastLoginAt` within the window and after the promotion, so the verify that linked the
+ * address does not count as a sign-in; the Keycloak login ticket records it there too).
  */
 export const hasRecentSignIn = async (
     identity: Pick<
         MongoClassLinkIdentityType,
-        'lastAuthTime' | 'primaryEmail' | 'firebaseUid' | 'subject'
+        'lastAuthTime' | 'lastFirebaseSignIn' | 'primaryEmail' | 'firebaseUid' | 'subject'
     >,
     now = new Date()
 ): Promise<boolean> => {
     if (isRecent(identity.lastAuthTime, now)) return true;
+    const own = identity.lastFirebaseSignIn;
+    if (own?.uid === identity.firebaseUid && isRecent(own.at, now)) return true;
     const record = identity.primaryEmail;
     if (record?.state !== 'active' || record.uid !== identity.firebaseUid) return false;
     const subject = await findAuthSubjectByIdentityKey(`email:${normalize(record.email)}`);
@@ -232,6 +242,54 @@ export const hasRecentSignIn = async (
         isRecent(subject.lastLoginAt, now) &&
         subject.lastLoginAt.getTime() > new Date(record.at).getTime()
     );
+};
+
+/**
+ * Record a fresh sign-in to the Firebase login `uid` (`lastFirebaseSignIn`) on every ClassLink
+ * identity whose T it is, keeping the latest. Only for sign-ins that proved a sign-in method of
+ * `uid` itself (never a custom token lca-api minted, which verify and remove hand out). Best
+ * effort: never throws.
+ */
+export const recordFirebaseSignIn = async (uid: string, at = new Date()): Promise<boolean> => {
+    if (!uid || !Number.isFinite(at.getTime())) return false;
+    try {
+        await getClassLinkIdentitiesCollection().updateMany(
+            {
+                firebaseUid: uid,
+                $or: [
+                    { 'lastFirebaseSignIn.uid': { $ne: uid } },
+                    { 'lastFirebaseSignIn.at': { $lt: at } },
+                ],
+            },
+            { $set: { lastFirebaseSignIn: { uid, at } } }
+        );
+        return true;
+    } catch {
+        console.warn('classlink.identity.sign_in_update_failed');
+        return false;
+    }
+};
+
+/** Sign-ins with a custom token lca-api minted (or anonymous ones) prove no sign-in method. */
+const UNPROVEN_SIGN_IN_PROVIDERS = new Set(['custom', 'anonymous']);
+
+/**
+ * Record a client-side sign-in to T (email link, Google, Apple, phone; they never reach
+ * lca-api) from its verified ID token, so `hasRecentSignIn` counts it. Only for T
+ * (`identity.firebaseUid`), only when the token's `auth_time` is within the window, and never
+ * for a custom-token sign-in (verify and remove hand those out, and the email-code and ClassLink
+ * sign-ins are recorded server-side). Returns whether a recent sign-in now counts.
+ */
+export const recordReportedSignIn = async (
+    identity: Pick<MongoClassLinkIdentityType, 'firebaseUid'>,
+    signIn: VerifiedFirebaseSignIn,
+    now = new Date()
+): Promise<boolean> => {
+    if (!signIn.signInProvider || UNPROVEN_SIGN_IN_PROVIDERS.has(signIn.signInProvider))
+        return false;
+    if (signIn.uid !== identity.firebaseUid || !isRecent(signIn.authTime, now)) return false;
+    const at = signIn.authTime.getTime() > now.getTime() ? now : signIn.authTime;
+    return recordFirebaseSignIn(signIn.uid, at);
 };
 
 /**
@@ -265,6 +323,30 @@ export const releaseEmailReservation = async (
         identityKey: `email:${normalize(email)}`,
         subject,
         reservedBy,
+    });
+};
+
+/**
+ * Release every `email:` reservation an unfinished verify left on `subject` (still tokened),
+ * except the addresses in `keep` (the address T holds, or this call's own reservation).
+ * A reservation is tokened only until its verify commits, and every verify, demote and
+ * reconcile of the account holds the email-change lock, so under that lock a tokened
+ * reservation is always one an earlier verify abandoned: one a retry took over (its token no
+ * longer matches the pending record's), or one a later verify for a different address
+ * replaced. Call only under the lock.
+ */
+export const releaseAbandonedEmailReservations = async (
+    subject: string,
+    keep: ReadonlyArray<string | null | undefined> = []
+): Promise<void> => {
+    const kept = keep
+        .map(normalize)
+        .filter((value): value is string => Boolean(value))
+        .map(value => `email:${value}`);
+    await getAuthSubjectsCollection().deleteMany({
+        subject,
+        reservedBy: { $exists: true },
+        identityKey: { $regex: /^email:/, ...(kept.length ? { $nin: kept } : {}) },
     });
 };
 
@@ -416,7 +498,13 @@ export const promotePersonalEmail = async ({
     let previous = identity.primaryEmail;
     if (previous && previous.uid !== plan.uid) {
         // A record left on another uid: put that uid back first.
-        await demotePersonalEmail({ auth, identity, reason: 'uid_changed', lock });
+        await demotePersonalEmail({
+            auth,
+            identity,
+            reason: 'uid_changed',
+            lock,
+            keepReservation: plan.email,
+        });
         previous = undefined;
     }
     // Changing the address: remember the promoted address T may still hold (the one it holds
@@ -529,7 +617,8 @@ const resolveRestoredEmail = async (
 
 /**
  * Put T back exactly as it was before the promotion, release an unfinished verify's `email:`
- * reservation (`reservedBy`), then clear `primaryEmail` and `demotePending` (only while the
+ * reservation (`reservedBy`; under the lock, every reservation still tokened on the subject,
+ * see `releaseAbandonedEmailReservations`), then clear `primaryEmail` and `demotePending` (only while the
  * record is still the one read). Each step is idempotent and only acts while T / the contact
  * still hold the personal address, so a retry converges. Returns a custom token for T when T is still a
  * login of the account and its Firebase email changed (the change revoked T's sessions).
@@ -542,12 +631,15 @@ export const demotePersonalEmail = async ({
     userKey,
     reason,
     lock,
+    keepReservation,
 }: {
     auth: AdminAuth | undefined;
     identity: MongoClassLinkIdentityType;
     userKey?: MongoUserKeyType | null;
     reason: string;
     lock?: EmailChangeLock;
+    /** An address whose reservation the caller (a verify in progress) still needs. */
+    keepReservation?: string;
 }): Promise<{ customToken?: string }> => {
     const record = identity.primaryEmail;
     if (!record) {
@@ -571,11 +663,13 @@ export const demotePersonalEmail = async ({
     );
     const user = await getFirebaseUserOrUndefined(auth, record.uid);
     const held = normalize(user?.email);
+    let restoredEmail: string | undefined;
     if (user && held && promotedEmails.includes(held)) {
         const restored = await resolveRestoredEmail(auth, identity, record);
         await lock?.assertHeld();
         await auth.updateUser(record.uid, restored);
         firebaseChanged = true;
+        restoredEmail = restored.email;
     }
 
     const account =
@@ -596,9 +690,18 @@ export const demotePersonalEmail = async ({
         }
     }
 
-    // An unfinished verify's `email:` reservation goes with its pending record.
-    if (record.reservedBy) {
-        await lock?.assertHeld();
+    // An unfinished verify's `email:` reservation goes with its pending record. Under the lock,
+    // also every other one left on the subject (a takeover's newer token, or an address a
+    // later verify replaced), except what T holds now, the committed personal email (in case
+    // its token removal failed) and the caller's own reservation.
+    if (lock) {
+        await lock.assertHeld();
+        await releaseAbandonedEmailReservations(identity.subject, [
+            firebaseChanged ? restoredEmail : held,
+            identity.personalEmailVerifiedAt ? identity.personalEmail : undefined,
+            keepReservation,
+        ]);
+    } else if (record.reservedBy) {
         await releaseEmailReservation(record.email, identity.subject, record.reservedBy);
     }
 

@@ -16,6 +16,7 @@ import {
 import { getAdminAuth } from '@helpers/firebaseAdminAuth.helpers';
 import {
     recordEmailCodeSignIn,
+    recordFirebaseSignIn,
     resolveOrCreateFirebaseUserByEmail,
 } from '@helpers/classlinkPrimaryEmail.helpers';
 import cache from '@cache';
@@ -385,6 +386,10 @@ export const firebaseRouter = t.router({
                 // A fresh email-code sign-in (LC-2409: lets the account change its sign-in
                 // email, see hasRecentSignIn). Only an existing `email:` subject is touched.
                 await recordEmailCodeSignIn(email);
+                // The address is this login's own email (not a school-email alias): a fresh
+                // sign-in to that Firebase user (hasRecentSignIn, for an account that signs in
+                // with its own email, or whose promotion was removed).
+                if (resolved.status === 'found') await recordFirebaseSignIn(resolved.uid);
 
                 return { success: true, token };
             } catch (err: any) {

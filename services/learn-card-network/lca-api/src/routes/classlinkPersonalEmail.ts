@@ -13,7 +13,7 @@ import { maskEmail } from '@helpers/maskEmail';
 import { isSyntheticEmail } from '@helpers/syntheticEmail.helpers';
 import { contactDigest } from '@helpers/escrowContactDigest';
 import { isEscrowConfirmBlocked } from '@helpers/escrowConfirmLimits';
-import { getAdminAuth } from '@helpers/firebaseAdminAuth.helpers';
+import { getAdminAuth, verifyFirebaseSignIn } from '@helpers/firebaseAdminAuth.helpers';
 import {
     demotePersonalEmail,
     getEmailChangeLockKey,
@@ -24,6 +24,8 @@ import {
     lockBusy,
     planPrimaryEmail,
     promotePersonalEmail,
+    recordReportedSignIn,
+    releaseAbandonedEmailReservations,
     releaseEmailReservation,
     rollbackPrimaryEmailRecord,
     withEmailChangeLock,
@@ -77,6 +79,8 @@ const CONTINUITY_REFUSALS: Record<AccountContinuityReason, string> = {
 
 /** Address checks (start or verify) allowed per account per 10 minutes. */
 const PERSONAL_EMAIL_CHECK_LIMIT = 20;
+/** Sign-in reports per account per 10 minutes (`recordRecentSignIn`). */
+const RECENT_SIGN_IN_REPORT_LIMIT = 10;
 /** Codes sent per account per 10 minutes. */
 const PERSONAL_EMAIL_SEND_LIMIT = 3;
 /** Wrong codes allowed per issued code before it is invalidated. */
@@ -549,6 +553,29 @@ export const personalEmailProcedures = {
                 }
             });
         }),
+    /**
+     * Report a client-side sign-in to T (email link, Google, Apple, phone: they never reach
+     * lca-api) with its Firebase ID token, so it counts as a recent sign-in for `start`,
+     * `verify` and `remove` (`recordReportedSignIn`): the token must verify (not revoked), be
+     * T's, carry an `auth_time` within the window, and not come from a custom token (verify and
+     * remove hand those out; email-code and ClassLink sign-ins are recorded server-side).
+     * `recorded` says whether a recent sign-in now counts; the app retries the refused call
+     * only then. Rate-limited per account.
+     */
+    recordRecentSignIn: accountRoute
+        .input(z.object({ idToken: z.string().min(1).max(8192) }))
+        .output(z.object({ recorded: z.boolean() }))
+        .mutation(async ({ input: { idToken }, ctx }) => {
+            await consumeBudget(
+                `classlink:rate:recent-sign-in:${sha256Hex(ctx.user.accountDid)}`,
+                RECENT_SIGN_IN_REPORT_LIMIT,
+                600,
+                'Too many attempts. Please try again later.'
+            );
+            const { identity } = await resolveClassLinkContext(ctx.user.accountDid);
+            const signIn = await verifyFirebaseSignIn(idToken);
+            return { recorded: Boolean(signIn && (await recordReportedSignIn(identity, signIn))) };
+        }),
     startPersonalEmail: accountRoute
         .input(z.object({ email: personalEmail }))
         .output(z.object({ success: z.boolean() }))
@@ -868,6 +895,21 @@ export const personalEmailProcedures = {
                             { $unset: { reservedBy: '' } }
                         )
                         .catch(() => console.warn('classlink.personal_email.unreserve_failed'));
+                // Earlier attempts' reservations nothing tracks any more: an address a failed
+                // verify left on T that this change replaced, or one a retry took over before
+                // failing. T and the contact are off them now (T keeps its own email on an
+                // alias-only verify), so release them rather than leave them blocking the
+                // address for every other account. Best effort.
+                try {
+                    const holder = await getFirebaseUserOrUndefined(auth, identity.firebaseUid);
+                    await lock.assertHeld();
+                    await releaseAbandonedEmailReservations(identity.subject, [
+                        email,
+                        holder?.email,
+                    ]);
+                } catch {
+                    console.warn('classlink.personal_email.release_failed');
+                }
                 const audit = { tenantId: continuity.tenantId, policyHash: continuity.policyHash };
                 logAccountContinuityEvent('verified', audit);
                 if (record) logAccountContinuityEvent('primary_set', audit);

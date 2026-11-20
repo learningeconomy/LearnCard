@@ -472,6 +472,13 @@ export type LCAPluginMethods = {
      * with it before any other call. Busy is `PRECONDITION_FAILED` with reason `busy`.
      */
     classlinkReconcilePersonalEmail: () => Promise<{ changed: boolean; customToken?: string }>;
+    /**
+     * Report this device's Firebase sign-in (email link, Google, Apple, phone never reach
+     * lca-api) with its ID token, after a `recent_sign_in_required` refusal. `recorded`: a
+     * fresh sign-in to the account's ClassLink login now counts, so the refused call can be
+     * retried. Custom-token sessions (email code, ClassLink) never count here.
+     */
+    classlinkRecordRecentSignIn: (args: { idToken: string }) => Promise<{ recorded: boolean }>;
     classlinkGetAuthorizeUrl: (args: {
         redirectUri: string;
         codeChallenge: string;

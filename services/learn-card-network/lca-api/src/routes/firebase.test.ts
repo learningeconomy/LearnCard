@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
     getDidAuthVp: vi.fn(),
     resolveOrCreate: vi.fn(),
     recordEmailCodeSignIn: vi.fn(),
+    recordFirebaseSignIn: vi.fn(),
     cache: { get: vi.fn(), set: vi.fn(), delete: vi.fn() },
     verifyPresentation: vi.fn(),
     isAuthorizedDID: vi.fn(),
@@ -44,6 +45,7 @@ vi.mock('@helpers/rateLimit.helpers', () => ({
 vi.mock('@helpers/classlinkPrimaryEmail.helpers', () => ({
     resolveOrCreateFirebaseUserByEmail: mocks.resolveOrCreate,
     recordEmailCodeSignIn: mocks.recordEmailCodeSignIn,
+    recordFirebaseSignIn: mocks.recordFirebaseSignIn,
 }));
 vi.mock('@helpers/firebaseAdminAuth.helpers', () => ({ getAdminAuth: () => mocks.adminAuth }));
 vi.mock('jwt-decode', () => ({
@@ -142,6 +144,22 @@ describe('email sign-in resolution (LC-2409)', () => {
         });
         // The sign-in counts as recent for a sign-in email change (hasRecentSignIn).
         expect(mocks.recordEmailCodeSignIn).toHaveBeenCalledWith('Student@Example.EDU');
+        // A school-email alias is not the login's own email: no sign-in on the uid.
+        expect(mocks.recordFirebaseSignIn).not.toHaveBeenCalled();
+    });
+
+    it("verifyLoginCode with a login's own email records a fresh sign-in on that uid", async () => {
+        mocks.resolveOrCreate.mockResolvedValue({ status: 'found', uid: 'own-uid' });
+        await expect(
+            caller.verifyLoginCode({ email: 'me@example.org', code: '123456' })
+        ).resolves.toEqual({ success: true, token: 'token-own-uid' });
+        expect(mocks.recordFirebaseSignIn).toHaveBeenCalledWith('own-uid');
+    });
+
+    it('a newly created user records no sign-in on a uid', async () => {
+        mocks.resolveOrCreate.mockResolvedValue({ status: 'created', uid: 'new-uid' });
+        await caller.verifyLoginCode({ email: 'new@example.org', code: '123456' });
+        expect(mocks.recordFirebaseSignIn).not.toHaveBeenCalled();
     });
 
     it('a wrong code records no sign-in', async () => {

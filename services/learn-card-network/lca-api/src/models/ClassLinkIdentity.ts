@@ -29,6 +29,14 @@ export interface MongoClassLinkIdentityType {
      */
     primaryDid?: string;
     lastAuthTime: Date;
+    /**
+     * The latest fresh sign-in to a Firebase login (`uid`) other than ClassLink's (LC-2409): an
+     * email-code sign-in with that login's own email (`firebase.verifyLoginCode`), or a
+     * client-side one (email link, Google, Apple, phone) reported with its ID token
+     * (`classlink.recordRecentSignIn`, its `auth_time`). Counts as a recent sign-in
+     * (`hasRecentSignIn`) only while `uid` is still `firebaseUid`.
+     */
+    lastFirebaseSignIn?: { uid: string; at: Date };
     isMinorHint?: boolean;
     personalEmail?: string;
     personalEmailVerifiedAt?: Date;

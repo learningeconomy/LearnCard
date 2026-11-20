@@ -16,7 +16,10 @@ import {
     findAuthSubjectByIdentityKey,
 } from '../src/models/AuthSubject';
 import { deleteClassLinkDataForAccount } from '../src/helpers/classlinkDeletion.helpers';
-import { recordEmailCodeSignIn } from '../src/helpers/classlinkPrimaryEmail.helpers';
+import {
+    recordEmailCodeSignIn,
+    recordFirebaseSignIn,
+} from '../src/helpers/classlinkPrimaryEmail.helpers';
 import { getCurrentProfile } from '../src/helpers/currentProfile';
 import { updateClassLinkIdentity } from '../src/models/ClassLinkIdentity';
 import { e2eAdminAuth } from '../src/helpers/firebaseAdminAuth.helpers';
@@ -893,6 +896,120 @@ describe('ClassLink personal email', () => {
             });
         });
 
+        describe('abandoned reservations (LC-2409 review)', () => {
+            const other = 'other@example.com';
+            const third = 'third@example.com';
+            const ageRecord = () =>
+                getClassLinkIdentitiesCollection().updateOne(
+                    { firebaseUid: 'uid-test' },
+                    { $set: { 'primaryEmail.at': new Date(Date.now() - 11 * 60 * 1000) } }
+                );
+            /** Verify `address`, crashing at the completion write (T already holds it). */
+            const crashAfterFirebase = async (address: string) => {
+                vi.mocked(updateClassLinkIdentity).mockRejectedValueOnce(new Error('crash'));
+                await expect(verify(address)).rejects.toThrow('crash');
+                expect(firebaseEmail()).toBe(address);
+            };
+
+            it('a pending address replaced by a successful verify of another address is released', async () => {
+                await crashAfterFirebase(email);
+                expect(
+                    (await findAuthSubjectByIdentityKey(`email:${email}`))?.reservedBy
+                ).toBeTruthy();
+                expect(await verify(other)).toEqual(promoted);
+                // The abandoned reservation no longer blocks the address for other accounts.
+                expect(await findAuthSubjectByIdentityKey(`email:${email}`)).toBeNull();
+                const linked = await findAuthSubjectByIdentityKey(`email:${other}`);
+                expect(linked).toMatchObject({ subject: 'same-subject' });
+                expect(linked?.reservedBy).toBeUndefined();
+            });
+
+            it('two abandoned addresses (A, then B replacing it) are both released by the reconcile', async () => {
+                await crashAfterFirebase(email);
+                await crashAfterFirebase(other);
+                expect((await identity())?.primaryEmail).toMatchObject({
+                    email: other,
+                    replacedEmail: email,
+                });
+                await ageRecord();
+                expect((await caller().reconcilePersonalEmail()).changed).toBe(true);
+                expect(await findAuthSubjectByIdentityKey(`email:${email}`)).toBeNull();
+                expect(await findAuthSubjectByIdentityKey(`email:${other}`)).toBeNull();
+                expect(firebaseEmail()).toBe(school);
+            });
+
+            it('A, then B, then C committed: neither A nor B stays reserved', async () => {
+                await crashAfterFirebase(email);
+                await crashAfterFirebase(other);
+                expect(await verify(third)).toEqual(promoted);
+                expect(await findAuthSubjectByIdentityKey(`email:${email}`)).toBeNull();
+                expect(await findAuthSubjectByIdentityKey(`email:${other}`)).toBeNull();
+                expect(await findAuthSubjectByIdentityKey(`email:${third}`)).toMatchObject({
+                    subject: 'same-subject',
+                });
+            });
+
+            it('a takeover that fails before the promote write is released by the reconcile', async () => {
+                await crashAfterFirebase(email);
+                const first = (await identity())?.primaryEmail?.reservedBy;
+                // The retry takes the reservation over, then fails before promote's write.
+                vi.mocked(getOrCreateAuthSubjectLinkedTo).mockRejectedValueOnce(
+                    new Error('transient')
+                );
+                await expect(verify(email)).rejects.toThrow('transient');
+                const reserved = await findAuthSubjectByIdentityKey(`email:${email}`);
+                expect(reserved?.reservedBy).toBeTruthy();
+                expect(reserved?.reservedBy).not.toBe(first);
+                expect((await identity())?.primaryEmail?.reservedBy).toBe(first);
+                await ageRecord();
+                expect((await caller().reconcilePersonalEmail()).changed).toBe(true);
+                expect(await findAuthSubjectByIdentityKey(`email:${email}`)).toBeNull();
+            });
+
+            it('remove releases a taken-over reservation too', async () => {
+                await crashAfterFirebase(email);
+                vi.mocked(getOrCreateAuthSubjectLinkedTo).mockRejectedValueOnce(
+                    new Error('transient')
+                );
+                await expect(verify(email)).rejects.toThrow('transient');
+                await caller().removePersonalEmail();
+                expect(await findAuthSubjectByIdentityKey(`email:${email}`)).toBeNull();
+            });
+
+            it("never releases another subject's reservation or a committed address", async () => {
+                await getAuthSubjectsCollection().insertOne({
+                    identityKey: 'email:theirs@example.com',
+                    subject: 'their-subject',
+                    email: 'theirs@example.com',
+                    emailVerified: true,
+                    createdAt: new Date(),
+                    reservedBy: 'their-token',
+                } as never);
+                expect(await verify(email)).toEqual(promoted);
+                // The committed address kept its token (its removal failed).
+                await getAuthSubjectsCollection().updateOne(
+                    { identityKey: `email:${email}` },
+                    { $set: { reservedBy: 'stale-token' } }
+                );
+                // A change to another address stops at Firebase, and is reconciled.
+                vi.spyOn(e2eAdminAuth.auth, 'updateUser').mockRejectedValueOnce(
+                    Object.assign(new Error('unavailable'), { code: 'auth/internal-error' })
+                );
+                await expect(verify(other)).rejects.toThrow();
+                await ageRecord();
+                expect((await caller().reconcilePersonalEmail()).changed).toBe(true);
+                expect((await identity())?.personalEmail).toBe(email);
+                // Their in-flight reservation, and this account's committed address, stay.
+                expect(
+                    await findAuthSubjectByIdentityKey('email:theirs@example.com')
+                ).toMatchObject({ reservedBy: 'their-token' });
+                expect(await findAuthSubjectByIdentityKey(`email:${email}`)).toMatchObject({
+                    subject: 'same-subject',
+                });
+                expect(await findAuthSubjectByIdentityKey(`email:${other}`)).toBeNull();
+            });
+        });
+
         describe('recent sign-in (LC-2409 review)', () => {
             const HOUR = 60 * 60 * 1000;
             const classLinkSignInAgo = (ms: number) =>
@@ -961,6 +1078,108 @@ describe('ClassLink personal email', () => {
                 expect(await reason(caller().removePersonalEmail())).toBe(
                     'recent_sign_in_required'
                 );
+            });
+
+            it('an account that signs in with its own email: an email-code sign-in to T counts', async () => {
+                // T signs in with its own real address, so verify only links an alias and
+                // there is no promotion whose subject could carry the sign-in.
+                e2eAdminAuth.setUser({ uid: 'uid-test', email: 'own@example.org' });
+                await classLinkSignInAgo(25 * HOUR);
+                expect(await reason(caller().startPersonalEmail({ email }))).toBe(
+                    'recent_sign_in_required'
+                );
+                // verifyLoginCode with T's own email (`found`, not an alias).
+                await recordFirebaseSignIn('uid-test');
+                expect(await verify(email)).toMatchObject({ primary: false });
+                expect(await caller().removePersonalEmail()).toMatchObject({ removed: true });
+            });
+
+            it('after a removal, an email-code sign-in to T counts', async () => {
+                await verify(email);
+                await caller().removePersonalEmail();
+                await classLinkSignInAgo(25 * HOUR);
+                expect(
+                    await reason(caller().startPersonalEmail({ email: 'second@example.com' }))
+                ).toBe('recent_sign_in_required');
+                await recordFirebaseSignIn('uid-test');
+                expect(await verify('second@example.com')).toEqual(promoted);
+            });
+
+            it('a sign-in recorded on another uid, or an old one, does not count', async () => {
+                await classLinkSignInAgo(25 * HOUR);
+                await recordFirebaseSignIn('some-other-uid');
+                await getClassLinkIdentitiesCollection().updateOne(
+                    { firebaseUid: 'uid-test' },
+                    { $set: { lastFirebaseSignIn: { uid: 'old-uid', at: new Date() } } }
+                );
+                expect(await reason(caller().startPersonalEmail({ email }))).toBe(
+                    'recent_sign_in_required'
+                );
+                await recordFirebaseSignIn('uid-test', new Date(Date.now() - 25 * HOUR));
+                expect(await reason(caller().startPersonalEmail({ email }))).toBe(
+                    'recent_sign_in_required'
+                );
+                // An older sign-in never replaces a newer one.
+                await recordFirebaseSignIn('uid-test');
+                await recordFirebaseSignIn('uid-test', new Date(Date.now() - 25 * HOUR));
+                await expect(caller().startPersonalEmail({ email })).resolves.toEqual({
+                    success: true,
+                });
+            });
+
+            describe('recordRecentSignIn (email link, Google, Apple: client-side sign-ins)', () => {
+                const idToken = (overrides: { uid?: string; ago?: number; provider?: string }) =>
+                    e2eAdminAuth.issueIdToken({
+                        uid: overrides.uid ?? 'uid-test',
+                        authTime: new Date(Date.now() - (overrides.ago ?? 60_000)),
+                        signInProvider: overrides.provider ?? 'password',
+                    });
+
+                it('a fresh email-link sign-in to T counts once reported', async () => {
+                    await verify(email);
+                    await classLinkSignInAgo(25 * HOUR);
+                    expect(await reason(caller().removePersonalEmail())).toBe(
+                        'recent_sign_in_required'
+                    );
+                    expect(await caller().recordRecentSignIn({ idToken: idToken({}) })).toEqual({
+                        recorded: true,
+                    });
+                    expect(await caller().removePersonalEmail()).toMatchObject({ removed: true });
+                });
+
+                it.each([
+                    [
+                        'a custom-token sign-in (verify and remove hand those out)',
+                        { provider: 'custom' },
+                    ],
+                    ['an anonymous sign-in', { provider: 'anonymous' }],
+                    ['a sign-in older than 24 hours', { ago: 25 * HOUR }],
+                    ['a sign-in to another uid', { uid: 'other-uid' }],
+                ])('%s does not count', async (_label, overrides) => {
+                    await classLinkSignInAgo(25 * HOUR);
+                    expect(
+                        await caller().recordRecentSignIn({ idToken: idToken(overrides) })
+                    ).toEqual({ recorded: false });
+                    expect(await reason(caller().startPersonalEmail({ email }))).toBe(
+                        'recent_sign_in_required'
+                    );
+                });
+
+                it('a token that does not verify records nothing', async () => {
+                    await classLinkSignInAgo(25 * HOUR);
+                    expect(await caller().recordRecentSignIn({ idToken: 'forged' })).toEqual({
+                        recorded: false,
+                    });
+                    expect((await identity())?.lastFirebaseSignIn).toBeUndefined();
+                });
+
+                it('is rate-limited per account', async () => {
+                    for (let i = 0; i < 10; i++)
+                        await caller().recordRecentSignIn({ idToken: 'forged' });
+                    await expect(
+                        caller().recordRecentSignIn({ idToken: idToken({}) })
+                    ).rejects.toMatchObject({ code: 'TOO_MANY_REQUESTS' });
+                });
             });
 
             it('recording an email-code sign-in never creates a subject', async () => {
