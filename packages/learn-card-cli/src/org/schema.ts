@@ -179,6 +179,7 @@ const referralProgram = z
     .object({
         name: z.string().trim().min(1).max(100),
         partner: profileIdSchema,
+        // Profile IDs registered as consent contract recipients so they can receive shared referral outcomes.
         referrers: z.array(profileIdSchema).min(1).max(50),
         outcomes: z
             .object({
