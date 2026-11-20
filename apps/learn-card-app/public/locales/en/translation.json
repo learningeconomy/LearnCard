@@ -10639,6 +10639,7 @@
     },
     "announcements": {
         "title": "Product announcements",
+        "description": "Choose how to hear about new features and updates.",
         "email": "Email",
         "push": "Push notifications",
         "loading": "Loading preferences…",

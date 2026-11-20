@@ -10576,6 +10576,7 @@
     },
     "announcements": {
         "title": "Annonces du produit",
+        "description": "Choisissez comment découvrir les nouveautés et les mises à jour.",
         "email": "E-mail",
         "push": "Notifications push",
         "loading": "Chargement des préférences…",

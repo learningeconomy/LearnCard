@@ -40,6 +40,7 @@ export const AnnouncementPreferences: React.FC<{ profileId: string }> = ({ profi
                 <h2 className="text-[15px] font-semibold text-grayscale-900">
                     {m['announcements.title']()}
                 </h2>
+                <p className="text-sm text-grayscale-600">{m['announcements.description']()}</p>
             </div>
             <GlassCard className="overflow-hidden">
                 {query.isPending ? (
