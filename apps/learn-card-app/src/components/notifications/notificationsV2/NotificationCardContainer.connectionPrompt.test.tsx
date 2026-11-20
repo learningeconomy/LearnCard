@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
     boostProps: vi.fn(),
     dismiss: vi.fn(async () => true),
     updateNotification: vi.fn(),
+    toast: vi.fn(),
 }));
 
 vi.mock('learn-card-base', () => ({
@@ -41,6 +42,8 @@ vi.mock('learn-card-base', () => ({
         mocks.profile();
         return { data: undefined, isLoading: false };
     },
+    ToastTypeEnum: { Error: 'error' },
+    useToast: () => ({ presentToast: mocks.toast }),
     useMarkNotificationRead: () => ({ mutate: vi.fn() }),
     useUpdateNotification: () => ({ mutate: mocks.updateNotification, mutateAsync: vi.fn() }),
     useWallet: () => ({
@@ -197,6 +200,17 @@ describe('suggested credentials (LC-2423)', () => {
             expect.objectContaining({ payload: { archived: true, read: true } }),
             expect.anything()
         );
+    });
+
+    it('keeps the suggestion and toasts when dismissal fails', async () => {
+        mocks.dismiss.mockRejectedValueOnce(new Error('network'));
+        renderContainer(suggestion());
+        const { handleArchive } = mocks.boostProps.mock.calls.at(-1)![0] as {
+            handleArchive: () => Promise<void>;
+        };
+        await handleArchive();
+        expect(mocks.updateNotification).not.toHaveBeenCalled();
+        expect(mocks.toast).toHaveBeenCalled();
     });
 
     it('does not dismiss a suggestion the person already accepted', async () => {

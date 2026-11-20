@@ -9,6 +9,8 @@ import {
     useGetProfile,
     useGetCurrentLCNUser,
     useWallet,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 import { getConnectionPromptCopy } from '../../../helpers/connectionPromptCopy';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
@@ -110,6 +112,7 @@ const StandardNotificationCardContainer: React.FC<NotificationCardProps> = ({
     const { mutate: markNotificationAsRead } = useMarkNotificationRead();
     const { refetch: refetchCurrentLCNUser } = useGetCurrentLCNUser();
     const { initWallet } = useWallet();
+    const { presentToast } = useToast();
 
     const handleArchiveNotification = () => {
         updateNotification(
@@ -126,7 +129,8 @@ const StandardNotificationCardContainer: React.FC<NotificationCardProps> = ({
     };
 
     // Archiving a suggestion the person has not accepted also dismisses it, so it
-    // leaves their incoming credentials. Best effort: the archive still happens.
+    // leaves their incoming credentials. Archive only once the dismissal succeeded;
+    // on failure the card stays so the person can retry.
     const handleDismissSuggestion = async () => {
         const uri = notification?.data?.vcUris?.[0];
         if (uri && !notification?.archived && notification?.actionStatus !== 'COMPLETED') {
@@ -135,6 +139,11 @@ const StandardNotificationCardContainer: React.FC<NotificationCardProps> = ({
                 await wallet.invoke.dismissContractSuggestion(uri);
             } catch (error) {
                 log.warn('Could not dismiss suggested credential', error);
+                presentToast('Could not dismiss this suggestion. Try again.', {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
+                return;
             }
         }
         handleArchiveNotification();
