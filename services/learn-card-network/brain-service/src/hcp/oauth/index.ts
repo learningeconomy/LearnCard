@@ -1,5 +1,13 @@
 export { createHcpOAuthApp, type CreateHcpOAuthAppOptions } from './app';
-export { beginAuthorize, completeConsent, exchangeToken, registerClient, type AsDeps } from './as';
+export {
+    beginAuthorize,
+    completeConsent,
+    completeConsentFromAssertion,
+    exchangeToken,
+    registerClient,
+    type AsDeps,
+} from './as';
+export { deriveOAuthClientDid } from './client-did';
 export {
     buildAuthorizationServerMetadata,
     buildProtectedResourceMetadata,

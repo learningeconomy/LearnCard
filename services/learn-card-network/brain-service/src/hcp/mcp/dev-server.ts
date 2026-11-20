@@ -1,13 +1,26 @@
 /**
  * Local HCP OAuth AS + MCP tools for Claude Code / curl.
  *
- * Does not bind 4319/3319. Seeds a memory grant (all PRM scopes) + one entry; prints ids.
+ * Does not bind 4319/3319.
  *
  *   bun --conditions=development src/hcp/mcp/dev-server.ts
  *   bun --conditions=development src/hcp/mcp/dev-server.ts 18766
+ *
+ * Env:
+ *  - HCP_MCP_DEV_STORE=neo4j: use the brain's Neo4j HCP store (same deps as the v1
+ *    router), so grants the local app creates are the ones tokens bind to. Needs the
+ *    brain's env (NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD, SEED, DOMAIN_NAME).
+ *    Default: an in-memory harness seeded with one grant and one entry.
+ *  - HCP_OAUTH_CONSENT_APP_URL: the LearnCard app that takes consent
+ *    (default http://localhost:3000).
+ *  - HCP_OAUTH_TOKEN_SECRET: HS256 secret; the brain must use the same one to verify
+ *    request tickets and sign consent assertions (default: a local-dev constant).
+ *  - HCP_OAUTH_DEV_TYPED_CONSENT=1: serve the dev typed subject/grant form instead of
+ *    the app handoff. No DID auth; refused when NODE_ENV is production.
  */
 import { createServer } from 'node:http';
 
+import type { HcpV1Deps } from '../v1/service/deps';
 import { createGrant } from '../v1/service/grants';
 import { createEntry } from '../v1/service/entries';
 import {
@@ -18,6 +31,7 @@ import {
     makeHarness,
     subject,
 } from '../v1/service/test-harness';
+import { hcpOAuthEnvironment } from '../oauth/environment';
 import { createHcpMcpApp, HCP_MCP_PATH } from './app';
 
 const DEFAULT_PORT = 8766;
@@ -30,9 +44,10 @@ if (!Number.isFinite(port) || port <= 0) {
     process.exit(1);
 }
 
-const main = async () => {
+/** In-memory harness with a grant covering every PRM scope and one entry. */
+const memoryDeps = async (): Promise<{ deps: HcpV1Deps; seeded: Record<string, string> }> => {
     const harness = makeHarness();
-    // Claude Code requests every PRM scope on login; seed must cover them all.
+    // The dev typed form needs a pre-issued grant covering every PRM scope.
     const grant = await createGrant(
         harness.deps,
         subject,
@@ -46,14 +61,33 @@ const main = async () => {
         subject,
         entryInput({ value: 'Prefers concise answers and dark mode' })
     );
+    return {
+        deps: harness.deps,
+        seeded: { subjectDid: SUBJECT_DID, clientDid: CLIENT_DID, grantId: grant.grantId },
+    };
+};
+
+const neo4jDeps = async (): Promise<{ deps: HcpV1Deps; seeded: Record<string, string> }> => {
+    const { createNeo4jHcpV1DepsFactory } = await import('../v1/neo4j-deps');
+    return { deps: createNeo4jHcpV1DepsFactory()(), seeded: {} };
+};
+
+const main = async () => {
+    const env = hcpOAuthEnvironment();
+    const mode = env.HCP_MCP_DEV_STORE;
+    const { deps, seeded } = mode === 'neo4j' ? await neo4jDeps() : await memoryDeps();
+    const devTypedConsent = env.HCP_OAUTH_DEV_TYPED_CONSENT === '1';
+    const consentAppUrl = env.HCP_OAUTH_CONSENT_APP_URL;
     const baseUrl = `http://127.0.0.1:${port}`;
     const app = createHcpMcpApp({
-        store: harness.store,
-        hcp: harness.deps,
+        store: deps.store,
+        hcp: deps,
         issuerUrl: baseUrl,
         resourceUrl: baseUrl,
-        tokenSecret: LOCAL_DEV_TOKEN_SECRET,
-        now: harness.deps.now,
+        tokenSecret: env.HCP_OAUTH_TOKEN_SECRET ?? LOCAL_DEV_TOKEN_SECRET,
+        now: deps.now,
+        consentAppUrl,
+        devTypedConsent,
     });
 
     const server = createServer(app);
@@ -66,17 +100,19 @@ const main = async () => {
         JSON.stringify(
             {
                 baseUrl,
+                store: mode,
+                consent: devTypedConsent ? 'dev typed form' : `${consentAppUrl}/hcp/connect`,
                 prm: `${baseUrl}/.well-known/oauth-protected-resource`,
                 as: `${baseUrl}/.well-known/oauth-authorization-server`,
                 mcp: `${baseUrl}${HCP_MCP_PATH}`,
                 probe: `${baseUrl}/hcp/oauth/v1/probe`,
-                subjectDid: SUBJECT_DID,
-                clientDid: CLIENT_DID,
-                grantId: grant.grantId,
+                ...seeded,
+                brainEnv: `HCP_OAUTH_ISSUER_URL=${baseUrl} (and the same HCP_OAUTH_TOKEN_SECRET)`,
                 claudeMcpAdd: `claude mcp add --transport http hcp-local ${baseUrl}${HCP_MCP_PATH}`,
                 claudeMcpLogin: 'claude mcp login hcp-local',
-                consentHint:
-                    'On the local consent HTML, paste subjectDid + grantId from this JSON (local only).',
+                consentHint: devTypedConsent
+                    ? 'On the dev typed form, paste subjectDid + grantId from this JSON (local only).'
+                    : 'Sign in to the LearnCard app in the browser that opens, then Allow.',
                 curlPrm: `curl -s ${baseUrl}/.well-known/oauth-protected-resource | jq .`,
             },
             null,

@@ -1,14 +1,18 @@
 /**
  * HCP OAuth Authorization Server controllers (Draft 3 §13).
  *
- * Unit 1 path: Authorization Code + PKCE against an *already-issued* HcpV1Grant.
- * The person (or a local consent form) selects which grant the token will represent.
- * OAuth client_id identifies the MCP host; grant.client.id is the HCP Context Client DID.
+ * Authorization Code + PKCE. Authorize hands the browser to the LearnCard app with a
+ * signed request ticket; the signed-in person allows it there, the brain issues a
+ * grant to the client's derived DID (deriveOAuthClientDid) and signs a consent
+ * assertion; `/oauth/consent/complete` mints the code only from that assertion.
+ * OAuth client_id identifies the MCP host; grant.client.id is its HCP Context Client DID.
  */
 import type { HcpV1Store } from '../v1/store/port';
 import { settleGrantExpiry } from '../v1/auth';
 import type { HcpV1Deps } from '../v1/service/deps';
 import { toGrant } from '../v1/service/grants';
+import { signOAuthRequestTicket, verifyConsentAssertion } from '../v1/service/oauth-consent';
+import { deriveOAuthClientDid } from './client-did';
 import { verifyPkceS256 } from './pkce';
 import { scopesForAccess, parseScopeString } from './scopes';
 import {
@@ -28,6 +32,12 @@ export type AsDeps = {
     /** Minimal deps settleGrantExpiry needs. */
     hcp: Pick<HcpV1Deps, 'store' | 'now' | 'newId' | 'providerId' | 'contracts'>;
     now?: () => Date;
+    /** The LearnCard app whose `/hcp/connect` takes the person's consent. */
+    consentAppUrl: string;
+    /** Scopes the AS issues (the PRM list). An empty request gets all of them. */
+    scopesSupported: readonly string[];
+    /** Dev/test only: authorize redirects to the local typed form instead of the app. */
+    typedConsent?: boolean;
 };
 
 export type AsError = { ok: false; status: number; error: string; error_description?: string };
@@ -90,7 +100,7 @@ export const beginAuthorize = async (
         scope: string | null;
         resource: string | null;
     }
-): Promise<AsResult<{ requestId: string; consentPath: string }>> => {
+): Promise<AsResult<{ requestId: string; consentUrl: string }>> => {
     if (query.response_type !== 'code') {
         return fail(400, 'unsupported_response_type');
     }
@@ -107,6 +117,11 @@ export const beginAuthorize = async (
         return fail(400, 'invalid_request', 'redirect_uri must match exactly');
     }
 
+    const requested = parseScopeString(query.scope);
+    if (!requested.every(scope => deps.scopesSupported.includes(scope))) {
+        return fail(400, 'invalid_scope', 'scope names a scope this provider does not issue');
+    }
+
     const requestId = newRequestId();
     const pending: PendingAuthorization = {
         requestId,
@@ -121,16 +136,40 @@ export const beginAuthorize = async (
         createdAt: Date.now(),
     };
     await deps.sessions.savePending(pending);
-    return { ok: true, data: { requestId, consentPath: `/oauth/consent?request_id=${requestId}` } };
+
+    if (deps.typedConsent) {
+        return {
+            ok: true,
+            data: { requestId, consentUrl: `/oauth/consent?request_id=${requestId}` },
+        };
+    }
+
+    // Signed, so the app can show the client and scopes and the brain can trust them.
+    const ticket = await signOAuthRequestTicket(
+        { issuerUrl: deps.tokens.issuerUrl, secret: deps.tokens.secret },
+        {
+            requestId,
+            clientId: client.client_id,
+            clientName: client.client_name || client.client_id,
+            clientDid: deriveOAuthClientDid(deps.tokens.issuerUrl, client.client_id),
+            scope: (requested.length > 0 ? requested : [...deps.scopesSupported].sort()).join(' '),
+        }
+    );
+    const consentUrl = new URL(`${deps.consentAppUrl.replace(/\/$/, '')}/hcp/connect`);
+    consentUrl.searchParams.set('oauth_request', ticket);
+    return { ok: true, data: { requestId, consentUrl: consentUrl.toString() } };
 };
 
 /**
- * Local/Unit-1 consent: bind an existing active grant to the pending OAuth request.
- * Production must replace this with DID-authenticated consent UI (§6.1.6).
+ * Binds an active grant to the pending OAuth request and mints the code. The pending
+ * request is taken first, so each request_id completes (or fails) at most once.
+ * `subjectDid` must come from authenticated consent (completeConsentFromAssertion);
+ * only the dev typed form passes it from a form body. With `bindClient`, the grant
+ * must be issued to this OAuth client's derived DID.
  */
 export const completeConsent = async (
     deps: AsDeps,
-    input: { requestId: string; subjectDid: string; grantId: string }
+    input: { requestId: string; subjectDid: string; grantId: string; bindClient?: boolean }
 ): Promise<AsResult<{ redirectUrl: string }>> => {
     const pending = await deps.sessions.takePending(input.requestId);
     if (!pending) return fail(400, 'invalid_request', 'unknown or expired request_id');
@@ -138,6 +177,12 @@ export const completeConsent = async (
     const stored = await deps.store.getGrant(input.grantId);
     if (!stored || stored.subjectDid !== input.subjectDid) {
         return fail(400, 'access_denied', 'grant not found for subject');
+    }
+    if (
+        input.bindClient &&
+        stored.client.id !== deriveOAuthClientDid(deps.tokens.issuerUrl, pending.clientId)
+    ) {
+        return fail(400, 'access_denied', 'grant was not issued to this client');
     }
 
     const grant = await settleGrantExpiry(deps.hcp as HcpV1Deps, stored);
@@ -175,6 +220,29 @@ export const completeConsent = async (
     url.searchParams.set('code', code);
     if (pending.state) url.searchParams.set('state', pending.state);
     return { ok: true, data: { redirectUrl: url.toString() } };
+};
+
+/**
+ * `/oauth/consent/complete`: the subject comes only from the brain's signed consent
+ * assertion (signature, typ, aud = this issuer, exp). Replay fails: the pending
+ * request it names was taken on first use.
+ */
+export const completeConsentFromAssertion = async (
+    deps: AsDeps,
+    assertion: string | null
+): Promise<AsResult<{ redirectUrl: string }>> => {
+    if (!assertion) return fail(400, 'invalid_request', 'assertion required');
+    const verified = await verifyConsentAssertion(
+        { issuerUrl: deps.tokens.issuerUrl, secret: deps.tokens.secret },
+        assertion
+    );
+    if (!verified.ok) return fail(400, 'access_denied', 'invalid or expired consent assertion');
+    return completeConsent(deps, {
+        requestId: verified.claims.requestId,
+        subjectDid: verified.claims.subjectDid,
+        grantId: verified.claims.grantId,
+        bindClient: true,
+    });
 };
 
 export const exchangeToken = async (

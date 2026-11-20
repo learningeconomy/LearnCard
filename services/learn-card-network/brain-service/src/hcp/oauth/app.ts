@@ -3,17 +3,30 @@
  *
  * Runs on a free high port against an injected HcpV1Store so Roadie's :4319 need
  * not restart. Fastify mount (docker-entry) can wrap the same controllers later.
+ *
+ * Consent is DID-authenticated: authorize hands off to the LearnCard app's
+ * `/hcp/connect?oauth_request=<ticket>`, and `/oauth/consent/complete?assertion=`
+ * finishes from the brain's signed assertion. The typed subject/grant form exists
+ * only with `devTypedConsent` outside production.
  */
 import express, { type Express, type Request, type Response, type NextFunction } from 'express';
 
 import type { HcpV1Deps } from '../v1/service/deps';
 import type { HcpV1Store } from '../v1/store/port';
-import { beginAuthorize, completeConsent, exchangeToken, registerClient, type AsDeps } from './as';
+import {
+    beginAuthorize,
+    completeConsent,
+    completeConsentFromAssertion,
+    exchangeToken,
+    registerClient,
+    type AsDeps,
+} from './as';
 import {
     buildAuthorizationServerMetadata,
     buildProtectedResourceMetadata,
     DEFAULT_SCOPES_SUPPORTED,
 } from './metadata';
+import { hcpOAuthEnvironment } from './environment';
 import { extractBearer, resolveBearerToGrant } from './rs';
 import { createMemoryOAuthSessionStore, type HcpOAuthSessionStore } from './session-store';
 import type { TokenSignerConfig } from './tokens';
@@ -29,6 +42,14 @@ export type CreateHcpOAuthAppOptions = {
     scopesSupported?: string[];
     accessTokenTtlSeconds?: number;
     now?: () => Date;
+    /** The LearnCard app (origin, no trailing path) whose `/hcp/connect` takes consent. */
+    consentAppUrl: string;
+    /**
+     * Local dev and tests only: serve the typed subject DID + grant id form at
+     * `/oauth/consent` instead of handing off to the app. It authenticates nobody.
+     * Refused when NODE_ENV is production.
+     */
+    devTypedConsent?: boolean;
 };
 
 const jsonError = (res: Response, status: number, error: string, description?: string) => {
@@ -57,9 +78,10 @@ const consentPage = (requestId: string): string => `<!doctype html>
   code{background:#f4f4f4;padding:0 .2rem}
 </style></head>
 <body>
-  <h1>HCP grant consent (Unit 1 local)</h1>
-  <p>Select an <strong>already-issued</strong> active grant. This page is for local Claude Code /
-  curl only; production must use DID-authenticated consent (Draft 3 §6.1.6).</p>
+  <h1>HCP grant consent (dev typed form)</h1>
+  <p>Select an <strong>already-issued</strong> active grant. Dev and tests only
+  (<code>devTypedConsent</code>): this form authenticates nobody. Real consent runs in the
+  LearnCard app (<code>/hcp/connect</code>) with DID auth.</p>
   <form method="post" action="/oauth/consent">
     <input type="hidden" name="request_id" value="${escapeHtml(requestId)}"/>
     <label for="subject_did">Subject DID</label>
@@ -73,6 +95,10 @@ const consentPage = (requestId: string): string => `<!doctype html>
 </body></html>`;
 
 export const createHcpOAuthApp = (options: CreateHcpOAuthAppOptions): Express => {
+    if (options.devTypedConsent && hcpOAuthEnvironment().NODE_ENV === 'production') {
+        throw new Error('devTypedConsent is not allowed when NODE_ENV is production');
+    }
+    const typedConsent = options.devTypedConsent === true;
     const issuerUrl = options.issuerUrl.replace(/\/$/, '');
     const resourceUrl = (options.resourceUrl ?? options.issuerUrl).replace(/\/$/, '');
     const sessions = options.sessions ?? createMemoryOAuthSessionStore();
@@ -82,14 +108,17 @@ export const createHcpOAuthApp = (options: CreateHcpOAuthAppOptions): Express =>
         resourceUrl,
         accessTokenTtlSeconds: options.accessTokenTtlSeconds,
     };
+    const scopesSupported = options.scopesSupported ?? DEFAULT_SCOPES_SUPPORTED;
     const asDeps: AsDeps = {
         store: options.store,
         sessions,
         tokens: tokenConfig,
         hcp: options.hcp,
         now: options.now,
+        consentAppUrl: options.consentAppUrl,
+        scopesSupported,
+        typedConsent,
     };
-    const scopesSupported = options.scopesSupported ?? DEFAULT_SCOPES_SUPPORTED;
 
     const app = express();
     app.use(express.json());
@@ -134,34 +163,16 @@ export const createHcpOAuthApp = (options: CreateHcpOAuthAppOptions): Express =>
             });
             if (!result.ok)
                 return jsonError(res, result.status, result.error, result.error_description);
-            res.redirect(result.data.consentPath);
+            res.redirect(result.data.consentUrl);
         } catch (error) {
             next(error);
         }
     });
 
-    app.get('/oauth/consent', async (req, res, next) => {
+    app.get('/oauth/consent/complete', async (req, res, next) => {
         try {
-            const requestId = typeof req.query.request_id === 'string' ? req.query.request_id : '';
-            if (!requestId) return jsonError(res, 400, 'invalid_request', 'request_id required');
-            const pending = await sessions.getPending(requestId);
-            if (!pending) {
-                return jsonError(res, 400, 'invalid_request', 'unknown or expired request_id');
-            }
-            res.type('html').send(consentPage(requestId));
-        } catch (error) {
-            next(error);
-        }
-    });
-
-    app.post('/oauth/consent', async (req, res, next) => {
-        try {
-            const body = req.body ?? {};
-            const result = await completeConsent(asDeps, {
-                requestId: String(body.request_id ?? ''),
-                subjectDid: String(body.subject_did ?? ''),
-                grantId: String(body.grant_id ?? ''),
-            });
+            const assertion = typeof req.query.assertion === 'string' ? req.query.assertion : null;
+            const result = await completeConsentFromAssertion(asDeps, assertion);
             if (!result.ok)
                 return jsonError(res, result.status, result.error, result.error_description);
             res.redirect(result.data.redirectUrl);
@@ -169,6 +180,40 @@ export const createHcpOAuthApp = (options: CreateHcpOAuthAppOptions): Express =>
             next(error);
         }
     });
+
+    if (typedConsent) {
+        app.get('/oauth/consent', async (req, res, next) => {
+            try {
+                const requestId =
+                    typeof req.query.request_id === 'string' ? req.query.request_id : '';
+                if (!requestId)
+                    return jsonError(res, 400, 'invalid_request', 'request_id required');
+                const pending = await sessions.getPending(requestId);
+                if (!pending) {
+                    return jsonError(res, 400, 'invalid_request', 'unknown or expired request_id');
+                }
+                res.type('html').send(consentPage(requestId));
+            } catch (error) {
+                next(error);
+            }
+        });
+
+        app.post('/oauth/consent', async (req, res, next) => {
+            try {
+                const body = req.body ?? {};
+                const result = await completeConsent(asDeps, {
+                    requestId: String(body.request_id ?? ''),
+                    subjectDid: String(body.subject_did ?? ''),
+                    grantId: String(body.grant_id ?? ''),
+                });
+                if (!result.ok)
+                    return jsonError(res, result.status, result.error, result.error_description);
+                res.redirect(result.data.redirectUrl);
+            } catch (error) {
+                next(error);
+            }
+        });
+    }
 
     app.post('/oauth/token', async (req, res, next) => {
         try {

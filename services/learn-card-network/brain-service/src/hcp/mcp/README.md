@@ -33,55 +33,78 @@ bunx vitest run --config vitest.config.ts src/hcp
 # includes mcp/conformance.test.ts (Unit 3)
 ```
 
-### Manual Claude Code (free high port; does not restart Roadie)
+### Manual Claude Code with DID-authenticated consent (spare ports)
 
-Measured on FrenchFry against this branch (Claude Code 2.1.326). The sidecar is an
-**in-memory** harness (seeded subject/grant/entry). It does **not** write into the
-Roadie Neo4j behind `:4319` / app `:3319`. Check results in Claude tool output (or
-`curl` against the sidecar). Use `./hcp-try.sh agent …` against Roadie when you want
-My info / Activity UI.
+Consent runs in the LearnCard app: `claude mcp login` opens `/hcp/connect?oauth_request=…`,
+you sign in and tap Allow, and the brain issues a grant to Claude's OAuth client DID
+(`did:web:<AS host>:hcp:oauth-clients:<client_id>`). See `../oauth/README.md`.
+Use ports that are not Roadie's (`4319`, `3319`, `17687`, `18766`).
 
 ```bash
-cd services/learn-card-network/brain-service
-bun --conditions=development src/hcp/mcp/dev-server.ts 18766
-# Prints JSON: baseUrl, subjectDid, grantId, claudeMcpAdd, consentHint.
-# Seed grant covers every PRM scope Claude requests on login.
-# Keep this process running.
+# 1. Throwaway Neo4j (from services/learn-card-network/brain-service)
+export NEO4J_PASSWORD=$(openssl rand -hex 16)
+docker run -d --name hcp-oauth-neo4j -p 127.0.0.1:27688:7687 \
+  -e NEO4J_AUTH=neo4j/$NEO4J_PASSWORD neo4j:5
+
+# 2. Shared env for the brain and the MCP server
+export NODE_ENV=development IS_OFFLINE=true DOMAIN_NAME=localhost%3A4329 \
+  NEO4J_URI=bolt://127.0.0.1:27688 NEO4J_USERNAME=neo4j \
+  SEED=$(openssl rand -hex 32) \
+  HCP_OAUTH_ISSUER_URL=http://127.0.0.1:18797 \
+  HCP_OAUTH_TOKEN_SECRET=$(openssl rand -hex 32) \
+  HCP_OAUTH_CONSENT_APP_URL=http://localhost:3329
+
+# 3. Brain on :4329
+PORT=4329 bun --conditions=development src/docker-entry.ts
+
+# 4. HCP MCP + AS on :18797 over the same Neo4j (another terminal, same env)
+HCP_MCP_DEV_STORE=neo4j bun --conditions=development src/hcp/mcp/dev-server.ts 18797
+# Prints store: "neo4j" and consent: http://localhost:3329/hcp/connect.
+# A one-off "An equivalent index already exists" log at start is harmless.
+
+# 5. App on :3329 (from apps/learn-card-app), pointed at the brain, as in ../v1/README.md:
+bun scripts/prepare-native-config.ts learncard --stage local
+#    public/tenant-config.json: apis.brainService = http://localhost:4329/trpc,
+#    apis.brainServiceApi = http://localhost:4329/api
+bun run i18n:compile
+bun --conditions=development ../../node_modules/vite/bin/vite.js --port 3329 --strictPort --host 127.0.0.1
+# Sign in once and set up a LearnCard profile.
 ```
 
 In another terminal (real TTY - Claude needs it for the OAuth callback listener):
 
 ```bash
-claude mcp add --transport http hcp-local http://127.0.0.1:18766/mcp
-claude mcp list
-# Expect: hcp-local … ! Needs authentication
-
+claude mcp add --transport http hcp-local http://127.0.0.1:18797/mcp
+claude mcp list            # hcp-local … ! Needs authentication
 claude mcp login hcp-local
-# Opens (or prints) authorize URL against http://127.0.0.1:18766/oauth/authorize
-# with redirect_uri=http://localhost:<ephemeral>/callback and all PRM scopes.
-# Browser shows local consent HTML - paste subjectDid + grantId from server stdout.
-# After redirect, Claude stores the token.
-
-claude mcp list
-# Expect: hcp-local … ✔ Connected
-# In a Claude Code session, /mcp lists:
-#   hcp_queryContext, hcp_getEntry, hcp_createEntry,
-#   hcp_reviseEntry, hcp_withdrawEntry, hcp_reportSharing
-
-# Cleanup when done (restore blender-only list if that was your baseline):
+# The browser opens http://localhost:3329/hcp/connect?oauth_request=… (log in first if
+# asked; you come back to the same screen). It shows "Claude Code would like to see some
+# of your info", the categories, "1 hour", the App ID (did:web:127.0.0.1%3A18797:hcp:
+# oauth-clients:hcp_oauth_…) and the exact scopes. Allow -> the browser goes to
+# 127.0.0.1:18797/oauth/consent/complete -> Claude's callback; login succeeds.
+claude mcp list            # hcp-local … ✔ Connected
+# The app's Apps with access now lists Claude Code; Activity shows the grant.
+# Stop sharing there, and the next tool call fails with 401 revoked_grant.
 claude mcp remove hcp-local -s local
+docker rm -f hcp-oauth-neo4j
 ```
 
-Headless note (measured): `claude mcp login --no-browser` prints the authorize URL but
-will not finish without an interactive TTY to receive the redirect. You can still prove
-token → `tools/list` → `hcp_queryContext` with the same consent form via curl (see
-`mcp.test.ts` / Unit 2 HTTP tests). The human click that remains is the consent HTML
-(and Claude's callback) in a real terminal.
+Running `claude mcp login` again with the same scopes reuses the active grant.
+
+#### In-memory sidecar with the dev typed form (no app, no DID auth)
+
+```bash
+HCP_OAUTH_DEV_TYPED_CONSENT=1 bun --conditions=development src/hcp/mcp/dev-server.ts 18798
+# Seeds an in-memory subject/grant/entry and prints subjectDid + grantId. The login
+# browser shows the dev typed form: paste them. Never available in production.
+```
 
 ### Natural-language prompts (once Connected)
 
-`purpose` tool args must be URLs (schema). Claude usually invents one; if a call fails
-validation, ask it to use `https://purpose.example/assist`.
+`purpose` tool args must be URLs (schema), and reads only see categories granted for
+that purpose. Grants from app consent use `https://learncard.com/hcp/purposes/app-access`;
+the in-memory seed uses `https://purpose.example/assist`. If Claude invents another URL,
+reads come back empty or `scope-denied`: tell it which purpose to use.
 
 1. **Read** - "Using HCP, what preferences do you know about me for helping plan my day?"
     - Expect `hcp_queryContext` → seeded entry ("Prefers concise answers and dark mode").
@@ -101,13 +124,13 @@ validation, ask it to use `https://purpose.example/assist`.
 
 ### Gaps vs `./hcp-try.sh agent` / Roadie demo-agent
 
-| Demo-agent / Roadie                         | Claude + local MCP sidecar                           |
-| ------------------------------------------- | ---------------------------------------------------- |
-| Hits brain `:4319` + Neo4j; My info updates | In-memory only; no `:3319` UI                        |
-| Consent via app Allow link (`suggest-link`) | Local OAuth HTML (subject DID + grant id)            |
-| Agent wrapper picks grant/demo identity     | Token=grant after Claude OAuth; no `grantId` in args |
-| `canWrite` grants can active-write          | Seeded grant suggests only (`suggested: true`)       |
-| Purpose strings in CLI                      | MCP schema requires purpose **URL**                  |
+| Demo-agent / Roadie                         | Claude + local MCP sidecar                               |
+| ------------------------------------------- | -------------------------------------------------------- |
+| Hits brain `:4319` + Neo4j; My info updates | `HCP_MCP_DEV_STORE=neo4j`: your local brain's Neo4j      |
+| Consent via app Allow link (`suggest-link`) | App `/hcp/connect` Allow with DID auth (dev form opt-in) |
+| Agent wrapper picks grant/demo identity     | Token=grant after Claude OAuth; no `grantId` in args     |
+| `canWrite` grants can active-write          | Seeded grant suggests only (`suggested: true`)           |
+| Purpose strings in CLI                      | MCP schema requires purpose **URL**                      |
 
 ## Decisions (Units 2-3)
 

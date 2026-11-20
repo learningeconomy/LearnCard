@@ -45,6 +45,9 @@ const listenWithMatchingIssuer = async (
         resourceUrl: baseUrl,
         tokenSecret: TOKEN_SECRET,
         now: harness.deps.now,
+        consentAppUrl: 'http://app.test',
+        // Pre-issued grants via the dev typed form; consent.test.ts covers the app path.
+        devTypedConsent: true,
     });
     const server = createServer(app);
     await new Promise<void>((resolve, reject) => {

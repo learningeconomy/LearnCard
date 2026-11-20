@@ -53,6 +53,9 @@ const startApp = async (
         tokenSecret: 'unit-test-hcp-oauth-secret-32bytes!!',
         now: harness.deps.now,
         sessions,
+        consentAppUrl: 'http://app.test',
+        // Token and RS behaviour over pre-issued grants; consent.test.ts covers the app path.
+        devTypedConsent: true,
     });
     const server = createServer(app);
     await new Promise<void>((resolve, reject) => {

@@ -5,6 +5,10 @@
  *
  *   bun --conditions=development src/hcp/oauth/dev-server.ts
  *   bun --conditions=development src/hcp/oauth/dev-server.ts 18765
+ *
+ * Consent goes to the LearnCard app at HCP_OAUTH_CONSENT_APP_URL (default
+ * http://localhost:3000). HCP_OAUTH_DEV_TYPED_CONSENT=1 serves the dev typed
+ * subject/grant form instead (no DID auth; never in production).
  */
 import { createServer } from 'node:http';
 
@@ -17,6 +21,7 @@ import {
     subject,
 } from '../v1/service/test-harness';
 import { createHcpOAuthApp } from './app';
+import { hcpOAuthEnvironment } from './environment';
 
 const DEFAULT_PORT = 8765;
 const LOCAL_DEV_TOKEN_SECRET = 'local-dev-only-hcp-oauth-secret-change-me';
@@ -29,6 +34,7 @@ if (!Number.isFinite(port) || port <= 0) {
 }
 
 const main = async () => {
+    const env = hcpOAuthEnvironment();
     const harness = makeHarness();
     const grant = await createGrant(harness.deps, subject, grantInput());
     const baseUrl = `http://127.0.0.1:${port}`;
@@ -39,6 +45,8 @@ const main = async () => {
         resourceUrl: baseUrl,
         tokenSecret: LOCAL_DEV_TOKEN_SECRET,
         now: harness.deps.now,
+        consentAppUrl: env.HCP_OAUTH_CONSENT_APP_URL,
+        devTypedConsent: env.HCP_OAUTH_DEV_TYPED_CONSENT === '1',
     });
 
     const server = createServer(app);
