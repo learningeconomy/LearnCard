@@ -36,14 +36,24 @@ describe('prefetchChunk', () => {
         expect(fetched()).toEqual(FILES);
     });
 
-    it('forgets a failed download, so the next prefetch asks the server again', async () => {
-        fetchMock.mockImplementationOnce(async () => new Response('', { status: 503 }));
-        const { prefetchChunk } = await loadHelper();
+    it('forgets a failed download after the cooldown, so a later prefetch asks again', async () => {
+        vi.useFakeTimers();
+        try {
+            fetchMock.mockImplementationOnce(async () => new Response('', { status: 503 }));
+            const { prefetchChunk, PREFETCH_FAIL_COOLDOWN_MS } = await loadHelper();
 
-        await expect(prefetchChunk('my-learncard')).resolves.toBe(false);
-        await expect(prefetchChunk('my-learncard')).resolves.toBe(true);
+            await expect(prefetchChunk('my-learncard')).resolves.toBe(false);
+            // Still in cooldown: no new fetch.
+            await expect(prefetchChunk('my-learncard')).resolves.toBe(false);
+            expect(fetched()).toEqual(FILES);
 
-        expect(fetched()).toEqual([...FILES, ...FILES]);
+            await vi.advanceTimersByTimeAsync(PREFETCH_FAIL_COOLDOWN_MS);
+            await expect(prefetchChunk('my-learncard')).resolves.toBe(true);
+            // Only the failed URL is re-fetched; the successful sibling stays in downloadsByUrl.
+            expect(fetched()).toEqual([...FILES, FILES[0]]);
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it('resolves false on a network error instead of throwing', async () => {
@@ -67,11 +77,81 @@ describe('prefetchChunk', () => {
         expect(fetched()).toEqual([FILES[0]]);
     });
 
+    it('shares one in-flight fetch when two keys list the same asset URL', async () => {
+        const shared = '/assets/CredentialPage-shared.js';
+        const uniqueA = '/assets/AchievementsPage-aaa.js';
+        const uniqueB = '/assets/QualificationsPage-bbb.js';
+        const deferred = () => {
+            let settle!: (response: Response | Error) => void;
+            const promise = new Promise<Response>((resolve, reject) => {
+                settle = r => (r instanceof Error ? reject(r) : resolve(r));
+            });
+            return { promise, settle };
+        };
+        const pending = new Map<string, ReturnType<typeof deferred>>();
+        fetchMock.mockImplementation((url: string) => {
+            const d = deferred();
+            pending.set(url, d);
+            return d.promise;
+        });
+        const { prefetchChunk } = await loadHelper({
+            achievements: [uniqueA, shared],
+            qualifications: [uniqueB, shared],
+        });
+
+        const a = prefetchChunk('achievements' as never);
+        const b = prefetchChunk('qualifications' as never);
+
+        // Both route attempts start sync; shared URL must be fetched once.
+        expect(fetched().sort()).toEqual([shared, uniqueA, uniqueB].sort());
+        expect(fetched().filter(url => url === shared)).toHaveLength(1);
+
+        for (const d of pending.values()) d.settle(ok());
+        await expect(a).resolves.toBe(true);
+        await expect(b).resolves.toBe(true);
+    });
+
     it('does nothing without a chunk list', async () => {
         const { prefetchChunk } = await loadHelper({});
 
         await expect(prefetchChunk('my-learncard')).resolves.toBe(false);
         expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('passes an AbortSignal so a hung fetch can be cancelled', async () => {
+        const { prefetchChunk, PREFETCH_FETCH_TIMEOUT_MS } = await loadHelper();
+        await prefetchChunk('my-learncard');
+
+        expect(PREFETCH_FETCH_TIMEOUT_MS).toBe(30_000);
+        for (const [, init] of fetchMock.mock.calls) {
+            expect(init?.signal).toBeInstanceOf(AbortSignal);
+        }
+    });
+
+    it('drops a hung fetch after the timeout and allows a later retry past cooldown', async () => {
+        vi.useFakeTimers();
+        try {
+            fetchMock.mockImplementation((_url: string, init?: RequestInit) => {
+                return new Promise((_resolve, reject) => {
+                    init?.signal?.addEventListener('abort', () => {
+                        reject(new DOMException('The operation was aborted.', 'AbortError'));
+                    });
+                });
+            });
+            const { prefetchChunk, PREFETCH_FETCH_TIMEOUT_MS, PREFETCH_FAIL_COOLDOWN_MS } =
+                await loadHelper();
+
+            const first = prefetchChunk('my-learncard');
+            await vi.advanceTimersByTimeAsync(PREFETCH_FETCH_TIMEOUT_MS);
+            await expect(first).resolves.toBe(false);
+
+            fetchMock.mockImplementation(async () => ok());
+            await vi.advanceTimersByTimeAsync(PREFETCH_FAIL_COOLDOWN_MS);
+            await expect(prefetchChunk('my-learncard')).resolves.toBe(true);
+            expect(fetched().length).toBeGreaterThan(FILES.length);
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     describe('waitForPrefetch', () => {

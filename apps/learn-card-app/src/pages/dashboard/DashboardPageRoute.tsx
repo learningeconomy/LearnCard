@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 
 import { lazyWithRetry } from 'learn-card-base';
 
+import { prefetchChunk } from '../../helpers/prefetchChunk';
 import { markDashboardPath } from '../../helpers/dashboardPathMarks';
 
 type DashboardPageComponent = (typeof import('./DashboardPage'))['default'];
@@ -21,6 +22,22 @@ const LazyDashboardPage = lazyWithRetry(importDashboardPage);
 
 /** Starts loading the dashboard chunk (ROUTE_PRELOAD['/dashboard']); the lazy path retries failures. */
 export const preloadDashboardPage = (): Promise<void> => LazyDashboardPage.preload();
+
+/**
+ * Early-boot / speculative warm for `/dashboard` (LC-2437).
+ *
+ * fetch() the chunk files into the HTTP cache only — never import() here. A failed
+ * speculative import (e.g. 503 after a successful fetch warm under Cache-Control:
+ * no-cache) poisons Firefox / some Chromium module maps, so the recovered server
+ * still serves a failed module on the next open.
+ *
+ * Import (LC-2415 page_direct) happens when the destination is confirmed:
+ * AppRouter calls preloadDashboardPage while the boot loader is still up for
+ * isDashboardBootLanding paths, and ROUTE_PRELOAD['/dashboard'] imports on
+ * in-app navigation.
+ */
+export const warmDashboardPage = (): Promise<void> =>
+    prefetchChunk('dashboard').then(() => undefined);
 
 /**
  * The `/dashboard` route component.

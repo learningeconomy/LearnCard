@@ -1,5 +1,5 @@
 import { enterSharePrivacy, isShareViewerPath } from './components/share-links/sharePrivacy';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { SplashScreen } from '@capacitor/splash-screen';
@@ -76,6 +76,12 @@ import useConsentFlow from './pages/consentFlow/useConsentFlow';
 import { runCredentialIndexBackfills } from 'learn-card-base/helpers/credentialVisibilityBackfill';
 import ReducedMotionManager from './components/accessibility/ReducedMotionManager';
 import { observeDashboardLongTasks, useDashboardPathMark } from './helpers/dashboardPathMarks';
+import { useDashboardAsHome } from './pages/dashboard/hooks/useDashboardAsHome';
+import { isDashboardBootLanding } from './pages/dashboard/hooks/isDashboardBootLanding';
+import {
+    DASHBOARD_BOOT_PRELOAD_TIMEOUT_MS,
+    primeDashboardPageBounded,
+} from './pages/dashboard/hooks/primeDashboardPage';
 
 const log = getLogger('app-router');
 
@@ -113,7 +119,37 @@ const AppRouter: React.FC = () => {
         !walletReady &&
         (authStatus.tag === 'unauthenticated' || authStatus.tag === 'resolving');
 
-    const initLoading =
+    // Captured once: boot landing destination doesn't follow in-app navigations.
+    const initialPathRef = useRef(window.location.pathname);
+
+    // Authenticated `/` (dashboard-as-home) and a direct `/dashboard` visit both
+    // mount DashboardPageRoute without ROUTE_PRELOAD. Keep fetch-only boot warm,
+    // then import while LoginLoadingPage is still up so the first mount can
+    // page_direct (LC-2415) without a speculative boot import().
+    const dashboardAsHome = useDashboardAsHome();
+    const landsOnDashboard = isDashboardBootLanding(initialPathRef.current, dashboardAsHome);
+    const [dashboardImportReady, setDashboardImportReady] = useState(() => !landsOnDashboard);
+
+    useEffect(() => {
+        if (!landsOnDashboard) {
+            setDashboardImportReady(true);
+            return;
+        }
+        if (!walletReady) return;
+        let cancelled = false;
+        // Same wait-then-import as ROUTE_PRELOAD['/dashboard'], but started under
+        // the boot loader so `/` redirects and direct `/dashboard` still page_direct.
+        // Bound the whole wait+import (not just waitForPrefetch) so a hung import()
+        // cannot leave LoginLoadingPage up forever — see DASHBOARD_BOOT_PRELOAD_TIMEOUT_MS.
+        void primeDashboardPageBounded(DASHBOARD_BOOT_PRELOAD_TIMEOUT_MS).finally(() => {
+            if (!cancelled) setDashboardImportReady(true);
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [walletReady, landsOnDashboard]);
+
+    const authBlockingLoader =
         !isShareViewer &&
         !(
             walletReady ||
@@ -122,6 +158,9 @@ const AppRouter: React.FC = () => {
             coordinatorState.status === 'needs_recovery' ||
             coordinatorState.status === 'error'
         );
+    const dashboardBlockingLoader =
+        Boolean(walletReady) && landsOnDashboard && !dashboardImportReady;
+    const initLoading = authBlockingLoader || dashboardBlockingLoader;
     useDashboardPathMark('shell_commit', !showOfflineBootGate && !initLoading);
 
     // Native splash bridge. The Capacitor splash is configured with
@@ -430,22 +469,23 @@ const AppRouter: React.FC = () => {
     }, [enablePrefetch]);
 
     // Warm the landing chunks immediately — while the boot loader or login
-    // form is still up, before auth resolves. The post-login redirect
-    // (→ /dashboard) and the post-boot mount of the refreshed route would
-    // otherwise only START downloading their chunk after navigation, leaving
-    // a white Suspense gap between the loader and the app on a cold cache.
-    // The full prefetch above stays gated on login; this is just the entry
+    // form is still up, before auth resolves. fetch()-only (warmRoute) so a 503
+    // can't poison the module map. Dashboard import() is not done here: `/` and
+    // `/dashboard` bypass ROUTE_PRELOAD, so AppRouter primes the import above once
+    // auth + destination are confirmed, still under LoginLoadingPage (LC-2415).
+    // The full idle prefetch above stays gated on login; this is just the entry
     // routes: the default landing pages plus wherever the URL already points.
-    const initialPathRef = useRef(window.location.pathname);
     useEffect(() => {
         observeDashboardLongTasks();
         // Lets the shell mount Routes without suspending once the wallet is ready.
         preloadRoutes().catch(() => undefined);
         import('./Routes')
             .then(m => {
-                void m.ROUTE_PRELOAD['/dashboard']?.();
-                void m.ROUTE_PRELOAD['/wallet']?.();
-                void m.ROUTE_PRELOAD[initialPathRef.current]?.();
+                // Speculative warm is fetch-only (LC-2437). Dashboard import() waits
+                // until auth + destination are confirmed (see dashboard boot prime effect).
+                m.warmRoute('/dashboard');
+                m.warmRoute('/wallet');
+                m.warmRoute(initialPathRef.current);
             })
             .catch(() => undefined);
     }, []);
