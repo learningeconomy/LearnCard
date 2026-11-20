@@ -1,5 +1,6 @@
 {
     "CAMPAIGN_APP_ORIGINS": "{\"learncard\":\"https://learncard.app\",\"vetpass\":\"https://vetpass.app\"}",
+    "EMAIL_APP_ORIGINS": "{\"learncard\":\"https://learncard.app\",\"vetpass\":\"https://vetpass.app\"}",
     "CLIENT_APP_DOMAIN_NAME": "learncard.app",
     "CREDENTIAL_REFRESH_ENABLED": "true",
     "CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS": "12",

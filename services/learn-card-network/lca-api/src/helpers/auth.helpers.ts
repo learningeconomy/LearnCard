@@ -6,19 +6,24 @@ import { environment } from '@environment';
 import { TRPCError } from '@trpc/server';
 import admin from 'firebase-admin';
 import { z } from 'zod';
+import { hasFirebaseOtpEmailProof } from '@learncard/helpers';
 import { getKeycloakVerifyOptionsFromEnv, verifyKeycloakJwt } from './keycloak.helpers';
 
-const offlineFirebaseClaimsSchema = z.object({
-    sub: z.string().optional(),
-    uid: z.string().optional(),
-    user_id: z.string().optional(),
-    email: z.string().nullish(),
-    phone_number: z.string().nullish(),
-});
+const offlineFirebaseClaimsSchema = z
+    .object({
+        sub: z.string().optional(),
+        uid: z.string().optional(),
+        user_id: z.string().optional(),
+        email: z.string().nullish(),
+        email_verified: z.boolean().optional(),
+        phone_number: z.string().nullish(),
+    })
+    .passthrough();
 
 export interface VerifiedUser {
     id: string;
     email?: string;
+    emailVerified?: boolean;
     phone?: string;
     providerType: string;
 }
@@ -51,9 +56,13 @@ export async function verifyFirebaseToken(
     if (environment.IS_E2E_TEST || environment.IS_OFFLINE) {
         const payload = parseOfflineFirebaseClaims(token);
         if (payload) {
+            const otpEmailVerified = hasFirebaseOtpEmailProof(payload);
             return {
                 id: payload.sub || payload.uid || payload.user_id || 'offline-user',
                 email: payload.email ?? undefined,
+                ...(payload.email_verified !== undefined || otpEmailVerified
+                    ? { emailVerified: payload.email_verified === true || otpEmailVerified }
+                    : {}),
                 phone: payload.phone_number ?? undefined,
                 providerType: 'firebase',
             };
@@ -66,10 +75,14 @@ export async function verifyFirebaseToken(
 
     try {
         const decodedToken = await admin.auth().verifyIdToken(token, options.checkRevoked === true);
+        const otpEmailVerified = hasFirebaseOtpEmailProof(decodedToken);
 
         return {
             id: decodedToken.uid,
             email: decodedToken.email,
+            ...(decodedToken.email_verified !== undefined || otpEmailVerified
+                ? { emailVerified: decodedToken.email_verified === true || otpEmailVerified }
+                : {}),
             phone: decodedToken.phone_number,
             providerType: 'firebase',
         };

@@ -1,5 +1,6 @@
 {
     "CAMPAIGN_APP_ORIGINS": "{\"learncard\":\"https://example.com\"}",
+    "EMAIL_APP_ORIGINS": "{\"learncard\":\"https://example.com\"}",
     "CLIENT_APP_DOMAIN_NAME": "example.com",
     "CREDENTIAL_REFRESH_ENABLED": "false",
     "CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS": "24",

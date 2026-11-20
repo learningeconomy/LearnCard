@@ -14,6 +14,8 @@ export default createVitestConfig(brainServicePreset, {
             // The unit router tests import the complete model registry. Keep
             // its eager index setup off; database tests have a separate config.
             NEO4J_SKIP_INDICES: 'true',
+            EMAIL_APP_ORIGINS:
+                '{"learncard":"https://learncard.app","vetpass":"https://vetpass.app","scoutpass":"https://pass.scout.org"}',
         },
         include: [
             'test/credential-share-previews.spec.ts',
@@ -34,6 +36,8 @@ export default createVitestConfig(brainServicePreset, {
             'src/helpers/inbox-queue.helpers.test.ts',
             'src/helpers/campaign-queue.helpers.test.ts',
             'test/campaigns-email.unit.spec.ts',
+            'test/email-action-branding.unit.spec.ts',
+            'test/contract-request-invite-email.spec.ts',
             'src/accesslayer/campaign/email.test.ts',
             'src/campaign-unsubscribe.test.ts',
             'src/helpers/campaign-webhook.helpers.test.ts',
@@ -69,6 +73,7 @@ export default createVitestConfig(brainServicePreset, {
             'src/routes/credential-refreshes.test.ts',
             'src/routes/credential-input-privacy.test.ts',
             'src/routes/act-as.test.ts',
+            'src/routes/contact-method-email-origin.test.ts',
             'src/helpers/percentile.helpers.test.ts',
             'src/helpers/perf.test.ts',
             'src/helpers/signingAuthority.helpers.test.ts',

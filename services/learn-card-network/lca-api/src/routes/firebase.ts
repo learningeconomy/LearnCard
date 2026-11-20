@@ -14,6 +14,7 @@ import {
     FirebaseCustomAuthResponseSchema,
 } from '@helpers/firebase.helpers';
 import cache from '@cache';
+import { consumeMatchingCode } from '@cache/getDel';
 import { checkRateLimit, clearRateLimit, decrementRateLimit } from '@helpers/rateLimit.helpers';
 import { TRPCError } from '@trpc/server';
 import { getDeliveryService, getFrom } from '../services/delivery';
@@ -387,36 +388,54 @@ export const firebaseRouter = t.router({
                     };
                 }
 
-                // Check if code exists and matches
-                const storedCode = await cache.get(loginCodeKey);
-
-                if (!storedCode || storedCode !== code) {
+                // Only the recipient of this code can verify this email. Consume it
+                // atomically so a concurrent request cannot redeem it twice.
+                if (!(await consumeMatchingCode(loginCodeKey, code))) {
                     // Invalid code — counters already incremented above
                     return { success: false, error: 'Invalid or expired code.' };
                 }
-
-                // Valid code — delete it to prevent reuse
-                await cache.delete([loginCodeKey]);
 
                 // Clear email counter on success; decrement (not clear) IP counter
                 // so legitimate successes don't accumulate but we don't hand attackers a wipe
                 await clearRateLimit(emailAttemptKey);
                 await decrementRateLimit(ipAttemptKey);
 
-                // Get or create the Firebase user
+                // Successful email OTP proves control of this exact address.
+                const normalizedEmail = email.trim().toLowerCase();
                 let user;
+                let created = false;
                 try {
-                    user = await app?.auth().getUserByEmail(email);
-                } catch {
-                    user = await app?.auth().createUser({ email });
+                    user = await app?.auth().getUserByEmail(normalizedEmail);
+                } catch (error) {
+                    if ((error as { code?: string })?.code !== 'auth/user-not-found') throw error;
+                    user = await app?.auth().createUser({
+                        email: normalizedEmail,
+                        emailVerified: true,
+                    });
+                    created = true;
                 }
 
-                if (!user) {
+                if (
+                    !user ||
+                    typeof user.email !== 'string' ||
+                    user.email.trim().toLowerCase() !== normalizedEmail
+                ) {
                     return { success: false, error: 'Unable to find or create user.' };
                 }
 
-                // Create Firebase custom auth token
-                const token = await app?.auth().createCustomToken(user.uid);
+                if (created && !user.emailVerified) {
+                    throw new Error('Unable to create a verified login email');
+                }
+
+                // Never rewrite an existing Firebase user's email: an account can
+                // change concurrently. A short-lived, address-bound claim lets
+                // downstream services check this OTP without changing that user.
+                const token = user.emailVerified
+                    ? await app?.auth().createCustomToken(user.uid)
+                    : await app?.auth().createCustomToken(user.uid, {
+                          lc_otp_verified_email: normalizedEmail,
+                          lc_otp_verified_at: Math.floor(Date.now() / 1000),
+                      });
 
                 return { success: true, token };
             } catch (err: any) {
@@ -557,7 +576,14 @@ export const firebaseRouter = t.router({
                 // Match sign-in's local/e2e token handling while retaining Firebase
                 // verification outside those environments.
                 const user = await verifyFirebaseToken(token);
-                const contactMethod = getContactMethodFromUser(user);
+                // A signed Firebase token proves the account's identity, but an
+                // email claim alone does not prove control of that email address.
+                // Keep verified phone logins working when an unverified email is
+                // also present; never turn that email into a proof of login.
+                const contactMethod = getContactMethodFromUser({
+                    ...user,
+                    email: user.emailVerified === true ? user.email : undefined,
+                });
                 if (!contactMethod) {
                     throw new Error('Login token does not contain an email or phone number');
                 }

@@ -79,6 +79,7 @@ services:
         environment:
             PORT: 4000
             SEED: a
+            EMAIL_APP_ORIGINS: '{"learncard":"https://${PREVIEW_DOMAIN:-localhost}"}'
             IS_OFFLINE: ''
             IS_E2E_TEST: true
             SKIP_DIDKIT_NAPI: '1'

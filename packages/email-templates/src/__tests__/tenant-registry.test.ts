@@ -110,6 +110,15 @@ describe('resolveTenantFromRequest', () => {
             expect(result.resolvedVia).toBe('origin');
         });
 
+        it('resolves the current LearnCard staging host instead of the deployment default', () => {
+            const result = resolveTenantFromRequest(
+                { origin: 'https://staging.learncard.ai' },
+                'vetpass'
+            );
+            expect(result.id).toBe('learncard');
+            expect(result.resolvedVia).toBe('origin');
+        });
+
         it('resolves learncard from app.learncard.com', () => {
             const headers: RequestHeaders = { origin: 'https://app.learncard.com' };
             const result = resolveTenantFromRequest(headers);

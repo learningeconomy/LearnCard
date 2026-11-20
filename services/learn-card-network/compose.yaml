@@ -51,6 +51,8 @@ services:
 
         environment:
             PORT: 4000
+            # Optional here: set a trusted HTTPS tenant origin to enable action emails.
+            EMAIL_APP_ORIGINS: ${EMAIL_APP_ORIGINS:-}
 
             # Seed used to create the Brain Service's did
             SEED: a
