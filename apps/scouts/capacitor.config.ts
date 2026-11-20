@@ -37,7 +37,7 @@ const config: CapacitorConfig = {
         CapacitorUpdater: {
             appId: 'org.scoutpass.app',
             autoUpdate: true,
-            defaultChannel: '1.0.8', // LC-2006: Tailwind 4 requires an iOS 16.4+ native build.
+            defaultChannel: '1.0.9', // Native keyboard patches require a rebuilt binary.
         },
     },
 };

@@ -35,14 +35,33 @@ export const KeyboardFocusManager = (): null => {
     useEffect(() => {
         const root = document.documentElement;
         const viewport = window.visualViewport;
+        const platform = Capacitor.getPlatform();
         let expandedHeight = window.innerHeight;
         let keyboardHeight = 0;
+        let nativeResizesViewport = false;
         let frame = 0;
         let revealFrame = 0;
         let revealRequested = false;
         let focusTimer: ReturnType<typeof setTimeout> | undefined;
         let disposed = false;
         const handles: PluginListenerHandle[] = [];
+
+        const getBounds = () =>
+            getKeyboardViewport(
+                window.innerHeight,
+                expandedHeight,
+                keyboardHeight,
+                // Older Android WebViews briefly subtract the IME again from
+                // VisualViewport after SystemBars has already resized the view.
+                // Keep panning bounds, but let the native layout own its height.
+                nativeResizesViewport && platform === 'android'
+                    ? {
+                          height: window.innerHeight,
+                          offsetTop: viewport?.offsetTop ?? 0,
+                          scale: viewport?.scale,
+                      }
+                    : (viewport ?? undefined)
+            );
 
         const revealField = (): void => {
             // Leave zoomed forms and user panning to the browser, even with a native keyboard.
@@ -55,12 +74,7 @@ export const KeyboardFocusManager = (): null => {
                 if (ancestor.matches('ion-input, ion-textarea')) return;
             }
 
-            const bounds = getKeyboardViewport(
-                window.innerHeight,
-                expandedHeight,
-                keyboardHeight,
-                viewport ?? undefined
-            );
+            const bounds = getBounds();
             const scope = field.closest('[data-lc-surface], .lc-auth-overlay, .ion-page');
             const footers = scope?.querySelectorAll<HTMLElement>(
                 '[data-keyboard-footer], ion-footer'
@@ -100,6 +114,7 @@ export const KeyboardFocusManager = (): null => {
             cancelAnimationFrame(revealFrame);
             if (isViewportZoomed(viewport ?? undefined)) {
                 root.removeAttribute('data-lc-keyboard-open');
+                root.removeAttribute('data-lc-keyboard-overlay');
                 root.style.removeProperty('--lc-keyboard-viewport-height');
                 root.style.removeProperty('--lc-keyboard-viewport-top');
                 return;
@@ -108,21 +123,25 @@ export const KeyboardFocusManager = (): null => {
             if (!field && keyboardHeight === 0) expandedHeight = window.innerHeight;
             // Track expansion on keyboard dismissal even if the input retains focus.
             expandedHeight = Math.max(expandedHeight, window.innerHeight);
-            const bounds = getKeyboardViewport(
-                window.innerHeight,
-                expandedHeight,
-                keyboardHeight,
-                viewport ?? undefined
-            );
+            const bounds = getBounds();
             const isOpen =
                 keyboardHeight > 0 ||
                 (!!field && expandedHeight - (bounds.bottom - bounds.top) > 120);
             root.toggleAttribute('data-lc-keyboard-open', isOpen);
-            root.style.setProperty(
-                '--lc-keyboard-viewport-height',
-                `${bounds.bottom - bounds.top}px`
-            );
-            root.style.setProperty('--lc-keyboard-viewport-top', `${bounds.top}px`);
+            // In native resize mode the OS owns the WebView's bounds. Applying the
+            // final keyboard height here snaps the app ahead of its animation and
+            // holds it short during dismissal. Only size hosts for overlay modes.
+            root.toggleAttribute('data-lc-keyboard-overlay', !nativeResizesViewport);
+            if (nativeResizesViewport) {
+                root.style.removeProperty('--lc-keyboard-viewport-height');
+                root.style.removeProperty('--lc-keyboard-viewport-top');
+            } else {
+                root.style.setProperty(
+                    '--lc-keyboard-viewport-height',
+                    `${bounds.bottom - bounds.top}px`
+                );
+                root.style.setProperty('--lc-keyboard-viewport-top', `${bounds.top}px`);
+            }
             // Surface sizes must settle before measuring their scroll containers.
             if (shouldReveal) revealFrame = requestAnimationFrame(revealField);
         };
@@ -150,6 +169,16 @@ export const KeyboardFocusManager = (): null => {
         viewport?.addEventListener('scroll', onViewportScroll);
 
         if (Capacitor.isNativePlatform()) {
+            if (platform === 'ios' || platform === 'android') {
+                void Keyboard.getResizeMode()
+                    .then(({ mode }) => {
+                        if (disposed) return;
+                        nativeResizesViewport = mode === 'native';
+                        schedule();
+                    })
+                    // Unimplemented on unpatched/legacy shells: retain overlay fallback.
+                    .catch(() => undefined);
+            }
             const register = (listener: Promise<PluginListenerHandle>): void => {
                 listener
                     .then(handle => {
@@ -164,12 +193,12 @@ export const KeyboardFocusManager = (): null => {
             };
             register(Keyboard.addListener('keyboardWillShow', onShow));
             register(Keyboard.addListener('keyboardDidShow', onShow));
-            register(
-                Keyboard.addListener('keyboardDidHide', () => {
-                    keyboardHeight = 0;
-                    schedule();
-                })
-            );
+            const onHide = (): void => {
+                keyboardHeight = 0;
+                schedule();
+            };
+            register(Keyboard.addListener('keyboardWillHide', onHide));
+            register(Keyboard.addListener('keyboardDidHide', onHide));
         }
 
         return () => {
@@ -184,6 +213,7 @@ export const KeyboardFocusManager = (): null => {
             viewport?.removeEventListener('scroll', onViewportScroll);
             handles.forEach(handle => void handle.remove());
             root.removeAttribute('data-lc-keyboard-open');
+            root.removeAttribute('data-lc-keyboard-overlay');
             root.style.removeProperty('--lc-keyboard-viewport-height');
             root.style.removeProperty('--lc-keyboard-viewport-top');
         };
