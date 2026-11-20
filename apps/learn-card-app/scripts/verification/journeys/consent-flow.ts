@@ -327,7 +327,7 @@ export const consentFlowFeature: FeatureDefinition = {
                     'Content-Type': 'application/json',
                     [ACT_AS_HEADER]: actAs,
                 },
-                body: JSON.stringify({ contractUri, did: learnerDid, limit: 1 }),
+                body: JSON.stringify({ contractUri, did: learnerDid, limit: 10 }),
             });
         const token = await tokenFor('contracts-data:read contracts-data:decrypt');
         await context.step(page, 'consent-readable-delivery', async () => {
@@ -335,8 +335,14 @@ export const consentFlowFeature: FeatureDefinition = {
             expect(response.status).toBe(200);
             expect(response.headers.get('cache-control')).toContain('no-store');
             const data = ReadableDeliveryPageValidator.parse(await response.json());
-            expect(data.records).toHaveLength(1);
-            expect(data.records[0]).toMatchObject({
+            // The combined tenant-field and readable-delivery journey shares both
+            // the requested profile answer and the selected Achievement.
+            expect(data.records).toHaveLength(2);
+            expect(data.records.map(record => record.category)).toEqual(
+                expect.arrayContaining([fieldCategory, 'Achievement'])
+            );
+            const achievement = data.records.find(record => record.uri === records.sharedUri);
+            expect(achievement).toMatchObject({
                 uri: records.sharedUri,
                 status: 'readable',
                 credential: {
@@ -350,7 +356,7 @@ export const consentFlowFeature: FeatureDefinition = {
                     },
                 },
             });
-            expect(data.records[0]?.fullCredential).toEqual(signedInput);
+            expect(achievement?.fullCredential).toEqual(signedInput);
             expect(data.hasMore).toBe(false);
             for (const scope of ['contracts-data:read', 'contracts-data:decrypt', '*:read']) {
                 expect((await readDelivery(await tokenFor(scope))).status).toBe(403);
@@ -359,7 +365,7 @@ export const consentFlowFeature: FeatureDefinition = {
             return {
                 records: data.records.length,
                 scopedAccess: 'enforced',
-                proof: data.records[0]?.credential?.verification.proof,
+                proof: achievement?.credential?.verification.proof,
             };
         });
         await context.step(page, 'consent-readable-delivery-revoked', async () => {
