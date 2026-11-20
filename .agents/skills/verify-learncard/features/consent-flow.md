@@ -13,6 +13,7 @@ A partner defines a data-sharing contract. A learner reviews exactly what's requ
 
 - `consent-readable-delivery`: an existing directly managed organization is enabled before consent and receives the learner-selected encrypted copy. The version 2 bearer-token API returns the complete selected credential (equal to the original signed input) and its summary with a valid did:web proof, applicable status/date checks, and the `verified` expected-issuer label, requires read AND decrypt permission, refuses another target, and sets no-store. The consent dialog names the organization and discloses LearnCard processing.
 - `consent-readable-delivery-revoked`: withdrawing terms denies reads; after explicitly restoring consent, disabling the recipient independently denies reads. The disposable stack supplies a random local wrapping key; this does not prove deployed KMS permissions.
+- `consent-referral-outcome`: an adult uploads a signed outcome through a connection in Privacy & Data on a 390×844 viewport with simulated insets. Both audience members can read that exact credential despite category sharing being off; the readable recipient verifies the proof and expected issuer. The upload never enters the general index or another live-sync referral. Reload preserves the selection, and removing it stops delivery without changing category grants.
 
 ## How to get to it (user POV)
 
@@ -31,6 +32,7 @@ Preconditions:
 - **Select and accept.** The request dialog opens **Privacy & Data** (`consent-privacy-and-data`). Its Anonymize IonToggle is located within its labelled row; the Name and Achievements controls are buttons. **Selective Sharing** displays the actual indexed input card. Scope `.boost-generic-card-wrapper` by that credential's title and click its unnamed sibling check button: clicking the named card body opens details instead of selecting it. The category editor's unlabelled toolbar back button saves the selection. The outer **Back** saves terms before **Accept**.
 - **Partner side.** `readUserData` and `issueThroughContract` are statically imported straight from `docs/snippets/consentflow/` and run against the stack. Empty Name/data, unselected credentials, wrong-contract records, content mismatches, or failed/missing proof checks fail the journey.
 - **Post-consent uploads.** **Build My LearnCard** → **Upload** → JSON file picker or **Paste your JSON here…** → **Add**. The bulk input includes a credential-shaped but invalid entry, which must not be saved or shared. The same regression can run alone with `$LCV script apps/learn-card-app/scripts/verification/consent-upload-regression.ts --dir /tmp/lcv --video`.
+- **Referral outcomes.** Open a connected referral in `/privacy-and-data` → **Add an outcome** → **Outcome file** → **Add an outcome** → **Confirm Sharing**. The regression can run alone with `$LCV script apps/learn-card-app/scripts/verification/referral-outcome-regression.ts --dir /tmp/lcv --video`. The invitation-card entry requires the tenant and LaunchDarkly referral rollout flags; that separate gate is unit-covered, not enabled by this local journey.
 
 ## Gotchas
 

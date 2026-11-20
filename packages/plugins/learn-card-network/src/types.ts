@@ -900,6 +900,18 @@ export type LearnCardNetworkPluginMethods = {
         /** Require current category-wide consent for automatic delivery. Omit for explicit selections. */
         automatic?: boolean
     ) => Promise<boolean>;
+    /** Attach one encrypted outcome to this referral's audience only. */
+    attachReferralOutcome: (
+        termsUri: string,
+        uri: string,
+        audienceVersion?: number
+    ) => Promise<boolean>;
+    /** Remove a previously attached outcome from this referral. */
+    detachReferralOutcome: (
+        termsUri: string,
+        uri: string,
+        audienceVersion?: number
+    ) => Promise<boolean>;
 
     deleteCredentialFromAllContracts: (deletedUris: string[]) => Promise<{
         contractsUpdated: number;

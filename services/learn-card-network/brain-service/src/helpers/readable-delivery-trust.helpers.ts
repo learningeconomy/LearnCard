@@ -46,40 +46,37 @@ export const verifyDeliveryOutcome = async (
 ): Promise<Verification> => {
     const issuer = typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id;
     const checks = await verifyDeliveryCredential(credential, localOrigin, signal);
+    const expected = Boolean(issuer && context.expectedIssuers.has(issuer));
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let recognized: string | undefined;
+    let registryComplete = false;
+    try {
+        if (!signal?.aborted) {
+            const registry = await Promise.race([
+                getRegistryService().getIssuer(issuer ?? ''),
+                new Promise<null>(resolve => {
+                    timer = setTimeout(() => resolve(null), 2_000);
+                }),
+            ]);
+            const match = registry?.matchingIssuers[0];
+            if (match) recognized = match.issuer.federation_entity.organization_name.slice(0, 2048);
+            registryComplete = Boolean(registry && registry.uncheckedRegistries.length === 0);
+        }
+    } catch {
+        // Recognition is supplementary; a failed registry cannot establish trust.
+    } finally {
+        clearTimeout(timer);
+    }
+    const issuerName = recognized ? { issuerName: recognized } : {};
     if (checks.proof === 'invalid' || context.learnerDids.has(issuer ?? ''))
-        return { ...checks, label: 'self_reported' };
+        return { ...checks, ...issuerName, label: 'self_reported' };
     if (
         checks.proof !== 'valid' ||
         checks.dates !== 'valid' ||
         !['valid', 'not_applicable'].includes(checks.status)
     )
-        return { ...checks, label: 'unverified' };
-    const expected = Boolean(issuer && context.expectedIssuers.has(issuer));
-    const unavailable: Verification = { ...checks, label: expected ? 'verified' : 'unverified' };
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    try {
-        if (signal?.aborted) return unavailable;
-        const registry = await Promise.race([
-            getRegistryService().getIssuer(issuer ?? ''),
-            new Promise<null>(resolve => {
-                timer = setTimeout(() => resolve(null), 2_000);
-            }),
-        ]);
-        const match = registry?.matchingIssuers[0];
-        if (match)
-            return {
-                ...checks,
-                label: expected ? 'verified' : 'recognized_issuer',
-                issuerName: match.issuer.federation_entity.organization_name.slice(0, 2048),
-            };
-        if (expected) return unavailable;
-        // A failed registry cannot establish that an issuer is unknown.
-        if (!registry || registry.uncheckedRegistries.length)
-            return { ...checks, label: 'unverified' };
-        return { ...checks, label: 'signed_unknown_issuer' };
-    } catch {
-        return unavailable;
-    } finally {
-        clearTimeout(timer);
-    }
+        return { ...checks, ...issuerName, label: 'unverified' };
+    if (expected) return { ...checks, ...issuerName, label: 'verified' };
+    if (recognized) return { ...checks, ...issuerName, label: 'recognized_issuer' };
+    return { ...checks, label: registryComplete ? 'signed_unknown_issuer' : 'unverified' };
 };

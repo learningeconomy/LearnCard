@@ -37,6 +37,7 @@ export interface UploadResult {
     category?: CredentialCategory;
     fileInfo?: FileInfo;
     error?: string;
+    invalidFile?: boolean;
 }
 
 export interface UploadOptions {
@@ -126,16 +127,24 @@ export const useUploadVcFromText = () => {
     const uploadSingleCredential = async (
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         parsed: any,
-        options: UploadOptions = {}
+        options: UploadOptions = {},
+        outcomeRecipients?: string[],
+        outcomeProfileDid?: string
     ): Promise<UploadResult> => {
         const { fileInfo, id, uploadType } = options;
         const wallet = await initWallet();
+        if (outcomeProfileDid && wallet.id.did() !== outcomeProfileDid) {
+            return { success: false, error: 'The active account changed. Please try again.' };
+        }
 
         if (isOpenBadgeV2(parsed)) {
             try {
                 const walletWithObv2 = await wallet.addPlugin(openBadgeV2Plugin(wallet));
                 const newVC = await walletWithObv2.invoke.wrapOpenBadgeV2(parsed);
-                const credURI = await walletWithObv2?.store?.LearnCloud?.uploadEncrypted?.(newVC);
+                const credURI = await walletWithObv2?.store?.LearnCloud?.uploadEncrypted?.(
+                    newVC,
+                    outcomeRecipients ? { recipients: outcomeRecipients } : undefined
+                );
                 const categoryObvV2 = getDefaultCategoryForCredential(newVC);
 
                 const name =
@@ -149,6 +158,10 @@ export const useUploadVcFromText = () => {
                         error: 'Failed to upload credential: no URI returned.',
                         fileInfo: fileInfo || {},
                     };
+                }
+                // Referral selections live in the consent terms, never the category-sync index.
+                if (outcomeRecipients) {
+                    return { success: true, credentialUri: credURI, category: categoryObvV2 };
                 }
                 const record = withInternalCategoryHidden({
                     id: id || crypto.randomUUID(),
@@ -198,15 +211,22 @@ export const useUploadVcFromText = () => {
                 return {
                     success: false,
                     error: Array.isArray(errors) ? errors.join('; ') : errors,
+                    invalidFile: true,
                 };
             }
 
             const category = getDefaultCategoryForCredential(parsed) as CredentialCategory;
 
             try {
-                const credentialUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(parsed);
+                const credentialUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(
+                    parsed,
+                    outcomeRecipients ? { recipients: outcomeRecipients } : undefined
+                );
 
                 if (credentialUri) {
+                    if (outcomeRecipients) {
+                        return { success: true, credentialUri, category };
+                    }
                     try {
                         const name =
                             fileInfo?.name ||
@@ -410,6 +430,36 @@ export const useUploadVcFromText = () => {
             };
         }
     };
+    /** Encrypt a single outcome for a reviewed referral audience without category-wide sync. */
+    const uploadReferralOutcome = async (
+        file: File,
+        recipients: string[],
+        profileDid: string
+    ): Promise<UploadResult> => {
+        // Leave room for DAG-JWE/base64 overhead within readable delivery's 2 MiB ciphertext cap.
+        if (file.size > 1024 * 1024) {
+            return {
+                success: false,
+                invalidFile: true,
+                error: 'Choose a JSON credential up to 1 MB.',
+            };
+        }
+        if (!recipients.length) return { success: false, error: 'Referral audience unavailable.' };
+        const { credentials, errors } = extractCredentialsFromText(await file.text());
+        if (credentials.length !== 1 || errors.length) {
+            return {
+                success: false,
+                invalidFile: true,
+                error: 'Choose a file containing one credential.',
+            };
+        }
+        return uploadSingleCredential(credentials[0], {}, recipients, profileDid);
+    };
 
-    return { uploadVcFromText, validateTextVC, uploadVcFromTextAndAddToWallet };
+    return {
+        uploadVcFromText,
+        validateTextVC,
+        uploadVcFromTextAndAddToWallet,
+        uploadReferralOutcome,
+    };
 };

@@ -10,6 +10,7 @@ const state = vi.hoisted(() => ({
 }));
 
 vi.mock('learn-card-base', () => ({
+    ModalTypes: { Right: 'right', FullScreen: 'fullscreen' },
     useModal: () => ({ closeModal: vi.fn() }),
     useToast: () => ({ presentToast: vi.fn() }),
     ToastTypeEnum: { Success: 'success', Error: 'error' },

@@ -13,6 +13,7 @@ import type { FeatureDefinition } from '../types';
 import { boostTemplate } from './sdk';
 import { UI_TIMEOUT } from './shared';
 import verifyConsentUploads from '../consent-upload-regression';
+import verifyReferralOutcomes from '../referral-outcome-regression';
 
 export const consentFlowFeature: FeatureDefinition = {
     id: 'consent-flow',
@@ -27,6 +28,7 @@ export const consentFlowFeature: FeatureDefinition = {
         'consent-upload-after-consent',
         'consent-readable-delivery',
         'consent-readable-delivery-revoked',
+        'consent-referral-outcome',
     ],
     run: async context => {
         const { issuer, learner } = context.actors;
@@ -288,6 +290,7 @@ export const consentFlowFeature: FeatureDefinition = {
             return { uri, boostUri: delivered.boostId, proofChecks: verification.checks };
         });
         const uploads = await verifyConsentUploads(context);
+        await verifyReferralOutcomes(context);
 
         // Real bearer-token HTTP requests exercise scoped delegation and the public API.
         // Tokens remain in this closure, never in observations or proof artifacts.

@@ -1,4 +1,24 @@
 {
+    "referralOutcomes": {
+        "add": "Ajouter un résultat",
+        "count": "Résultats sélectionnés : {{count}}",
+        "title": "Résultats de l’orientation",
+        "description": "Partagez un fichier d’attestation uniquement avec les destinataires de cette orientation.",
+        "privacy": "Cela n’active pas la synchronisation et ne partage pas le fichier avec d’autres orientations.",
+        "file": "Fichier du résultat",
+        "hint": "Une attestation JSON de 1 Mo maximum.",
+        "sharing": "Partage du résultat…",
+        "removing": "Suppression…",
+        "remove": "Supprimer le résultat {{number}}",
+        "outcome": "Résultat {{number}}",
+        "empty": "Aucun résultat joint pour le moment.",
+        "added": "Résultat partagé avec cette orientation.",
+        "removed": "Résultat supprimé de cette orientation.",
+        "error": "Impossible de mettre à jour cette orientation. Vérifiez votre connexion et réessayez.",
+        "fileError": "Choisissez un fichier JSON contenant une attestation, de 1 Mo maximum.",
+        "unavailable": "Connectez-vous à cette orientation et examinez les modifications en attente avant d’ajouter un résultat.",
+        "loading": "Chargement de l’orientation…"
+    },
     "classlinkPersonalEmail": {
         "title": "Ajoutez une adresse e-mail personnelle",
         "body": "Pour conserver votre compte après votre départ de l’école.",

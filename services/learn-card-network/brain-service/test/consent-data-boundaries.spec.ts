@@ -645,4 +645,84 @@ describe('consented data boundaries', () => {
         expect(record?.transactions).toHaveLength(expected.size);
         expect(new Set(record!.transactions.map(transaction => transaction.id))).toEqual(expected);
     });
+
+    it('attaches outcomes only to their referral, appends concurrently, and preserves them on term edits', async () => {
+        const { contractUri, termsUri } = await consent();
+        const sibling = await consent({
+            terms: {
+                ...structuredClone(normalFullTerms),
+                outcomes: ['urn:unreviewed:client-value'],
+            },
+        });
+        const uris = ['urn:encrypted:outcome-a', 'urn:encrypted:outcome-b'];
+        await expect(
+            owner.clients.fullAuth.contracts.updateReferralOutcome({
+                termsUri,
+                uri: 'urn:encrypted:owner-attempt',
+            })
+        ).rejects.toThrow();
+        await Promise.all(
+            uris.map(uri =>
+                learner.clients.fullAuth.contracts.updateReferralOutcome({ termsUri, uri })
+            )
+        );
+
+        const terms = structuredClone(normalFullTerms);
+        await learner.clients.fullAuth.contracts.updateConsentedContractTerms({
+            uri: termsUri,
+            terms,
+        });
+        await learner.clients.fullAuth.contracts.syncCredentialsToContract({
+            termsUri,
+            categories: { Achievement: ['achievement1'] },
+        });
+        const recipientData = await owner.clients.fullAuth.contracts.getConsentedDataForDid({
+            did: learnerDid,
+            query: { id: contractUri.split(':').at(-1)! },
+        });
+        expect(recipientData.records[0]?.credentials).toEqual(
+            expect.arrayContaining(uris.map(uri => ({ category: 'Outcome', uri })))
+        );
+        expect(recipientData.records[0]?.terms.outcomes).toEqual(expect.arrayContaining(uris));
+        const contractData = await owner.clients.fullAuth.contracts.getConsentedDataForContract({
+            uri: contractUri,
+        });
+        expect(contractData.records[0]?.credentials.selected).toEqual(
+            expect.arrayContaining(uris.map(uri => ({ category: 'Outcome', uri })))
+        );
+        const siblingData = await owner.clients.fullAuth.contracts.getConsentedDataForDid({
+            did: learnerDid,
+            query: { id: sibling.contractUri.split(':').at(-1)! },
+        });
+        expect(
+            siblingData.records[0]?.credentials.filter(item => item.category === 'Outcome')
+        ).toEqual([]);
+
+        await learner.clients.fullAuth.contracts.updateReferralOutcome({
+            termsUri,
+            uri: uris[0]!,
+            remove: true,
+        });
+        const afterDetach = await owner.clients.fullAuth.contracts.getConsentedDataForDid({
+            did: learnerDid,
+            query: { id: contractUri.split(':').at(-1)! },
+        });
+        expect(afterDetach.records[0]?.credentials).not.toContainEqual({
+            category: 'Outcome',
+            uri: uris[0],
+        });
+        expect(afterDetach.records[0]?.terms.read.credentials.categories).toEqual(
+            normalFullTerms.read.credentials.categories
+        );
+        await learner.clients.fullAuth.contracts.updateReferralOutcome({
+            termsUri,
+            uri: uris[1]!,
+            remove: true,
+        });
+        const afterLastDetach = await owner.clients.fullAuth.contracts.getConsentedDataForDid({
+            did: learnerDid,
+            query: { id: contractUri.split(':').at(-1)! },
+        });
+        expect(afterLastDetach.records[0]?.terms.outcomes).toEqual([]);
+    });
 });

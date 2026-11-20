@@ -67,6 +67,16 @@ The response contains `records`, `hasMore`, and a continuation `cursor` when app
 
 For a version 2 recipient, each readable record also contains `fullCredential`, the original credential JSON, including subject data, issuer-defined fields, and any proof. A mediator can map its fields into Salesforce. Use `credential.verification` to decide how to handle the result, including self-reported and unverified outcomes. Version 1 recipients receive summaries only. To switch, provision a fresh version 2 recipient and obtain fresh learner consent. The version is fixed at provisioning.
 
+### Uploaded referral outcomes
+
+Learners may upload an outcome credential they received outside LearnCard (including a JSON credential supplied by a partner) and attach it to a referral. Uploading makes the credential available through that referral's consented audience; it does not prove who issued it. OBv2 credentials re-signed by the learner are classified as `self_reported`, not as verified partner-issued credentials.
+
+Choose **Add an outcome** on an accepted referral card or open its connection in **Privacy & Data**. Select one JSON credential (up to 1 MB, leaving room for encryption overhead), review the named audience, then confirm sharing. Outcomes are stored as separate selected URIs in `terms.outcomes`, not as category grants or entries in the general credential index; live-sync and other contracts never discover these uploads. Multiple files append outcomes rather than replacing earlier ones. The same screen can remove a selected outcome; withdrawal revokes access to all outcomes under the consent.
+
+For SDK integrations, encrypt the credential for the contract owner and recipients using the current audience, then call `learnCard.invoke.attachReferralOutcome(termsUri, encryptedUri, audienceVersion)`. Use `detachReferralOutcome` with the same arguments to remove it. Both require the learner's current consent and authorization; neither changes category sharing. Recipient data exposes these selections with `category: "Outcome"`, and readable delivery includes each credential's issuer DID and server-derived verification.
+
+Use `verification.label` as a signal, not as an authorization decision. In particular, `verified` means the signature and applicable status/date checks passed and the issuer is expected for this contract; it does not establish that the outcome meets a program's substantive criteria. HHUSA determines and documents its own acceptance policy for each label, including whether any `unverified` or `self_reported` outcomes may be considered. Registry recognition alone never makes an issuer expected for the referral.
+
 The API limits full credential content to 2 MiB per page. Follow the returned cursor even if fewer records than requested are returned. The summary includes available name, types, issuer, dates, and boost URI. Each summary has a `verification` object:
 
 | Field        | Values / meaning                                                                                        |

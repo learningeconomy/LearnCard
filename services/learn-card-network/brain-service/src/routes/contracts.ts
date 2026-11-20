@@ -111,6 +111,7 @@ import { InvalidContractConnectionsCursorError } from '@helpers/contract-connect
 import { areTermsValid } from '@helpers/contract.helpers';
 import { updateDidForProfile, getProfileIdFromString } from '@helpers/did.helpers';
 import {
+    attachReferralOutcomeToContract,
     reconsentTerms,
     syncCredentialsToContract,
     updateTerms,
@@ -1374,6 +1375,9 @@ export const contractsRouter = t.router({
                 }
             }
 
+            if (previousTerms?.terms.outcomes !== undefined)
+                terms.outcomes = previousTerms.terms.outcomes;
+            else delete terms.outcomes;
             if (!areTermsValid(terms, contractDetails.contract.contract)) {
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid Terms for Contract' });
             }
@@ -2029,6 +2033,70 @@ export const contractsRouter = t.router({
             );
 
             return result;
+        }),
+
+    updateReferralOutcome: guardianGatedRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/consent-flow-contract/outcome',
+                tags: ['Contracts'],
+                summary: 'Attach or remove a referral outcome',
+                description: 'Adds or removes one encrypted outcome URI from consent terms',
+            },
+            requiredScope: 'contracts-data:write',
+        })
+        .input(
+            z.object({
+                termsUri: z.string(),
+                uri: z.string().min(1),
+                audienceVersion: z.number().int().nonnegative().optional(),
+                remove: z.boolean().default(false),
+            })
+        )
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const relationship = await getContractTermsByUri(input.termsUri);
+            if (!relationship)
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Could not find contract terms',
+                });
+            if (relationship.consenter.profileId !== profile.profileId)
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not own these terms',
+                });
+            const { isChildAccount, hasGuardianApproval, guardianIdentity } = ctx;
+            assertLatestContractApproval(
+                relationship.terms,
+                Number(relationship.contract.currentVersion ?? 1)
+            );
+            if (relationship.terms.status !== 'live')
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Only live contract terms can attach an outcome',
+                });
+            if (isChildAccount && !hasGuardianApproval)
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message:
+                        'Child accounts require guardian approval to update consented contract terms',
+                });
+            if (!guardianIdentity && (await hasGuardianApprovalHistory(relationship.terms)))
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'This consent requires approval from a current guardian',
+                });
+            return attachReferralOutcomeToContract(
+                relationship,
+                input.uri,
+                input.audienceVersion ?? Number(relationship.contract.audienceVersion ?? 0),
+                ctx.domain,
+                input.remove
+            );
         }),
 
     getCredentialsForContract: profileRoute

@@ -1,4 +1,24 @@
 {
+    "referralOutcomes": {
+        "add": "Add an outcome",
+        "count": "Selected outcomes: {{count}}",
+        "title": "Referral outcomes",
+        "description": "Share one credential file only with this referral’s audience.",
+        "privacy": "This does not turn on live sync or share the file with other referrals.",
+        "file": "Outcome file",
+        "hint": "One JSON credential, up to 1 MB.",
+        "sharing": "Sharing outcome…",
+        "removing": "Removing…",
+        "remove": "Remove outcome {{number}}",
+        "outcome": "Outcome {{number}}",
+        "empty": "No outcomes attached yet.",
+        "added": "Outcome shared with this referral.",
+        "removed": "Outcome removed from this referral.",
+        "error": "Couldn't update this referral. Check your connection and try again.",
+        "fileError": "Choose a JSON file containing one credential, up to 1 MB.",
+        "unavailable": "Connect to this referral and review any pending changes before adding an outcome.",
+        "loading": "Loading referral…"
+    },
     "classlinkPersonalEmail": {
         "title": "Add a personal email",
         "body": "So you can keep your account after you leave school.",

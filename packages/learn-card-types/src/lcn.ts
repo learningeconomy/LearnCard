@@ -1174,7 +1174,14 @@ export const PaginatedConsentFlowContractsValidator = PaginationResponseValidato
 export type PaginatedConsentFlowContracts = z.infer<typeof PaginatedConsentFlowContractsValidator>;
 
 export const ConsentFlowContractDataValidator = z.object({
-    credentials: z.object({ categories: z.record(z.string(), z.string().array()).default({}) }),
+    credentials: z.object({
+        categories: z.record(z.string(), z.string().array()).default({}),
+        /** Individually attached referral outcomes, independent of category grants. */
+        selected: z
+            .object({ category: z.literal('Outcome'), uri: z.string() })
+            .array()
+            .optional(),
+    }),
     personal: z.record(z.string(), z.string()).default({}),
     date: z.string(),
 });
@@ -1212,6 +1219,7 @@ export type ConsentFlowExternalGrantExpectation = z.infer<
 
 export const ConsentFlowTermsValidator = z.object({
     externalGrant: ConsentFlowExternalGrantValidator.optional(),
+    outcomes: z.string().array().optional(),
     read: z
         .object({
             anonymize: z.boolean().optional(),

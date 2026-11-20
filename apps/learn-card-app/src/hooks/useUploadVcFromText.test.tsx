@@ -317,4 +317,74 @@ describe('useUploadVcFromText contract synchronization', () => {
             expect(mocks.sync).not.toHaveBeenCalled();
         }
     );
+
+    it.each(['signed', 'openbadge'] as const)(
+        'encrypts a %s referral outcome only for its audience, outside the category-sync index',
+        async kind => {
+            const { result } = renderHook(() => useUploadVcFromText());
+            const source =
+                kind === 'signed'
+                    ? credential
+                    : {
+                          '@context': 'https://openbadges.org/openbadges/v2',
+                          name: 'badge',
+                      };
+            const file = new File([JSON.stringify(source)], 'outcome.json');
+            Object.defineProperty(file, 'text', { value: async () => JSON.stringify(source) });
+            const response = await result.current.uploadReferralOutcome(
+                file,
+                ['did:example:owner', 'did:example:recipient'],
+                'did:example:upload-account'
+            );
+            expect(response).toMatchObject({ success: true, credentialUri: 'credential-uri' });
+            expect(mocks.upload).toHaveBeenCalledExactlyOnceWith(credential, {
+                recipients: ['did:example:owner', 'did:example:recipient'],
+            });
+            expect(mocks.add).not.toHaveBeenCalled();
+            expect(await readPersistedJobs()).toEqual([]);
+        }
+    );
+
+    it('rejects multi-credential outcome files and switched accounts without uploading', async () => {
+        const { result } = renderHook(() => useUploadVcFromText());
+        const file = new File(['[]'], 'outcome.json');
+        Object.defineProperty(file, 'text', {
+            value: async () => JSON.stringify([credential, credential]),
+        });
+        expect(
+            (
+                await result.current.uploadReferralOutcome(
+                    file,
+                    ['did:example:owner'],
+                    'did:example:upload-account'
+                )
+            ).success
+        ).toBe(false);
+        const single = new File(['{}'], 'single.json');
+        Object.defineProperty(single, 'text', { value: async () => JSON.stringify(credential) });
+        expect(
+            (
+                await result.current.uploadReferralOutcome(
+                    single,
+                    ['did:example:owner'],
+                    'did:example:other-account'
+                )
+            ).success
+        ).toBe(false);
+        expect(mocks.upload).not.toHaveBeenCalled();
+        expect(mocks.add).not.toHaveBeenCalled();
+    });
+
+    it('rejects oversized outcome files before encryption', async () => {
+        const { result } = renderHook(() => useUploadVcFromText());
+        const file = new File(['x'.repeat(1024 * 1024 + 1)], 'large.json');
+        expect(
+            await result.current.uploadReferralOutcome(
+                file,
+                ['did:example:owner'],
+                'did:example:upload-account'
+            )
+        ).toMatchObject({ success: false, invalidFile: true });
+        expect(mocks.upload).not.toHaveBeenCalled();
+    });
 });

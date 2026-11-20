@@ -22,6 +22,7 @@ import ConsentFlowWriteSharing from './ConsentFlowWriteSharing';
 import ContractPermissionsAndDetailsText from './ContractPermissionsAndDetailsText';
 import PrivacyAndDataHeader from './PrivacyAndDataHeader';
 import { ContractAudience } from '../../components/contract-requests/ContractAudience';
+import { AddReferralOutcomeButton } from '../../components/contract-requests/AddReferralOutcomeButton';
 import ConsentFlowVerifiableDataSharingItem from './ConsentFlowVerifiableDataSharingItem';
 
 import { curriedStateSlice } from '@learncard/helpers';
@@ -349,6 +350,13 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
 
             <div className="min-h-0 flex-1 w-full flex flex-col gap-4 overflow-y-auto bg-grayscale-10 px-6 py-5">
                 <ContractAudience contract={contractDetails} testId="consent-shared-with" />
+                {isPostConsent && (
+                    <AddReferralOutcomeButton
+                        contractUri={contractDetails.uri}
+                        onComplete={onSaved}
+                        disabled={updatingTerms || isUpdated}
+                    />
+                )}
                 <div className="text-sm leading-relaxed text-grayscale-600 rounded-2xl border border-grayscale-200 bg-white w-full p-4 flex flex-col gap-3">
                     <ContractPermissionsAndDetailsText
                         contractDetails={contractDetails}

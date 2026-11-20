@@ -1,4 +1,24 @@
 {
+    "referralOutcomes": {
+        "add": "Añadir un resultado",
+        "count": "Resultados seleccionados: {{count}}",
+        "title": "Resultados de la derivación",
+        "description": "Comparte un archivo de credencial solo con los destinatarios de esta derivación.",
+        "privacy": "Esto no activa la sincronización ni comparte el archivo con otras derivaciones.",
+        "file": "Archivo del resultado",
+        "hint": "Una credencial JSON de hasta 1 MB.",
+        "sharing": "Compartiendo resultado…",
+        "removing": "Eliminando…",
+        "remove": "Eliminar resultado {{number}}",
+        "outcome": "Resultado {{number}}",
+        "empty": "Todavía no hay resultados adjuntos.",
+        "added": "Resultado compartido con esta derivación.",
+        "removed": "Resultado eliminado de esta derivación.",
+        "error": "No se pudo actualizar esta derivación. Comprueba tu conexión e inténtalo de nuevo.",
+        "fileError": "Elige un archivo JSON con una credencial de hasta 1 MB.",
+        "unavailable": "Conéctate a esta derivación y revisa los cambios pendientes antes de añadir un resultado.",
+        "loading": "Cargando derivación…"
+    },
     "classlinkPersonalEmail": {
         "title": "Añade un correo personal",
         "body": "Para conservar tu cuenta cuando dejes la escuela.",

@@ -3096,6 +3096,24 @@ export async function getLearnCardNetworkPlugin(
                     automatic,
                 });
             },
+            attachReferralOutcome: async (_learnCard, termsUri, uri, audienceVersion) => {
+                await ensureUser();
+                return client.contracts.updateReferralOutcome.mutate({
+                    termsUri,
+                    uri,
+                    audienceVersion,
+                    remove: false,
+                });
+            },
+            detachReferralOutcome: async (_learnCard, termsUri, uri, audienceVersion) => {
+                await ensureUser();
+                return client.contracts.updateReferralOutcome.mutate({
+                    termsUri,
+                    uri,
+                    audienceVersion,
+                    remove: true,
+                });
+            },
 
             deleteCredentialFromAllContracts: async (_learnCard, deletedUris) => {
                 await ensureUser();

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { PendingContractRequests } from '../contract-requests/ContractRequest';
 import { ContractAudience } from '../contract-requests/ContractAudience';
+import { AddReferralOutcomeButton } from '../contract-requests/AddReferralOutcomeButton';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('manage-data-sharing-modal');
 
@@ -323,7 +324,13 @@ type ContractDetailViewProps = {
     onUpdate?: () => Promise<unknown> | void;
 };
 
-export const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract, onUpdate }) => {
+export const ContractDetailView: React.FC<ContractDetailViewProps> = ({
+    contract: initialContract,
+    onUpdate,
+}) => {
+    const { data: currentContracts } = useConsentedContracts();
+    const contract =
+        currentContracts?.find(record => record.uri === initialContract.uri) ?? initialContract;
     const contractDetails = contract.contract;
     const { closeModal, newModal } = useModal();
     const { initWallet } = useWallet();
@@ -495,6 +502,12 @@ export const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract
                     </div>
 
                     <div className="shrink-0 flex flex-col gap-2.5 px-6 py-5 border-t border-grayscale-100">
+                        {contract.status === 'live' && (
+                            <AddReferralOutcomeButton
+                                contractUri={contractUri}
+                                onComplete={() => void onUpdate?.()}
+                            />
+                        )}
                         {redirectUrl && (
                             <button
                                 onClick={handleOpenApp}
@@ -588,8 +601,9 @@ const PermissionsList: React.FC<{ contract: ConsentedContract }> = ({ contract }
 
     const hasReadCategories = acceptedReadCategories.length > 0;
     const hasWriteCategories = acceptedWriteCategories.length > 0;
+    const outcomeCount = contract.terms?.outcomes?.length ?? 0;
 
-    if (!hasReadCategories && !hasWriteCategories) {
+    if (!hasReadCategories && !hasWriteCategories && !outcomeCount) {
         return (
             <p className="text-sm text-grayscale-500 italic">
                 {m['dataSharing.noDataPermissions']()}
@@ -599,6 +613,11 @@ const PermissionsList: React.FC<{ contract: ConsentedContract }> = ({ contract }
 
     return (
         <div className="flex flex-col gap-3">
+            {outcomeCount > 0 && hasReadCategories && (
+                <p className="text-sm text-grayscale-700">
+                    {m['referralOutcomes.count']({ count: outcomeCount })}
+                </p>
+            )}
             {/* Read Permissions */}
             <div className="bg-cyan-50 border border-cyan-100 rounded-lg p-3">
                 <div className="flex items-center gap-2 mb-2">
@@ -627,7 +646,9 @@ const PermissionsList: React.FC<{ contract: ConsentedContract }> = ({ contract }
                     </div>
                 ) : (
                     <p className="text-xs text-cyan-600 italic">
-                        {m['dataSharing.noReadPermissions']()}
+                        {outcomeCount > 0
+                            ? m['referralOutcomes.count']({ count: outcomeCount })
+                            : m['dataSharing.noReadPermissions']()}
                     </p>
                 )}
             </div>

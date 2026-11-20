@@ -79,22 +79,43 @@ describe('readable outcome trust labels', () => {
         });
     });
     it.each([...context.learnerDids])(
-        'never upgrades a learner-signed outcome from %s',
+        'never upgrades a learner-signed outcome from %s and preserves recognized display names',
         async issuer => {
+            mocks.registry.mockResolvedValue({
+                matchingIssuers: [
+                    { issuer: { federation_entity: { organization_name: 'Learner Issuer' } } },
+                ],
+                uncheckedRegistries: [],
+            });
             expect(
-                (
-                    await verifyDeliveryOutcome(
-                        { ...credential, issuer },
-                        { ...context, expectedIssuers: new Set([issuer]) }
-                    )
-                ).label
-            ).toBe('self_reported');
-            expect(mocks.registry).not.toHaveBeenCalled();
+                await verifyDeliveryOutcome(
+                    { ...credential, issuer },
+                    { ...context, expectedIssuers: new Set([issuer]) }
+                )
+            ).toMatchObject({ label: 'self_reported', issuerName: 'Learner Issuer' });
         }
     );
-    it('labels missing/invalid signatures self-reported, even for an expected issuer', async () => {
+    it('preserves a recognized issuer name when proof or status checks fail', async () => {
+        mocks.registry.mockResolvedValue({
+            matchingIssuers: [
+                { issuer: { federation_entity: { organization_name: 'Example College' } } },
+            ],
+            uncheckedRegistries: [],
+        });
+        mocks.verify.mockResolvedValue({ ...valid, status: 'invalid' });
+        expect(
+            await verifyDeliveryOutcome({ ...credential, issuer: 'did:key:other' }, context)
+        ).toMatchObject({
+            label: 'unverified',
+            issuerName: 'Example College',
+        });
         mocks.verify.mockResolvedValue({ ...valid, proof: 'invalid' });
-        expect((await verifyDeliveryOutcome(credential, context)).label).toBe('self_reported');
+        expect(
+            await verifyDeliveryOutcome({ ...credential, issuer: 'did:key:other' }, context)
+        ).toMatchObject({
+            label: 'self_reported',
+            issuerName: 'Example College',
+        });
     });
     it.each([
         { proof: 'unavailable' },

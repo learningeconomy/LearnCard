@@ -86,6 +86,8 @@
 
 ### Patch Changes
 
+- Add and remove individually selected referral outcomes from referral cards and Privacy & Data without enabling category-wide sharing. Recipient reads verify proof, status, dates, and expected issuers independently of uploaded claims (LC-2373).
+
 - Keep authenticated AI chat startup running when optional credential/topic preloading fails. Show a localized, nonfatal warning instead of treating the missing suggestions as a failed session. Clear the warning on credential recovery or account/socket changes; ignore stale socket notifications. Credential verification, consent, and model-context privacy checks remain mandatory.
 
 ## 1.101.2

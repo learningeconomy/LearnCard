@@ -28,6 +28,7 @@ import { getLocale } from '../../paraglide/runtime.js';
 import { localizeCategoryTitle } from '../../i18n/categoryTitle';
 import { localizeContractPersonalField } from '../../i18n/contractPersonalField';
 import { ContractAudience } from './ContractAudience';
+import { AddReferralOutcomeButton } from './AddReferralOutcomeButton';
 
 const isExpired = (expiresAt?: string): boolean =>
     Boolean(
@@ -413,6 +414,16 @@ export const ContractRequest: React.FC<RequestProps> = ({
                     </div>
                 )}
             </div>
+            {status?.status === 'accepted' && contract && !expired && !request.isError && (
+                <div className="shrink-0 px-6 py-4">
+                    <AddReferralOutcomeButton
+                        contractUri={contractUri}
+                        onComplete={() => void refresh()}
+                        disabled={busy}
+                        beforeSubmit={requireEnabled}
+                    />
+                </div>
+            )}
             {(pending || details) && !request.isPending && (
                 <footer
                     className={

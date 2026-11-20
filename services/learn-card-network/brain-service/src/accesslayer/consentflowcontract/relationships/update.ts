@@ -33,6 +33,13 @@ import {
     runAudienceMutation,
 } from './recipients';
 
+/** Category edits must not rewrite separately selected outcomes or flatten their atomic array. */
+const flattenEditableTerms = (terms: ConsentFlowTermsType) => {
+    const editable = { ...terms };
+    delete editable.outcomes;
+    return flattenObject({ terms: editable });
+};
+
 export const claimAutoBoostTransaction = async (
     contractId: string,
     termsId: string,
@@ -151,11 +158,14 @@ export const reconsentTerms = async (
         ...(typeof oneTime === 'boolean' ? { oneTime } : {}),
     } as const satisfies ConsentFlowTransactionType;
 
-    const existingFlat = flattenObject({
-        terms: relationship.terms.terms,
-        guardianApproval: relationship.terms.guardianApproval,
-    });
-    const newFlat = flattenObject({ terms, ...(guardianApproval ? { guardianApproval } : {}) });
+    const existingFlat = {
+        ...flattenEditableTerms(relationship.terms.terms),
+        ...flattenObject({ guardianApproval: relationship.terms.guardianApproval }),
+    };
+    const newFlat = {
+        ...flattenEditableTerms(terms),
+        ...(guardianApproval ? flattenObject({ guardianApproval }) : {}),
+    };
     const removedProperties = Object.fromEntries(
         Object.keys(existingFlat)
             .filter(key => !(key in newFlat))
@@ -454,14 +464,14 @@ export const updateTerms = async (
     /* -------------------------------------------------------------------------- */
 
     // 1. Flatten both the existing stored terms and the new terms we are saving
-    const existingFlat = flattenObject({
-        terms: relationship.terms.terms,
-        guardianApproval: relationship.terms.guardianApproval,
-    });
-    const newFlatInner = flattenObject({
-        terms,
-        ...(guardianApproval ? { guardianApproval } : {}),
-    });
+    const existingFlat = {
+        ...flattenEditableTerms(relationship.terms.terms),
+        ...flattenObject({ guardianApproval: relationship.terms.guardianApproval }),
+    };
+    const newFlatInner = {
+        ...flattenEditableTerms(terms),
+        ...(guardianApproval ? flattenObject({ guardianApproval }) : {}),
+    };
 
     // 2. Determine keys that are present in the existing node but NOT in the new update
     const keysToRemove = Object.keys(existingFlat).filter(key => !(key in newFlatInner));
@@ -699,6 +709,91 @@ export const updateTerms = async (
     return result.summary.counters.containsUpdates();
 };
 
+/** Append or remove one selection under the audience lock without rewriting category grants. */
+export const attachReferralOutcomeToContract = async (
+    relationship: {
+        terms: DbTermsType;
+        consenter: LCNProfile;
+        contract: DbContractType;
+    },
+    uri: string,
+    audienceVersion: number | undefined,
+    domain?: string,
+    remove = false
+): Promise<boolean> => {
+    const outcomes = new Set(relationship.terms.terms.outcomes ?? []);
+    if (remove) outcomes.delete(uri);
+    else outcomes.add(uri);
+    const updatedOutcomes = [...outcomes];
+    const transaction = {
+        id: uuid(),
+        action: remove ? 'update' : 'sync',
+        date: new Date().toISOString(),
+        terms: { outcomes: updatedOutcomes } as ConsentFlowTermsType,
+    } as const satisfies ConsentFlowTransactionType;
+    const now = new Date().toISOString();
+    const result = await runAudienceMutation(
+        appendConsentEvent(
+            lockContractAudience(
+                new QueryBuilder(
+                    new BindParam({
+                        expectedContractVersion: Number(relationship.contract.currentVersion ?? 1),
+                        audienceVersion: audienceVersion ?? null,
+                        uri,
+                        remove,
+                        now,
+                        params: flattenObject({ updatedAt: now }),
+                        transactionParams: flattenObject(transaction),
+                    })
+                ),
+                relationship.contract.id
+            )
+                .where(
+                    `${audienceVersionWhere} AND coalesce(contract.status, 'active') <> 'retired' AND coalesce(contract.currentVersion, 1) = $expectedContractVersion`
+                )
+                .match({
+                    model: ConsentFlowTerms,
+                    where: { id: relationship.terms.id },
+                    identifier: 'terms',
+                })
+                .where(
+                    `terms.status = 'live'
+                    AND (CASE WHEN terms.expiresAt IS NULL OR trim(terms.expiresAt) = '' THEN true ELSE datetime(terms.expiresAt) > datetime($now) END)
+                    AND (CASE WHEN contract.expiresAt IS NULL OR trim(contract.expiresAt) = '' THEN true ELSE datetime(contract.expiresAt) > datetime($now) END)`
+                )
+                .set(
+                    `terms.\`terms.outcomes\` = CASE WHEN $remove
+                    THEN [outcome IN coalesce(terms.\`terms.outcomes\`, []) WHERE outcome <> $uri]
+                    WHEN $uri IN coalesce(terms.\`terms.outcomes\`, []) THEN coalesce(terms.\`terms.outcomes\`, [])
+                    ELSE coalesce(terms.\`terms.outcomes\`, []) + [$uri] END`
+                )
+                .set('terms += $params')
+                .set('terms.mutationVersion = coalesce(terms.mutationVersion, 0) + 1')
+                .with('terms, contract')
+                .create({
+                    related: [
+                        { identifier: 'transaction', model: ConsentFlowTransaction },
+                        ConsentFlowTransaction.getRelationshipByAlias('isFor'),
+                        { identifier: 'terms' },
+                    ],
+                })
+                .set('transaction += $transactionParams')
+                .with('terms, contract, transaction'),
+            {
+                consenterProfileId: relationship.consenter.profileId,
+                transaction,
+                domain,
+                messageKey: remove
+                    ? 'consentFlowTransactionUpdatedTerms'
+                    : 'consentFlowTransactionSyncedSingle',
+            }
+        ).return('terms.id AS id')
+    );
+    assertAudienceMutation(result.records.length);
+    await tryDispatchContractEvent(transaction.id);
+    return result.summary.counters.containsUpdates();
+};
+
 export const withdrawTerms = async (
     relationship: {
         terms: DbTermsType;
@@ -855,10 +950,10 @@ export const syncCredentialsToContract = async (
                         automaticCategories: automatic ? Object.keys(categories) : [],
                         termsMutationVersion: Number(relationship.terms.mutationVersion ?? 0),
                         now: new Date().toISOString(),
-                        params: flattenObject({
-                            terms: updatedTerms,
+                        params: {
+                            ...flattenEditableTerms(updatedTerms),
                             updatedAt: new Date().toISOString(),
-                        }),
+                        },
                         transactionParams: (flattenObject as any)(transaction),
                     })
                 ),

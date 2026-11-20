@@ -635,6 +635,9 @@ const projectConsentedData = (
                 ? (category.shared ?? [])
                 : []
         ),
+        ...(term.terms.outcomes?.length
+            ? { selected: term.terms.outcomes.map(uri => ({ category: 'Outcome' as const, uri })) }
+            : {}),
     },
     personal: term.terms.read.personal ?? {},
 });
@@ -994,19 +997,21 @@ AND ${contractWhereClause}
                         },
                     },
                 },
-                credentials: Object.entries(term.terms.read.credentials.categories).flatMap(
-                    ([category, { shared, sharing, shareUntil }]) => {
-                        if (
-                            term.terms.read.credentials.sharing === false ||
-                            !sharing ||
-                            !isConsentExpiryActive(shareUntil, now) ||
-                            !shouldIncludeCategory(params.credentials?.categories, category)
-                        )
-                            return [];
-
-                        return shared?.map(uri => ({ category, uri })) ?? [];
-                    }
-                ),
+                credentials: [
+                    ...Object.entries(term.terms.read.credentials.categories).flatMap(
+                        ([category, { shared, sharing, shareUntil }]) => {
+                            if (
+                                term.terms.read.credentials.sharing === false ||
+                                !sharing ||
+                                !isConsentExpiryActive(shareUntil, now) ||
+                                !shouldIncludeCategory(params.credentials?.categories, category)
+                            )
+                                return [];
+                            return shared?.map(uri => ({ category, uri })) ?? [];
+                        }
+                    ),
+                    ...(term.terms.outcomes ?? []).map(uri => ({ category: 'Outcome', uri })),
+                ],
                 personal: term.terms.read.personal,
             });
             if (records.length >= limit) {

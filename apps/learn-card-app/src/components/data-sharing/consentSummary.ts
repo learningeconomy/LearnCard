@@ -4,7 +4,7 @@ import * as m from '../../paraglide/messages.js';
 
 export type ConsentedContract = PaginatedConsentFlowTerms['records'][number];
 
-/** Counts accepted read/write categories for one contract. Shared by the modal rows and the dashboard summary. */
+/** Counts accepted read/write categories for one contract. */
 export const summarizeContractPermissions = (
     contract: ConsentedContract
 ): { read: number; write: number } => {
@@ -34,10 +34,12 @@ export const summarizeContractPermissions = (
  */
 export const buildPermissionText = (contract: ConsentedContract): string => {
     const { read, write } = summarizeContractPermissions(contract);
+    const outcomes = contract.terms?.outcomes?.length ?? 0;
 
     const parts: string[] = [];
     if (read > 0) parts.push(m['dataSharing.readCount']({ count: read }));
     if (write > 0) parts.push(m['dataSharing.writeCount']({ count: write }));
+    if (outcomes > 0) parts.push(m['referralOutcomes.count']({ count: outcomes }));
 
     return parts.length ? parts.join(', ') : m['dataSharing.noPermissions']();
 };
@@ -62,7 +64,7 @@ export const summarizeConsent = (contracts: ConsentedContract[]): ConsentSummary
 
     for (const contract of contracts) {
         const { read, write } = summarizeContractPermissions(contract);
-        if (read > 0) canRead += 1;
+        if (read > 0 || contract.terms?.outcomes?.length) canRead += 1;
         if (write > 0) canWrite += 1;
 
         proof.push({
