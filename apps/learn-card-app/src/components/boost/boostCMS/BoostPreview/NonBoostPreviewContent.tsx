@@ -1,0 +1,489 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import { BoostPreviewTabsEnum } from '../../../boost-preview-tabs/boost-preview-tabs.helpers';
+import { boostPreviewStore } from 'learn-card-base';
+import { Capacitor } from '@capacitor/core';
+
+import { IonPage } from '@ionic/react';
+import { getVCDisplayCardVariant } from '@learncard/react';
+import RenderMethodDisplay from '../../../render-method/RenderMethodDisplay';
+import BoostDetailsSideBar from './BoostDetailsSideBar';
+import BoostDetailsSideMenu from './BoostDetailsSideMenu';
+import VerifiedChildCLRFooter from './VerifiedChildCLRFooter';
+import PreviewCredentialFooter from './PreviewCredentialFooter';
+import EndorsementBadge from '../../../boost-endorsements/EndorsementBadge';
+import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
+import BoostMediaPreview from './BoostMediaPreview';
+import BoostFooterLayout from '../../../accessibility/AccessibleBoostFooterLayout';
+import AccessibleCredentialCard from '../../../accessibility/AccessibleCredentialCard';
+import ClrTranscriptFullPage, {
+    createClrRecordNavigator,
+} from '../../../clr-transcript/surfaces/ClrTranscriptFullPage';
+import ClrCourseDetailPanel from '../../../clr-transcript/ClrCourseDetailPanel';
+import {
+    isStandaloneCourseCredential,
+    normalizeClrTranscriptDisplayModel,
+    ClrTranscriptSurface,
+} from 'learn-card-base/helpers/credentials/clr/renderer';
+import { getDownloadableEvidence } from 'learn-card-base/helpers/credentials/clr/helpers';
+import { getClrIssuerLogo } from 'learn-card-base/helpers/credentials/clr/kind';
+import {
+    getAchievementType,
+    getCredentialName,
+    unwrapBoostCredential,
+} from 'learn-card-base/helpers/credentialHelpers';
+import { applyLifecycleStatusToVerifications } from 'learn-card-base/helpers/lifecycleVerification.helpers';
+
+import { VC, UnsignedVC, VerificationItem } from '@learncard/types';
+import {
+    BoostCategoryOptionsEnum,
+    useWallet,
+    useModal,
+    ModalTypes,
+    useDeviceTypeByWidth,
+    DisplayTypeEnum,
+} from 'learn-card-base';
+import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
+import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
+import { AnalyticsEvents, useAnalytics } from '@analytics';
+import * as m from '../../../../paraglide/messages.js';
+
+type IssueHistory = {
+    id?: string | number;
+    name?: string;
+    thumb?: string;
+    date?: string;
+};
+
+type NonBoostPreviewProps = {
+    credential: VC;
+    boostUri?: string;
+    credentialUri?: string;
+    verificationItems: VerificationItem[];
+    categoryType: BoostCategoryOptionsEnum;
+    customThumbComponent: React.ReactNode;
+    customBodyCardComponent: React.ReactNode;
+    customFooterComponent: React.ReactNode;
+    issueHistory?: IssueHistory[];
+    issueeOverride?: string;
+    issuerOverride?: string;
+    handleCloseModal: () => void;
+    subjectDID?: string;
+    subjectImageComponent?: React.ReactNode;
+    issuerImageComponent?: React.ReactNode;
+    showVerifications?: boolean;
+    boostPreviewWrapperCustomClass?: string;
+    customCriteria?: React.ReactNode;
+    customDescription?: React.ReactNode;
+    customIssueHistoryComponent: React.ReactNode;
+    titleOverride?: string;
+    onDotsClick?: () => void;
+    qrCodeOnClick?: () => void;
+    handleShareBoost?: () => void;
+    customLinkedCredentialsComponent?: React.ReactNode;
+    showEndorsementBadge?: boolean;
+    existingEndorsements?: VC[];
+    isEarnedBoost?: boolean;
+    isClrChildCredential?: boolean;
+    isClrCredential?: boolean;
+    displayType?: DisplayTypeEnum;
+    isPreview?: boolean;
+    lifecycleStatus?: 'active' | 'revoked' | 'suspended';
+};
+
+const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
+    credential,
+    boostUri,
+    credentialUri,
+    verificationItems,
+    lifecycleStatus,
+    categoryType,
+    issueHistory,
+    issueeOverride,
+    issuerOverride,
+    handleCloseModal,
+    customThumbComponent,
+    customBodyCardComponent,
+    customFooterComponent,
+    subjectDID,
+    subjectImageComponent,
+    issuerImageComponent,
+    showVerifications = true,
+    boostPreviewWrapperCustomClass = '',
+    customCriteria,
+    customDescription,
+    customIssueHistoryComponent,
+    titleOverride,
+    onDotsClick,
+    qrCodeOnClick,
+    handleShareBoost,
+    customLinkedCredentialsComponent,
+    showEndorsementBadge,
+    existingEndorsements,
+    isEarnedBoost,
+    isClrChildCredential = false,
+    isClrCredential = false,
+    displayType,
+    isPreview = false,
+}) => {
+    const { track } = useAnalytics();
+    // A preview flag must not hide verification of an already signed credential.
+    const isUnsignedPreview =
+        isPreview && !credential?.proof && !credential?.boostCredential?.proof;
+    const { initWallet } = useWallet();
+    const [verificationResult, setVerificationResult] = useState<{
+        credential: VC;
+        items: VerificationItem[];
+    }>();
+    const vcVerifications =
+        verificationResult?.credential === credential ? verificationResult.items : [];
+    const viewedCredentialIdRef = React.useRef<string | undefined>(undefined);
+    const renderMethod = getSvgMustacheRenderMethod(credential as VC);
+    const selectedDisplayView = boostPreviewStore.useTracked.selectedDisplayView();
+
+    useEffect(() => {
+        // Reset to Details tab whenever the credential changes
+        boostPreviewStore.set.updateSelectedTab(BoostPreviewTabsEnum.Details);
+    }, [credential?.id]);
+    useEffect(() => {
+        boostPreviewStore.set.updateSelectedDisplayView(
+            renderMethod ? BoostPreviewDisplayViewEnum.Issuer : BoostPreviewDisplayViewEnum.Default
+        );
+    }, [credential?.id, renderMethod?.template]);
+    const [isFront, setIsFront] = useState(true);
+    const { newModal, closeModal } = useModal();
+
+    const { isMobile } = useDeviceTypeByWidth();
+
+    useEffect(() => {
+        if (isUnsignedPreview) return;
+        let cancelled = false;
+
+        const verify = async () => {
+            try {
+                const wallet = await initWallet();
+                const verifications = await wallet?.invoke?.verifyCredential(credential, {}, true);
+                if (!cancelled) setVerificationResult({ credential, items: verifications ?? [] });
+            } catch {
+                if (!cancelled) setVerificationResult({ credential, items: [] });
+            }
+        };
+
+        verify();
+        return () => {
+            cancelled = true;
+        };
+    }, [credential, isUnsignedPreview]);
+
+    useEffect(() => {
+        if (!isEarnedBoost || isPreview) return;
+
+        const viewedCredentialId = credential?.id;
+        if (!viewedCredentialId || viewedCredentialIdRef.current === viewedCredentialId) return;
+
+        viewedCredentialIdRef.current = viewedCredentialId;
+        track(AnalyticsEvents.CREDENTIAL_VIEWED, {
+            credential_type: getAchievementType(credential),
+            category: categoryType,
+            surface: 'wallet',
+        });
+    }, [categoryType, credential, isEarnedBoost, isPreview, track]);
+
+    let verifications: VerificationItem[] = [];
+    if (isClrChildCredential) {
+        verifications = [];
+    } else if (showVerifications && verificationItems && verificationItems.length > 0) {
+        verifications = verificationItems;
+    } else if (showVerifications) {
+        verifications = vcVerifications;
+    }
+
+    // Reflect the authoritative revoked/suspended status in the side-panel verifications
+    // list (the client status check can't see a set suspension bit).
+    verifications = applyLifecycleStatusToVerifications(verifications, lifecycleStatus);
+
+    const detailVerificationItems = isClrChildCredential ? verificationItems : verifications;
+
+    const selectedCredential = credential;
+
+    const openDetailsSideModal = () => {
+        // ! this prevents the modal from opening if there are no verifications
+        // ! on desktop this opens regardless, commenting out for now
+        // ! to keep things consistent across mobile and desktop
+        // if (vcVerifications.length === 0) {
+        //     return;
+        // }
+        newModal(
+            <BoostDetailsSideMenu
+                credential={selectedCredential}
+                shareCredentialUri={boostUri ?? credentialUri}
+                categoryType={categoryType}
+                verificationItems={detailVerificationItems}
+                customLinkedCredentialsComponent={customLinkedCredentialsComponent}
+                existingEndorsements={existingEndorsements}
+                isEarnedBoost={isEarnedBoost}
+                isClrChildCredential={isClrChildCredential}
+                renderMethodCredential={credential as VC | UnsignedVC}
+                isPreview={isUnsignedPreview}
+            />,
+            {
+                className: 'bg-transparent!',
+                hideButton: true,
+            },
+            { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+        );
+    };
+
+    useEffect(() => {
+        if (!isFront) {
+            setIsFront(!isFront);
+            if (isMobile) {
+                openDetailsSideModal();
+            }
+        }
+    }, [isFront]);
+
+    const endorsementBadge = showEndorsementBadge ? (
+        <EndorsementBadge
+            credential={credential}
+            categoryType={categoryType}
+            onClick={() => {
+                if (isMobile) {
+                    openDetailsSideModal();
+                }
+            }}
+        />
+    ) : null;
+
+    const clrCredential = useMemo(() => unwrapBoostCredential(credential), [credential]);
+    const isStandaloneCourse = useMemo(
+        () =>
+            !isClrChildCredential &&
+            isStandaloneCourseCredential(clrCredential as unknown as Record<string, unknown>),
+        [clrCredential, isClrChildCredential]
+    );
+    const usesClrPresentation = isClrCredential || isClrChildCredential || isStandaloneCourse;
+    const usesAcademicFullPage = isClrCredential || isStandaloneCourse;
+
+    const isCertificate =
+        displayType === DisplayTypeEnum.Certificate ||
+        credential?.display?.displayType === 'certificate';
+    const isID =
+        displayType === DisplayTypeEnum.ID ||
+        credential?.display?.displayType === 'id' ||
+        categoryType === 'ID';
+    const isMedia =
+        !isClrCredential &&
+        !isClrChildCredential &&
+        !isStandaloneCourse &&
+        (displayType === DisplayTypeEnum.Media || credential?.display?.displayType === 'media');
+    const isIssuerViewSelected =
+        Boolean(renderMethod) && selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
+    const shouldUseHostCardPadding =
+        isIssuerViewSelected ||
+        getVCDisplayCardVariant(credential, categoryType, displayType) !== 'ribbon';
+    const bgColor = usesAcademicFullPage ? 'bg-grayscale-100' : '';
+
+    const clrModel = useMemo(
+        () =>
+            usesClrPresentation
+                ? normalizeClrTranscriptDisplayModel(
+                      clrCredential as unknown as Record<string, unknown>
+                  )
+                : null,
+        [clrCredential, usesClrPresentation]
+    );
+    const clrEvidence = clrModel ? getDownloadableEvidence(clrModel.evidence) : [];
+    const hasClrEvidence = clrEvidence.length > 0;
+    const standaloneCourse = isStandaloneCourse ? clrModel?.courses[0] : undefined;
+    const showsCoursePanel = Boolean(standaloneCourse && clrModel);
+    const clrRecordNavigator = useMemo(
+        () =>
+            clrModel
+                ? createClrRecordNavigator({
+                      model: clrModel,
+                      boost: clrCredential,
+                      adminMode: false,
+                      openPanel: panel => {
+                          newModal(panel, undefined, {
+                              desktop: ModalTypes.Right,
+                              mobile: ModalTypes.Right,
+                          });
+                      },
+                  })
+                : undefined,
+        [clrCredential, clrModel, newModal]
+    );
+    const handleSelectClrRecord = clrRecordNavigator?.selectRecord;
+    let previewWrapperPaddingClass = '';
+    let previewContentPaddingClass = '';
+
+    if (showsCoursePanel || (isMobile && isClrCredential)) {
+        previewWrapperPaddingClass = 'px-0';
+        previewContentPaddingClass = 'p-0!';
+    } else if (shouldUseHostCardPadding) {
+        previewWrapperPaddingClass = 'px-2';
+        previewContentPaddingClass = 'px-6';
+    }
+
+    if (isMedia) {
+        return (
+            <BoostMediaPreview
+                credential={credential}
+                openDetailsSideModal={openDetailsSideModal}
+                handleShareBoost={handleShareBoost}
+                onDotsClick={onDotsClick}
+                verifications={verifications}
+                handleCloseModal={handleCloseModal}
+            />
+        );
+    }
+
+    const credentialDisplay = (
+        <AccessibleCredentialCard
+            label={
+                titleOverride ||
+                getCredentialName(credential) ||
+                m['claim.modal.credentialFallback']()
+            }
+        >
+            <VCDisplayCardWrapper2
+                credential={credential}
+                issueeOverride={issueeOverride}
+                issuerOverride={issuerOverride}
+                issueHistory={issueHistory}
+                categoryType={categoryType}
+                skipVerification={isUnsignedPreview}
+                verificationItems={isUnsignedPreview ? [] : verifications}
+                lifecycleStatus={lifecycleStatus}
+                customThumbComponent={customThumbComponent}
+                customBodyCardComponent={customBodyCardComponent}
+                customFooterComponent={
+                    isUnsignedPreview ? (
+                        <PreviewCredentialFooter />
+                    ) : isClrChildCredential ? (
+                        <VerifiedChildCLRFooter />
+                    ) : (
+                        customFooterComponent
+                    )
+                }
+                subjectDID={subjectDID}
+                subjectImageComponent={subjectImageComponent}
+                issuerImageComponent={issuerImageComponent}
+                customDescription={customDescription}
+                customCriteria={customCriteria}
+                customIssueHistoryComponent={customIssueHistoryComponent}
+                enableLightbox
+                titleOverride={titleOverride}
+                handleClose={isCertificate && !isStandaloneCourse ? handleCloseModal : undefined}
+                hideNavButtons
+                setIsFrontOverride={setIsFront}
+                customLinkedCredentialsComponent={customLinkedCredentialsComponent}
+                customBodyContentSlot={endorsementBadge}
+            />
+        </AccessibleCredentialCard>
+    );
+
+    let credentialContent: React.ReactNode;
+    if (showsCoursePanel) {
+        credentialContent =
+            standaloneCourse && clrModel ? (
+                <div className="w-full max-w-[800px] mx-auto overflow-hidden bg-grayscale-100 shadow-[0_4px_24px_rgba(0,0,0,0.10)] rounded-xl">
+                    <ClrCourseDetailPanel
+                        course={standaloneCourse}
+                        boost={clrCredential}
+                        showCloseButton={false}
+                        model={clrModel}
+                        onSelectRecord={handleSelectClrRecord}
+                        issuerName={clrModel.header.issuerName?.value}
+                        issuerLogo={getClrIssuerLogo(clrModel)}
+                    />
+                </div>
+            ) : (
+                credentialDisplay
+            );
+    } else if (isClrCredential && clrModel) {
+        credentialContent = (
+            <ClrTranscriptFullPage
+                model={clrModel}
+                boost={clrCredential}
+                // boostUri comes from boost cards; credentialUri from direct credential views
+                boostUri={boostUri ?? credentialUri}
+                verificationItems={verifications}
+                options={{ viewer: 'student', surface: ClrTranscriptSurface.Full }}
+            />
+        );
+    } else if (isIssuerViewSelected && renderMethod) {
+        credentialContent = (
+            <RenderMethodDisplay
+                vc={credential}
+                renderMethod={renderMethod}
+                fallback={credentialDisplay}
+                className="w-full"
+            />
+        );
+    } else {
+        credentialContent = credentialDisplay;
+    }
+
+    return (
+        <IonPage>
+            <h1 className="sr-only">
+                {titleOverride ||
+                    getCredentialName(credential) ||
+                    m['claim.modal.credentialFallback']()}
+            </h1>
+            <BoostFooterLayout
+                className={bgColor}
+                contentOwnsScroll
+                footerProps={{
+                    handleClose: handleCloseModal,
+                    handleDetails:
+                        isMobile && !isClrCredential && !showsCoursePanel
+                            ? () => openDetailsSideModal()
+                            : undefined,
+                    handleShare: handleShareBoost,
+                    handleDotMenu: onDotsClick,
+                    useFullCloseButton: !isMobile || isClrCredential || showsCoursePanel,
+                }}
+            >
+                <div className="flex h-full">
+                    <section className="flex h-full overflow-y-scroll flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0">
+                        <div
+                            className={`w-full ${previewWrapperPaddingClass} flex flex-col items-center justify-center overflow-x-auto ${boostPreviewWrapperCustomClass} ${
+                                isCertificate && !isStandaloneCourse
+                                    ? 'certificate-display-zoom'
+                                    : ''
+                            } ${isID ? 'px-0! mt-[calc(20px+var(--ion-safe-area-top,0px))]' : ''}`}
+                        >
+                            <section
+                                className={`w-full overflow-y-auto max-h-full disable-scrollbars ${
+                                    Capacitor.isNativePlatform() && !usesAcademicFullPage
+                                        ? 'pt-0 mt-[var(--ion-safe-area-top,0px)]'
+                                        : 'pt-[30px]'
+                                } ${previewContentPaddingClass}`}
+                            >
+                                {credentialContent}
+                            </section>
+                        </div>
+                    </section>
+                    {!isMobile && !isClrCredential && !showsCoursePanel && (
+                        <BoostDetailsSideBar
+                            credential={selectedCredential}
+                            shareCredentialUri={boostUri ?? credentialUri}
+                            categoryType={categoryType}
+                            verificationItems={detailVerificationItems}
+                            customLinkedCredentialsComponent={customLinkedCredentialsComponent}
+                            existingEndorsements={existingEndorsements}
+                            isEarnedBoost={isEarnedBoost}
+                            isClrChildCredential={isClrChildCredential}
+                            renderMethodCredential={credential as VC | UnsignedVC}
+                            isPreview={isUnsignedPreview}
+                        />
+                    )}
+                </div>
+            </BoostFooterLayout>
+        </IonPage>
+    );
+};
+
+export default NonBoostPreview;

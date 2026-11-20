@@ -23,7 +23,7 @@ import GenericErrorBoundary from './components/generic/GenericErrorBoundary';
 
 const CampaignsPage = lazyWithRetry(() => import('./pages/campaigns/CampaignsPage'));
 const WalletPage = lazyWithRetry(() => import('./pages/wallet/WalletPage'));
-const DashboardPage = lazyWithRetry(() => import('./pages/dashboard/DashboardPage'));
+import { DashboardPageRoute, preloadDashboardPage } from './pages/dashboard/DashboardPageRoute';
 const LaunchPad = lazyWithRetry(() => import('./pages/launchPad/LaunchPad'));
 const MyAppsLanding = lazyWithRetry(() => import('./pages/myApps/MyAppsLanding'));
 const EmbedAppFullScreen = lazyWithRetry(() => import('./pages/launchPad/EmbedAppFullScreen'));
@@ -103,6 +103,12 @@ const ApproveAccount = lazyWithRetry(() => import('./pages/approveAccount/Approv
 const SocialBadgesPage = lazyWithRetry(() => import('./pages/socialBadgesPage/SocialBadgesPage'));
 
 import { LoadingPage2 } from './pages/loadingPage/LoadingPage';
+import {
+    FallbackMarker,
+    markDashboardPath,
+    useDashboardPathMark,
+} from './helpers/dashboardPathMarks';
+const markRoutesFallbackTimer = () => markDashboardPath('routes_fallback_timer', true);
 const AccomplishmentsPage = lazyWithRetry(
     () => import('./pages/accomplishments/AccomplishmentsPage')
 );
@@ -221,6 +227,8 @@ const PublishFromManifestRoute: React.FC = () => {
 };
 
 export const Routes: React.FC = () => {
+    markDashboardPath('routes_render');
+    useDashboardPathMark('routes_commit');
     const isLoggedIn = useIsLoggedIn();
     const location = useLocation<{ background: any }>();
     const flags = useFlags();
@@ -244,9 +252,11 @@ export const Routes: React.FC = () => {
         <ChunkBoundary>
             <Suspense
                 fallback={
-                    <DelayedFallback delayMs={200}>
-                        <RouteTransitionLoader />
-                    </DelayedFallback>
+                    <FallbackMarker boundary="routes">
+                        <DelayedFallback delayMs={200} onShow={markRoutesFallbackTimer}>
+                            <RouteTransitionLoader />
+                        </DelayedFallback>
+                    </FallbackMarker>
                 }
             >
                 <GenericErrorBoundary>
@@ -287,7 +297,7 @@ export const Routes: React.FC = () => {
                             path="/share-creds/:uri/:seed"
                             component={ViewCredsBundle}
                         />
-                        <PrivateRoute exact path="/dashboard" component={DashboardPage} />
+                        <PrivateRoute exact path="/dashboard" component={DashboardPageRoute} />
                         <PrivateRoute exact path="/home" component={WalletPage} />
                         <PrivateRoute exact path="/wallet" component={WalletPage} />
                         <PrivateRoute exact path="/passport" component={WalletPage} />
@@ -465,13 +475,16 @@ export const Routes: React.FC = () => {
                         <SentryRoute
                             exact
                             path="/"
-                            render={() =>
-                                isLoggedIn ? (
+                            render={() => {
+                                markDashboardPath(
+                                    isLoggedIn ? 'root_redirect' : 'root_redirect_login'
+                                );
+                                return isLoggedIn ? (
                                     <Redirect to={dashboardAsHome ? '/dashboard' : '/wallet'} />
                                 ) : (
                                     <Redirect to="/login" />
-                                )
-                            }
+                                );
+                            }}
                         />
 
                         <SentryRoute exact path="/verify-email" component={UserVerifyEmail} />
@@ -510,7 +523,7 @@ const AI_GATED_PATHS = new Set([
  * chunk is in memory.
  */
 export const ROUTE_PRELOAD: Record<string, () => Promise<void>> = {
-    '/dashboard': () => DashboardPage.preload(),
+    '/dashboard': preloadDashboardPage,
     // Wallet (Passport) — same chunk for all three aliases.
     '/passport': () => WalletPage.preload(),
     '/wallet': () => WalletPage.preload(),

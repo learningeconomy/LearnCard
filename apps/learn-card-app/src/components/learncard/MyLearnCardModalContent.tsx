@@ -1,0 +1,902 @@
+import React, { useEffect, useRef, useState } from 'react';
+import type { ModalInstanceToken } from 'learn-card-base/components/modals/types/Modals';
+import { useHistory } from 'react-router-dom';
+import { useFlags } from 'launchdarkly-react-client-sdk';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('my-learn-card-modal');
+
+import * as m from '../../paraglide/messages.js';
+
+import CaretListItem from './CaretListItem';
+import LearnCardIdView from './LearnCardIdView';
+import LearnCardFooter from './LearnCardFooter';
+import EmailIcon from 'learn-card-base/svgs/EmailIcon';
+import BlocksIcon from 'learn-card-base/svgs/Blocks';
+import ReplyIcon from 'learn-card-base/svgs/ReplyIcon';
+import SwitchAccountButton from './SwitchAccountButton';
+import IdViewDivetFrame from '../svgs/IdViewDivetFrame';
+import AccountSwitcherModal from './AccountSwitcherModal';
+import SignOutIcon from 'learn-card-base/svgs/SignOutIcon';
+import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
+import UserProfileSetup from '../user-profile/UserProfileSetup';
+import BluePaintBrush from 'learn-card-base/svgs/BluePaintBrush';
+import QrCodeUserCardModal from '../qrcode-user-card/QRCodeUserCard';
+import OrangeProfileIcon from 'learn-card-base/svgs/OrangeProfileIcon';
+import UserContact from '../user-profile/UserContact/UserContact';
+import LogoutLoadingPage from '../../pages/login/LoginPageLoader/LogoutLoader';
+import AdminToolsModal from '../../pages/adminToolsPage/AdminToolsModal/AdminToolsModal';
+import { WrenchColorFillIcon } from 'learn-card-base/svgs/WrenchIcon';
+import ShieldCheck from 'learn-card-base/svgs/ShieldCheck';
+import PrivacyLock from 'learn-card-base/svgs/PrivacyLock';
+import LearnCardIDCMS, { LearnCardIdCMSEditorModeEnum } from '../learncardID-CMS/LearnCardIDCMS';
+import { RecoverySetupModal } from '../recovery';
+
+import {
+    useModal,
+    useGetConnections,
+    useIsCurrentUserLCNUser,
+    BrandingEnum,
+    ModalTypes,
+    useGetCurrentLCNUser,
+    useCurrentUser,
+    useWallet,
+    getAuthConfig,
+    isEmailRelayConfigured,
+} from 'learn-card-base';
+import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
+import useLogout from '../../hooks/useLogout';
+import ReAuthOverlay from '../auth/ReAuthOverlay';
+
+import {
+    DEFAULT_COLOR_LIGHT,
+    DEFAULT_LEARNCARD_ID_ISSUER_THUMBNAIL,
+    DEFAULT_LEARNCARD_WALLPAPER,
+} from '../learncardID-CMS/learncard-cms.helpers';
+import { FamilyCMSAppearance } from '../familyCMS/familyCMSState';
+import { LCNProfile } from '@learncard/types';
+import { getBespokeLearnCard, getSigningLearnCard } from 'learn-card-base/helpers/walletHelpers';
+import useJoinLCNetworkModal from '../network-prompts/hooks/useJoinLCNetworkModal';
+import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
+import { MyLearnCardModalViewModeEnum } from './MyLearnCardModal.types';
+import { getTenantHeaders } from '../../config/bootstrapTenantConfig';
+import { FeedbackSettingsRows } from '../../feedback/reporting/FeedbackSettingsRows';
+
+type MyLearnCardModalProps = {
+    branding: BrandingEnum;
+    viewMode?: MyLearnCardModalViewModeEnum;
+    user?: LCNProfile;
+    hideLogout?: boolean;
+    hideEdit?: boolean;
+    hideShare?: boolean;
+    resumeRecovery?: boolean;
+};
+
+const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
+    branding,
+    viewMode = MyLearnCardModalViewModeEnum.guardian,
+    user: _user,
+    hideLogout = false,
+    hideEdit = false,
+    hideShare = false,
+    resumeRecovery = false,
+}) => {
+    const flags = useFlags();
+    const resumedRecovery = useRef(false);
+    const [user, setUser] = useState(_user);
+
+    const { initWallet } = useWallet();
+    const history = useHistory();
+    const currentUser = useCurrentUser();
+    const { currentLCNUser, refetch } = useGetCurrentLCNUser();
+    const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
+    const { gate } = useLCNGatedAction();
+
+    const { newModal, newModalWithToken, closeModal, forceCloseModalByToken, closeAllModals } =
+        useModal();
+    const { handleLogout, isLoggingOut } = useLogout();
+
+    const { data: isNetworkUser, isLoading: isNetworkUserLoading } = useIsCurrentUserLCNUser();
+
+    const { data: connections } = useGetConnections();
+
+    const {
+        keyDerivation,
+        capabilities,
+        showDeviceLinkModal,
+        authProvider: contextAuthProvider,
+        refreshAuthSession,
+        disableEscrowRecovery,
+        enableEscrowRecovery,
+        getEscrowEnrollmentState,
+        setEscrowPin,
+        clearEscrowPin,
+        openSecureAccount,
+        runRecoverySetup,
+        resetRecoverySetup,
+        needsActivation,
+    } = useAppAuth();
+
+    const description = user?.bio ?? user?.shortBio;
+
+    let learnCardDisplayStyles = currentLCNUser?.display;
+    if (viewMode === MyLearnCardModalViewModeEnum.child) learnCardDisplayStyles = user?.display;
+
+    const handleUpdateMyLearnCardID = async (learnCardIDUpdates: FamilyCMSAppearance) => {
+        if (viewMode === MyLearnCardModalViewModeEnum.child) {
+            const childLc = await getBespokeLearnCard(currentUser?.privateKey, user?.did);
+
+            // Ensure profile is ready
+            await childLc.invoke.getProfile();
+
+            const updates = {
+                display: {
+                    // container styles
+                    backgroundColor: learnCardIDUpdates?.backgroundColor ?? DEFAULT_COLOR_LIGHT,
+                    backgroundImage:
+                        learnCardIDUpdates?.backgroundImage ?? DEFAULT_LEARNCARD_WALLPAPER,
+                    fadeBackgroundImage: learnCardIDUpdates?.fadeBackgroundImage ?? false,
+                    repeatBackgroundImage: learnCardIDUpdates?.repeatBackgroundImage ?? false,
+
+                    // id styles
+                    fontColor: learnCardIDUpdates?.fontColor ?? DEFAULT_COLOR_LIGHT,
+                    accentColor: learnCardIDUpdates?.accentColor ?? '#ffffff',
+                    accentFontColor: learnCardIDUpdates?.accentFontColor ?? '',
+                    idBackgroundImage:
+                        learnCardIDUpdates?.idBackgroundImage ?? DEFAULT_LEARNCARD_WALLPAPER,
+                    fadeIdBackgroundImage: learnCardIDUpdates?.dimIdBackgroundImage ?? true,
+                    idBackgroundColor: learnCardIDUpdates?.idBackgroundColor ?? '#2DD4BF',
+                    repeatIdBackgroundImage: learnCardIDUpdates?.repeatIdBackgroundImage ?? false,
+                },
+            };
+
+            await childLc.invoke.updateProfile(updates);
+            setUser(oldUser => ({ ...oldUser!, ...updates }));
+            return;
+        }
+        const wallet = await initWallet();
+
+        const updatedProfile = await wallet?.invoke?.updateProfile({
+            display: {
+                // container styles
+                backgroundColor: learnCardIDUpdates?.backgroundColor ?? DEFAULT_COLOR_LIGHT,
+                backgroundImage: learnCardIDUpdates?.backgroundImage ?? DEFAULT_LEARNCARD_WALLPAPER,
+                fadeBackgroundImage: learnCardIDUpdates?.fadeBackgroundImage ?? false,
+                repeatBackgroundImage: learnCardIDUpdates?.repeatBackgroundImage ?? false,
+
+                // id styles
+                fontColor: learnCardIDUpdates?.fontColor ?? DEFAULT_COLOR_LIGHT,
+                accentColor: learnCardIDUpdates?.accentColor ?? '#ffffff',
+                accentFontColor: learnCardIDUpdates?.accentFontColor ?? '',
+                idBackgroundImage:
+                    learnCardIDUpdates?.idBackgroundImage ?? DEFAULT_LEARNCARD_WALLPAPER,
+                fadeIdBackgroundImage: learnCardIDUpdates?.dimIdBackgroundImage ?? true,
+                idBackgroundColor: learnCardIDUpdates?.idBackgroundColor ?? '#2DD4BF',
+                repeatIdBackgroundImage: learnCardIDUpdates?.repeatIdBackgroundImage ?? false,
+            },
+        });
+
+        refetch();
+    };
+
+    const rows: {
+        id?: string;
+        Icon: React.FC;
+        title: string;
+        iconVersion?: string;
+        caretText?: string;
+        onClick?: () => void;
+        hide?: boolean;
+    }[] = [];
+
+    if (viewMode === MyLearnCardModalViewModeEnum.guardian) {
+        rows.push(
+            {
+                title: m['profile.menu.settings'](),
+                Icon: OrangeProfileIcon,
+                caretText: '',
+                onClick: async () => {
+                    newModal(
+                        <div className="h-full">
+                            <UserProfileSetup
+                                title={m['profile.menu.settings']()}
+                                handleCloseModal={closeModal}
+                                handleLogout={() => handleLogout({ overrideRedirectUrl: '/login' })}
+                                showNetworkSettings={true}
+                                showNotificationsModal={false}
+                            />
+                        </div>,
+                        {},
+                        { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+                    );
+                },
+            },
+            {
+                title: m['profile.menu.emailAddresses'](),
+                iconVersion: '2',
+                Icon: EmailIcon,
+                caretText: '',
+                onClick: async () => {
+                    const { prompted } = await gate();
+                    if (prompted) return;
+                    newModal(
+                        <div className="h-full">
+                            <UserContact />
+                        </div>,
+                        {},
+                        { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+                    );
+                },
+            }
+        );
+    }
+
+    if (!hideEdit) {
+        rows.push({
+            title: m['profile.menu.editContactCard'](),
+            Icon: BluePaintBrush,
+            caretText: '',
+            onClick: () => {
+                const learnCardID = {
+                    backgroundColor: learnCardDisplayStyles?.backgroundColor ?? DEFAULT_COLOR_LIGHT,
+                    backgroundImage:
+                        learnCardDisplayStyles?.backgroundImage ?? DEFAULT_LEARNCARD_WALLPAPER,
+                    fadeBackgroundImage: learnCardDisplayStyles?.fadeBackgroundImage ?? false,
+                    repeatBackgroundImage: learnCardDisplayStyles?.repeatBackgroundImage ?? false,
+
+                    fontColor: learnCardDisplayStyles?.fontColor ?? DEFAULT_COLOR_LIGHT,
+                    accentColor: learnCardDisplayStyles?.accentColor ?? '#ffffff',
+                    idBackgroundImage:
+                        learnCardDisplayStyles?.idBackgroundImage ?? DEFAULT_LEARNCARD_WALLPAPER,
+                    dimIdBackgroundImage: learnCardDisplayStyles?.fadeIdBackgroundImage ?? true,
+                    idIssuerThumbnail: DEFAULT_LEARNCARD_ID_ISSUER_THUMBNAIL,
+                    showIdIssuerImage: true,
+                    idThumbnail: '',
+                    accentFontColor: '',
+                    idBackgroundColor: learnCardDisplayStyles?.idBackgroundColor ?? '#2DD4BF',
+                    repeatIdBackgroundImage:
+                        learnCardDisplayStyles?.repeatIdBackgroundImage ?? false,
+                    idDescription: 'LearnCard',
+                };
+
+                newModal(
+                    <LearnCardIDCMS
+                        learnCardID={learnCardID}
+                        user={{
+                            name:
+                                user?.displayName ??
+                                currentUser?.name ??
+                                currentLCNUser?.displayName ??
+                                '',
+                            shortBio: currentLCNUser?.bio,
+                            image:
+                                user?.image ?? currentLCNUser?.image ?? currentUser?.profileImage,
+                            learnCardID: learnCardID,
+                        }}
+                        handleSaveLearnCardID={handleUpdateMyLearnCardID}
+                        handleCloseModal={() => closeModal()}
+                        showIssueDate={false}
+                        viewMode={LearnCardIdCMSEditorModeEnum.edit}
+                    />,
+                    {},
+                    { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+                );
+            },
+        });
+    }
+
+    if (viewMode === MyLearnCardModalViewModeEnum.guardian) {
+        rows.push(
+            {
+                title: m['dataSharing.title'](),
+                Icon: PrivacyLock,
+                caretText: '',
+                onClick: () => {
+                    closeModal();
+                    history.push('/privacy-and-data');
+                },
+            },
+            {
+                title: m['profile.menu.adminTools'](),
+                Icon: WrenchColorFillIcon,
+                caretText: '',
+                onClick: async () => {
+                    const { prompted } = await gate();
+                    if (prompted) return;
+                    newModal(
+                        <AdminToolsModal />,
+                        {},
+                        { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+                    );
+                },
+            }
+        );
+
+        if (capabilities.recovery) {
+            rows.push({
+                id: 'account-recovery',
+                title: m['profile.menu.accountRecovery'](),
+                Icon: ShieldCheck,
+                caretText: '',
+                onClick: async () => {
+                    if (!currentUser?.privateKey) {
+                        log.error('No private key available');
+                        return;
+                    }
+
+                    const showReAuth = () => {
+                        newModal(
+                            <ReAuthOverlay
+                                resumeAction="account-recovery"
+                                onSuccess={closeModal}
+                                onCancel={closeModal}
+                            />,
+                            { sectionClassName: 'max-w-[480px]!' },
+                            { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
+                        );
+                    };
+
+                    // Proactive session check — try silent refresh first,
+                    // then verify the token before opening the modal.
+                    if (!contextAuthProvider) {
+                        showReAuth();
+                        return;
+                    }
+
+                    // Try silent refresh first
+                    const refreshed = await refreshAuthSession();
+
+                    if (!refreshed) {
+                        try {
+                            await contextAuthProvider.getIdToken();
+                        } catch {
+                            showReAuth();
+                            return;
+                        }
+                    }
+
+                    let existingMethods: Array<{ type: string; createdAt: Date }> = [];
+                    let fetchedMaskedRecoveryEmail: string | null = null;
+
+                    if (keyDerivation.getAvailableRecoveryMethods) {
+                        try {
+                            const token = await contextAuthProvider.getIdToken();
+                            const providerType = contextAuthProvider.getProviderType();
+                            existingMethods = await keyDerivation.getAvailableRecoveryMethods(
+                                token,
+                                providerType
+                            );
+
+                            // Fetch masked recovery email from server key status
+                            if (keyDerivation.fetchServerKeyStatus) {
+                                const status = await keyDerivation.fetchServerKeyStatus(
+                                    token,
+                                    providerType
+                                );
+                                fetchedMaskedRecoveryEmail = status.maskedRecoveryEmail ?? null;
+                            }
+                        } catch {
+                            // Non-critical — show modal with empty methods
+                        }
+                    }
+
+                    const canSetup = !!keyDerivation.setupRecoveryMethod;
+
+                    const setupMethod = canSetup
+                        ? async (
+                              input: {
+                                  method: string;
+                                  password?: string;
+                                  did?: string;
+                                  email?: string;
+                              },
+                              authUser?: unknown
+                          ) => {
+                              let token: string;
+
+                              try {
+                                  token = await contextAuthProvider.getIdToken();
+                              } catch {
+                                  throw new Error(
+                                      'Your session has expired. Please close this dialog and sign in again.'
+                                  );
+                              }
+
+                              const providerType = contextAuthProvider.getProviderType();
+
+                              const signVp = async (
+                                  pk: string,
+                                  challenge?: string
+                              ): Promise<string> => {
+                                  const lc = await getSigningLearnCard(pk);
+
+                                  const jwt = await lc.invoke.getDidAuthVp({
+                                      proofFormat: 'jwt',
+                                      challenge,
+                                  });
+
+                                  if (!jwt || typeof jwt !== 'string')
+                                      throw new Error('Failed to sign DID-Auth VP');
+
+                                  return jwt;
+                              };
+
+                              if (input.method !== 'passkey') resetRecoverySetup(input.method);
+
+                              return keyDerivation.setupRecoveryMethod!({
+                                  token,
+                                  providerType,
+                                  privateKey: currentUser.privateKey!,
+                                  input: input as import('@learncard/sss-key-manager').RecoverySetupInput,
+                                  authUser:
+                                      (authUser as import('@learncard/sss-key-manager').AuthUser) ??
+                                      undefined,
+                                  signDidAuthVp: signVp,
+                              });
+                          }
+                        : null;
+
+                    const confirmMethod = keyDerivation.confirmRecoveryMethod
+                        ? async (
+                              input: import('@learncard/sss-key-manager').RecoveryConfirmationInput
+                          ) => {
+                              const token = await contextAuthProvider.getIdToken();
+                              const providerType = contextAuthProvider.getProviderType();
+                              const signVp = async (
+                                  privateKey: string,
+                                  challenge?: string
+                              ): Promise<string> => {
+                                  const lc = await getSigningLearnCard(privateKey);
+                                  const jwt = await lc.invoke.getDidAuthVp({
+                                      proofFormat: 'jwt',
+                                      challenge,
+                                  });
+
+                                  if (!jwt || typeof jwt !== 'string') {
+                                      throw new Error('Failed to sign DID-Auth VP');
+                                  }
+
+                                  return jwt;
+                              };
+
+                              await runRecoverySetup(input.method, () =>
+                                  keyDerivation.confirmRecoveryMethod!({
+                                      token,
+                                      providerType,
+                                      privateKey: currentUser.privateKey!,
+                                      input,
+                                      signDidAuthVp: signVp,
+                                  })
+                              );
+                          }
+                        : null;
+
+                    const requireAuth = async () => {
+                        throw new Error(
+                            'Your session has expired. Please close this dialog and sign in again.'
+                        );
+                    };
+
+                    const { serverUrl } = getAuthConfig();
+
+                    const getTokenAndProvider = async () => {
+                        const token = await contextAuthProvider.getIdToken();
+                        const providerType = contextAuthProvider.getProviderType();
+                        return { token, providerType };
+                    };
+
+                    const getDidAuthHeaders = async (): Promise<Record<string, string>> => {
+                        const lc = await getSigningLearnCard(currentUser.privateKey!);
+                        const did = lc.id.did();
+                        const signVp = async (
+                            privateKey: string,
+                            challenge?: string
+                        ): Promise<string> => {
+                            const signingLc = await getSigningLearnCard(privateKey);
+                            const jwt = await signingLc.invoke.getDidAuthVp({
+                                proofFormat: 'jwt',
+                                challenge,
+                            });
+
+                            if (!jwt || typeof jwt !== 'string') {
+                                throw new Error('Failed to sign DID-Auth VP');
+                            }
+
+                            return jwt;
+                        };
+                        const vpJwt = keyDerivation.getFreshDidAuthVp
+                            ? await keyDerivation.getFreshDidAuthVp(
+                                  currentUser.privateKey!,
+                                  did,
+                                  signVp
+                              )
+                            : await signVp(currentUser.privateKey!);
+
+                        return {
+                            'Content-Type': 'application/json',
+                            Authorization: `Bearer ${vpJwt}`,
+                            ...getTenantHeaders(),
+                        };
+                    };
+
+                    let requestClose: (() => void) | undefined;
+                    const modalRef: { token?: ReturnType<typeof newModalWithToken> } = {};
+                    // Close exactly this instance; a no-op if it already closed.
+                    const closeRecoveryModal = () => {
+                        if (modalRef.token) forceCloseModalByToken(modalRef.token);
+                    };
+                    modalRef.token = newModalWithToken(
+                        <RecoverySetupModal
+                            registerCloseRequest={fn => {
+                                requestClose = fn;
+                            }}
+                            emailAvailable={isEmailRelayConfigured()}
+                            onGetEscrowEnrollmentState={getEscrowEnrollmentState}
+                            onDisableEscrowRecovery={disableEscrowRecovery}
+                            onEnableEscrowRecovery={enableEscrowRecovery}
+                            onSetEscrowPin={setEscrowPin}
+                            onClearEscrowPin={clearEscrowPin}
+                            onSignOutOtherDevices={() => {
+                                // The secure flow is a provider-level Overlay that sits below
+                                // the shared modal stack, so close the whole stack (this
+                                // profile sheet included) or it would render underneath.
+                                closeAllModals();
+                                openSecureAccount();
+                            }}
+                            existingMethods={existingMethods.map(m => ({
+                                type: m.type,
+                                createdAt:
+                                    m.createdAt instanceof Date
+                                        ? m.createdAt.toISOString()
+                                        : String(m.createdAt),
+                            }))}
+                            maskedRecoveryEmail={fetchedMaskedRecoveryEmail}
+                            isActivationPending={needsActivation}
+                            onCompleted={closeRecoveryModal}
+                            onSetupPasskey={
+                                setupMethod
+                                    ? async () => {
+                                          const authUser =
+                                              await contextAuthProvider.getCurrentUser();
+                                          const result = await runRecoverySetup('passkey', () =>
+                                              setupMethod({ method: 'passkey' }, authUser)
+                                          );
+                                          return result?.method === 'passkey'
+                                              ? result.credentialId
+                                              : 'Passkey created';
+                                      }
+                                    : requireAuth
+                            }
+                            onGeneratePhrase={
+                                setupMethod
+                                    ? async () => {
+                                          const authUser =
+                                              await contextAuthProvider.getCurrentUser();
+                                          const result = await setupMethod(
+                                              { method: 'phrase' },
+                                              authUser
+                                          );
+                                          if (result?.method !== 'phrase') {
+                                              throw new Error('Could not generate recovery words.');
+                                          }
+
+                                          return {
+                                              phrase: result.phrase,
+                                              challengeWordIndices: result.challengeWordIndices,
+                                              challengeWordOptions: result.challengeWordOptions,
+                                          };
+                                      }
+                                    : requireAuth
+                            }
+                            onConfirmPhrase={
+                                confirmMethod
+                                    ? challengeWords =>
+                                          confirmMethod({ method: 'phrase', challengeWords })
+                                    : requireAuth
+                            }
+                            onSetupBackup={
+                                setupMethod
+                                    ? async (backupPw: string) => {
+                                          const authUser =
+                                              await contextAuthProvider.getCurrentUser();
+                                          const lc = await getSigningLearnCard(
+                                              currentUser.privateKey!
+                                          );
+                                          const did = lc?.id?.did() || '';
+                                          const result = await setupMethod(
+                                              { method: 'backup', password: backupPw, did },
+                                              authUser
+                                          );
+                                          return result?.method === 'backup'
+                                              ? JSON.stringify(result.backupFile, null, 2)
+                                              : '';
+                                      }
+                                    : requireAuth
+                            }
+                            onConfirmBackup={
+                                confirmMethod
+                                    ? (fileContents, password) =>
+                                          confirmMethod({
+                                              method: 'backup',
+                                              fileContents,
+                                              password,
+                                          })
+                                    : requireAuth
+                            }
+                            onAddRecoveryEmail={async (email: string) => {
+                                const { token, providerType } = await getTokenAndProvider();
+                                const headers = await getDidAuthHeaders();
+
+                                const res = await fetch(`${serverUrl}/keys/recovery-email/add`, {
+                                    method: 'POST',
+                                    headers,
+                                    body: JSON.stringify({ authToken: token, providerType, email }),
+                                });
+
+                                if (!res.ok) {
+                                    const data = await res.json().catch(() => ({}));
+                                    throw new Error(
+                                        data?.message || 'Failed to send verification code.'
+                                    );
+                                }
+                            }}
+                            onVerifyRecoveryEmail={async (code: string) => {
+                                const { token, providerType } = await getTokenAndProvider();
+                                const headers = await getDidAuthHeaders();
+
+                                const res = await fetch(`${serverUrl}/keys/recovery-email/verify`, {
+                                    method: 'POST',
+                                    headers,
+                                    body: JSON.stringify({ authToken: token, providerType, code }),
+                                });
+
+                                if (!res.ok) {
+                                    const data = await res.json().catch(() => ({}));
+                                    throw new Error(data?.message || 'Incorrect code.');
+                                }
+
+                                return res.json();
+                            }}
+                            onSetupEmailRecovery={
+                                setupMethod
+                                    ? async email => {
+                                          const authUser =
+                                              await contextAuthProvider.getCurrentUser();
+                                          await setupMethod({ method: 'email', email }, authUser);
+                                      }
+                                    : requireAuth
+                            }
+                            onConfirmEmailRecovery={
+                                confirmMethod
+                                    ? code => confirmMethod({ method: 'email', code })
+                                    : requireAuth
+                            }
+                            onClose={closeRecoveryModal}
+                        />,
+                        {
+                            sectionClassName: 'max-w-[480px]!',
+                            // Backdrop/Escape: let the modal guard an unfinished check.
+                            onClose: () => {
+                                if (!requestClose) return true;
+                                requestClose();
+                                return false;
+                            },
+                        },
+                        { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
+                    );
+                },
+            });
+        }
+
+        if (capabilities.deviceLinking) {
+            rows.push({
+                title: m['profile.menu.linkADevice'](),
+                Icon: QRCodeScanner,
+                caretText: '',
+                onClick: () => {
+                    closeModal();
+                    showDeviceLinkModal();
+                },
+            });
+        }
+    }
+
+    const handleSwitchAccountsClick = () => {
+        const modalRef: { token?: ModalInstanceToken } = {};
+        modalRef.token = newModalWithToken(
+            <AccountSwitcherModal
+                showServiceProfiles
+                containerClassName="max-h-[65vh]"
+                showStepsFooter
+                onSwitchComplete={() => {
+                    if (modalRef.token) forceCloseModalByToken(modalRef.token);
+                }}
+            />,
+            {
+                sectionClassName: 'bg-transparent! border-none! shadow-none! max-w-[400px]!',
+                hideButton: true,
+            }
+        );
+    };
+
+    const handleQrCodeClick = () => {
+        newModal(
+            <QrCodeUserCardModal
+                branding={branding}
+                history={history}
+                connections={connections ?? []}
+                qrOnly
+            />,
+            {},
+            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+        );
+    };
+
+    const appearance = learnCardDisplayStyles ?? currentLCNUser?.display;
+    const wallpaperImage = appearance?.backgroundImage ?? DEFAULT_LEARNCARD_WALLPAPER;
+    const wallpaperBackgroundColor = appearance?.backgroundColor ?? DEFAULT_COLOR_LIGHT;
+    const isWallpaperFaded = appearance?.fadeBackgroundImage ?? false;
+    const isWallpaperTiled = appearance?.repeatBackgroundImage ?? false;
+
+    let backgroundStyles = {
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+        backgroundSize: 'cover',
+        backgroundImage: `url(${wallpaperImage})`,
+        backgroundRepeat: 'no-repeat',
+    };
+
+    if (isWallpaperFaded) {
+        backgroundStyles = {
+            ...backgroundStyles,
+            backgroundImage: `linear-gradient(#353E6480, #353E6480), url(${wallpaperImage})`,
+        };
+
+        if (wallpaperBackgroundColor) {
+            backgroundStyles = {
+                ...backgroundStyles,
+                backgroundImage: `linear-gradient(${wallpaperBackgroundColor}80, ${wallpaperBackgroundColor}80), url(${wallpaperImage})`,
+            };
+        }
+    }
+
+    if (isWallpaperTiled) {
+        backgroundStyles = {
+            ...backgroundStyles,
+            backgroundRepeat: 'repeat',
+            backgroundSize: 'auto',
+        };
+    }
+
+    if (!isWallpaperFaded) {
+        backgroundStyles.backgroundColor = wallpaperBackgroundColor;
+    }
+
+    useEffect(() => {
+        if (!resumeRecovery || resumedRecovery.current || !currentUser?.privateKey) return;
+        const recoveryRow = rows.find(row => row.id === 'account-recovery');
+        if (!recoveryRow?.onClick) return;
+        resumedRecovery.current = true;
+        void Promise.resolve(recoveryRow.onClick()).catch(() => {
+            log.warn('Unable to reopen account recovery');
+        });
+    }, [resumeRecovery, currentUser?.privateKey, rows]);
+
+    if (isLoggingOut) {
+        return <LogoutLoadingPage />;
+    }
+
+    return (
+        <section
+            className="min-h-full h-full overflow-y-auto pb-[100px]"
+            style={{
+                ...backgroundStyles,
+            }}
+        >
+            <h1 className="sr-only">{m['profile.menu.settings']()}</h1>
+            {/* items-start (not items-center): when the profile content is taller
+                than the modal, align-items:center pushes the top above the scroll
+                origin where it can't be reached, clipping it. Top-align so it's
+                always scrollable from the top. */}
+            <section
+                className="min-h-[calc(100%-85px)] px-[20px] pb-[20px] flex items-start justify-center"
+                style={{ paddingTop: '20px' }}
+            >
+                <div className="max-w-[335px] mx-auto rounded-[15px] overflow-hidden shadow-box-bottom">
+                    <div className="bg-white/70  backdrop-blur-[10px]">
+                        <div className="p-[15px] flex flex-col gap-[10px]">
+                            <LearnCardIdView user={user} />
+
+                            <SwitchAccountButton
+                                handleAccountSwitcher={handleSwitchAccountsClick}
+                            />
+                        </div>
+
+                        <div
+                            className={`flex justify-center relative ${
+                                hideShare ? 'pb-[50px]' : ' pb-[10px]'
+                            }`}
+                        >
+                            {!hideShare && (
+                                <button
+                                    type="button"
+                                    onClick={handleQrCodeClick}
+                                    aria-label={m['share.shareProfile']()}
+                                    className="bg-white rounded-full p-[10px] h-[50px] w-[50px] shadow-box-bottom"
+                                >
+                                    <QRCodeScanner
+                                        className="text-grayscale-900"
+                                        aria-hidden="true"
+                                    />
+                                </button>
+                            )}
+
+                            <IdViewDivetFrame className="absolute top-[20px] bottom-0 pointer-events-none" />
+                        </div>
+                    </div>
+                    <div className="bg-white text-grayscale-900 px-[10px] flex flex-col pb-[10px]">
+                        <span className="py-[10px] text-grayscale-900 font-notoSans text-[17px] text-center line-clamp-4">
+                            {description}
+                        </span>
+                        {!isNetworkUser && !isNetworkUserLoading && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    void handlePresentJoinNetworkModal();
+                                }}
+                                className="bg-grayscale-800 text-white font-notoSans text-[17px] font-semibold px-[20px] py-[7px] rounded-[10px] mb-[10px]"
+                            >
+                                {m['profile.menu.completeProfile']()}
+                            </button>
+                        )}
+
+                        <div>
+                            {rows.map((r, index) => {
+                                const { title, Icon, iconVersion, caretText, onClick, hide } = r;
+
+                                if (hide) return undefined;
+
+                                const version = iconVersion ?? '1';
+
+                                const icon = (
+                                    <Icon className="h-[30px] w-[30px]" version={version} />
+                                );
+
+                                return (
+                                    <CaretListItem
+                                        key={index}
+                                        mainText={title}
+                                        icon={icon}
+                                        caretText={caretText}
+                                        onClick={onClick}
+                                    />
+                                );
+                            })}
+
+                            {/* Explicit feedback entry points (LC-2086), gated
+                                per destination by privacy eligibility. */}
+                            {viewMode === MyLearnCardModalViewModeEnum.guardian && (
+                                <FeedbackSettingsRows />
+                            )}
+                        </div>
+
+                        {!hideLogout && (
+                            <button
+                                type="button"
+                                onClick={() => handleLogout({ overrideRedirectUrl: '/login' })}
+                                className="flex items-center justify-center gap-[5px] py-[10px] text-grayscale-900 font-notoSans text-[20px] disabled:opacity-60"
+                                disabled={isLoggingOut}
+                            >
+                                <SignOutIcon />
+                                {m['sidemenu.footer.logout']()}
+                            </button>
+                        )}
+                    </div>
+                </div>
+            </section>
+
+            <LearnCardFooter hideShare={hideShare} icon={<ReplyIcon />} />
+        </section>
+    );
+};
+
+export default MyLearnCardModal;

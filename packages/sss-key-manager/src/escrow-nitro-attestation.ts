@@ -9,26 +9,10 @@ import {
 import { base64ToBuffer, bufferToBase64 } from './crypto';
 import type { EscrowAttestationPolicy } from './types';
 
-export type NitroAttestationReason =
-    | 'cbor'
-    | 'cose'
-    | 'alg'
-    | 'chain'
-    | 'root'
-    | 'signature'
-    | 'pcr'
-    | 'debug'
-    | 'nonce'
-    | 'freshness'
-    | 'user-data';
+import { NitroAttestationError, type NitroAttestationReason } from './nitro-attestation-error';
 
-/** A fail-closed attestation failure with a stable, non-sensitive reason. */
-export class NitroAttestationError extends Error {
-    constructor(public readonly reason: NitroAttestationReason) {
-        super(`Nitro attestation rejected: ${reason}`);
-        this.name = 'NitroAttestationError';
-    }
-}
+export { NitroAttestationError };
+export type { NitroAttestationReason };
 
 const AWS_ROOT_SHA256 = '641a0321a3e244efe456463195d606317ed7cdcc3c1756e09893f3c68f79bb5b';
 type NitroPolicy = Extract<EscrowAttestationPolicy, { mode: 'nitro' }>;

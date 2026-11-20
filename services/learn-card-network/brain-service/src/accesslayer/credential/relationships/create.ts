@@ -5,6 +5,7 @@ import {
 import { termsReferralSnapshotCypher } from '@helpers/consent-referral.helpers';
 import { QueryBuilder, BindParam } from 'neogma';
 import type { Transaction } from 'neo4j-driver';
+import type { ConsentFlowExternalGrantExpectation } from '@learncard/types';
 import { v4 as uuid } from 'uuid';
 
 import {
@@ -235,6 +236,7 @@ export const createContractCredentialRelationships = async ({
     credential,
     boost,
     terms,
+    expectedExternalGrant,
     metadata,
     activityId,
     integrationId,
@@ -248,6 +250,7 @@ export const createContractCredentialRelationships = async ({
     credential: CredentialInstance;
     boost: BoostInstance;
     terms: DbTermsType;
+    expectedExternalGrant?: ConsentFlowExternalGrantExpectation;
     metadata?: Record<string, unknown>;
     activityId?: string;
     integrationId?: string;
@@ -269,6 +272,8 @@ export const createContractCredentialRelationships = async ({
             new BindParam({
                 termsId: terms.id,
                 expectedVersion: terms.consentedVersion,
+                expectedExternalRevision: expectedExternalGrant?.revision ?? null,
+                expectedExternalHash: expectedExternalGrant?.hash ?? null,
                 issuerId: owner.profileId,
                 writerProfileId,
                 recipientId: recipient.profileId,
@@ -301,6 +306,18 @@ export const createContractCredentialRelationships = async ({
                   AND NOT $writerProfileId IN coalesce(terms['terms.deniedWriters'], [])
                   AND EXISTS { MATCH (contract)-[:CREATED_BY|CAN_WRITE]->(:Profile {profileId:$writerProfileId}) }
                   AND EXISTS { MATCH (:Profile {profileId:$recipientId})-[:CREATED_BY]->(terms) }
+                WITH terms, contract,
+                    ($expectedExternalRevision IS NULL OR coalesce(
+                        terms['terms.externalGrant.revision'] = $expectedExternalRevision
+                        AND terms['terms.externalGrant.hash'] = $expectedExternalHash,
+                        false)) AS externalGrantMatches
+                CALL {
+                    WITH terms, contract, externalGrantMatches
+                    WITH terms, contract WHERE NOT externalGrantMatches
+                    RETURN null AS id, null AS action, true AS externalGrantMismatch
+                    UNION
+                    WITH terms, contract, externalGrantMatches
+                    WITH terms, contract WHERE externalGrantMatches
                 MATCH (credential:Credential {id:$credentialId}), (boost:Boost {id:$boostId}),
                     (issuer:Profile {profileId:$issuerId})
                 WHERE boost.category IS NULL OR terms['terms.write.credentials.categories.' + boost.category] = true
@@ -315,11 +332,23 @@ export const createContractCredentialRelationships = async ({
                     SET delivery = $sent)
                 CREATE (transaction:ConsentFlowTransaction {id:$transactionId, action:${contractWriteActionCypher()}, date:$date, boostId:$boostId})
                     -[:${ConsentFlowTransaction.getRelationshipByAlias('isFor').name}]->(terms)
+                FOREACH (_ IN CASE WHEN $expectedExternalRevision IS NULL THEN [] ELSE [1] END |
+                    SET transaction.consentMutationVersion = coalesce(terms.mutationVersion, 0),
+                        transaction.externalGrantRevision = terms['terms.externalGrant.revision'],
+                        transaction.externalGrantHash = terms['terms.externalGrant.hash'])
                 ${termsReferralSnapshotCypher()}
                 CREATE (credential)-[:${Credential.getRelationshipByAlias('issuedViaTransaction').name} {date:$date}]->(transaction)
-                RETURN transaction.id AS id, transaction.action AS action
+                    RETURN transaction.id AS id, transaction.action AS action, false AS externalGrantMismatch
+                }
+                RETURN id, action, externalGrantMismatch
             `)
     );
+    if (result.records[0]?.get('externalGrantMismatch')) {
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'External grant revision or hash does not match the expected grant',
+        });
+    }
     if (!result.records.length) {
         throw new TRPCError({
             code: 'FORBIDDEN',

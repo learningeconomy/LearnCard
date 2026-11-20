@@ -1,18 +1,78 @@
+import type { IntegrationWebhookState } from '@learncard/types';
+
 import { IntegrationType } from 'types/integration';
 
 /**
- * Parse guideState from JSON string to object if present
+ * Stored Integration properties that are never part of the public Integration:
+ * encrypted webhook secrets, the event sequence bookkeeping, and webhook delivery health
+ * (which only the getIntegrationWebhook route returns, in its own shape).
+ */
+export const PRIVATE_INTEGRATION_PROPERTIES = [
+    'webhookSecretEnc',
+    'webhookSecretPrevEnc',
+    'webhookSecretPrevExpiresAt',
+    'webhookSecretVersion',
+    'webhookLastSuccessAt',
+    'webhookLastFailureAt',
+    'webhookLastFailureReason',
+    'webhookLastOutcome',
+    'eventSeq',
+    'eventPurgedThroughSeq',
+    'eventSeqLock',
+] as const;
+
+/**
+ * Turn a stored Integration into its public shape: remove private properties, compute
+ * hasWebhookSecret, and parse guideState from a JSON string to an object if present.
  */
 export const parseIntegration = (integration: IntegrationType): IntegrationType => {
-    if (integration.guideState && typeof integration.guideState === 'string') {
+    const stored = integration as unknown as Record<string, unknown>;
+    const publicProperties: Record<string, unknown> = { ...stored };
+
+    for (const key of PRIVATE_INTEGRATION_PROPERTIES) delete publicProperties[key];
+
+    publicProperties.hasWebhookSecret =
+        typeof stored.webhookSecretEnc === 'string' && stored.webhookSecretEnc.length > 0;
+
+    const parsed = publicProperties as unknown as IntegrationType;
+
+    if (parsed.guideState && typeof parsed.guideState === 'string') {
         try {
-            return { ...integration, guideState: JSON.parse(integration.guideState) };
+            return { ...parsed, guideState: JSON.parse(parsed.guideState) };
         } catch {
-            return integration;
+            return parsed;
         }
     }
 
-    return integration;
+    return parsed;
+};
+
+/**
+ * State of an Integration's webhook: `disabled` without a URL or while contract events are
+ * disabled, `failing` when the most recent delivery attempt failed, `active` otherwise. The
+ * stored `lastOutcome` marker says which attempt was the most recent one. An Integration that
+ * has none yet falls back to comparing the two timestamps (a failure later than the last
+ * success, or failures and no success yet).
+ */
+export const deriveIntegrationWebhookState = ({
+    webhookUrl,
+    contractEventsEnabledAt,
+    lastSuccessAt,
+    lastFailureAt,
+    lastOutcome,
+}: {
+    webhookUrl: string | null;
+    contractEventsEnabledAt?: string;
+    lastSuccessAt?: string;
+    lastFailureAt?: string;
+    lastOutcome?: 'success' | 'failure';
+}): IntegrationWebhookState => {
+    if (!webhookUrl || !contractEventsEnabledAt) return 'disabled';
+    if (lastOutcome) return lastOutcome === 'failure' ? 'failing' : 'active';
+    if (!lastFailureAt) return 'active';
+    if (!lastSuccessAt) return 'failing';
+
+    return Date.parse(lastFailureAt) > Date.parse(lastSuccessAt) ? 'failing' : 'active';
 };
 
 /**

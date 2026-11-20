@@ -31,6 +31,7 @@ import { summarizeConsent } from '../../components/data-sharing/consentSummary';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { useModal, ModalTypes, useBrandingConfig } from 'learn-card-base';
 import useOpenMyLearnCard from '../../components/learncard/useOpenMyLearnCard';
+import { prefetchMyLearnCard } from '../../components/learncard/MyLearnCardModal';
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import { ErrorBoundary } from 'react-error-boundary';
 
@@ -81,11 +82,16 @@ import LinkOutlinedIcon from 'learn-card-base/svgs/LinkOutlinedIcon';
 import AddCredentialIcon from 'learn-card-base/svgs/AddCredentialIcon';
 import ProfileAlertsIsland from '../../components/main-header/ProfileAlertsIsland';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
+import { markDashboardPath, useDashboardPathMark } from '../../helpers/dashboardPathMarks';
+import { markFirstScreenPainted } from 'learn-card-base/helpers/firstScreen';
 
 /** The activity card lists at most three passive records. */
 const RECENT_ACTIVITY_RECORDS = 3;
 
 const DashboardPage: React.FC = () => {
+    markDashboardPath('page_body_render', true);
+    useDashboardPathMark('dashboard_commit');
+    useEffect(() => markFirstScreenPainted(), []);
     const history = useHistory();
     const { track } = useAnalytics();
     const {
@@ -523,6 +529,7 @@ const DashboardPage: React.FC = () => {
             shortBio: currentLCNUser?.shortBio,
             professionalTitle: skillProfileData?.professionalTitle,
             onAvatarClick: openMyLearnCard,
+            onAvatarIntent: prefetchMyLearnCard,
             onScanQrTopRight: openQrScanner,
             onNotificationsClick: openNotifications,
             unreadCount: unreadNotifications.length,

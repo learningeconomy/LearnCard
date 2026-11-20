@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
 
-import BecomeTrustedIssuerForm from './BecomeTrustedIssuerForm';
+import BecomeTrustedIssuerForm from './LazyBecomeTrustedIssuerForm';
 
 import useModal from '../modals/useModal';
 

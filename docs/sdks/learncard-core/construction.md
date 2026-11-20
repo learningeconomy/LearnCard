@@ -318,7 +318,7 @@ Expected output: `sent: true`. The E2E recipient reads `getIncomingCredentials(s
 | `getBoost`                                  | `(uri)`                                                    | Boost metadata plus unsigned `boost` |
 | `updateBoost`                               | `(uri, updates, credential?)`                              | Boolean                              |
 | `deleteBoost`                               | `(uri)`                                                    | Boolean                              |
-| `getPaginatedBoosts`                        | `({ limit?, cursor?, query? }?)`                           | Paginated boosts                     |
+| `getPaginatedBoosts`                        | `({ limit?, cursor?, query?, exclude? }?)`                 | Paginated boosts                     |
 | `countBoosts`                               | `(query?)`                                                 | Number                               |
 | `send`                                      | `({ type: 'boost', recipient, templateUri })`              | `SendResponse`                       |
 | `getPaginatedBoostRecipients`               | `(uri, limit?, cursor?, includeUnacceptedBoosts?, query?)` | Paginated recipients                 |
@@ -336,6 +336,8 @@ Expected output: `sent: true`. The E2E recipient reads `getIncomingCredentials(s
 | `revokeBoostRecipient`                      | `(boostUri, recipientProfileId, credentialUri?)`           | Boolean                              |
 
 Recipient lists exclude unaccepted credentials by default. The example passes `true` explicitly so that a just-sent credential is visible before the second profile accepts. Hierarchy and permissions are separate concerns: linking templates does not substitute for checking the caller's permissions.
+
+Pass `exclude` to omit boosts whose name or category matches before pagination. Each field accepts an exact string, a list via `$in`, or a pattern via `$regex`. For example, `exclude: { category: { $in: ['Resume', 'AI Topic'] }, name: { $regex: /^AI Passport credential$/i } }` omits both categories and the generic AI Passport name. A missing name or category does not match an exclusion.
 
 <!-- snippet: methods/templates.mjs -->
 

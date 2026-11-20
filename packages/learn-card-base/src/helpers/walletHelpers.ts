@@ -57,20 +57,7 @@ export const getSigningLearnCard = async (seed: string) => {
     return SIGNING_LEARN_CARDS[seed];
 };
 
-/**
- * Starts the bundled DIDKit WASM init at app entry without waiting for it, so the first
- * wallet build finds DIDKit warm. A failure is logged and dropped: DIDKit clears a failed
- * init, so the real wallet build retries it.
- */
-export const prewarmDidKit = (): void => {
-    try {
-        initDidKit(didkit).catch(error =>
-            log.warn('DIDKit prewarm failed; wallet build retries', error)
-        );
-    } catch (error) {
-        log.warn('DIDKit prewarm failed; wallet build retries', error);
-    }
-};
+export { prewarmDidKit } from './didkitPrewarm';
 
 export interface GetBespokeLearnCardOptions {
     /**

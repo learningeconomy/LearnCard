@@ -23,7 +23,7 @@ graph LR
     Doc --> Svc["service endpoints"]
 ```
 
-LearnCard can also resolve `did:jwk`, `did:pkh`, `did:ethr`, `did:ion`, and `did:tezos` credentials issued elsewhere. You won't create those with LearnCard; you'll only verify them.
+LearnCard can also resolve `did:jwk`, `did:pkh`, `did:ethr`, and `did:tz` credentials issued elsewhere. You won't create those with LearnCard; you'll only verify them. `did:ion` isn't supported: resolving it needs a Sidetree node, and the DIDKit build LearnCard ships doesn't have one configured.
 
 ## Signing in with a DID
 
