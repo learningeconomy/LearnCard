@@ -9,6 +9,7 @@ BAKE_FILE="$REPO_ROOT/scripts/e2e-hosted/docker-bake.hcl"
 source "$REPO_ROOT/scripts/e2e-hosted/metrics.sh"
 source "$REPO_ROOT/scripts/e2e-hosted/compose-pull.sh"
 source "$REPO_ROOT/scripts/e2e-hosted/prepare-sdk-build.sh"
+source "$REPO_ROOT/scripts/e2e-hosted/referral-test-tls.sh"
 e2e_metrics_init service
 
 collect_service_artifacts() {
@@ -18,11 +19,13 @@ collect_service_artifacts() {
     docker compose logs --no-color > "$E2E_ARTIFACT_DIR/docker-compose.log" 2>&1
     e2e_snapshot before-cleanup
     e2e_timed stack_teardown docker compose down --remove-orphans -v
+    cleanup_referral_test_tls
     e2e_snapshot after-cleanup
     e2e_render_summary
     exit "$status"
 }
 trap collect_service_artifacts EXIT
+prepare_referral_test_tls "$SERVICE_DIR"
 
 # Vitest's --shard is CLI-only, and `nx:run-script` argument forwarding is fiddly,
 # so the shard is handed to the npm script through E2E_VITEST_ARGS instead. Every

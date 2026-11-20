@@ -8,7 +8,8 @@ import { describe, expect, test } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
-import { createServer, type IncomingHttpHeaders } from 'node:http';
+import type { IncomingHttpHeaders } from 'node:http';
+import { createServer } from 'node:https';
 import { tmpdir } from 'node:os';
 import { join, resolve as resolvePath } from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
@@ -49,31 +50,39 @@ interface CapturedWebhook {
 const startReceiver = async () => {
     const path = `/referral-${randomBytes(16).toString('hex')}`;
     const received: CapturedWebhook[] = [];
-    const server = createServer((request, response) => {
-        if (request.method !== 'POST' || request.url !== path) {
-            response.writeHead(404).end();
-            return;
-        }
-        const chunks: Buffer[] = [];
-        let size = 0;
-        request.on('error', () => response.destroy());
-        request.on('data', (chunk: Buffer) => {
-            size += chunk.length;
-            if (size > 64 * 1024 || received.length >= 100) {
-                request.destroy();
+    const tlsDir = process.env.REFERRAL_E2E_TLS_DIR;
+    if (!tlsDir) throw new Error('Referral E2E requires the disposable TLS fixture');
+    const server = createServer(
+        {
+            cert: readFileSync(join(tlsDir, 'cert.pem')),
+            key: readFileSync(join(tlsDir, 'key.pem')),
+        },
+        (request, response) => {
+            if (request.method !== 'POST' || request.url !== path) {
+                response.writeHead(404).end();
                 return;
             }
-            chunks.push(chunk);
-        });
-        request.on('end', () => {
-            received.push({
-                body: Buffer.concat(chunks),
-                headers: request.headers,
-                receivedAt: Date.now(),
+            const chunks: Buffer[] = [];
+            let size = 0;
+            request.on('error', () => response.destroy());
+            request.on('data', (chunk: Buffer) => {
+                size += chunk.length;
+                if (size > 64 * 1024 || received.length >= 100) {
+                    request.destroy();
+                    return;
+                }
+                chunks.push(chunk);
             });
-            response.writeHead(204).end();
-        });
-    });
+            request.on('end', () => {
+                received.push({
+                    body: Buffer.concat(chunks),
+                    headers: request.headers,
+                    receivedAt: Date.now(),
+                });
+                response.writeHead(204).end();
+            });
+        }
+    );
     server.requestTimeout = 10_000;
     await new Promise<void>((resolve, reject) => {
         server.once('error', reject);
@@ -84,7 +93,7 @@ const startReceiver = async () => {
     if (!address || typeof address === 'string') throw new Error('Receiver did not bind');
     return {
         received,
-        url: `http://host.docker.internal:${address.port}${path}`,
+        url: `https://host.docker.internal:${address.port}${path}`,
         close: async (): Promise<void> => {
             await new Promise<void>((resolve, reject) => {
                 server.close(error =>
