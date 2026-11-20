@@ -4,7 +4,7 @@ import { LearnCard } from '@learncard/core';
 import { isEncrypted, resolveStorageReadResult } from '@learncard/helpers';
 import {
     CredentialRecord,
-    EncryptedCredentialRecord,
+    type EncryptedCredentialRecord,
     JWE,
     PaginatedEncryptedRecordsType,
     PaginatedEncryptedCredentialRecordsType,
