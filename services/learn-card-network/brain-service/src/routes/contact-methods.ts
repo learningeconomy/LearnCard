@@ -31,6 +31,7 @@ import {
 } from '@helpers/contact-method.helpers';
 import { claimPendingGuardianLinksForProfile } from '@helpers/guardian-links.helpers';
 import { attachContractRequestInvitesForProfile } from '@helpers/contract-request-invites.helpers';
+import { getEmailActionBranding } from '@helpers/email-action-branding.helpers';
 import { getDidWebLearnCard, isTrustedLoginProviderDID } from '@helpers/learnCard.helpers';
 import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
 import jwtDecode from 'jwt-decode';
@@ -384,6 +385,13 @@ export const contactMethodsRouter = t.router({
             const { profile } = ctx.user;
             const { type, value } = input;
 
+            // Resolve before creating contact records: an absent/unsafe origin must not send
+            // a verification token to another deployment or leave a partial contact behind.
+            const branding =
+                type === 'email'
+                    ? getEmailActionBranding(ctx.tenant?.id, ctx.tenant?.emailBranding)
+                    : ctx.tenant?.emailBranding;
+
             /**
              * Phone numbers can only be added and verified by trusted issuers
              * TODO: Remove this check once we have a way to add progressive trust verification: i.e.
@@ -452,7 +460,7 @@ export const contactMethodsRouter = t.router({
                 templateModel: {
                     verificationToken,
                 },
-                branding: ctx.tenant?.emailBranding,
+                branding,
                 locale: resolveRecipientLocale(profile),
             });
 

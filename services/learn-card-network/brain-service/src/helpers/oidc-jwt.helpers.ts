@@ -1,6 +1,7 @@
 import { environment } from '@environment';
 import { createRemoteJWKSet, jwtVerify, type JWTVerifyGetKey } from 'jose';
 import { z } from 'zod';
+import { hasFirebaseOtpEmailProof } from '@learncard/helpers';
 
 type AuthProviderConfig = {
     issuer: string;
@@ -58,9 +59,11 @@ export async function verifyAuthToken(
             audience: provider.audience,
         });
 
-        const email = (verified[provider.emailClaim ?? 'email'] as string) ?? '';
+        const emailClaim = verified[provider.emailClaim ?? 'email'];
+        const email = typeof emailClaim === 'string' ? emailClaim : '';
         const emailVerified =
-            (verified[provider.emailVerifiedClaim ?? 'email_verified'] as boolean) ?? false;
+            verified[provider.emailVerifiedClaim ?? 'email_verified'] === true ||
+            hasFirebaseOtpEmailProof(verified);
 
         return {
             email,

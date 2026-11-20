@@ -22,6 +22,7 @@ import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { defaultDomain } from './integration-events.helpers';
 import type { ContractRequestInviteType } from '@accesslayer/contract-request-invite/read';
 import { normalizeInviteEmail } from './invite-email.helpers';
+import { getEmailActionBranding } from './email-action-branding.helpers';
 
 import { getDeliveryService } from '@services/delivery/delivery.factory';
 import { getPendingContractRequestInvitesForProfile } from '@accesslayer/contract-request-invite/read';
@@ -90,24 +91,29 @@ export const sendContractRequestInviteEmail = async ({
     referrerName,
     contractOwnerName,
     branding,
+    tenantId,
 }: {
     email: string;
     referrerName?: string;
     contractOwnerName?: string;
     /** Branding of the tenant that sent the request (`ctx.tenant?.emailBranding`). */
     branding?: Partial<TenantBranding>;
+    tenantId?: string | null;
 }): Promise<boolean> => {
     const contactMethod = { type: 'email' as const, value: email };
     try {
+        // Resolve at delivery time, including for already queued records that contain the
+        // old production branding. A missing tenant must not fall back to another tenant.
+        const actionBranding = getEmailActionBranding(tenantId, branding);
         await getDeliveryService(contactMethod).send({
             contactMethod,
             templateId: 'contract-request-invite',
             templateModel: {
-                inviteUrl: resolveBranding(branding).appUrl.replace(/\/+$/, ''),
+                inviteUrl: resolveBranding(actionBranding).appUrl.replace(/\/+$/, ''),
                 referrer: { name: referrerName },
                 contractOwner: { name: contractOwnerName },
             },
-            branding,
+            branding: actionBranding,
         });
         return true;
     } catch {
@@ -131,6 +137,12 @@ export const sendContractRequestToEmail = async (
     const contract = await authorizeContractRequestSend(input.contractUri, profile);
     const email = normalizeInviteEmail(input.targetEmail ?? '');
     if (!email) throw new TRPCError({ code: 'BAD_REQUEST', message: 'targetEmail is required' });
+
+    // Every email-addressed request needs a safe origin, including one whose recipient
+    // already has an account. Validate before writing without looking up the address,
+    // so configuration failures cannot leave a permanently undeliverable invite or
+    // disclose whether this email is registered. Validate again when the worker sends.
+    getEmailActionBranding(tenant?.id, tenant?.emailBranding);
 
     const result = await createContractRequestInvite({
         contractId: contract.id,
@@ -273,6 +285,7 @@ export const deliverContractRequestInvites = async ({
                 email: invite.email,
                 referrerName,
                 contractOwnerName,
+                tenantId: invite.tenantId,
                 ...(branding ? { branding } : {}),
             });
             if (sent) {

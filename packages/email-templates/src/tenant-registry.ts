@@ -61,6 +61,7 @@ const ORIGIN_MAP: Record<string, string> = {
 
     // LearnCard
     'learncard.app': 'learncard',
+    'staging.learncard.ai': 'learncard',
     'staging.learncard.app': 'learncard',
     'app.learncard.com': 'learncard',
 

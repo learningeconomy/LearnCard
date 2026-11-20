@@ -49,6 +49,7 @@ provider:
     region: ${opt:region, "us-east-1"}
     environment:
         INBOX_QUEUE_URL: ${env:INBOX_QUEUE_URL, ''}
+        EMAIL_APP_ORIGINS: ${env:EMAIL_APP_ORIGINS, ''}
         INBOX_QUEUE_ENDPOINT: ${env:INBOX_QUEUE_ENDPOINT, ''}
         PORT: ${env:PORT, 3000}
         CONFIG_STAGE: ${env:CONFIG_STAGE, ''}

@@ -113,6 +113,7 @@ services:
             - ../../packages:/app/packages
         environment:
             IS_OFFLINE: true
+            EMAIL_APP_ORIGINS: '{"learncard":"http://localhost:3000"}'
             PORT: 4000
             SEED: a
             # LC-1644: Enable backend PerfTracker JSON logs (gated on this env var)

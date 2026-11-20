@@ -34,6 +34,7 @@ services:
             PORT: 4000
             SEED: a
             IS_OFFLINE: true
+            EMAIL_APP_ORIGINS: '{"learncard":"http://localhost:3000","scoutpass":"http://localhost:3000"}'
             IS_E2E_TEST: true
             SKIP_DIDKIT_NAPI: '1'
             DOMAIN_NAME: localhost%3A4000
@@ -85,6 +86,7 @@ services:
             PORT: 4001
             SEED: b
             IS_OFFLINE: true
+            EMAIL_APP_ORIGINS: '{"learncard":"http://localhost:3000","scoutpass":"http://localhost:3000"}'
             IS_E2E_TEST: true
             SKIP_DIDKIT_NAPI: '1'
             DOMAIN_NAME: localhost%3A4001
