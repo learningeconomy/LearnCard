@@ -129,7 +129,16 @@ test.describe('ClassLink sign-in hand-off @mocked', () => {
 });
 
 test.describe('ClassLink login hint @mocked', () => {
-    const withClassLinkSso = async (page: import('@playwright/test').Page, on: boolean) => {
+    const keepAccountFlags = (on: boolean) => ({
+        classlinkPersonalEmail: on,
+        classlinkKeepAccount: on,
+    });
+    const withClassLinkSso = async (
+        page: import('@playwright/test').Page,
+        on: boolean,
+        // The hint is only for tenants where students can add a personal email.
+        keepAccount = true
+    ) => {
         await page.route('**/tenant-config.json', async route => {
             const response = await route.fetch();
             const json = await response.json();
@@ -139,7 +148,11 @@ test.describe('ClassLink login hint @mocked', () => {
                 contentType: 'application/json',
                 body: JSON.stringify({
                     ...json,
-                    features: { ...json.features, classlinkSso: on },
+                    features: {
+                        ...json.features,
+                        classlinkSso: on,
+                        ...keepAccountFlags(keepAccount),
+                    },
                 }),
             });
         });
@@ -174,6 +187,14 @@ test.describe('ClassLink login hint @mocked', () => {
         await page.getByTestId('recovery-identity-sign-in-with-email').click();
         await expect(page.getByTestId('recovery-identity-sign-in-with-email')).toHaveCount(0);
         await expect(page.locator('input[type="email"]').first()).toBeFocused();
+    });
+
+    test('no hint on a ClassLink tenant without the keep-account flags', async ({ page }) => {
+        await installNetwork(page);
+        await withClassLinkSso(page, true, false);
+        await page.goto('/login');
+        await expect(page.locator('input[type="email"]').first()).toBeVisible();
+        await expect(page.getByTestId('login-classlink-personal-email-hint')).toHaveCount(0);
     });
 
     test('no hint without ClassLink', async ({ page }) => {
