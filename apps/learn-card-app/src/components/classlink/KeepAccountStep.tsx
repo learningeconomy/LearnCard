@@ -772,7 +772,14 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
 
     const heading = variant === 'onboarding' ? 'h1' : 'h2';
     const shellVariant = variant === 'onboarding' ? 'onboarding' : 'sheet';
-    const maskedEmail = isolateLtr(data.maskedEmail ?? '');
+    // The address the account signs in with: the stored personal email, else T's own sign-in
+    // email (`signInEmailSource: 'account'` stores none). Either can be absent: never render it
+    // blank.
+    const shownEmail = data.maskedEmail ?? data.maskedSignInEmail;
+    const maskedEmail = isolateLtr(shownEmail ?? '');
+    // T's own sign-in email: what a T session signs in with. A stored address of another
+    // login (account source) would sign in to that login instead.
+    const signInEmail = data.maskedSignInEmail ?? data.maskedEmail;
     const stepTitle = title ?? defaultTitle;
     const emailBody = m['classlinkKeepAccount.body']();
     // The PIN confirm names the address the backup will be sealed to: this session's own
@@ -975,12 +982,23 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
             : m['classlinkKeepAccount.methodBodyPhrase']();
     // The full address when this device typed or proved it; else the server's masked one.
     const finishOnSignInEmail = m['classlinkKeepAccount.finishOnSignInEmail']({
-        email: confirmedContact ? isolateLtr(confirmedContact) : maskedEmail,
+        email: isolateLtr(confirmedContact || signInEmail || ''),
     });
     const lockedBody = m['classlinkKeepAccount.banner.pinLockedBody']();
 
     let content: React.ReactNode;
     if (variant === 'inline') {
+        // No stored personal email: the action adds one (it does not replace the sign-in email).
+        const addButton = !expanded && (
+            <button
+                type="button"
+                data-testid="keep-account-add"
+                className={ROW_ACTION_CLASS}
+                onClick={() => setExpanded(true)}
+            >
+                {m['classlinkPersonalEmail.title']()}
+            </button>
+        );
         const removeButton = data.canRemove ? (
             <button
                 type="button"
@@ -993,6 +1011,8 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
                     ? m['classlinkKeepAccount.removing']()
                     : m['classlinkKeepAccount.remove']()}
             </button>
+        ) : !storedEmail ? (
+            addButton
         ) : (
             // The only way this account signs in: it can be changed, not removed.
             !expanded && (
@@ -1011,14 +1031,23 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
             maskedEmail,
             ...(data.hasSchoolEmail ? [m['classlinkKeepAccount.rowSchoolAlsoWorks']()] : []),
         ];
-        // The sign-in address, and whether the school email still signs in too.
-        const emailRow = (
+        // The sign-in address, and whether the school email still signs in too. With no
+        // address to name, the row offers to add a personal email instead of a blank value.
+        const emailRow = shownEmail ? (
             <Row
                 icon="mail"
                 title={m['classlinkKeepAccount.rowLabel']()}
                 titleRef={headingRef}
                 subtitle={subtitleParts.join(' · ')}
                 action={removeButton}
+            />
+        ) : (
+            <Row
+                icon="mail"
+                title={m['classlinkKeepAccount.rowLabel']()}
+                titleRef={headingRef}
+                subtitle={m['classlinkKeepAccount.banner.emailBody']()}
+                action={addButton}
             />
         );
         const changeForm = expanded && view !== 'email' && (
@@ -1491,9 +1520,15 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
                 headingRef={headingRef}
                 icon="check"
                 title={m['classlinkKeepAccount.doneTitle']()}
-                body={(data.pinRecoverable
-                    ? m['classlinkKeepAccount.doneBody']
-                    : m['classlinkKeepAccount.doneBodyMethod'])({ email: maskedEmail })}
+                body={
+                    shownEmail
+                        ? (data.pinRecoverable
+                              ? m['classlinkKeepAccount.doneBody']
+                              : m['classlinkKeepAccount.doneBodyMethod'])({ email: maskedEmail })
+                        : data.pinRecoverable
+                          ? m['classlinkKeepAccount.doneBodyNoEmail']()
+                          : m['classlinkKeepAccount.doneBodyMethodNoEmail']()
+                }
                 actions={
                     onComplete && (
                         <button

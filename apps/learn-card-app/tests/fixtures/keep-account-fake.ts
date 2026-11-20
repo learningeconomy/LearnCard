@@ -147,6 +147,12 @@ export const installKeepAccountFake = (
             personalEmail: reason ? { allowed: false, reason } : { allowed: true },
             emailVerified: emailPrimary,
             ...(server.email ? { maskedEmail: `${server.email[0]}***@example.org` } : {}),
+            // T's real Firebase email (personal or school); never a placeholder address.
+            ...(signInEmail().endsWith('.invalid')
+                ? {}
+                : {
+                      maskedSignInEmail: `${signInEmail()[0]}***@${signInEmail().split('@')[1]}`,
+                  }),
             emailPrimary,
             primaryUid: PRIMARY_UID,
             ...(emailPrimary ? { signInEmailSource: 'personal' as const } : {}),

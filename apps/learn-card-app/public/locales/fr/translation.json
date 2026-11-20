@@ -60,6 +60,8 @@
         "pinTitle": "Créez un code PIN",
         "pinBody": "Vous saisirez ce code PIN quand vous vous connecterez sur un nouvel appareil.",
         "doneBodyMethod": "Connectez-vous avec {{email}} à tout moment. Sur un nouvel appareil, vous utiliserez aussi votre méthode de récupération. D’autres appareils peuvent vous demander de vous reconnecter.",
+        "doneBodyNoEmail": "Sur un nouvel appareil, connectez-vous, puis saisissez votre code PIN. D’autres appareils peuvent vous demander de vous reconnecter.",
+        "doneBodyMethodNoEmail": "Sur un nouvel appareil, connectez-vous, puis utilisez votre méthode de récupération. D’autres appareils peuvent vous demander de vous reconnecter.",
         "done": "Terminé",
         "celebrateBody": "Vous pouvez maintenant vous connecter avec votre adresse e-mail personnelle.",
         "titleTranscript": "Conservez votre relevé de notes après votre diplôme",

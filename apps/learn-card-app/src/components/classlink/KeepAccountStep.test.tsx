@@ -8,7 +8,9 @@ type Continuity = {
     personalEmail: { allowed: boolean; reason?: string };
     emailVerified: boolean;
     maskedEmail?: string;
+    maskedSignInEmail?: string;
     emailPrimary: boolean;
+    signInEmailSource?: 'personal' | 'account';
     primaryUid?: string;
     hasSchoolEmail: boolean;
     contactStale: boolean;
@@ -218,6 +220,23 @@ const PIN = state({
 /** Escrow + an enabled PIN: email code + PIN recovers it. */
 const DONE = state({ ...VERIFIED, hasServerConfirmedMethod: true, nextStep: 'done' });
 const DONE_METHOD = { ...METHOD, hasUserRecoveryMethod: true, nextStep: 'done' as const };
+/**
+ * T already signs in with its own real email (`signInEmailSource: 'account'`): done with no
+ * stored personal email, so only `maskedSignInEmail` names an address.
+ */
+const ACCOUNT_DONE = state({
+    emailVerified: false,
+    emailPrimary: false,
+    maskedSignInEmail: 'a***@example.com',
+    signInEmailSource: 'account',
+    canRemove: false,
+    hasSchoolEmail: false,
+    hasServerConfirmedMethod: true,
+    nextStep: 'done',
+});
+/** The same, with no address the server can name at all. */
+const NO_ADDRESS_DONE = { ...ACCOUNT_DONE, maskedSignInEmail: undefined };
+const SIGN_IN_MASKED = isolateLtr('a***@example.com');
 /** A PIN account whose backup still names the old contact. */
 const CONFIRM = state({
     ...VERIFIED,
@@ -676,6 +695,16 @@ describe('KeepAccountStep', () => {
             expect(mocks.confirmEscrowPin).not.toHaveBeenCalled();
         });
 
+        it("names T's sign-in email, not a stored alias, on another login", () => {
+            mocks.continuity = { ...CONFIRM, maskedSignInEmail: 'a***@example.com' };
+            mocks.uid = 'uid-other';
+            mocks.confirmedContact = undefined;
+            renderStep();
+            expect(screen.getByTestId('keep-account-other-uid').textContent).toBe(
+                m['classlinkKeepAccount.finishOnSignInEmail']({ email: SIGN_IN_MASKED })
+            );
+        });
+
         it('names the full sign-in email on another login when this device typed it', () => {
             mocks.continuity = CONFIRM;
             mocks.uid = 'uid-other';
@@ -992,6 +1021,29 @@ describe('KeepAccountStep', () => {
         expect(onComplete).toHaveBeenCalledWith(DONE);
         // Removing lives in School Connect, beside the address it removes.
         expect(screen.queryByTestId('keep-account-remove')).toBeNull();
+    });
+
+    it('names the account sign-in email when done with no stored personal email', () => {
+        mocks.continuity = ACCOUNT_DONE;
+        renderStep();
+        expect(
+            screen.getByText(m['classlinkKeepAccount.doneBody']({ email: SIGN_IN_MASKED }))
+        ).toBeTruthy();
+    });
+
+    it('names no blank address when done with neither address', () => {
+        mocks.continuity = NO_ADDRESS_DONE;
+        renderStep();
+        expect(screen.getByText(m['classlinkKeepAccount.doneBodyNoEmail']())).toBeTruthy();
+        expect(
+            screen.queryByText(m['classlinkKeepAccount.doneBody']({ email: isolateLtr('') }))
+        ).toBeNull();
+    });
+
+    it('names no blank address when done with neither address and no PIN', () => {
+        mocks.continuity = { ...NO_ADDRESS_DONE, pinRecoverable: false, pinState: 'none' };
+        renderStep();
+        expect(screen.getByText(m['classlinkKeepAccount.doneBodyMethodNoEmail']())).toBeTruthy();
     });
 
     it('names the recovery method when done without a PIN', () => {
@@ -1330,6 +1382,37 @@ describe('KeepAccountStep', () => {
             ).toBeNull();
             fireEvent.click(screen.getByTestId('keep-account-change'));
             expect(screen.getByTestId('classlink-email-input')).toBeTruthy();
+        });
+
+        it('shows the account sign-in email when no personal email is stored', () => {
+            mocks.continuity = ACCOUNT_DONE;
+            renderStep({ variant: 'inline' });
+            expect(screen.getByText(m['classlinkKeepAccount.rowLabel']())).toBeTruthy();
+            expect(screen.getByText(SIGN_IN_MASKED)).toBeTruthy();
+            // Nothing stored to remove or replace: the action adds a personal email.
+            expect(screen.queryByTestId('keep-account-remove')).toBeNull();
+            expect(screen.queryByTestId('keep-account-change')).toBeNull();
+            expect(screen.queryByText(m['classlinkKeepAccount.rowDifferent']())).toBeNull();
+            const add = screen.getByTestId('keep-account-add');
+            expect(add.textContent).toBe(m['classlinkPersonalEmail.title']());
+            fireEvent.click(add);
+            expect(screen.getByTestId('classlink-email-input')).toBeTruthy();
+        });
+
+        it('renders no blank sign-in row when the server names no address', () => {
+            mocks.continuity = NO_ADDRESS_DONE;
+            renderStep({ variant: 'inline' });
+            const step = screen.getByTestId('keep-account-step');
+            // The row says why to add one instead of an empty address.
+            expect(screen.getByText(m['classlinkKeepAccount.banner.emailBody']())).toBeTruthy();
+            expect(step.textContent).not.toContain(m['classlinkKeepAccount.rowDifferent']());
+            expect(screen.getByTestId('keep-account-add').textContent).toBe(
+                m['classlinkPersonalEmail.title']()
+            );
+            // No row whose subtitle is empty.
+            for (const p of Array.from(step.querySelectorAll('p'))) {
+                expect(p.textContent?.replace(/[\u2066-\u2069]/g, '').trim()).not.toBe('');
+            }
         });
 
         it('explains a placeholder refusal instead of a generic error', async () => {

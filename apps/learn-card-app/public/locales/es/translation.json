@@ -60,6 +60,8 @@
         "pinTitle": "Crea un PIN",
         "pinBody": "Introducirás este PIN cuando inicies sesión en un dispositivo nuevo.",
         "doneBodyMethod": "Inicia sesión con {{email}} cuando quieras. En un dispositivo nuevo, también usarás tu método de recuperación. Es posible que otros dispositivos te pidan iniciar sesión de nuevo.",
+        "doneBodyNoEmail": "En un dispositivo nuevo, inicia sesión y luego introduce tu PIN. Es posible que otros dispositivos te pidan iniciar sesión de nuevo.",
+        "doneBodyMethodNoEmail": "En un dispositivo nuevo, inicia sesión y luego usa tu método de recuperación. Es posible que otros dispositivos te pidan iniciar sesión de nuevo.",
         "done": "Listo",
         "celebrateBody": "Ahora puedes iniciar sesión con tu correo personal.",
         "titleTranscript": "Conserva tu expediente académico después de graduarte",

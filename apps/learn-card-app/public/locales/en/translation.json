@@ -60,6 +60,8 @@
         "pinTitle": "Create a PIN",
         "pinBody": "You'll enter this PIN when you sign in on a new device.",
         "doneBodyMethod": "Sign in with {{email}} anytime. On a new device, you'll also use your recovery method. Other devices may ask you to sign in again.",
+        "doneBodyNoEmail": "On a new device, sign in and then enter your PIN. Other devices may ask you to sign in again.",
+        "doneBodyMethodNoEmail": "On a new device, sign in and then use your recovery method. Other devices may ask you to sign in again.",
         "done": "Done",
         "celebrateBody": "You can now sign in with your personal email.",
         "titleTranscript": "Keep your transcript after you graduate",
