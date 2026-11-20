@@ -141,6 +141,10 @@ const FIXTURES: { [K in TemplateId]: TemplateDataMap[K] } = {
         requestedAt: 'September 25, 2026, 3:00 PM',
         releaseAfter: 'October 2, 2026, 3:00 PM',
     },
+    'sign-in-email-changed': {
+        changedAt: 'November 20, 2026, 3:00 PM',
+        maskedEmail: 'p*******@example.com',
+    },
 };
 
 const ALL_TEMPLATE_IDS = Object.keys(FIXTURES) as TemplateId[];

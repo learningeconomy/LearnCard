@@ -124,6 +124,12 @@ export {
 } from './escrow-reset-started';
 
 export {
+    SignInEmailChanged,
+    getSignInEmailChangedSubject,
+    type SignInEmailChangedProps,
+} from './sign-in-email-changed';
+
+export {
     AccountSecured,
     getAccountSecuredSubject,
     type AccountSecuredProps,

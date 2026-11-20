@@ -60,6 +60,8 @@ import {
     getAccountSecuredSubject,
     EscrowResetStarted,
     getEscrowResetStartedSubject,
+    SignInEmailChanged,
+    getSignInEmailChangedSubject,
     ContractRequestInvite,
     getContractRequestInviteSubject,
 } from './templates';
@@ -87,6 +89,7 @@ import type {
     EscrowPinSignInProps,
     AccountSecuredProps,
     EscrowResetStartedProps,
+    SignInEmailChangedProps,
     ContractRequestInviteProps,
 } from './templates';
 import { localeProp } from './i18n';
@@ -224,6 +227,9 @@ export interface TemplateDataMap {
     /** lca-api: a PIN reset (waiting-period recovery) started; to the ClassLink school address (LC-2409) */
     'escrow-reset-started': EscrowResetStartedData;
 
+    /** lca-api: the account's sign-in email changed; to the previous address and the school address (LC-2409) */
+    'sign-in-email-changed': SignInEmailChangedData;
+
     /** brain-service: contract-request-invites.helpers.ts — invite to an email with no account */
     'contract-request-invite': ContractRequestInviteData;
 }
@@ -352,6 +358,12 @@ export interface AccountSecuredData {
 export interface EscrowResetStartedData {
     requestedAt: string;
     releaseAfter: string;
+}
+
+export interface SignInEmailChangedData {
+    changedAt: string;
+    /** The new sign-in email, masked by the sender. Omitted when there is none. */
+    maskedEmail?: string;
 }
 
 export interface ContractRequestInviteData {
@@ -679,6 +691,21 @@ function buildElement(
             return {
                 element: React.createElement(EscrowResetStarted, props),
                 subject: getEscrowResetStartedSubject(branding, locale),
+            };
+        }
+
+        case 'sign-in-email-changed': {
+            const d = data as SignInEmailChangedData;
+            const props: SignInEmailChangedProps = {
+                branding,
+                changedAt: d.changedAt,
+                ...(d.maskedEmail ? { maskedEmail: d.maskedEmail } : {}),
+                ...localeProp(locale),
+            };
+
+            return {
+                element: React.createElement(SignInEmailChanged, props),
+                subject: getSignInEmailChangedSubject(branding, locale),
             };
         }
 
