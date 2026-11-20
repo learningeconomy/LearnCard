@@ -9692,6 +9692,7 @@
         "searchCreds": "Search your credentials…",
         "nothingMatches": "Nothing matches “{{query}}”.",
         "noneIssued": "You haven't issued any credentials yet.",
+        "lookForOlderCredentials": "Select “Show more” to look for older credentials to send.",
         "showMore": "Show more",
         "previewDesc": "This is exactly what your recipient will receive.",
         "chooseRecip": "Choose recipient",

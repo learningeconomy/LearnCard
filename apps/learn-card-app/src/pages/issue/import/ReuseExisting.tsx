@@ -157,7 +157,13 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
     const records = useMemo<BoostRecord[]>(() => {
         const all = (data?.pages ?? []).flatMap(page => (page?.records ?? []) as BoostRecord[]);
         const trimmed = query.trim().toLowerCase();
-        return trimmed ? all.filter(record => record.name?.toLowerCase().includes(trimmed)) : all;
+        // Older Brain deployments can silently ignore the exclusion option.
+        return all.filter(
+            record =>
+                !REUSE_EXCLUSIONS.name.$regex.test(record.name ?? '') &&
+                !REUSE_EXCLUSIONS.category.$regex.test(record.category ?? '') &&
+                (!trimmed || record.name?.toLowerCase().includes(trimmed))
+        );
     }, [data, query]);
 
     const groups = useMemo(() => {
@@ -391,7 +397,9 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
                                         <p className="text-sm text-grayscale-500">
                                             {query
                                                 ? m['issueFlow.nothingMatches']({ query })
-                                                : m['issueFlow.noneIssued']()}
+                                                : hasNextPage
+                                                  ? m['issueFlow.lookForOlderCredentials']()
+                                                  : m['issueFlow.noneIssued']()}
                                         </p>
                                     </div>
                                 )}
