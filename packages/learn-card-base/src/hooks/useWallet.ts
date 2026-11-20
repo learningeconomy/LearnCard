@@ -699,9 +699,6 @@ export const useWallet = () => {
                 returnUri = uri2;
                 if (result) void recordCredentialClaim(wallet, uri2, vc, category);
 
-                stage = 'cache';
-                if (result) await cacheSavedRecord(record, category);
-
                 if (result && !deferContractSync) {
                     // Persist before returning; the singleton worker owns network delivery.
                     await enqueuePendingContractSyncSafely({
@@ -711,6 +708,9 @@ export const useWallet = () => {
                         category,
                     });
                 }
+
+                stage = 'cache';
+                if (result) await cacheSavedRecord(record, category);
             }
 
             if (!skipLCNUser) {

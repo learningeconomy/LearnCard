@@ -965,6 +965,25 @@ it('refreshes profile-scoped caches after a Partner Connect (skipLCNUser) save',
     }
 });
 
+it('persists Partner Connect sharing before refreshing a malformed cached page', async () => {
+    mocks.queryClient!.setQueryData(
+        ['useGetCredentialList', '', 'Achievement', 'did:example:claiming-account'],
+        { pages: [{ hasMore: false }], pageParams: [undefined] }
+    );
+
+    await expect(
+        useWallet().storeAndAddVCToWallet(credential, {}, 'LearnCloud', true)
+    ).rejects.toThrow();
+
+    expect(records).toEqual([expect.objectContaining({ uri: 'encrypted-uri' })]);
+    expect(Object.values(pendingContractSyncStore.get.jobs())).toEqual([
+        expect.objectContaining({
+            profileDid: 'did:example:claiming-account',
+            record: expect.objectContaining({ uri: 'encrypted-uri', category: 'Achievement' }),
+        }),
+    ]);
+});
+
 it('does not refresh caches when a Partner Connect (skipLCNUser) index write fails', async () => {
     const skillsFn = vi.fn().mockResolvedValue([]);
     const observer = new QueryObserver(mocks.queryClient!, {
