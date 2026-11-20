@@ -6,6 +6,7 @@ All URIs are relative to _/api_
 | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------- | --------------------------------------------- |
 | [**inbox_approve_guardian_request**](ProfilesApi.md#inbox_approve_guardian_request)                 | **POST** /inbox/guardian-approval/approve               | Approve Guardian Request                      |
 | [**inbox_approve_guardian_request_by_path**](ProfilesApi.md#inbox_approve_guardian_request_by_path) | **GET** /inbox/guardian-approval/{token}                | Approve Guardian Request (GET)                |
+| [**inbox_get_guardian_approval_status**](ProfilesApi.md#inbox_get_guardian_approval_status)         | **GET** /inbox/guardian-approval-status                 | Get Guardian Approval Email Status            |
 | [**inbox_send_guardian_approval_email**](ProfilesApi.md#inbox_send_guardian_approval_email)         | **POST** /inbox/guardian-approval/send                  | Send Guardian Approval Email                  |
 | [**profile_accept_connection_request**](ProfilesApi.md#profile_accept_connection_request)           | **POST** /profile/{profileId}/accept-connection         | Accept Connection Request                     |
 | [**profile_block_profile**](ProfilesApi.md#profile_block_profile)                                   | **POST** /profile/{profileId}/block                     | Block another profile                         |
@@ -201,6 +202,82 @@ with openapi_client.ApiClient(configuration) as api_client:
 | **401**     | Authorization not provided | -                |
 | **403**     | Insufficient access        | -                |
 | **404**     | Not found                  | -                |
+| **500**     | Internal server error      | -                |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **inbox_get_guardian_approval_status**
+
+> InboxGetGuardianApprovalStatus200Response inbox_get_guardian_approval_status()
+
+Get Guardian Approval Email Status
+
+Returns the latest guardian approval email outcome, the guardian address on file, and when another email may be requested. "accepted" means the email provider accepted the message, not that it was delivered.
+
+### Example
+
+- Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.inbox_get_guardian_approval_status200_response import InboxGetGuardianApprovalStatus200Response
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.ProfilesApi(api_client)
+
+    try:
+        # Get Guardian Approval Email Status
+        api_response = api_instance.inbox_get_guardian_approval_status()
+        print("The response of ProfilesApi->inbox_get_guardian_approval_status:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ProfilesApi->inbox_get_guardian_approval_status: %s\n" % e)
+```
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+[**InboxGetGuardianApprovalStatus200Response**](InboxGetGuardianApprovalStatus200Response.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
 | **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

@@ -2,14 +2,15 @@
 
 ## Properties
 
-| Name                  | Type                                                                                      | Description | Notes      |
-| --------------------- | ----------------------------------------------------------------------------------------- | ----------- | ---------- |
-| **refresh_id**        | **str**                                                                                   |             |
-| **notify_holder**     | **bool**                                                                                  |             | [optional] |
-| **update_summary**    | **str**                                                                                   |             | [optional] |
-| **idempotency_key**   | **str**                                                                                   |             | [optional] |
-| **mode**              | **str**                                                                                   |             |
-| **signed_credential** | [**BoostSendRequestTemplateCredentialAnyOf**](BoostSendRequestTemplateCredentialAnyOf.md) |             |
+| Name                  | Type                                                                                      | Description                                                                       | Notes      |
+| --------------------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ---------- |
+| **refresh_id**        | **str**                                                                                   |                                                                                   |
+| **notify_holder**     | **bool**                                                                                  |                                                                                   | [optional] |
+| **update_summary**    | **str**                                                                                   | Public legacy update summary. Do not include private claims; prefer updateReason. | [optional] |
+| **update_reason**     | **str**                                                                                   | Public reason for this update                                                     | [optional] |
+| **idempotency_key**   | **str**                                                                                   |                                                                                   | [optional] |
+| **mode**              | **str**                                                                                   |                                                                                   |
+| **signed_credential** | [**BoostSendRequestTemplateCredentialAnyOf**](BoostSendRequestTemplateCredentialAnyOf.md) |                                                                                   |
 
 ## Example
 

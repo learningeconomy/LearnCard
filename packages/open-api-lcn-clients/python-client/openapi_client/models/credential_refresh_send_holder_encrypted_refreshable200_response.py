@@ -17,25 +17,27 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
 
-class BoostSend200ResponseInboxRefreshRefreshServiceAuthorization(BaseModel):
+class CredentialRefreshSendHolderEncryptedRefreshable200Response(BaseModel):
     """
-    BoostSend200ResponseInboxRefreshRefreshServiceAuthorization
+    CredentialRefreshSendHolderEncryptedRefreshable200Response
     """ # noqa: E501
-    type: StrictStr
+    uri: StrictStr
+    activity_id: StrictStr = Field(alias="activityId")
+    status_management: StrictStr = Field(alias="statusManagement")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["type"]
+    __properties: ClassVar[List[str]] = ["uri", "activityId", "statusManagement"]
 
-    @field_validator('type')
-    def type_validate_enum(cls, value):
+    @field_validator('status_management')
+    def status_management_validate_enum(cls, value):
         """Validates the enum"""
-        if value not in set(['LearnCardDIDAuth']):
-            raise ValueError("must be one of enum values ('LearnCardDIDAuth')")
+        if value not in set(['network', 'external', 'mixed', 'none']):
+            raise ValueError("must be one of enum values ('network', 'external', 'mixed', 'none')")
         return value
 
     model_config = ConfigDict(
@@ -56,7 +58,7 @@ class BoostSend200ResponseInboxRefreshRefreshServiceAuthorization(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of BoostSend200ResponseInboxRefreshRefreshServiceAuthorization from a JSON string"""
+        """Create an instance of CredentialRefreshSendHolderEncryptedRefreshable200Response from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -87,7 +89,7 @@ class BoostSend200ResponseInboxRefreshRefreshServiceAuthorization(BaseModel):
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of BoostSend200ResponseInboxRefreshRefreshServiceAuthorization from a dict"""
+        """Create an instance of CredentialRefreshSendHolderEncryptedRefreshable200Response from a dict"""
         if obj is None:
             return None
 
@@ -95,7 +97,9 @@ class BoostSend200ResponseInboxRefreshRefreshServiceAuthorization(BaseModel):
             return cls.model_validate(obj)
 
         _values = {
-            "type": obj.get("type")
+            "uri": obj.get("uri"),
+            "activityId": obj.get("activityId"),
+            "statusManagement": obj.get("statusManagement")
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

@@ -2,15 +2,16 @@
 
 ## Properties
 
-| Name                       | Type                                                                                                                              | Description | Notes      |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
-| **name**                   | **str**                                                                                                                           |             | [optional] |
-| **description**            | **str**                                                                                                                           |             | [optional] |
-| **whitelisted_domains**    | [**List[IntegrationsAddIntegrationRequestWhitelistedDomainsInner]**](IntegrationsAddIntegrationRequestWhitelistedDomainsInner.md) |             | [optional] |
-| **rotate_publishable_key** | **bool**                                                                                                                          |             | [optional] |
-| **status**                 | **str**                                                                                                                           |             | [optional] |
-| **guide_type**             | **str**                                                                                                                           |             | [optional] |
-| **guide_state**            | **Dict[str, Optional[object]]**                                                                                                   |             | [optional] |
+| Name                        | Type                                                                                                                              | Description                                                                | Notes      |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ---------- |
+| **name**                    | **str**                                                                                                                           |                                                                            | [optional] |
+| **description**             | **str**                                                                                                                           |                                                                            | [optional] |
+| **whitelisted_domains**     | [**List[IntegrationsAddIntegrationRequestWhitelistedDomainsInner]**](IntegrationsAddIntegrationRequestWhitelistedDomainsInner.md) |                                                                            | [optional] |
+| **rotate_publishable_key**  | **bool**                                                                                                                          |                                                                            | [optional] |
+| **contract_events_enabled** | **bool**                                                                                                                          | true enables the contract event feed without a webhook; false disables it. | [optional] |
+| **status**                  | **str**                                                                                                                           |                                                                            | [optional] |
+| **guide_type**              | **str**                                                                                                                           |                                                                            | [optional] |
+| **guide_state**             | **Dict[str, Optional[object]]**                                                                                                   |                                                                            | [optional] |
 
 ## Example
 

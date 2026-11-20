@@ -79,6 +79,10 @@ class CredentialSharePreviewsGet200Response(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
+        # Preserve a supplied nullable value.
+        if self.image is None and "image" in self.model_fields_set and "image" not in excluded_fields:
+            _dict['image'] = None
+
         return _dict
 
     @classmethod

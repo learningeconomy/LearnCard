@@ -10,6 +10,7 @@
 | **etag**           | **str** |             | [optional] |
 | **signing_mode**   | **str** |             | [optional] |
 | **update_summary** | **str** |             | [optional] |
+| **update_reason**  | **str** |             | [optional] |
 
 ## Example
 

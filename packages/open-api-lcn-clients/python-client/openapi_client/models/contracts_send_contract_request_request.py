@@ -17,7 +17,7 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
 from typing import Optional, Set
@@ -29,10 +29,21 @@ class ContractsSendContractRequestRequest(BaseModel):
     ContractsSendContractRequestRequest
     """ # noqa: E501
     contract_uri: StrictStr = Field(alias="contractUri")
-    target_profile_id: StrictStr = Field(alias="targetProfileId")
+    target_profile_id: Optional[StrictStr] = Field(default=None, alias="targetProfileId")
+    target_email: Optional[Annotated[str, Field(strict=True, max_length=320)]] = Field(default=None, alias="targetEmail")
     external_reference_id: Optional[Annotated[str, Field(min_length=1, strict=True, max_length=256)]] = Field(default=None, alias="externalReferenceId")
     message: Optional[Annotated[str, Field(strict=True, max_length=500)]] = None
-    __properties: ClassVar[List[str]] = ["contractUri", "targetProfileId", "externalReferenceId", "message"]
+    __properties: ClassVar[List[str]] = ["contractUri", "targetProfileId", "targetEmail", "externalReferenceId", "message"]
+
+    @field_validator('target_email', mode="before")
+    def target_email_validate_regular_expression(cls, value):
+        """Validates the regular expression"""
+        if value is None:
+            return value
+
+        if isinstance(value, str) and not re.match(r"^(?:[A-Za-z0-9_\'+\-]+\.)*[A-Za-z0-9_\'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
+            raise ValueError(r"must validate the regular expression /^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
+        return value
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -86,6 +97,7 @@ class ContractsSendContractRequestRequest(BaseModel):
         _values = {
             "contractUri": obj.get("contractUri"),
             "targetProfileId": obj.get("targetProfileId"),
+            "targetEmail": obj.get("targetEmail"),
             "externalReferenceId": obj.get("externalReferenceId"),
             "message": obj.get("message")
         }

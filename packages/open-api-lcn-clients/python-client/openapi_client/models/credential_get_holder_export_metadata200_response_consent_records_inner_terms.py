@@ -19,6 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_terms_external_grant import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsExternalGrant
 from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_terms_read import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsRead
 from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_terms_write import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWrite
 from typing import Optional, Set
@@ -29,11 +30,12 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTerms(BaseM
     """
     CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTerms
     """ # noqa: E501
+    external_grant: Optional[CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsExternalGrant] = Field(default=None, alias="externalGrant")
     read: CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsRead
     write: CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWrite
     denied_writers: Optional[List[StrictStr]] = Field(default=None, alias="deniedWriters")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["read", "write", "deniedWriters"]
+    __properties: ClassVar[List[str]] = ["externalGrant", "read", "write", "deniedWriters"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -75,6 +77,9 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTerms(BaseM
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # override the default output from pydantic by calling `to_dict()` of external_grant
+        if self.external_grant:
+            _dict['externalGrant'] = self.external_grant.to_dict()
         # override the default output from pydantic by calling `to_dict()` of read
         if self.read:
             _dict['read'] = self.read.to_dict()
@@ -98,6 +103,7 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTerms(BaseM
             return cls.model_validate(obj)
 
         _values = {
+            "externalGrant": CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsExternalGrant.from_dict(obj["externalGrant"]) if obj.get("externalGrant") is not None else None,
             "read": CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsRead.from_dict(obj["read"]) if obj.get("read") is not None else None,
             "write": CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWrite.from_dict(obj["write"]) if obj.get("write") is not None else None,
             "deniedWriters": obj.get("deniedWriters")

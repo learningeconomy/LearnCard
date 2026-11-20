@@ -22,8 +22,12 @@ from typing_extensions import Annotated
 from openapi_client.models.credential_refresh_allocate_credential_refresh200_response import CredentialRefreshAllocateCredentialRefresh200Response
 from openapi_client.models.credential_refresh_allocate_credential_refresh_request import CredentialRefreshAllocateCredentialRefreshRequest
 from openapi_client.models.credential_refresh_get_credential_refresh_history200_response import CredentialRefreshGetCredentialRefreshHistory200Response
+from openapi_client.models.credential_refresh_get_encryption_recipients200_response import CredentialRefreshGetEncryptionRecipients200Response
 from openapi_client.models.credential_refresh_publish_credential_refresh200_response import CredentialRefreshPublishCredentialRefresh200Response
 from openapi_client.models.credential_refresh_publish_credential_refresh_request import CredentialRefreshPublishCredentialRefreshRequest
+from openapi_client.models.credential_refresh_publish_holder_encrypted_refreshable_request import CredentialRefreshPublishHolderEncryptedRefreshableRequest
+from openapi_client.models.credential_refresh_send_holder_encrypted_refreshable200_response import CredentialRefreshSendHolderEncryptedRefreshable200Response
+from openapi_client.models.credential_refresh_send_holder_encrypted_refreshable_request import CredentialRefreshSendHolderEncryptedRefreshableRequest
 from openapi_client.models.credential_refresh_send_refreshable_credential_request import CredentialRefreshSendRefreshableCredentialRequest
 
 from openapi_client.api_client import ApiClient, RequestSerialized
@@ -643,6 +647,284 @@ class CredentialRefreshApi:
 
 
     @validate_call
+    def credential_refresh_get_encryption_recipients(
+        self,
+        refresh_id: Annotated[str, Field(min_length=1, strict=True)],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> CredentialRefreshGetEncryptionRecipients200Response:
+        """Get the current holder-mode encryption recipients
+
+        Returns the current key-agreement verification-method ids (holder + managers) a holder-mode handoff must encrypt to. Used after a RECIPIENTS_CHANGED conflict.
+
+        :param refresh_id: (required)
+        :type refresh_id: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._credential_refresh_get_encryption_recipients_serialize(
+            refresh_id=refresh_id,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "CredentialRefreshGetEncryptionRecipients200Response",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '404': "ErrorNOTFOUND",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def credential_refresh_get_encryption_recipients_with_http_info(
+        self,
+        refresh_id: Annotated[str, Field(min_length=1, strict=True)],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[CredentialRefreshGetEncryptionRecipients200Response]:
+        """Get the current holder-mode encryption recipients
+
+        Returns the current key-agreement verification-method ids (holder + managers) a holder-mode handoff must encrypt to. Used after a RECIPIENTS_CHANGED conflict.
+
+        :param refresh_id: (required)
+        :type refresh_id: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._credential_refresh_get_encryption_recipients_serialize(
+            refresh_id=refresh_id,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "CredentialRefreshGetEncryptionRecipients200Response",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '404': "ErrorNOTFOUND",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def credential_refresh_get_encryption_recipients_without_preload_content(
+        self,
+        refresh_id: Annotated[str, Field(min_length=1, strict=True)],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Get the current holder-mode encryption recipients
+
+        Returns the current key-agreement verification-method ids (holder + managers) a holder-mode handoff must encrypt to. Used after a RECIPIENTS_CHANGED conflict.
+
+        :param refresh_id: (required)
+        :type refresh_id: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._credential_refresh_get_encryption_recipients_serialize(
+            refresh_id=refresh_id,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "CredentialRefreshGetEncryptionRecipients200Response",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '404': "ErrorNOTFOUND",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _credential_refresh_get_encryption_recipients_serialize(
+        self,
+        refresh_id,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        if refresh_id is not None:
+            
+            _query_params.append(('refreshId', refresh_id))
+            
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'Authorization'
+        ]
+
+        return self.api_client.param_serialize(
+            method='GET',
+            resource_path='/credential-refresh/encryption-recipients',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
     def credential_refresh_publish_credential_refresh(
         self,
         credential_refresh_publish_credential_refresh_request: CredentialRefreshPublishCredentialRefreshRequest,
@@ -913,6 +1195,578 @@ class CredentialRefreshApi:
         return self.api_client.param_serialize(
             method='POST',
             resource_path='/credential-refresh/publish',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def credential_refresh_publish_holder_encrypted_refreshable(
+        self,
+        credential_refresh_publish_holder_encrypted_refreshable_request: CredentialRefreshPublishHolderEncryptedRefreshableRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> CredentialRefreshPublishCredentialRefresh200Response:
+        """Publish a holder-mode (student-only encrypted) refresh version
+
+        Publishes a new immutable version from an already-encrypted handoff and atomically advances the refresh head. `notify` replaces server-inferred materiality.
+
+        :param credential_refresh_publish_holder_encrypted_refreshable_request: (required)
+        :type credential_refresh_publish_holder_encrypted_refreshable_request: CredentialRefreshPublishHolderEncryptedRefreshableRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._credential_refresh_publish_holder_encrypted_refreshable_serialize(
+            credential_refresh_publish_holder_encrypted_refreshable_request=credential_refresh_publish_holder_encrypted_refreshable_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "CredentialRefreshPublishCredentialRefresh200Response",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def credential_refresh_publish_holder_encrypted_refreshable_with_http_info(
+        self,
+        credential_refresh_publish_holder_encrypted_refreshable_request: CredentialRefreshPublishHolderEncryptedRefreshableRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[CredentialRefreshPublishCredentialRefresh200Response]:
+        """Publish a holder-mode (student-only encrypted) refresh version
+
+        Publishes a new immutable version from an already-encrypted handoff and atomically advances the refresh head. `notify` replaces server-inferred materiality.
+
+        :param credential_refresh_publish_holder_encrypted_refreshable_request: (required)
+        :type credential_refresh_publish_holder_encrypted_refreshable_request: CredentialRefreshPublishHolderEncryptedRefreshableRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._credential_refresh_publish_holder_encrypted_refreshable_serialize(
+            credential_refresh_publish_holder_encrypted_refreshable_request=credential_refresh_publish_holder_encrypted_refreshable_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "CredentialRefreshPublishCredentialRefresh200Response",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def credential_refresh_publish_holder_encrypted_refreshable_without_preload_content(
+        self,
+        credential_refresh_publish_holder_encrypted_refreshable_request: CredentialRefreshPublishHolderEncryptedRefreshableRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Publish a holder-mode (student-only encrypted) refresh version
+
+        Publishes a new immutable version from an already-encrypted handoff and atomically advances the refresh head. `notify` replaces server-inferred materiality.
+
+        :param credential_refresh_publish_holder_encrypted_refreshable_request: (required)
+        :type credential_refresh_publish_holder_encrypted_refreshable_request: CredentialRefreshPublishHolderEncryptedRefreshableRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._credential_refresh_publish_holder_encrypted_refreshable_serialize(
+            credential_refresh_publish_holder_encrypted_refreshable_request=credential_refresh_publish_holder_encrypted_refreshable_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "CredentialRefreshPublishCredentialRefresh200Response",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _credential_refresh_publish_holder_encrypted_refreshable_serialize(
+        self,
+        credential_refresh_publish_holder_encrypted_refreshable_request,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+        if credential_refresh_publish_holder_encrypted_refreshable_request is not None:
+            _body_params = credential_refresh_publish_holder_encrypted_refreshable_request
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+        # set the HTTP header `Content-Type`
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'Authorization'
+        ]
+
+        return self.api_client.param_serialize(
+            method='POST',
+            resource_path='/credential-refresh/publish-holder-encrypted',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def credential_refresh_send_holder_encrypted_refreshable(
+        self,
+        credential_refresh_send_holder_encrypted_refreshable_request: CredentialRefreshSendHolderEncryptedRefreshableRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> CredentialRefreshSendHolderEncryptedRefreshable200Response:
+        """Send a holder-mode (student-only encrypted) refreshable credential
+
+        Binds an already-encrypted handoff to its allocated refresh aggregate. The server never decrypts or processes the credential.
+
+        :param credential_refresh_send_holder_encrypted_refreshable_request: (required)
+        :type credential_refresh_send_holder_encrypted_refreshable_request: CredentialRefreshSendHolderEncryptedRefreshableRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._credential_refresh_send_holder_encrypted_refreshable_serialize(
+            credential_refresh_send_holder_encrypted_refreshable_request=credential_refresh_send_holder_encrypted_refreshable_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "CredentialRefreshSendHolderEncryptedRefreshable200Response",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def credential_refresh_send_holder_encrypted_refreshable_with_http_info(
+        self,
+        credential_refresh_send_holder_encrypted_refreshable_request: CredentialRefreshSendHolderEncryptedRefreshableRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[CredentialRefreshSendHolderEncryptedRefreshable200Response]:
+        """Send a holder-mode (student-only encrypted) refreshable credential
+
+        Binds an already-encrypted handoff to its allocated refresh aggregate. The server never decrypts or processes the credential.
+
+        :param credential_refresh_send_holder_encrypted_refreshable_request: (required)
+        :type credential_refresh_send_holder_encrypted_refreshable_request: CredentialRefreshSendHolderEncryptedRefreshableRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._credential_refresh_send_holder_encrypted_refreshable_serialize(
+            credential_refresh_send_holder_encrypted_refreshable_request=credential_refresh_send_holder_encrypted_refreshable_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "CredentialRefreshSendHolderEncryptedRefreshable200Response",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def credential_refresh_send_holder_encrypted_refreshable_without_preload_content(
+        self,
+        credential_refresh_send_holder_encrypted_refreshable_request: CredentialRefreshSendHolderEncryptedRefreshableRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Send a holder-mode (student-only encrypted) refreshable credential
+
+        Binds an already-encrypted handoff to its allocated refresh aggregate. The server never decrypts or processes the credential.
+
+        :param credential_refresh_send_holder_encrypted_refreshable_request: (required)
+        :type credential_refresh_send_holder_encrypted_refreshable_request: CredentialRefreshSendHolderEncryptedRefreshableRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._credential_refresh_send_holder_encrypted_refreshable_serialize(
+            credential_refresh_send_holder_encrypted_refreshable_request=credential_refresh_send_holder_encrypted_refreshable_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "CredentialRefreshSendHolderEncryptedRefreshable200Response",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _credential_refresh_send_holder_encrypted_refreshable_serialize(
+        self,
+        credential_refresh_send_holder_encrypted_refreshable_request,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+        if credential_refresh_send_holder_encrypted_refreshable_request is not None:
+            _body_params = credential_refresh_send_holder_encrypted_refreshable_request
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+        # set the HTTP header `Content-Type`
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'Authorization'
+        ]
+
+        return self.api_client.param_serialize(
+            method='POST',
+            resource_path='/credential-refresh/send-holder-encrypted',
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,

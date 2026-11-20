@@ -2,12 +2,13 @@
 
 ## Properties
 
-| Name             | Type                                                                                                              | Description | Notes |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
-| **did**          | **str**                                                                                                           |             |
-| **contract_uri** | **str**                                                                                                           |             |
-| **boost_uri**    | **str**                                                                                                           |             |
-| **credential**   | [**ContractsWriteCredentialToContractRequestCredential**](ContractsWriteCredentialToContractRequestCredential.md) |             |
+| Name                        | Type                                                                                                                                    | Description | Notes      |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **did**                     | **str**                                                                                                                                 |             |
+| **contract_uri**            | **str**                                                                                                                                 |             |
+| **boost_uri**               | **str**                                                                                                                                 |             |
+| **credential**              | [**ContractsWriteCredentialToContractRequestCredential**](ContractsWriteCredentialToContractRequestCredential.md)                       |             |
+| **expected_external_grant** | [**ContractsWriteCredentialToContractRequestExpectedExternalGrant**](ContractsWriteCredentialToContractRequestExpectedExternalGrant.md) |             | [optional] |
 
 ## Example
 

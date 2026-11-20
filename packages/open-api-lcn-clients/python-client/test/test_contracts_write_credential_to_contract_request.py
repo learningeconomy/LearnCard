@@ -38,7 +38,10 @@ class TestContractsWriteCredentialToContractRequest(unittest.TestCase):
                 did = '',
                 contract_uri = '',
                 boost_uri = '',
-                credential = None
+                credential = None,
+                expected_external_grant = openapi_client.models.contracts_write_credential_to_contract_request_expected_external_grant.contracts_writeCredentialToContract_request_expectedExternalGrant(
+                    revision = 0, 
+                    hash = 'k0', )
             )
         else:
             return ContractsWriteCredentialToContractRequest(

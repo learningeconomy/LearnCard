@@ -89,6 +89,13 @@ class TestUniversalInboxApi(unittest.TestCase):
         """
         pass
 
+    def test_inbox_get_guardian_approval_status(self) -> None:
+        """Test case for inbox_get_guardian_approval_status
+
+        Get Guardian Approval Email Status
+        """
+        pass
+
     def test_inbox_get_guardian_pending_credential(self) -> None:
         """Test case for inbox_get_guardian_pending_credential
 

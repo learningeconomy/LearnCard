@@ -5,6 +5,7 @@
 | Name                 | Type                     | Description | Notes      |
 | -------------------- | ------------------------ | ----------- | ---------- |
 | **terms_uri**        | **str**                  |             |
+| **automatic**        | **bool**                 |             | [optional] |
 | **audience_version** | **int**                  |             | [optional] |
 | **categories**       | **Dict[str, List[str]]** |             |
 

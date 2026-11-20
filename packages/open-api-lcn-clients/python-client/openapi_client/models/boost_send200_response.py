@@ -29,6 +29,7 @@ class BoostSend200Response(BaseModel):
     """
     BoostSend200Response
     """ # noqa: E501
+    status_management: Optional[StrictStr] = Field(default=None, alias="statusManagement")
     type: StrictStr
     credential_uri: StrictStr = Field(alias="credentialUri")
     uri: StrictStr
@@ -36,7 +37,17 @@ class BoostSend200Response(BaseModel):
     inbox: Optional[BoostSend200ResponseInbox] = None
     refresh: Optional[BoostSend200ResponseRefresh] = None
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["type", "credentialUri", "uri", "activityId", "inbox", "refresh"]
+    __properties: ClassVar[List[str]] = ["statusManagement", "type", "credentialUri", "uri", "activityId", "inbox", "refresh"]
+
+    @field_validator('status_management')
+    def status_management_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['network', 'external', 'mixed', 'none']):
+            raise ValueError("must be one of enum values ('network', 'external', 'mixed', 'none')")
+        return value
 
     @field_validator('type')
     def type_validate_enum(cls, value):
@@ -108,6 +119,7 @@ class BoostSend200Response(BaseModel):
             return cls.model_validate(obj)
 
         _values = {
+            "statusManagement": obj.get("statusManagement"),
             "type": obj.get("type"),
             "credentialUri": obj.get("credentialUri"),
             "uri": obj.get("uri"),

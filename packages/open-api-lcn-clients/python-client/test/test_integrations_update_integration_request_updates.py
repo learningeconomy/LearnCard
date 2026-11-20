@@ -41,6 +41,7 @@ class TestIntegrationsUpdateIntegrationRequestUpdates(unittest.TestCase):
                     null
                     ],
                 rotate_publishable_key = True,
+                contract_events_enabled = True,
                 status = 'setup',
                 guide_type = '',
                 guide_state = {

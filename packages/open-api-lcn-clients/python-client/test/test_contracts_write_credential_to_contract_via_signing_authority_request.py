@@ -40,7 +40,10 @@ class TestContractsWriteCredentialToContractViaSigningAuthorityRequest(unittest.
                 boost_uri = '',
                 signing_authority = openapi_client.models.boost_send_boost_via_signing_authority_request_signing_authority.boost_sendBoostViaSigningAuthority_request_signingAuthority(
                     name = '', 
-                    endpoint = '', )
+                    endpoint = '', ),
+                expected_external_grant = openapi_client.models.contracts_write_credential_to_contract_via_signing_authority_request_expected_external_grant.contracts_writeCredentialToContractViaSigningAuthority_request_expectedExternalGrant(
+                    revision = 0, 
+                    hash = 'k0', )
             )
         else:
             return ContractsWriteCredentialToContractViaSigningAuthorityRequest(

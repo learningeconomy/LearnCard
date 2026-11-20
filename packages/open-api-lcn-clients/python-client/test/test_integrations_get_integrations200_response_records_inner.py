@@ -42,6 +42,9 @@ class TestIntegrationsGetIntegrations200ResponseRecordsInner(unittest.TestCase):
                 whitelisted_domains = [
                     null
                     ],
+                webhook_url = '',
+                has_webhook_secret = True,
+                contract_events_enabled_at = '',
                 status = 'setup',
                 guide_type = '',
                 guide_state = {

@@ -35,6 +35,7 @@ class TestBoostSend200Response(unittest.TestCase):
         model = BoostSend200Response()
         if include_optional:
             return BoostSend200Response(
+                status_management = 'network',
                 type = 'boost',
                 credential_uri = '',
                 uri = '',
@@ -42,9 +43,8 @@ class TestBoostSend200Response(unittest.TestCase):
                 inbox = openapi_client.models.boost_send_200_response_inbox.boost_send_200_response_inbox(
                     refresh = openapi_client.models.boost_send_200_response_inbox_refresh.boost_send_200_response_inbox_refresh(
                         refresh_id = '0', 
-                        refresh_service = {
-                            'key' : null
-                            }, 
+                        refresh_service = null, 
+                        refresh_service_binding = 'managed-entry', 
                         credential_id = '0', 
                         issuer_did = '0', 
                         credential_status = null, 
@@ -55,9 +55,8 @@ class TestBoostSend200Response(unittest.TestCase):
                     guardian_status = 'AWAITING_GUARDIAN', ),
                 refresh = openapi_client.models.boost_send_200_response_refresh.boost_send_200_response_refresh(
                     refresh_id = '0', 
-                    refresh_service = {
-                        'key' : null
-                        }, 
+                    refresh_service = null, 
+                    refresh_service_binding = 'managed-entry', 
                     credential_id = '0', 
                     issuer_did = '0', 
                     holder_did = '0', 
