@@ -58,6 +58,7 @@ describe('CLR canonical normalization corpus', () => {
             'clr/licensing-regulatory-record',
             'clr/mixed-career-record',
             'clr/mixed-role-portfolio',
+            'clr/multi-issuer-verification',
         ]);
         for (const fixture of clrFixtures) {
             const model = normalizeClrTranscriptDisplayModel(
