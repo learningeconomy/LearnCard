@@ -1,5 +1,13 @@
 # learn-card-types
 
+## 6.3.0
+
+### Minor Changes
+
+- [#2115](https://github.com/learningeconomy/LearnCard/pull/2115) [`afb25c9b840c75db9eccfe792428b0327a98afb6`](https://github.com/learningeconomy/LearnCard/commit/afb25c9b840c75db9eccfe792428b0327a98afb6) Thanks [@goblincore](https://github.com/goblincore)! - Add an optional `exclude` filter to managed boost pagination. Omit boosts with a matching name or category before selecting a page. Each exclusion accepts an exact string, a list, or a regular expression. Missing field values remain eligible, and exact exclusions preserve slash-delimited strings over tRPC. Existing queries retain their matching behavior.
+
+- [#2092](https://github.com/learningeconomy/LearnCard/pull/2092) [`902aebe9ba82986c6be52c46bc16f22cc1822294`](https://github.com/learningeconomy/LearnCard/commit/902aebe9ba82986c6be52c46bc16f22cc1822294) Thanks [@Custard7](https://github.com/Custard7)! - Add optional external consent bindings and opt-in revision/hash expectations to contract credential writes. Compare expectations inside the existing locked consent delivery gate and retain cleanup on rejected delivery. Calls without expectations retain existing authorization behavior.
+
 ## 6.2.0
 
 ### Minor Changes

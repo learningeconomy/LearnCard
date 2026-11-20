@@ -1,5 +1,19 @@
 # learn-card-base
 
+## 0.8.4
+
+### Patch Changes
+
+- Updated dependencies [[`afb25c9b840c75db9eccfe792428b0327a98afb6`](https://github.com/learningeconomy/LearnCard/commit/afb25c9b840c75db9eccfe792428b0327a98afb6), [`902aebe9ba82986c6be52c46bc16f22cc1822294`](https://github.com/learningeconomy/LearnCard/commit/902aebe9ba82986c6be52c46bc16f22cc1822294)]:
+    - @learncard/types@6.3.0
+    - @learncard/helpers@1.8.4
+    - @learncard/didkit-plugin@1.11.1
+    - @learncard/lca-api-plugin@3.0.1
+    - @learncard/learn-card-plugin@1.2.48
+    - @learncard/ler-rs-plugin@0.1.39
+    - @learncard/render-method-plugin@16.0.0
+    - @learncard/sss-key-manager@0.3.4
+
 ## 0.8.3
 
 ### Patch Changes

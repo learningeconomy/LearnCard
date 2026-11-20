@@ -1,5 +1,12 @@
 # @learncard/escrow-relay-service
 
+## 0.1.13
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/sss-key-manager@0.3.4
+
 ## 0.1.12
 
 ### Patch Changes
