@@ -87,7 +87,7 @@ export default async function verifyReferralOutcomes(v: VerificationContext) {
             actAs: recipient.profileId,
         })
     );
-    const readDelivery = async () => {
+    const readDelivery = async (did = learner.id.did()) => {
         const response = await fetch(`${v.stack.brainApi}/readable-delivery/data`, {
             method: 'POST',
             headers: {
@@ -95,7 +95,7 @@ export default async function verifyReferralOutcomes(v: VerificationContext) {
                 'Content-Type': 'application/json',
                 [ACT_AS_HEADER]: recipient.profileId,
             },
-            body: JSON.stringify({ contractUri, did: learner.id.did(), limit: 25 }),
+            body: JSON.stringify({ contractUri, did, limit: 25 }),
         });
         expect(response.status).toBe(200);
         expect(response.headers.get('cache-control')).toContain('no-store');
@@ -143,13 +143,28 @@ export default async function verifyReferralOutcomes(v: VerificationContext) {
             category: 'Outcome',
             uri,
             status: 'readable',
-            fullCredential: signed,
             credential: {
                 name: title,
                 issuer: owner.id.did(),
                 verification: { proof: 'valid', label: 'verified' },
             },
         });
+        expect(readable.records[0]?.fullCredential).toEqual(signed);
+
+        // An attacker can reuse a known ciphertext URI, but cannot inherit its learner's trust.
+        const otherLearner = await v.sdk(v.newActor('outcome-other-learner'));
+        await otherLearner.invoke.consentToContract(contractUri, { terms, audienceVersion });
+        const otherConsent = (await otherLearner.invoke.getConsentedContracts()).records.find(
+            record => record.contract.uri === contractUri
+        )!;
+        await otherLearner.invoke.attachReferralOutcome(otherConsent.uri, uri, audienceVersion);
+        const copied = await readDelivery(otherLearner.id.did());
+        expect(copied.records[0]).toMatchObject({
+            uri,
+            status: 'readable',
+            credential: { verification: { proof: 'valid', label: 'unverified' } },
+        });
+        await otherLearner.invoke.detachReferralOutcome(otherConsent.uri, uri, audienceVersion);
         await page.getByRole('button', { name: 'Close', exact: true }).click();
         await expect(
             page

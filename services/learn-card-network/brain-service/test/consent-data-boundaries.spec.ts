@@ -654,11 +654,14 @@ describe('consented data boundaries', () => {
                 outcomes: ['urn:unreviewed:client-value'],
             },
         });
-        const uris = ['urn:encrypted:outcome-a', 'urn:encrypted:outcome-b'];
+        const uris = [
+            'lc:cloud:cloud.learncard.com:credential:outcome-a',
+            'lc:cloud:cloud.learncard.com:credential:outcome-b',
+        ];
         await expect(
             owner.clients.fullAuth.contracts.updateReferralOutcome({
                 termsUri,
-                uri: 'urn:encrypted:owner-attempt',
+                uri: 'lc:cloud:cloud.learncard.com:credential:owner-attempt',
             })
         ).rejects.toThrow();
         await Promise.all(

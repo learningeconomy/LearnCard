@@ -79,7 +79,7 @@ describe('readable outcome trust labels', () => {
         });
     });
     it.each([...context.learnerDids])(
-        'never upgrades a learner-signed outcome from %s and preserves recognized display names',
+        'never looks up or names learner-signed outcome from %s',
         async issuer => {
             mocks.registry.mockResolvedValue({
                 matchingIssuers: [
@@ -87,15 +87,16 @@ describe('readable outcome trust labels', () => {
                 ],
                 uncheckedRegistries: [],
             });
-            expect(
-                await verifyDeliveryOutcome(
-                    { ...credential, issuer },
-                    { ...context, expectedIssuers: new Set([issuer]) }
-                )
-            ).toMatchObject({ label: 'self_reported', issuerName: 'Learner Issuer' });
+            const result = await verifyDeliveryOutcome(
+                { ...credential, issuer },
+                { ...context, expectedIssuers: new Set([issuer]) }
+            );
+            expect(result).toMatchObject({ label: 'self_reported' });
+            expect(result).not.toHaveProperty('issuerName');
+            expect(mocks.registry).not.toHaveBeenCalled();
         }
     );
-    it('preserves a recognized issuer name when proof or status checks fail', async () => {
+    it('preserves a recognized issuer name when authenticated status checks fail', async () => {
         mocks.registry.mockResolvedValue({
             matchingIssuers: [
                 { issuer: { federation_entity: { organization_name: 'Example College' } } },
@@ -109,13 +110,28 @@ describe('readable outcome trust labels', () => {
             label: 'unverified',
             issuerName: 'Example College',
         });
-        mocks.verify.mockResolvedValue({ ...valid, proof: 'invalid' });
-        expect(
-            await verifyDeliveryOutcome({ ...credential, issuer: 'did:key:other' }, context)
-        ).toMatchObject({
-            label: 'self_reported',
-            issuerName: 'Example College',
-        });
+    });
+    it.each(['invalid', 'unavailable'])(
+        'does not look up or name an issuer with %s proof',
+        async proof => {
+            mocks.verify.mockResolvedValue({ ...valid, proof });
+            const result = await verifyDeliveryOutcome(credential, context);
+            expect(result.label).toBe(proof === 'invalid' ? 'self_reported' : 'unverified');
+            expect(result).not.toHaveProperty('issuerName');
+            expect(mocks.registry).not.toHaveBeenCalled();
+        }
+    );
+    it.each([
+        [{ id: 'did:key:foreign' }, 'unverified'],
+        [{}, 'unverified'],
+        [[{ id: 'did:key:foreign' }, { id: 'did:key:learner' }], 'verified'],
+        [[{ id: 'did:key:foreign' }, {}], 'unverified'],
+    ])('binds subjects %j to the learner', async (credentialSubject, label) => {
+        const result = await verifyDeliveryOutcome(
+            { ...credential, credentialSubject } as UnsignedVC,
+            context
+        );
+        expect(result.label).toBe(label);
     });
     it.each([
         { proof: 'unavailable' },

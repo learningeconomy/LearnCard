@@ -18,6 +18,7 @@ export default createVitestConfig(brainServicePreset, {
         include: [
             'src/accesslayer/readable-delivery.test.ts',
             'src/helpers/readable-delivery*.test.ts',
+            'src/helpers/referral-outcome-uri.helpers.test.ts',
             'test/credential-share-previews.spec.ts',
             'test/share-link-*.unit.spec.ts',
             'test/share-content-client.*.spec.ts',

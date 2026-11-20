@@ -46,6 +46,15 @@ export const verifyDeliveryOutcome = async (
 ): Promise<Verification> => {
     const issuer = typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id;
     const checks = await verifyDeliveryCredential(credential, localOrigin, signal);
+    if (checks.proof === 'invalid' || context.learnerDids.has(issuer ?? ''))
+        return { ...checks, label: 'self_reported' };
+    if (checks.proof !== 'valid') return { ...checks, label: 'unverified' };
+    const subjects = Array.isArray(credential.credentialSubject)
+        ? credential.credentialSubject
+        : [credential.credentialSubject];
+    const belongsToLearner = subjects.some(
+        subject => typeof subject?.id === 'string' && context.learnerDids.has(subject.id)
+    );
     const expected = Boolean(issuer && context.expectedIssuers.has(issuer));
     let timer: ReturnType<typeof setTimeout> | undefined;
     let recognized: string | undefined;
@@ -68,10 +77,8 @@ export const verifyDeliveryOutcome = async (
         clearTimeout(timer);
     }
     const issuerName = recognized ? { issuerName: recognized } : {};
-    if (checks.proof === 'invalid' || context.learnerDids.has(issuer ?? ''))
-        return { ...checks, ...issuerName, label: 'self_reported' };
     if (
-        checks.proof !== 'valid' ||
+        !belongsToLearner ||
         checks.dates !== 'valid' ||
         !['valid', 'not_applicable'].includes(checks.status)
     )

@@ -141,7 +141,7 @@ describe('readable delivery real crypto path', () => {
                 type: ['VerifiableCredential'],
                 issuer,
                 validFrom: '2026-01-01T00:00:00Z',
-                credentialSubject: { id: 'did:key:another-learner' },
+                credentialSubject: { id: keyDid },
             });
             const unrelatedTrust = {
                 expectedIssuers: new Set(['did:key:expected']),
@@ -157,6 +157,17 @@ describe('readable delivery real crypto path', () => {
             expect(await verifyDeliveryOutcome(unrelated, unrelatedTrust, origin)).toMatchObject({
                 proof: 'valid',
                 label: 'signed_unknown_issuer',
+            });
+            const foreign = await sign({
+                '@context': ['https://www.w3.org/ns/credentials/v2'],
+                type: ['VerifiableCredential'],
+                issuer,
+                validFrom: '2026-01-01T00:00:00Z',
+                credentialSubject: { id: 'did:key:another-learner' },
+            });
+            expect(await verifyDeliveryOutcome(foreign, trust, origin)).toMatchObject({
+                proof: 'valid',
+                label: 'unverified',
             });
             const learnerSigned = await signAsLearner({
                 '@context': [

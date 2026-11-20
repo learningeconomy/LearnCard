@@ -32,6 +32,7 @@ import {
 import { uploadSmartResume } from '@helpers/smartResume.helpers';
 import { TRPCError } from '@trpc/server';
 import { getDeliveryDisclosures } from '@accesslayer/readable-delivery';
+import { isReferralOutcomeUri } from '@helpers/referral-outcome-uri.helpers';
 import { z } from 'zod';
 
 import { t, profileRoute, credentialProfileRoute, openRoute, guardianGatedRoute } from '@routes';
@@ -2050,7 +2051,7 @@ export const contractsRouter = t.router({
         .input(
             z.object({
                 termsUri: z.string(),
-                uri: z.string().min(1),
+                uri: z.string().max(2048).refine(isReferralOutcomeUri, 'Invalid credential URI'),
                 audienceVersion: z.number().int().nonnegative().optional(),
                 remove: z.boolean().default(false),
             })
