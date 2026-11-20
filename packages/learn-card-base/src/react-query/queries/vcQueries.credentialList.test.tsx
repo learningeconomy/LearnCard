@@ -315,7 +315,7 @@ it('paginates filtered managed boosts with a cache separate from other patterns 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     rerender({ pattern: /ai passport/i });
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    await waitFor(() => expect(result.current.data?.pages).toHaveLength(1));
     await act(async () => result.current.fetchNextPage());
     expect(getPaginatedBoosts).toHaveBeenNthCalledWith(2, {
         query: undefined,
