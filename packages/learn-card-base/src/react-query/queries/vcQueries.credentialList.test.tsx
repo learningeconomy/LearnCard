@@ -334,11 +334,25 @@ it('paginates filtered managed boosts with a cache separate from other patterns 
     rerender({ pattern: /resume/i });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.pages).toHaveLength(1);
+
+    const getChildBoosts = vi.fn().mockResolvedValue({
+        records: [{ uri: 'child-boost' }],
+        hasMore: false,
+    });
+    host.wallet = {
+        id: { did: () => 'did:example:child' },
+        invoke: { getPaginatedBoosts: getChildBoosts },
+    } as unknown as BespokeLearnCard;
     host.switchedDid = 'did:example:child';
+    // The profile switch resets unscoped queries before React renders the new profile.
+    await act(async () => client.resetQueries({ queryKey: ['useGetPaginatedManagedBoostsQuery'] }));
+    expect(getChildBoosts).not.toHaveBeenCalled();
+
     rerender({ pattern: /ai passport/i });
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    await waitFor(() => expect(result.current.data?.pages[0]?.records[0]?.uri).toBe('child-boost'));
     expect(result.current.data?.pages).toHaveLength(1);
-    expect(getPaginatedBoosts).toHaveBeenCalledTimes(5);
+    expect(getPaginatedBoosts).toHaveBeenCalledTimes(4);
+    expect(getChildBoosts).toHaveBeenCalledOnce();
 });
 
 /** Mirrors CredentialPage reading pages[0].records.length after a corrupt restore. */

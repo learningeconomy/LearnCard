@@ -323,23 +323,24 @@ export const useGetPaginatedManagedBoostsQuery = (
 ) => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
-    const switchedDid = switchedProfileStore.use.switchedDid();
+    const reader = useCredentialReader();
     const { exclude, limit = 10 } = options ?? {};
     // JSON encoding a RegExp directly would give every pattern the same cache key.
     const queryKey = exclude
         ? [
-              'useGetPaginatedManagedBoostsQuery',
-              switchedDid ?? '',
+              'useGetPaginatedManagedBoostsWithExclusions',
+              reader?.id.did() ?? '',
               RegExpTransformer.serialize({ query, exclude }),
               limit,
           ]
         : ['useGetPaginatedManagedBoostsQuery', query ?? ''];
-    dropMalformedInfiniteCacheEntry(queryClient, queryKey, 'useGetPaginatedManagedBoostsQuery');
+    dropMalformedInfiniteCacheEntry(queryClient, queryKey);
 
     return useInfiniteQuery({
         queryKey,
         queryFn: async ({ pageParam }) => {
-            const wallet = await initWallet();
+            const wallet = exclude ? reader : await initWallet();
+            if (!wallet) throw new Error('Managed boost reader is unavailable');
 
             const data = await wallet.invoke.getPaginatedBoosts({
                 ...options,
@@ -352,7 +353,7 @@ export const useGetPaginatedManagedBoostsQuery = (
         },
         initialPageParam: undefined as undefined | string,
         getNextPageParam: lastPage => (lastPage?.hasMore ? lastPage?.cursor : undefined),
-        enabled,
+        enabled: enabled && (!exclude || Boolean(reader)),
     });
 };
 
