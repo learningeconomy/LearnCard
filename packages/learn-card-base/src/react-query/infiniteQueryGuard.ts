@@ -21,6 +21,7 @@ export const INFINITE_QUERY_KEY_ROOTS: ReadonlySet<string> = new Set([
     'useGetCredentialList',
     'useGetPaginatedManagedBoosts',
     'useGetPaginatedManagedBoostsQuery',
+    'useGetPaginatedManagedBoostsWithExclusions',
     'useGetUserNotifications',
     'paginatedBoostRecipients',
     'paginatedConnections',
