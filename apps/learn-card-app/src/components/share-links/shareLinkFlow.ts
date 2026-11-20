@@ -105,7 +105,11 @@ export interface ShareWallet {
         getReceivedPresentations(): Promise<SentCredentialInfo[]>;
         getIncomingPresentations(): Promise<SentCredentialInfo[]>;
         verifyPresentation(vp: VP, options: { proofPurpose: string }): Promise<VerificationCheck>;
-        verifyCredential(vc: VC): Promise<VerificationCheck>;
+        verifyCredential(
+            vc: VC,
+            options?: Record<string, never>,
+            prettify?: false
+        ): Promise<VerificationCheck>;
     };
 }
 export const shareWallet = (wallet: unknown): ShareWallet => wallet as ShareWallet;
@@ -598,11 +602,15 @@ export const verifyCredentialTree = async (
     budget: VerificationBudget,
     onUpdate?: (snapshot: ClrVerificationSnapshot) => void
 ): Promise<ProofState> => {
+    const isClr = credential.type?.includes('ClrCredential') ?? false;
     const result = await verifyClrCredentialTree(
         normalizeClrCredential(credential),
-        value => wallet.invoke.verifyCredential(value as VC),
+        value =>
+            isClr
+                ? wallet.invoke.verifyCredential(value as VC, {}, false)
+                : wallet.invoke.verifyCredential(value as VC),
         budget,
-        onUpdate
+        isClr ? onUpdate : undefined
     );
     const outcomes = [result.outer];
     let incomplete = result.outer.proof !== 'verified';
@@ -611,21 +619,21 @@ export const verifyCredentialTree = async (
         if (
             node.proof === 'invalid' ||
             node.lifecycle === 'revoked' ||
-            node.lifecycle === 'suspended'
+            node.lifecycle === 'suspended' ||
+            node.validity ||
+            (!isClr && node.errors.length > 0)
         )
             return 'failed';
         if (
             node.proof === 'checking' ||
             node.proof === 'unavailable' ||
+            (!isClr && node.proof === 'unsigned') ||
             node.lifecycle === 'unavailable'
         )
             incomplete = true;
         outcomes.push(...node.descendants);
     }
-    const types = Array.isArray(credential.type) ? credential.type : [credential.type];
-    const confirmed = types.includes('ClrCredential')
-        ? isClrRecordConfirmed(result.outer)
-        : !incomplete;
+    const confirmed = isClr ? isClrRecordConfirmed(result.outer) : !incomplete;
     return confirmed ? 'verified' : 'unavailable';
 };
 

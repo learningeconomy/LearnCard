@@ -151,6 +151,118 @@ describe('CLR occurrence verification', () => {
         expect(isClrRecordConfirmed(result.records.child)).toBe(false);
     });
 
+    it('requires matching structured status evidence for each declared entry', async () => {
+        const declaration = {
+            type: 'BitstringStatusListEntry',
+            statusPurpose: 'revocation',
+            statusListCredential: 'https://example.test/list',
+            statusListIndex: '3',
+        };
+        const model = collection([{ ...signed('child'), credentialStatus: declaration }]);
+        const entry = {
+            entryType: declaration.type,
+            statusPurpose: declaration.statusPurpose,
+            statusListCredential: declaration.statusListCredential,
+            statusListIndex: declaration.statusListIndex,
+            isSet: false,
+        };
+        const run = (status: (typeof entry)[]) =>
+            verifyClrCredentialTree(model, async () => ({
+                checks: ['proof', 'credentialStatus'],
+                warnings: [],
+                errors: [],
+                status,
+            }));
+        expect((await run([entry])).records.child.lifecycle).toBe('active');
+        expect((await run([{ ...entry, statusListIndex: '4' }])).records.child.lifecycle).toBe(
+            'unavailable'
+        );
+    });
+
+    it.each(['verified', 'invalid'] as const)(
+        'keeps a %s proof distinct from a status-list outage',
+        async proof => {
+            const model = collection([
+                { ...signed('child'), credentialStatus: { type: 'BitstringStatusListEntry' } },
+            ]);
+            const result = await verifyClrCredentialTree(model, async credential =>
+                credential.id === 'child'
+                    ? {
+                          checks: proof === 'verified' ? ['proof'] : [],
+                          warnings: [],
+                          errors: [
+                              ...(proof === 'invalid' ? ['invalid signature'] : []),
+                              'Unable to fetch status list credential: timeout',
+                          ],
+                      }
+                    : success
+            );
+            expect(result.records.child).toMatchObject({ proof, lifecycle: 'unavailable' });
+            expect(isClrRecordConfirmed(result.records.child)).toBe(false);
+        }
+    );
+
+    it.each([
+        ['expiration error: Credential is expired', 'expired'],
+        ['expiration error: Credential is no longer valid', 'expired'],
+        ['expiration error: Credential is not valid yet', 'not-yet-valid'],
+    ] as const)('separates %s from proof and status', async (error, validity) => {
+        const result = await verifyClrCredentialTree(
+            collection([signed('child')]),
+            async credential =>
+                credential.id === 'child' ? { ...success, errors: [error] } : success
+        );
+        expect(result.records.child).toMatchObject({
+            proof: 'verified',
+            validity,
+            lifecycle: 'unchecked',
+        });
+        expect(isClrRecordConfirmed(result.records.child)).toBe(false);
+    });
+
+    it('keeps encoded and non-object descendants unavailable rather than skipping them', async () => {
+        const model = collection([
+            {
+                ...signed('container'),
+                credentialSubject: {
+                    id: 'did:example:learner',
+                    verifiableCredential: ['eyJ.jwt', null, 5],
+                },
+            },
+        ]);
+        const verify = vi.fn(async () => success);
+        const result = await verifyClrCredentialTree(model, verify);
+        expect(verify).toHaveBeenCalledTimes(2);
+        expect(result.records.container.descendants.map(node => node.proof)).toEqual([
+            'unavailable',
+            'unavailable',
+            'unavailable',
+        ]);
+        expect(isClrRecordConfirmed(result.outer)).toBe(false);
+    });
+
+    it('keeps unsigned status declarations quiet without scheduling a status check', async () => {
+        const credentialStatus = { type: 'BitstringStatusListEntry' };
+        const verify = vi.fn(async () => success);
+        const result = await verifyClrCredentialTree(
+            collection([{ id: 'unsigned-status', credentialStatus }]),
+            verify
+        );
+        expect(verify).toHaveBeenCalledTimes(1);
+        expect(result.records['unsigned-status']).toMatchObject({
+            proof: 'unsigned',
+            lifecycle: 'unchecked',
+        });
+        expect(isClrRecordConfirmed(result.outer)).toBe(true);
+
+        const unsignedOuter = await verifyClrCredentialTree(
+            collection([], { proof: undefined, credentialStatus }),
+            verify
+        );
+        expect(unsignedOuter.outer).toMatchObject({ proof: 'unsigned', lifecycle: 'unchecked' });
+        expect(verify).toHaveBeenCalledTimes(1);
+    });
+
     it('does not equate proof presence, a missing proof check or authorization warnings with verification', async () => {
         const model = collection([signed('child')]);
         expect(createClrVerificationSnapshot(model).outer.proof).toBe('checking');

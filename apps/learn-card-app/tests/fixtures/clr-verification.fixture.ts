@@ -128,82 +128,94 @@ export interface MaterializedClrVerificationFixture {
 }
 
 /** Uses actual LearnCard/DIDKit proofs and a live ephemeral DID-web/status server. */
-export const createClrVerificationFixture =
-    async (): Promise<MaterializedClrVerificationFixture> => {
-        const server = await startLocalClrFixtureServer();
-        try {
-            const publisherDid = `${server.baseDid}:state`;
-            const issuerDids = [
-                `${server.baseDid}:district-a`,
-                `${server.baseDid}:district-b`,
-            ] as const;
-            const learnerDid = `${server.baseDid}:learner`;
-            const [state, districtA, districtB] = await Promise.all([
-                initLearnCard({ seed: 'c'.repeat(64), didkit, allowRemoteContexts: true }),
-                initLearnCard({ seed: 'a'.repeat(64), didkit, allowRemoteContexts: true }),
-                initLearnCard({ seed: 'b'.repeat(64), didkit, allowRemoteContexts: true }),
-            ]);
-            const didDocuments = {
-                [publisherDid]: didDocument(publisherDid, state),
-                [issuerDids[0]]: didDocument(issuerDids[0], districtA),
-                [issuerDids[1]]: didDocument(issuerDids[1], districtB),
-            };
-            Object.assign(server.didDocuments, didDocuments);
-            const allIssuerDids = [publisherDid, ...issuerDids];
-            const signers = Object.fromEntries(
-                [state, districtA, districtB].map((wallet, index) => {
-                    const issuer = allIssuerDids[index]!;
-                    return [
-                        issuer,
-                        (credential: Record<string, unknown>) =>
-                            wallet.invoke.issueCredential(credential as never, {
-                                verificationMethod: `${issuer}#assertion-key`,
-                            }),
-                    ];
-                })
-            );
-            const revokedBits = new Uint8Array(16_384);
-            setBitstringStatusListBit(revokedBits, 1, true);
-            const statusListDraft = {
-                '@context': ['https://www.w3.org/ns/credentials/v2'],
-                id: server.statusListUrl,
-                type: ['VerifiableCredential', 'BitstringStatusListCredential'],
-                issuer: issuerDids[1],
-                validFrom: '2026-01-01T00:00:00Z',
-                credentialSubject: {
-                    id: `${server.statusListUrl}#list`,
-                    type: 'BitstringStatusList',
-                    statusPurpose: 'revocation',
-                    encodedList: `u${gzipSync(revokedBits).toString('base64url')}`,
-                },
-            };
-            const statusList = await signers[issuerDids[1]]!(statusListDraft);
-            server.setStatusList(statusList);
-            const credential = await materializeMultiIssuerClrVerificationFixture({
-                issuerDids,
-                publisherDid,
-                learnerDid,
-                signers,
-                revokedStatusList: statusList,
-                duplicateValidChild: true,
-            });
-            server.resetCounters();
-            return {
-                credential,
-                statusList,
-                didDocuments,
-                issuerDids,
-                publisherDid,
-                learnerDid,
-                statusListUrl: server.statusListUrl,
-                counters: server.counters,
-                close: server.close,
-            };
-        } catch (error) {
-            await server.close();
-            throw error;
-        }
-    };
+export const createClrVerificationFixture = async (
+    invalidDates = false
+): Promise<MaterializedClrVerificationFixture> => {
+    const server = await startLocalClrFixtureServer();
+    try {
+        const publisherDid = `${server.baseDid}:state`;
+        const issuerDids = [
+            `${server.baseDid}:district-a`,
+            `${server.baseDid}:district-b`,
+        ] as const;
+        const learnerDid = `${server.baseDid}:learner`;
+        const [state, districtA, districtB] = await Promise.all([
+            initLearnCard({ seed: 'c'.repeat(64), didkit, allowRemoteContexts: true }),
+            initLearnCard({ seed: 'a'.repeat(64), didkit, allowRemoteContexts: true }),
+            initLearnCard({ seed: 'b'.repeat(64), didkit, allowRemoteContexts: true }),
+        ]);
+        const didDocuments = {
+            [publisherDid]: didDocument(publisherDid, state),
+            [issuerDids[0]]: didDocument(issuerDids[0], districtA),
+            [issuerDids[1]]: didDocument(issuerDids[1], districtB),
+        };
+        Object.assign(server.didDocuments, didDocuments);
+        const allIssuerDids = [publisherDid, ...issuerDids];
+        const signers = Object.fromEntries(
+            [state, districtA, districtB].map((wallet, index) => {
+                const issuer = allIssuerDids[index]!;
+                const dates = !invalidDates
+                    ? undefined
+                    : index === 0
+                      ? { validFrom: '2099-01-01T00:00:00Z' }
+                      : index === 1
+                        ? {
+                              validFrom: '2000-01-01T00:00:00Z',
+                              validUntil: '2001-01-01T00:00:00Z',
+                          }
+                        : undefined;
+                return [
+                    issuer,
+                    (credential: Record<string, unknown>) =>
+                        wallet.invoke.issueCredential(
+                            (dates ? { ...credential, ...dates } : credential) as never,
+                            { verificationMethod: `${issuer}#assertion-key` }
+                        ),
+                ];
+            })
+        );
+        const revokedBits = new Uint8Array(16_384);
+        setBitstringStatusListBit(revokedBits, 1, true);
+        const statusListDraft = {
+            '@context': ['https://www.w3.org/ns/credentials/v2'],
+            id: server.statusListUrl,
+            type: ['VerifiableCredential', 'BitstringStatusListCredential'],
+            issuer: issuerDids[1],
+            validFrom: '2026-01-01T00:00:00Z',
+            credentialSubject: {
+                id: `${server.statusListUrl}#list`,
+                type: 'BitstringStatusList',
+                statusPurpose: 'revocation',
+                encodedList: `u${gzipSync(revokedBits).toString('base64url')}`,
+            },
+        };
+        const statusList = await signers[issuerDids[1]]!(statusListDraft);
+        server.setStatusList(statusList);
+        const credential = await materializeMultiIssuerClrVerificationFixture({
+            issuerDids,
+            publisherDid,
+            learnerDid,
+            signers,
+            revokedStatusList: statusList,
+            duplicateValidChild: !invalidDates,
+        });
+        server.resetCounters();
+        return {
+            credential,
+            statusList,
+            didDocuments,
+            issuerDids,
+            publisherDid,
+            learnerDid,
+            statusListUrl: server.statusListUrl,
+            counters: server.counters,
+            close: server.close,
+        };
+    } catch (error) {
+        await server.close();
+        throw error;
+    }
+};
 
 export interface MaterializedClrScaleFixture {
     credential: VC;

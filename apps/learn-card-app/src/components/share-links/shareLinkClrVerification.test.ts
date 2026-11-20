@@ -96,4 +96,62 @@ describe('share CLR verification adapter', () => {
             )
         ).toBe('verified');
     });
+
+    it.each(['Credential is expired', 'Credential is not valid yet'])(
+        'fails an ordinary share when the verifier reports %s despite a valid signature',
+        async error => {
+            const wallet = shareWallet({
+                invoke: {
+                    verifyCredential: async () => ({
+                        ...valid,
+                        errors: [`expiration error: ${error}`],
+                    }),
+                },
+            });
+            expect(
+                await verifyCredentialTree(
+                    wallet,
+                    child('ordinary') as unknown as VC,
+                    createVerificationBudget()
+                )
+            ).toBe('failed');
+        }
+    );
+
+    it('retains legacy returned-error failures for ordinary credentials but not thrown outages', async () => {
+        const ordinary = child('ordinary') as unknown as VC;
+        const verifyCredential = vi
+            .fn()
+            .mockResolvedValue({ checks: [], warnings: [], errors: ['DID resolution failed'] });
+        const wallet = shareWallet({ invoke: { verifyCredential } });
+        expect(await verifyCredentialTree(wallet, ordinary, createVerificationBudget())).toBe(
+            'failed'
+        );
+        verifyCredential.mockRejectedValue(new Error('network'));
+        expect(await verifyCredentialTree(wallet, ordinary, createVerificationBudget())).toBe(
+            'unavailable'
+        );
+    });
+
+    it.each([{ ...child('unsigned'), proof: undefined }, 'encoded.jwt'])(
+        'does not verify an ordinary share containing an unchecked descendant: %s',
+        async nested => {
+            const ordinary = {
+                ...child('ordinary'),
+                credentialSubject: {
+                    id: 'did:example:learner',
+                    verifiableCredential: [nested],
+                },
+            } as unknown as VC;
+            const verifyCredential = vi.fn(async () => valid);
+            expect(
+                await verifyCredentialTree(
+                    shareWallet({ invoke: { verifyCredential } }),
+                    ordinary,
+                    createVerificationBudget()
+                )
+            ).toBe('unavailable');
+            expect(verifyCredential).toHaveBeenCalledTimes(1);
+        }
+    );
 });

@@ -22,6 +22,7 @@ export interface ClrCredentialVerification {
     verificationMethods: string[];
     proof: ClrProofState;
     lifecycle: ClrLifecycleState;
+    validity?: 'expired' | 'not-yet-valid';
     binding: ClrSubjectBinding;
     checks: string[];
     warnings: string[];

@@ -97,6 +97,14 @@ SDK verification promise itself cannot be aborted. Resolution/transport failures
 missing status evidence and exhausted budgets remain unavailable, not invalid.
 Reuse DIDKit's existing DID-web document cache; never cache credential proof
 results merely by issuer DID or raw credential ID.
+Encoded or otherwise non-object embedded occurrences are retained as unavailable;
+they cannot silently qualify an enclosing record as confirmed. Unsigned CLR
+occurrences are not submitted for proof or status checks. Recognized temporal
+errors are reported separately from proof and lifecycle.
+
+An active status requires a completed status check and structured unset evidence
+matching every declared entry's type, purpose, list URL and index. Missing or
+unmatched metadata stays unavailable; a status flag alone is not an all-clear.
 
 Unsigned children and successful same-publisher children need no extra UI.
 Signed-child exceptions must still qualify the summary, including same-publisher

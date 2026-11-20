@@ -111,7 +111,10 @@ const initialNode = (
                 : []
         ),
         proof: credential.proof === undefined ? 'unsigned' : 'checking',
-        lifecycle: credential.credentialStatus === undefined ? 'unchecked' : 'unavailable',
+        lifecycle:
+            credential.proof === undefined || credential.credentialStatus === undefined
+                ? 'unchecked'
+                : 'unavailable',
         binding,
         checks: [],
         warnings: [],
@@ -147,8 +150,20 @@ const discover = (model: ClrNormalizedModel): { outer: Occurrence; all: Occurren
             if (key === 'verifiableCredential') {
                 const members = Array.isArray(child) ? child : [child];
                 members.forEach((member, index) => {
-                    if (!object(member)) return;
                     const memberPath = Array.isArray(child) ? `${childPath}[${index}]` : childPath;
+                    if (!object(member)) {
+                        const node = initialNode({}, memberPath, 'unknown');
+                        node.proof = 'unavailable';
+                        const occurrence: Occurrence = {
+                            credential: {},
+                            node,
+                            parent: owner,
+                            children: [],
+                        };
+                        owner.children.push(occurrence);
+                        all.push(occurrence);
+                        return;
+                    }
                     const occurrence: Occurrence = {
                         credential: member,
                         node: initialNode(
@@ -221,9 +236,11 @@ export const createUnavailableClrVerificationSnapshot = (
 // arrive in errors[] instead of throwing; unknown error text remains inconclusive.
 const INVALID_PROOF =
     /invalid signature|signature verification (?:failed|error)|verification equation was not satisfied|proof verification failed|invalid proof|invalid jws|invalid jwt signature|signature mismatch|not authorized|unauthorized verification method|issuer.*(?:does not match|mismatch)/i;
-const STATUS_FAILURE =
-    /credential (?:is |has been )?(?:revoked|suspended)|revocation check failed|suspension check failed/i;
 const INCONCLUSIVE_PROOF = /resolv|network|fetch|timed? out|timeout|connection|http [45]\d\d/i;
+const EXPIRED = /^expiration error: Credential is (?:expired|no longer valid)$/i;
+const NOT_YET_VALID = /^expiration error: Credential is not valid yet$/i;
+const STATUS_ERROR =
+    /status list|credentialstatus|revocation|suspension|credential (?:is |has been )?(?:revoked|suspended)/i;
 
 export const classifyClrVerification = (
     initial: ClrCredentialVerification,
@@ -239,7 +256,41 @@ export const classifyClrVerification = (
     const legacySuspended = result.errors.some(error =>
         /^credential (?:is |has been )?suspended\b/i.test(error)
     );
-    const statusErrors = result.errors.filter(error => !STATUS_FAILURE.test(error));
+    const validity = result.errors.some(error => EXPIRED.test(error))
+        ? 'expired'
+        : result.errors.some(error => NOT_YET_VALID.test(error))
+          ? 'not-yet-valid'
+          : undefined;
+    const proofErrors = result.errors.filter(
+        error => !STATUS_ERROR.test(error) && !EXPIRED.test(error) && !NOT_YET_VALID.test(error)
+    );
+    const declaredStatus = Array.isArray(credential.credentialStatus)
+        ? credential.credentialStatus
+        : [credential.credentialStatus];
+    // DIDKit emits one structured result per checked entry. A bare check flag
+    // or a partial list is not sufficient to confirm a credential is active.
+    const statusEvidence =
+        status.length > 0 &&
+        status.length === declaredStatus.length &&
+        declaredStatus.every(declared => {
+            if (!object(declared)) return false;
+            const legacy = declared.type === 'RevocationList2020Status';
+            const purpose = legacy ? 'revocation' : declared.statusPurpose;
+            const url = legacy ? declared.revocationListCredential : declared.statusListCredential;
+            const index = legacy ? declared.revocationListIndex : declared.statusListIndex;
+            return (
+                typeof url === 'string' &&
+                (typeof index === 'string' || typeof index === 'number') &&
+                status.some(
+                    entry =>
+                        entry.entryType === declared.type &&
+                        entry.statusPurpose === purpose &&
+                        entry.statusListCredential === url &&
+                        entry.statusListIndex === String(index) &&
+                        !entry.isSet
+                )
+            );
+        });
     const lifecycle =
         revoked || legacyRevoked
             ? 'revoked'
@@ -248,23 +299,24 @@ export const classifyClrVerification = (
               : credential.credentialStatus === undefined
                 ? 'unchecked'
                 : result.checks.some(check => check === 'credentialStatus' || check === 'status') &&
-                    !statusErrors.length &&
-                    status.length > 0 &&
-                    status.every(entry => !entry.isSet)
+                    !result.errors.some(error => STATUS_ERROR.test(error)) &&
+                    !result.warnings.length &&
+                    statusEvidence
                   ? 'active'
                   : 'unavailable';
-    const invalid =
-        !result.errors.some(error => INCONCLUSIVE_PROOF.test(error)) &&
-        result.errors.some(error => INVALID_PROOF.test(error));
+    const invalid = proofErrors.some(
+        error => INVALID_PROOF.test(error) && !INCONCLUSIVE_PROOF.test(error)
+    );
     const proof = invalid
         ? 'invalid'
-        : result.checks.includes('proof') && !statusErrors.length && !result.warnings.length
+        : result.checks.includes('proof') && !proofErrors.length && !result.warnings.length
           ? 'verified'
           : 'unavailable';
     return {
         ...initial,
         proof,
         lifecycle,
+        validity,
         checks: result.checks,
         warnings: result.warnings,
         errors: result.errors,
@@ -289,6 +341,7 @@ export const isClrPublisherVerified = (snapshot?: ClrVerificationSnapshot): bool
         snapshot?.complete &&
         snapshot.outer.proof === 'verified' &&
         snapshot.outer.lifecycle !== 'revoked' &&
+        !snapshot.outer.validity &&
         snapshot.outer.lifecycle !== 'suspended' &&
         snapshot.outer.lifecycle !== 'unavailable'
     );
@@ -297,6 +350,7 @@ export const isClrPublisherVerified = (snapshot?: ClrVerificationSnapshot): bool
 export const isClrRecordConfirmed = (node: ClrCredentialVerification): boolean =>
     node.proof === 'verified' &&
     node.lifecycle !== 'revoked' &&
+    !node.validity &&
     node.lifecycle !== 'suspended' &&
     node.lifecycle !== 'unavailable' &&
     node.binding !== 'mismatch' &&

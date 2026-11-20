@@ -277,3 +277,22 @@ test('keeps unavailable DID results neutral and retries in place after recovery 
     ).toHaveCount(1);
     await expect(retry).toBeFocused();
 });
+
+test('shows signed validity failures without treating them as signature errors @mocked', async ({
+    page,
+}) => {
+    const fixture = await createClrVerificationFixture(true);
+    liveServers.add(fixture.close);
+    const summary = await openFixture(page, fixture.credential);
+    await expect(page.getByTestId('clr-outer-verification')).toContainText(
+        /^Not yet valid · Issued by/,
+        { timeout: 30_000 }
+    );
+    await expect(summary).toContainText('Expired records: 1');
+    await expect(
+        page.getByTestId('clr-record-verification').filter({ hasText: /^Expired$/ })
+    ).toHaveCount(1);
+    await expect(
+        summary.getByRole('button', { name: 'Retry verification', exact: true })
+    ).toHaveCount(0);
+});

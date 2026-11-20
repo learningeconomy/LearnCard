@@ -149,6 +149,32 @@ describe('CLR verification presentation', () => {
         }
     );
 
+    it.each([
+        ['expired', 'Expired', 'Expired records: 1'],
+        ['not-yet-valid', 'Not yet valid', 'Records not yet valid: 1'],
+    ] as const)(
+        'shows %s as a validity failure without offering a retry',
+        (validity, label, count) => {
+            const view = render(
+                <ClrVerificationSummary
+                    publisherDid={publisher}
+                    retry={vi.fn()}
+                    snapshot={snapshot({ record: node({ validity }) })}
+                />
+            );
+            const outer = screen.getByTestId('clr-outer-verification');
+            expect(outer).toHaveTextContent(`Verified · Issued by State agency · ${count}`);
+            expect(screen.queryByRole('button', { name: 'Retry verification' })).toBeNull();
+            view.rerender(
+                <ClrVerificationSummary
+                    publisherDid={publisher}
+                    snapshot={snapshot({}, { validity })}
+                />
+            );
+            expect(outer).toHaveTextContent(`${label} · Issued by State agency`);
+        }
+    );
+
     it('does not upgrade an unsigned or invalid publisher with valid district records', () => {
         const view = render(
             <ClrVerificationSummary

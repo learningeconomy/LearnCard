@@ -32,6 +32,8 @@ const statusText = (node: ClrCredentialVerification): string => {
     if (node.proof === 'checking') return m['clrRenderer.checkingVerification']();
     const labels: string[] = [];
     if (node.proof === 'invalid') labels.push(m['clrRenderer.signatureUnconfirmed']());
+    if (node.validity === 'expired') labels.push(m['clrRenderer.credentialExpired']());
+    if (node.validity === 'not-yet-valid') labels.push(m['clrRenderer.notYetValid']());
     if (node.lifecycle === 'revoked') labels.push(m['clrRenderer.revoked']());
     if (node.lifecycle === 'suspended') labels.push(m['clrRenderer.suspended']());
     if (node.proof === 'unavailable' || node.lifecycle === 'unavailable')
@@ -57,6 +59,7 @@ const verificationTheme = (
     if (
         node.lifecycle === 'revoked' ||
         node.lifecycle === 'suspended' ||
+        node.validity ||
         node.binding === 'mismatch'
     )
         return { icon: alertCircleOutline, tone: 'bg-amber-50 text-amber-900' };
@@ -445,6 +448,14 @@ export const ClrVerificationSummary = ({
         [
             exceptions.filter(entry => entry.node.proof === 'invalid'),
             m['clrRenderer.recordsSignatureUnconfirmed'],
+        ],
+        [
+            exceptions.filter(entry => entry.node.validity === 'expired'),
+            m['clrRenderer.recordsExpired'],
+        ],
+        [
+            exceptions.filter(entry => entry.node.validity === 'not-yet-valid'),
+            m['clrRenderer.recordsNotYetValid'],
         ],
         [
             exceptions.filter(entry => entry.node.lifecycle === 'revoked'),
