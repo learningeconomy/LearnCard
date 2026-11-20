@@ -45,6 +45,7 @@ Use ports that are not Roadie's (`4319`, `3319`, `17687`, `18766`).
 export NEO4J_PASSWORD=$(openssl rand -hex 16)
 docker run -d --name hcp-oauth-neo4j -p 127.0.0.1:27688:7687 \
   -e NEO4J_AUTH=neo4j/$NEO4J_PASSWORD neo4j:5
+until docker logs hcp-oauth-neo4j 2>&1 | grep -q 'Started.'; do sleep 1; done
 
 # 2. Shared env for the brain and the MCP server
 export NODE_ENV=development IS_OFFLINE=true DOMAIN_NAME=localhost%3A4329 \
@@ -57,7 +58,11 @@ export NODE_ENV=development IS_OFFLINE=true DOMAIN_NAME=localhost%3A4329 \
 # 3. Brain on :4329
 PORT=4329 bun --conditions=development src/docker-entry.ts
 
-# 4. HCP MCP + AS on :18797 over the same Neo4j (another terminal, same env)
+# 4. HCP MCP + AS on :18797 over the same Neo4j (another terminal: re-export
+#    NEO4J_PASSWORD and everything in step 2; an env file with `set -a; . file; set +a` helps)
+# The AS issuer is always http://127.0.0.1:<port> (dev-server.ts does not read
+# HCP_OAUTH_ISSUER_URL). The brain's HCP_OAUTH_ISSUER_URL must match it exactly (not
+# localhost), or approve fails with "invalid or expired".
 HCP_MCP_DEV_STORE=neo4j bun --conditions=development src/hcp/mcp/dev-server.ts 18797
 # Prints store: "neo4j" and consent: http://localhost:3329/hcp/connect.
 # A one-off "An equivalent index already exists" log at start is harmless.
@@ -84,12 +89,18 @@ claude mcp login hcp-local
 # 127.0.0.1:18797/oauth/consent/complete -> Claude's callback; login succeeds.
 claude mcp list            # hcp-local … ✔ Connected
 # The app's Apps with access now lists Claude Code; Activity shows the grant.
-# Stop sharing there, and the next tool call fails with 401 revoked_grant.
-claude mcp remove hcp-local -s local
+# Stop sharing there: the MCP endpoint now answers 401 with WWW-Authenticate
+# error="invalid_token", error_description="revoked_grant", and `claude mcp list`
+# shows "! Needs authentication".
+claude mcp logout hcp-local && claude mcp remove hcp-local -s local
 docker rm -f hcp-oauth-neo4j
 ```
 
 Running `claude mcp login` again with the same scopes reuses the active grant.
+
+Without a TTY or browser, use `claude mcp login --no-browser` (or set `BROWSER` to a
+script that saves the URL). A set `ANTHROPIC_API_KEY` overrides the claude.ai login for
+`claude -p`; unset it if that key has no credit.
 
 #### In-memory sidecar with the dev typed form (no app, no DID auth)
 
