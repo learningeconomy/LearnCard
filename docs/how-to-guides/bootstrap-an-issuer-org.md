@@ -35,6 +35,10 @@ npx @learncard/cli org apply hhusa-referrals.yaml --network staging --tenant-con
 3. Run the preview again to inspect drift. Keep the program name stable between applies. Recipients freeze at first consent, including after withdrawal. A change classified as requiring fresh consent can be published with `--allow-reconsent`. Set `reason` in the program to the explanation learners should see.
 4. Verify an invitation, learner consent, outcome, readable result and signed event with the sandbox mediator before setting up a separate production project. Use the production tenant config, endpoint and secrets file for that project. Pilot feature-flag targeting is a separate operator step.
 
+The handoff token grants access as the recipient profile, not as a single contract. Use a dedicated recipient per partner. Enabling or removing a webhook or readable delivery can change the token's required scopes. If the existing grant no longer matches, explicitly revoke it and securely reissue the token for the new scopes; reapplying does not silently replace the grant.
+
+When a program changes recipients and contract terms together, those two changes are published atomically. Recipient provisioning, webhook registration, and token handoff are separate steps. If an apply stops, review the reported progress before retrying the same spec, network, identity, and private file.
+
 If the file loses a webhook secret, restore the existing secret from secure storage or explicitly rotate it in the integration. Reapplying never silently rotates a secret.
 
 ## Before you start: one folder, one identity

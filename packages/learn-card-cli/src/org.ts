@@ -71,8 +71,12 @@ export const runOrgApply = async (file: string, options: OrgApplyOptions): Promi
         referrals: {
             ...inputs,
             root: learnCard,
-            asProfile: did =>
-                connectAsDidWeb(project, { ...options, readOnly: !!options.dryRun }, did),
+            asProfile: (did, readOnly) =>
+                connectAsDidWeb(
+                    project,
+                    { ...options, readOnly: !!options.dryRun || readOnly },
+                    did
+                ),
             network: resolveServices(project.env, options.network).network,
             provisionReadable: async (profileId, displayName, requestId) => {
                 // LC-2369 is deployed independently. Use its authenticated client route, and

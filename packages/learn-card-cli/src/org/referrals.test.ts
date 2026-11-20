@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import path from 'node:path';
 import { loadOrgSpec } from './load';
 import { loadReferralInputs } from './referral-inputs';
-import { referralContract, applyReferralContract, type ReferralCard } from './referral-contract';
+import { referralContract, planReferralContract, type ReferralCard } from './referral-contract';
 import { type ReferralProgram, OrgSpecValidator } from './schema';
 import type { OrgChange } from './apply';
 
@@ -26,6 +26,7 @@ const mockOwner = () => {
             name: program.name,
             contract,
             version: 2,
+            status: 'active',
         }),
         reconcileReferralAudience: vi
             .fn()
@@ -35,15 +36,16 @@ const mockOwner = () => {
     };
     return {
         methods,
-        apply: (p = program, dry = false, allow = false, changes: OrgChange[] = []) =>
-            applyReferralContract(
-                methods as unknown as ReferralCard,
-                p,
-                referralContract(p, {}),
-                dry,
-                allow,
-                changes
-            ),
+        apply: async (p = program, dry = false, allow = false, changes: OrgChange[] = []) =>
+            (
+                await planReferralContract(
+                    methods as unknown as ReferralCard,
+                    p,
+                    referralContract(p, {}),
+                    dry,
+                    allow
+                )
+            ).apply(changes),
     };
 };
 describe('referral setup', () => {
@@ -97,6 +99,7 @@ describe('referral setup', () => {
         expect(methods.reconcileReferralAudience).toHaveBeenCalledExactlyOnceWith({
             contractUri: uri,
             recipients: ['recipient'],
+            expectedRecipients: [],
             dryRun: true,
         });
     });
@@ -195,6 +198,8 @@ it('provisions delegated delivery before registering a webhook and minting the r
         });
         const [handoff] = await applyReferrals(spec, ctx, false, false, file, [], changes, mint);
         expect(order).toEqual(['delivery', 'webhook', 'token']);
+        expect(ctx.asProfile).toHaveBeenNthCalledWith(1, 'did:web:local:recipient', true);
+        expect(ctx.asProfile).toHaveBeenNthCalledWith(2, 'did:web:local:recipient');
         expect(provisionReadable).toHaveBeenCalledWith(
             'recipient',
             'Recipient',
@@ -229,4 +234,142 @@ it('provisions delegated delivery before registering a webhook and minting the r
     } finally {
         await fs.rm(directory, { recursive: true, force: true });
     }
+});
+
+it.each(['frozen', 'wrong program', 'needs re-consent'] as const)(
+    'validates all programs before any referral writes when the second is %s',
+    async failure => {
+        const { applyReferrals } = await import('./referrals');
+        const first = {
+            ...program,
+            name: 'First new program',
+            outcomes: { ...program.outcomes, issuer: 'partner' },
+            delivery: { readable: true },
+        };
+        const second = {
+            ...first,
+            name: 'Second existing program',
+            outcomes: { ...first.outcomes, required: true },
+        };
+        const spec = OrgSpecValidator.parse({
+            issuer: {
+                profileId: 'partner',
+                displayName: 'Partner',
+                signingAuthority: { type: 'learncard-hosted', name: 'outcomes' },
+            },
+            referralRecipients: [{ profileId: 'recipient', displayName: 'Recipient' }],
+            referralPrograms: [first, second],
+        });
+        const { methods } = mockOwner();
+        methods.getContracts.mockResolvedValue({
+            records: [{ name: second.name, uri }],
+            hasMore: false,
+        });
+        methods.getContract.mockResolvedValue({
+            status: 'active',
+            owner: { profileId: 'partner' },
+            referralProgram: failure === 'wrong program' ? undefined : second.name,
+            name: second.name,
+            contract: referralContract(first, {}),
+            version: 7,
+            recipients: [{ profileId: 'previous-recipient' }],
+        });
+        methods.reconcileReferralAudience.mockResolvedValue({
+            writers: [],
+            changed: true,
+            frozen: failure === 'frozen',
+        });
+        const invoke = {
+            ...methods,
+            getManagedServiceProfiles: vi.fn().mockResolvedValue({ records: [], hasMore: false }),
+            createManagedServiceProfile: vi.fn(),
+        };
+        const provisionReadable = vi.fn();
+        const mint = vi.fn();
+        const connect = vi.fn();
+        const ctx = {
+            root: { invoke },
+            asProfile: connect,
+            contracts: new Map(spec.referralPrograms!.map(p => [p.name, referralContract(p, {})])),
+            endpoints: new Map(),
+            network: 'local',
+            provisionReadable,
+        } as unknown as import('./referrals').ReferralContext;
+        const changes: OrgChange[] = [];
+        const result = applyReferrals(
+            spec,
+            ctx,
+            false,
+            false,
+            path.resolve('absent-handoff-test.env'),
+            [],
+            changes,
+            mint
+        );
+        await expect(result).rejects.toThrow(
+            failure === 'frozen'
+                ? /frozen after first consent/
+                : failure === 'wrong program'
+                  ? /was not created for this referral program/
+                  : /allow-reconsent/
+        );
+        expect(changes).toEqual([]);
+        for (const write of [
+            invoke.createManagedServiceProfile,
+            invoke.createContract,
+            provisionReadable,
+            mint,
+            connect,
+        ])
+            expect(write).not.toHaveBeenCalled();
+        if (failure === 'wrong program') {
+            expect(invoke.reconcileReferralAudience).not.toHaveBeenCalled();
+        } else {
+            expect(invoke.reconcileReferralAudience).toHaveBeenCalledExactlyOnceWith({
+                contractUri: uri,
+                recipients: ['recipient'],
+                expectedRecipients: ['previous-recipient'],
+                dryRun: true,
+            });
+        }
+        if (failure === 'needs re-consent')
+            expect(invoke.updateContract).toHaveBeenCalledExactlyOnceWith(
+                uri,
+                expect.anything(),
+                expect.objectContaining({ dryRun: true, expectedVersion: 7 })
+            );
+        else expect(invoke.updateContract).not.toHaveBeenCalled();
+    }
+);
+
+it('publishes changed recipients and terms together, with no separate audience write', async () => {
+    const { methods, apply } = mockOwner();
+    methods.reconcileReferralAudience.mockResolvedValue({
+        writers: ['writer'],
+        changed: true,
+        frozen: false,
+    });
+    methods.updateContract
+        .mockResolvedValueOnce({ kind: 'requires_consent', affectedUsers: 0 })
+        .mockRejectedValueOnce(new Error('untrusted provider response'));
+    const expanded = { ...program, outcomes: { ...program.outcomes, required: true } };
+    const changes: OrgChange[] = [];
+    await expect(apply(expanded, false, true, changes)).rejects.toThrow();
+    expect(changes).toEqual([]);
+    expect(methods.reconcileReferralAudience).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ dryRun: true })
+    );
+    expect(methods.updateContract).toHaveBeenLastCalledWith(
+        uri,
+        expect.anything(),
+        expect.objectContaining({
+            expectedVersion: 2,
+            referralAudience: {
+                recipients: ['recipient'],
+                expectedRecipients: [],
+                allowReconsent: true,
+            },
+        })
+    );
+    expect(methods.updateContract.mock.calls.at(-1)?.[2].dryRun).toBeUndefined();
 });

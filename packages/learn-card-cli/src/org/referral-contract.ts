@@ -102,51 +102,74 @@ export const findProgramContract = async (owner: ReferralCard, name: string) => 
     }
 };
 
-/** Preview the audience and versioned contract change before publishing either one. */
-export const applyReferralContract = async (
+type ReferralContractPlan = {
+    uri?: string;
+    current?: Awaited<ReturnType<ReferralCard['getContract']>>;
+    apply: (changes: OrgChange[], publisher?: ReferralCard) => Promise<string | undefined>;
+};
+
+/** Read and validate one program without writing; apply pins mutations to the states we previewed. */
+export const planReferralContract = async (
     owner: ReferralCard,
     program: ReferralProgram,
     contract: ConsentFlowContract,
     dryRun: boolean,
-    allowReconsent: boolean,
-    changes: OrgChange[]
-): Promise<string | undefined> => {
+    allowReconsent: boolean
+): Promise<ReferralContractPlan> => {
     const { name, partner, referrers: recipients } = program;
     const writers = program.outcomes.issuer === partner ? [] : [program.outcomes.issuer];
     const uri = await findProgramContract(owner, name);
-    const record = (action: OrgChange['action'], detail: string, id = uri) =>
+    const record = (changes: OrgChange[], action: OrgChange['action'], detail: string, id = uri) =>
         changes.push({ resource: 'referralContract', name, action, detail, id });
-    if (!uri) {
-        const createdUri = dryRun
-            ? undefined
-            : await owner.createContract({
-                  referralProgram: name,
-                  name,
-                  contract,
-                  writers,
-                  recipients,
-              });
-        record(
-            dryRun ? 'would-create' : 'created',
-            `owner ${partner}, writers ${writers.join(', ') || partner}, recipients ${recipients.join(', ')} (fixed after first consent); ${describeReferralScopes(contract)}`,
-            createdUri
-        );
-        return createdUri;
-    }
+    if (!uri)
+        return {
+            apply: async (changes, publisher = owner) => {
+                const createdUri = dryRun
+                    ? undefined
+                    : await publisher.createContract({
+                          referralProgram: name,
+                          name,
+                          contract,
+                          writers,
+                          recipients,
+                      });
+                record(
+                    changes,
+                    dryRun ? 'would-create' : 'created',
+                    `owner ${partner}, writers ${writers.join(', ') || partner}, recipients ${recipients.join(', ')} (fixed after first consent); ${describeReferralScopes(contract)}`,
+                    createdUri
+                );
+                return createdUri;
+            },
+        };
+
     const current = await owner.getContract(uri);
-    if (current.owner.profileId !== partner || current.status === 'retired')
+    if (current.owner.profileId !== partner || current.status !== 'active')
         throw new ReferralConfigurationError(`Expected an active contract owned by ${partner}.`);
-    const audienceInput = { contractUri: uri, recipients };
-    const audience = await owner.reconcileReferralAudience({ ...audienceInput, dryRun: true });
     if (current.referralProgram !== name)
         throw new ReferralConfigurationError(
             `An existing contract named "${name}" was not created for this referral program. Choose a unique program name.`
         );
+    // A preview evaluates the requested IDs even when some profiles will be created by this apply.
+    const audienceInput = {
+        contractUri: uri,
+        recipients,
+        // Compare participant IDs, not audienceVersion: our own readable-delivery setup
+        // can bump the version without changing membership.
+        expectedRecipients: current.recipients?.map(recipient => recipient.profileId) ?? [],
+    };
+    const audience = await owner.reconcileReferralAudience({ ...audienceInput, dryRun: true });
     if (audience.changed && audience.frozen) {
         const detail = 'Recipients are frozen after first consent. This needs a new contract.';
         if (!dryRun) throw new ReferralConfigurationError(detail);
-        record('drifted', detail);
-        return uri;
+        return {
+            uri,
+            current,
+            apply: async changes => {
+                record(changes, 'drifted', detail);
+                return uri;
+            },
+        };
     }
     const read = patchScopes(
         current.contract.read.credentials.categories,
@@ -188,13 +211,27 @@ export const applyReferralContract = async (
         .join(', ');
     if (reconsent && !allowReconsent && !dryRun)
         throw new ReferralConfigurationError(`${name}: ${detail}`);
-    if (!dryRun) {
-        if (audience.changed) {
-            await owner.reconcileReferralAudience({ ...audienceInput, dryRun: false });
-            record('updated', 'recipients reconciled before first consent');
-        }
-        if (needsUpdate) await owner.updateContract(uri, delta, options);
-    }
-    record(detail ? (dryRun ? 'would-update' : 'updated') : 'unchanged', detail);
-    return uri;
+    return {
+        uri,
+        current,
+        apply: async (changes, publisher = owner) => {
+            if (!dryRun) {
+                if (needsUpdate)
+                    await publisher.updateContract(uri, delta, {
+                        ...options,
+                        ...(audience.changed && {
+                            referralAudience: {
+                                recipients,
+                                expectedRecipients: audienceInput.expectedRecipients,
+                                allowReconsent,
+                            },
+                        }),
+                    });
+                else if (audience.changed)
+                    await publisher.reconcileReferralAudience({ ...audienceInput, dryRun: false });
+            }
+            record(changes, detail ? (dryRun ? 'would-update' : 'updated') : 'unchanged', detail);
+            return uri;
+        },
+    };
 };

@@ -1,4 +1,5 @@
 import {
+    ReferralAudienceContractUpdateValidator,
     ReferralAudienceInputValidator,
     ReferralAudienceResultValidator,
     SendContractRequestValidator,
@@ -386,7 +387,8 @@ export const contractsRouter = t.router({
                 getIdFromUri(input.contractUri),
                 ctx.user.profile.profileId,
                 input.recipients,
-                input.dryRun
+                input.dryRun,
+                input.expectedRecipients
             )
         ),
 
@@ -529,6 +531,7 @@ export const contractsRouter = t.router({
                 reconsentDeadline: z.string().datetime().optional(),
                 dryRun: z.boolean().optional(),
                 expectedVersion: z.number().int().positive().optional(),
+                referralAudience: ReferralAudienceContractUpdateValidator.optional(),
             })
         )
         .output(ConsentFlowContractUpdateResultValidator)

@@ -5,8 +5,7 @@ import type { GrantCard, OrgChange, OrgApplyResult } from './apply';
 import type { OrgServiceAccountSpec, OrgSpec, ReferralProgram } from './schema';
 import {
     describeReferralScopes,
-    applyReferralContract,
-    findProgramContract,
+    planReferralContract,
     type ReferralCard,
 } from './referral-contract';
 import { hasPrivateSecret, writeSecret } from './secrets';
@@ -29,7 +28,7 @@ export interface ReferralContext {
             'getManagedServiceProfiles' | 'createManagedServiceProfile'
         >;
     };
-    asProfile: (did: string) => Promise<Actor>;
+    asProfile: (did: string, readOnly?: boolean) => Promise<Actor>;
     contracts: Map<string, ConsentFlowContract>;
     endpoints: Map<string, string>;
     network: string;
@@ -204,14 +203,18 @@ export const applyReferrals = async (
             recipients.set(id, {
                 did: current?.did,
                 displayName: current?.displayName ?? declaration!.displayName,
-                actor: current ? await ctx.asProfile(current.did) : undefined,
+                actor: current ? await ctx.asProfile(current.did, true) : undefined,
             });
         }
-        const owners = new Map<string, Actor>();
+        const plans = new Map<
+            string,
+            { plan: Awaited<ReturnType<typeof planReferralContract>>; partnerDid?: string }
+        >();
         const readable = new Set<string>();
         // Check all programs, including later ones, before contract or audience writes.
         for (const p of spec.referralPrograms ?? []) {
-            if (!ctx.contracts.has(p.name))
+            const contract = ctx.contracts.get(p.name);
+            if (!contract)
                 throw new ReferralConfigurationError(
                     `Missing resolved referral scopes for ${p.name}.`
                 );
@@ -229,13 +232,16 @@ export const applyReferrals = async (
                 p.partner === spec.issuer.profileId
                     ? ctx.root
                     : partnerDid
-                      ? await ctx.asProfile(partnerDid)
+                      ? await ctx.asProfile(partnerDid, true)
                       : undefined;
             if (!owner && !dryRun)
                 throw new ReferralConfigurationError(`Missing managed partner ${p.partner}.`);
-            if (owner) owners.set(p.name, owner);
-            const uri = owner ? await findProgramContract(owner.invoke, p.name) : undefined;
-            const details = uri ? await owner!.invoke.getContract(uri) : undefined;
+            const plan = owner
+                ? await planReferralContract(owner.invoke, p, contract, dryRun, allowReconsent)
+                : undefined;
+            if (plan) plans.set(p.name, { plan, partnerDid });
+            const uri = plan?.uri;
+            const details = plan?.current;
             const disclosure = details as
                 | {
                       readableDeliveryRecipients?: Array<{
@@ -297,7 +303,7 @@ export const applyReferrals = async (
                 id: profile.did,
                 action: existing ? 'unchanged' : dryRun ? 'would-create' : 'created',
             });
-            if (!profile.actor && profile.did) profile.actor = await ctx.asProfile(profile.did);
+            if (!dryRun && profile.did) profile.actor = await ctx.asProfile(profile.did);
             // A newly created recipient can only be inspected after its identity exists.
             if (!existing && profile.actor) {
                 for (const entry of handoff.filter(item => item.recipient === id)) {
@@ -334,20 +340,17 @@ export const applyReferrals = async (
             }
         }
         for (const p of spec.referralPrograms ?? []) {
-            const owner = owners.get(p.name);
-            if (!owner) {
+            const prepared = plans.get(p.name);
+            if (!prepared) {
                 planNewReferral(p, changes, ctx.contracts.get(p.name));
                 continue;
             }
             phase = 'contract reconciliation';
-            const uri = await applyReferralContract(
-                owner.invoke,
-                p,
-                ctx.contracts.get(p.name)!,
-                dryRun,
-                allowReconsent,
-                changes
-            );
+            const publisher =
+                !dryRun && p.partner !== spec.issuer.profileId && prepared.partnerDid
+                    ? (await ctx.asProfile(prepared.partnerDid)).invoke
+                    : undefined;
+            const uri = await prepared.plan.apply(changes, publisher);
             const entries = handoff.filter(entry => entry.program === p.name);
             // Publish all confirmed IDs in memory before a private-file write can fail.
             for (const entry of entries) entry.contractUri = uri;

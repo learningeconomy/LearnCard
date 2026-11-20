@@ -1,4 +1,8 @@
-import type { ReferralAudienceInput, ReferralAudienceResult } from '@learncard/types';
+import type {
+    ReferralAudienceContractUpdate,
+    ReferralAudienceInput,
+    ReferralAudienceResult,
+} from '@learncard/types';
 import type { CampaignAudienceResult } from '@learncard/types';
 import type {
     CreateReadableDeliveryRecipient,
@@ -797,6 +801,7 @@ export type LearnCardNetworkPluginMethods = {
             reconsentDeadline?: string;
             dryRun?: boolean;
             expectedVersion?: number;
+            referralAudience?: ReferralAudienceContractUpdate;
         }
     ) => Promise<ConsentFlowContractUpdateResult>;
     reconcileReferralAudience: (input: ReferralAudienceInput) => Promise<ReferralAudienceResult>;

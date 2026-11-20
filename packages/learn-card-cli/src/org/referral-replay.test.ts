@@ -125,6 +125,8 @@ const setup = async () => {
                 referralProgram: program.name,
                 contract,
                 version: 1,
+                status: 'active',
+                recipients: [{ profileId: 'recipient' }],
                 readableDeliveryRecipients: state.readable
                     ? [
                           {
@@ -396,7 +398,7 @@ describe('referral partial progress and replay', () => {
         ).toBe(fakeToken);
     });
 
-    it('retains confirmed audience progress when contract publication fails afterward', async () => {
+    it('retries a rejected atomic audience and terms update without a separate audience write', async () => {
         const f = await setup();
         f.state.recipient = true;
         f.state.contract = true;
@@ -405,10 +407,10 @@ describe('referral partial progress and replay', () => {
             ...wanted,
             read: { ...wanted.read, personal: { email: { required: true } } },
         });
-        let audienceChanged = true;
-        f.root.invoke.reconcileReferralAudience.mockImplementation(async (...args: unknown[]) => {
-            if (!(args[0] as { dryRun: boolean }).dryRun) audienceChanged = false;
-            return { writers: [], changed: audienceChanged, frozen: false };
+        f.root.invoke.reconcileReferralAudience.mockResolvedValue({
+            writers: [],
+            changed: true,
+            frozen: false,
         });
         f.root.invoke.updateContract.mockImplementation(async (...args: unknown[]) => {
             if (!(args[2] as { dryRun?: boolean }).dryRun) throw new Error(rawError);
@@ -416,19 +418,30 @@ describe('referral partial progress and replay', () => {
         });
         const progress = await incomplete(f.apply);
         expect(progress.outputs.referrals[0]!.contractUri).toBe(uri);
-        expect(progress.changes).toContainEqual(
-            expect.objectContaining({ resource: 'referralContract', action: 'updated', id: uri })
+        expect(progress.changes).not.toContainEqual(
+            expect.objectContaining({ resource: 'referralContract', action: 'updated' })
         );
-        expect(audienceChanged).toBe(false);
         f.root.invoke.updateContract.mockResolvedValue({ kind: 'no_change' });
         const result = await f.apply();
         expect(result.outputs.referrals![0]!.contractUri).toBe(uri);
         expect(f.root.invoke.createContract).not.toHaveBeenCalled();
         expect(
-            f.root.invoke.reconcileReferralAudience.mock.calls.filter(
-                call => !((call as unknown[])[0] as { dryRun: boolean }).dryRun
+            f.root.invoke.reconcileReferralAudience.mock.calls.every(
+                call => ((call as unknown[])[0] as { dryRun: boolean }).dryRun
             )
-        ).toHaveLength(1);
+        ).toBe(true);
+        expect(f.root.invoke.updateContract).toHaveBeenLastCalledWith(
+            uri,
+            expect.anything(),
+            expect.objectContaining({
+                expectedVersion: 1,
+                referralAudience: {
+                    recipients: ['recipient'],
+                    expectedRecipients: ['recipient'],
+                    allowReconsent: false,
+                },
+            })
+        );
     });
 
     it('retains the referral handoff if a later organization account fails', async () => {

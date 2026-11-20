@@ -1004,8 +1004,20 @@ export const ReferralAudienceInputValidator = z.object({
     contractUri: z.string(),
     recipients: z.array(z.string().min(1)).max(50),
     dryRun: z.boolean().default(true),
+    // Guard membership rather than disclosure-version changes to the same recipients.
+    expectedRecipients: z.array(z.string().min(1)).optional(),
 });
 export type ReferralAudienceInput = z.input<typeof ReferralAudienceInputValidator>;
+// The versioned update may also replace an unchanged, pre-consent referral audience.
+export const ReferralAudienceContractUpdateValidator = ReferralAudienceInputValidator.pick({
+    recipients: true,
+}).extend({
+    expectedRecipients: z.array(z.string().min(1)),
+    allowReconsent: z.boolean().default(false),
+});
+export type ReferralAudienceContractUpdate = z.input<
+    typeof ReferralAudienceContractUpdateValidator
+>;
 export const ReferralAudienceResultValidator = z.object({
     changed: z.boolean(),
     frozen: z.boolean(),

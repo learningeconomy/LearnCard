@@ -146,42 +146,60 @@ export const removeRecipientFromContract = async (
     return Number(result.records[0]?.get('count') ?? 0) > 0;
 };
 
-/** Replace the entire recipient set only while the contract has never had consent.
+/** Replace an owned referral program's recipient set only before its first consent.
  * The preview reads the identical state without taking a write lock.
  */
 export const reconcileReferralAudience = async (
     contractId: string,
     owner: string,
     recipients: string[],
-    dryRun: boolean
+    dryRun: boolean,
+    expectedRecipients?: string[]
 ) => {
     const query = new QueryBuilder(
-        new BindParam({ contractId, owner, recipients: [...new Set(recipients)] })
+        new BindParam({
+            contractId,
+            owner,
+            recipients: [...new Set(recipients)],
+            expectedRecipients: expectedRecipients ? [...new Set(expectedRecipients)] : null,
+        })
     );
     query.raw(
         `MATCH (contract:ConsentFlowContract {id: $contractId})-[:CREATED_BY]->(:Profile {profileId: $owner})`
     );
-    if (!dryRun) query.raw('SET contract.audienceLock = coalesce(contract.audienceLock, 0) + 1');
+    if (!dryRun)
+        query.raw(`
+            FOREACH (_ IN CASE WHEN contract.referralProgram IS NOT NULL THEN [1] ELSE [] END |
+                SET contract.audienceLock = coalesce(contract.audienceLock, 0) + 1)
+        `);
     query.raw(`
-        WITH contract, EXISTS { MATCH (:AppStoreListing)-[:HAS_CONSENT_CONTRACT]->(contract) } AS listing,
+        WITH contract, contract.referralProgram IS NOT NULL AS referral,
+             coalesce(contract.status, 'active') <> 'retired' AS active,
+             EXISTS { MATCH (:AppStoreListing)-[:HAS_CONSENT_CONTRACT]->(contract) } AS listing,
              (coalesce(contract.hasConsented, false) OR EXISTS { MATCH (:ConsentFlowTerms)-[:CONSENTS_TO]->(contract) }) AS frozen,
              [(contract)-[:CAN_WRITE]->(writer:Profile) | writer.profileId] AS writers
         OPTIONAL MATCH (contract)-[edge:SHARES_DATA_WITH]->(current:Profile)
-        WITH contract, listing, frozen, writers, collect(edge) AS edges, collect(current.profileId) AS currentIds
+        WITH contract, referral, active, listing, frozen, writers,
+             collect(CASE WHEN NOT (current.profileId IN $recipients) THEN edge END) AS removedEdges,
+             collect(current.profileId) AS currentIds
         OPTIONAL MATCH (wanted:Profile) WHERE wanted.profileId IN $recipients
-        WITH contract, listing, frozen, writers, edges, currentIds, collect(wanted) AS targets
-        WITH *, size(targets) = size($recipients) AND NOT $owner IN $recipients AS valid,
-             (size(currentIds) <> size($recipients) OR any(id IN currentIds WHERE NOT id IN $recipients)) AS changed
+        WITH contract, referral, active, listing, frozen, writers, removedEdges, currentIds, collect(wanted) AS targets
+        WITH *, size(targets) = size($recipients) AND NOT ($owner IN $recipients) AS valid,
+             ($expectedRecipients IS NULL OR (size(currentIds) = size($expectedRecipients)
+                 AND all(id IN currentIds WHERE id IN $expectedRecipients))) AS audienceMatches,
+             (size(currentIds) <> size($recipients) OR any(id IN currentIds WHERE NOT (id IN $recipients))) AS changed
     `);
     if (!dryRun)
         query.raw(`
-        FOREACH (_ IN CASE WHEN valid AND changed AND NOT listing AND NOT frozen THEN [1] ELSE [] END |
-            FOREACH (edge IN edges | DELETE edge)
-            FOREACH (target IN targets | CREATE (contract)-[:SHARES_DATA_WITH {addedAt: toString(datetime())}]->(target))
+        FOREACH (_ IN CASE WHEN referral AND active AND audienceMatches AND valid AND changed AND NOT listing AND NOT frozen THEN [1] ELSE [] END |
+            FOREACH (edge IN removedEdges | DELETE edge)
+            FOREACH (target IN [p IN targets WHERE NOT (p.profileId IN currentIds)] |
+                MERGE (contract)-[added:SHARES_DATA_WITH]->(target)
+                ON CREATE SET added.addedAt = toString(datetime()))
             SET contract.audienceVersion = coalesce(contract.audienceVersion, 0) + 1)
     `);
     const result = await runAudienceMutation(
-        query.return('listing, valid, changed, frozen, writers')
+        query.return('listing, referral, active, audienceMatches, valid, changed, frozen, writers')
     );
     const row = result.records[0];
     if (!row)
@@ -190,6 +208,15 @@ export const reconcileReferralAudience = async (
         throw new TRPCError({
             code: 'BAD_REQUEST',
             message: 'An App Store listing contract cannot be used for a referral program.',
+        });
+    if (!row.get('referral'))
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Owned referral contract not found' });
+    if (!row.get('active'))
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Retired contracts cannot be updated' });
+    if (!row.get('audienceMatches'))
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Referral audience changed since preview. Review the contract and try again.',
         });
     if (recipients.includes(owner) || (!dryRun && !row.get('valid')))
         throw new TRPCError({
