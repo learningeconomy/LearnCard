@@ -1601,6 +1601,44 @@ export const AuthGrantValidator = z.object({
 });
 export type AuthGrantType = z.infer<typeof AuthGrantValidator>;
 
+/**
+ * Opt-in issuance delegation. A key DID is deliberately immutable: key rotation
+ * requires revocation and a new grant, rather than following mutable aliases.
+ * This schema does not enable delegate authentication on existing grant routes.
+ */
+export const DelegateAuthGrantValidator = AuthGrantValidator.extend({
+    delegateDid: z.string().regex(/^did:key:z[1-9A-HJ-NP-Za-km-z]+$/),
+    ownerProfileId: z
+        .string()
+        .min(1)
+        .regex(/^[^\s*,:/?#]+$/),
+    effectiveProfileId: z
+        .string()
+        .min(1)
+        .regex(/^[^\s*,:/?#]+$/),
+    audience: z.string().min(1),
+    createdBy: z.string().min(1),
+    expiresAt: z.iso.datetime(),
+    actAs: z.never().optional(),
+    scope: z.string().refine(scope => {
+        const scopes = scope.split(' ');
+        return (
+            scopes.length > 0 &&
+            new Set(scopes).size === scopes.length &&
+            scopes.every(value => value === 'inbox:write' || value === 'contracts-data:write')
+        );
+    }, 'Delegation requires explicit issuance scopes'),
+})
+    .refine(grant => grant.ownerProfileId === grant.effectiveProfileId, {
+        message: 'Delegation target must be the grant owner',
+        path: ['effectiveProfileId'],
+    })
+    .refine(grant => Date.parse(grant.expiresAt) > Date.parse(grant.createdAt), {
+        message: 'Delegation expiry must follow creation',
+        path: ['expiresAt'],
+    });
+export type DelegateAuthGrant = z.infer<typeof DelegateAuthGrantValidator>;
+
 export const FlatAuthGrantValidator = z.object({ id: z.string() }).catchall(z.any());
 export type FlatAuthGrantType = z.infer<typeof FlatAuthGrantValidator>;
 
