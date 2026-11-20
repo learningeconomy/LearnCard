@@ -9687,6 +9687,7 @@
         "searchCreds": "Busca tus credenciales…",
         "nothingMatches": "No hay coincidencias para “{{query}}”.",
         "noneIssued": "Aún no has emitido ninguna credencial.",
+        "lookForOlderCredentials": "Selecciona «Mostrar más» para buscar credenciales más antiguas que puedas enviar.",
         "showMore": "Mostrar más",
         "previewDesc": "Esto es exactamente lo que recibirá tu destinatario.",
         "chooseRecip": "Elegir destinatario",

@@ -312,31 +312,6 @@ export function DIDAuth(holder, linked_data_proof_options, key, context_map) {
 }
 
 /**
- * @param {string} invocation
- * @param {string} delegation
- * @returns {Promise<any>}
- */
-export function verifyInvocation(invocation, delegation) {
-    const ptr0 = passStringToWasm0(invocation, wasm.__wbindgen_export_0, wasm.__wbindgen_export_1);
-    const len0 = WASM_VECTOR_LEN;
-    const ptr1 = passStringToWasm0(delegation, wasm.__wbindgen_export_0, wasm.__wbindgen_export_1);
-    const len1 = WASM_VECTOR_LEN;
-    const ret = wasm.verifyInvocation(ptr0, len0, ptr1, len1);
-    return takeObject(ret);
-}
-
-/**
- * @param {string} url
- * @returns {Promise<any>}
- */
-export function contextLoader(url) {
-    const ptr0 = passStringToWasm0(url, wasm.__wbindgen_export_0, wasm.__wbindgen_export_1);
-    const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.contextLoader(ptr0, len0);
-    return takeObject(ret);
-}
-
-/**
  * @param {string} tz
  * @returns {Promise<any>}
  */
@@ -348,138 +323,13 @@ export function JWKFromTezos(tz) {
 }
 
 /**
- * @param {string} capability
- * @param {string} linked_data_proof_options
- * @param {string} parents
- * @param {string} key
+ * @param {string} url
  * @returns {Promise<any>}
  */
-export function delegateCapability(capability, linked_data_proof_options, parents, key) {
-    const ptr0 = passStringToWasm0(capability, wasm.__wbindgen_export_0, wasm.__wbindgen_export_1);
+export function contextLoader(url) {
+    const ptr0 = passStringToWasm0(url, wasm.__wbindgen_export_0, wasm.__wbindgen_export_1);
     const len0 = WASM_VECTOR_LEN;
-    const ptr1 = passStringToWasm0(linked_data_proof_options, wasm.__wbindgen_export_0, wasm.__wbindgen_export_1);
-    const len1 = WASM_VECTOR_LEN;
-    const ptr2 = passStringToWasm0(parents, wasm.__wbindgen_export_0, wasm.__wbindgen_export_1);
-    const len2 = WASM_VECTOR_LEN;
-    const ptr3 = passStringToWasm0(key, wasm.__wbindgen_export_0, wasm.__wbindgen_export_1);
-    const len3 = WASM_VECTOR_LEN;
-    const ret = wasm.delegateCapability(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
-    return takeObject(ret);
-}
-
-/**
- * @param {string} capability
- * @param {string} linked_data_proof_options
- * @param {string} parents
- * @param {string} public_key
- * @returns {Promise<any>}
- */
-export function prepareDelegateCapability(capability, linked_data_proof_options, parents, public_key) {
-    const ptr0 = passStringToWasm0(capability, wasm.__wbindgen_export_0, wasm.__wbindgen_export_1);
-    const len0 = WASM_VECTOR_LEN;
-    const ptr1 = passStringToWasm0(linked_data_proof_options, wasm.__wbindgen_export_0, wasm.__wbindgen_export_1);
-    const len1 = WASM_VECTOR_LEN;
-    const ptr2 = passStringToWasm0(parents, wasm.__wbindgen_export_0, wasm.__wbindgen_export_1);
-    const len2 = WASM_VECTOR_LEN;
-    const ptr3 = passStringToWasm0(public_key, wasm.__wbindgen_export_0, wasm.__wbindgen_export_1);
-    const len3 = WASM_VECTOR_LEN;
-    const ret = wasm.prepareDelegateCapability(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
-    return takeObject(ret);
-}
-
-/**
- * @param {string} capability
- * @param {string} preparation
- * @param {string} signature
- * @returns {Promise<any>}
- */
-export function completeDelegateCapability(capability, preparation, signature) {
-    const ptr0 = passStringToWasm0(capability, wasm.__wbindgen_export_0, wasm.__wbindgen_export_1);
-    const len0 = WASM_VECTOR_LEN;
-    const ptr1 = passStringToWasm0(preparation, wasm.__wbindgen_export_0, wasm.__wbindgen_export_1);
-    const len1 = WASM_VECTOR_LEN;
-    const ptr2 = passStringToWasm0(signature, wasm.__wbindgen_export_0, wasm.__wbindgen_export_1);
-    const len2 = WASM_VECTOR_LEN;
-    const ret = wasm.completeDelegateCapability(ptr0, len0, ptr1, len1, ptr2, len2);
-    return takeObject(ret);
-}
-
-/**
- * @param {string} delegation
- * @returns {Promise<any>}
- */
-export function verifyDelegation(delegation) {
-    const ptr0 = passStringToWasm0(delegation, wasm.__wbindgen_export_0, wasm.__wbindgen_export_1);
-    const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.verifyDelegation(ptr0, len0);
-    return takeObject(ret);
-}
-
-/**
- * @param {string} invocation
- * @param {string} target_id
- * @param {string} linked_data_proof_options
- * @param {string} key
- * @returns {Promise<any>}
- */
-export function invokeCapability(invocation, target_id, linked_data_proof_options, key) {
-    const ptr0 = passStringToWasm0(invocation, wasm.__wbindgen_export_0, wasm.__wbindgen_export_1);
-    const len0 = WASM_VECTOR_LEN;
-    const ptr1 = passStringToWasm0(target_id, wasm.__wbindgen_export_0, wasm.__wbindgen_export_1);
-    const len1 = WASM_VECTOR_LEN;
-    const ptr2 = passStringToWasm0(linked_data_proof_options, wasm.__wbindgen_export_0, wasm.__wbindgen_export_1);
-    const len2 = WASM_VECTOR_LEN;
-    const ptr3 = passStringToWasm0(key, wasm.__wbindgen_export_0, wasm.__wbindgen_export_1);
-    const len3 = WASM_VECTOR_LEN;
-    const ret = wasm.invokeCapability(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
-    return takeObject(ret);
-}
-
-/**
- * @param {string} invocation
- * @param {string} target_id
- * @param {string} linked_data_proof_options
- * @param {string} public_key
- * @returns {Promise<any>}
- */
-export function prepareInvokeCapability(invocation, target_id, linked_data_proof_options, public_key) {
-    const ptr0 = passStringToWasm0(invocation, wasm.__wbindgen_export_0, wasm.__wbindgen_export_1);
-    const len0 = WASM_VECTOR_LEN;
-    const ptr1 = passStringToWasm0(target_id, wasm.__wbindgen_export_0, wasm.__wbindgen_export_1);
-    const len1 = WASM_VECTOR_LEN;
-    const ptr2 = passStringToWasm0(linked_data_proof_options, wasm.__wbindgen_export_0, wasm.__wbindgen_export_1);
-    const len2 = WASM_VECTOR_LEN;
-    const ptr3 = passStringToWasm0(public_key, wasm.__wbindgen_export_0, wasm.__wbindgen_export_1);
-    const len3 = WASM_VECTOR_LEN;
-    const ret = wasm.prepareInvokeCapability(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
-    return takeObject(ret);
-}
-
-/**
- * @param {string} invocation
- * @param {string} preparation
- * @param {string} signature
- * @returns {Promise<any>}
- */
-export function completeInvokeCapability(invocation, preparation, signature) {
-    const ptr0 = passStringToWasm0(invocation, wasm.__wbindgen_export_0, wasm.__wbindgen_export_1);
-    const len0 = WASM_VECTOR_LEN;
-    const ptr1 = passStringToWasm0(preparation, wasm.__wbindgen_export_0, wasm.__wbindgen_export_1);
-    const len1 = WASM_VECTOR_LEN;
-    const ptr2 = passStringToWasm0(signature, wasm.__wbindgen_export_0, wasm.__wbindgen_export_1);
-    const len2 = WASM_VECTOR_LEN;
-    const ret = wasm.completeInvokeCapability(ptr0, len0, ptr1, len1, ptr2, len2);
-    return takeObject(ret);
-}
-
-/**
- * @param {string} invocation
- * @returns {Promise<any>}
- */
-export function verifyInvocationSignature(invocation) {
-    const ptr0 = passStringToWasm0(invocation, wasm.__wbindgen_export_0, wasm.__wbindgen_export_1);
-    const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.verifyInvocationSignature(ptr0, len0);
+    const ret = wasm.contextLoader(ptr0, len0);
     return takeObject(ret);
 }
 
@@ -873,15 +723,15 @@ export function decryptDagJwe(jwe, jwks) {
     return takeObject(ret);
 }
 
-function __wbg_adapter_10(arg0, arg1) {
+function __wbg_adapter_12(arg0, arg1) {
     wasm.__wbindgen_export_5(arg0, arg1);
 }
 
-function __wbg_adapter_13(arg0, arg1, arg2) {
+function __wbg_adapter_17(arg0, arg1, arg2) {
     wasm.__wbindgen_export_6(arg0, arg1, addHeapObject(arg2));
 }
 
-function __wbg_adapter_107(arg0, arg1, arg2, arg3) {
+function __wbg_adapter_98(arg0, arg1, arg2, arg3) {
     wasm.__wbindgen_export_7(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
 }
 
@@ -1102,7 +952,7 @@ function __wbg_get_imports() {
                 const a = state0.a;
                 state0.a = 0;
                 try {
-                    return __wbg_adapter_107(a, state0.b, arg0, arg1);
+                    return __wbg_adapter_98(a, state0.b, arg0, arg1);
                 } finally {
                     state0.a = a;
                 }
@@ -1383,9 +1233,9 @@ function __wbg_get_imports() {
         const ret = BigInt.asUintN(64, arg0);
         return addHeapObject(ret);
     };
-    imports.wbg.__wbindgen_cast_48e5f44a91055ef8 = function(arg0, arg1) {
-        // Cast intrinsic for `Closure(Closure { dtor_idx: 634, function: Function { arguments: [], shim_idx: 635, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-        const ret = makeMutClosure(arg0, arg1, 634, __wbg_adapter_10);
+    imports.wbg.__wbindgen_cast_97b2994476861e36 = function(arg0, arg1) {
+        // Cast intrinsic for `Closure(Closure { dtor_idx: 580, function: Function { arguments: [Externref], shim_idx: 581, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+        const ret = makeMutClosure(arg0, arg1, 580, __wbg_adapter_17);
         return addHeapObject(ret);
     };
     imports.wbg.__wbindgen_cast_9ae0607507abb057 = function(arg0) {
@@ -1398,14 +1248,14 @@ function __wbg_get_imports() {
         const ret = getArrayU8FromWasm0(arg0, arg1);
         return addHeapObject(ret);
     };
+    imports.wbg.__wbindgen_cast_cfb4a7783b62dc83 = function(arg0, arg1) {
+        // Cast intrinsic for `Closure(Closure { dtor_idx: 487, function: Function { arguments: [], shim_idx: 488, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+        const ret = makeMutClosure(arg0, arg1, 487, __wbg_adapter_12);
+        return addHeapObject(ret);
+    };
     imports.wbg.__wbindgen_cast_d6cd19b81560fd6e = function(arg0) {
         // Cast intrinsic for `F64 -> Externref`.
         const ret = arg0;
-        return addHeapObject(ret);
-    };
-    imports.wbg.__wbindgen_cast_d871b54798cd90af = function(arg0, arg1) {
-        // Cast intrinsic for `Closure(Closure { dtor_idx: 725, function: Function { arguments: [Externref], shim_idx: 726, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-        const ret = makeMutClosure(arg0, arg1, 725, __wbg_adapter_13);
         return addHeapObject(ret);
     };
     imports.wbg.__wbindgen_object_clone_ref = function(arg0) {

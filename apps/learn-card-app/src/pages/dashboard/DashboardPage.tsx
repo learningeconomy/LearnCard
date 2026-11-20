@@ -31,6 +31,7 @@ import { summarizeConsent } from '../../components/data-sharing/consentSummary';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { useModal, ModalTypes, useBrandingConfig } from 'learn-card-base';
 import useOpenMyLearnCard from '../../components/learncard/useOpenMyLearnCard';
+import { prefetchMyLearnCard } from '../../components/learncard/MyLearnCardModal';
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import { ErrorBoundary } from 'react-error-boundary';
 
@@ -528,6 +529,7 @@ const DashboardPage: React.FC = () => {
             shortBio: currentLCNUser?.shortBio,
             professionalTitle: skillProfileData?.professionalTitle,
             onAvatarClick: openMyLearnCard,
+            onAvatarIntent: prefetchMyLearnCard,
             onScanQrTopRight: openQrScanner,
             onNotificationsClick: openNotifications,
             unreadCount: unreadNotifications.length,

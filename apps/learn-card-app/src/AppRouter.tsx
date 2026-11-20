@@ -55,7 +55,9 @@ import endorsementsRequestStore from './stores/endorsementsRequestStore';
 import { useFirebase } from './hooks/useFirebase';
 import { useKeycloakRedirect } from './auth/useKeycloakRedirect';
 import { assertCurrentKeycloakReauth } from './auth/keycloakReauth';
-import MyLearnCardModal from './components/learncard/MyLearnCardModal';
+import MyLearnCardModal, {
+    prefetchMyLearnCardWhenIdle,
+} from './components/learncard/MyLearnCardModal';
 import { useSentryIdentify } from './constants/useSentryIdentify';
 
 import { Modals, getLogger } from 'learn-card-base';
@@ -418,6 +420,14 @@ const AppRouter: React.FC = () => {
             cancelled = true;
         };
     }, [enablePrefetch, isAiEnabled]);
+
+    // The My LearnCard modal (avatar, header profile button, side-menu Settings) is its own chunk.
+    // Fetch it once the first screen has painted and the browser is idle, so the first open doesn't
+    // wait on the network. Its triggers also prefetch on hover, focus and press.
+    useEffect(() => {
+        if (!enablePrefetch) return;
+        return prefetchMyLearnCardWhenIdle();
+    }, [enablePrefetch]);
 
     // Warm the landing chunks immediately — while the boot loader or login
     // form is still up, before auth resolves. The post-login redirect

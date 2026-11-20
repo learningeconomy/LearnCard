@@ -1,13 +1,9 @@
 /* tslint:disable */
 /* eslint-disable */
 export const memory: WebAssembly.Memory;
-export const didkit_error_code: () => number;
-export const didkit_error_message: () => number;
 export const DIDAuth: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => number;
 export const JWKFromTezos: (a: number, b: number) => number;
 export const clearCache: () => number;
-export const completeDelegateCapability: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
-export const completeInvokeCapability: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
 export const completeIssueCredential: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
 export const completeIssuePresentation: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
 export const contextLoader: (a: number, b: number) => number;
@@ -15,7 +11,6 @@ export const createDagJwe: (a: number, b: number, c: number) => number;
 export const createJwe: (a: number, b: number, c: number, d: number) => number;
 export const decryptDagJwe: (a: number, b: number, c: number, d: number) => number;
 export const decryptJwe: (a: number, b: number, c: number, d: number) => number;
-export const delegateCapability: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => number;
 export const didResolver: (a: number, b: number, c: number, d: number) => number;
 export const didToVerificationMethod: (a: number, b: number) => number;
 export const generateEd25519Key: (a: number) => void;
@@ -23,21 +18,17 @@ export const generateEd25519KeyFromBytes: (a: number, b: number, c: number) => v
 export const generateSecp256k1Key: (a: number) => void;
 export const generateSecp256k1KeyFromBytes: (a: number, b: number, c: number) => void;
 export const getVersion: (a: number) => void;
-export const invokeCapability: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => number;
 export const issueCredential: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => number;
 export const issuePresentation: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => number;
 export const keyToDID: (a: number, b: number, c: number, d: number, e: number) => void;
 export const keyToVerificationMethod: (a: number, b: number, c: number, d: number) => number;
-export const prepareDelegateCapability: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => number;
-export const prepareInvokeCapability: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => number;
 export const prepareIssueCredential: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
 export const prepareIssuePresentation: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
 export const resolveDID: (a: number, b: number, c: number, d: number) => number;
 export const verifyCredential: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
-export const verifyDelegation: (a: number, b: number) => number;
-export const verifyInvocation: (a: number, b: number, c: number, d: number) => number;
-export const verifyInvocationSignature: (a: number, b: number) => number;
 export const verifyPresentation: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
+export const didkit_error_code: () => number;
+export const didkit_error_message: () => number;
 export const __wbindgen_export_0: (a: number, b: number) => number;
 export const __wbindgen_export_1: (a: number, b: number, c: number, d: number) => number;
 export const __wbindgen_export_2: (a: number) => void;
