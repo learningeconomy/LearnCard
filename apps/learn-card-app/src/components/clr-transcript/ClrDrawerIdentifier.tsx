@@ -37,7 +37,7 @@ export const ClrDrawerIdentifier = ({ label, value }: { label: string; value: st
             <span className="flex items-center gap-2">
                 <bdi
                     title={value}
-                    className="min-w-0 rounded-md bg-grayscale-100 px-2 py-1 font-mono text-xs leading-relaxed text-grayscale-700 wrap-anywhere"
+                    className="min-w-0 wrap-anywhere text-sm leading-snug text-grayscale-900"
                 >
                     {identifierLabel(value)}
                 </bdi>
@@ -45,12 +45,12 @@ export const ClrDrawerIdentifier = ({ label, value }: { label: string; value: st
                     type="button"
                     aria-label={m['clrTranscript.details.copyIdentifier']({ label })}
                     onClick={() => void copy()}
-                    className="ms-auto flex size-11 shrink-0 items-center justify-center rounded-[20px] text-grayscale-700 hover:bg-grayscale-100 focus-visible:outline-2 focus-visible:outline-emerald-600"
+                    className="ms-auto -my-2 flex size-11 shrink-0 items-center justify-center rounded-[20px] text-grayscale-900 hover:bg-grayscale-100 focus-visible:outline-2 focus-visible:outline-emerald-600"
                 >
                     <IonIcon
                         aria-hidden="true"
                         icon={result === 'copied' ? checkmarkOutline : copyOutline}
-                        className="size-5"
+                        className="size-[18px]"
                     />
                 </button>
             </span>

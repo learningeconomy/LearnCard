@@ -70,11 +70,20 @@ const VerificationMark = ({
     icon,
     tone,
     children,
-}: ReturnType<typeof verificationTheme> & { children: React.ReactNode }) => (
+    prominent = false,
+}: ReturnType<typeof verificationTheme> & { children: React.ReactNode; prominent?: boolean }) => (
     <span
-        className={`inline-flex max-w-full items-start gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium leading-4 ${tone}`}
+        className={`inline-flex max-w-full items-start rounded-full ${
+            prominent
+                ? 'gap-2 px-3 py-1 text-sm font-semibold leading-5'
+                : 'gap-1.5 px-2 py-0.5 text-xs font-medium leading-4'
+        } ${prominent && icon === checkmarkCircleOutline ? 'bg-emerald-100 text-emerald-800' : tone}`}
     >
-        <IonIcon aria-hidden="true" icon={icon} className="h-4 w-4 shrink-0" />
+        <IonIcon
+            aria-hidden="true"
+            icon={icon}
+            className={prominent ? 'size-5 shrink-0' : 'size-4 shrink-0'}
+        />
         <span className="min-w-0 wrap-anywhere">{children}</span>
     </span>
 );
@@ -144,7 +153,7 @@ export const ClrRecordVerification = ({
             ? { icon: helpCircleOutline, tone: 'bg-grayscale-100 text-grayscale-700' }
             : verificationTheme(node);
     return (
-        <span className="block min-h-6">
+        <span className={drawer ? 'mt-0.5 block' : 'block min-h-6'}>
             <span
                 data-testid="clr-record-verification"
                 data-record-id={recordId}
@@ -154,7 +163,9 @@ export const ClrRecordVerification = ({
                     status: label,
                 })}
             >
-                <VerificationMark {...theme}>{label}</VerificationMark>
+                <VerificationMark {...theme} prominent={drawer}>
+                    {label}
+                </VerificationMark>
             </span>
         </span>
     );
@@ -169,12 +180,12 @@ const VerificationField = ({
     label: string;
     children: React.ReactNode;
 }) => (
-    <div className="relative min-w-0 ps-8 wrap-anywhere">
-        <dt className="font-semibold">
+    <div className="relative min-w-0 ps-9 wrap-anywhere">
+        <dt className="text-base font-semibold leading-snug">
             <IonIcon
                 aria-hidden="true"
                 icon={icon}
-                className="absolute start-0 top-0.5 size-5 text-grayscale-600"
+                className="absolute start-0 top-0.5 size-5 text-grayscale-700"
             />
             {label}
         </dt>
@@ -225,7 +236,7 @@ const RecordVerificationEvidence = (
                         <p>{m['clrRenderer.verificationIncompleteExplanation']()}</p>
                     )}
                     {drawer ? (
-                        <dl className="space-y-3">
+                        <dl className="space-y-4">
                             <VerificationField
                                 icon={businessOutline}
                                 label={m['clrTranscript.details.issuerDid']()}

@@ -51,10 +51,10 @@ const ClrGenericRecordDetailPanel = ({
         drawer: true,
     };
     return (
-        <div className="h-full overflow-y-auto bg-white px-5 py-5 font-poppins sm:px-7">
+        <div className="h-full overflow-y-auto bg-white px-5 pb-8 pt-4 font-poppins sm:px-7">
             <div className="space-y-5">
                 <header className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 space-y-1">
+                    <div className="flex min-w-0 flex-col items-start gap-1">
                         {!!canonical?.achievementTypes.length && (
                             <p className="text-sm font-medium text-grayscale-700">
                                 {canonical.achievementTypes
@@ -62,7 +62,7 @@ const ClrGenericRecordDetailPanel = ({
                                     .join(' · ')}
                             </p>
                         )}
-                        <h2 className="wrap-anywhere text-xl font-semibold leading-tight text-grayscale-900">
+                        <h2 className="wrap-anywhere text-[22px] font-semibold leading-tight text-grayscale-900">
                             {record.name?.value ?? m['clrTranscript.details.recordDetails']()}
                         </h2>
                         <ClrRecordVerification {...verification} />
@@ -76,7 +76,7 @@ const ClrGenericRecordDetailPanel = ({
                         type="button"
                         aria-label={m['clrTranscript.details.closeRecordDetails']()}
                         onClick={closeModal}
-                        className="mt-2 flex size-11 shrink-0 items-center justify-center rounded-[20px] text-grayscale-700 hover:bg-grayscale-100 focus-visible:outline-2 focus-visible:outline-emerald-600"
+                        className="mt-2 flex size-11 shrink-0 items-center justify-center rounded-[20px] text-grayscale-900 hover:bg-grayscale-100 focus-visible:outline-2 focus-visible:outline-emerald-600"
                     >
                         <IonIcon aria-hidden="true" icon={closeOutline} className="size-6" />
                     </button>
@@ -99,7 +99,7 @@ const ClrGenericRecordDetailPanel = ({
                         {canonical.term.value}
                     </p>
                 )}
-                {course && <ClrCreditValues course={course} />}
+                {course && <ClrCreditValues course={course} showMissingEarned={false} />}
                 <ClrResultWithScaleList results={record.results} showResultType={adminMode} />
                 <ClrAlignmentList alignments={record.alignments} />
                 <ClrTranscriptEvidenceList evidence={record.evidence} />

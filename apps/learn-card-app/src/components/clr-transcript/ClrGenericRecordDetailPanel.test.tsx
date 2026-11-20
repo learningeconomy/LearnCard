@@ -93,6 +93,7 @@ describe('generic CLR record details', () => {
         const model = normalizeClrTranscriptDisplayModel(clrMultiIssuerVerification.credential);
         vi.mocked(Clipboard.write).mockResolvedValue(undefined);
         render(<ClrGenericRecordDetailPanel model={model} record={model.courses[0]} />);
+        expect(screen.queryByLabelText('Earned credits not supplied')).not.toBeInTheDocument();
 
         const identifiers = screen.getByText('Credential identifiers').closest('details')!;
         expect(identifiers).toHaveAttribute('open');
