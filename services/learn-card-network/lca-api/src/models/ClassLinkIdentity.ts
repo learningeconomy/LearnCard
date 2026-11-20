@@ -29,11 +29,75 @@ export interface MongoClassLinkIdentityType {
      */
     primaryDid?: string;
     lastAuthTime: Date;
+    /**
+     * The latest fresh sign-in to a Firebase login (`uid`) other than ClassLink's (LC-2409): an
+     * email-code sign-in with that login's own email (`firebase.verifyLoginCode`), or a
+     * client-side one (email link, Google, Apple, phone) reported with its ID token
+     * (`classlink.recordRecentSignIn`, its `auth_time`). Counts as a recent sign-in
+     * (`hasRecentSignIn`) only while `uid` is still `firebaseUid`.
+     */
+    lastFirebaseSignIn?: { uid: string; at: Date };
     isMinorHint?: boolean;
+    /**
+     * Whether `isMinorHint` rests on a recognized role (LC-2409): true when a sign-in found a
+     * student (sticky with the hint) or its verified id_token carried a recognized role
+     * (`classifyClassLinkRole`); false when the latest one carried none, so `isMinorHint: false`
+     * only means "not known to be a student". Absent on identities written before this field;
+     * those still have `role` (recorded since ClassLink SSO). Account continuity
+     * (`getContinuityStudentStatus`) counts a non-student as confirmed only when `role` is a
+     * known non-student role and this is not false; the student privacy lock still reads only
+     * `isMinorHint`.
+     */
+    studentStatusKnown?: boolean;
     personalEmail?: string;
     personalEmailVerifiedAt?: Date;
+    /**
+     * The personal email promoted to the account's sign-in email (LC-2409). `pending` is
+     * written before any Firebase write and `active` is the completion marker; demote, remove
+     * and the continuity reconcile act on both. `prev*` are what demote restores exactly.
+     */
+    primaryEmail?: ClassLinkPrimaryEmail;
+    /** A demote that could not run (busy lock or failure); the continuity reconcile retries it. */
+    demotePending?: { reason: string; at: Date };
+    /**
+     * The last completed demote (LC-2409): the uid it restored, the promoted addresses it took
+     * off that uid and the recorded previous Firebase email. With no `primaryEmail`, a uid that
+     * holds one of `emails` again (a promote write that outlived the lock) is drift, repaired by
+     * the continuity reconcile back to `prevFirebaseEmail` (`resolveRestoredEmail` rules).
+     */
+    demotedPrimaryEmail?: {
+        uid: string;
+        emails: string[];
+        prevFirebaseEmail: string | null;
+        at: Date;
+    };
     createdAt: Date;
     updatedAt: Date;
+}
+
+export interface ClassLinkPrimaryEmail {
+    /** The personal address, lowercased. */
+    email: string;
+    /** The Firebase uid that holds it (`identity.firebaseUid` at promotion, called T). */
+    uid: string;
+    /** T's Firebase email before the promotion (null: none). */
+    prevFirebaseEmail: string | null;
+    /** The account's contact method before the promotion. */
+    prevContactMethod?: { type: 'email' | 'phone'; value: string };
+    /**
+     * While `pending`: an earlier promoted address this change replaces, which T's Firebase
+     * email and the contact may still hold if the change stopped before its Firebase write.
+     * Treated like `email` by plan and demote; dropped once the change is `active`.
+     */
+    replacedEmail?: string;
+    /**
+     * While `pending`: the token of the `email:<email>` AuthSubject reservation the verify that
+     * wrote this record inserted (or took over). Demote and the reconcile release that
+     * reservation with the record; dropped once `active`.
+     */
+    reservedBy?: string;
+    state: 'pending' | 'active';
+    at: Date;
 }
 
 type StateStudentIdField = 'stateStudentId' | 'stateStudentIdEnc' | 'stateStudentIdExpiresAt';
@@ -71,6 +135,12 @@ export const ensureClassLinkIdentityIndexes = (): Promise<void> => {
             getClassLinkIdentitiesCollection().createIndex({ firebaseUid: 1 }),
             getClassLinkIdentitiesCollection().createIndex({ subject: 1 }),
             getClassLinkIdentitiesCollection().createIndex({ primaryDid: 1 }, { sparse: true }),
+            // Login-time lookups: the orphan guard (by promoted uid) and the school-email alias.
+            getClassLinkIdentitiesCollection().createIndex(
+                { 'primaryEmail.uid': 1 },
+                { sparse: true }
+            ),
+            getClassLinkIdentitiesCollection().createIndex({ email: 1 }, { sparse: true }),
             getClassLinkIdentitiesCollection().createIndex(
                 { stateStudentIdExpiresAt: 1 },
                 { sparse: true }
@@ -189,14 +259,19 @@ export const findClassLinkIdentityByIdentityKey = (
 ): Promise<MongoClassLinkIdentityType | null> =>
     getClassLinkIdentitiesCollection().findOne({ identityKey });
 
+/**
+ * Set fields on an identity. `expected` adds conditions to the match (a compare-and-set):
+ * returns null when the identity is missing or no longer matches them.
+ */
 export const updateClassLinkIdentity = async (
     identityKey: string,
     partial: Partial<
         Omit<MongoClassLinkIdentityType, 'identityKey' | 'createdAt' | StateStudentIdField>
-    >
+    >,
+    expected: Filter<MongoClassLinkIdentityType> = {}
 ): Promise<MongoClassLinkIdentityType | null> => {
     const result = await getClassLinkIdentitiesCollection().findOneAndUpdate(
-        { identityKey },
+        { ...expected, identityKey },
         {
             $set: { ...partial, updatedAt: new Date() },
             $unset: LEGACY_STATE_STUDENT_ID_UNSET,

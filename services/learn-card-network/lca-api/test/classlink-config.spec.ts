@@ -144,6 +144,23 @@ describe('ClassLink configuration', () => {
             expect(getClassLinkTenant(config, id)).toEqual(DEFAULT_CLASSLINK_TENANT);
     });
 
+    it('keeps entries without accountContinuity, and confines a bad value to its district', () => {
+        expect(getClassLinkConfig()?.accountContinuity.tenants).toEqual({});
+        env.CLASSLINK_TENANTS = JSON.stringify({
+            ...validTenants,
+            typo: { ...validTenants['tenant-test'], accountContinuity: { personalEmail: 'yes' } },
+        });
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        const config = getClassLinkConfig();
+        expect(config?.tenants['tenant-test']).toEqual(validTenants['tenant-test']);
+        expect(config?.accountContinuity.tenants).toEqual({ typo: { personalEmail: 'off' } });
+        expect(warn).toHaveBeenCalledWith('classlink.continuity.invalid_district', {
+            tenantId: 'typo',
+        });
+        for (const id of ['toString', '__proto__'])
+            expect(Object.hasOwn(config!.accountContinuity.tenants, id)).toBe(false);
+    });
+
     it('disables ClassLink when CLASSLINK_TENANTS is present but invalid', () => {
         env.CLASSLINK_TENANTS = '{not json';
         const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);

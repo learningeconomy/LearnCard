@@ -21,6 +21,7 @@ export default createVitestConfig(nodePreset, {
             'test/keycloak-verify.integration.spec.ts',
             'test/oidc.spec.ts',
             'test/classlink-config.spec.ts',
+            'test/account-continuity.spec.ts',
             'test/classlink-verify.spec.ts',
             'test/classlink-pii.spec.ts',
             'test/issuer-assertion.spec.ts',

@@ -11,6 +11,7 @@ import {
 } from '../models/ClassLinkIdentity';
 import { getTranscriptRequestsCollection } from '../models/TranscriptRequest';
 import { hasExpiredStateStudentId } from '@helpers/classlinkPii.helpers';
+import { classifyClassLinkRole } from '@helpers/classlinkRole.helpers';
 import { getClassLinkConfig, getClassLinkTenant } from '@helpers/classlink.config';
 import { maybeClearExpiredStateStudentIds } from '@helpers/classlinkCleanup.helpers';
 import type { ClassLinkTenantConfig } from 'types/classlink';
@@ -241,6 +242,59 @@ export const recordClassLinkIdentityDid = async (
     }
 };
 
+/**
+ * Every matched identity: owned, held elsewhere and orphaned. They all describe the same
+ * person (same sign-in), so student status and district policy consider all of them.
+ */
+export const getAllMatchedIdentities = ({
+    identities,
+    heldElsewhere,
+    orphaned,
+}: AccountClassLinkIdentities): MongoClassLinkIdentityType[] => [
+    ...identities,
+    ...heldElsewhere,
+    ...orphaned,
+];
+
+/**
+ * Any student identity locks the account, so a second link can never unlock it. An identity
+ * held by another account grants no access, but it still marks the same person (same
+ * sign-in) as a student: a fresh wallet made for the owner's old uid stays locked rather
+ * than escaping the lock.
+ */
+export const getMatchedStudentStatus = (
+    matched: AccountClassLinkIdentities
+): 'student' | 'not_student' =>
+    getAllMatchedIdentities(matched).some(identity => identity.isMinorHint === true)
+        ? 'student'
+        : 'not_student';
+
+/**
+ * Whether an identity that is not a student is a confirmed non-student: its stored role (the
+ * latest sign-in's claim, recorded since ClassLink SSO) is a known non-student role
+ * (`classifyClassLinkRole`). Rows written before `studentStatusKnown` existed are judged by
+ * that role alone; `studentStatusKnown: false` (the latest sign-in had no recognized role)
+ * always stays unknown.
+ */
+const isConfirmedNonStudent = (identity: MongoClassLinkIdentityType): boolean =>
+    identity.studentStatusKnown !== false && classifyClassLinkRole(identity.role) === 'not_student';
+
+/**
+ * Student status for account continuity (LC-2409), failing closed: any student identity gives
+ * `student`; otherwise any identity without a recognized non-student role (no role claim, a
+ * blank or unlisted role such as `guest`, or `studentStatusKnown: false`) gives `unknown`;
+ * only when every identity has a known non-student role, `not_student`. The privacy lock keeps
+ * using `getMatchedStudentStatus` (it only knows `isMinorHint`).
+ */
+export const getContinuityStudentStatus = (
+    matched: AccountClassLinkIdentities
+): 'student' | 'not_student' | 'unknown' => {
+    const identities = getAllMatchedIdentities(matched);
+    if (identities.some(identity => identity.isMinorHint === true)) return 'student';
+    if (!identities.every(isConfirmedNonStudent)) return 'unknown';
+    return 'not_student';
+};
+
 /** Whether the DID belongs to a ClassLink student. Lookup failures return 'unknown'. */
 export const getClassLinkStudentStatus = async (did: string): Promise<ClassLinkStudentStatus> => {
     try {
@@ -251,15 +305,7 @@ export const getClassLinkStudentStatus = async (did: string): Promise<ClassLinkS
         await Promise.all(
             identities.map(identity => recordClassLinkIdentityDid(identity, userKey))
         );
-        // Any student identity locks the account, so a second link can never unlock it. An
-        // identity held by another account grants no access, but it still marks the same
-        // person (same sign-in) as a student: a fresh wallet made for the owner's old uid
-        // stays locked rather than escaping the lock.
-        return [...identities, ...heldElsewhere, ...orphaned].some(
-            identity => identity.isMinorHint === true
-        )
-            ? 'student'
-            : 'not_student';
+        return getMatchedStudentStatus({ identities, heldElsewhere, orphaned });
     } catch {
         console.warn('classlink.student_lookup.failed');
         return 'unknown';
@@ -287,6 +333,8 @@ export interface ClassLinkContext {
      * (see `getOwningFirebaseUids`).
      */
     ownerFirebaseUids: string[];
+    /** Every identity matched for the account (see `matchClassLinkIdentitiesForAccount`). */
+    matched: AccountClassLinkIdentities;
 }
 
 /** Resolve account ownership from the authenticated DID, never a client-supplied identity. */
@@ -324,6 +372,7 @@ export const resolveClassLinkContext = async (did: string): Promise<ClassLinkCon
         // Never re-add identity.firebaseUid here: getOwningFirebaseUids already considers it
         // and may have excluded it as another live account's history.
         ownerFirebaseUids: await getOwningFirebaseUids(userKey, matched),
+        matched,
     };
 };
 

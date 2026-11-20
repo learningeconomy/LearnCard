@@ -28,6 +28,7 @@ import {
     type MongoUserKeyType,
 } from '@models';
 import * as delivery from '../src/services/delivery';
+import * as primaryEmailHelpers from '../src/helpers/classlinkPrimaryEmail.helpers';
 import { __setEscrowEnclaveForTests } from '../src/services/escrow-enclave';
 import { getClient, getUser } from './helpers/getClient';
 
@@ -1180,5 +1181,91 @@ describe('revokeOtherDevices notice (account-secured)', () => {
 
         await expect(revoke()).resolves.toMatchObject({ success: true, shareVersion: 2 });
         expect((await record())?.shareVersion).toBe(2);
+    });
+});
+
+describe('LC-2409: notices to the ClassLink school address', () => {
+    const school = 'student@district.example.edu';
+    const captureAll = () => {
+        const send = vi.fn().mockResolvedValue(undefined);
+        vi.spyOn(delivery, 'getDeliveryService').mockReturnValue({ send });
+        return (alias: string) =>
+            send.mock.calls
+                .map(
+                    call => call[0] as { to: string; templateAlias: string; templateModel: object }
+                )
+                .filter(call => call.templateAlias === alias)
+                .map(call => call.to)
+                .sort();
+    };
+    /** The school address is trusted and its alias is live (rules: classlink-primary-email.spec). */
+    const schoolAliasLive = () =>
+        vi.spyOn(primaryEmailHelpers, 'getSchoolNoticeRecipients').mockResolvedValue([school]);
+
+    it('the account-secured notice also goes to the school address', async () => {
+        schoolAliasLive();
+        const sent = captureAll();
+
+        await owner().keys.revokeOtherDevices({
+            ...auth,
+            primaryDid: did,
+            authShare: { encryptedData: 'owner-split', encryptedDek: '', iv: '' },
+            expectedShareVersion: 1,
+        });
+
+        expect(sent('account-secured')).toEqual([email, school].sort());
+    });
+
+    it('the PIN sign-in notices also go to the school address', async () => {
+        schoolAliasLive();
+        await enrollPin();
+        const hold = await startPin();
+        const sent = captureAll();
+
+        const released = await completePin(hold);
+        expect(sent('escrow-pin-sign-in')).toEqual([email, school].sort());
+
+        const uid = `device-${randomUUID()}`;
+        await owner().keys.completePinSignIn({
+            recoverySessionToken: released.rebindSessionToken,
+            newAuthToken: makeMockToken(`${uid}@example.org`, uid),
+            providerType: 'firebase',
+            primaryDid: did,
+        });
+        await vi.waitFor(() => expect(sent('account-sign-in-changed')).toContain(school));
+    });
+
+    it('a PIN reset (waiting-period hold) start sends the reset notice to the school address only', async () => {
+        schoolAliasLive();
+        await enrollPin();
+        const sent = captureAll();
+
+        await startHold();
+
+        expect(sent('escrow-reset-started')).toEqual([school]);
+        // The account's own recipients get the existing notice, unchanged.
+        expect(sent('escrow-hold-started')).toEqual([email]);
+    });
+
+    it('no school address: no reset notice, and a PIN start sends none', async () => {
+        vi.spyOn(primaryEmailHelpers, 'getSchoolNoticeRecipients').mockResolvedValue([]);
+        await enrollPin();
+        const sent = captureAll();
+
+        await startHold();
+        await startPin();
+
+        expect(sent('escrow-reset-started')).toEqual([]);
+    });
+
+    it('a failing school notice never fails the hold start', async () => {
+        schoolAliasLive();
+        await enrollPin();
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        vi.spyOn(delivery, 'getDeliveryService').mockReturnValue({
+            send: vi.fn().mockRejectedValue(new Error('postmark down')),
+        });
+
+        await expect(startHold()).resolves.toMatchObject({ status: 'pending' });
     });
 });

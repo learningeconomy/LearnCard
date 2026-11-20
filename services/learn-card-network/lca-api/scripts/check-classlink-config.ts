@@ -1,6 +1,12 @@
-import { collectClassLinkConfigProblems } from '../src/helpers/classlinkConfigValidation';
+import {
+    collectAccountContinuityWarnings,
+    collectClassLinkConfigProblems,
+} from '../src/helpers/classlinkConfigValidation';
 
 const problems = collectClassLinkConfigProblems(process.env);
+// Warnings never fail the check.
+for (const warning of collectAccountContinuityWarnings(process.env))
+    console.warn(`Warning: ${warning}`);
 if (problems.length) {
     for (const problem of problems) console.error(problem);
     process.exitCode = 1;
