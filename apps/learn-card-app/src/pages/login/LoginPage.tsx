@@ -45,6 +45,10 @@ import { SignInPersistenceError } from './SignInPersistenceError';
 import { useSignInAdapter } from 'learn-card-base';
 import { readKeycloakReauth } from '../../auth/keycloakReauth';
 import { primeDashboardIfDestination } from '../dashboard/hooks/primeDashboardPage';
+import {
+    commitLoginRedirectIfCurrent,
+    useLoginRedirectGeneration,
+} from './useLoginRedirectGeneration';
 import { getConfigCapabilities } from 'learn-card-base/config/authConfig';
 
 import { IonContent, IonGrid, IonPage, IonRow } from '@ionic/react';
@@ -181,6 +185,9 @@ export const LoginContent: React.FC = () => {
     }, [coordinatorState.status, currentUser, isLoggedIn, initWallet, openOnboardingModal]);
 
     const didRedirectRef = useRef(false);
+    // Sign-out or a different user invalidates a redirect still awaiting its prime.
+    const authIdentityKey = authStatus.tag === 'unauthenticated' ? '' : (currentUser?.uid ?? '');
+    const redirectGeneration = useLoginRedirectGeneration(history, authIdentityKey);
     const didOpenOnboardingRef = useRef(false);
     const didTrackSignupStartedRef = useRef(false);
 
@@ -262,6 +269,7 @@ export const LoginContent: React.FC = () => {
             redirectStore.get.authRedirect() || query.get('redirectTo') || query.get('returnUrl');
         const lcnRedirectTo = redirectStore.get.lcnRedirect();
         // const isChapiInteraction = chapiStore.get.isChapiInteraction();
+        const generation = redirectGeneration.begin();
         void (async () => {
             try {
                 const underageFamily = query.get('underageFamily');
@@ -290,21 +298,33 @@ export const LoginContent: React.FC = () => {
                 // `/login` entry makes AppRouter's initialPathRef miss dashboard boot
                 // priming. While redirectPending still shows the login overlay, prime
                 // the dashboard chunk when that is the destination (LC-2415).
+                // The prime can take up to 4s: only the still-current attempt
+                // consumes the pending redirect, navigates, and runs PIN/onboarding.
                 const finishRedirect = async (path: string, go: () => void) => {
-                    await primeDashboardIfDestination(path);
-                    go();
-                    void handleGeneratePinUpdateToken();
-                    if (canRepromptOnboarding) void handlePromptOnboarding();
+                    const committed = await commitLoginRedirectIfCurrent(
+                        redirectGeneration,
+                        generation,
+                        () => primeDashboardIfDestination(path),
+                        () => {
+                            go();
+                            void handleGeneratePinUpdateToken();
+                            if (canRepromptOnboarding) void handlePromptOnboarding();
+                        }
+                    );
+                    // Superseded: let the newer flow run the redirect again.
+                    if (!committed) didRedirectRef.current = false;
                 };
 
                 if (redirectTo) {
-                    redirectStore.set.lcnRedirect(null);
-                    redirectStore.set.authRedirect(null);
-                    chapiStore.set.isChapiInteraction(null);
-                    await finishRedirect(redirectTo, () => resumeAuthRedirect(history, redirectTo));
+                    await finishRedirect(redirectTo, () => {
+                        redirectStore.set.lcnRedirect(null);
+                        redirectStore.set.authRedirect(null);
+                        chapiStore.set.isChapiInteraction(null);
+                        resumeAuthRedirect(history, redirectTo);
+                    });
                 } else if (lcnRedirectTo) {
-                    redirectStore.set.lcnRedirect(null);
                     await finishRedirect(lcnRedirectTo, () => {
+                        redirectStore.set.lcnRedirect(null);
                         history.push(lcnRedirectTo);
                     });
                 } else {
@@ -331,6 +351,7 @@ export const LoginContent: React.FC = () => {
         handlePromptOnboarding,
         handleLogout,
         openOnboardingModal,
+        redirectGeneration,
         trackSignupStarted,
     ]);
 
