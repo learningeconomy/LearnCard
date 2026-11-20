@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useHistory } from 'react-router-dom';
+import type { BoostExclusion } from '@learncard/types';
 import {
     X,
     Loader2,
@@ -19,7 +20,7 @@ import {
     ToastTypeEnum,
     useGetCurrentLCNUser,
     useSigningAuthority,
-    useGetPaginatedManagedBoosts,
+    useGetPaginatedManagedBoostsQuery,
     getLogger,
     boostCategoryMetadata,
     BoostCategoryOptionsEnum,
@@ -51,22 +52,30 @@ interface ReuseExistingProps {
 type Step = 'list' | 'preview' | 'recipient' | 'success';
 
 const ENUM_VALUES = Object.values(BoostCategoryOptionsEnum);
-const normalizeCategory = (category: string): string =>
-    category.toLowerCase().replace(/[\s-]/g, '');
-const AI_PASSPORT_CATEGORIES = new Set<string>(
-    [
-        BoostCategoryOptionsEnum.aiSummary,
-        BoostCategoryOptionsEnum.aiTopic,
-        BoostCategoryOptionsEnum.aiPathway,
-        BoostCategoryOptionsEnum.aiInsight,
-        BoostCategoryOptionsEnum.aiAssessment,
-    ].map(normalizeCategory)
-);
+// Include the Unicode whitespace that JavaScript's \s also matches so Neo4j
+// accepts the same stored spellings and padding as the original picker.
+const WHITESPACE = String.raw`\s\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff`;
+const CATEGORY_SEPARATOR = `[${WHITESPACE}-]*`;
+const AI_PASSPORT_CATEGORY_PATTERN = [
+    BoostCategoryOptionsEnum.aiSummary,
+    BoostCategoryOptionsEnum.aiTopic,
+    BoostCategoryOptionsEnum.aiPathway,
+    BoostCategoryOptionsEnum.aiInsight,
+    BoostCategoryOptionsEnum.aiAssessment,
+]
+    .map(category => category.replace(/[\s-]/g, '').split('').join(CATEGORY_SEPARATOR))
+    .join('|');
 
-// The stored name also identifies AI Passport boosts with a generic category.
-const isAIPassportBoost = ({ category, name }: BoostRecord): boolean =>
-    AI_PASSPORT_CATEGORIES.has(normalizeCategory(category ?? '')) ||
-    name?.trim().toLowerCase() === 'ai passport credential';
+const REUSE_EXCLUSIONS = {
+    category: {
+        $regex: new RegExp(
+            `^${CATEGORY_SEPARATOR}(?:${AI_PASSPORT_CATEGORY_PATTERN})${CATEGORY_SEPARATOR}$`,
+            'i'
+        ),
+    },
+    // The stored name also identifies AI Passport boosts with a generic category.
+    name: { $regex: new RegExp(`^[${WHITESPACE}]*AI Passport credential[${WHITESPACE}]*$`, 'i') },
+} satisfies BoostExclusion;
 
 const resolveCategory = (category?: string): BoostCategoryOptionsEnum => {
     if (!category) return BoostCategoryOptionsEnum.achievement;
@@ -127,7 +136,7 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
     const { getRegisteredSigningAuthority, getRegisteredSigningAuthorities } =
         useSigningAuthority();
     const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
-        useGetPaginatedManagedBoosts(undefined, { limit: 18 });
+        useGetPaginatedManagedBoostsQuery(undefined, { limit: 18, exclude: REUSE_EXCLUSIONS });
 
     const [step, setStep] = useState<Step>('list');
     const [query, setQuery] = useState('');
@@ -148,10 +157,12 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
     const records = useMemo<BoostRecord[]>(() => {
         const all = (data?.pages ?? []).flatMap(page => (page?.records ?? []) as BoostRecord[]);
         const trimmed = query.trim().toLowerCase();
+        // Older Brain deployments can silently ignore the exclusion option.
         return all.filter(
             record =>
-                !isAIPassportBoost(record) &&
-                (!trimmed || (record.name ?? '').toLowerCase().includes(trimmed))
+                !REUSE_EXCLUSIONS.name.$regex.test(record.name ?? '') &&
+                !REUSE_EXCLUSIONS.category.$regex.test(record.category ?? '') &&
+                (!trimmed || record.name?.toLowerCase().includes(trimmed))
         );
     }, [data, query]);
 
