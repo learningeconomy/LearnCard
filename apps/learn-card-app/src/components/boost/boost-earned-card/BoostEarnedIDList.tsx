@@ -49,7 +49,7 @@ const BoostEarnedIDList: React.FC<{
         mode: searching ? 'search' : 'browse',
         search: searchString,
     });
-    const onScreen = useOnScreen(infiniteScrollRef, '-100px', [records.length]);
+    const onScreen = useOnScreen(infiniteScrollRef, '300px', [records.length]);
     useEffect(() => {
         if (onScreen && hasNextPage && !credentialsFetching && !boostError && !searching)
             fetchNextPage();
@@ -72,39 +72,32 @@ const BoostEarnedIDList: React.FC<{
     ));
     const isCardView = viewMode === BoostPageViewMode.Card;
     const loadingTextColor = 'teal-500';
+    const searchResultsText = searching
+        ? isComplete
+            ? matches.length === 0
+                ? m['boost.search.noResultsTitled']({ query: searchString })
+                : m['boost.search.foundResults']({
+                      count: matches.length,
+                      query: searchString,
+                  })
+            : boostError
+              ? m['credentialCollection.searchIncomplete']({ count: matches.length })
+              : m['credentialCollection.searching']({ count: matches.length })
+        : boostError
+          ? records.length > 0
+              ? m['credentialCollection.loadError']({ count: records.length })
+              : m['credentialCollection.loadErrorEmpty']()
+          : '';
+
     const searchResultsElement = (
         <div
             className={`flex flex-col gap-[5px] mt-[6px] ${isCardView ? 'px-[15px]' : ''} ${boostError ? 'rounded-2xl border border-red-100 bg-red-50 p-3' : ''}`}
         >
             <span
-                role="status"
-                aria-live="polite"
-                aria-atomic="true"
+                aria-hidden="true"
                 className={`font-notoSans text-[14px] font-[700] ${boostError ? 'text-red-700' : 'text-grayscale-900'}`}
             >
-                {searching
-                    ? isComplete
-                        ? matches.length === 0
-                            ? m['boost.search.noResultsTitled']({ query: searchString })
-                            : m['boost.search.foundResults']({
-                                  count: matches.length,
-                                  query: searchString,
-                              })
-                        : boostError
-                          ? m['credentialCollection.searchIncomplete']({ count: matches.length })
-                          : m['credentialCollection.searching']({ count: matches.length })
-                    : boostError
-                      ? records.length > 0
-                          ? m['credentialCollection.loadError']({ count: records.length })
-                          : m['credentialCollection.loadErrorEmpty']()
-                      : isComplete
-                        ? m['credentialCollection.complete']({ count: records.length })
-                        : m['credentialCollection.loaded']({
-                              count: records.length,
-                              state: credentialsFetching
-                                  ? m['credentialCollection.loadingMore']()
-                                  : m['credentialCollection.moreAvailable'](),
-                          })}
+                {searchResultsText}
             </span>
             {boostError && (
                 <button
@@ -120,25 +113,14 @@ const BoostEarnedIDList: React.FC<{
                         : m['credentialCollection.retry']()}
                 </button>
             )}
-            {!searching && hasNextPage && !boostError && (
-                <button
-                    type="button"
-                    aria-disabled={credentialsFetching}
-                    className="self-start py-2 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 focus-visible:ring-2 focus-visible:ring-emerald-500"
-                    onClick={() => {
-                        if (!credentialsFetching) void fetchNextPage();
-                    }}
-                >
-                    {credentialsFetching
-                        ? m['credentialCollection.loading']()
-                        : m['credentialCollection.continue']()}
-                </button>
-            )}
             <div className={`h-[1px] bg-sp-blue-ocean mb-[5px] ${noResultsLineColor}`} />
         </div>
     );
     return (
         <>
+            <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+                {searchResultsText}
+            </div>
             {credentialsLoading && credentials.length === 0 && (
                 <section
                     role="status"
@@ -169,13 +151,12 @@ const BoostEarnedIDList: React.FC<{
                 <>
                     {isCardView && (
                         <div className="flex flex-col">
-                            {(searchActive || hasNextPage || boostError) && searchResultsElement}
+                            {(searching || boostError) && searchResultsElement}
                             <section className="relative flex flex-wrap text-center justify-center items-center gap-4 max-w-[800px]">
                                 <div
                                     className={`bg-filler absolute h-full mt-[200px] w-[3000px] -z-10 ${bgFillerColor}`}
                                 />
                                 {credentials}
-                                <div role="presentation" ref={infiniteScrollRef} />
                                 {credentialsFetching && (
                                     <div className="w-full flex items-center justify-center">
                                         <IonSpinner
@@ -194,11 +175,9 @@ const BoostEarnedIDList: React.FC<{
                                 className={`bg-filler absolute h-full mt-[200px] w-[3000px] -z-10 ${bgFillerColor}`}
                             />
                             <div className="flex flex-col gap-[10px] w-full max-w-[700px] px-[20px]">
-                                {(searchActive || hasNextPage || boostError) &&
-                                    searchResultsElement}
+                                {(searching || boostError) && searchResultsElement}
                                 {credentials}
                             </div>
-                            <div role="presentation" ref={infiniteScrollRef} />
                             {credentialsFetching && (
                                 <div className="w-full flex items-center justify-center">
                                     <IonSpinner
@@ -210,6 +189,8 @@ const BoostEarnedIDList: React.FC<{
                             )}
                         </IonCol>
                     )}
+                    {/* Keep the observed node stable across Card/List switches. */}
+                    <div role="presentation" ref={infiniteScrollRef} className="h-px w-full" />
                 </>
             )}
         </>

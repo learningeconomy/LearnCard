@@ -1,4 +1,4 @@
-import _ from 'lodash';
+import { shuffle } from 'lodash';
 
 import { TrainingProgram } from 'learn-card-base';
 
@@ -25,7 +25,7 @@ const getProgramCoursesCount = (program: any) =>
           : 0;
 
 export const normalizeSchoolPrograms = (trainingPrograms: TrainingProgram[]) => {
-    const randomSchoolPrograms = _.shuffle([...trainingPrograms]);
+    const randomSchoolPrograms = shuffle([...trainingPrograms]);
 
     const selectedSchoolPrograms = randomSchoolPrograms;
 
@@ -92,7 +92,7 @@ export const filterCoursesByFieldOfStudy = (
     });
 
     // Randomize the filtered courses before returning
-    return _.shuffle(filteredCourses);
+    return shuffle(filteredCourses);
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR

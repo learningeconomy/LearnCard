@@ -2,6 +2,7 @@ import { environment } from '@environment';
 import { generateClaimUrl } from './contact-method.helpers';
 import type { BoostInstance } from '@models';
 import { getBoostById } from '@accesslayer/boost/read';
+import { getPublicBoostDisplayName } from './credential-display.helpers';
 import { getContactMethodsForProfile } from '@accesslayer/contact-method/read';
 import {
     claimCredentialRefreshEmailDelivery,
@@ -84,29 +85,21 @@ export const resolveCredentialRefreshEmailTarget = async (
 };
 
 /**
- * Resolves the bounded email-only title: the persisted publish-input title first,
- * then the aggregate's coalesced title, then the original boost template name.
- * The holder-encrypted payload is never decrypted to recover a title.
+ * Only explicit public Boost display metadata can supply an email title.
+ * Historical publication titles may contain claims, so they are never used.
  */
 export const resolveCredentialRefreshEmailDisplayTitle = async (params: {
     version: CredentialRefreshVersionNode;
     refreshId: string;
 }): Promise<string | undefined> => {
-    const { version, refreshId } = params;
-    const fromVersion = extractBoundedCredentialDisplayTitle(version.credentialDisplayName);
-
-    if (fromVersion) return fromVersion;
-
+    const { refreshId } = params;
     const aggregate = await getCredentialRefresh(refreshId);
-    const fromAggregate = extractBoundedCredentialDisplayTitle(aggregate?.credentialDisplayName);
-
-    if (fromAggregate) return fromAggregate;
 
     if (!aggregate?.boostId) return undefined;
 
     const boost: BoostInstance | null = await getBoostById(aggregate.boostId);
 
-    return extractBoundedCredentialDisplayTitle(boost?.name);
+    return extractBoundedCredentialDisplayTitle(getPublicBoostDisplayName(boost));
 };
 
 /**

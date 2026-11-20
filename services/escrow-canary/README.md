@@ -19,8 +19,11 @@ not implied by passing offline tests.
   enrollment and the configured authority generation. **Both steps exist**;
   no not-implemented metric or new API route is needed. `/v1/hold-state` is a
   host protocol endpoint, not the appropriate read-only enrollment probe.
-- **Tier 2**, every 30 minutes: select PIN A/B by the scheduled UTC half-hour
-  slot modulo two. Both accounts run once per hour. Start with empty memory
+- **Tier 2**, `cron(5,35 0,12 * * ? *)`: select PIN A/B by the scheduled UTC
+  half-hour slot modulo two, so :05 runs PIN A and :35 runs PIN B and each account
+  recovers every 12 hours (was every hour until 2026-11-14: each recovery appends
+  ~8 permanent authority rows, and hourly runs filled the ledger monitor's
+  per-account row limit in about three weeks). Start with empty memory
   storage and call `executeRecovery({ input: { method: 'escrow-pin', ... } })`.
   The SDK creates/verifies a fresh PIN hold, releases and reconstructs the key,
   then keeps the account: it stores the released share at the current version
@@ -228,7 +231,8 @@ not be manually reset to force retries.
   and allowlisted `Reason`. Logging projects only those fields: no error bodies,
   IDs, email addresses, tokens, private keys, PINs or device shares.
 - Tier 1: Minimum Success < 1, 2 of 3 × 60s. Tier 2: **per-account** 2 of 2 ×
-  3600s, matching each account's hourly cadence. Success alarms retain
+  43200s, matching each account's 12-hour cadence (a broken PIN path pages within
+  about 24 hours; tier 1 still covers availability every minute). Success alarms retain
   missing=breaching; a healthy alternating account cannot clear a broken account.
   Every handled failure emits Success=0, including configuration/initialization,
   secret reads/validation, stale events and auth (allowlisted `Reason` values
@@ -444,21 +448,31 @@ backlog of real holds can legitimately delay a warning past its due time and pag
 
 ### Tier 3 staging drills
 
-1. Warm-up and cancel gap: 8+ days enabled with no false page.
+1. Warm-up and cancel gap: 8+ days enabled with no false page. Passed 2026-11-12:
+   staging enabled 2026-11-03; its only tier 3 pages were drills 2–4 on 2026-11-04.
+   First weekly cancel runs closed `cancelled` in both environments on 2026-11-09.
 2. `inject-overdue` pages within one evaluation; `close-step` clears it. Observed
    2026-11-04: paged at the first evaluation (19:58Z), OK one evaluation after `close-step`.
 3. Disable only the evaluator schedule: the heartbeat alarm pages. Observed 2026-11-04:
    76 min after the last heartbeat, not the ~45 min that 3 × 900 s suggests, because
    CloudWatch keeps counting the last real datapoint while it is inside the alarm's
    evaluation range. Cleared ~1 min after the schedule was re-enabled.
-4. Point `TIER3_LEDGER_TABLE` at a missing table: no heartbeat, pages.
-5. Send mail from a non-allowlisted sender to a pool address: ignored.
+4. Point `TIER3_LEDGER_TABLE` at a missing table: no heartbeat, pages. Observed
+   2026-11-04: paged ~75 min later; cleared 23:15:51Z after the setting was restored.
+5. Send mail from a non-allowlisted sender to a pool address: ignored. Passed
+   2026-11-12: one plain-text message from an outside mailbox was delivered to staging
+   `hold-03` on 2026-11-06 19:34Z. The runner read that prefix every tick from the
+   warning-read window (2026-11-11 15:13Z) until the real warning arrived (16:10:48Z),
+   skipped the foreign message, then reached `warned` and was released and re-enrolled
+   2026-11-12 16:28Z. No `Step.Failure` Tier=3 series and no Overdue. A skipped
+   foreign message emits nothing by design.
 6. Resolve every UNVERIFIED item in TIER3-DESIGN.md §11: capture a redacted
    real code email (header order, `Authentication-Results` position, DKIM
    `header.i`/`header.d`), the SES setup-notification object, SSE-KMS writes
    (fallback: `AES256`), plus-address exact matching, the rules-per-set quota,
    cancel cooldown, and that `apply production → apply staging → plan production`
-   shows no changes to either environment's receipt rules.
+   shows no changes to either environment's receipt rules. Done 2026-11-06 (read-only);
+   outcomes in TIER3-DESIGN.md §11.
 
 ## Supporting signals and remaining phases
 
@@ -472,9 +486,249 @@ Escrow-account DynamoDB UserErrors (account aggregate), authority-table SystemEr
 SES delivery correlation, KMS decrypt alarms and host Roughtime probes are untouched
 and still require the owning escrow stack/operator. Ledger monitoring is unchanged.
 Release gates/CI pin consistency and two-week production observation are not
-implemented. Tier 3 and the inbox are implemented but not deployed or
-live-verified. Offline tests do not replace the real staging drills, Linux
+implemented. Tier 3 and the inbox run in staging (since 2026-11-03) and production
+(since 2026-11-04); see the staging drills above for what is live-verified. Offline tests do not replace the real staging drills, Linux
 owned-stack `lc verify`, or Lambda/CloudWatch delivery proof.
+
+## Load testing (staging only)
+
+`scripts/load.ts` (built to `dist/load.mjs`, **not** part of `canary.zip`) drives
+real client flows against **staging** at a controlled rate to find the first
+bottleneck in escrow. It uses the same SDK strategy and attestation trust
+configuration as the canary (`createSdk`, Nitro PCR pins, no software fallback).
+It is an operator tool: nothing in CI runs it, and its tests are offline.
+
+**Flows.** Each synthetic user is created with the Firebase Admin SDK
+(`createUser` with `emailVerified: true`, then `createCustomToken`), and signs in
+through the same Firebase REST custom-token exchange the provisioning tool uses
+(`src/provision/login.ts`). No login codes are sent. Per arrival:
+
+- `enrol`: new key (`atomicUpdateShares`, as the app's `setupNewKey`), then the
+  app's **automatic** enrolment, as `AuthCoordinator.refreshEscrow` runs it on
+  reaching `ready` (learn-card-base `src/auth-coordinator/AuthCoordinator.ts`):
+  the rollout-gate `getEscrowEnrollmentState` read, `ensureEscrowEnrollment`
+  with the recovery contact options (login email + locale), then
+  `getEscrowEnrollmentState` and `getEscrowRecoveryStatus`. The rollout gate
+  itself is assumed open for these accounts. `--enrol-opt-in` uses the explicit
+  settings opt-in (`enableEscrowRecovery`) instead. With `--enrol-with-pin`,
+  also `setEscrowPin` and activation, as the app's PIN setup.
+- `pin` (fraction `--pin-ratio`): a new-device PIN sign-in, as the coordinator
+  does it: fresh sign-in, empty memory storage, the status read that lands a new
+  device in `needs_recovery`, `executeRecovery({ method: 'escrow-pin' })` with
+  the own-typos attempt context from that status and the recovery contact
+  options, an independent DID check, then the same `refreshEscrow` as above.
+  The scenario latency therefore includes that post-`ready` refresh; the
+  `recovery` step is the user's wait. The canary's same-PIN re-set is off by
+  default (the SDK's PIN sign-in already refreshes the PIN budget);
+  `--pin-reset-after-recovery` adds it. Uses users from a PIN pool
+  (`--pin-pool`) prepared before the stages; one operation per pool user at a
+  time. A pool user whose recovery fails is retired, not reused, except when
+  lca-api refused the **start** with a 429: no hold exists then (both start-time
+  429s are raised before a hold is created), so the user goes back to the pool.
+
+All Firebase users are created in an unmeasured **setup** phase (`--setup-rate`,
+default 2/s) before the stages, so account creation (which real users already
+have) is not mistaken for the first bottleneck. The Firebase Admin API has its
+own quotas; raise `--setup-rate` only within them.
+
+**Load shape.** `--stages <rate/s>:<seconds>,...` (e.g. `0.5:120,1:300`) runs
+stages back to back with **open-loop** arrivals: starts happen on schedule
+regardless of earlier ones, bounded by `--max-in-flight`. A start that would
+exceed the bound is **dropped** (counted, never queued), so rising latency is
+visible rather than self-throttled. A start more than `--late-ms` behind schedule
+is counted **late**: the generator itself (one Node process doing DIDKit and SSS
+work) is then the limit, not the server. If you see late starts, split the load
+across several processes or hosts, each with its own `--run-id`.
+
+**PIN recovery is rate-limited per client IP.** lca-api (`limitPinCompletion` in
+`services/learn-card-network/lca-api/src/routes/escrow.ts`) counts, in Redis per
+client IP, every PIN-policy hold start (`escrow:pin-start:<ip>`) and every
+completion with a PIN proof (`escrow:pin-complete:<ip>`): a fixed 60 s window
+(`EXPIRE` set on the first hit) and a 429 once a count exceeds **20**. Each PIN
+recovery makes one of each, so one egress IP sustains at most 20 PIN recoveries
+per minute (a burst straddling two windows can pass up to 40). The client IP is
+the API Gateway source IP (or the first `X-Forwarded-For` hop), so several
+processes on one host share one budget. The plan prints a WARNING for any stage
+whose PIN rate (`rate x --pin-ratio x 60`) exceeds 20: PIN results above it
+measure the limiter, not escrow capacity. Measuring higher PIN rates needs
+multiple egress IPs, or a staging allowlist / raised limit for the load
+generator, which is a decision to record (with its owner) before such a run; it
+is not something to work around from one host. Enrolment and PIN setup are not
+limited this way.
+
+**Output.** Plan and progress lines (every `--progress-sec`) go to stderr; the
+final JSON summary is the only stdout. Per stage (`setup`, `s1`, ...) and per
+scenario/step: count, ok, errors by safe reason (the canary's `safeReason` plus
+HTTP status class, timeout, Firebase Admin code and SDK error class), latency
+p50/p95/p99/max over **ok** operations (`latencyMs`, the primary series) and,
+separately, over failed ones (`failedLatencyMs`), achieved start and success
+rates, dropped and late starts, plus request counts by class (escrow / other
+keys / Firebase) with 409/429/4xx/5xx/transport buckets. A 429 whose body is
+lca-api's per-IP PIN limiter message is counted as `throttledByClientIp` and
+the operation's outcome is `throttled_by_client_ip`, reported apart from
+capacity failures: it is not in `failed`, not in the stop-on-error ratio, and
+progress lines show it as its own count next to ok-only latency. The `firebase`
+request bucket covers only the custom-token exchange (Firebase REST); the Admin
+SDK's `createUser` volume is in `stages.setup` (`createUser` / `pinSetup`). It
+never prints keys, PINs, tokens, shares or email addresses: counts and the run
+id only.
+
+### Guards (fail closed; `--dry-run` runs them all and sends nothing)
+
+- `--lca-api-url` must be https and its host must equal `--staging-host`, carry a
+  `staging` or `staging-*` DNS label, and not be a known production host.
+- `GOOGLE_APPLICATION_CREDENTIALS` must be a service-account file whose
+  `project_id` equals `--firebase-project`; known production projects and ids
+  that look like production are refused. Each ID token's audience is also
+  checked against `--firebase-project`; a mismatch stops the run (exit 3).
+  The one exception is the shared project (next item); `scoutpass-9a67e` is
+  never allowed.
+- **Shared Firebase project.** Staging lca-api verifies sign-ins from the
+  Firebase project `learncard`, which production also uses (staging has no
+  Firebase project of its own), so the test users have to be created there.
+  That is refused unless the operator passes
+  `--shared-production-firebase learncard` (the value must equal
+  `--firebase-project`; the flag is refused for any other project). The plan
+  then prints a boxed WARNING. Consequences: the synthetic users sit beside
+  real production accounts in the Firebase console, count toward the
+  project's monthly active users (billing), and run any Auth-triggered
+  extension or function the project has. They are removed only by
+  `cleanup --manifest` (below).
+- `--manifest <path>` is required and must not exist yet (see "Run manifest").
+- `--domain` is required and is an **allowlist**: only subdomains of
+  `notify.learncard.com`, where the canary's receive-only SES inbox lives (e.g.
+  `canary.notify.learncard.com`), are accepted. The bare organisation domains
+  (`learningeconomy.io`, `learncard.com`, `learncard.app`, `learncard.ai`,
+  `learncloud.ai`, `vetpass.app`, `scoutnetwork.org`, and `notify.learncard.com`
+  itself) are refused by name; anything else is not allowlisted. Addresses are
+  `<prefix>+<runId>-<n>@<domain>`.
+- The canary inbox stores only its 12 fixed pool addresses (exact-recipient
+  receipt rules, `infra/escrow-canary/inbox.tf`) and drops everything else, so
+  the PIN-recovery emails to these synthetic addresses are **not read** by
+  anyone. Before a large PIN run, confirm with whoever owns the mail provider
+  that staging delivery to them won't bounce or hurt sender reputation, or
+  that staging lca-api has no `POSTMARK_SERVER_TOKEN`/`POSTMARK_FROM_EMAIL`, in
+  which case lca-api only logs emails
+  (`lca-api/src/services/delivery/delivery.factory.ts`).
+- `--i-understand-roughtime` is required: every enclave time sample queries the
+  three third-party Roughtime servers (Cloudflare, int08h, time.txryan.com; see
+  `services/escrow-enclave-app/LAUNCH-DECISIONS.md` "RT"). The plan prints an
+  estimated per-server request count before anything is sent (an estimate, not
+  measured); the summary reports the measured escrow request count.
+- `--max-users` (hard cap on Firebase users created) and `--max-emails` are
+  required. Enrolment sends no email. Each PIN recovery sends two
+  (`escrow-hold-started` and `escrow-pin-sign-in`) through lca-api's delivery
+  service; `--max-emails` must cover the upper bound of three per PIN recovery.
+  The file:line evidence is in the header of `scripts/load.ts`.
+- Scheduling stops (remaining starts counted as `stopped`) on Ctrl-C (a second
+  Ctrl-C aborts), on a fatal token guard, or when a stage's failure ratio exceeds
+  `--stop-error-rate` (default 0.5) after 20 completions (client-IP throttling
+  does not count). The summary's `stopped` records the reason, including a fatal
+  guard or Ctrl-C that arrives while in-flight work drains after the last start;
+  a fatal stop exits 3.
+
+### Before the first run against the shared project (one time)
+
+- **Credential.** Create a dedicated service account in `learncard` with only
+  the **Firebase Authentication Admin** role, use its key for the test window,
+  and delete the service account (not just the key) afterwards. Do not reuse a
+  broader production credential.
+- **Console check.** In the Firebase console for `learncard`, review
+  Extensions and Integrations (and any Cloud Functions on Auth `onCreate` /
+  `onDelete`): each created and deleted test user triggers them. Check the
+  billing plan: if the project is on Identity Platform's monthly-active-user
+  pricing, every synthetic user that signs in counts as an active user for that
+  month (billed above the free tier); size `--max-users` with that in mind.
+  Record the result with the run record (Confluence), not here.
+
+### Run manifest
+
+Before the first Firebase user is created, the tool creates `--manifest <path>`
+(exclusive create: an existing file is refused; mode 0600) with the run id,
+prefix, domain, Firebase project and creation time. After each successful
+`createUser` it appends the uid and that user's synthetic address and fsyncs
+before the user is used, so a crash leaves a usable manifest (a torn last line
+is ignored; a user created but not yet recorded at the moment of a crash is the
+only possible miss). If the manifest cannot be written, the run stops
+(`fatal_manifest_write`, exit 3) and deletes the user it could not record; if
+that delete also fails it prints the uid (`unrecorded Firebase user <uid>`) to
+delete by hand in the Firebase console. The manifest holds no keys, PINs, tokens or
+shares. It is JSON Lines; cleanup appends its progress to it.
+
+The manifest is the **only** cleanup source: the tool never lists or scans the
+project's users. Keep it until cleanup reports every user deleted or already
+gone; without it this run's users cannot be removed by this tool.
+
+### Usage
+
+Build from the repo root (as in "Staging operator setup" step 4):
+
+```sh
+NX_DAEMON=false bunx nx run-many -t build -p init sss-key-manager --parallel=3
+bun run --cwd services/escrow-canary build
+```
+
+Then run with Node 22 from the repo (firebase-admin is external to the bundle
+and resolves from the workspace). Non-secret trust configuration comes from the
+same environment variables as the canary:
+
+```sh
+export GOOGLE_APPLICATION_CREDENTIALS=<staging service-account JSON path>
+export FIREBASE_API_KEY=<staging web API key> ESCROW_KEY_ID=<id> AUTHORITY_GENERATION=<gen>
+export ESCROW_MEASUREMENTS_JSON='<reviewed staging PCR tuples>'
+node services/escrow-canary/dist/load.mjs \
+  --lca-api-url https://<staging host>/api --staging-host <staging host> --tenant-id <tenant> \
+  --firebase-project <staging project> --domain <canary inbox domain> \
+  --stages <rate:sec,...> --max-in-flight <n> --pin-ratio <0..1> --pin-pool <n> \
+  --max-users <n> --max-emails <n> --manifest <new file> --i-understand-roughtime \
+  [--shared-production-firebase learncard] --dry-run
+# optional: --enrol-with-pin, --enrol-opt-in, --pin-reset-after-recovery
+# then without --dry-run, redirecting stdout to keep the JSON summary
+```
+
+### Cleanup
+
+```sh
+export GOOGLE_APPLICATION_CREDENTIALS=<staging service-account JSON path>
+node services/escrow-canary/dist/load.mjs cleanup --manifest <file> \
+  --firebase-project <project> [--shared-production-firebase learncard] [--dry-run]
+```
+
+The same Firebase project guards run first (including the shared-project
+flag), and `--firebase-project` must equal the manifest's project. For each uid
+in the manifest the tool fetches the user (`getUsers`, batches of 100) and
+deletes it (`deleteUsers`) only if its **current** email still matches the run
+(`<prefix>+<runId>-<n>@<domain>`, exactly) and equals the address recorded for
+it. It reports `deleted`, `already-gone` and `skipped-mismatch` (`--dry-run`
+looks up and reports `would-delete`, deleting nothing). Progress is appended to
+the manifest after each batch, so re-running after a crash or a partial failure
+is safe: finished uids are skipped and the rest re-checked. Exit 4 means some
+deletions failed; re-run the same command. The tool does **not** delete anything in
+lca-api or the enclave: user keys (`contactMethod` = the synthetic address,
+`authProvider` = the deleted Firebase uid), escrow blobs and authority records,
+and completed PIN holds for these accounts remain in staging. They can be
+identified by the email prefix and run id; removing them is a separate,
+reviewed staging operation.
+
+### What to watch during a run
+
+- Enclave host: CPU, memory, vsock/proxy errors, enclave restarts.
+- KMS: `ThrottlingException` and attested `Decrypt` errors.
+- Authority DynamoDB: throttled requests, `UserErrors`/`SystemErrors`,
+  transaction conflicts, latency.
+- lca-api Lambda: throttles, duration, concurrent executions, errors, and the
+  `LearnCard/Escrow / EnclaveFailure` EMF reasons.
+- MongoDB: connections, operation latency, queueing.
+- Roughtime: per-source failures on the host probes (2 of 3 needed).
+- lca-api 429s on PIN routes: `throttledByClientIp` in progress lines and the
+  summary means the per-IP limiter answered (see above), not capacity.
+- Email: lca-api delivery sends/bounces for PIN notices; SES sends, bounces and
+  complaints on the recovery configuration set (hold-policy mail only).
+- The escrow canary itself (tiers 1 and 2) for user-visible impact.
+
+Capacity results and run records (run ids, shapes, first bottleneck) belong in
+Confluence, not in this repository. Do not add capacity numbers or traffic
+forecasts here.
 
 ## Local verification (no AWS)
 

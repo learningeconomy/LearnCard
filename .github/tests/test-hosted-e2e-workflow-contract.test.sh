@@ -59,6 +59,46 @@ policy = eligibility_steps.find { |step| step['id'] == 'policy' }
 abort 'policy must receive the event name' unless policy.dig('env', 'EVENT_NAME') == '${{ github.event_name }}'
 abort 'queue change detection must use the merge-group base' unless policy.dig('env', 'BASE_SHA') == '${{ github.event.merge_group.base_sha }}'
 
+observer = eligibility_steps.find { |step| step['run'] == 'node scripts/e2e-hosted/observe-queue-batch.mjs' }
+abort 'queue observation must run only on merge-group events' unless observer && observer.fetch('if') == "${{ github.event_name == 'merge_group' }}"
+abort 'queue observation must be best-effort and bounded' unless observer.fetch('continue-on-error') == true && observer.fetch('timeout-minutes') == 1
+abort 'queue observation may only read repository and pull requests' unless eligibility.fetch('permissions') == { 'contents' => 'read', 'pull-requests' => 'read' }
+abort 'queue observation must run after the E2E policy' unless eligibility_steps.index(observer) > eligibility_steps.index(policy)
+abort 'E2E policy outputs must not depend on the queue observation' unless outputs == { 'run_e2e' => '${{ steps.policy.outputs.run_e2e }}', 'reason' => '${{ steps.policy.outputs.reason }}' }
+
+# Execute the actual inline policy, stubbing only documentation classification.
+# PR and manual decisions must work without touching the repository at all.
+[
+  ['pull_request', 0, 'false', 'merge-queue-only', true],
+  ['pull_request', 1, 'false', 'merge-queue-only', true],
+  ['merge_group', 0, 'false', 'docs-only', true],
+  ['merge_group', 1, 'true', 'merge_group', true],
+  ['merge_group', 2, 'true', 'merge_group', true],
+  ['workflow_dispatch', 0, 'true', 'manual-dispatch', true],
+  ['workflow_dispatch', 1, 'true', 'manual-dispatch', true],
+  ['push', 0, nil, nil, false]
+].each do |event, docs_exit, run_e2e, reason, expected_success|
+  Dir.mktmpdir('e2e-policy') do |dir|
+    if event == 'merge_group'
+      scripts = File.join(dir, 'scripts', 'e2e-hosted')
+      FileUtils.mkdir_p(scripts)
+      File.write(File.join(scripts, 'changes-are-docs-only.sh'),
+        "[[ \"$1\" == queue-base && \"$2\" == HEAD ]] || exit 99\necho called > docs-called\nexit #{docs_exit}\n")
+    end
+    output = File.join(dir, 'output')
+    File.write(output, '')
+    stdout, status = Open3.capture2e({
+      'EVENT_NAME' => event, 'BASE_SHA' => 'queue-base', 'GITHUB_OUTPUT' => output
+    }, 'bash', '-euo', 'pipefail', '-c', policy.fetch('run'), chdir: dir)
+    abort "policy failed for #{event}/#{docs_exit}: #{stdout}" unless status.success? == expected_success
+    expected = expected_success ? ["run_e2e=#{run_e2e}", "reason=#{reason}"] : []
+    abort "unexpected policy output for #{event}/#{docs_exit}" unless File.readlines(output, chomp: true) == expected
+    abort 'queue policy must inspect the combined diff' if event == 'merge_group' && !File.exist?(File.join(dir, 'docs-called'))
+    abort 'PR/manual policy must not attempt change detection' if event != 'merge_group' && stdout.include?('changes-are-docs-only')
+  end
+end
+puts 'E2E event policy passed (PR deferral, queue changes, manual override, unsupported event)'
+
 browser = jobs.fetch('playwright_e2e')
 services = (1..3).map { |shard| jobs.fetch("tests_e2e_#{shard}") }
 service = services.first

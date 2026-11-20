@@ -124,6 +124,67 @@ describe('message host impressions', () => {
         vi.restoreAllMocks();
     });
 
+    it('gates private tests by account and route without engagement or fatigue state', async () => {
+        state.messages = [];
+        const testDelivery = {
+            accountDid: 'alice',
+            message: inAppMessageValidator.parse({
+                id: 'private-test',
+                title: 'Private test',
+                targeting: { role: ['never'] },
+            }),
+            onShown: vi.fn(),
+            onClose: vi.fn(),
+        };
+        const onEvent = vi.fn();
+        const view = render(<InAppMessageHost testDelivery={testDelivery} onEvent={onEvent} />);
+        expect(screen.queryByText('Private test')).toBeNull();
+        expect(testDelivery.onShown).not.toHaveBeenCalled();
+        state.gate = true;
+        state.accountDid = 'bob';
+        view.rerender(<InAppMessageHost testDelivery={testDelivery} onEvent={onEvent} />);
+        expect(screen.queryByText('Private test')).toBeNull();
+        state.accountDid = 'alice';
+        view.rerender(<InAppMessageHost testDelivery={testDelivery} onEvent={onEvent} />);
+        const button = await screen.findByText('Private test');
+        expect(testDelivery.onShown).toHaveBeenCalledOnce();
+        expect(getMessageLastSeen('private-test', 'alice')).toBeFalsy();
+        expect(onEvent).toHaveBeenCalledWith(
+            expect.objectContaining({ source: 'test', type: 'shown' })
+        );
+        fireEvent.click(button);
+        expect(testDelivery.onClose).toHaveBeenCalledOnce();
+        expect(screen.queryByText('Private test')).toBeNull();
+    });
+    it('lets supported tests and regular messages display while an unsupported native test stays pending', async () => {
+        state.native = true;
+        state.gate = true;
+        const unsupported = {
+            accountDid: 'alice',
+            message: inAppMessageValidator.parse({
+                id: 'web-test',
+                title: 'Web only',
+                presentation: 'iframe',
+                iframe: { url: 'https://campaign.example/test' },
+            }),
+            onShown: vi.fn(),
+            onClose: vi.fn(),
+        };
+        const supported = {
+            ...unsupported,
+            message: inAppMessageValidator.parse({ id: 'native-test', title: 'Native test' }),
+            onShown: vi.fn(),
+            onClose: vi.fn(),
+        };
+        const view = render(<InAppMessageHost testDelivery={supported} />);
+        fireEvent.click(await screen.findByText('Native test'));
+        expect(supported.onShown).toHaveBeenCalledOnce();
+        expect(supported.onClose).toHaveBeenCalledOnce();
+        view.rerender(<InAppMessageHost testDelivery={unsupported} />);
+        expect(await screen.findByText('Claim complete')).toBeTruthy();
+        expect(unsupported.onShown).not.toHaveBeenCalled();
+        expect(unsupported.onClose).not.toHaveBeenCalled();
+    });
     it('waits for the gate, bypasses targeting/trigger/seen/cap and localizes a requested message', async () => {
         const onEvent = vi.fn();
         const requested = inAppMessageValidator.parse({
@@ -600,6 +661,35 @@ describe('campaign presentation in the shared host', () => {
         state.flagDeliveryReady = true;
     });
     afterEach(cleanup);
+    it('keeps a private snapshot out of real engagement even when its ID matches a live campaign', async () => {
+        state.gate = true;
+        const campaigns = source();
+        const testDelivery = {
+            accountDid: 'alice',
+            message: inAppMessageValidator.parse({
+                id: 'server-campaign',
+                title: 'Private snapshot',
+            }),
+            onShown: vi.fn(),
+            onClose: vi.fn(),
+        };
+        const onEvent = vi.fn();
+        render(
+            <InAppMessageHost
+                campaignSource={campaigns}
+                testDelivery={testDelivery}
+                onEvent={onEvent}
+            />
+        );
+        fireEvent.click(await screen.findByText('Private snapshot'));
+        expect(testDelivery.onShown).toHaveBeenCalledOnce();
+        expect(testDelivery.onClose).toHaveBeenCalledOnce();
+        expect(campaigns.record).not.toHaveBeenCalled();
+        expect(
+            onEvent.mock.calls.every(([event]) => event.source === 'test' && !event.campaignId)
+        ).toBe(true);
+        expect(getMessageLastSeen('server-campaign', 'alice')).toBeFalsy();
+    });
     it('reports one server impression across diagnostics and campaign source refreshes', async () => {
         let campaigns = source();
         const record = vi.fn();

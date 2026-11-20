@@ -38,7 +38,15 @@ const parseOfflineFirebaseClaims = (
     }
 };
 
-export async function verifyFirebaseToken(token: string): Promise<VerifiedUser> {
+export interface VerifyTokenOptions {
+    /** Reject revoked sessions and disabled users (one extra Firebase lookup). */
+    checkRevoked?: boolean;
+}
+
+export async function verifyFirebaseToken(
+    token: string,
+    options: VerifyTokenOptions = {}
+): Promise<VerifiedUser> {
     // E2E test or offline bypass - parse JWT without Firebase Admin verification
     if (environment.IS_E2E_TEST || environment.IS_OFFLINE) {
         const payload = parseOfflineFirebaseClaims(token);
@@ -57,7 +65,7 @@ export async function verifyFirebaseToken(token: string): Promise<VerifiedUser> 
     }
 
     try {
-        const decodedToken = await admin.auth().verifyIdToken(token);
+        const decodedToken = await admin.auth().verifyIdToken(token, options.checkRevoked === true);
 
         return {
             id: decodedToken.uid,
@@ -128,11 +136,12 @@ export async function verifyOidcToken(_token: string): Promise<VerifiedUser> {
 
 export async function verifyAuthToken(
     token: string,
-    providerType: AuthProviderType
+    providerType: AuthProviderType,
+    options: VerifyTokenOptions = {}
 ): Promise<VerifiedUser> {
     switch (providerType) {
         case 'firebase':
-            return verifyFirebaseToken(token);
+            return verifyFirebaseToken(token, options);
         case 'supertokens':
             return verifySuperTokensToken(token);
         case 'keycloak':

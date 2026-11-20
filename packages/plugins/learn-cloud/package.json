@@ -1,6 +1,6 @@
 {
     "name": "@learncard/learn-cloud-plugin",
-    "version": "2.3.51",
+    "version": "2.5.0",
     "description": "Stores, indexes, and syncs encrypted credentials in LearnCloud.",
     "type": "module",
     "main": "./dist/index.cjs",
@@ -39,7 +39,6 @@
         "url": "https://github.com/learningeconomy/LearnCard/issues"
     },
     "devDependencies": {
-        "@learncard/learn-cloud-service": "workspace:^",
         "@learncard/types": "workspace:*",
         "@types/lodash": "^4.14.191",
         "@types/node": "^17.0.31",

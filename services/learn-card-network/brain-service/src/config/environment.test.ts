@@ -21,6 +21,29 @@ const REQUIRED_ENVIRONMENT = {
 };
 
 describe('credential refresh configuration', () => {
+    it.each(['invalid-json', '[]', 'null', '{"v1":123}'])(
+        'rejects invalid previous digest keys at startup: %s',
+        value => {
+            expect(() =>
+                parseBrainServiceEnvironment({
+                    ...REQUIRED_ENVIRONMENT,
+                    NODE_ENV: 'test',
+                    CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS: value,
+                })
+            ).toThrow(/Must be a JSON object mapping digest versions to string keys/);
+        }
+    );
+
+    it('transforms previous digest keys into a typed record at startup', () => {
+        expect(
+            parseBrainServiceEnvironment({
+                ...REQUIRED_ENVIRONMENT,
+                NODE_ENV: 'test',
+                CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS: '{"v1":"previous-test-key"}',
+            }).CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS
+        ).toEqual({ v1: 'previous-test-key' });
+    });
+
     it('parses typed defaults and explicit runtime values at call time', () => {
         const previousEnabled = process.env.CREDENTIAL_REFRESH_ENABLED;
         const previousSecret = process.env.CREDENTIAL_REFRESH_DIGEST_SECRET;

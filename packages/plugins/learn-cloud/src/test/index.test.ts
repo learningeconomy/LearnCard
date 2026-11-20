@@ -15,6 +15,9 @@ const makeMockClient = (learnCloudDid = 'did:key:z6MkLearnCloud') => ({
     storage: {
         batchResolve: { query: vi.fn() },
     },
+    index: {
+        get: { query: vi.fn().mockResolvedValue({ records: [], hasMore: false }) },
+    },
 });
 
 const mockClient = makeMockClient();
@@ -57,6 +60,27 @@ describe('LearnCloud Plugin', () => {
         vi.clearAllMocks();
         mockGetClient.mockResolvedValue(mockClient);
     });
+
+    it.each([undefined, { category: 'Achievement' }])(
+        'normalizes a restored null cursor before querying the index with %j',
+        async query => {
+            const learnCard = makeLearnCard();
+            const plugin = await getLearnCloudPlugin(
+                learnCard as never,
+                'https://cloud.example',
+                [],
+                [],
+                false
+            );
+            // Persisted infinite-query page parameters can restore undefined as null.
+            const pagination = JSON.parse('{"cursor":null,"limit":12}');
+            await plugin.index.getPage!(learnCard as never, query, pagination);
+
+            expect(mockClient.index.get.query).toHaveBeenCalledWith(
+                expect.objectContaining({ cursor: undefined, limit: 12 })
+            );
+        }
+    );
 
     it('defers remote identity requests until a method needs them', async () => {
         await getLearnCloudPlugin(makeLearnCard() as never, 'https://cloud.example');

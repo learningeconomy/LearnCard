@@ -4,7 +4,7 @@ import { SharedI18nProvider } from './i18n/SharedI18nProvider';
 import { createBrowserHistory } from 'history';
 import { IonReactRouter } from '@ionic/react-router';
 import { QueryClient, onlineManager } from '@tanstack/react-query';
-import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import { BatchedPersistQueryClientProvider } from './providers/BatchedPersistQueryClientProvider';
 import { connectivityStore, networkStore } from 'learn-card-base';
 import {
     isLikelyTransportError,
@@ -15,6 +15,8 @@ import { IonApp } from '@ionic/react';
 import { LoadingPageDumb } from './pages/loadingPage/LoadingPage';
 
 import AppRouter from './AppRouter';
+import { FallbackMarker } from './helpers/dashboardPathMarks';
+import NativeDigitalCredentialsListener from './native-digital-credentials/NativeDigitalCredentialsListener';
 import {
     sqliteInit,
     PushNotificationListener,
@@ -40,6 +42,7 @@ import { installPathwaysDevGlobals } from './pages/pathways/dev/pathwaysDevGloba
 import { QRCodeScannerStore } from 'learn-card-base';
 import Toast from 'learn-card-base/components/toast/Toast';
 import ModalAccessibilityManager from 'learn-card-base/components/modals/ModalAccessibilityManager';
+import { KeyboardFocusManager } from 'learn-card-base/components/keyboard/KeyboardFocusManager';
 import { getConnectionPromptCopy } from './helpers/connectionPromptCopy';
 
 // Install `window.__pathwaysDev` at the app-root level rather than
@@ -62,7 +65,7 @@ import AuthCoordinatorProvider from './providers/AuthCoordinatorProvider';
 import { FeedbackProvider } from './feedback/reporting';
 import { useInitializeTheme } from './theme/hooks/useTheme';
 import type { LearnCardAppEnvironment } from './config/buildEnvironment';
-import { persister } from './helpers/queryPersistence';
+import { persister, QUERY_CACHE_BUSTER } from './helpers/queryPersistence';
 
 declare const __APP_BUILD_ENV__: LearnCardAppEnvironment;
 
@@ -202,15 +205,21 @@ const FullApp: React.FC = () => {
     }, []);
 
     return (
-        <PersistQueryClientProvider
+        <BatchedPersistQueryClientProvider
             client={client}
-            persistOptions={{ persister, maxAge: CACHE_TTL }}
+            persistOptions={{ persister, maxAge: CACHE_TTL, buster: QUERY_CACHE_BUSTER }}
         >
             <AnalyticsContextProvider>
                 <div className="app-bar-top relative top-0 left-0 w-full z-[9999] bg-black" />
                 {/* <ReactQueryDevtools /> */}
                 <IonReactRouter history={history}>
-                    <Suspense fallback={<LoadingPageDumb />}>
+                    <Suspense
+                        fallback={
+                            <FallbackMarker boundary="root">
+                                <LoadingPageDumb />
+                            </FallbackMarker>
+                        }
+                    >
                         <AuthCoordinatorProvider>
                             <ThemeInitializer />
                             <ExternalAuthServiceProvider>
@@ -218,6 +227,7 @@ const FullApp: React.FC = () => {
                                     <IonApp>
                                         <div id="modal-mid-root"></div>
                                         <ModalAccessibilityManager />
+                                        <KeyboardFocusManager />
                                         <Toast />
                                         <SdkActivityIndicator />
                                         <NetworkListener />
@@ -225,6 +235,7 @@ const FullApp: React.FC = () => {
                                         <PushNotificationListener />
                                         <PresentVcModalListener />
                                         <CredentialSyncListener />
+                                        <NativeDigitalCredentialsListener />
                                         {/* Foreground refresh of stale refreshable
                                             credentials; gated by the LaunchDarkly
                                             credentialRefreshForegroundEnabled flag. */}
@@ -282,7 +293,7 @@ const FullApp: React.FC = () => {
                     </Suspense>
                 </IonReactRouter>
             </AnalyticsContextProvider>
-        </PersistQueryClientProvider>
+        </BatchedPersistQueryClientProvider>
     );
 };
 

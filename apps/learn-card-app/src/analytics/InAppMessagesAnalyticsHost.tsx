@@ -3,14 +3,17 @@ import { useHistory } from 'react-router-dom';
 import { InAppMessageHost, useMyCampaigns } from 'learn-card-base';
 import { useAnalytics } from './context';
 import { AnalyticsEvents } from './events';
+import { useCampaignTestDelivery } from '../pages/campaigns/useCampaignTestDelivery';
 
 /** Mount below AnalyticsContextProvider so telemetry respects the app's consent settings. */
 export const InAppMessagesAnalyticsHost: React.FC = () => {
     const campaigns = useMyCampaigns();
     const { track } = useAnalytics();
     const history = useHistory();
+    const testDelivery = useCampaignTestDelivery();
     return (
         <InAppMessageHost
+            testDelivery={testDelivery}
             campaignSource={campaigns}
             onOpenApp={(listingId, path) => {
                 const query = new URLSearchParams({ launch: '1' });
@@ -18,7 +21,7 @@ export const InAppMessagesAnalyticsHost: React.FC = () => {
                 history.push(`/app/${encodeURIComponent(listingId)}?${query}`);
             }}
             onEvent={event => {
-                if (event.source === 'override') return;
+                if (event.source === 'override' || event.source === 'test') return;
                 const names = {
                     shown: AnalyticsEvents.IN_APP_MESSAGE_SHOWN,
                     action: AnalyticsEvents.IN_APP_MESSAGE_ACTION,

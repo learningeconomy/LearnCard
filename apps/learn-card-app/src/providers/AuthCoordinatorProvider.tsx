@@ -27,10 +27,12 @@ import React, {
     useRef,
 } from 'react';
 import { Capacitor } from '@capacitor/core';
+import { clearClassLinkDisplayName } from '../auth/classlink/classlinkDisplayName';
 
 import type { LCNProfile } from '@learncard/types';
 import { getLocale } from '../paraglide/runtime.js';
 
+import { resolveMigrationKey } from './resolveMigrationKey';
 import {
     AuthCoordinatorProvider as BaseAuthCoordinatorProvider,
     useAuthCoordinator as useBaseAuthCoordinator,
@@ -102,6 +104,7 @@ import useSQLiteStorage from 'learn-card-base/hooks/useSQLiteStorage';
 import { createDeviceShareStorage } from 'learn-card-base/security/deviceShareStorage';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 
+import { deriveDidKeyFromPrivateKey } from './didFromPrivateKey';
 import { getBespokeLearnCard, getSigningLearnCard } from 'learn-card-base/helpers/walletHelpers';
 import {
     withDeadline,
@@ -914,13 +917,9 @@ const AuthSessionManager: React.FC<{
     }, [showRecoverySetup, authProvider, refreshAuthSession]);
 
     // --- DID derivation (shared between auto-setup and recovery) ---
-    // Uses getSigningLearnCard (no network) so lc.id.did() returns did:key,
-    // which is deterministic and directly tied to the private key.
-    // Must match the server's stored primaryDid (also did:key, from VP auth).
-    const didFromPrivateKey = useCallback(async (privateKey: string): Promise<string> => {
-        const lc = await getSigningLearnCard(privateKey);
-        return lc?.id.did() || '';
-    }, []);
+    // did:key is deterministic and tied to the private key; it must match the
+    // server's stored primaryDid (also did:key, from VP auth).
+    const didFromPrivateKey = useCallback(deriveDidKeyFromPrivateKey, []);
 
     // --- DID-Auth VP signing (for recovery setup write ops) ---
     // Uses getSigningLearnCard (no network) so lc.id.did() returns did:key,
@@ -952,6 +951,7 @@ const AuthSessionManager: React.FC<{
     // When coordinator enters needs_migration, extract the Web3Auth key and
     // inject it as migrationData so the auto-setup hook can trigger migration.
     const migrationKeyFetchedRef = useRef(false);
+    const migrationAttemptRef = useRef(0);
     const migrationCoordinatorRef = useRef(coordinator);
     migrationCoordinatorRef.current = coordinator;
 
@@ -965,6 +965,16 @@ const AuthSessionManager: React.FC<{
         if (migrationData.web3AuthKey) return;
 
         migrationKeyFetchedRef.current = true;
+        const migrationAttempt = migrationAttemptRef.current;
+        const migrationUserId = coordinator.state.authUser?.id;
+        const isCurrentAttempt = (): boolean => {
+            const latestState = migrationCoordinatorRef.current.state;
+            return (
+                migrationAttemptRef.current === migrationAttempt &&
+                latestState.status === 'needs_migration' &&
+                latestState.authUser?.id === migrationUserId
+            );
+        };
 
         // A provisional account re-derives only when nothing better is at hand:
         // a QR-delivered share is picked up from recovery, and a failed derivation
@@ -978,7 +988,7 @@ const AuthSessionManager: React.FC<{
 
         const fallBack = (): void => {
             const latestCoordinator = migrationCoordinatorRef.current;
-            if (canFallBack && latestCoordinator.state.status === 'needs_migration') {
+            if (canFallBack && isCurrentAttempt()) {
                 latestCoordinator.fallBackToRecovery();
             }
         };
@@ -986,8 +996,28 @@ const AuthSessionManager: React.FC<{
         const extractAndInject = async (): Promise<void> => {
             try {
                 emitAuthDebugEvent('web3auth:migration_key', 'Extracting account upgrade key');
-                const privateKey = await deriveLegacyMigrationKey(authProvider);
-                if (!privateKey) {
+                const resolved = await resolveMigrationKey({
+                    fetchArchivedKey: async () => {
+                        if (!coordinator.keyDerivation.fetchArchivedKey) return null;
+                        const token = await authProvider.getIdToken(true);
+                        return coordinator.keyDerivation.fetchArchivedKey(
+                            token,
+                            authProvider.getProviderType()
+                        );
+                    },
+                    deriveLegacyKey: () => deriveLegacyMigrationKey(authProvider),
+                    getExistingExpectedDid: () => {
+                        const latestState = migrationCoordinatorRef.current.state;
+                        const expectedDid =
+                            latestState.status === 'needs_migration'
+                                ? latestState.migrationData?.expectedDid
+                                : undefined;
+                        return typeof expectedDid === 'string' ? expectedDid : undefined;
+                    },
+                    isCurrentAttempt,
+                });
+                if (!resolved) {
+                    if (!isCurrentAttempt()) return;
                     emitAuthError('web3auth:migration_key', 'No sign-in session available');
                     fallBack();
                     return;
@@ -995,9 +1025,21 @@ const AuthSessionManager: React.FC<{
 
                 // A sign-out or completed upgrade may occur while this tab waits.
                 const latestCoordinator = migrationCoordinatorRef.current;
-                if (latestCoordinator.state.status !== 'needs_migration') return;
+                if (!isCurrentAttempt()) return;
+                if (resolved.source === 'archive') {
+                    emitAuthSuccess('web3auth:migration_key', 'Account upgrade key restored');
+                    latestCoordinator.setMigrationData({
+                        web3AuthKey: resolved.privateKey,
+                        source: 'archive',
+                        expectedDid: resolved.expectedDid,
+                    });
+                    return;
+                }
                 emitAuthSuccess('web3auth:migration_key', 'Account upgrade key extracted');
-                latestCoordinator.setMigrationData({ web3AuthKey: privateKey, source: 'derived' });
+                latestCoordinator.setMigrationData({
+                    web3AuthKey: resolved.privateKey,
+                    source: 'derived',
+                });
             } catch {
                 // Provider and Torus errors can embed credentials. Shared strategy
                 // diagnostics retain safe outcome metadata; never forward raw errors.
@@ -1013,6 +1055,7 @@ const AuthSessionManager: React.FC<{
     useEffect(() => {
         if (coordinator.state.status !== 'needs_migration') {
             migrationKeyFetchedRef.current = false;
+            migrationAttemptRef.current += 1;
         }
     }, [coordinator.state.status]);
 
@@ -2325,11 +2368,8 @@ const AuthCoordinatorSessionProvider: React.FC<AppAuthCoordinatorProviderProps> 
     const clearDBRef = useRef(clearDB);
     clearDBRef.current = clearDB;
 
-    // DID derivation helper — uses getSigningLearnCard (no network) for deterministic did:key
-    const didFromPrivateKey = useCallback(async (privateKey: string): Promise<string> => {
-        const lc = await getSigningLearnCard(privateKey);
-        return lc?.id.did() || '';
-    }, []);
+    // DID derivation helper: deterministic did:key, no wallet or WASM (cold-start path)
+    const didFromPrivateKey = useCallback(deriveDidKeyFromPrivateKey, []);
 
     // Confirms a legacy key belongs to this account before migration writes it.
     const verifyMigrationIdentity = useMemo(
@@ -2382,6 +2422,7 @@ const AuthCoordinatorSessionProvider: React.FC<AppAuthCoordinatorProviderProps> 
     // Unified logout cleanup — called by the coordinator after its own signOut + clearLocalKeys.
     // Consolidates all app-specific store/DB/storage clearing in one place.
     const handleAppLogout = useCallback(async () => {
+        clearClassLinkDisplayName();
         try {
             await queryClient.clear();
         } catch (e) {

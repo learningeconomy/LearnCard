@@ -1,11 +1,16 @@
-import { createHash, randomUUID } from 'crypto';
+import { createHmac, randomUUID } from 'crypto';
 import { TRPCError } from '@trpc/server';
 import type { ManagedCredentialRefreshReceipt, SendBoostResponse } from '@learncard/types';
+import { getStatusEntriesForCredential, getStatusManagement } from './status-list.helpers';
 import { canonicalizeCredentialJson } from '@learncard/helpers';
 
 import { neogma } from '@instance';
 
 import { getInitialRefreshRoot, getManagedCredentialUri } from './credential-refresh.helpers';
+import {
+    getCredentialRefreshDigestSecret,
+    getCredentialRefreshDigestCandidateSecrets,
+} from './credential-refresh-materiality.helpers';
 
 /** A preparation not touched for this long is considered abandoned and may be taken over. */
 export const REFRESH_SEND_INTENT_STALE_MS = 5 * 60_000;
@@ -26,6 +31,8 @@ export type RefreshSendIntent = {
     credentialId?: string;
     refreshId?: string;
     holderDid?: string;
+    contractUri?: string;
+    integrationId?: string;
     pendingReceipt?: ManagedCredentialRefreshReceipt;
     pendingActivityId?: string;
     result?: SendBoostResponse;
@@ -40,31 +47,57 @@ export type ClaimRefreshSendIntentResult =
 const getIntentKey = (issuerProfileId: string, idempotencyKey: string): string =>
     `${issuerProfileId}:${idempotencyKey}`;
 
-/** Digest of everything that defines a prepare request; a reused key must match it. */
-export const computeRefreshSendRequestDigest = (request: {
-    recipientProfileId: string;
-    holderDid: string;
-    templateUri?: string;
-    template?: unknown;
-    contractUri?: string;
-    templateData?: Record<string, unknown>;
-    integrationId?: string;
-    credentialId?: string;
-}): string =>
-    createHash('sha256')
+/** Versioned, domain-separated public-metadata digest. Legacy unkeyed intents fail closed. */
+export const computeRefreshSendRequestDigest = (
+    request: {
+        statusBinding?: 'server';
+        statusPurposes?: ('revocation' | 'suspension')[];
+        recipientProfileId: string;
+        holderDid: string;
+        credentialId?: string;
+        templateUri?: string;
+        display?: import('@learncard/types').CredentialDisplay;
+        contractUri?: string;
+        integrationId?: string;
+        /** Included so an idempotencyKey can never silently replay across modes. */
+        encryption?: 'network' | 'holder';
+    },
+    secret: string = getCredentialRefreshDigestSecret()
+): string =>
+    'v1:' +
+    createHmac('sha256', secret)
+        .update('refresh-send-intent:v1\0')
         .update(
             canonicalizeCredentialJson({
                 recipientProfileId: request.recipientProfileId,
                 holderDid: request.holderDid,
                 templateUri: request.templateUri ?? null,
-                template: request.template ?? null,
+                display: request.display ?? {},
                 contractUri: request.contractUri ?? null,
-                templateData: request.templateData ?? {},
                 integrationId: request.integrationId ?? null,
+                refresh: true,
                 credentialId: request.credentialId ?? null,
+                encryption: request.encryption ?? 'network',
+                ...(request.statusBinding ? { statusBinding: request.statusBinding } : {}),
+                ...(request.statusPurposes?.includes('suspension')
+                    ? { suspensionRequested: true }
+                    : {}),
             })
         )
         .digest('base64url');
+
+/** The v1 prefix identifies the request scheme, not the rotating key version. */
+export const getRefreshSendRequestDigestCandidates = (
+    request: Parameters<typeof computeRefreshSendRequestDigest>[0]
+): string[] =>
+    getCredentialRefreshDigestCandidateSecrets().map(secret =>
+        computeRefreshSendRequestDigest(request, secret)
+    );
+
+export const matchesRefreshSendRequestDigest = (
+    request: Parameters<typeof computeRefreshSendRequestDigest>[0],
+    stored: string
+): boolean => getRefreshSendRequestDigestCandidates(request).includes(stored);
 
 const parseIntent = (props: Record<string, unknown>): RefreshSendIntent => ({
     intentKey: props.intentKey as string,
@@ -76,6 +109,8 @@ const parseIntent = (props: Record<string, unknown>): RefreshSendIntent => ({
     credentialId: (props.credentialId as string | undefined) ?? undefined,
     refreshId: (props.refreshId as string | undefined) ?? undefined,
     holderDid: (props.holderDid as string | undefined) ?? undefined,
+    contractUri: (props.contractUri as string | undefined) ?? undefined,
+    integrationId: (props.integrationId as string | undefined) ?? undefined,
     pendingReceipt: props.pendingReceipt
         ? (JSON.parse(props.pendingReceipt as string) as ManagedCredentialRefreshReceipt)
         : undefined,
@@ -97,6 +132,19 @@ export const getRefreshSendIntent = async (
     return node ? parseIntent(node.properties) : null;
 };
 
+/** Resolve the preparation even when the caller did not supply an idempotency key. */
+export const getRefreshSendIntentForRefresh = async (
+    issuerProfileId: string,
+    refreshId: string
+): Promise<RefreshSendIntent | null> => {
+    const result = await neogma.queryRunner.run(
+        'MATCH (i:RefreshSendIntent {issuerProfileId: $issuerProfileId, refreshId: $refreshId}) RETURN i',
+        { issuerProfileId, refreshId }
+    );
+    const node = result.records[0]?.get('i');
+    return node ? parseIntent(node.properties) : null;
+};
+
 /**
  * Creates or claims the intent for (issuer, idempotencyKey). Concurrency-safe through
  * the `refresh_send_intent_key_unique` constraint. Throws CONFLICT when the key was used
@@ -106,8 +154,10 @@ export const claimRefreshSendIntent = async (params: {
     issuerProfileId: string;
     idempotencyKey: string;
     requestDigest: string;
+    requestDigestCandidates?: string[];
 }): Promise<ClaimRefreshSendIntentResult> => {
     const { issuerProfileId, idempotencyKey, requestDigest } = params;
+    const requestDigestCandidates = params.requestDigestCandidates ?? [requestDigest];
     const claimToken = randomUUID();
     const now = new Date();
 
@@ -125,7 +175,7 @@ export const claimRefreshSendIntent = async (params: {
              WITH i
              WITH i WHERE i.state = 'preparing'
                       AND i.claimToken <> $claimToken
-                      AND i.requestDigest = $requestDigest
+                       AND i.requestDigest IN $requestDigestCandidates
                       AND i.updatedAt < $staleBefore
              SET i.claimToken = $claimToken, i.updatedAt = $now
          }
@@ -134,6 +184,7 @@ export const claimRefreshSendIntent = async (params: {
             intentKey: getIntentKey(issuerProfileId, idempotencyKey),
             issuerProfileId,
             requestDigest,
+            requestDigestCandidates,
             claimToken,
             now: now.toISOString(),
             staleBefore: new Date(now.getTime() - REFRESH_SEND_INTENT_STALE_MS).toISOString(),
@@ -141,7 +192,7 @@ export const claimRefreshSendIntent = async (params: {
     );
     const intent = parseIntent(result.records[0]!.get('i').properties);
 
-    if (intent.requestDigest !== requestDigest) {
+    if (!requestDigestCandidates.includes(intent.requestDigest)) {
         throw new TRPCError({
             code: 'CONFLICT',
             message: 'This idempotencyKey was already used for a different send request.',
@@ -173,7 +224,15 @@ const lostIntentClaim = (): TRPCError =>
 export const recordRefreshSendIntent = async (
     intent: RefreshSendIntent,
     fields: Partial<
-        Pick<RefreshSendIntent, 'boostUri' | 'credentialId' | 'refreshId' | 'holderDid'>
+        Pick<
+            RefreshSendIntent,
+            | 'boostUri'
+            | 'credentialId'
+            | 'refreshId'
+            | 'holderDid'
+            | 'contractUri'
+            | 'integrationId'
+        >
     > & { state?: 'prepared' }
 ): Promise<RefreshSendIntent> => {
     const result = await neogma.queryRunner.run(
@@ -265,6 +324,10 @@ export const reconcileBoundRefreshSendIntent = async (
         credentialUri: getManagedCredentialUri(root.rootId, domain),
         activityId: intent.pendingActivityId ?? '',
         refresh: intent.pendingReceipt,
+        statusManagement: getStatusManagement(
+            await getStatusEntriesForCredential(root.rootId),
+            domain
+        ),
     };
 
     await markRefreshSendIntentDelivered(intent, result);

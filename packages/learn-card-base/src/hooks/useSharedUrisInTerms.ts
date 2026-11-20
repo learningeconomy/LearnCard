@@ -66,7 +66,7 @@ const syncCachedCategoryRecords = (
     const recordMap = new Map(records.map(record => [record.id, record]));
 
     queryClient.setQueriesData<InfiniteData<CredentialListPage, string>>({ queryKey }, oldData =>
-        oldData
+        Array.isArray(oldData?.pages)
             ? {
                   ...oldData,
                   pages: oldData.pages.map(oldPage => ({
@@ -232,7 +232,9 @@ const createSharedUriForWallet = async (
 ): Promise<string | false> => {
     const queryKey = getCredentialListQueryKey(category, wallet.id.did());
     const cache = queryClient.getQueryData<InfiniteData<CredentialListPage, string>>(queryKey);
-    const cachedRecords = cache?.pages.flatMap(page => page.records) ?? [];
+    const cachedRecords = Array.isArray(cache?.pages)
+        ? cache.pages.flatMap(page => page?.records ?? [])
+        : [];
 
     if (cachedRecords.length > 0) {
         const cachedResult = await getOrCreateSharedUriFromCategoryRecords(

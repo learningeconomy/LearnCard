@@ -1,9 +1,17 @@
 import { VC, VCValidator } from '@learncard/types';
-import { useWallet, CredentialCategory } from 'learn-card-base';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+    useWallet,
+    CredentialCategory,
+    enqueuePendingContractSyncSafely,
+    switchedProfileStore,
+    invalidateVisibleCredentialCounts,
+} from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { openBadgeV2Plugin } from '@learncard/open-badge-v2-plugin';
 
 import { extractCredentialsFromText } from './extractCredentialsFromText';
+import { withInternalCategoryHidden } from 'learn-card-base/helpers/credentialCollection';
 
 export interface FileInfo {
     name?: string;
@@ -11,7 +19,7 @@ export interface FileInfo {
     type?: string;
 }
 
-// Define the type for the stored VC returned from wallet.index.LearnCloud.add
+// Metadata persisted with the credential in the LearnCloud index.
 export interface StoredVC {
     id: string;
     uri: string;
@@ -50,6 +58,14 @@ export interface AggregateUploadResult {
 
 export const useUploadVcFromText = () => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
+    // Direct index writes must refresh the cached list walk and the Passport/Home counts;
+    // both stay fresh for minutes (LC-2412).
+    const invalidateCredentialList = () => {
+        const profileDid = switchedProfileStore.get.switchedDid() ?? '';
+        void invalidateVisibleCredentialCounts(queryClient, profileDid);
+        return queryClient.invalidateQueries({ queryKey: ['useGetCredentialList', profileDid] });
+    };
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const isOpenBadgeV2 = (obj: any) => {
@@ -127,19 +143,42 @@ export const useUploadVcFromText = () => {
                     parsed?.name ||
                     parsed?.badge?.name ||
                     'Open Badge V2 Credential';
-
+                if (!credURI) {
+                    return {
+                        success: false,
+                        error: 'Failed to upload credential: no URI returned.',
+                        fileInfo: fileInfo || {},
+                    };
+                }
+                const record = withInternalCategoryHidden({
+                    id: id || crypto.randomUUID(),
+                    uri: credURI,
+                    category: categoryObvV2,
+                    fileName: name,
+                    fileSize: fileInfo?.size,
+                    fileType: fileInfo?.type,
+                    uploadType,
+                });
+                const storedVC = await walletWithObv2.index.LearnCloud.add(record);
+                if (!storedVC) {
+                    return {
+                        success: false,
+                        error: 'Failed to add credential to index.',
+                        category: categoryObvV2,
+                        fileInfo: fileInfo || {},
+                    };
+                }
+                // Persist the handoff before any network delivery; the account-scoped worker owns it.
+                await enqueuePendingContractSyncSafely({
+                    kind: 'credential',
+                    profileDid: wallet.id.did(),
+                    record: { id: record.id, uri: record.uri, category: record.category },
+                    category: categoryObvV2,
+                });
                 return {
                     success: true,
                     credentialUri: credURI,
-                    storedVC: await walletWithObv2.index.LearnCloud.add({
-                        id: id || crypto.randomUUID(),
-                        uri: credURI,
-                        category: categoryObvV2,
-                        fileName: name,
-                        fileSize: fileInfo?.size,
-                        fileType: fileInfo?.type,
-                        uploadType,
-                    }),
+                    storedVC: record,
                     category: categoryObvV2,
                     fileInfo: fileInfo || {},
                 };
@@ -175,7 +214,7 @@ export const useUploadVcFromText = () => {
                             parsed?.credentialSubject?.achievement?.name ||
                             'JSON Credential';
 
-                        const storedVC = await wallet.index.LearnCloud.add({
+                        const record = withInternalCategoryHidden({
                             id: id || crypto.randomUUID(),
                             uri: credentialUri,
                             category,
@@ -184,11 +223,27 @@ export const useUploadVcFromText = () => {
                             fileType: fileInfo?.type,
                             uploadType,
                         });
+                        const storedVC = await wallet.index.LearnCloud.add(record);
+                        if (!storedVC) {
+                            return {
+                                success: false,
+                                error: 'Failed to add credential to index.',
+                                category,
+                                fileInfo: fileInfo || {},
+                            };
+                        }
+                        // Persist the handoff before any network delivery; the account-scoped worker owns it.
+                        await enqueuePendingContractSyncSafely({
+                            kind: 'credential',
+                            profileDid: wallet.id.did(),
+                            record: { id: record.id, uri: record.uri, category: record.category },
+                            category,
+                        });
 
                         return {
                             success: true,
                             credentialUri,
-                            storedVC,
+                            storedVC: record,
                             category,
                             fileInfo: fileInfo || {},
                         };
@@ -254,6 +309,7 @@ export const useUploadVcFromText = () => {
         }
 
         const addedCount = results.filter(r => r.success).length;
+        if (addedCount > 0) void invalidateCredentialList();
         const failedCount = results.length - addedCount;
         const errors = [
             ...extractionErrors,
@@ -302,16 +358,32 @@ export const useUploadVcFromText = () => {
                 if (credentialUri) {
                     // Add to index if credentialUri was successfully obtained
                     try {
-                        storedVC = await wallet.index.LearnCloud.add({
+                        const record = withInternalCategoryHidden({
                             id: crypto.randomUUID(),
                             uri: credentialUri,
                             category,
                         });
+                        storedVC = await wallet.index.LearnCloud.add(record);
+                        if (!storedVC) {
+                            return {
+                                success: false,
+                                error: 'Failed to add credential to index.',
+                                category,
+                            };
+                        }
+                        // Persist the handoff before any network delivery; the account-scoped worker owns it.
+                        await enqueuePendingContractSyncSafely({
+                            kind: 'credential',
+                            profileDid: wallet.id.did(),
+                            record: { id: record.id, uri: record.uri, category: record.category },
+                            category,
+                        });
+                        void invalidateCredentialList();
 
                         return {
                             success: true,
                             credentialUri,
-                            storedVC,
+                            storedVC: record,
                             category,
                         };
                     } catch (error) {

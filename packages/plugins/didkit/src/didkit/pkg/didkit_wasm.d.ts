@@ -4,17 +4,8 @@ export function getVersion(): string;
 export function completeIssuePresentation(presentation: string, preparation: string, signature: string): Promise<any>;
 export function verifyPresentation(vp: string, proof_options: string, context_map: string): Promise<any>;
 export function DIDAuth(holder: string, linked_data_proof_options: string, key: string, context_map: string): Promise<any>;
-export function verifyInvocation(invocation: string, delegation: string): Promise<any>;
-export function contextLoader(url: string): Promise<any>;
 export function JWKFromTezos(tz: string): Promise<any>;
-export function delegateCapability(capability: string, linked_data_proof_options: string, parents: string, key: string): Promise<any>;
-export function prepareDelegateCapability(capability: string, linked_data_proof_options: string, parents: string, public_key: string): Promise<any>;
-export function completeDelegateCapability(capability: string, preparation: string, signature: string): Promise<any>;
-export function verifyDelegation(delegation: string): Promise<any>;
-export function invokeCapability(invocation: string, target_id: string, linked_data_proof_options: string, key: string): Promise<any>;
-export function prepareInvokeCapability(invocation: string, target_id: string, linked_data_proof_options: string, public_key: string): Promise<any>;
-export function completeInvokeCapability(invocation: string, preparation: string, signature: string): Promise<any>;
-export function verifyInvocationSignature(invocation: string): Promise<any>;
+export function contextLoader(url: string): Promise<any>;
 export function clearCache(): Promise<any>;
 export function didResolver(did: string, input_metadata: string): Promise<any>;
 export function resolveDID(did: string, input_metadata: string): Promise<any>;
@@ -40,13 +31,9 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
-  readonly didkit_error_code: () => number;
-  readonly didkit_error_message: () => number;
   readonly DIDAuth: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => number;
   readonly JWKFromTezos: (a: number, b: number) => number;
   readonly clearCache: () => number;
-  readonly completeDelegateCapability: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
-  readonly completeInvokeCapability: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
   readonly completeIssueCredential: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
   readonly completeIssuePresentation: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
   readonly contextLoader: (a: number, b: number) => number;
@@ -54,7 +41,6 @@ export interface InitOutput {
   readonly createJwe: (a: number, b: number, c: number, d: number) => number;
   readonly decryptDagJwe: (a: number, b: number, c: number, d: number) => number;
   readonly decryptJwe: (a: number, b: number, c: number, d: number) => number;
-  readonly delegateCapability: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => number;
   readonly didResolver: (a: number, b: number, c: number, d: number) => number;
   readonly didToVerificationMethod: (a: number, b: number) => number;
   readonly generateEd25519Key: (a: number) => void;
@@ -62,29 +48,25 @@ export interface InitOutput {
   readonly generateSecp256k1Key: (a: number) => void;
   readonly generateSecp256k1KeyFromBytes: (a: number, b: number, c: number) => void;
   readonly getVersion: (a: number) => void;
-  readonly invokeCapability: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => number;
   readonly issueCredential: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => number;
   readonly issuePresentation: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => number;
   readonly keyToDID: (a: number, b: number, c: number, d: number, e: number) => void;
   readonly keyToVerificationMethod: (a: number, b: number, c: number, d: number) => number;
-  readonly prepareDelegateCapability: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => number;
-  readonly prepareInvokeCapability: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => number;
   readonly prepareIssueCredential: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
   readonly prepareIssuePresentation: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
   readonly resolveDID: (a: number, b: number, c: number, d: number) => number;
   readonly verifyCredential: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
-  readonly verifyDelegation: (a: number, b: number) => number;
-  readonly verifyInvocation: (a: number, b: number, c: number, d: number) => number;
-  readonly verifyInvocationSignature: (a: number, b: number) => number;
   readonly verifyPresentation: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
+  readonly didkit_error_code: () => number;
+  readonly didkit_error_message: () => number;
   readonly __wbindgen_export_0: (a: number, b: number) => number;
   readonly __wbindgen_export_1: (a: number, b: number, c: number, d: number) => number;
   readonly __wbindgen_export_2: (a: number) => void;
   readonly __wbindgen_export_3: WebAssembly.Table;
   readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
   readonly __wbindgen_export_4: (a: number, b: number, c: number) => void;
-  readonly __wbindgen_export_5: (a: number, b: number, c: number) => void;
-  readonly __wbindgen_export_6: (a: number, b: number) => void;
+  readonly __wbindgen_export_5: (a: number, b: number) => void;
+  readonly __wbindgen_export_6: (a: number, b: number, c: number) => void;
   readonly __wbindgen_export_7: (a: number, b: number, c: number, d: number) => void;
 }
 

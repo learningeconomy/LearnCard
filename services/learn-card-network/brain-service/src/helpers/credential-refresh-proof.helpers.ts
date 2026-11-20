@@ -28,11 +28,11 @@ export const verifyManagedRefreshProof = async (
             result = await verifier.verifyCredential(credential, { checks: ['proof'] });
             if (proofVerified(result)) return;
         }
-    } catch (cause) {
+    } catch {
         throw new TRPCError({
             code: 'BAD_REQUEST',
             message: 'Credential proof could not be verified',
-            cause,
+            cause: 'CREDENTIAL_PROOF_INVALID',
         });
     }
 

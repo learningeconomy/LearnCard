@@ -1,0 +1,18 @@
+{
+    "name": "learncard-android-credential-lab",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build:web": "bun web/build.ts",
+        "test": "vitest run --config vitest.config.ts",
+        "verifier:browser": "bun browser-verifier/serve.ts"
+    },
+    "dependencies": {
+        "@capacitor/core": "8.5.2",
+        "@noble/curves": "1.9.7",
+        "@openeudi/openid4vp": "0.18.0",
+        "@scure/base": "1.2.6",
+        "@sd-jwt/sd-jwt-vc": "0.19.0",
+        "esbuild": "0.27.1"
+    }
+}

@@ -1,5 +1,56 @@
 # @learncard/sss-key-manager
 
+## 0.3.3
+
+### Patch Changes
+
+- [#2073](https://github.com/learningeconomy/LearnCard/pull/2073) [`9ea97f319158a461ec42b4256c63b81ed53afe97`](https://github.com/learningeconomy/LearnCard/commit/9ea97f319158a461ec42b4256c63b81ed53afe97) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Load the Nitro attestation verifier (X.509, ASN.1, CBOR) on first use instead of at import time.
+
+- [#2073](https://github.com/learningeconomy/LearnCard/pull/2073) [`9ea97f319158a461ec42b4256c63b81ed53afe97`](https://github.com/learningeconomy/LearnCard/commit/9ea97f319158a461ec42b4256c63b81ed53afe97) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Mark the package side-effect free so bundlers can drop unused modules (for example the SSS strategy when an app only imports a constant).
+
+- Updated dependencies [[`e096512e4291bcaa5e424b7abbfc0932ca2a2317`](https://github.com/learningeconomy/LearnCard/commit/e096512e4291bcaa5e424b7abbfc0932ca2a2317), [`ff6f013bdedc9aee84e9849fa5736a8ad4a90c81`](https://github.com/learningeconomy/LearnCard/commit/ff6f013bdedc9aee84e9849fa5736a8ad4a90c81), [`e096512e4291bcaa5e424b7abbfc0932ca2a2317`](https://github.com/learningeconomy/LearnCard/commit/e096512e4291bcaa5e424b7abbfc0932ca2a2317), [`154941805bd8e2aa626afe3582e7794921debd27`](https://github.com/learningeconomy/LearnCard/commit/154941805bd8e2aa626afe3582e7794921debd27), [`1e4a9e97b825c18300ae0f00c2b9324120be196f`](https://github.com/learningeconomy/LearnCard/commit/1e4a9e97b825c18300ae0f00c2b9324120be196f), [`bd450e7b0467a94bbd30573fa0aebfcd6333db22`](https://github.com/learningeconomy/LearnCard/commit/bd450e7b0467a94bbd30573fa0aebfcd6333db22), [`acda1d1bd362add238a7c6ff8096c295e844e586`](https://github.com/learningeconomy/LearnCard/commit/acda1d1bd362add238a7c6ff8096c295e844e586)]:
+    - @learncard/types@6.2.0
+
+## 0.3.2
+
+### Patch Changes
+
+- [#2007](https://github.com/learningeconomy/LearnCard/pull/2007) [`f3f3d678156b46a67a2f916b62789aeef4e40bc7`](https://github.com/learningeconomy/LearnCard/commit/f3f3d678156b46a67a2f916b62789aeef4e40bc7) Thanks [@Custard7](https://github.com/Custard7)! - Add optional `KeyDerivationStrategy.fetchArchivedKey()`, implemented by the SSS strategy against `POST /keys/archived-key`. It returns `null` on any failure or unavailable response, so callers can fall back to legacy key derivation.
+
+- Updated dependencies [[`f3f3d678156b46a67a2f916b62789aeef4e40bc7`](https://github.com/learningeconomy/LearnCard/commit/f3f3d678156b46a67a2f916b62789aeef4e40bc7)]:
+    - @learncard/types@6.1.1
+
+## 0.3.1
+
+### Patch Changes
+
+- Updated dependencies [[`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c), [`f086c95870f57896331b2bbbdd97a94f6ddc3339`](https://github.com/learningeconomy/LearnCard/commit/f086c95870f57896331b2bbbdd97a94f6ddc3339), [`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c)]:
+    - @learncard/types@6.1.0
+
+## 0.3.0
+
+### Minor Changes
+
+- [#1925](https://github.com/learningeconomy/LearnCard/pull/1925) [`13e0809239cd73c5153a3ff82b268afb21b665b2`](https://github.com/learningeconomy/LearnCard/commit/13e0809239cd73c5153a3ff82b268afb21b665b2) Thanks [@Custard7](https://github.com/Custard7)! - Let the escrow enclave's own recovery emails (code, recovery started, release warning) carry the app's brand. The owner's device seals a display name into the escrow blob at enrollment (`recoveryBrand`), the same way it seals the recovery email and language. This needs the brand-aware enclave image, and stays off until a tenant turns it on (SECURITY.md D21).
+
+    - **sss-key-manager:** new optional `escrow.emailBrand`. It is sealed as `recoveryBrand` only when the recovery contact is sealed (nitro enroll/replace), never on a carry. `createSSSStrategy` throws if the value is invalid. New export `canonicalEscrowEmailBrand` (ASCII letters, digits, space, `-`, `'`, `&`; 1-32 characters, starting with a letter; at most 3 digits in total and no `http`/`www`), plus `MAX_ESCROW_EMAIL_BRAND_LENGTH` and `MAX_ESCROW_EMAIL_BRAND_DIGITS`. `EscrowBlobPlaintext` gains `recoveryBrand?`. The blob and release parsers keep a valid brand and drop an invalid one without failing; before this change they dropped the field entirely. `violatesCarryContactRule` also flags a target that claims a brand.
+    - **learn-card-base:** new tenant config flag `auth.sss.escrowSealEmailBrand` (default false). When it is on, `getEscrowStrategyConfig(sss, { appBrandName })` forwards the canonical app name as `emailBrand`. An invalid name is logged and omitted, and escrow stays enabled. `getEscrowEmailSender` now returns `mixed`, which is true when this app seals its brand. New optional `auth.sss.escrowSharedEmailBrands` (the other apps sharing this app's DIDs): with sealing on, an app whose fallback brand is its own (LearnCard) gets a `shared` note naming them, since a shared DID's brand is "last writer wins". New `getTenantEscrowStrategyConfig(sss, tenant)`, used by both apps' `sss` factories, forwards `branding.name`.
+    - **learn-card-app:** passes `branding.name` through `getTenantEscrowStrategyConfig`. While sealing is on, the recovery screens say the code and updates may come from either brand, or, in LearnCard, from VetPass if the user also uses it (4 new keys in each of the 4 locales).
+    - **lca-api:** no code change. The software enclave now keeps the sealed brand through carry and rewrap because it uses the updated parser (covered by a test).
+
+- [#1925](https://github.com/learningeconomy/LearnCard/pull/1925) [`13e0809239cd73c5153a3ff82b268afb21b665b2`](https://github.com/learningeconomy/LearnCard/commit/13e0809239cd73c5153a3ff82b268afb21b665b2) Thanks [@Custard7](https://github.com/Custard7)! - Prepare VetPass to use escrow recovery on LearnCard's escrow enclave. The enclave serves one tenant: it signs and checks its own authority tenant label (`learncard`). Before this change VetPass sent its app tenant (`vetpass`) instead, so its first authority-state read failed.
+
+    - **sss-key-manager:** new optional `escrow.authorityTenant`, used for everything the enclave signs or checks (intent tenant, authority state, hold and code-delivery records, persisted recovery expectations). `tenantId` is still sent as `X-Tenant-Id` and used for branding. It defaults to `tenantId`, so LearnCard and ScoutPass behave as before. If signed evidence carries another label, the client throws the new `EscrowAuthorityTenantMismatchError` (a subclass of `EscrowEvidenceError` that names both labels) before rotating shares or taking any recovery step. A malformed label throws in `createSSSStrategy`.
+    - **learn-card-base:** new tenant config field `auth.sss.escrowAuthorityTenant` (validated), forwarded with the escrow trust policy by `getEscrowStrategyConfig`. Also adds the helpers `getEscrowAuthorityTenant`, `escrowAuthorityBrandName`, `getEscrowEmailSenderBrand` and `getEscrowEmailSender` (compares the app's `branding.name` with the enclave brand).
+    - **lca-api:** checks escrow intents and authority state against the new `ESCROW_AUTHORITY_TENANT` setting (default `learncard`, so no infrastructure change), not the client-supplied `X-Tenant-Id`. It also refuses an enroll when the authority state it reads carries a different tenant. Holds, emails and links still use the app tenant. The default is global, so the ScoutPass deployment (escrow off) must set its own value before it turns escrow on.
+    - **learn-card-app:** no VetPass config change: VetPass escrow stays off at every stage until the SSS switch turns it on together with LearnCard production. A new test keeps it off until then, and afterwards fails if VetPass and LearnCard differ in key derivation, escrow mode, pins or authority tenant at any deployed stage. When the enclave's email brand differs from the app's, the recovery screens explain that the code and some other emails come from LearnCard (4 locales).
+    - **escrow-canary:** tier 3 reports any `EscrowEvidenceError` subclass, including the new tenant mismatch, as `evidence` rather than `unexpected`.
+
+### Patch Changes
+
+- Updated dependencies [[`e9d738eea3b477dbd82bde171d3c5f8ffa2efbc5`](https://github.com/learningeconomy/LearnCard/commit/e9d738eea3b477dbd82bde171d3c5f8ffa2efbc5), [`69b80366c48e0f458b3bb50f25166c90ecaa2d6d`](https://github.com/learningeconomy/LearnCard/commit/69b80366c48e0f458b3bb50f25166c90ecaa2d6d), [`0caa0e478bce246793893e488f37ee90c9b00a1a`](https://github.com/learningeconomy/LearnCard/commit/0caa0e478bce246793893e488f37ee90c9b00a1a), [`bde3fe0f15a780d9fafc699096a9a0307502f529`](https://github.com/learningeconomy/LearnCard/commit/bde3fe0f15a780d9fafc699096a9a0307502f529), [`784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3`](https://github.com/learningeconomy/LearnCard/commit/784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3), [`751579d9c14116dbf6d0e7f7d62f489c81c39db2`](https://github.com/learningeconomy/LearnCard/commit/751579d9c14116dbf6d0e7f7d62f489c81c39db2), [`2c60b1a760958cbfe2525bc951d2381332e1aa48`](https://github.com/learningeconomy/LearnCard/commit/2c60b1a760958cbfe2525bc951d2381332e1aa48)]:
+    - @learncard/types@6.0.0
+
 ## 0.2.7
 
 ### Patch Changes

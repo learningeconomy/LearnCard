@@ -1,6 +1,6 @@
 {
     "name": "@learncard/lca-api-service",
-    "version": "1.6.3",
+    "version": "1.9.0",
     "description": "",
     "engines": {
         "node": ">=24.12 <25"
@@ -9,6 +9,7 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
+        "config:check": "bun scripts/check-classlink-config.ts",
         "migrate:sa-seeds:local": "bash scripts/migrate-signing-authority-seeds-local.sh",
         "migrate:sa-seeds": "node scripts/migrate-signing-authority-seeds.mjs",
         "check:sa-infra": "node scripts/check-seed-encryption-infrastructure.mjs",
@@ -61,6 +62,7 @@
     "dependencies": {
         "@aws-sdk/client-bedrock-runtime": "^3.1139.0",
         "@aws-sdk/client-kms": "^3.1139.0",
+        "@aws-sdk/client-s3": "^3.883.0",
         "@aws-sdk/client-secrets-manager": "^3.1139.0",
         "@fastify/cors": "^11.2.0",
         "@fastify/formbody": "^8.0.2",

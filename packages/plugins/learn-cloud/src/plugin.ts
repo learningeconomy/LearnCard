@@ -18,10 +18,12 @@ import { LearnCloudPluginDependentMethods, LearnCloudPlugin } from './types';
 import {
     generateEncryptedRecord,
     generateEncryptedFieldsArray,
+    generateIndexQuery,
     generateJWE,
     decryptJWE,
     hash,
 } from './helpers';
+import { createSendTogether } from './sendTogether';
 
 export * from './types';
 
@@ -127,6 +129,35 @@ export const getLearnCloudPlugin = async (
             throw error;
         }
     };
+
+    /**
+     * The index count can't dedupe by uri: the server only sees it encrypted and as an
+     * unlabelled field hash. So a uri that's already indexed isn't added again (LC-2413).
+     * A failed lookup adds as before.
+     */
+    const isUriIndexed = async (
+        _learnCard: typeof initialLearnCard,
+        currentClient: LearnCloudClient,
+        uri: unknown
+    ): Promise<boolean> => {
+        if (typeof uri !== 'string' || !uri) return false;
+        try {
+            const jwe = await currentClient.index.count.query({
+                query: await generateJWE(
+                    _learnCard,
+                    await getLearnCloudDid(currentClient),
+                    await generateIndexQuery(_learnCard, { uri }, unencryptedFields)
+                ),
+            });
+            const count = isEncrypted(jwe) ? await decryptJWE<number>(_learnCard, jwe) : jwe;
+            return Number(count) > 0;
+        } catch {
+            return false;
+        }
+    };
+
+    // Passport/Home counts and the backfill marker read go in one batched request.
+    const sendCountTogether = createSendTogether();
 
     let updateQueue = Promise.resolve();
 
@@ -303,31 +334,38 @@ export const getLearnCloudPlugin = async (
                     ),
                 };
             },
-            learnCloudCount: async (_learnCard, query, includeAssociatedDids) => {
-                const currentClient = await updateLearnCard(_learnCard);
+            learnCloudCount: async (_learnCard, query, includeAssociatedDids) =>
+                sendCountTogether(async () => {
+                    const currentClient = await updateLearnCard(_learnCard);
 
-                if (!query)
-                    return currentClient.customStorage.count.query({ includeAssociatedDids });
+                    if (!query)
+                        return () =>
+                            currentClient.customStorage.count.query({ includeAssociatedDids });
 
-                const fields = await generateEncryptedFieldsArray(_learnCard, query, [
-                    ...unencryptedCustomFields,
-                    '_id',
-                ]);
+                    const fields = await generateEncryptedFieldsArray(_learnCard, query, [
+                        ...unencryptedCustomFields,
+                        '_id',
+                    ]);
 
-                const unencryptedEntries = Object.fromEntries(
-                    Object.entries(query).filter(([key]) =>
-                        [...unencryptedCustomFields, '_id'].includes(key)
-                    )
-                );
+                    const unencryptedEntries = Object.fromEntries(
+                        Object.entries(query).filter(([key]) =>
+                            [...unencryptedCustomFields, '_id'].includes(key)
+                        )
+                    );
 
-                return currentClient.customStorage.count.query({
-                    query: await generateJWE(_learnCard, await getLearnCloudDid(currentClient), {
-                        ...unencryptedEntries,
-                        ...(fields.length > 0 ? { fields: { $in: fields } } : {}),
-                    }),
-                    includeAssociatedDids,
-                });
-            },
+                    const input = {
+                        query: await generateJWE(
+                            _learnCard,
+                            await getLearnCloudDid(currentClient),
+                            {
+                                ...unencryptedEntries,
+                                ...(fields.length > 0 ? { fields: { $in: fields } } : {}),
+                            }
+                        ),
+                        includeAssociatedDids,
+                    };
+                    return () => currentClient.customStorage.count.query(input);
+                }),
             learnCloudUpdate: async (_learnCard, query, update) => {
                 const currentClient = await updateLearnCard(_learnCard);
 
@@ -575,6 +613,8 @@ export const getLearnCloudPlugin = async (
 
                 const options = {
                     ...paginationOptions,
+                    // JSON-persisted infinite-query page parameters may restore as null.
+                    cursor: paginationOptions?.cursor ?? undefined,
                     sort: ['newestFirst', 'oldestFirst'].includes(paginationOptions?.sort ?? '')
                         ? (paginationOptions?.sort as 'newestFirst' | 'oldestFirst')
                         : undefined,
@@ -607,28 +647,16 @@ export const getLearnCloudPlugin = async (
 
                 _learnCard.debug?.('LearnCloud index.get (query)');
 
-                const fields = await generateEncryptedFieldsArray(
-                    _learnCard,
-                    query,
-                    unencryptedFields
-                );
+                const serverQuery = await generateIndexQuery(_learnCard, query, unencryptedFields);
 
-                _learnCard.debug?.('LearnCloud index.get (query fields)', fields);
-
-                const unencryptedEntries = Object.fromEntries(
-                    Object.entries(query).filter(([key]) => unencryptedFields.includes(key))
-                );
-
-                _learnCard.debug?.(
-                    'LearnCloud index.get (query unencryptedEntries)',
-                    unencryptedEntries
-                );
+                _learnCard.debug?.('LearnCloud index.get (query filter)', serverQuery);
 
                 const jwe: JWE = (await currentClient.index.get.query({
-                    query: await generateJWE(_learnCard, await getLearnCloudDid(currentClient), {
-                        ...unencryptedEntries,
-                        ...(fields.length > 0 ? { fields: { $in: fields } } : {}),
-                    }),
+                    query: await generateJWE(
+                        _learnCard,
+                        await getLearnCloudDid(currentClient),
+                        serverQuery
+                    ),
                     ...options,
                 })) as any;
 
@@ -653,47 +681,32 @@ export const getLearnCloudPlugin = async (
                 };
             },
             getCount: async (_learnCard, query) => {
-                const currentClient = await updateLearnCard(_learnCard);
+                const jwe = await sendCountTogether(async () => {
+                    const currentClient = await updateLearnCard(_learnCard);
 
-                if (!query) {
-                    _learnCard.debug?.('LearnCloud index.count (no query)');
-                    const jwe = await currentClient.index.count.query();
+                    if (!query) {
+                        _learnCard.debug?.('LearnCloud index.count (no query)');
+                        return () => currentClient.index.count.query();
+                    }
 
-                    _learnCard.debug?.('LearnCloud index.count (no query response)', jwe);
+                    _learnCard.debug?.('LearnCloud index.getCount (query)');
 
-                    const count = isEncrypted(jwe as any)
-                        ? await decryptJWE<number>(_learnCard, jwe as JWE)
-                        : (jwe as number);
+                    const serverQuery = await generateIndexQuery(
+                        _learnCard,
+                        query,
+                        unencryptedFields
+                    );
 
-                    _learnCard.debug?.('LearnCloud index.count (no query count)', count);
+                    _learnCard.debug?.('LearnCloud index.getCount (query filter)', serverQuery);
 
-                    return count;
-                }
-
-                _learnCard.debug?.('LearnCloud index.getCount (query)');
-
-                const fields = await generateEncryptedFieldsArray(
-                    _learnCard,
-                    query,
-                    unencryptedFields
-                );
-
-                _learnCard.debug?.('LearnCloud index.getCount (query fields)', fields);
-
-                const unencryptedEntries = Object.fromEntries(
-                    Object.entries(query).filter(([key]) => unencryptedFields.includes(key))
-                );
-
-                _learnCard.debug?.(
-                    'LearnCloud index.getCount (query unencryptedEntries)',
-                    unencryptedEntries
-                );
-
-                const jwe = await currentClient.index.count.query({
-                    query: await generateJWE(_learnCard, await getLearnCloudDid(currentClient), {
-                        ...unencryptedEntries,
-                        ...(fields.length > 0 ? { fields: { $in: fields } } : {}),
-                    }),
+                    const input = {
+                        query: await generateJWE(
+                            _learnCard,
+                            await getLearnCloudDid(currentClient),
+                            serverQuery
+                        ),
+                    };
+                    return () => currentClient.index.count.query(input);
                 });
 
                 _learnCard.debug?.('LearnCloud index.count (query response)', jwe);
@@ -708,6 +721,9 @@ export const getLearnCloudPlugin = async (
             },
             add: async (_learnCard, record) => {
                 const currentClient = await updateLearnCard(_learnCard);
+
+                // Already indexed: nothing to add, and callers treat it as stored.
+                if (await isUriIndexed(_learnCard, currentClient, record.uri)) return true;
 
                 const id = record.id || _learnCard.invoke.crypto().randomUUID();
 

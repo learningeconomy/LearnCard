@@ -24,6 +24,7 @@ vi.mock('qrcode.react', () => ({
         React.createElement('img', { role, 'aria-label': ariaLabel }),
 }));
 vi.mock('learn-card-base', () => ({
+    useGetProfile: () => ({ data: undefined }),
     ModalTypes: { Center: 'center', BottomSheet: 'bottom-sheet', FullScreen: 'full-screen' },
     useModal: () => ({
         newModal: (node: React.ReactNode) => {

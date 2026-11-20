@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { configureLoggerContext } from 'learn-card-base/logging/logger';
-import { FirebaseAnalytics } from '@capacitor-firebase/analytics';
+import { FirebaseProvider } from '../../analytics/providers/firebase';
 import userflow from 'userflow.js';
 import * as Sentry from '@sentry/react';
 
@@ -34,9 +34,13 @@ export const enterSharePrivacy = (): void => {
     });
     // Callers suppress capture during render; notify other mounted consumers afterward.
     queueMicrotask(() => listeners.forEach(listener => listener()));
-    userflow.setPageTrackingDisabled(true);
-    userflow.reset();
-    void FirebaseAnalytics.setEnabled({ enabled: false }).catch(() => {});
+    // The loader queues most API methods and injects its CDN script even for
+    // reset(). isIdentified() is a synchronous, non-loading public check.
+    if (userflow.isIdentified()) {
+        userflow.setPageTrackingDisabled(true);
+        userflow.reset();
+    }
+    void FirebaseProvider.disableCollectionIfStarted().catch(() => {});
     void Sentry.getReplay()?.stop();
 };
 

@@ -1,5 +1,155 @@
 # @learncard/cli
 
+## 4.1.1
+
+### Patch Changes
+
+- [#2094](https://github.com/learningeconomy/LearnCard/pull/2094) [`ff6f013bdedc9aee84e9849fa5736a8ad4a90c81`](https://github.com/learningeconomy/LearnCard/commit/ff6f013bdedc9aee84e9849fa5736a8ad4a90c81) Thanks [@goblincore](https://github.com/goblincore)! - **Breaking:** `sendContractRequest` now returns `{ requestId, status }` instead of `true`.
+
+    Add `getContractRequest(contractUri, requestId)` to read one contract request by its request ID, and let `cancelContractRequest` take `{ requestId }` instead of a target profile ID. `getContractSentRequests` rows gain `target` and may omit `profile`.
+
+    Prepare for requests addressed to an email: a request marked `addressedByEmail` shows only the email to other parties until it is accepted, in `getContractRequest`, `getContractSentRequests`, `getRequestStatusForProfile` and the decision notifications. Request status gains `expired`.
+
+- [#2071](https://github.com/learningeconomy/LearnCard/pull/2071) [`54bc8e4085ac93118838fbb8070565ebb62171cc`](https://github.com/learningeconomy/LearnCard/commit/54bc8e4085ac93118838fbb8070565ebb62171cc) Thanks [@goblincore](https://github.com/goblincore)! - Expose Integration webhooks and the change feed to clients. The network plugin gains `setIntegrationWebhook` (returns the signing secret once, when it creates the first one), `getIntegrationWebhook` (URL, state, delivery health, secret version), `rotateIntegrationWebhookSecret`, `sendIntegrationTestEvent` (`{ delivered, httpStatus, latencyMs, error }`), `getIntegrationEvents` and `getContractConnections`. The CLI lists them for `learncard call` (the secret-returning `setIntegrationWebhook` and `rotateIntegrationWebhookSecret` calls need `--show-secret`) and adds an `integration-webhooks` capability. The developer portal gets a Webhooks tab for integrations that use contracts: webhook URL (the first save shows the signing secret once), feed-only toggle, secret rotation, delivery health (state, last success and failure with its reason, waiting and retrying events, secret version), and a test event with HTTP status and latency. The server webhooks guide no longer shows an HMAC signature check for profile notification webhooks, which are verified with their `Authorization` bearer token.
+
+- Updated dependencies [[`e096512e4291bcaa5e424b7abbfc0932ca2a2317`](https://github.com/learningeconomy/LearnCard/commit/e096512e4291bcaa5e424b7abbfc0932ca2a2317), [`ff6f013bdedc9aee84e9849fa5736a8ad4a90c81`](https://github.com/learningeconomy/LearnCard/commit/ff6f013bdedc9aee84e9849fa5736a8ad4a90c81), [`e096512e4291bcaa5e424b7abbfc0932ca2a2317`](https://github.com/learningeconomy/LearnCard/commit/e096512e4291bcaa5e424b7abbfc0932ca2a2317), [`154941805bd8e2aa626afe3582e7794921debd27`](https://github.com/learningeconomy/LearnCard/commit/154941805bd8e2aa626afe3582e7794921debd27), [`cad95b60227e1b99ffaaad07406ccc0366b08555`](https://github.com/learningeconomy/LearnCard/commit/cad95b60227e1b99ffaaad07406ccc0366b08555), [`154941805bd8e2aa626afe3582e7794921debd27`](https://github.com/learningeconomy/LearnCard/commit/154941805bd8e2aa626afe3582e7794921debd27), [`1e4a9e97b825c18300ae0f00c2b9324120be196f`](https://github.com/learningeconomy/LearnCard/commit/1e4a9e97b825c18300ae0f00c2b9324120be196f), [`154941805bd8e2aa626afe3582e7794921debd27`](https://github.com/learningeconomy/LearnCard/commit/154941805bd8e2aa626afe3582e7794921debd27), [`bd450e7b0467a94bbd30573fa0aebfcd6333db22`](https://github.com/learningeconomy/LearnCard/commit/bd450e7b0467a94bbd30573fa0aebfcd6333db22), [`261e0f46814595d06460dc617ba50800671f03b1`](https://github.com/learningeconomy/LearnCard/commit/261e0f46814595d06460dc617ba50800671f03b1), [`acda1d1bd362add238a7c6ff8096c295e844e586`](https://github.com/learningeconomy/LearnCard/commit/acda1d1bd362add238a7c6ff8096c295e844e586), [`6d5afc9c348c20ac6ac9c7b35651e5b850b13401`](https://github.com/learningeconomy/LearnCard/commit/6d5afc9c348c20ac6ac9c7b35651e5b850b13401), [`98674f16ea4ff1b8407749da2edcfbe5e023a7ac`](https://github.com/learningeconomy/LearnCard/commit/98674f16ea4ff1b8407749da2edcfbe5e023a7ac), [`0bb92c2cc8047aa4bf307fd0952c1714219286a9`](https://github.com/learningeconomy/LearnCard/commit/0bb92c2cc8047aa4bf307fd0952c1714219286a9)]:
+    - @learncard/types@6.2.0
+    - @learncard/network-brain-client@2.8.0
+    - @learncard/didkit-plugin@1.11.0
+    - @learncard/learn-cloud-plugin@2.5.0
+    - @learncard/core@10.0.0
+    - @learncard/lca-api-plugin@3.0.0
+    - @learncard/init@3.0.0
+    - @learncard/holder-continuity@1.0.0
+    - @learncard/ler-rs-plugin@0.1.38
+    - @learncard/linked-claims-plugin@0.2.47
+    - @learncard/open-badge-v2-plugin@1.1.48
+    - @learncard/render-method-plugin@15.0.0
+
+## 4.1.0
+
+### Minor Changes
+
+- [#2032](https://github.com/learningeconomy/LearnCard/pull/2032) [`1921604b3cf5013556d9ad6f7e7aff6c56d49eeb`](https://github.com/learningeconomy/LearnCard/commit/1921604b3cf5013556d9ad6f7e7aff6c56d49eeb) Thanks [@goblincore](https://github.com/goblincore)! - Publish the CLI as one self-contained file. `npx @learncard/cli` now installs a single package of about 10 MB instead of roughly 1,170 packages and 1.2 GB, with no EBADENGINE or deprecation warnings, and starts about twice as fast. Commands, flags and output are unchanged.
+
+    Also fixes `--json` output being cut off at 8 KB on Node 20 when another process captured it, and the CLI failing to start on Node 20 releases that cannot `require()` ES modules.
+
+    Adds `bun run build:binary` to compile standalone executables that need no Node.js install.
+
+### Patch Changes
+
+- Updated dependencies [[`f3f3d678156b46a67a2f916b62789aeef4e40bc7`](https://github.com/learningeconomy/LearnCard/commit/f3f3d678156b46a67a2f916b62789aeef4e40bc7), [`ae4eb0ffc9c23119c469af38e8866b5086179b70`](https://github.com/learningeconomy/LearnCard/commit/ae4eb0ffc9c23119c469af38e8866b5086179b70), [`ae4eb0ffc9c23119c469af38e8866b5086179b70`](https://github.com/learningeconomy/LearnCard/commit/ae4eb0ffc9c23119c469af38e8866b5086179b70), [`ae4eb0ffc9c23119c469af38e8866b5086179b70`](https://github.com/learningeconomy/LearnCard/commit/ae4eb0ffc9c23119c469af38e8866b5086179b70)]:
+    - @learncard/types@6.1.1
+    - @learncard/learn-cloud-plugin@2.4.0
+    - @learncard/holder-continuity@0.2.31
+    - @learncard/core@9.4.46
+    - @learncard/init@2.5.12
+    - @learncard/network-brain-client@2.7.2
+    - @learncard/didkit-plugin@1.10.12
+    - @learncard/lca-api-plugin@2.1.1
+    - @learncard/ler-rs-plugin@0.1.37
+    - @learncard/linked-claims-plugin@0.2.46
+    - @learncard/open-badge-v2-plugin@1.1.47
+    - @learncard/render-method-plugin@14.0.1
+
+## 4.0.3
+
+### Patch Changes
+
+- [#1983](https://github.com/learningeconomy/LearnCard/pull/1983) [`f086c95870f57896331b2bbbdd97a94f6ddc3339`](https://github.com/learningeconomy/LearnCard/commit/f086c95870f57896331b2bbbdd97a94f6ddc3339) Thanks [@smurflo2](https://github.com/smurflo2)! - fix: [LC-2288] Recover credential claims in place without false expiration errors or duplicate issuance, preserving confirmed save and refresh progress.
+
+    Expose claim reconciliation in CLI method and capability discovery, and require `call --write` because reconciliation can finish acceptance and usage accounting.
+
+- Updated dependencies [[`c245cba6fc162e6896c4f9439a8a8da42d4189c9`](https://github.com/learningeconomy/LearnCard/commit/c245cba6fc162e6896c4f9439a8a8da42d4189c9), [`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c), [`6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480`](https://github.com/learningeconomy/LearnCard/commit/6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480), [`f086c95870f57896331b2bbbdd97a94f6ddc3339`](https://github.com/learningeconomy/LearnCard/commit/f086c95870f57896331b2bbbdd97a94f6ddc3339), [`7f430656d7ff8c780b375f109e870dd07b5b9bf2`](https://github.com/learningeconomy/LearnCard/commit/7f430656d7ff8c780b375f109e870dd07b5b9bf2), [`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c)]:
+    - @learncard/didkit-plugin@1.10.11
+    - @learncard/types@6.1.0
+    - @learncard/lca-api-plugin@2.1.0
+    - @learncard/init@2.5.11
+    - @learncard/learn-cloud-plugin@2.3.53
+    - @learncard/holder-continuity@0.2.30
+    - @learncard/core@9.4.45
+    - @learncard/network-brain-client@2.7.1
+    - @learncard/ler-rs-plugin@0.1.36
+    - @learncard/linked-claims-plugin@0.2.45
+    - @learncard/open-badge-v2-plugin@1.1.46
+    - @learncard/render-method-plugin@14.0.0
+
+## 4.0.2
+
+### Patch Changes
+
+- [#1819](https://github.com/learningeconomy/LearnCard/pull/1819) [`784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3`](https://github.com/learningeconomy/LearnCard/commit/784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3) Thanks [@smurflo2](https://github.com/smurflo2)! - feat: [LC-2194] Support versioned ConsentFlow updates and user review.
+
+    Keep a connection's URI and history while publishing immutable access updates. New optional read/write choices stay off; required additions pause writes until the user reviews the changes. Add explicit update acceptance, review notifications, deadlines, once-only AutoBoost delivery, and safe retirement. Unsaved request previews no longer require a URI.
+
+    Preserve existing grants in partial scope updates, gate Lambda startup on legacy snapshots, and retain once-only delivery during explicit one-time updates. Localize review and history content, recover from cancelled guardian checks and concurrent updates, and keep handled notifications safe to reopen.
+
+    Retry transient Lambda migration failures without poisoning warm application imports. Record completed migrations for fast cold starts, report malformed request IDs without credential data, and identify retained ambiguous AutoBoost claims for reconciliation. Load runtime secrets before importing the scheduled deadline worker, including secrets-only Lambda deployments. Keep inbox maintenance coverage behavioral rather than pinning Lambda wrapper source text.
+
+    Recover valid, unversioned contracts created after the migration marker through scoped version-1 initialization. Atomically backfill only their existing connections, preserve global migration completion, and keep missing history on already-versioned or malformed contracts fail-closed.
+
+    Settle guardian PIN actions on external dismissal or unmount without cancelling valid submissions. Cover reapproval, signing failures and referral cancellation with the current PIN modal contract. Clear stacked overlays before opening a contract-update review. Cancel delayed modal-removal timers when their provider unmounts while preserving closing animations. Use stable localization keys independent of English labels and stop proposing optional defaults after their window expires.
+
+    Route pending and suspended connections from ordinary consent entry to explicit update review. Recover the same way when the latest-approval error arrives during an open consent dialog, without treating the connection as approved or bypassing guardian checks.
+
+    Reject overlapping top-level and nested SDK scope patches instead of silently dropping changes. Restore strict type-only imports, declare the runnable update snippet's SDK contract, and narrow unsuccessful notification reads in end-to-end consumers without raising the typecheck allowance.
+
+    Include cumulative changes in consent records so users can approve all required additions across multiple unreviewed versions. Clear the pending optional-choice marker only when the holder successfully saves their choices.
+
+    Resolve built-in request categories and personal fields to localized labels and descriptions in English, Spanish, French, and Arabic, including learning history and career/AI categories. Recognize the legitimate French cognates “Image” and “Qualifications” in the existing untranslated-value guard.
+
+    Dismiss Alerts when opening a contract-update review without waiting for read-status writes. Give unread indicators their own layout space so they cannot overlap notification dates.
+
+    Use one shared request form with the original creation controls for creating and editing requests, without per-item purpose fields or added default-enabled checkboxes. Keep the overall update explanation separate. Replace JSON authoring with readable changes and Preview Update / Publish Update actions in the Contracts tab. Show an accessible help icon and meaningful existing-access/defaults disclosures.
+
+    Start new optional review controls from their Opt-in/Opt-out settings without silently granting access. Use the edited request's defaults in previews, refresh saved choices when reopening without overwriting active edits, and reduce the extra spacing below the current version.
+
+    Separate Advanced Options from changes, published feedback, and actions. Add space below the current version while keeping the image's remove control in its original outside corner.
+
+    Show a clear unavailable state for networks that omit contract version metadata, including cached responses. Keep publishing disabled until a versioned response is available, and never assume an unversioned response is version 1.
+
+    Use direct Mongo connections for the local Docker APIs so the single-node replica's localhost address does not prevent them from starting. Gate Mongo-dependent services on a writable primary so they do not exit during replica initialization or election.
+
+    Pre-bundle the remaining workspace crypto and cloud-client dependencies before serving the local app, avoiding dependency-discovery reloads during browser startup.
+
+    Open an on-demand Update contract modal from each configured request in the Contracts tab, rather than the Testing tab. Reveal the update explanation only after edits, separate it from grouped current/next values, and keep user-review previews in the shared modal stack for correct focus and Escape behavior.
+
+    Breaking SDK/API changes: use `updateContract` instead of the removed `addAutoBoostsToContract` and `removeAutoBoostsFromContract` SDK methods. One-time consent status is now `consumed`, not `stale`. The deprecated HTTP AutoBoost routes remain available for one compatibility release and use the versioned update path. Legacy AutoBoost additions also pause writes and synchronization pending explicit holder review; coordinate partner upgrades and support `getConsentStatus` / `reviewUrl` before rollout.
+
+    Reject stale editor drafts with their original expected version, treat equivalent updates as no-ops, require future reconsent deadlines, and restrict legacy AutoBoost publications to contract owners. Paginate tied consent-data timestamps with stable opaque cursors and preserve all unreviewed optional additions across later updates.
+
+    Track each holder's last explicit review, backfill that baseline from transaction history, and timestamp legacy snapshots at the revision actually captured. Require notification and approval when an existing item's reason changes; keep redirect-only changes quiet. Retain ambiguous initial AutoBoost claims and reject mismatched concurrent initial credential deliveries.
+
+    Show material metadata, writer, and automatic-delivery changes alongside scope updates. Refresh holder terms before enabling review edits, populate newly enabled personal fields from the holder profile, and use a structured approval-required reason instead of matching error text.
+
+    Regenerate the Python API client from the current router graph, including all consent lifecycle states, versioned updates, and review metadata. Omit `None` for ordinary non-nullable optional inputs, preserve nullable values, and retain the allocation holder's explicit-null rejection instead of silently treating it as an omission.
+
+    Preserve existing delegated AutoBoost issuers when owners publish unchanged configurations, while keeping new configurations owner-issued and rejecting changes to an existing delegated signer. Defer new cross-account setup until an explicit issuer-authorization flow is available. Use pre-upgrade persisted fixtures for legacy-delegation regressions without reopening writer publication, and fix the signer mock's recursive self-call in consent regressions.
+
+    Keep saves from already handled reviews in ordinary sharing-update history, and preserve the saved one-time setting when update or reconsent inputs omit it.
+
+    Use opaque timestamp-and-ID cursors for holder consent lists, between-profile data, transaction history, and holder exports as well as owner data pages. Preserve legacy timestamp fallbacks and reject malformed or pre-upgrade date-only cursors with `BAD_REQUEST`; restart pagination without a cursor after upgrading.
+
+    Pin owned verification review links to the allocated app origin so real consent review URLs never escape to an unrelated localhost development server.
+
+    Explain approval notifications above Publish Update without changing checked-by-default Opt-out selections. Synchronize the CLI method catalog with the versioned contract SDK, removing obsolete AutoBoost commands and exposing update, history, status, and acceptance methods.
+
+    Use neutral changed-request summaries and Updated badges for existing-scope edits, including reason-only reviews. Reserve new-access headlines and new-item counts for pure scope additions without material request-detail edits, and retain existing optional choices during approval.
+
+- Updated dependencies [[`e9d738eea3b477dbd82bde171d3c5f8ffa2efbc5`](https://github.com/learningeconomy/LearnCard/commit/e9d738eea3b477dbd82bde171d3c5f8ffa2efbc5), [`69b80366c48e0f458b3bb50f25166c90ecaa2d6d`](https://github.com/learningeconomy/LearnCard/commit/69b80366c48e0f458b3bb50f25166c90ecaa2d6d), [`0caa0e478bce246793893e488f37ee90c9b00a1a`](https://github.com/learningeconomy/LearnCard/commit/0caa0e478bce246793893e488f37ee90c9b00a1a), [`bde3fe0f15a780d9fafc699096a9a0307502f529`](https://github.com/learningeconomy/LearnCard/commit/bde3fe0f15a780d9fafc699096a9a0307502f529), [`784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3`](https://github.com/learningeconomy/LearnCard/commit/784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3), [`83dad5258438dd7cbc1fba3035f1b009c703653e`](https://github.com/learningeconomy/LearnCard/commit/83dad5258438dd7cbc1fba3035f1b009c703653e), [`a7923d7deaf0baf7205bbae1f6fe132e846fed44`](https://github.com/learningeconomy/LearnCard/commit/a7923d7deaf0baf7205bbae1f6fe132e846fed44), [`751579d9c14116dbf6d0e7f7d62f489c81c39db2`](https://github.com/learningeconomy/LearnCard/commit/751579d9c14116dbf6d0e7f7d62f489c81c39db2), [`2c60b1a760958cbfe2525bc951d2381332e1aa48`](https://github.com/learningeconomy/LearnCard/commit/2c60b1a760958cbfe2525bc951d2381332e1aa48)]:
+    - @learncard/types@6.0.0
+    - @learncard/network-brain-client@2.7.0
+    - @learncard/learn-cloud-plugin@2.3.52
+    - @learncard/holder-continuity@0.2.29
+    - @learncard/core@9.4.44
+    - @learncard/init@2.5.10
+    - @learncard/didkit-plugin@1.10.10
+    - @learncard/lca-api-plugin@2.0.16
+    - @learncard/ler-rs-plugin@0.1.35
+    - @learncard/linked-claims-plugin@0.2.44
+    - @learncard/open-badge-v2-plugin@1.1.45
+    - @learncard/render-method-plugin@13.0.0
+
 ## 4.0.1
 
 ### Patch Changes

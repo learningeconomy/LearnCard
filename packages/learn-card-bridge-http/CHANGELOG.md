@@ -1,5 +1,52 @@
 # @learncard/create-http-bridge
 
+## 2.0.0
+
+### Major Changes
+
+- [#2045](https://github.com/learningeconomy/LearnCard/pull/2045) [`acda1d1bd362add238a7c6ff8096c295e844e586`](https://github.com/learningeconomy/LearnCard/commit/acda1d1bd362add238a7c6ff8096c295e844e586) Thanks [@goblincore](https://github.com/goblincore)! - Stop installing the backend services and React Native tooling with the SDK.
+
+    - `@learncard/network-brain-client` and `@learncard/learn-cloud-client` no longer depend on `@learncard/network-brain-service` / `@learncard/learn-cloud-service`. Workspace development continues to resolve their source without a build. Release manifest preparation removes that source-only development condition, so published entry points use built JavaScript and bundled declarations under both default and development conditions. The brain client bundles its helper runtime dependencies in ESM and CommonJS. The declarations contain the router types they need, so consumers type-check without the server packages. `@learncard/learn-cloud-client` also exports `Filter`, which `@learncard/learn-cloud-plugin` now imports from there.
+    - `@learncard/core`, `@learncard/crypto-plugin` and `@learncard/lca-api-plugin` no longer depend on `isomorphic-webcrypto`, which pulled in Expo and React Native through its optional dependencies. They use the platform's `globalThis.crypto` (Node.js 20+, every current browser). **Breaking for environments without WebCrypto** (React Native, Node.js 18 and older): they must now load a WebCrypto polyfill before initializing LearnCard; `learnCard.invoke.crypto()` throws a clear error if it is missing.
+    - `@learncard/types` declares the `zod-openapi` type augmentation imported by its published development sources, so client types also resolve with the development condition enabled.
+    - The service packages publish only `dist`, `README.md` and `CHANGELOG.md`.
+
+    The WebCrypto requirement is a major release for `core`, `crypto-plugin`, and the public entry points that initialize LearnCard: `init`, `lca-api-plugin`, `react`, `holder-continuity`, and `create-http-bridge`. Changesets otherwise propagates internal dependency updates as patches; explicit majors prevent existing compatible ranges from silently losing the polyfill. The CLI already requires Node.js 20+. Plugins that call WebCrypto directly, including `sd-jwt-vc`, `openid4vc`, `linked-claims`, and `learn-cloud`, also require the platform API or a consumer-provided polyfill before use; loading core no longer supplies it. Only callers of `learnCard.invoke.crypto()` receive the explicit missing-WebCrypto error; direct callers can fail with a native error. Packages that only reference core/plugin types do not acquire a new runtime requirement.
+
+### Patch Changes
+
+- [#2087](https://github.com/learningeconomy/LearnCard/pull/2087) [`6d5afc9c348c20ac6ac9c7b35651e5b850b13401`](https://github.com/learningeconomy/LearnCard/commit/6d5afc9c348c20ac6ac9c7b35651e5b850b13401) Thanks [@e2e-test-playwright-runner](https://github.com/apps/e2e-test-playwright-runner)! - [Auto] Update DIDKit WASM
+
+- [#2068](https://github.com/learningeconomy/LearnCard/pull/2068) [`0bb92c2cc8047aa4bf307fd0952c1714219286a9`](https://github.com/learningeconomy/LearnCard/commit/0bb92c2cc8047aa4bf307fd0952c1714219286a9) Thanks [@e2e-test-playwright-runner](https://github.com/apps/e2e-test-playwright-runner)! - Update DIDKit WASM from didkit 9dc227081584 and ssi 6d71e5f46e59, including the HTTP bridge artifact and integrity pin.
+
+- Updated dependencies [[`e096512e4291bcaa5e424b7abbfc0932ca2a2317`](https://github.com/learningeconomy/LearnCard/commit/e096512e4291bcaa5e424b7abbfc0932ca2a2317), [`ff6f013bdedc9aee84e9849fa5736a8ad4a90c81`](https://github.com/learningeconomy/LearnCard/commit/ff6f013bdedc9aee84e9849fa5736a8ad4a90c81), [`e096512e4291bcaa5e424b7abbfc0932ca2a2317`](https://github.com/learningeconomy/LearnCard/commit/e096512e4291bcaa5e424b7abbfc0932ca2a2317), [`154941805bd8e2aa626afe3582e7794921debd27`](https://github.com/learningeconomy/LearnCard/commit/154941805bd8e2aa626afe3582e7794921debd27), [`1e4a9e97b825c18300ae0f00c2b9324120be196f`](https://github.com/learningeconomy/LearnCard/commit/1e4a9e97b825c18300ae0f00c2b9324120be196f), [`bd450e7b0467a94bbd30573fa0aebfcd6333db22`](https://github.com/learningeconomy/LearnCard/commit/bd450e7b0467a94bbd30573fa0aebfcd6333db22), [`acda1d1bd362add238a7c6ff8096c295e844e586`](https://github.com/learningeconomy/LearnCard/commit/acda1d1bd362add238a7c6ff8096c295e844e586)]:
+    - @learncard/types@6.2.0
+    - @learncard/init@3.0.0
+
+## 1.1.269
+
+### Patch Changes
+
+- Updated dependencies [[`f3f3d678156b46a67a2f916b62789aeef4e40bc7`](https://github.com/learningeconomy/LearnCard/commit/f3f3d678156b46a67a2f916b62789aeef4e40bc7)]:
+    - @learncard/types@6.1.1
+    - @learncard/init@2.5.12
+
+## 1.1.268
+
+### Patch Changes
+
+- Updated dependencies [[`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c), [`f086c95870f57896331b2bbbdd97a94f6ddc3339`](https://github.com/learningeconomy/LearnCard/commit/f086c95870f57896331b2bbbdd97a94f6ddc3339), [`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c)]:
+    - @learncard/types@6.1.0
+    - @learncard/init@2.5.11
+
+## 1.1.267
+
+### Patch Changes
+
+- Updated dependencies [[`e9d738eea3b477dbd82bde171d3c5f8ffa2efbc5`](https://github.com/learningeconomy/LearnCard/commit/e9d738eea3b477dbd82bde171d3c5f8ffa2efbc5), [`69b80366c48e0f458b3bb50f25166c90ecaa2d6d`](https://github.com/learningeconomy/LearnCard/commit/69b80366c48e0f458b3bb50f25166c90ecaa2d6d), [`0caa0e478bce246793893e488f37ee90c9b00a1a`](https://github.com/learningeconomy/LearnCard/commit/0caa0e478bce246793893e488f37ee90c9b00a1a), [`bde3fe0f15a780d9fafc699096a9a0307502f529`](https://github.com/learningeconomy/LearnCard/commit/bde3fe0f15a780d9fafc699096a9a0307502f529), [`784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3`](https://github.com/learningeconomy/LearnCard/commit/784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3), [`751579d9c14116dbf6d0e7f7d62f489c81c39db2`](https://github.com/learningeconomy/LearnCard/commit/751579d9c14116dbf6d0e7f7d62f489c81c39db2), [`2c60b1a760958cbfe2525bc951d2381332e1aa48`](https://github.com/learningeconomy/LearnCard/commit/2c60b1a760958cbfe2525bc951d2381332e1aa48)]:
+    - @learncard/types@6.0.0
+    - @learncard/init@2.5.10
+
 ## 1.1.266
 
 ### Patch Changes

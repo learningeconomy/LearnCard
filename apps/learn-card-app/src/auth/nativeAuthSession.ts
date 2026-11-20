@@ -3,6 +3,7 @@ import type { URLOpenListenerEvent } from '@capacitor/app';
 import type { PluginListenerHandle } from '@capacitor/core';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
+import { nativeDigitalCredentials } from '../native-digital-credentials/plugin';
 import { AuthSessionError } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
 
@@ -39,6 +40,13 @@ export interface OpenNativeAuthSessionOptions {
     callbackUrlPrefix: string;
     /** Custom scheme the OS routes the callback URL to (the tenant bundle ID). */
     callbackScheme: string;
+    /**
+     * Overall time allowed before the sheet is treated as stuck and the session rejects
+     * with `AuthSessionError('expired')`. Defaults to 60 s on iOS (`ASWebAuthenticationSession`,
+     * sized for silent Keycloak ticket hops) and 5 min on the system-browser fallback.
+     * Interactive IdP logins (e.g. ClassLink district search + federated MFA) need longer.
+     */
+    timeoutMs?: number;
 }
 
 const WebAuthSession = registerPlugin<WebAuthSessionPlugin>('WebAuthSession');
@@ -49,7 +57,8 @@ const getErrorCode = (error: unknown): string | undefined =>
 const openViaWebAuthSession = async (
     plugin: WebAuthSessionPlugin,
     url: string,
-    callbackScheme: string
+    callbackScheme: string,
+    timeoutMs: number = WEB_AUTH_SESSION_TIMEOUT_MS
 ): Promise<string> => {
     let timedOut = false;
     let watchdog: ReturnType<typeof setTimeout> | undefined;
@@ -61,7 +70,7 @@ const openViaWebAuthSession = async (
             timedOut = true;
             plugin.cancel().catch(error => log.debug('Failed to cancel auth sheet', error));
             reject(new AuthSessionError('Sign-in expired. Please try again.', 'expired'));
-        }, WEB_AUTH_SESSION_TIMEOUT_MS);
+        }, timeoutMs);
     });
 
     const startWhenReady = async (): Promise<WebAuthSessionResult> => {
@@ -101,17 +110,19 @@ const openViaWebAuthSession = async (
 /** Android (and the iOS fallback): Custom Tabs / SFSafariViewController + a deep-link listener. */
 const openViaSystemBrowser = async (
     url: string,
-    { callbackUrlPrefix }: OpenNativeAuthSessionOptions
+    { callbackUrlPrefix, timeoutMs = OVERALL_TIMEOUT_MS }: OpenNativeAuthSessionOptions
 ): Promise<string> => {
     let urlListener: PluginListenerHandle | undefined;
     let finishedListener: PluginListenerHandle | undefined;
     let overallTimer: ReturnType<typeof setTimeout> | undefined;
     let graceTimer: ReturnType<typeof setTimeout> | undefined;
+    let providerCallbackToken: string | undefined;
+    let stopped = false;
 
     const result = new Promise<string>((resolve, reject) => {
         overallTimer = setTimeout(() => {
             reject(new AuthSessionError('Sign-in expired. Please try again.', 'expired'));
-        }, OVERALL_TIMEOUT_MS);
+        }, timeoutMs);
 
         const setup = async (): Promise<void> => {
             // Listener must be live before the browser opens: the redirect can
@@ -126,7 +137,36 @@ const openViaSystemBrowser = async (
                     );
                 }, BROWSER_FINISHED_GRACE_MS);
             });
-            await Browser.open({ url, toolbarColor: '#FFFFFF' });
+            if (
+                Capacitor.getPlatform() === 'android' &&
+                Capacitor.isPluginAvailable('NativeDigitalCredentials')
+            ) {
+                const context = await nativeDigitalCredentials.getPendingRequest();
+                if (stopped) return;
+                if (context.isProvider) {
+                    // Older native binaries cannot deliver this callback into the provider.
+                    // Fail before opening a browser rather than stranding the selected request.
+                    if (!context.pending || !context.authCallbackRouting) {
+                        throw new AuthSessionError(
+                            'Sign-in unavailable. Please try again.',
+                            'no_session'
+                        );
+                    }
+                    const registration = await nativeDigitalCredentials.beginAuthCallback({
+                        requestId: context.pending.requestId,
+                        callbackUrlPrefix,
+                        timeoutMs,
+                    });
+                    if (stopped) {
+                        await nativeDigitalCredentials.endAuthCallback({
+                            token: registration.token,
+                        });
+                        return;
+                    }
+                    providerCallbackToken = registration.token;
+                }
+            }
+            if (!stopped) await Browser.open({ url, toolbarColor: '#FFFFFF' });
         };
 
         setup().catch(reject);
@@ -135,6 +175,7 @@ const openViaSystemBrowser = async (
     try {
         return await result;
     } finally {
+        stopped = true;
         if (overallTimer !== undefined) clearTimeout(overallTimer);
         if (graceTimer !== undefined) clearTimeout(graceTimer);
         try {
@@ -146,6 +187,13 @@ const openViaSystemBrowser = async (
             await finishedListener?.remove();
         } catch (error) {
             log.debug('Failed to remove browserFinished listener', error);
+        }
+        if (providerCallbackToken) {
+            try {
+                await nativeDigitalCredentials.endAuthCallback({ token: providerCallbackToken });
+            } catch (error) {
+                log.debug('Failed to remove provider auth callback', error);
+            }
         }
         try {
             await Browser.close();
@@ -160,13 +208,21 @@ const openViaSystemBrowser = async (
  * iOS uses the local `WebAuthSession` plugin (`ASWebAuthenticationSession`)
  * when available; Android, and iOS without the plugin, fall back to
  * `@capacitor/browser` + an `appUrlOpen` listener.
+ *
+ * Rejects with `AuthSessionError`: `reason: 'no_session'` when the user closes the
+ * sheet, `reason: 'expired'` when `options.timeoutMs` (or the platform default) elapses.
  */
 export const openNativeAuthSession = async (
     url: string,
     options: OpenNativeAuthSessionOptions
 ): Promise<string> => {
     if (Capacitor.getPlatform() === 'ios' && Capacitor.isPluginAvailable('WebAuthSession')) {
-        return openViaWebAuthSession(WebAuthSession, url, options.callbackScheme);
+        return openViaWebAuthSession(
+            WebAuthSession,
+            url,
+            options.callbackScheme,
+            options.timeoutMs
+        );
     }
     return openViaSystemBrowser(url, options);
 };

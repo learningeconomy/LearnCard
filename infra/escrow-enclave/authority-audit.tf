@@ -32,8 +32,15 @@ resource "aws_iam_role_policy" "authority_monitor" {
     }
   }
 }
+
+# One of this set, AuthorityAccountOverCapacity: one account exceeded the
+# monitor's per-account row/byte bound. That account alone is skipped (every other
+# account is still verified) and the sweep also reports AuthorityCoverageFailure
+# with no heartbeat. It is legitimate growth OR deliberate padding (row counting
+# checks no signatures): an unknown account, a sudden jump, or non-enclave-looking
+# rows is suspected tampering. See the monitor README isolation section/runbook.
 resource "aws_cloudwatch_metric_alarm" "authority_integrity" {
-  for_each            = var.enable_enrollment_authority ? toset(["AuthorityIntegrityFailure", "AuthorityCoverageFailure"]) : toset([])
+  for_each            = var.enable_enrollment_authority ? toset(["AuthorityIntegrityFailure", "AuthorityCoverageFailure", "AuthorityAccountOverCapacity"]) : toset([])
   alarm_name          = "${local.name_prefix}-${each.key}"
   namespace           = "LearnCard/EscrowLedger"
   metric_name         = each.key

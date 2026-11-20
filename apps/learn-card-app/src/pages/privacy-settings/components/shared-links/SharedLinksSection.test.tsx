@@ -12,6 +12,7 @@ vi.mock('@ionic/react', () => ({
 }));
 
 vi.mock('learn-card-base', () => ({
+    useGetProfile: () => ({ data: undefined }),
     ModalTypes: { Center: 'center', BottomSheet: 'bottom', FullScreen: 'full' },
     useModal: () => ({ newModal: vi.fn(() => 1), closeModalById: vi.fn() }),
 }));

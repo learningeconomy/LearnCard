@@ -1,5 +1,253 @@
 # learn-card-base
 
+## 0.8.3
+
+### Patch Changes
+
+- [#2094](https://github.com/learningeconomy/LearnCard/pull/2094) [`ff6f013bdedc9aee84e9849fa5736a8ad4a90c81`](https://github.com/learningeconomy/LearnCard/commit/ff6f013bdedc9aee84e9849fa5736a8ad4a90c81) Thanks [@goblincore](https://github.com/goblincore)! - **Breaking:** `sendContractRequest` now returns `{ requestId, status }` instead of `true`.
+
+    Add `getContractRequest(contractUri, requestId)` to read one contract request by its request ID, and let `cancelContractRequest` take `{ requestId }` instead of a target profile ID. `getContractSentRequests` rows gain `target` and may omit `profile`.
+
+    Prepare for requests addressed to an email: a request marked `addressedByEmail` shows only the email to other parties until it is accepted, in `getContractRequest`, `getContractSentRequests`, `getRequestStatusForProfile` and the decision notifications. Request status gains `expired`.
+
+- [#2038](https://github.com/learningeconomy/LearnCard/pull/2038) [`13dff3c7d32e9499944aa7c7e31c8db8a2bd40f7`](https://github.com/learningeconomy/LearnCard/commit/13dff3c7d32e9499944aa7c7e31c8db8a2bd40f7) Thanks [@smurflo2](https://github.com/smurflo2)! - fix: [LC-2371] Sync uploaded, pasted, and Partner Connect credentials to live consent contracts. Shared store/add/bulk-save callers retain successful saves when consent discovery or sharing fails, with durable, account-scoped retries. Partner Connect returns after queuing delivery; AI Topic/Session saves keep their previous sharing opt-out. Persist acknowledged terms to avoid duplicate mutations on retry and cancel retries after recategorization. Automatic sharing remains limited to LearnCloud-indexed credentials; SQLite-only sharing is not supported.
+
+    Keep background discovery out of contract-sync banners, and keep contract-scoped Partner Connect status syncing until that account's queued credential deliveries finish. Persist only credential identifiers and category in delivery jobs.
+
+    Persist failed contract destinations so an exhausted credential delivery reports an error only to affected partners. Unattributed failures remain visible in account-wide status without blocking unrelated contracts indefinitely.
+
+    Guard automatic deliveries against current category consent at the server write while preserving explicit selective sharing. Uploads persist account-scoped delivery jobs immediately after successful indexing, before network sharing starts.
+
+    Treat blank legacy category expiries as no expiry while preserving the server's automatic-sharing consent and expiry guards.
+
+    Persist pending delivery updates transactionally across tabs, retain legacy retry checkpoints, and recover abandoned attempts without losing other saved credentials. Successful background delivery reports completed progress.
+
+    Initialize cross-tab notifications only when browser event APIs are available, preserving credential-helper imports in storage-only environments.
+
+    Keep committed credential saves and consent successful if retry persistence fails, while still awaiting a healthy durable handoff. Import late jobs from older tabs without resurrecting removed deliveries, and update progress without repeatedly scanning the whole queue.
+
+    Retain personal uploads across key-to-network identity resolution without crossing switched profiles. Skip contended job locks so other deliveries can proceed, and stop future sharing mutations when an attempt loses its lease.
+
+    Preserve newer unfinished deliveries from older tabs even while a completed job with the same identity is retained.
+
+- [#2063](https://github.com/learningeconomy/LearnCard/pull/2063) [`6d4be59b2aa76c609149658480a0731c5f49ed9b`](https://github.com/learningeconomy/LearnCard/commit/6d4be59b2aa76c609149658480a0731c5f49ed9b) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Passport/Home counts and the visibility backfill now read the whole wallet index in 100-record pages instead of 1000, matching LearnCloud's new `index.get` page limit. 1000-record pages could exceed the 6 MB response limit on large accounts (LC-2428).
+
+- [#1631](https://github.com/learningeconomy/LearnCard/pull/1631) [`e8cd62004079c24bdb5b09e8ebbea9b6ce927417`](https://github.com/learningeconomy/LearnCard/commit/e8cd62004079c24bdb5b09e8ebbea9b6ce927417) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Keep AI chat running when optional credential or topic preloading fails (LC-2118). Show a localized nonfatal notice instead of treating the miss as a failed session, and clear it when credentials recover or the account or socket changes.
+
+- [#2015](https://github.com/learningeconomy/LearnCard/pull/2015) [`f071d44b47d04ed50e148d72bb267e1ff7d326cf`](https://github.com/learningeconomy/LearnCard/commit/f071d44b47d04ed50e148d72bb267e1ff7d326cf) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Batch /wallet credential resolution through LearnCloud storage.batchResolve so Passport no longer fires one storage.resolve POST per URI (LC-2382). storage.batchResolve now resolves Redis misses from MongoDB by credential ID and rejects URIs for other hosts.
+  Also fix in-app credential facts: look up the account-scoped resolved-credential RQ key, and on miss join fetchResolvedCredential (batch coalescer) instead of raw wallet.read.get so a cold facts backfill cannot race the wallet warmer with standalone storage.resolve.
+  Also: prefetch shares per-URI in-flight React Query work with individual readers; failed refreshes of invalidated entries return unresolved slots; same-host batches run independently of foreign/network reads; and batchResolve cold-miss lookups skip malformed IDs so they cannot empty the rest of the batch.
+  Also fix the qualification-category backfill: when a QueryClient is provided, resolve legacy records through tryFetchResolvedCredential (join the batch coalescer / reuse a warm RQ cache) instead of serial wallet.read.get, which re-issued standalone storage.resolve after a successful batchResolve (LC-2382 retake3).
+  Also: null-slot read.get retries for one 64-URI batch chunk no longer block later chunks, so a slow or stuck fallback cannot stall otherwise valid credentials.
+
+- [#2077](https://github.com/learningeconomy/LearnCard/pull/2077) [`1fe2450d45aa1f5e038b7bbb02f61965e72671fc`](https://github.com/learningeconomy/LearnCard/commit/1fe2450d45aa1f5e038b7bbb02f61965e72671fc) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - [LC-2433] Identify the LaunchDarkly user once per context instead of on every app render, so a cold start no longer cancels its own flag requests and user-targeted flags load.
+
+- [#2073](https://github.com/learningeconomy/LearnCard/pull/2073) [`9ea97f319158a461ec42b4256c63b81ed53afe97`](https://github.com/learningeconomy/LearnCard/commit/9ea97f319158a461ec42b4256c63b81ed53afe97) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Ship a much smaller startup bundle (LC-2432). Production builds compile `@learncard/*` workspace packages from source so shared code is deduped and tree-shaken, and heavy features load when first used instead of at startup: PDF, Lottie, emoji picker, Web3Auth, date picker, Typeform form, big modal bodies, the embedded-app modal, intro slides, theme building, and the wallet stack. The entry chunk drops from about 4.1 MB to 0.85 MB gzip. While the app shell downloads, the web app now shows the sign-in loader instead of a blank page. If an OpenID4VC exchange fails because its code chunk is gone after a deploy, the error screen reloads the app within the same reload budget the error boundaries use.
+
+- [#2048](https://github.com/learningeconomy/LearnCard/pull/2048) [`261e0f46814595d06460dc617ba50800671f03b1`](https://github.com/learningeconomy/LearnCard/commit/261e0f46814595d06460dc617ba50800671f03b1) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Faster LCA cold start on the cached-key path:
+
+    - `@learncard/didkey-plugin`: add `getEd25519DidKeyFromSeed`, a plain-JS (`@noble/ed25519`) did:key derivation that matches the DIDKit path, and derive the secp256k1 keypair only on first use.
+    - `@learncard/didkit-plugin`: concurrent and repeated `init()` calls share one WASM init (no 250 ms polling); a failed init clears so the next call retries. Add `initDidKit` to start that init without building a plugin.
+    - `learn-card-app` / `learn-card-base`: the auth coordinator derives the DID in JS instead of building a signing wallet, and app entry warms DIDKit without awaiting it.
+
+- [#2073](https://github.com/learningeconomy/LearnCard/pull/2073) [`9ea97f319158a461ec42b4256c63b81ed53afe97`](https://github.com/learningeconomy/LearnCard/commit/9ea97f319158a461ec42b4256c63b81ed53afe97) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Load filestack-js on first upload and html2canvas on first feedback screenshot instead of in the startup bundle.
+
+- [#2050](https://github.com/learningeconomy/LearnCard/pull/2050) [`7f4c6f1b001370569030024216c97fb7a134cad7`](https://github.com/learningeconomy/LearnCard/commit/7f4c6f1b001370569030024216c97fb7a134cad7) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Stop Capacitor from logging plugin payloads to device logs. Debuggable builds of LearnCard (every tenant) and ScoutPass used to print SQLite query rows, including the stored private key, to logcat and the iOS console. Native bridge logging is now off for every build, and LearnCard debug builds log a redacted line per plugin call (plugin, method, SQL operation keyword such as `INSERT`, value and row counts) instead. The SQL statement text and bound values are never logged, so a key or seed inside a statement cannot reach the log.
+
+- [#2073](https://github.com/learningeconomy/LearnCard/pull/2073) [`9ea97f319158a461ec42b4256c63b81ed53afe97`](https://github.com/learningeconomy/LearnCard/commit/9ea97f319158a461ec42b4256c63b81ed53afe97) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Start native SQLite initialization at app entry (`startNativeSQLiteInit`) instead of after the lazy app shell's first commit, so the cached-key read on the auth cold-start path doesn't wait behind it. `sqliteInit()` joins the in-flight attempt or retries a failed one.
+
+- [#2073](https://github.com/learningeconomy/LearnCard/pull/2073) [`9ea97f319158a461ec42b4256c63b81ed53afe97`](https://github.com/learningeconomy/LearnCard/commit/9ea97f319158a461ec42b4256c63b81ed53afe97) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Native SQLite startup creates its tables in one batched `execute` (`ensureSQLiteSchemas`) and keeps the connection open briefly so the cached-key read reuses it.
+
+- [#2052](https://github.com/learningeconomy/LearnCard/pull/2052) [`e473064a8f53262519f40926a67c08c44ccf7d91`](https://github.com/learningeconomy/LearnCard/commit/e473064a8f53262519f40926a67c08c44ccf7d91) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fresh-device Passport/Home counts: the visibility backfill and its marker now run once per wallet per app session, whichever starts it and even when the wallet's DID turns from did:key into did:web as the profile loads. Every caller shares one marker read, so a counts request carries one marker read. A run that doesn't leave the marker can be retried in the same session (LC-2413).
+
+- [#2059](https://github.com/learningeconomy/LearnCard/pull/2059) [`b6d5270114d7865c4acde540433ff819e36caccf`](https://github.com/learningeconomy/LearnCard/commit/b6d5270114d7865c4acde540433ff819e36caccf) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Stop two false reports at app start. Campaign messages no longer fail with "Campaign profile changed" when the wallet's DID turns from did:key into the profile's did:web as the profile loads (LEARN-CARD-APP-M7A). Credential list and count reads that React Query cancels (key change or unmount) are no longer reported as errors (LEARN-CARD-APP-M6W, M6T, M70).
+
+- Updated dependencies [[`e096512e4291bcaa5e424b7abbfc0932ca2a2317`](https://github.com/learningeconomy/LearnCard/commit/e096512e4291bcaa5e424b7abbfc0932ca2a2317), [`ff6f013bdedc9aee84e9849fa5736a8ad4a90c81`](https://github.com/learningeconomy/LearnCard/commit/ff6f013bdedc9aee84e9849fa5736a8ad4a90c81), [`e096512e4291bcaa5e424b7abbfc0932ca2a2317`](https://github.com/learningeconomy/LearnCard/commit/e096512e4291bcaa5e424b7abbfc0932ca2a2317), [`154941805bd8e2aa626afe3582e7794921debd27`](https://github.com/learningeconomy/LearnCard/commit/154941805bd8e2aa626afe3582e7794921debd27), [`1e4a9e97b825c18300ae0f00c2b9324120be196f`](https://github.com/learningeconomy/LearnCard/commit/1e4a9e97b825c18300ae0f00c2b9324120be196f), [`bd450e7b0467a94bbd30573fa0aebfcd6333db22`](https://github.com/learningeconomy/LearnCard/commit/bd450e7b0467a94bbd30573fa0aebfcd6333db22), [`261e0f46814595d06460dc617ba50800671f03b1`](https://github.com/learningeconomy/LearnCard/commit/261e0f46814595d06460dc617ba50800671f03b1), [`acda1d1bd362add238a7c6ff8096c295e844e586`](https://github.com/learningeconomy/LearnCard/commit/acda1d1bd362add238a7c6ff8096c295e844e586), [`9ea97f319158a461ec42b4256c63b81ed53afe97`](https://github.com/learningeconomy/LearnCard/commit/9ea97f319158a461ec42b4256c63b81ed53afe97), [`9ea97f319158a461ec42b4256c63b81ed53afe97`](https://github.com/learningeconomy/LearnCard/commit/9ea97f319158a461ec42b4256c63b81ed53afe97), [`6d5afc9c348c20ac6ac9c7b35651e5b850b13401`](https://github.com/learningeconomy/LearnCard/commit/6d5afc9c348c20ac6ac9c7b35651e5b850b13401), [`98674f16ea4ff1b8407749da2edcfbe5e023a7ac`](https://github.com/learningeconomy/LearnCard/commit/98674f16ea4ff1b8407749da2edcfbe5e023a7ac), [`0bb92c2cc8047aa4bf307fd0952c1714219286a9`](https://github.com/learningeconomy/LearnCard/commit/0bb92c2cc8047aa4bf307fd0952c1714219286a9)]:
+    - @learncard/types@6.2.0
+    - @learncard/didkit-plugin@1.11.0
+    - @learncard/lca-api-plugin@3.0.0
+    - @learncard/sss-key-manager@0.3.3
+    - @learncard/helpers@1.8.3
+    - @learncard/learn-card-plugin@1.2.47
+    - @learncard/ler-rs-plugin@0.1.38
+    - @learncard/render-method-plugin@15.0.0
+
+## Unreleased
+
+### Patch Changes
+
+- LC-2371: Shared store/add/bulk-save callers retain successful saves when consent discovery or sharing fails. Persist account-scoped retries and acknowledged terms so retries do not repeat successful contract mutations. Queue Partner Connect delivery before returning, pause stale-account attempts without consuming retries, and cancel retries after recategorization. Automatic sharing remains limited to LearnCloud-indexed credentials; the audience-copy cache and retry worker do not support SQLite-only sources.
+- LC-2371: Persist only credential identifiers and category in automatic delivery jobs, without optional display or network metadata.
+- LC-2371: Persist the latest failed contract destinations alongside delivery checkpoints and replace that snapshot after each completed discovery pass.
+
+## 0.8.2
+
+### Patch Changes
+
+- [#1875](https://github.com/learningeconomy/LearnCard/pull/1875) [`0cd204d5d1d9af393001a17b772339bfd9a5b6dd`](https://github.com/learningeconomy/LearnCard/commit/0cd204d5d1d9af393001a17b772339bfd9a5b6dd) Thanks [@Custard7](https://github.com/Custard7)! - Point Terms of Service and Privacy Policy links at https://learncard.com/terms-of-service and https://learncard.com/privacy-policy (LearnCard production config, tenant defaults used by VetPass, and fallback constants).
+
+- [#2044](https://github.com/learningeconomy/LearnCard/pull/2044) [`ae4eb0ffc9c23119c469af38e8866b5086179b70`](https://github.com/learningeconomy/LearnCard/commit/ae4eb0ffc9c23119c469af38e8866b5086179b70) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fresh-device Passport/Home counts: the counts start the visibility backfill when its marker is missing, so a sign-in that skips the auth coordinator still writes it, and the marker read goes in the same batched request as the counts (LC-2413).
+
+- [#2044](https://github.com/learningeconomy/LearnCard/pull/2044) [`ae4eb0ffc9c23119c469af38e8866b5086179b70`](https://github.com/learningeconomy/LearnCard/commit/ae4eb0ffc9c23119c469af38e8866b5086179b70) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - LearnCloud index `getPage`/`getCount` accept `$ne`, `$nin` and `$in` on encrypted fields (sent as `fields.$nin` / `fields.$in` hashes; equality-only queries are unchanged). Internal index records (verifiable data, Self-Assigned Skills, internal categories) are written with `hidden: true`, a one-time per-account client backfill marks existing ones, and Passport and Home counts come from one index count request per tile instead of walking the whole index once the backfill is done (LC-2412, LC-2413).
+
+- [#2044](https://github.com/learningeconomy/LearnCard/pull/2044) [`ae4eb0ffc9c23119c469af38e8866b5086179b70`](https://github.com/learningeconomy/LearnCard/commit/ae4eb0ffc9c23119c469af38e8866b5086179b70) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - LearnCloud `index.add` skips a record whose `uri` is already indexed (one count lookup per add, by the existing `uri` field hash) and returns `true`, so new duplicate uri rows can't inflate index counts. Passport and Home counts no longer wait for this device's visibility backfill: a finished backfill leaves a LearnCloud marker, a fresh device reads it in the same batched request as the counts, and accounts with no marker count from one 1000-record index read instead of the paged walk (LC-2413).
+
+- [#2044](https://github.com/learningeconomy/LearnCard/pull/2044) [`ae4eb0ffc9c23119c469af38e8866b5086179b70`](https://github.com/learningeconomy/LearnCard/commit/ae4eb0ffc9c23119c469af38e8866b5086179b70) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Keep Passport and Home counts visible from the cached index walk during background refetches and after a failed refresh (LC-2412), reuse the walk for 5 minutes, and take 100-record pages after the first page so the complete walk needs far fewer round trips (LC-2413).
+
+- Updated dependencies [[`f3f3d678156b46a67a2f916b62789aeef4e40bc7`](https://github.com/learningeconomy/LearnCard/commit/f3f3d678156b46a67a2f916b62789aeef4e40bc7)]:
+    - @learncard/types@6.1.1
+    - @learncard/sss-key-manager@0.3.2
+    - @learncard/helpers@1.8.2
+    - @learncard/didkit-plugin@1.10.12
+    - @learncard/lca-api-plugin@2.1.1
+    - @learncard/learn-card-plugin@1.2.46
+    - @learncard/ler-rs-plugin@0.1.37
+    - @learncard/render-method-plugin@14.0.1
+
+## 0.8.1
+
+### Patch Changes
+
+- [#2005](https://github.com/learningeconomy/LearnCard/pull/2005) [`439a7115220eff2d221ae5dd63d7c5306f7cc778`](https://github.com/learningeconomy/LearnCard/commit/439a7115220eff2d221ae5dd63d7c5306f7cc778) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Recover from malformed persisted infinite-query cache entries (LC-2352). A shared restore-boundary guard drops known infinite-query roots that are not valid `{ pages, pageParams }` InfiniteData before hydrate (unknown keys, including credentials with a `pages` extension, are left alone), and every `useInfiniteQuery` hook (including managed boosts) drops a bad in-memory entry and refetches instead of crashing on `pages.length`.
+
+- [#2029](https://github.com/learningeconomy/LearnCard/pull/2029) [`928d25ea984d27626a7de6a2a421d66136e1f470`](https://github.com/learningeconomy/LearnCard/commit/928d25ea984d27626a7de6a2a421d66136e1f470) Thanks [@rhen92](https://github.com/rhen92)! - LC-2254: Route OpenSALT issuer-registry lookups through an allowlisted same-origin Netlify edge proxy (`/api/registry-proxy`) on web and native, so OpenSALT-listed issuers no longer show as unknown because of CORS. Falls back to the direct request, and never marks an issuer trusted on failure.
+
+- [#1983](https://github.com/learningeconomy/LearnCard/pull/1983) [`f086c95870f57896331b2bbbdd97a94f6ddc3339`](https://github.com/learningeconomy/LearnCard/commit/f086c95870f57896331b2bbbdd97a94f6ddc3339) Thanks [@smurflo2](https://github.com/smurflo2)! - fix: [LC-2288] Recover credential claims in place without false expiration errors or duplicate issuance, preserving confirmed save and refresh progress.
+
+    Expose claim reconciliation in CLI method and capability discovery, and require `call --write` because reconciliation can finish acceptance and usage accounting.
+
+- Updated dependencies [[`c245cba6fc162e6896c4f9439a8a8da42d4189c9`](https://github.com/learningeconomy/LearnCard/commit/c245cba6fc162e6896c4f9439a8a8da42d4189c9), [`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c), [`6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480`](https://github.com/learningeconomy/LearnCard/commit/6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480), [`f086c95870f57896331b2bbbdd97a94f6ddc3339`](https://github.com/learningeconomy/LearnCard/commit/f086c95870f57896331b2bbbdd97a94f6ddc3339), [`7f430656d7ff8c780b375f109e870dd07b5b9bf2`](https://github.com/learningeconomy/LearnCard/commit/7f430656d7ff8c780b375f109e870dd07b5b9bf2), [`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c)]:
+    - @learncard/didkit-plugin@1.10.11
+    - @learncard/types@6.1.0
+    - @learncard/lca-api-plugin@2.1.0
+    - @learncard/helpers@1.8.1
+    - @learncard/learn-card-plugin@1.2.45
+    - @learncard/ler-rs-plugin@0.1.36
+    - @learncard/render-method-plugin@14.0.0
+    - @learncard/sss-key-manager@0.3.1
+
+## 0.8.0
+
+### Minor Changes
+
+- [#1819](https://github.com/learningeconomy/LearnCard/pull/1819) [`784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3`](https://github.com/learningeconomy/LearnCard/commit/784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3) Thanks [@smurflo2](https://github.com/smurflo2)! - feat: [LC-2194] Support versioned ConsentFlow updates and user review.
+
+    Keep a connection's URI and history while publishing immutable access updates. New optional read/write choices stay off; required additions pause writes until the user reviews the changes. Add explicit update acceptance, review notifications, deadlines, once-only AutoBoost delivery, and safe retirement. Unsaved request previews no longer require a URI.
+
+    Preserve existing grants in partial scope updates, gate Lambda startup on legacy snapshots, and retain once-only delivery during explicit one-time updates. Localize review and history content, recover from cancelled guardian checks and concurrent updates, and keep handled notifications safe to reopen.
+
+    Retry transient Lambda migration failures without poisoning warm application imports. Record completed migrations for fast cold starts, report malformed request IDs without credential data, and identify retained ambiguous AutoBoost claims for reconciliation. Load runtime secrets before importing the scheduled deadline worker, including secrets-only Lambda deployments. Keep inbox maintenance coverage behavioral rather than pinning Lambda wrapper source text.
+
+    Recover valid, unversioned contracts created after the migration marker through scoped version-1 initialization. Atomically backfill only their existing connections, preserve global migration completion, and keep missing history on already-versioned or malformed contracts fail-closed.
+
+    Settle guardian PIN actions on external dismissal or unmount without cancelling valid submissions. Cover reapproval, signing failures and referral cancellation with the current PIN modal contract. Clear stacked overlays before opening a contract-update review. Cancel delayed modal-removal timers when their provider unmounts while preserving closing animations. Use stable localization keys independent of English labels and stop proposing optional defaults after their window expires.
+
+    Route pending and suspended connections from ordinary consent entry to explicit update review. Recover the same way when the latest-approval error arrives during an open consent dialog, without treating the connection as approved or bypassing guardian checks.
+
+    Reject overlapping top-level and nested SDK scope patches instead of silently dropping changes. Restore strict type-only imports, declare the runnable update snippet's SDK contract, and narrow unsuccessful notification reads in end-to-end consumers without raising the typecheck allowance.
+
+    Include cumulative changes in consent records so users can approve all required additions across multiple unreviewed versions. Clear the pending optional-choice marker only when the holder successfully saves their choices.
+
+    Resolve built-in request categories and personal fields to localized labels and descriptions in English, Spanish, French, and Arabic, including learning history and career/AI categories. Recognize the legitimate French cognates “Image” and “Qualifications” in the existing untranslated-value guard.
+
+    Dismiss Alerts when opening a contract-update review without waiting for read-status writes. Give unread indicators their own layout space so they cannot overlap notification dates.
+
+    Use one shared request form with the original creation controls for creating and editing requests, without per-item purpose fields or added default-enabled checkboxes. Keep the overall update explanation separate. Replace JSON authoring with readable changes and Preview Update / Publish Update actions in the Contracts tab. Show an accessible help icon and meaningful existing-access/defaults disclosures.
+
+    Start new optional review controls from their Opt-in/Opt-out settings without silently granting access. Use the edited request's defaults in previews, refresh saved choices when reopening without overwriting active edits, and reduce the extra spacing below the current version.
+
+    Separate Advanced Options from changes, published feedback, and actions. Add space below the current version while keeping the image's remove control in its original outside corner.
+
+    Show a clear unavailable state for networks that omit contract version metadata, including cached responses. Keep publishing disabled until a versioned response is available, and never assume an unversioned response is version 1.
+
+    Use direct Mongo connections for the local Docker APIs so the single-node replica's localhost address does not prevent them from starting. Gate Mongo-dependent services on a writable primary so they do not exit during replica initialization or election.
+
+    Pre-bundle the remaining workspace crypto and cloud-client dependencies before serving the local app, avoiding dependency-discovery reloads during browser startup.
+
+    Open an on-demand Update contract modal from each configured request in the Contracts tab, rather than the Testing tab. Reveal the update explanation only after edits, separate it from grouped current/next values, and keep user-review previews in the shared modal stack for correct focus and Escape behavior.
+
+    Breaking SDK/API changes: use `updateContract` instead of the removed `addAutoBoostsToContract` and `removeAutoBoostsFromContract` SDK methods. One-time consent status is now `consumed`, not `stale`. The deprecated HTTP AutoBoost routes remain available for one compatibility release and use the versioned update path. Legacy AutoBoost additions also pause writes and synchronization pending explicit holder review; coordinate partner upgrades and support `getConsentStatus` / `reviewUrl` before rollout.
+
+    Reject stale editor drafts with their original expected version, treat equivalent updates as no-ops, require future reconsent deadlines, and restrict legacy AutoBoost publications to contract owners. Paginate tied consent-data timestamps with stable opaque cursors and preserve all unreviewed optional additions across later updates.
+
+    Track each holder's last explicit review, backfill that baseline from transaction history, and timestamp legacy snapshots at the revision actually captured. Require notification and approval when an existing item's reason changes; keep redirect-only changes quiet. Retain ambiguous initial AutoBoost claims and reject mismatched concurrent initial credential deliveries.
+
+    Show material metadata, writer, and automatic-delivery changes alongside scope updates. Refresh holder terms before enabling review edits, populate newly enabled personal fields from the holder profile, and use a structured approval-required reason instead of matching error text.
+
+    Regenerate the Python API client from the current router graph, including all consent lifecycle states, versioned updates, and review metadata. Omit `None` for ordinary non-nullable optional inputs, preserve nullable values, and retain the allocation holder's explicit-null rejection instead of silently treating it as an omission.
+
+    Preserve existing delegated AutoBoost issuers when owners publish unchanged configurations, while keeping new configurations owner-issued and rejecting changes to an existing delegated signer. Defer new cross-account setup until an explicit issuer-authorization flow is available. Use pre-upgrade persisted fixtures for legacy-delegation regressions without reopening writer publication, and fix the signer mock's recursive self-call in consent regressions.
+
+    Keep saves from already handled reviews in ordinary sharing-update history, and preserve the saved one-time setting when update or reconsent inputs omit it.
+
+    Use opaque timestamp-and-ID cursors for holder consent lists, between-profile data, transaction history, and holder exports as well as owner data pages. Preserve legacy timestamp fallbacks and reject malformed or pre-upgrade date-only cursors with `BAD_REQUEST`; restart pagination without a cursor after upgrading.
+
+    Pin owned verification review links to the allocated app origin so real consent review URLs never escape to an unrelated localhost development server.
+
+    Explain approval notifications above Publish Update without changing checked-by-default Opt-out selections. Synchronize the CLI method catalog with the versioned contract SDK, removing obsolete AutoBoost commands and exposing update, history, status, and acceptance methods.
+
+    Use neutral changed-request summaries and Updated badges for existing-scope edits, including reason-only reviews. Reserve new-access headlines and new-item counts for pure scope additions without material request-detail edits, and retain existing optional choices during approval.
+
+### Patch Changes
+
+- [#1904](https://github.com/learningeconomy/LearnCard/pull/1904) [`69b80366c48e0f458b3bb50f25166c90ecaa2d6d`](https://github.com/learningeconomy/LearnCard/commit/69b80366c48e0f458b3bb50f25166c90ecaa2d6d) Thanks [@gerardopar](https://github.com/gerardopar)! - Add branded campaign broadcast emails, duplicate-safe reservations, signed public unsubscribe, and private announcement email/push preferences.
+
+- [#1925](https://github.com/learningeconomy/LearnCard/pull/1925) [`13e0809239cd73c5153a3ff82b268afb21b665b2`](https://github.com/learningeconomy/LearnCard/commit/13e0809239cd73c5153a3ff82b268afb21b665b2) Thanks [@Custard7](https://github.com/Custard7)! - Let the escrow enclave's own recovery emails (code, recovery started, release warning) carry the app's brand. The owner's device seals a display name into the escrow blob at enrollment (`recoveryBrand`), the same way it seals the recovery email and language. This needs the brand-aware enclave image, and stays off until a tenant turns it on (SECURITY.md D21).
+
+    - **sss-key-manager:** new optional `escrow.emailBrand`. It is sealed as `recoveryBrand` only when the recovery contact is sealed (nitro enroll/replace), never on a carry. `createSSSStrategy` throws if the value is invalid. New export `canonicalEscrowEmailBrand` (ASCII letters, digits, space, `-`, `'`, `&`; 1-32 characters, starting with a letter; at most 3 digits in total and no `http`/`www`), plus `MAX_ESCROW_EMAIL_BRAND_LENGTH` and `MAX_ESCROW_EMAIL_BRAND_DIGITS`. `EscrowBlobPlaintext` gains `recoveryBrand?`. The blob and release parsers keep a valid brand and drop an invalid one without failing; before this change they dropped the field entirely. `violatesCarryContactRule` also flags a target that claims a brand.
+    - **learn-card-base:** new tenant config flag `auth.sss.escrowSealEmailBrand` (default false). When it is on, `getEscrowStrategyConfig(sss, { appBrandName })` forwards the canonical app name as `emailBrand`. An invalid name is logged and omitted, and escrow stays enabled. `getEscrowEmailSender` now returns `mixed`, which is true when this app seals its brand. New optional `auth.sss.escrowSharedEmailBrands` (the other apps sharing this app's DIDs): with sealing on, an app whose fallback brand is its own (LearnCard) gets a `shared` note naming them, since a shared DID's brand is "last writer wins". New `getTenantEscrowStrategyConfig(sss, tenant)`, used by both apps' `sss` factories, forwards `branding.name`.
+    - **learn-card-app:** passes `branding.name` through `getTenantEscrowStrategyConfig`. While sealing is on, the recovery screens say the code and updates may come from either brand, or, in LearnCard, from VetPass if the user also uses it (4 new keys in each of the 4 locales).
+    - **lca-api:** no code change. The software enclave now keeps the sealed brand through carry and rewrap because it uses the updated parser (covered by a test).
+
+- [#1945](https://github.com/learningeconomy/LearnCard/pull/1945) [`fea9c25ec76f230944a1713500a280c80e2a9cc0`](https://github.com/learningeconomy/LearnCard/commit/fea9c25ec76f230944a1713500a280c80e2a9cc0) Thanks [@smurflo2](https://github.com/smurflo2)! - Enforce current profile age rules in analytics preferences and keep optional telemetry off until account and tenant permission resolve. Retire SDK sessions on opt-out without replaying queued data, while preserving necessary security error reporting.
+
+    Keep ordinary preferences available during profile-authority outages without erasing saved analytics consent. Share session-bound preference reads, preserve legacy ISO birth-date formats and avoid initializing web Firebase merely to disable collection.
+
+    Report unavailable analytics opt-in instead of silently accepting it, keep age-enforced reads available when a repair cannot be saved, and ensure preference writes target the newly selected account.
+
+    Use checked-in Lambda stage configuration for the profile authority URL instead of forwarding stale deployment-environment values as secrets.
+
+    Normalize the shared Brain URL for login-email locale lookups and preserve onboarding AI and bug-report choices when analytics authority is unavailable. Keep the Firebase logger import independent of the wallet barrel.
+
+- [#1988](https://github.com/learningeconomy/LearnCard/pull/1988) [`b40737bd683efb7ce66bb1e205f002b13cda3b4e`](https://github.com/learningeconomy/LearnCard/commit/b40737bd683efb7ce66bb1e205f002b13cda3b4e) Thanks [@gerardopar](https://github.com/gerardopar)! - Fix Web3Auth sign-in on browser localhost by skipping the SDK session write rejected by the session server's CORS policy. Preserve key derivation and session persistence on other web hosts.
+
+- [#1871](https://github.com/learningeconomy/LearnCard/pull/1871) [`a7923d7deaf0baf7205bbae1f6fe132e846fed44`](https://github.com/learningeconomy/LearnCard/commit/a7923d7deaf0baf7205bbae1f6fe132e846fed44) Thanks [@smurflo2](https://github.com/smurflo2)! - fix: [LC-2294] Search complete credential collections, keep visible totals stable, and recover from incomplete loading without misleading empty states.
+
+    Keep searching other records and metadata pages when one legacy credential cannot load, while preserving an incomplete, retryable result. Scope shared-credential metadata caches to the reader account, and translate collection status and recovery feedback in LearnCard and ScoutPass with accessible dashboard contrast.
+
+    Search older wrapped credentials by displayed and achievement names, keep scrolling after collection totals finish, and refresh only the originating account's affected lists once per bulk save. Localize LearnCard's unavailable category counts with narrow, right-to-left-safe layouts, and preserve live ScoutPass managed-list localization.
+
+    Await optimistic list/count updates after saving without making claim completion or contract sync wait for background paginated rescans.
+
+- [#1957](https://github.com/learningeconomy/LearnCard/pull/1957) [`95f865a4c259b85001687703540fbd3b2247e48a`](https://github.com/learningeconomy/LearnCard/commit/95f865a4c259b85001687703540fbd3b2247e48a) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - React Query cache fixes (LC-2349 to LC-2355): managed-boost writes use the same key as the list, LearnCard App drops saved caches from other app versions, ScoutPass waits for SQLite instead of dropping saves, malformed cached lists no longer crash readers, web logout deletes the saved cache before redirect, profile switches reset non-profile-scoped queries, and delete restores stale-time on the profile it pinned.
+
+- [#1925](https://github.com/learningeconomy/LearnCard/pull/1925) [`13e0809239cd73c5153a3ff82b268afb21b665b2`](https://github.com/learningeconomy/LearnCard/commit/13e0809239cd73c5153a3ff82b268afb21b665b2) Thanks [@Custard7](https://github.com/Custard7)! - Prepare VetPass to use escrow recovery on LearnCard's escrow enclave. The enclave serves one tenant: it signs and checks its own authority tenant label (`learncard`). Before this change VetPass sent its app tenant (`vetpass`) instead, so its first authority-state read failed.
+
+    - **sss-key-manager:** new optional `escrow.authorityTenant`, used for everything the enclave signs or checks (intent tenant, authority state, hold and code-delivery records, persisted recovery expectations). `tenantId` is still sent as `X-Tenant-Id` and used for branding. It defaults to `tenantId`, so LearnCard and ScoutPass behave as before. If signed evidence carries another label, the client throws the new `EscrowAuthorityTenantMismatchError` (a subclass of `EscrowEvidenceError` that names both labels) before rotating shares or taking any recovery step. A malformed label throws in `createSSSStrategy`.
+    - **learn-card-base:** new tenant config field `auth.sss.escrowAuthorityTenant` (validated), forwarded with the escrow trust policy by `getEscrowStrategyConfig`. Also adds the helpers `getEscrowAuthorityTenant`, `escrowAuthorityBrandName`, `getEscrowEmailSenderBrand` and `getEscrowEmailSender` (compares the app's `branding.name` with the enclave brand).
+    - **lca-api:** checks escrow intents and authority state against the new `ESCROW_AUTHORITY_TENANT` setting (default `learncard`, so no infrastructure change), not the client-supplied `X-Tenant-Id`. It also refuses an enroll when the authority state it reads carries a different tenant. Holds, emails and links still use the app tenant. The default is global, so the ScoutPass deployment (escrow off) must set its own value before it turns escrow on.
+    - **learn-card-app:** no VetPass config change: VetPass escrow stays off at every stage until the SSS switch turns it on together with LearnCard production. A new test keeps it off until then, and afterwards fails if VetPass and LearnCard differ in key derivation, escrow mode, pins or authority tenant at any deployed stage. When the enclave's email brand differs from the app's, the recovery screens explain that the code and some other emails come from LearnCard (4 locales).
+    - **escrow-canary:** tier 3 reports any `EscrowEvidenceError` subclass, including the new tenant mismatch, as `evidence` rather than `unexpected`.
+
+- [#1992](https://github.com/learningeconomy/LearnCard/pull/1992) [`18451f510c3d8a91343e6cbc6ffd5d129d771119`](https://github.com/learningeconomy/LearnCard/commit/18451f510c3d8a91343e6cbc6ffd5d129d771119) Thanks [@smurflo2](https://github.com/smurflo2)! - fix: [LC-2294] Remove routine credential loading text and continuation buttons while preserving automatic pagination and retry.
+
+    Keep screen-reader announcement regions mounted while idle so search and loading failures can be announced without restoring routine visible status text.
+
+    Keep automatic pagination connected when switching between Card and List views so older credentials remain reachable.
+
+- [#1987](https://github.com/learningeconomy/LearnCard/pull/1987) [`278e88258bb918c3e794f9ec3bd148b6e40afeec`](https://github.com/learningeconomy/LearnCard/commit/278e88258bb918c3e794f9ec3bd148b6e40afeec) Thanks [@Custard7](https://github.com/Custard7)! - Fix "no such table: users" when creating an account on web after signing out in the same tab. Logout deletes the browser's SQLite store, but table setup was remembered for the whole page load; it is now re-checked each time the database is opened. Onboarding no longer fails when only the local user cache write fails.
+
+- [#1971](https://github.com/learningeconomy/LearnCard/pull/1971) [`03e81d9908d3ba9eae473103ead4fff6099b7f02`](https://github.com/learningeconomy/LearnCard/commit/03e81d9908d3ba9eae473103ead4fff6099b7f02) Thanks [@Custard7](https://github.com/Custard7)! - Web3Auth sign-in now checks which method the account signs in with before deriving a key. If the account uses SSS and this login would derive a different key, sign-in stops and asks the user to update the app instead of creating a different, empty identity. Accounts migrated from Web3Auth keep signing in with Web3Auth through the login they migrated with: lca-api records that login at `/keys/migrate` (`web3AuthLogin`, only when it is the account's sole login) and reports `isWeb3AuthLogin` from `/keys/auth-share`. Migrations from before this change have no recorded login and are stopped on Web3Auth builds.
+
+- Updated dependencies [[`e9d738eea3b477dbd82bde171d3c5f8ffa2efbc5`](https://github.com/learningeconomy/LearnCard/commit/e9d738eea3b477dbd82bde171d3c5f8ffa2efbc5), [`69b80366c48e0f458b3bb50f25166c90ecaa2d6d`](https://github.com/learningeconomy/LearnCard/commit/69b80366c48e0f458b3bb50f25166c90ecaa2d6d), [`0caa0e478bce246793893e488f37ee90c9b00a1a`](https://github.com/learningeconomy/LearnCard/commit/0caa0e478bce246793893e488f37ee90c9b00a1a), [`13e0809239cd73c5153a3ff82b268afb21b665b2`](https://github.com/learningeconomy/LearnCard/commit/13e0809239cd73c5153a3ff82b268afb21b665b2), [`fea9c25ec76f230944a1713500a280c80e2a9cc0`](https://github.com/learningeconomy/LearnCard/commit/fea9c25ec76f230944a1713500a280c80e2a9cc0), [`bde3fe0f15a780d9fafc699096a9a0307502f529`](https://github.com/learningeconomy/LearnCard/commit/bde3fe0f15a780d9fafc699096a9a0307502f529), [`784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3`](https://github.com/learningeconomy/LearnCard/commit/784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3), [`751579d9c14116dbf6d0e7f7d62f489c81c39db2`](https://github.com/learningeconomy/LearnCard/commit/751579d9c14116dbf6d0e7f7d62f489c81c39db2), [`2c60b1a760958cbfe2525bc951d2381332e1aa48`](https://github.com/learningeconomy/LearnCard/commit/2c60b1a760958cbfe2525bc951d2381332e1aa48), [`13e0809239cd73c5153a3ff82b268afb21b665b2`](https://github.com/learningeconomy/LearnCard/commit/13e0809239cd73c5153a3ff82b268afb21b665b2)]:
+    - @learncard/types@6.0.0
+    - @learncard/sss-key-manager@0.3.0
+    - @learncard/helpers@1.8.0
+    - @learncard/lca-api-plugin@2.0.16
+    - @learncard/learn-card-plugin@1.2.44
+    - @learncard/ler-rs-plugin@0.1.35
+    - @learncard/render-method-plugin@13.0.0
+
 ## Unreleased
 
 ### Patch Changes

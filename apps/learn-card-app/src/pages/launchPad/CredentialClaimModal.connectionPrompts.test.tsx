@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
     presentToast: vi.fn(),
     queryNotifications: vi.fn(),
     updateNotificationMeta: vi.fn(),
+    resolveCredentialForClaim: vi.fn(),
 }));
 
 vi.mock('@ionic/react', () => ({
@@ -24,6 +25,7 @@ vi.mock('learn-card-base', () => ({
     CredentialCategoryEnum: { achievement: 'Achievement' },
     ToastTypeEnum: { Error: 'error', Success: 'success' },
     connectionPromptKeys: { all: ['connectionPrompts'] },
+    resolveCredentialForClaim: mocks.resolveCredentialForClaim,
     getLogger: () => ({ error: vi.fn(), warn: vi.fn() }),
     useToast: () => ({ presentToast: mocks.presentToast }),
     useWallet: () => ({
@@ -47,11 +49,13 @@ vi.mock('../../paraglide/messages.js', () => ({
     'claim.modal.loadingNameAria': () => 'Loading name',
     'claim.modal.loadingCredential': () => 'Loading credential',
     'claim.modal.loadError': () => 'Unable to load credential',
+    'claim.modal.verificationFailed': () => "We couldn't verify this",
     'claim.modal.loadErrorTitle': () => 'Unable to load',
     'claim.modal.maybeLater': () => 'Maybe Later',
     'claim.modal.notFoundBody': () => 'Credential not found',
     'claim.modal.preparing': () => 'Preparing',
     'common.continue': () => 'Continue',
+    'common.close': () => 'Close',
     'toasts.credentialClaimed': () => 'Credential claimed',
     'toasts.credentialClaimFailed': () => 'Credential claim failed',
 }));
@@ -82,6 +86,44 @@ const credential = {
 } as VC;
 
 describe('CredentialClaimModal connection prompt cache', () => {
+    it('never previews or accepts a managed delivery when verification fails, even with a pre-resolved payload', async () => {
+        mocks.initWallet.mockResolvedValue({});
+        mocks.resolveCredentialForClaim.mockRejectedValue(new Error('invalid proof'));
+        const client = new QueryClient();
+        render(
+            <QueryClientProvider client={client}>
+                <CredentialClaimModal
+                    credentialUri="lc:network:example/trpc:credential:one"
+                    credential={credential}
+                    onDismiss={vi.fn()}
+                />
+            </QueryClientProvider>
+        );
+        await screen.findByText("We couldn't verify this");
+        expect(screen.queryByText('Credential preview')).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Accept Credential' })).toBeNull();
+        expect(mocks.addVCtoWallet).not.toHaveBeenCalled();
+        expect(mocks.acceptCredential).not.toHaveBeenCalled();
+    });
+
+    it('waits for verification before rendering a network delivery preview', async () => {
+        const verification = deferred<{ credential: VC }>();
+        mocks.initWallet.mockResolvedValue({});
+        mocks.resolveCredentialForClaim.mockReturnValue(verification.promise);
+        render(
+            <QueryClientProvider client={new QueryClient()}>
+                <CredentialClaimModal
+                    credentialUri="lc:network:example/trpc:credential:one"
+                    credential={credential}
+                    onDismiss={vi.fn()}
+                />
+            </QueryClientProvider>
+        );
+        expect(screen.queryByText('Credential preview')).toBeNull();
+        await act(async () => verification.resolve({ credential }));
+        await screen.findByText('Credential preview');
+    });
+
     beforeEach(() => {
         vi.clearAllMocks();
         mocks.queryNotifications.mockResolvedValue(undefined);

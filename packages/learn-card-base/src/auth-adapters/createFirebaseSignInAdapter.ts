@@ -1,6 +1,7 @@
 import type { Auth, User } from 'firebase/auth';
 import type { AuthUser, SignInAdapter } from '@learncard/types';
 import { getLogger } from '../logging/logger';
+import { getContactEmail } from '../helpers/syntheticEmail';
 import { createFirebasePhoneAuth } from './createFirebasePhoneAuth';
 import { loadFirebaseAuth } from './firebaseAuthModule';
 import { verifyFirebaseSignOut } from './verifyFirebaseSignOut';
@@ -21,7 +22,8 @@ const log = getLogger('create-firebase-sign-in-adapter');
 
 const mapFirebaseUser = (user: NonNullable<FirebaseAuthLike['currentUser']>): AuthUser => ({
     id: user.uid,
-    email: user.email || undefined,
+    // Synthetic ClassLink placeholders are not contact emails; expose them as no email.
+    email: getContactEmail(user.email),
     phone: user.phoneNumber || undefined,
     displayName: user.displayName || undefined,
     photoUrl: user.photoURL || undefined,
@@ -196,7 +198,7 @@ export const createFirebaseSignInAdapter = (config: FirebaseSignInAdapterConfig)
                 if (options?.intent !== 'reauthenticate') await native.getIdToken();
                 const mapped: AuthUser = {
                     id: user.uid,
-                    email: user.email || undefined,
+                    email: getContactEmail(user.email),
                     phone: user.phoneNumber || undefined,
                     displayName: user.displayName || undefined,
                     photoUrl: user.photoUrl || undefined,

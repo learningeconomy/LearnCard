@@ -1,4 +1,4 @@
-import type { Filter } from '@learncard/learn-cloud-service';
+import type { Filter } from '@learncard/learn-cloud-client';
 import {
     JWE,
     JWKWithPrivateKey,

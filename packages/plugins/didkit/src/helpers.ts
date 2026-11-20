@@ -1,19 +1,27 @@
 import { LearnCard } from '@learncard/core';
 
-export const getContextURIs = (jsonld: Record<string, any>) => {
+/**
+ * Collects every remote context URI (string `@context` entry) in a JSON-LD document,
+ * including scoped contexts nested inside term definitions.
+ *
+ * Inline context objects are skipped: they are already part of the document, so there
+ * is nothing to resolve. Forwarding them to the DIDKit WASM `contextLoader` (whose
+ * `url` parameter is a string) makes wasm-bindgen reallocate a dangling pointer, which
+ * traps inside the WASM allocator (LC-2380).
+ */
+export const getContextURIs = (jsonld: unknown): string[] => {
     const contexts: string[] = [];
 
-    const traverse = (obj: Record<string, any>) => {
+    const traverse = (obj: unknown) => {
         if (typeof obj !== 'object' || obj === null) return;
 
-        if (obj['@context']) {
-            if (Array.isArray(obj['@context'])) contexts.push(...obj['@context']);
-            else contexts.push(obj['@context']);
+        const context = '@context' in obj ? obj['@context'] : undefined;
+
+        for (const entry of Array.isArray(context) ? context : [context]) {
+            if (typeof entry === 'string') contexts.push(entry);
         }
 
-        Object.keys(obj).forEach(key => {
-            traverse(obj[key]);
-        });
+        Object.values(obj).forEach(traverse);
     };
 
     traverse(jsonld);

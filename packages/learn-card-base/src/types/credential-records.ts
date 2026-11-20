@@ -1,4 +1,4 @@
-import { CredentialRecord } from '@learncard/types';
+import { CredentialRecord, CredentialRefreshReceipt } from '@learncard/types';
 import { CredentialCategory } from './credentials';
 
 /**
@@ -20,6 +20,8 @@ export type CredentialRefreshHistoryEntry = {
  * enforce staleness. The record itself is encrypted by the LearnCloud index plane.
  */
 export type CredentialRefreshMetadata = {
+    /** Independently validated delivery binding, retained across every local refresh. */
+    baseline?: CredentialRefreshReceipt;
     serviceId: string;
     serviceType: string;
     credentialId: string;
@@ -53,6 +55,13 @@ export type CredentialMetadata = {
      */
     networkUri?: string;
     refresh?: CredentialRefreshMetadata;
+    /**
+     * Internal plumbing (verifiable data, Self-Assigned Skills, internal categories) that never
+     * appears in Passport or Home. Set when the record is written; it lets the index count
+     * endpoint leave these records out with `hidden: { $ne: true }`. Distinct from the
+     * holder-facing 'Hidden' category (LC-2294), which stays category-based.
+     */
+    hidden?: boolean;
     __v?: number;
 };
 

@@ -17,7 +17,7 @@ export const enrollInCampaign = async (profileId: string, campaignId: string): P
         if (
             !campaign.selfEnroll ||
             campaign.status !== 'live' ||
-            !campaign.message.enabled ||
+            !campaign.message?.enabled ||
             !campaign.channels.includes('inApp') ||
             (campaign.startsAt && campaign.startsAt > params.now) ||
             (campaign.endsAt && campaign.endsAt <= params.now)

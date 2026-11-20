@@ -20,8 +20,36 @@ vi.mock('@learncard/sss-key-manager', () => ({
     }),
 }));
 
+const { mockOpenPP, markup } = vi.hoisted(() => ({
+    mockOpenPP: vi.fn(),
+    markup: (type: 'markup-start' | 'markup-end') => ({
+        type,
+        name: '0',
+        options: {},
+        attributes: {},
+    }),
+}));
+vi.mock('../../../helpers/externalLinkHelpers', () => ({ openPP: mockOpenPP }));
+
 // Mock i18n messages
 vi.mock('../../../paraglide/messages.js', () => ({
+    'recovery.pin.escrowNotice': Object.assign(
+        vi.fn(
+            () =>
+                'An encrypted piece of your account key is held by a secure service. Your PIN unlocks it right away, without a 7-day wait. Learn more'
+        ),
+        {
+            parts: () => [
+                {
+                    type: 'text',
+                    value: 'An encrypted piece of your account key is held by a secure service. Your PIN unlocks it right away, without a 7-day wait. ',
+                },
+                markup('markup-start'),
+                { type: 'text', value: 'Learn more' },
+                markup('markup-end'),
+            ],
+        }
+    ),
     'onboarding.v2.pin.title': vi.fn(() => 'Create your PIN'),
     'onboarding.v2.pin.body': vi.fn(() => "You'll use it to sign in on new devices."),
     'onboarding.v2.pin.confirmTitle': vi.fn(() => 'Confirm your PIN'),
@@ -79,6 +107,24 @@ describe('RecoveryPinStep', () => {
             screen.getByText('You can change or remove it anytime in Settings.')
         ).toBeInTheDocument();
         expect(screen.queryByText('Skip for now')).not.toBeInTheDocument();
+    });
+
+    it('explains escrow on the enter step and opens the privacy policy', () => {
+        renderComponent();
+        expect(
+            screen.getByText(/An encrypted piece of your account key is held by a secure service/)
+        ).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Learn more' }));
+        expect(mockOpenPP).toHaveBeenCalledOnce();
+    });
+
+    it('drops the escrow notice once the PIN is being confirmed', () => {
+        renderComponent();
+        enterPin('147258');
+        expect(screen.getByText('Confirm your PIN')).toBeInTheDocument();
+        expect(screen.queryByText(/encrypted piece of your account key/)).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Learn more' })).not.toBeInTheDocument();
     });
 
     it('does not offer a skip for typing mistakes', () => {

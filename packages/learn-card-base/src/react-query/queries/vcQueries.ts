@@ -32,10 +32,13 @@ import {
     type HeldCredential,
 } from 'learn-card-base/helpers/credentialLifecycleStatus';
 import { getLogger } from '../../logging/logger';
+import { dropMalformedInfiniteCacheEntry, isInfiniteData } from '../infiniteQueryGuard';
+export { isInfiniteData } from '../infiniteQueryGuard';
 import { walletStore } from '../../stores/walletStore';
 import {
     fetchResolvedCredential,
     tryFetchResolvedCredential,
+    prefetchResolvedCredentials,
     resolvedCredentialQueryOptions,
     UnresolvableCredentialError,
 } from './credentialResolution';
@@ -56,6 +59,24 @@ const useCredentialReader = () => {
  * missing index metadata. Existing server authorization still applies; a rejected
  * metadata write never prevents the credential from being displayed.
  */
+import { resolveCredentialForClaim } from '../../helpers/ingestManagedCredential';
+
+/** Claim previews must not reuse the unverified document-resolution cache. */
+export const useGetClaimCredential = (uri: string | undefined) => {
+    const wallet = useCredentialReader();
+    return useQuery({
+        queryKey: ['verified-claim', wallet?.id.did(), uri],
+        enabled: Boolean(wallet && uri),
+        staleTime: 0,
+        gcTime: 0,
+        retry: false,
+        queryFn: async () => {
+            if (!wallet || !uri) throw new Error('CLAIM_READER_UNAVAILABLE');
+            return (await resolveCredentialForClaim(wallet, uri)).credential as VC;
+        },
+    });
+};
+
 export const useGetResolvedCredential = (uri: string | undefined, enabled = true) => {
     const wallet = useCredentialReader();
     const queryClient = useQueryClient();
@@ -98,9 +119,9 @@ export const useResolveManyCredentials = (uris: string[] | undefined, enabled = 
         queryKey: ['useResolveManyCredentials', uris, wallet?.id.did() ?? ''],
         queryFn: async () => {
             if (!wallet || !uris) return [];
-            return Promise.all(
-                uris.map(uri => tryFetchResolvedCredential(queryClient, wallet, uri))
-            );
+            // One (or a few chunked) storage.batchResolve round-trips instead of N storage.resolve
+            // POSTs — see LC-2382. Per-URI failures stay undefined without rejecting the list.
+            return prefetchResolvedCredentials(queryClient, wallet, uris);
         },
         // Recheck partial results on the next mount; keep successful raw documents shared.
         staleTime: query =>
@@ -112,6 +133,8 @@ export const useResolveManyCredentials = (uris: string[] | undefined, enabled = 
 export const useGetResolvedCredentials = (uris?: (string | undefined)[], enabled = true) => {
     const wallet = useCredentialReader();
     const queryClient = useQueryClient();
+    // When learnCloudBatchResolve exists, concurrent queryFns coalesce into storage.batchResolve
+    // (LC-2382). Without it, each URI still uses read.get via the shared RQ cache.
     return useQueries({
         queries:
             enabled && uris
@@ -127,13 +150,25 @@ export const useGetResolvedCredentials = (uris?: (string | undefined)[], enabled
     }).map((result, index) => ({ ...result, uri: uris?.[index] }));
 };
 
-/**
- * React Query's infinite observer reads `data.pages` and `data.pageParams` directly, so a truthy
- * entry without them (seen in Scouts' persisted cache, LC-2330) throws on mount.
- */
-export const isInfiniteData = <TData = unknown>(data: unknown): data is InfiniteData<TData> =>
-    Array.isArray((data as Partial<InfiniteData<TData>> | undefined)?.pages) &&
-    Array.isArray((data as Partial<InfiniteData<TData>> | undefined)?.pageParams);
+/** First page stays small so lists and Recent paint fast (LC-2413). */
+export const CREDENTIAL_LIST_FIRST_PAGE_SIZE = 12;
+/** Later pages are larger so complete walks (Passport/Home counts) take ~N/100 round trips,
+ * not N/12. Cursor pagination, so mixed page sizes in one infinite query are safe (LC-2413). */
+export const CREDENTIAL_LIST_PAGE_SIZE = 100;
+/** Matches LC-2383's CREDENTIAL_INDEX_STALE_TIME: return/resume within the window reuses the walk.
+ * Writers still refetch or invalidate these keys, and a new launch revalidates (LC-2412). */
+export const CREDENTIAL_LIST_STALE_TIME = 5 * 60 * 1000;
+
+/** When the server walk behind these pages last succeeded, or undefined when any page did not
+ * come from the list queryFn (optimistic placeholders from insertItem/refreshCredentialCaches).
+ * Cache-only writers spread existing pages, so they keep the stamp without refreshing it. */
+export const getCredentialListWalkedAt = (data?: {
+    pages?: ({ walkedAt?: number } | undefined)[];
+}): number | undefined => {
+    const stamps = (data?.pages ?? []).map(page => page?.walkedAt);
+    if (!stamps.length || stamps.some(stamp => typeof stamp !== 'number')) return undefined;
+    return Math.min(...(stamps as number[]));
+};
 
 // Returns an array of stored idx credentials
 export const useGetCredentialList = (category?: CredentialCategory, enabled: boolean = true) => {
@@ -143,12 +178,8 @@ export const useGetCredentialList = (category?: CredentialCategory, enabled: boo
     const reader = useCredentialReader();
     const queryKey = ['useGetCredentialList', didWeb ?? '', category ?? '', reader?.id.did() ?? ''];
 
-    // Recover malformed persisted entries before the infinite observer reads them.
-    const cached = queryClient.getQueryData(queryKey);
-    if (cached !== undefined && !isInfiniteData(cached)) {
-        log.warn('Dropping malformed useGetCredentialList cache entry', queryKey);
-        queryClient.removeQueries({ queryKey, exact: true });
-    }
+    // Recover malformed persisted entries before the infinite observer reads them (LC-2330/LC-2352).
+    dropMalformedInfiniteCacheEntry(queryClient, queryKey, 'useGetCredentialList');
 
     return useInfiniteQuery({
         queryKey,
@@ -161,7 +192,13 @@ export const useGetCredentialList = (category?: CredentialCategory, enabled: boo
                 signal.throwIfAborted();
                 const data = await wallet.index.LearnCloud.getPage<CredentialMetadata>?.(
                     category ? { category } : undefined,
-                    { cursor: pageParam, limit: 12, sort: 'newestFirst' }
+                    {
+                        cursor: pageParam,
+                        limit: pageParam
+                            ? CREDENTIAL_LIST_PAGE_SIZE
+                            : CREDENTIAL_LIST_FIRST_PAGE_SIZE,
+                        sort: 'newestFirst',
+                    }
                 );
                 signal.throwIfAborted();
                 if (!data) throw new Error('Credential index is unavailable');
@@ -171,15 +208,30 @@ export const useGetCredentialList = (category?: CredentialCategory, enabled: boo
                         ...record,
                         ...(record.__v && { __v: Number(record.__v) }),
                     })),
+                    walkedAt: Date.now(),
                 };
             } catch (error: unknown) {
-                log.error(error);
+                // React Query aborts the signal when the key changes or the last observer leaves.
+                // That cancellation is not a failure, so it is not reported.
+                if (!signal.aborted) log.error(error);
                 throw error;
             }
         },
         initialPageParam: undefined as undefined | string,
         getNextPageParam: lastPage => (lastPage?.hasMore ? lastPage?.cursor : undefined),
         enabled: enabled && Boolean(reader),
+        staleTime: query => {
+            const data = query.state.data;
+            // A malformed restore is never fresh, so mount refetches instead of reading it (LC-2330).
+            if (!isInfiniteData(data)) return 0;
+            // Keep the delete mutation's temporary Infinity hold (setQueryDefaults) effective.
+            if (queryClient.getQueryDefaults(queryKey).staleTime === Infinity) return Infinity;
+            // Freshness follows the last server walk, not cache-only writes (backfills, inserts).
+            // Placeholders and walks from an earlier launch revalidate; counts stay shown meanwhile.
+            const walkedAt = getCredentialListWalkedAt(data);
+            if (walkedAt === undefined || walkedAt < performance.timeOrigin) return 0;
+            return Math.max(0, walkedAt + CREDENTIAL_LIST_STALE_TIME - query.state.dataUpdatedAt);
+        },
     });
 };
 
@@ -221,6 +273,12 @@ export const useGetRecordForUri = (uri?: string, enabled = true) => {
     });
 };
 
+// Single source for the managed-boosts key so mutation writes hit the list the screen reads (LC-2349).
+export const getPaginatedManagedBoostsKey = (
+    category?: CredentialCategory | CredentialCategory[] | string,
+    didWeb: string | null | undefined = switchedProfileStore.get.switchedDid()
+) => ['useGetPaginatedManagedBoosts', didWeb ?? '', category ?? ''];
+
 /* Use 'useGetPaginatedManagedBoostsQuery' instead - deprecated in favor of useGetPaginatedManagedBoostsQuery*/
 export const useGetPaginatedManagedBoosts = (
     category?: CredentialCategory | CredentialCategory[],
@@ -228,11 +286,14 @@ export const useGetPaginatedManagedBoosts = (
     enabled: boolean = true
 ) => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
     const didWeb = switchedProfileStore.use.switchedDid();
     const { limit, ...restOptions } = options ?? {};
+    const queryKey = getPaginatedManagedBoostsKey(category, didWeb ?? '');
+    dropMalformedInfiniteCacheEntry(queryClient, queryKey, 'useGetPaginatedManagedBoosts');
 
     return useInfiniteQuery({
-        queryKey: ['useGetPaginatedManagedBoosts', didWeb ?? '', category ?? ''],
+        queryKey,
         queryFn: async ({ pageParam }) => {
             const wallet = await initWallet();
 
@@ -260,9 +321,12 @@ export const useGetPaginatedManagedBoostsQuery = (
     enabled: boolean = true
 ) => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
+    const queryKey = ['useGetPaginatedManagedBoostsQuery', query ?? ''] as const;
+    dropMalformedInfiniteCacheEntry(queryClient, queryKey, 'useGetPaginatedManagedBoostsQuery');
 
     return useInfiniteQuery({
-        queryKey: ['useGetPaginatedManagedBoostsQuery', query ?? ''],
+        queryKey,
         queryFn: async ({ pageParam }) => {
             const wallet = await initWallet();
 
@@ -328,7 +392,8 @@ export const useGetCredentialCount = (category?: CredentialCategory, enabled: bo
                 signal.throwIfAborted();
                 return credentialsCount;
             } catch (error) {
-                log.error(error);
+                // A cancelled count (key change, unmount) is not a failure; see useGetCredentialList.
+                if (!signal.aborted) log.error(error);
                 return Promise.reject(new Error(error));
             }
         },

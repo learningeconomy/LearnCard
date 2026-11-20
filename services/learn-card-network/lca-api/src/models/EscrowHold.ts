@@ -7,6 +7,7 @@ import {
 import type { Collection } from 'mongodb';
 import mongodb from '@mongo';
 import { environment } from '@environment';
+import { createRetryingOnce } from '../helpers/retryingOnce';
 import {
     AuthProviderMappingValidator,
     EscrowEnvelopeValidator,
@@ -167,77 +168,130 @@ export type CreateEscrowHoldInput = Omit<
 export const getEscrowHoldsCollection = (): Collection<EscrowHold> =>
     mongodb.collection<EscrowHold>(ESCROW_HOLDS_COLLECTION);
 
-const runIndexMigrationOperation = async (operation: () => Promise<unknown>): Promise<void> => {
+const mongoIndexError = z.object({
+    code: z.union([z.number(), z.string()]).optional(),
+    codeName: z.string().optional(),
+    errmsg: z.string().optional(),
+    message: z.string().optional(),
+    keyValue: z.record(z.string(), z.unknown()).optional(),
+});
+
+const runIndexMigrationOperation = async (
+    operationName: string,
+    operation: () => Promise<unknown>
+): Promise<void> => {
     try {
         await operation();
     } catch (error) {
-        const code =
-            typeof error === 'object' && error !== null && 'code' in error ? error.code : undefined;
-        // Unlike lookup indexes, uniqueness is a security invariant: fail closed on duplicates.
-        if (code === 27 || code === 85 || code === 86) {
-            const indexes = await getEscrowHoldsCollection().listIndexes().toArray();
-            if (
-                indexes.some(
-                    index =>
-                        index.unique &&
-                        Object.keys(index.key ?? {}).length === 3 &&
-                        index.key?.['authProvider.type'] === 1 &&
-                        index.key?.['authProvider.id'] === 1 &&
-                        index.key?.releasePolicy === 1 &&
-                        Object.keys(index.partialFilterExpression ?? {}).length === 1 &&
-                        index.partialFilterExpression?.status === 'pending'
-                )
-            )
-                return;
-        }
-        throw new Error('Escrow hold index initialization failed', { cause: error });
+        const parsed = mongoIndexError.safeParse(error);
+        const details = parsed.success ? parsed.data : {};
+        // E11000 embeds the identity in both errmsg and keyValue. Keep the Mongo
+        // diagnosis in CloudWatch without copying account identifiers into logs.
+        const redactDuplicateKey = (message: string | undefined): string | undefined =>
+            message?.replace(/dup key:.*$/s, 'dup key: [redacted]');
+        const diagnostic = {
+            operation: operationName,
+            code: details.code,
+            codeName: details.codeName,
+            errmsg: redactDuplicateKey(details.errmsg),
+            message: redactDuplicateKey(details.message),
+            keyValue: details.keyValue
+                ? Object.fromEntries(Object.keys(details.keyValue).map(key => [key, '[redacted]']))
+                : undefined,
+        };
+        console.error('[escrow-hold-indexes] initialization failed', diagnostic);
+        // Generic route loggers also inspect Error.cause; never retain the raw identity there.
+        // eslint-disable-next-line preserve-caught-error -- MongoError retains PII; keep only the sanitized cause.
+        throw new Error('Escrow hold index initialization failed', { cause: diagnostic });
     }
 };
 
 export const createEscrowHoldsIndexes = async (): Promise<void> => {
     const collection = getEscrowHoldsCollection();
     // Normalize legacy rows while the old, stricter index still protects them.
-    await collection.updateMany(
-        { releasePolicy: { $exists: false } },
-        { $set: { releasePolicy: 'hold' } }
-    );
-    await runIndexMigrationOperation(() =>
-        collection.createIndex(
-            { 'authProvider.type': 1, 'authProvider.id': 1, releasePolicy: 1 },
-            {
-                name: 'pending_escrow_identity_policy_unique',
-                unique: true,
-                partialFilterExpression: { status: 'pending' },
-            }
+    await runIndexMigrationOperation('normalize-legacy-release-policy', () =>
+        collection.updateMany(
+            { releasePolicy: { $exists: false } },
+            { $set: { releasePolicy: 'hold' } }
         )
     );
-    // Install the replacement before dropping the old index: no uniqueness gap.
-    try {
-        await collection.dropIndex('pending_escrow_identity_unique');
-    } catch (error) {
-        if (!(typeof error === 'object' && error !== null && 'code' in error && error.code === 27))
+    await runIndexMigrationOperation('pending_escrow_identity_policy_unique', async () => {
+        try {
+            await collection.createIndex(
+                { 'authProvider.type': 1, 'authProvider.id': 1, releasePolicy: 1 },
+                {
+                    name: 'pending_escrow_identity_policy_unique',
+                    unique: true,
+                    partialFilterExpression: { status: 'pending' },
+                }
+            );
+        } catch (error) {
+            const code = mongoIndexError.safeParse(error);
+            if (code.success && (code.data.code === 85 || code.data.code === 86)) {
+                const indexes = await collection.listIndexes().toArray();
+                // Accept an equivalent unique index under another name. Never
+                // drop/rebuild a conflicting spec or mistake a lookup for protection.
+                if (
+                    indexes.some(
+                        index =>
+                            index.unique === true &&
+                            index.sparse !== true &&
+                            (!index.collation || index.collation.locale === 'simple') &&
+                            Object.keys(index.key ?? {}).join(',') ===
+                                'authProvider.type,authProvider.id,releasePolicy' &&
+                            index.key?.['authProvider.type'] === 1 &&
+                            index.key?.['authProvider.id'] === 1 &&
+                            index.key?.releasePolicy === 1 &&
+                            Object.keys(index.partialFilterExpression ?? {}).length === 1 &&
+                            index.partialFilterExpression?.status === 'pending'
+                    )
+                )
+                    return;
+            }
             throw error;
-    }
-    await runIndexMigrationOperation(() =>
+        }
+    });
+    // Install the replacement before dropping the old index: no uniqueness gap.
+    await runIndexMigrationOperation('drop-pending_escrow_identity_unique', async () => {
+        try {
+            await collection.dropIndex('pending_escrow_identity_unique');
+        } catch (error) {
+            const parsed = mongoIndexError.safeParse(error);
+            if (!parsed.success || parsed.data.code !== 27) throw error;
+        }
+    });
+    await runIndexMigrationOperation('authProvider.type_1_authProvider.id_1_status_1', () =>
         collection.createIndex({ 'authProvider.type': 1, 'authProvider.id': 1, status: 1 })
     );
-    await runIndexMigrationOperation(() => collection.createIndex({ releaseAfter: 1 }));
-    // Backs findEscrowHoldsDueForReminder's { status:'pending', releaseAfter: {$gt,$lte} } scan.
-    await collection.createIndex(
-        { status: 1, releaseAfter: 1 },
-        { name: 'pending_escrow_hold_reminder_lookup' }
+    await runIndexMigrationOperation('releaseAfter_1', () =>
+        collection.createIndex({ releaseAfter: 1 })
     );
-    await collection.createIndex(
-        { status: 1, enclaveCancelConfirmedAt: 1, enclaveCancelAttempts: 1, releaseAfter: 1 },
-        { name: 'escrow_enclave_cancel_retry_lookup' }
+    await runIndexMigrationOperation('pending_escrow_hold_reminder_lookup', () =>
+        collection.createIndex(
+            { status: 1, releaseAfter: 1 },
+            { name: 'pending_escrow_hold_reminder_lookup' }
+        )
     );
-    await collection.createIndex(
-        { primaryDid: 1, status: 1, enclaveCancelConfirmedAt: 1 },
-        { name: 'escrow_enclave_cancel_identity_lookup' }
+    await runIndexMigrationOperation('escrow_enclave_cancel_retry_lookup', () =>
+        collection.createIndex(
+            { status: 1, enclaveCancelConfirmedAt: 1, enclaveCancelAttempts: 1, releaseAfter: 1 },
+            { name: 'escrow_enclave_cancel_retry_lookup' }
+        )
+    );
+    await runIndexMigrationOperation('escrow_enclave_cancel_identity_lookup', () =>
+        collection.createIndex(
+            { primaryDid: 1, status: 1, enclaveCancelConfirmedAt: 1 },
+            { name: 'escrow_enclave_cancel_identity_lookup' }
+        )
     );
 };
 
+/** Only escrow writers wait for this migration; a failure can retry on the next request. */
+export const ensureEscrowHoldsIndexes: () => Promise<void> =
+    createRetryingOnce(createEscrowHoldsIndexes);
+
 export const createEscrowHold = async (input: CreateEscrowHoldInput): Promise<EscrowHold> => {
+    await ensureEscrowHoldsIndexes();
     const now = new Date();
     const parsed = EscrowHoldValidator.safeParse({
         ...input,
@@ -491,6 +545,7 @@ export const markClaimedEscrowHoldFailed = async (
 };
 /** Reopen only our own failed release claim, never another request's terminal row. */
 export const retryClaimedEscrowHold = async (id: string, completedAt: Date): Promise<void> => {
+    await ensureEscrowHoldsIndexes();
     try {
         await getEscrowHoldsCollection().updateOne(
             { _id: id, status: 'completed', completedAt },

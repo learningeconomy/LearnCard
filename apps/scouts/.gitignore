@@ -36,4 +36,7 @@ yarn-error.log*
 
 demoState.json
 
+# Edge function — copy of packages/learn-card-base/src/registry-proxy/registryProxy.ts
+/netlify/edge-functions/shared/registryProxy.ts
+
 .env

@@ -55,6 +55,16 @@ const setup = async (
         route.fulfill({ json: { features: { contractRequests: options.tenant ?? true } } })
     );
     const mock = await installNetwork(page);
+    // Consent reads can share an LCA batch with notifications. Own both so a
+    // timing-dependent mixed batch cannot fall through to an unmatched HAR.
+    mock.on('preferences.getPreferencesForDid', () => ({
+        aiEnabled: true,
+        aiAutoDisabled: false,
+        analyticsEnabled: false,
+        analyticsAutoDisabled: false,
+        bugReportsEnabled: false,
+        isMinor: false,
+    }));
     mock.on(
         'user.getDids',
         () =>

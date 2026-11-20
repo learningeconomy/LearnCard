@@ -66,6 +66,8 @@ export type VCPluginMethods = {
  * @group VC Plugin
  */
 export type RefreshCredentialOptions = {
+    /** Public bindings validated at ingestion and retained with the local index record. */
+    baseline?: Pick<VC, 'credentialStatus' | 'refreshService'>;
     /** Previously seen ETag validator for the credential; sent as `If-None-Match` */
     etag?: string;
     /** Per-request timeout in milliseconds (default 10_000) */

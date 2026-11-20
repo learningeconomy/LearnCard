@@ -2,8 +2,12 @@ import type {} from 'zod-openapi';
 import { z } from 'zod/v4';
 
 import { PaginationResponseValidator } from './mongo';
-import { StringQuery } from './queries';
+import { BaseStringQuery, StringQuery } from './queries';
 import { UnsignedVCValidator, VCValidator, VPValidator } from './vc';
+import {
+    BitstringStatusListEntryValidator,
+    BitstringStatusPurposeValidator,
+} from './bitstring-status-list';
 import {
     ManagedCredentialRefreshReceiptValidator,
     InboxCredentialRefreshReceiptValidator,
@@ -396,6 +400,13 @@ export const BoostQueryValidator = z.union([
 ]);
 export type BoostQuery = z.infer<typeof BoostQueryValidator>;
 
+/** A paginated boost is omitted if its name or category matches an exclusion. */
+export const BoostExclusionValidator = z.object({
+    name: BaseStringQuery.optional(),
+    category: BaseStringQuery.optional(),
+});
+export type BoostExclusion = z.infer<typeof BoostExclusionValidator>;
+
 export const PaginatedBoostsValidator = PaginationResponseValidator.extend({
     records: BoostValidator.array(),
 });
@@ -447,6 +458,19 @@ export const LCNBoostClaimLinkOptionsValidator = z.object({
 });
 export type LCNBoostClaimLinkOptionsType = z.infer<typeof LCNBoostClaimLinkOptionsValidator>;
 
+/** Confirmed terminal claim-link conditions; missing historical metadata is unavailable, not expired. */
+export const ClaimLinkTerminalReasonValidator = z.enum(['expired', 'exhausted', 'unavailable']);
+export type ClaimLinkTerminalReason = z.infer<typeof ClaimLinkTerminalReasonValidator>;
+
+/** Reconciliation always precedes repeating an interrupted claim mutation. */
+export const ClaimLinkRequestStatusValidator = z.discriminatedUnion('status', [
+    z.object({ status: z.literal('absent') }),
+    z.object({ status: z.literal('pending') }),
+    z.object({ status: z.literal('complete'), credentialUri: z.string() }),
+    z.object({ status: z.literal('terminal'), reason: ClaimLinkTerminalReasonValidator }),
+]);
+export type ClaimLinkRequestStatus = z.infer<typeof ClaimLinkRequestStatusValidator>;
+
 export const LCNSigningAuthorityValidator = z.object({
     endpoint: z.string(),
 });
@@ -476,6 +500,19 @@ export const AutoBoostConfigValidator = z.object({
     }),
 });
 export type AutoBoostConfig = z.infer<typeof AutoBoostConfigValidator>;
+
+/** Public metadata: never include private credential claims in these fields. */
+export const CredentialDisplayValidator = z.object({
+    name: z.string().trim().min(1).max(280).optional(),
+    category: z.string().max(280).optional(),
+    image: z
+        .string()
+        .max(2048)
+        .url()
+        .refine(url => url.startsWith('https://'), { message: 'Image URL must use https' })
+        .optional(),
+});
+export type CredentialDisplay = z.infer<typeof CredentialDisplayValidator>;
 
 export const SendBoostTemplateValidator = BoostValidator.partial()
     .omit({ uri: true, claimPermissions: true })
@@ -509,6 +546,24 @@ export const GuardianStatusValidator = z.enum([
     'GUARDIAN_REJECTED',
 ]);
 export type GuardianStatus = z.infer<typeof GuardianStatusValidator>;
+
+export const GuardianApprovalEmailStatusValidator = z
+    .enum(['not_requested', 'sending', 'accepted', 'failed', 'unknown'])
+    .describe(
+        'Outcome of the latest account-level guardian approval email. "accepted" means the email provider accepted the message; it does not confirm delivery.'
+    );
+export type GuardianApprovalEmailStatus = z.infer<typeof GuardianApprovalEmailStatusValidator>;
+
+export const GuardianApprovalRequestStatusValidator = z.object({
+    pendingApproval: z.boolean(),
+    status: GuardianApprovalEmailStatusValidator,
+    guardianEmail: z.string().optional(),
+    updatedAt: z.string().optional(),
+    linkExpiresAt: z.string().optional(),
+    resendAvailableAt: z.string().optional(),
+    attemptsRemaining: z.number().int().nonnegative(),
+});
+export type GuardianApprovalRequestStatus = z.infer<typeof GuardianApprovalRequestStatusValidator>;
 
 // Options for send method (applies when recipient is email/phone, routes to Universal Inbox)
 export const SendOptionsValidator = z.object({
@@ -544,6 +599,10 @@ export const SendBoostInputValidator = z
         templateUri: z.string().optional(),
         template: SendBoostTemplateValidator.optional(),
         signedCredential: VCValidator.optional(),
+        display: CredentialDisplayValidator.optional().describe(
+            "Public display metadata for managed and signed-only sends. Nothing is inferred from credential content; omitted names use generic copy. The exception is category: when display.category is omitted for an inline template, the template's category is copied, since consent-flow write authorization is keyed on it."
+        ),
+        statusPurposes: z.array(BitstringStatusPurposeValidator).optional(),
         options: SendOptionsValidator.optional().describe(
             'Options for email/phone recipients (Universal Inbox)'
         ),
@@ -598,7 +657,13 @@ export const SendInboxResponseValidator = z.object({
 });
 export type SendInboxResponse = z.infer<typeof SendInboxResponseValidator>;
 
+/** Where public status is controlled; not part of the holder's signed refresh receipt. */
+export const StatusManagementValidator = z.enum(['network', 'external', 'mixed', 'none']);
+export type StatusManagement = z.infer<typeof StatusManagementValidator>;
+
 export const SendBoostResponseValidator = z.object({
+    /** Public status providers for a managed send; external entries require provider-side updates. */
+    statusManagement: StatusManagementValidator.optional(),
     type: z.literal('boost'),
     credentialUri: z.string(),
     uri: z.string(),
@@ -614,22 +679,36 @@ export type SendBoostResponse = z.infer<typeof SendBoostResponseValidator>;
 
 export const PrepareRefreshableSendInputValidator = z
     .object({
+        /** Opt in to signing the server-bound statusEntries; omission preserves client allocation. */
+        statusBinding: z.literal('server').optional(),
+        statusPurposes: z.array(BitstringStatusPurposeValidator).optional(),
         recipient: z.string(),
         templateUri: z.string().optional(),
         template: SendBoostTemplateValidator.optional(),
+        display: CredentialDisplayValidator.optional().describe('Public display metadata only'),
         contractUri: z.string().optional(),
         templateData: z.record(z.string(), z.unknown()).optional(),
         integrationId: z.string().optional(),
         /** Credential ID to allocate for; generated server-side when omitted. */
         credentialId: z.string().min(1).optional(),
         idempotencyKey: z.string().min(1).max(200).optional(),
+        /**
+         * `'holder'` requests student-only encryption (LC-2345): the SDK signs and
+         * encrypts locally and the server never receives plaintext. Requires a
+         * profile or DID recipient; rejected for signedCredential-only sends and for
+         * inbox (email/phone) recipients. Defaults to `'network'`.
+         */
+        encryption: z.enum(['network', 'holder']).optional(),
     })
-    .refine(data => Boolean(data.templateUri) !== Boolean(data.template), {
-        message: 'Provide exactly one of templateUri or template.',
+    .refine(data => !(data.templateUri && data.template), {
+        message: 'Provide at most one of templateUri or template.',
     });
 export type PrepareRefreshableSendInput = z.infer<typeof PrepareRefreshableSendInputValidator>;
 
 export const PrepareRefreshableSendResultValidator = z.object({
+    /** Public status providers known at preparation; final send reports the signed entries. */
+    statusManagement: StatusManagementValidator.optional(),
+    statusEntries: z.array(BitstringStatusListEntryValidator).optional(),
     boostUri: z.string(),
     credentialId: z.string(),
     refreshId: z.string(),
@@ -638,6 +717,14 @@ export const PrepareRefreshableSendResultValidator = z.object({
     holderDid: z.string(),
     /** Present when this idempotencyKey already completed: return it without signing. */
     completed: SendBoostResponseValidator.optional(),
+    /**
+     * Present only when `encryption: 'holder'` was requested: the exact
+     * key-agreement verification-method ids (holder + current managers) the SDK
+     * must encrypt to. Recomputed on every call, so a later manager change can
+     * make a previously-prepared set stale (see `credentialRefresh.sendHolderEncryptedRefreshable`
+     * and `credentialRefresh.getEncryptionRecipients`).
+     */
+    recipientKeyIds: z.array(z.string()).optional(),
 });
 export type PrepareRefreshableSendResult = z.infer<typeof PrepareRefreshableSendResultValidator>;
 
@@ -929,9 +1016,17 @@ export const ConsentFlowContractDetailsValidator = z.object({
 export type ConsentFlowContractDetails = z.infer<typeof ConsentFlowContractDetailsValidator>;
 export type ConsentFlowContractDetailsInput = z.input<typeof ConsentFlowContractDetailsValidator>;
 
-export const ConsentFlowContractRequestStatusValidator = z
-    .enum(['pending', 'accepted', 'denied', 'cancelled'])
-    .nullable();
+export const ContractRequestStatusValueValidator = z.enum([
+    'pending',
+    'accepted',
+    'denied',
+    'cancelled',
+    'expired',
+]);
+export type ContractRequestStatusValue = z.infer<typeof ContractRequestStatusValueValidator>;
+
+export const ConsentFlowContractRequestStatusValidator =
+    ContractRequestStatusValueValidator.nullable();
 export type ConsentFlowContractRequestStatus = z.infer<
     typeof ConsentFlowContractRequestStatusValidator
 >;
@@ -955,12 +1050,18 @@ export const ContractRequestFieldsValidator = ConsentFlowReferralValidator.parti
 });
 export type ContractRequestFields = z.infer<typeof ContractRequestFieldsValidator>;
 
-export const SendContractRequestValidator = z.object({
-    contractUri: z.string(),
-    targetProfileId: z.string(),
-    externalReferenceId: z.string().trim().min(1).max(256).optional(),
-    message: z.string().trim().max(500).optional(),
-});
+/** Send to a profile (`targetProfileId`, a profile ID or DID) or to an email (`targetEmail`). */
+export const SendContractRequestValidator = z
+    .object({
+        contractUri: z.string(),
+        targetProfileId: z.string().optional(),
+        targetEmail: z.string().trim().email().max(320).optional(),
+        externalReferenceId: z.string().trim().min(1).max(256).optional(),
+        message: z.string().trim().max(500).optional(),
+    })
+    .refine(value => Boolean(value.targetProfileId) !== Boolean(value.targetEmail), {
+        message: 'Provide exactly one of targetProfileId or targetEmail',
+    });
 export type SendContractRequest = z.infer<typeof SendContractRequestValidator>;
 
 export const ConsentFlowWebhookMetadataValidator = z.object({
@@ -1001,6 +1102,41 @@ export type ConsentFlowContractRequestForProfileList = z.infer<
     typeof ConsentFlowContractRequestForProfileListValidator
 >;
 
+/** Result of `sendContractRequest`. Email-addressed sends always answer `pending`. */
+export const SendContractRequestResultValidator = z.object({
+    requestId: z.string(),
+    status: ContractRequestStatusValueValidator,
+});
+export type SendContractRequestResult = z.infer<typeof SendContractRequestResultValidator>;
+
+/** Who a request is addressed to. An email-addressed request shows only the email until accepted. */
+export const ContractRequestTargetValidator = z.union([
+    z.object({ email: z.string() }),
+    z.object({ profile: LCNProfileValidator }),
+]);
+export type ContractRequestTarget = z.infer<typeof ContractRequestTargetValidator>;
+
+/** One request read by its request ID. */
+export const ContractRequestValidator = z.object({
+    requestId: z.string(),
+    status: ContractRequestStatusValueValidator,
+    externalReferenceId: z.string().optional(),
+    requestedAt: z.string().optional(),
+    expiresAt: z.string().optional(),
+    target: ContractRequestTargetValidator,
+});
+export type ContractRequest = z.infer<typeof ContractRequestValidator>;
+
+/** A row of `getContractSentRequests`. `profile` is absent for email-addressed requests until accepted. */
+export const ContractSentRequestValidator = ContractRequestFieldsValidator.extend({
+    profile: LCNProfileValidator.optional(),
+    target: ContractRequestTargetValidator.optional(),
+    expiresAt: z.string().optional(),
+    status: ConsentFlowContractRequestStatusValidator,
+    readStatus: ConsentFlowContractRequestReadStatusValidator.optional(),
+});
+export type ContractSentRequest = z.infer<typeof ContractSentRequestValidator>;
+
 export const PaginatedConsentFlowContractsValidator = PaginationResponseValidator.extend({
     records: ConsentFlowContractDetailsValidator.omit({ owner: true }).array(),
 });
@@ -1026,7 +1162,25 @@ export const ConsentFlowTermValidator = z.object({
 });
 export type ConsentFlowTerm = z.infer<typeof ConsentFlowTermValidator>;
 
+/** Opaque external consent reference; it never grants additional network permissions. */
+export const ConsentFlowExternalGrantValidator = z.strictObject({
+    issuer: z.string().min(1).max(2048).regex(/^\S+$/),
+    ref: z.string().min(1).max(2048).regex(/^\S+$/),
+    revision: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+    hash: z.string().min(1).max(512).regex(/^\S+$/),
+});
+export type ConsentFlowExternalGrant = z.infer<typeof ConsentFlowExternalGrantValidator>;
+
+export const ConsentFlowExternalGrantExpectationValidator = ConsentFlowExternalGrantValidator.pick({
+    revision: true,
+    hash: true,
+});
+export type ConsentFlowExternalGrantExpectation = z.infer<
+    typeof ConsentFlowExternalGrantExpectationValidator
+>;
+
 export const ConsentFlowTermsValidator = z.object({
+    externalGrant: ConsentFlowExternalGrantValidator.optional(),
     read: z
         .object({
             anonymize: z.boolean().optional(),
@@ -2019,6 +2173,11 @@ export const LCNIntegrationValidator = z.object({
     publishableKey: z.string(),
     whitelistedDomains: z.array(LCNDomainOrOriginValidator).default([]),
 
+    // Contract event webhook and change feed (LC-2370). Encrypted secrets are never exposed.
+    webhookUrl: z.string().optional(),
+    hasWebhookSecret: z.boolean().optional(),
+    contractEventsEnabledAt: z.string().optional(),
+
     // Setup/onboarding status
     status: LCNIntegrationStatusEnum.default('setup'),
     guideType: z.string().optional(),
@@ -2040,11 +2199,38 @@ export const LCNIntegrationCreateValidator = z.object({
 
 export type LCNIntegrationCreateType = z.infer<typeof LCNIntegrationCreateValidator>;
 
+/**
+ * URL of an Integration's contract-event webhook: an absolute URL whose scheme is exactly
+ * `http` or `https`, at most 2048 characters, without a username or password (the delivery
+ * transport refuses those, so they would be stored and then never delivered).
+ */
+export const IntegrationWebhookUrlValidator = z
+    .url({ protocol: /^https?$/ })
+    .max(2048)
+    .refine(
+        value => {
+            try {
+                const url = new URL(value);
+
+                return url.username === '' && url.password === '';
+            } catch {
+                return false;
+            }
+        },
+        { message: 'Webhook URL must not contain a username or password' }
+    );
+
 export const LCNIntegrationUpdateValidator = z.object({
     name: z.string().optional(),
     description: z.string().optional(),
     whitelistedDomains: z.array(LCNDomainOrOriginValidator).optional(),
     rotatePublishableKey: z.boolean().optional(),
+
+    // Contract event change feed (LC-2370). The webhook URL is set with setIntegrationWebhook.
+    contractEventsEnabled: z
+        .boolean()
+        .optional()
+        .describe('true enables the contract event feed without a webhook; false disables it.'),
 
     // Setup/onboarding updates
     status: LCNIntegrationStatusEnum.optional(),
@@ -2071,6 +2257,164 @@ export const PaginatedLCNIntegrationsValidator = PaginationResponseValidator.ext
 });
 
 export type PaginatedLCNIntegrationsType = z.infer<typeof PaginatedLCNIntegrationsValidator>;
+
+// Integration change feed and signed webhooks (LC-2370)
+export const IntegrationEventTypeValidator = z.enum([
+    'request_sent',
+    'request_accepted',
+    'request_denied',
+    'request_cancelled',
+    'request_expired',
+    'consent_created',
+    'consent_updated',
+    'consent_withdrawn',
+    'credentials_synced',
+    'contract_retired',
+    'consent_paused',
+    'consent_suspended',
+    'consent_expired',
+    'integration.test',
+]);
+export type IntegrationEventType = z.infer<typeof IntegrationEventTypeValidator>;
+
+export const IntegrationEventRoleValidator = z.enum(['owner', 'writer', 'recipient', 'requester']);
+export type IntegrationEventRole = z.infer<typeof IntegrationEventRoleValidator>;
+
+export const IntegrationEventSubjectValidator = z.object({
+    profileId: z.string(),
+    did: z.string(),
+    didKey: z.string(),
+});
+export type IntegrationEventSubject = z.infer<typeof IntegrationEventSubjectValidator>;
+
+/**
+ * One record in an integration's change feed. The same object is the exact body of the signed
+ * webhook. It carries identifiers only: no shared credentials and no personal fields.
+ */
+export const IntegrationEventValidator = z.object({
+    eventId: z.string(),
+    deliveryKey: z.string(),
+    sequence: z.number().int().nonnegative(),
+    type: IntegrationEventTypeValidator,
+    contractUri: z.string(),
+    termsUri: z.string().optional(),
+    subject: IntegrationEventSubjectValidator.optional(),
+    requestId: z.string().optional(),
+    externalReferenceId: z.string().optional(),
+    reason: z.string().optional(),
+    /** Credential category the event is about. Set for `reason: "share_until_passed"`. */
+    category: z.string().optional(),
+    role: IntegrationEventRoleValidator,
+    occurredAt: z.string(),
+});
+export type IntegrationEvent = z.infer<typeof IntegrationEventValidator>;
+
+export const IntegrationEventsResponseValidator = z.object({
+    records: IntegrationEventValidator.array(),
+    cursor: z.string().optional(),
+    latestCursor: z.string(),
+    hasMore: z.boolean(),
+});
+export type IntegrationEventsResponse = z.infer<typeof IntegrationEventsResponseValidator>;
+
+/**
+ * Result of setting, replacing or removing an Integration's webhook URL. `secret` is the
+ * plaintext signing secret and is only present when this call created the Integration's first
+ * secret; it is never returned again.
+ */
+export const IntegrationWebhookRegistrationValidator = z.object({
+    webhookUrl: z.string().nullable(),
+    secret: z.string().optional(),
+    contractEventsEnabledAt: z.string().optional(),
+});
+export type IntegrationWebhookRegistration = z.infer<
+    typeof IntegrationWebhookRegistrationValidator
+>;
+
+export const IntegrationWebhookStateValidator = z.enum(['active', 'failing', 'disabled']);
+export type IntegrationWebhookState = z.infer<typeof IntegrationWebhookStateValidator>;
+
+/**
+ * Configuration and delivery health of an Integration's webhook. Never contains a secret.
+ *
+ * `state` is `disabled` when there is no webhook URL or contract events are disabled,
+ * `failing` when the most recent delivery attempt failed, and `active` otherwise.
+ * `lastFailureReason` is a short fixed code such as `http_500`, `timeout`, `network_error` or
+ * `redirect` (the endpoint answered with a redirect, which is not followed) or
+ * `invalid_webhook` (the address was refused before any request); it never contains a URL or a
+ * response body.
+ */
+export const IntegrationWebhookStatusValidator = z.object({
+    webhookUrl: z.string().nullable(),
+    state: IntegrationWebhookStateValidator,
+    contractEventsEnabledAt: z.string().optional(),
+    hasSecret: z.boolean(),
+    secretVersion: z
+        .number()
+        .int()
+        .describe('0 without a secret, 1 for the first secret, plus 1 for every rotation.'),
+    previousSecretExpiresAt: z.string().optional(),
+    lastSuccessAt: z.string().optional(),
+    lastFailureAt: z.string().optional(),
+    lastFailureReason: z.string().optional(),
+    pendingDeliveries: z
+        .number()
+        .int()
+        .describe('Feed records waiting for their first delivery attempt.'),
+    retryingDeliveries: z
+        .number()
+        .int()
+        .describe('Feed records that were attempted at least once and will be tried again.'),
+});
+export type IntegrationWebhookStatus = z.infer<typeof IntegrationWebhookStatusValidator>;
+
+export const IntegrationWebhookSecretRotationValidator = z.object({
+    secret: z.string(),
+    previousSecretExpiresAt: z.string().optional(),
+});
+export type IntegrationWebhookSecretRotation = z.infer<
+    typeof IntegrationWebhookSecretRotationValidator
+>;
+
+/**
+ * Result of one synchronous test ping. `httpStatus` is present when the receiver answered,
+ * `latencyMs` when a request was made (not for `invalid_webhook` or `no_webhook`), and `error` is a
+ * short fixed code (`http_<status>`, `timeout`, `network_error`, `redirect`, `invalid_webhook`,
+ * `no_webhook`) when it was not delivered. `redirect` means the endpoint answered with a
+ * redirect, which is never followed: `httpStatus` is its 3xx code. `invalid_webhook` means the
+ * address was refused before any request was sent.
+ */
+export const IntegrationTestEventResultValidator = z.object({
+    delivered: z.boolean(),
+    httpStatus: z.number().optional(),
+    latencyMs: z.number().optional(),
+    error: z.string().optional(),
+});
+export type IntegrationTestEventResult = z.infer<typeof IntegrationTestEventResultValidator>;
+
+export const ContractConnectionStatusValidator = z.enum(['live', 'needs_reconsent', 'suspended']);
+export type ContractConnectionStatus = z.infer<typeof ContractConnectionStatusValidator>;
+
+/**
+ * One current connection (consenter) of a contract, as returned by the connections snapshot.
+ * Identifiers only, the same as an integration event: no shared credentials or personal fields.
+ */
+export const ContractConnectionValidator = z.object({
+    profileId: z.string(),
+    did: z.string(),
+    didKey: z.string(),
+    termsUri: z.string(),
+    status: ContractConnectionStatusValidator,
+    requestId: z.string().optional(),
+    externalReferenceId: z.string().optional(),
+    updatedAt: z.string(),
+});
+export type ContractConnection = z.infer<typeof ContractConnectionValidator>;
+
+export const PaginatedContractConnectionsValidator = PaginationResponseValidator.extend({
+    records: ContractConnectionValidator.array(),
+});
+export type PaginatedContractConnections = z.infer<typeof PaginatedContractConnectionsValidator>;
 
 export const ClaimTokenValidator = z.object({
     token: z.string(),

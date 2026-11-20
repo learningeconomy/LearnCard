@@ -100,6 +100,13 @@ real issuance — that's a signing + multi-service backend flow that lives in th
 On replay, any backend call that isn't in the HAR (and isn't overridden) is **aborted**
 (`notFound: 'abort'`) — missing coverage fails loudly instead of hanging.
 
+A batched tRPC request is only answered by the typed mock when **every** procedure in
+the batch has a handler; otherwise the whole batch falls through to the HAR. So a
+background read that can join other batches needs a default handler, or any batch it
+joins is aborted. `installNetwork` registers defaults for `utilities.getChallenges`,
+`campaigns.getMyCampaigns` and `preferences.getPreferencesForDid` (the recorded adult preferences);
+override them per spec with `mock.on`.
+
 The replay app is built with the **local** tenant config (`--stage local`) so it points at
 `localhost`, matching the recorded HAR. DIDKit signing runs locally (WASM mocked by the
 `mocked-test` fixture).

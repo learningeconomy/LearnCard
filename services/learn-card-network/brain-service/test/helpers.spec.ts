@@ -1,6 +1,30 @@
 import { describe, it, expect } from 'vitest';
 
-import { convertRegExpToNeo4j, convertObjectRegExpToNeo4j, buildWhereClause } from '@helpers/neo4j.helpers';
+import {
+    convertExclusionRegExpToNeo4j,
+    convertRegExpToNeo4j,
+    convertObjectRegExpToNeo4j,
+    buildWhereClause,
+} from '@helpers/neo4j.helpers';
+
+describe('convertExclusionRegExpToNeo4j', () => {
+    it('groups alternations and retains multiline and dotAll flags', () => {
+        expect(convertExclusionRegExpToNeo4j(/Passport|Resume/)).toBe(
+            '(?s:.*)(?:Passport|Resume)(?s:.*)'
+        );
+        expect(convertExclusionRegExpToNeo4j(/^Resume$/im)).toBe('(?im)(?s:.*)(?:^Resume$)(?s:.*)');
+        expect(convertExclusionRegExpToNeo4j(/first.second/s)).toBe(
+            '(?s)(?s:.*)(?:first.second)(?s:.*)'
+        );
+        expect(convertExclusionRegExpToNeo4j(/test/y)).toBe('(?:test)(?s:.*)');
+    });
+
+    it('uses strict end anchors without changing literal dollar signs', () => {
+        expect(convertExclusionRegExpToNeo4j(/^a$/)).toBe('(?s:.*)(?:^a\\z)(?s:.*)');
+        expect(convertExclusionRegExpToNeo4j(/[$]\$$/)).toBe('(?s:.*)(?:[$]\\$\\z)(?s:.*)');
+        expect(convertExclusionRegExpToNeo4j(/^a$/m)).toBe('(?m)(?s:.*)(?:^a$)(?s:.*)');
+    });
+});
 
 describe('convertRegExpToNeo4j', () => {
     it('converts basic RegExp without flags', () => {
@@ -161,68 +185,69 @@ describe('buildWhereClause', () => {
     });
 
     it('handles $or at document level', () => {
-        const result = buildWhereClause('boost', { 
-            $or: [
-                { name: 'Test1' }, 
-                { name: 'Test2' }
-            ] 
+        const result = buildWhereClause('boost', {
+            $or: [{ name: 'Test1' }, { name: 'Test2' }],
         });
         expect(result.whereClause).toBe('(boost.name = $param_0 OR boost.name = $param_1)');
         expect(result.params).toEqual({ param_0: 'Test1', param_1: 'Test2' });
     });
 
     it('handles $or at field level', () => {
-        const result = buildWhereClause('boost', { 
-            name: { $or: ['Test1', 'Test2'] } 
+        const result = buildWhereClause('boost', {
+            name: { $or: ['Test1', 'Test2'] },
         });
         expect(result.whereClause).toBe('(boost.name = $param_0 OR boost.name = $param_1)');
         expect(result.params).toEqual({ param_0: 'Test1', param_1: 'Test2' });
     });
 
     it('handles nested objects with dot notation (backtick-escaped for Neo4j)', () => {
-        const result = buildWhereClause('boost', { 
-            meta: { appListingId: 'listing-123' } 
+        const result = buildWhereClause('boost', {
+            meta: { appListingId: 'listing-123' },
         });
         expect(result.whereClause).toBe('boost.`meta.appListingId` = $param_0');
         expect(result.params).toEqual({ param_0: 'listing-123' });
     });
 
     it('handles multiple nested object fields', () => {
-        const result = buildWhereClause('boost', { 
-            meta: { appListingId: 'listing-123', integrationId: 'int-456' } 
+        const result = buildWhereClause('boost', {
+            meta: { appListingId: 'listing-123', integrationId: 'int-456' },
         });
-        expect(result.whereClause).toBe('(boost.`meta.appListingId` = $param_0 AND boost.`meta.integrationId` = $param_1)');
+        expect(result.whereClause).toBe(
+            '(boost.`meta.appListingId` = $param_0 AND boost.`meta.integrationId` = $param_1)'
+        );
         expect(result.params).toEqual({ param_0: 'listing-123', param_1: 'int-456' });
     });
 
     it('handles deeply nested objects', () => {
-        const result = buildWhereClause('boost', { 
-            meta: { 
-                config: { 
-                    setting: 'value' 
-                } 
-            } 
+        const result = buildWhereClause('boost', {
+            meta: {
+                config: {
+                    setting: 'value',
+                },
+            },
         });
         expect(result.whereClause).toBe('boost.`meta.config.setting` = $param_0');
         expect(result.params).toEqual({ param_0: 'value' });
     });
 
     it('handles nested objects with operators', () => {
-        const result = buildWhereClause('boost', { 
-            meta: { 
-                type: { $in: ['A', 'B'] } 
-            } 
+        const result = buildWhereClause('boost', {
+            meta: {
+                type: { $in: ['A', 'B'] },
+            },
         });
         expect(result.whereClause).toBe('boost.`meta.type` IN $param_0');
         expect(result.params).toEqual({ param_0: ['A', 'B'] });
     });
 
     it('handles mixed top-level and nested conditions', () => {
-        const result = buildWhereClause('boost', { 
+        const result = buildWhereClause('boost', {
             name: 'Test',
-            meta: { appListingId: 'listing-123' } 
+            meta: { appListingId: 'listing-123' },
         });
-        expect(result.whereClause).toBe('boost.name = $param_0 AND boost.`meta.appListingId` = $param_1');
+        expect(result.whereClause).toBe(
+            'boost.name = $param_0 AND boost.`meta.appListingId` = $param_1'
+        );
         expect(result.params).toEqual({ param_0: 'Test', param_1: 'listing-123' });
     });
 

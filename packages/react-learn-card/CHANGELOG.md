@@ -1,5 +1,48 @@
 # @welibraryos/react-learn-card
 
+## 4.0.0
+
+### Major Changes
+
+- [#2045](https://github.com/learningeconomy/LearnCard/pull/2045) [`acda1d1bd362add238a7c6ff8096c295e844e586`](https://github.com/learningeconomy/LearnCard/commit/acda1d1bd362add238a7c6ff8096c295e844e586) Thanks [@goblincore](https://github.com/goblincore)! - Stop installing the backend services and React Native tooling with the SDK.
+
+    - `@learncard/network-brain-client` and `@learncard/learn-cloud-client` no longer depend on `@learncard/network-brain-service` / `@learncard/learn-cloud-service`. Workspace development continues to resolve their source without a build. Release manifest preparation removes that source-only development condition, so published entry points use built JavaScript and bundled declarations under both default and development conditions. The brain client bundles its helper runtime dependencies in ESM and CommonJS. The declarations contain the router types they need, so consumers type-check without the server packages. `@learncard/learn-cloud-client` also exports `Filter`, which `@learncard/learn-cloud-plugin` now imports from there.
+    - `@learncard/core`, `@learncard/crypto-plugin` and `@learncard/lca-api-plugin` no longer depend on `isomorphic-webcrypto`, which pulled in Expo and React Native through its optional dependencies. They use the platform's `globalThis.crypto` (Node.js 20+, every current browser). **Breaking for environments without WebCrypto** (React Native, Node.js 18 and older): they must now load a WebCrypto polyfill before initializing LearnCard; `learnCard.invoke.crypto()` throws a clear error if it is missing.
+    - `@learncard/types` declares the `zod-openapi` type augmentation imported by its published development sources, so client types also resolve with the development condition enabled.
+    - The service packages publish only `dist`, `README.md` and `CHANGELOG.md`.
+
+    The WebCrypto requirement is a major release for `core`, `crypto-plugin`, and the public entry points that initialize LearnCard: `init`, `lca-api-plugin`, `react`, `holder-continuity`, and `create-http-bridge`. Changesets otherwise propagates internal dependency updates as patches; explicit majors prevent existing compatible ranges from silently losing the polyfill. The CLI already requires Node.js 20+. Plugins that call WebCrypto directly, including `sd-jwt-vc`, `openid4vc`, `linked-claims`, and `learn-cloud`, also require the platform API or a consumer-provided polyfill before use; loading core no longer supplies it. Only callers of `learnCard.invoke.crypto()` receive the explicit missing-WebCrypto error; direct callers can fail with a native error. Packages that only reference core/plugin types do not acquire a new runtime requirement.
+
+### Patch Changes
+
+- Updated dependencies [[`acda1d1bd362add238a7c6ff8096c295e844e586`](https://github.com/learningeconomy/LearnCard/commit/acda1d1bd362add238a7c6ff8096c295e844e586)]:
+    - @learncard/init@3.0.0
+    - @learncard/helpers@1.8.3
+
+## 3.0.7
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/helpers@1.8.2
+    - @learncard/init@2.5.12
+
+## 3.0.6
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/init@2.5.11
+    - @learncard/helpers@1.8.1
+
+## 3.0.5
+
+### Patch Changes
+
+- Updated dependencies [[`fea9c25ec76f230944a1713500a280c80e2a9cc0`](https://github.com/learningeconomy/LearnCard/commit/fea9c25ec76f230944a1713500a280c80e2a9cc0), [`bde3fe0f15a780d9fafc699096a9a0307502f529`](https://github.com/learningeconomy/LearnCard/commit/bde3fe0f15a780d9fafc699096a9a0307502f529), [`784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3`](https://github.com/learningeconomy/LearnCard/commit/784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3), [`751579d9c14116dbf6d0e7f7d62f489c81c39db2`](https://github.com/learningeconomy/LearnCard/commit/751579d9c14116dbf6d0e7f7d62f489c81c39db2), [`2c60b1a760958cbfe2525bc951d2381332e1aa48`](https://github.com/learningeconomy/LearnCard/commit/2c60b1a760958cbfe2525bc951d2381332e1aa48)]:
+    - @learncard/helpers@1.8.0
+    - @learncard/init@2.5.10
+
 ## 3.0.4
 
 ### Patch Changes

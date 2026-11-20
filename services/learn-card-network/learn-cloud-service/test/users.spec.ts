@@ -1,11 +1,16 @@
 import { Users } from '@accesslayer/user';
 import { getClient, getUser } from './helpers/getClient';
 import { testRecordA, testRecordB } from './helpers/records';
-import { EncryptedCredentialRecord } from '@learncard/types';
+import {
+    EncryptedCredentialRecord,
+    PaginatedEncryptedCredentialRecordsType,
+} from '@learncard/types';
 import { CredentialRecords } from '@accesslayer/credential-record';
 
 import { client } from '@mongo';
 import cache from '@cache';
+import { getErrorShape } from '@trpc/server/unstable-core-do-not-import';
+import { appRouter } from '../src/app';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -76,6 +81,41 @@ describe('Users', () => {
             await cache.node.flushall();
         });
 
+        describe('when the user lookup fails (LC-2434)', () => {
+            afterEach(() => {
+                vi.restoreAllMocks();
+            });
+
+            it('sends a fixed message, not the database error text', async () => {
+                const dbError = 'connect ECONNREFUSED mongo-shard-00.internal:27017';
+                vi.spyOn(Users, 'findOne').mockRejectedValueOnce(new Error(dbError));
+
+                const error = await userA.clients.fullAuth.user
+                    .addDid({ presentation: await userB.learnCard.invoke.getDidAuthVp() })
+                    .then(
+                        () => undefined,
+                        (e: unknown) => e
+                    );
+
+                expect(error).toMatchObject({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Could not add DID',
+                });
+                expect((error as Error).cause).toMatchObject({ message: dbError });
+
+                // The response body tRPC builds from it, with isDev on so the stack is in it too.
+                const shape = getErrorShape({
+                    config: { ...appRouter._def._config, isDev: true },
+                    error: error as never,
+                    type: 'mutation',
+                    path: 'user.addDid',
+                    input: undefined,
+                    ctx: undefined,
+                });
+                expect(JSON.stringify(shape)).not.toContain('mongo-shard-00');
+            });
+        });
+
         afterAll(async () => {
             await Users.deleteMany({});
             await CredentialRecords.deleteMany({});
@@ -121,8 +161,11 @@ describe('Users', () => {
             await userA.clients.fullAuth.index.add({ record: testRecordA });
             await userB.clients.fullAuth.index.add({ record: testRecordB });
 
-            const records = ((await userA.clients.fullAuth.index.get({ encrypt: false })) as any)
-                .records as EncryptedCredentialRecord[];
+            const records = (
+                (await userA.clients.fullAuth.index.get({
+                    encrypt: false,
+                })) as PaginatedEncryptedCredentialRecordsType
+            ).records as EncryptedCredentialRecord[];
 
             expect(records).toHaveLength(1);
             expect(records).toContainEqual(testRecordA);
@@ -132,8 +175,11 @@ describe('Users', () => {
                 presentation: await userB.learnCard.invoke.getDidAuthVp(),
             });
 
-            const newRecords = ((await userA.clients.fullAuth.index.get({ encrypt: false })) as any)
-                .records as EncryptedCredentialRecord[];
+            const newRecords = (
+                (await userA.clients.fullAuth.index.get({
+                    encrypt: false,
+                })) as PaginatedEncryptedCredentialRecordsType
+            ).records as EncryptedCredentialRecord[];
 
             expect(newRecords).toHaveLength(2);
             expect(newRecords).toContainEqual(testRecordA);
@@ -240,8 +286,11 @@ describe('Users', () => {
             await userA.clients.fullAuth.index.add({ record: testRecordA });
             await userB.clients.fullAuth.index.add({ record: testRecordB });
 
-            const records = ((await userA.clients.fullAuth.index.get({ encrypt: false })) as any)
-                .records as EncryptedCredentialRecord[];
+            const records = (
+                (await userA.clients.fullAuth.index.get({
+                    encrypt: false,
+                })) as PaginatedEncryptedCredentialRecordsType
+            ).records as EncryptedCredentialRecord[];
 
             expect(records).toHaveLength(2);
             expect(records).toContainEqual(testRecordA);
@@ -251,8 +300,11 @@ describe('Users', () => {
                 presentation: await userB.learnCard.invoke.getDidAuthVp(),
             });
 
-            const newRecords = ((await userA.clients.fullAuth.index.get({ encrypt: false })) as any)
-                .records as EncryptedCredentialRecord[];
+            const newRecords = (
+                (await userA.clients.fullAuth.index.get({
+                    encrypt: false,
+                })) as PaginatedEncryptedCredentialRecordsType
+            ).records as EncryptedCredentialRecord[];
 
             expect(newRecords).toHaveLength(1);
             expect(newRecords).toContainEqual(testRecordA);

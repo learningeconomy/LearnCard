@@ -7,7 +7,7 @@ const buildOptions = {
     // target: 'es6',
     target: 'es2020',
     sourcemap: true,
-    external: ['isomorphic-fetch', 'isomorphic-webcrypto'],
+    external: ['isomorphic-fetch'],
 };
 
 const configurations = [

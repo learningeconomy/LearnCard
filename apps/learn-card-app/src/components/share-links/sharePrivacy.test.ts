@@ -9,12 +9,19 @@ const capture = vi.hoisted(() => ({
 }));
 vi.mock('@sentry/react', () => ({ getReplay: () => ({ stop: capture.stop }) }));
 vi.mock('userflow.js', () => ({
-    default: { setPageTrackingDisabled: capture.disable, reset: capture.reset },
+    default: {
+        setPageTrackingDisabled: capture.disable,
+        reset: capture.reset,
+        isIdentified: () => true,
+    },
 }));
 vi.mock('@capacitor-firebase/analytics', () => ({
     FirebaseAnalytics: { setEnabled: capture.analytics },
 }));
-vi.mock('learn-card-base/logging/logger', () => ({ configureLoggerContext: capture.logger }));
+vi.mock('learn-card-base/logging/logger', () => ({
+    configureLoggerContext: capture.logger,
+    getLogger: () => ({ debug: vi.fn(), error: vi.fn() }),
+}));
 import {
     scrubShareTelemetry,
     isShareViewerPath,
@@ -99,7 +106,6 @@ describe('share privacy', () => {
         });
         expect(capture.reset).toHaveBeenCalledOnce();
         expect(capture.stop).toHaveBeenCalledOnce();
-        expect(capture.analytics).toHaveBeenCalledOnce();
         expect(result.current).toBe(true);
         unmount();
     });
@@ -119,7 +125,6 @@ describe('share privacy', () => {
             privacy.enterSharePrivacy();
             expect(capture.disable).toHaveBeenCalledOnce();
             expect(capture.reset).toHaveBeenCalledOnce();
-            expect(capture.analytics).toHaveBeenCalledWith({ enabled: false });
             expect(capture.stop).toHaveBeenCalledOnce();
         } finally {
             window.history.replaceState(null, '', previous);

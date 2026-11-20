@@ -20,8 +20,9 @@ import * as Sentry from '@sentry/react';
 
 import GenericErrorBoundary from './components/generic/GenericErrorBoundary';
 
+const CampaignsPage = lazyWithRetry(() => import('./pages/campaigns/CampaignsPage'));
 const WalletPage = lazyWithRetry(() => import('./pages/wallet/WalletPage'));
-const DashboardPage = lazyWithRetry(() => import('./pages/dashboard/DashboardPage'));
+import { DashboardPageRoute, preloadDashboardPage } from './pages/dashboard/DashboardPageRoute';
 const LaunchPad = lazyWithRetry(() => import('./pages/launchPad/LaunchPad'));
 const MyAppsLanding = lazyWithRetry(() => import('./pages/myApps/MyAppsLanding'));
 const EmbedAppFullScreen = lazyWithRetry(() => import('./pages/launchPad/EmbedAppFullScreen'));
@@ -99,6 +100,12 @@ const ApproveAccount = lazyWithRetry(() => import('./pages/approveAccount/Approv
 const SocialBadgesPage = lazyWithRetry(() => import('./pages/socialBadgesPage/SocialBadgesPage'));
 
 import { LoadingPage2 } from './pages/loadingPage/LoadingPage';
+import {
+    FallbackMarker,
+    markDashboardPath,
+    useDashboardPathMark,
+} from './helpers/dashboardPathMarks';
+const markRoutesFallbackTimer = () => markDashboardPath('routes_fallback_timer', true);
 const AccomplishmentsPage = lazyWithRetry(
     () => import('./pages/accomplishments/AccomplishmentsPage')
 );
@@ -111,6 +118,9 @@ const ClaimFromDashboard = lazyWithRetry(
 const ClaimFromRequest = lazyWithRetry(() => import('./pages/claim-from-request/ClaimFromRequest'));
 const Oid4vciExchange = lazyWithRetry(() => import('./pages/oid4vci/Oid4vciExchange'));
 const Oid4vpExchange = lazyWithRetry(() => import('./pages/oid4vp/Oid4vpExchange'));
+const NativeDigitalCredentialFlow = lazyWithRetry(
+    () => import('./native-digital-credentials/NativeDigitalCredentialFlow')
+);
 const InteractionsPage = lazyWithRetry(() => import('./pages/interactions/InteractionsPage'));
 const GuardianCredentialApprovalPage = lazyWithRetry(
     () => import('./pages/interactions/GuardianCredentialApprovalPage')
@@ -123,7 +133,10 @@ const PublishSignInGate = lazyWithRetry(
     () => import('./pages/appStoreDeveloper/submit/PublishSignInGate')
 );
 const FamilyPage = lazyWithRetry(() => import('./pages/familyPage/FamilyPage'));
+const SchoolConnectPage = lazyWithRetry(() => import('./pages/schoolConnect/SchoolConnectPage'));
 const AuthHandoff = lazyWithRetry(() => import('./pages/auth/AuthHandoff'));
+const ClassLinkCallback = lazyWithRetry(() => import('./pages/auth/ClassLinkCallback'));
+const ClassLinkStart = lazyWithRetry(() => import('./pages/auth/ClassLinkStart'));
 
 // App Store Developer Portal
 const DeveloperPortalRoutes = lazyWithRetry(
@@ -209,6 +222,8 @@ const PublishFromManifestRoute: React.FC = () => {
 };
 
 export const Routes: React.FC = () => {
+    markDashboardPath('routes_render');
+    useDashboardPathMark('routes_commit');
     const isLoggedIn = useIsLoggedIn();
     const location = useLocation<{ background: any }>();
     const flags = useFlags();
@@ -231,9 +246,11 @@ export const Routes: React.FC = () => {
         <ChunkBoundary>
             <Suspense
                 fallback={
-                    <DelayedFallback delayMs={200}>
-                        <RouteTransitionLoader />
-                    </DelayedFallback>
+                    <FallbackMarker boundary="routes">
+                        <DelayedFallback delayMs={200} onShow={markRoutesFallbackTimer}>
+                            <RouteTransitionLoader />
+                        </DelayedFallback>
+                    </FallbackMarker>
                 }
             >
                 <GenericErrorBoundary>
@@ -256,6 +273,16 @@ export const Routes: React.FC = () => {
                             component={ViewCredsBundle}
                         />
                         <SentryRoute exact path="/auth/handoff" component={AuthHandoff} />
+                        <SentryRoute
+                            exact
+                            path="/auth/classlink/callback"
+                            component={ClassLinkCallback}
+                        />
+                        <SentryRoute
+                            exact
+                            path="/auth/classlink/start"
+                            component={ClassLinkStart}
+                        />
                         <SentryRoute exact path="/share-boost" component={ViewSharedBoost} />
                         <SentryRoute exact path="/verify/resume" component={VerifySharedResume} />
                         <SentryRoute path="/waitingsofa" children={<LoadingPage2 />} />
@@ -264,7 +291,7 @@ export const Routes: React.FC = () => {
                             path="/share-creds/:uri/:seed"
                             component={ViewCredsBundle}
                         />
-                        <PrivateRoute exact path="/dashboard" component={DashboardPage} />
+                        <PrivateRoute exact path="/dashboard" component={DashboardPageRoute} />
                         <PrivateRoute exact path="/home" component={WalletPage} />
                         <PrivateRoute exact path="/wallet" component={WalletPage} />
                         <PrivateRoute exact path="/passport" component={WalletPage} />
@@ -296,6 +323,8 @@ export const Routes: React.FC = () => {
                             component={AppStoreAdminWithProvider}
                         />
 
+                        <SentryRoute path="/admin/campaigns" component={CampaignsPage} />
+
                         <PrivateRoute exact path="/notifications" component={NotificationsPage} />
                         {/* Linked from the "New device signed in with your PIN" email. */}
                         <PrivateRoute exact path="/account/secure" component={SecureAccountPage} />
@@ -318,6 +347,7 @@ export const Routes: React.FC = () => {
                         <PrivateRoute exact path="/memberships" component={MembershipPage} />
                         <PrivateRoute exact path="/workhistory" component={WorkHistoryPage} />
                         <PrivateRoute exact path="/families" component={FamilyPage} />
+                        <PrivateRoute exact path="/school-connect" component={SchoolConnectPage} />
                         <PrivateRoute exact path="/skills" component={SkillsPage} />
                         <PrivateRoute exact path="/ai/insights" component={AiInsights} />
                         {learnCardAssistantEnabled && (
@@ -397,6 +427,11 @@ export const Routes: React.FC = () => {
                         <SentryRoute exact path="/request" component={ClaimFromRequest} />
                         <SentryRoute exact path="/oid4vci" component={Oid4vciExchange} />
                         <SentryRoute exact path="/oid4vp" component={Oid4vpExchange} />
+                        <SentryRoute
+                            exact
+                            path="/native-digital-credentials"
+                            component={NativeDigitalCredentialFlow}
+                        />
 
                         <SentryRoute
                             exact
@@ -430,13 +465,16 @@ export const Routes: React.FC = () => {
                         <SentryRoute
                             exact
                             path="/"
-                            render={() =>
-                                isLoggedIn ? (
+                            render={() => {
+                                markDashboardPath(
+                                    isLoggedIn ? 'root_redirect' : 'root_redirect_login'
+                                );
+                                return isLoggedIn ? (
                                     <Redirect to={dashboardAsHome ? '/dashboard' : '/wallet'} />
                                 ) : (
                                     <Redirect to="/login" />
-                                )
-                            }
+                                );
+                            }}
                         />
 
                         <SentryRoute exact path="/verify-email" component={UserVerifyEmail} />
@@ -475,7 +513,7 @@ const AI_GATED_PATHS = new Set([
  * chunk is in memory.
  */
 export const ROUTE_PRELOAD: Record<string, () => Promise<void>> = {
-    '/dashboard': () => DashboardPage.preload(),
+    '/dashboard': preloadDashboardPage,
     // Wallet (Passport) — same chunk for all three aliases.
     '/passport': () => WalletPage.preload(),
     '/wallet': () => WalletPage.preload(),
@@ -490,6 +528,7 @@ export const ROUTE_PRELOAD: Record<string, () => Promise<void>> = {
     '/accommodations': () => AccommodationsPage.preload(),
     '/workhistory': () => WorkHistoryPage.preload(),
     '/families': () => FamilyPage.preload(),
+    '/school-connect': () => SchoolConnectPage.preload(),
     '/ids': () => IdsPage.preload(),
     '/memberships': () => MembershipPage.preload(),
     '/currencies': () => CurrenciesPage.preload(),

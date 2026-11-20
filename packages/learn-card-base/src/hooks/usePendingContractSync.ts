@@ -14,12 +14,15 @@ import {
     getNextRetryAt,
     isJobReadyToProcess,
     MAX_JOB_RETRIES,
+    hydratePendingContractSyncJobs,
 } from '../stores/pendingContractSyncStore';
 import { getLogger } from '../logging/logger';
+import { switchedProfileStore, walletStore } from '../stores/walletStore';
 
 const log = getLogger('pending-contract-sync');
 
 const MAX_CONCURRENT_CREDENTIAL_SYNCS = 8;
+const LOCK_RETRY_DELAY_MS = 1_000;
 
 type SyncCredentialTask = {
     categoryName: string;
@@ -35,7 +38,7 @@ const isCategoryEligibleForSync = (
     return (
         categoryConfig.shareAll === true &&
         categoryConfig.sharing === true &&
-        (!categoryConfig.shareUntil || categoryConfig.shareUntil > new Date().toISOString())
+        (!categoryConfig.shareUntil?.trim() || categoryConfig.shareUntil > new Date().toISOString())
     );
 };
 
@@ -58,19 +61,22 @@ const runWithConcurrency = async <T>(
 };
 
 /**
- * Drives the background contract-sync worker. The single-flight guard
- * (`processingJobIdRef`) is per-hook-instance, so this hook MUST be mounted
- * exactly once in the tree. Mounting it in two trees simultaneously would let
- * two workers race on the same jobs.
+ * Drives background delivery with one active attempt per job. Web Locks cover the
+ * whole attempt; renewable IndexedDB leases also support platforms without them.
  */
 export const usePendingContractSync = (enabled = true): void => {
-    const { initWallet } = useWallet();
+    const { initWallet, syncCredentialToContracts } = useWallet();
     const queryClient = useQueryClient();
 
     const jobs = usePendingContractSyncJobs(); // get all jobs
+    const activeWallet = walletStore.use.wallet();
+    const switchedDid = switchedProfileStore.use.switchedDid();
+    const activeDid = switchedDid ?? activeWallet?.id.did();
+    const activeKeyDid = !switchedDid ? activeWallet?.id.did('key') : undefined;
 
     const processingJobIdRef = useRef<string | null>(null); // track currently processing job
     const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const unavailableLocksRef = useRef(new Map<string, number>());
     const [workerTick, setWorkerTick] = useState(0);
 
     // Cancel any pending retry-wake timer on unmount.
@@ -84,24 +90,42 @@ export const usePendingContractSync = (enabled = true): void => {
     // Prune long-finished jobs once on mount so the persisted store stays bounded
     // even for users who never enqueue new jobs.
     useEffect(() => {
-        if (enabled) pendingContractSyncStore.set.pruneDoneJobs();
+        if (!enabled) return;
+        void pendingContractSyncStore.set.pruneDoneJobs().catch(error => {
+            log.error('Failed to prune pending contract sync jobs', error);
+        });
     }, [enabled]);
 
     useEffect(() => {
-        if (!enabled || processingJobIdRef.current) return;
+        if (!enabled || !activeDid || processingJobIdRef.current) return;
 
         const pendingJobs = Object.values(jobs)
-            .filter(job => job.status !== 'done' && job.retryCount < MAX_JOB_RETRIES)
+            .filter(
+                job =>
+                    (job.profileDid === activeDid ||
+                        (job.kind === 'credential' && job.profileDid === activeKeyDid)) &&
+                    job.status !== 'done' &&
+                    job.retryCount < MAX_JOB_RETRIES
+            )
             .sort((a, b) => a.createdAt - b.createdAt);
 
-        const nextJob = pendingJobs.find(job => isJobReadyToProcess(job));
+        const currentTime = Date.now();
+        for (const [id, retryAt] of unavailableLocksRef.current) {
+            if (!jobs[id] || retryAt <= currentTime) unavailableLocksRef.current.delete(id);
+        }
+        const nextJob = pendingJobs.find(
+            job => isJobReadyToProcess(job, currentTime) && !unavailableLocksRef.current.has(job.id)
+        );
 
         // No job is ready right now. If some job is waiting out its retry
         // backoff, schedule a single wake-up for when the soonest one becomes
         // eligible instead of busy-looping the effect.
         if (!nextJob) {
             const soonestRetryAt = pendingJobs.reduce<number | null>((soonest, job) => {
-                const retryAt = getNextRetryAt(job);
+                const retryAt = Math.max(
+                    getNextRetryAt(job),
+                    unavailableLocksRef.current.get(job.id) ?? 0
+                );
                 if (retryAt <= 0) return soonest;
                 return soonest === null ? retryAt : Math.min(soonest, retryAt);
             }, null);
@@ -130,19 +154,117 @@ export const usePendingContractSync = (enabled = true): void => {
             failedCredentials: nextJob.failedCredentials,
         });
 
-        const processJob = async (job: PendingContractSyncJob): Promise<void> => {
-            pendingContractSyncStore.set.markRunning(job.id); // mark job as running
-            log.info('Starting pending contract sync job', {
-                contractUri: job.contractUri,
-                termsUri: job.termsUri,
-                ownerDid: job.ownerDid,
-                retryCount: job.retryCount,
-                completedCredentials: job.completedCredentials,
-                failedCredentials: job.failedCredentials,
-            });
-
+        let shouldWake = true;
+        let leaseHeartbeat: ReturnType<typeof setInterval> | undefined;
+        const processJob = async (id: string): Promise<void> => {
+            let attemptId: string | undefined;
+            let job = nextJob;
+            let leaseLost = false;
+            let attemptWalletDid: string | undefined;
+            const assertAttemptActive = (): void => {
+                const currentJob = pendingContractSyncStore.get.jobs()[job.id];
+                const currentDid =
+                    switchedProfileStore.get.switchedDid() ?? walletStore.get.wallet()?.id.did();
+                if (
+                    leaseLost ||
+                    currentJob?.processingAttemptId !== attemptId ||
+                    (currentJob.processingLeaseUntil ?? 0) <= Date.now() ||
+                    currentDid !== attemptWalletDid
+                ) {
+                    leaseLost = true;
+                    throw new Error('Background delivery attempt no longer owns this job');
+                }
+            };
             try {
                 const wallet = await initWallet();
+                const currentDid =
+                    switchedProfileStore.get.switchedDid() ?? walletStore.get.wallet()?.id.did();
+                const walletDid = wallet.id.did();
+                const isSameWalletCredential =
+                    job.kind === 'credential' &&
+                    !switchedProfileStore.get.switchedDid() &&
+                    job.profileDid === wallet.id.did('key');
+                // A stable key DID also owns uploads queued before network identity resolved.
+                if (
+                    (job.profileDid !== walletDid && !isSameWalletCredential) ||
+                    currentDid !== walletDid
+                ) {
+                    shouldWake =
+                        currentDid !== activeDid || walletStore.get.wallet() !== activeWallet;
+                    return;
+                }
+                const claimed = await pendingContractSyncStore.set.claimJob(id);
+                if (!claimed) {
+                    await hydratePendingContractSyncJobs();
+                    return;
+                }
+                job = claimed;
+                attemptId = claimed.processingAttemptId!;
+                attemptWalletDid = walletDid;
+                leaseHeartbeat = setInterval(() => {
+                    void pendingContractSyncStore.set
+                        .renewProcessingLease(job.id, attemptId!)
+                        .then(renewed => {
+                            if (!renewed) {
+                                leaseLost = true;
+                                log.error('Pending contract sync attempt lost its lease', {
+                                    contractUri: job.contractUri,
+                                    termsUri: job.termsUri,
+                                });
+                            }
+                        })
+                        .catch(error => {
+                            leaseLost = true;
+                            log.error('Failed to renew pending contract sync lease', error);
+                        });
+                }, 20_000);
+
+                await queryClient.invalidateQueries({
+                    queryKey: ['useConsentedContracts'],
+                    refetchType: 'none',
+                });
+                if (job.kind === 'credential') {
+                    const source = job.record;
+                    const records = await wallet.index.LearnCloud.get({ id: source.id });
+                    const current = records.find(record => record.uri === source.uri);
+                    // Recategorization changes which consent applies; never replay the old grant.
+                    if (!current || current.category !== job.category) {
+                        await pendingContractSyncStore.set.markDone(job.id, attemptId);
+                        return;
+                    }
+                    await pendingContractSyncStore.set.setTotals(job.id, 1, attemptId);
+                    assertAttemptActive();
+                    await syncCredentialToContracts(
+                        { record: job.record, category: job.category },
+                        wallet,
+                        new Set(job.syncedTermsUris ?? []),
+                        {
+                            beforeSync: assertAttemptActive,
+                            onTermsSynced: termsUri =>
+                                pendingContractSyncStore.set.recordTermsSynced(
+                                    job.id,
+                                    termsUri,
+                                    attemptId
+                                ),
+                            onContractsFailed: contractUris =>
+                                pendingContractSyncStore.set.setFailedContractUris(
+                                    job.id,
+                                    contractUris,
+                                    attemptId
+                                ),
+                        }
+                    );
+                    await pendingContractSyncStore.set.recordCredentialProcessed(job.id, attemptId);
+                    // Credential jobs count source records; contract jobs below count audience copies.
+                    await pendingContractSyncStore.set.recordCredentialSynced(
+                        job.id,
+                        job.category,
+                        job.record.uri,
+                        attemptId
+                    );
+                    await pendingContractSyncStore.set.markDone(job.id, attemptId);
+                    return;
+                }
                 log.info('Loaded wallet for contract sync job', {
                     contractUri: job.contractUri,
                     termsUri: job.termsUri,
@@ -150,8 +272,8 @@ export const usePendingContractSync = (enabled = true): void => {
                 const contracts = await getOrFetchConsentedContracts(queryClient, wallet);
                 const consentedContract = contracts.find(
                     contract =>
-                        contract.uri === job.termsUri ||
-                        contract.contract.uri === job.contractUri ||
+                        contract.uri === job.termsUri &&
+                        contract.contract.uri === job.contractUri &&
                         contract.contract.owner.did === job.ownerDid
                 );
 
@@ -193,19 +315,16 @@ export const usePendingContractSync = (enabled = true): void => {
                             credentialCount: records.length,
                         });
 
-                        return records.map(
-                            record =>
-                                ({
-                                    categoryName,
-                                    credentialCategory,
-                                    sourceUri: record.uri,
-                                }) as SyncCredentialTask
-                        );
+                        return records.map((record): SyncCredentialTask => ({
+                            categoryName,
+                            credentialCategory,
+                            sourceUri: record.uri,
+                        }));
                     })
                 );
 
                 const tasks = taskGroups.flat();
-                pendingContractSyncStore.set.setTotals(job.id, tasks.length);
+                await pendingContractSyncStore.set.setTotals(job.id, tasks.length, attemptId);
                 log.info('Prepared contract sync tasks', {
                     contractUri: job.contractUri,
                     termsUri: job.termsUri,
@@ -234,6 +353,7 @@ export const usePendingContractSync = (enabled = true): void => {
                                     pendingContractSyncStore.get.jobs()[job.id]?.failedCredentials,
                             });
 
+                            assertAttemptActive();
                             const sharedUri = await getOrCreateSharedUriForWallet(
                                 wallet,
                                 audience.recipients,
@@ -253,10 +373,11 @@ export const usePendingContractSync = (enabled = true): void => {
                                 ]),
                             ];
 
-                            pendingContractSyncStore.set.recordCredentialSynced(
+                            await pendingContractSyncStore.set.recordCredentialSynced(
                                 job.id,
                                 categoryName,
-                                sharedUri
+                                sharedUri,
+                                attemptId
                             );
                             log.info('Contract sync credential materialized', {
                                 contractUri: job.contractUri,
@@ -268,7 +389,11 @@ export const usePendingContractSync = (enabled = true): void => {
                             });
                         } catch (error) {
                             const message = error instanceof Error ? error.message : String(error);
-                            pendingContractSyncStore.set.recordCredentialFailed(job.id, message);
+                            await pendingContractSyncStore.set.recordCredentialFailed(
+                                job.id,
+                                message,
+                                attemptId
+                            );
                             log.error('Contract sync credential failed', error, {
                                 contractUri: job.contractUri,
                                 termsUri: job.termsUri,
@@ -277,7 +402,10 @@ export const usePendingContractSync = (enabled = true): void => {
                                 sourceUri,
                             });
                         } finally {
-                            pendingContractSyncStore.set.recordCredentialProcessed(job.id);
+                            await pendingContractSyncStore.set.recordCredentialProcessed(
+                                job.id,
+                                attemptId
+                            );
                         }
                     }
                 );
@@ -301,10 +429,12 @@ export const usePendingContractSync = (enabled = true): void => {
                             0
                         ),
                     });
+                    assertAttemptActive();
                     await wallet.invoke.syncCredentialsToContract(
                         job.termsUri,
                         categoriesToSync,
-                        audience.audienceVersion
+                        audience.audienceVersion,
+                        true
                     );
                     queryClient.invalidateQueries({
                         queryKey: ['useTermsTransactions', job.termsUri],
@@ -332,15 +462,21 @@ export const usePendingContractSync = (enabled = true): void => {
                     );
                 }
 
-                pendingContractSyncStore.set.markDone(job.id);
+                await pendingContractSyncStore.set.markDone(job.id, attemptId);
                 log.info('Contract sync job completed', {
                     contractUri: job.contractUri,
                     termsUri: job.termsUri,
                     credentialCount: tasks.length,
                 });
             } catch (error) {
+                if (leaseLost) return;
                 const message = error instanceof Error ? error.message : String(error);
-                pendingContractSyncStore.set.markError(job.id, message);
+                const failedAttempt =
+                    attemptId ??
+                    (await pendingContractSyncStore.set.claimJob(job.id))?.processingAttemptId;
+                if (failedAttempt) {
+                    await pendingContractSyncStore.set.markError(job.id, message, failedAttempt);
+                }
                 log.error('Contract sync job failed', error, {
                     contractUri: job.contractUri,
                     termsUri: job.termsUri,
@@ -350,9 +486,48 @@ export const usePendingContractSync = (enabled = true): void => {
             }
         };
 
-        processJob(nextJob).finally(() => {
-            processingJobIdRef.current = null;
-            setWorkerTick(tick => tick + 1);
-        });
-    }, [enabled, initWallet, jobs, queryClient, workerTick]);
+        const runWithJobLock = async (): Promise<void> => {
+            if (typeof navigator === 'undefined' || !navigator.locks) {
+                // IndexedDB claim + fenced attempt updates are the fallback on platforms without Web Locks.
+                await processJob(nextJob.id);
+                return;
+            }
+            await navigator.locks.request(
+                `learn-card-pending-contract-sync:${nextJob.id}`,
+                { mode: 'exclusive', ifAvailable: true },
+                async lock => {
+                    if (!lock) {
+                        unavailableLocksRef.current.set(
+                            nextJob.id,
+                            Date.now() + LOCK_RETRY_DELAY_MS
+                        );
+                        return;
+                    }
+                    unavailableLocksRef.current.delete(nextJob.id);
+                    await processJob(nextJob.id);
+                }
+            );
+        };
+
+        runWithJobLock()
+            .catch(error => {
+                shouldWake = false;
+                log.error('Failed to process pending contract sync job', error);
+            })
+            .finally(() => {
+                clearInterval(leaseHeartbeat);
+                processingJobIdRef.current = null;
+                if (shouldWake) setWorkerTick(tick => tick + 1);
+            });
+    }, [
+        enabled,
+        activeDid,
+        activeKeyDid,
+        activeWallet,
+        initWallet,
+        syncCredentialToContracts,
+        jobs,
+        queryClient,
+        workerTick,
+    ]);
 };

@@ -20,10 +20,10 @@ import NotificationProfileApprovalCard from './NotificationProfileApprovalCard';
 import NotificationAppStoreCard from './NotificationAppStoreCard';
 import NotificationGuardianApprovalCard from './NotificationGuardianApprovalCard';
 import NotificationGuardianOutcomeCard from './NotificationGuardianOutcomeCard';
-import { NotificationAnnouncementCard } from './NotificationAnnouncementCard';
 import NotificationAppNotificationCard from './NotificationAppNotificationCard';
 import NotificationCredentialStatusCard from './NotificationCredentialStatusCard';
 import NotificationCredentialRefreshedCard from './NotificationCredentialRefreshedCard';
+import { NotificationAnnouncementCard } from './NotificationAnnouncementCard';
 import { useQueryClient } from '@tanstack/react-query';
 
 type NotificationCardProps = {
@@ -466,7 +466,8 @@ const StandardNotificationCardContainer: React.FC<NotificationCardProps> = ({
     );
 };
 
-// Campaign copy is authored; service senders need no public profile lookup.
+// Announcements carry authored copy and may come from a service DID. Do not resolve a
+// sender profile or run the legacy sender-name substitution on their title/body.
 export const NotificationCardContainer: React.FC<NotificationCardProps> = props =>
     props.notification.type === NOTIFICATION_TYPES.ANNOUNCEMENT ? (
         <NotificationAnnouncementCard {...props} />

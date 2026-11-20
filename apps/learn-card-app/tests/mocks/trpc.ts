@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test';
 import type { inferRouterOutputs } from '@trpc/server';
 import type { AppRouter as BrainRouter } from '@learncard/network-brain-service';
 import type { AppRouter as CloudRouter } from '@learncard/learn-cloud-service';
+import type { AppRouter as LcaRouter } from '@learncard/lca-api-service';
 
 /**
  * Response types inferred from the REAL routers. Anchoring mock payloads to
@@ -14,6 +15,7 @@ import type { AppRouter as CloudRouter } from '@learncard/learn-cloud-service';
  */
 export type BrainOutputs = inferRouterOutputs<BrainRouter>;
 export type CloudOutputs = inferRouterOutputs<CloudRouter>;
+export type LcaOutputs = inferRouterOutputs<LcaRouter>;
 
 /** Return this from a handler to fail the call (renders the retry-able error path). */
 export const ABORT = Symbol('trpc-mock-abort');
@@ -53,7 +55,7 @@ const decodeBatchInput = (entry: unknown): unknown => {
  * tRPC v11 over httpBatchLink at `/trpc` with an IDENTITY output transformer,
  * so a batch response is a plain JSON array positioned by op index, each shaped
  * `{ result: { data } }`. Procedure names arrive comma-joined in the URL path
- * (`/trpc/proc.a,proc.b`); inputs (unused here) arrive in the POST body.
+ * (`/trpc/proc.a,proc.b`); inputs arrive in the POST body or GET input parameter.
  */
 export const createTrpcMock = (page: Page) => {
     const handlers = new Map<string, Handler>();
@@ -85,7 +87,11 @@ export const createTrpcMock = (page: Page) => {
 
             let body: Record<string, unknown>;
             try {
-                body = JSON.parse(route.request().postData() ?? '{}');
+                const input =
+                    route.request().method() === 'GET'
+                        ? new URL(route.request().url()).searchParams.get('input')
+                        : route.request().postData();
+                body = JSON.parse(input ?? '{}');
             } catch {
                 body = {};
             }

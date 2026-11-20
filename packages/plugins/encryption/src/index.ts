@@ -21,6 +21,13 @@ export const getEncryptionPlugin = async (
         createDagJwe: async (_learnCard, cleartext, recipients = []) =>
             learnCard.invoke.createDagJwe(cleartext, [_learnCard.id.did(), ...recipients]),
 
+        createDagJweExact: async (_learnCard, cleartext, recipients) => {
+            if (recipients.length === 0 || new Set(recipients).size !== recipients.length) {
+                throw new Error('Explicit encryption recipients must be nonempty and unique');
+            }
+            return learnCard.invoke.createDagJwe(cleartext, recipients);
+        },
+
         decryptDagJwe: async (_learnCard, jwe, jwks = []) =>
             learnCard.invoke.decryptDagJwe(jwe, [_learnCard.id.keypair(), ...jwks]),
     },

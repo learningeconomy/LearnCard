@@ -16,8 +16,8 @@ vi.mock('@tanstack/react-query', () => ({
     onlineManager: { setEventListener: vi.fn() },
 }));
 
-vi.mock('@tanstack/react-query-persist-client', () => ({
-    PersistQueryClientProvider: ({ children }: { children: React.ReactNode }) => children,
+vi.mock('./providers/BatchedPersistQueryClientProvider', () => ({
+    BatchedPersistQueryClientProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
 vi.mock('@tanstack/query-async-storage-persister', () => ({
@@ -122,6 +122,9 @@ vi.mock('./pages/sync-my-school/ExternalAuthServiceProvider', () => ({
     default: ({ children }: { children: React.ReactNode }) => children,
 }));
 vi.mock('./components/debug/DevDebugPanel', () => ({ default: () => null }));
+vi.mock('./native-digital-credentials/NativeDigitalCredentialsListener', () => ({
+    default: () => null,
+}));
 vi.mock('./providers/AuthCoordinatorProvider', () => ({
     default: ({ children }: { children: React.ReactNode }) => children,
 }));

@@ -12,7 +12,7 @@ combine their results. The three service jobs have explicit names and share the
 same steps through a YAML anchor. Their names therefore remain present when
 eligibility skips execution; job-level conditions run before matrix expansion.
 
-The intended required-check set on `main` is:
+The recommended required-check set on `main` is:
 
 - `Test` (unchanged)
 - `Workflow validation` (unchanged)
@@ -23,14 +23,19 @@ The intended required-check set on `main` is:
 - `tests/e2e (2)`
 - `tests/e2e (3)`
 
-Eligibility is required too: a failed dependency can skip its children, and
-GitHub accepts skipped job checks. The eligibility job validates its decision
-before reporting success. All PR updates, including drafts, defer full E2E to
-the merge queue. Their eligibility summary explains the deferral; the four suite
-checks report skipped. Merge groups run the full suites except for the existing
-documentation-only exemption. Manual dispatch always runs them. Failed or cancelled
-required jobs, and absent required check names, block merging. Unit tests, mock
-tests and Verification Catalog retain their existing triggers.
+Require eligibility as well as the four suite checks: a failed dependency can
+skip its children, and GitHub accepts skipped job checks. The eligibility job
+validates its decision before reporting success. GitHub's branch protection
+couples required PR and merge-queue check names, so these names must report in
+both places even though automatic full-suite execution is a merge-queue gate.
+
+On every PR update, including drafts, eligibility reports the deferral and all
+four suite checks report skipped; these statuses do not represent a test pass.
+A merge group runs the full suites on the combined revision, except for the
+existing documentation-only exemption. Manual dispatch always runs them and can
+provide earlier feedback. Failed or cancelled required jobs, and absent required
+check names, block merging. Unit tests, mock tests and Verification Catalog
+retain their existing triggers.
 
 ### Coordinated settings rollout
 
@@ -39,18 +44,27 @@ cutover, `main` requires `Test`, `Workflow validation`, `Typecheck ratchet` and 
 old aggregate `E2E`. This PR will wait for that removed aggregate status until
 the matching protection change.
 
-Before merging, validate the exact new names on a PR and their skipped states,
-plus a full manual suite run. Then drain the existing merge queue so old
-candidates are not left waiting for new check names. Replace the old `E2E`
-requirement with **all five** E2E checks listed above in one coordinated settings
-update, preserving `Test`, `Workflow validation`, `Typecheck ratchet`, the merge
-queue and every other protection. Enqueue
-the approved workflow change normally and verify the new required checks on its
-actual `merge_group` revision. Do not remove the old requirement on its own.
+Before merging, confirm this PR’s current head reports the exact new check names
+and skipped suite states, confirm those names are available in repository settings,
+and run the full suite manually on that exact head SHA. Pause new queue admissions
+and drain the existing merge queue so candidates based on the old workflow are
+not left waiting for new check names. In one coordinated settings update, replace
+the old `E2E` requirement with **all five** E2E checks listed above. Preserve `Test`, `Workflow validation`,
+`Typecheck ratchet`, the merge queue and every other protection. Enqueue the
+approved workflow change normally, then verify that the actual `merge_group`
+revision runs the full suites and that all five required checks are accepted.
+Verify failed or cancelled eligibility and suite checks block merging, and that
+the documentation-only exemption reports the expected skips. Do not remove the
+old requirement on its own. Avoid admitting unrelated candidates until this
+workflow lands or those candidates report the new check names; keep the cutover
+window short.
 
-Restoring only the old `E2E` requirement after its job is gone would block future
-merges. A rollback must restore the aggregate workflow job and its matching
-required-check settings together.
+If the cutover must be reversed before this workflow merges, restore the previous
+required-check set, including `E2E`, and use a candidate whose workflow still
+reports that aggregate. After this workflow merges, restoring the old `E2E`
+requirement alone would block future merges: coordinate restoration of the
+aggregate workflow job and its matching required-check settings together, with
+the queue drained while old and new revisions may report different names.
 
 ### Run full E2E on a PR before queuing
 

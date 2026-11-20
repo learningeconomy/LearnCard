@@ -19,17 +19,33 @@ import init, {
     clearCache,
 } from './didkit/index';
 import { getDocumentMap } from './helpers';
+import {
+    clearDidWebDocumentFetchCache,
+    installDidWebDocumentFetchCache,
+    invalidateDidWebDocument,
+} from './didWebDocumentCache';
 
 import { DIDKitPlugin, DidMethod } from './types';
 
 /**
- j
+ * Starts (or joins) the single DIDKit WASM init without building a plugin. Hosts can call it
+ * early so the first wallet build finds DIDKit warm. A rejection is safe to ignore: the next
+ * `initDidKit` / `getDidKitPlugin` call retries.
+ *
+ * @group Plugins
+ */
+export const initDidKit = (input?: InitInput | Promise<InitInput>): Promise<void> => init(input);
+
+/**
  * @group Plugins
  */
 export const getDidKitPlugin = async (
     input?: InitInput | Promise<InitInput>,
     allowRemoteContexts = false
 ): Promise<DIDKitPlugin> => {
+    // Deduplicate concurrent did:web document GETs (verify/resolve stampede) before WASM boots.
+    // Generic SDK default (10s). App wallet boot raises TTL via installWalletDidWebDocumentFetchCache.
+    installDidWebDocumentFetchCache();
     await init(input);
 
     const memoizedDids: Partial<Record<DidMethod, string>> = {};
@@ -41,6 +57,9 @@ export const getDidKitPlugin = async (
             'Provides an interface to DIDKit, which allows for the generation of key material, as well as signing and verifying credentials and presentations',
         context: {
             resolveStaticDocument: async (_learnCard, url) => {
+                // The WASM loader only accepts string URLs; anything else traps (LC-2380)
+                if (typeof url !== 'string') return undefined;
+
                 try {
                     return JSON.parse((await contextLoader(url)) ?? '') || undefined;
                 } catch (error) {
@@ -127,6 +146,8 @@ export const getDidKitPlugin = async (
             },
 
             contextLoader: async (_learnCard, url) => {
+                if (typeof url !== 'string') return undefined;
+
                 try {
                     return JSON.parse((await contextLoader(url)) ?? '') || undefined;
                 } catch (error) {
@@ -136,11 +157,15 @@ export const getDidKitPlugin = async (
                 }
             },
 
-            resolveDid: async (_learnCard, did, inputMetadata = {}) =>
-                JSON.parse(await resolveDID(did, JSON.stringify(inputMetadata))),
+            resolveDid: async (_learnCard, did, inputMetadata = {}) => {
+                if (inputMetadata.noCache) invalidateDidWebDocument(did);
+                return JSON.parse(await resolveDID(did, JSON.stringify(inputMetadata)));
+            },
 
-            didResolver: async (_learnCard, did, inputMetadata = {}) =>
-                JSON.parse(await didResolver(did, JSON.stringify(inputMetadata))),
+            didResolver: async (_learnCard, did, inputMetadata = {}) => {
+                if (inputMetadata.noCache) invalidateDidWebDocument(did);
+                return JSON.parse(await didResolver(did, JSON.stringify(inputMetadata)));
+            },
 
             createJwe: async (_learnCard, cleartext, recipients) =>
                 JSON.parse(await createJwe(cleartext, recipients)),
@@ -193,6 +218,7 @@ export const getDidKitPlugin = async (
             },
 
             clearDidWebCache: async () => {
+                clearDidWebDocumentFetchCache();
                 await clearCache();
             },
         },

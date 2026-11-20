@@ -18,7 +18,7 @@ import {
     ModalTypes,
     useToast,
     ToastTypeEnum,
-    enqueuePendingContractSync,
+    enqueuePendingContractSyncSafely,
 } from 'learn-card-base';
 import { checkAppInstallEligibility } from '@learncard/helpers';
 import { AnalyticsEvents, useAnalytics } from '@analytics';
@@ -224,20 +224,16 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                     beforeSubmit,
                 });
 
-                try {
-                    const wallet = await initWallet();
-                    const profileDid = await wallet.id.did();
+                const wallet = await initWallet();
+                const profileDid = await wallet.id.did();
 
-                    // enqueue background contract sync
-                    enqueuePendingContractSync({
-                        profileDid,
-                        contractUri,
-                        termsUri: consentResult.termsUri,
-                        ownerDid: contractDetails.owner.did,
-                    });
-                } catch (error) {
-                    log.error('Failed to enqueue background contract sync:', error);
-                }
+                // enqueue background contract sync
+                await enqueuePendingContractSyncSafely({
+                    profileDid,
+                    contractUri,
+                    termsUri: consentResult.termsUri,
+                    ownerDid: contractDetails.owner.did,
+                });
 
                 analytics.track(AnalyticsEvents.CONSENT_FLOW_INSTALL_COMPLETED, {
                     contractUri,

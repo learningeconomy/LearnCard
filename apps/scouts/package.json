@@ -1,6 +1,6 @@
 {
     "name": "scoutpass-app",
-    "version": "1.90.49",
+    "version": "1.90.53",
     "private": true,
     "engines": {
         "node": ">=24.12 <25"
@@ -37,6 +37,7 @@
         "@ionic/react-router": "8.7.2",
         "@sentry/browser": "8.34.0",
         "@sentry/react": "8.34.0",
+        "@learncard/didkey-plugin": "workspace:*",
         "@learncard/helpers": "workspace:*",
         "@learncard/react": "workspace:^",
         "@learncard/sss-key-manager": "workspace:*",

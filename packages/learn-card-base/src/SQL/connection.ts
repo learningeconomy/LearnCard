@@ -17,6 +17,16 @@ interface ConnectionState {
 
 const connections = new WeakMap<SQLiteConnectionAccess, ConnectionState>();
 const schemas = new WeakMap<SQLiteConnectionAccess, Map<string, Promise<void>>>();
+const reloadedOnOpen = new WeakSet<SQLiteConnectionAccess>();
+
+/**
+ * Mark a connection whose every open may load a different database, so ensured
+ * schemas are re-checked after each close. On web, jeep-sqlite reloads the
+ * database from IndexedDB on open, and logout deletes that store.
+ */
+export const markSQLiteReloadedOnOpen = (db: SQLiteConnectionAccess): void => {
+    reloadedOnOpen.add(db);
+};
 
 const transition = (state: ConnectionState, operation: () => Promise<void>): Promise<void> => {
     const result = state.transition.then(operation);
@@ -68,6 +78,7 @@ export const withSQLiteDatabase = async <T, Database extends SQLiteConnectionAcc
         connection.users--;
         await transition(connection, async () => {
             if (!connection.users && connection.open === true) {
+                if (reloadedOnOpen.has(db)) schemas.delete(db);
                 try {
                     await db.close();
                     connection.open = false;
@@ -84,7 +95,10 @@ export const withSQLiteDatabase = async <T, Database extends SQLiteConnectionAcc
     }
 };
 
-/** Ensure an idempotent schema once per connection, sharing concurrent initialization. */
+/**
+ * Ensure an idempotent schema once per connection (once per open for connections
+ * marked with `markSQLiteReloadedOnOpen`), sharing concurrent initialization.
+ */
 export const ensureSQLiteSchema = (
     db: Pick<SQLiteDBConnection, 'open' | 'close' | 'execute'>,
     name: string,
@@ -107,6 +121,49 @@ export const ensureSQLiteSchema = (
         });
     }
     return result;
+};
+
+export interface SQLiteSchema {
+    /** Same key `ensureSQLiteSchema` memoizes under, so batched and single calls share state. */
+    name: string;
+    statements: string;
+}
+
+/**
+ * Ensure several idempotent schemas in ONE `execute` (one native bridge round trip instead of
+ * one per schema). Schemas already ensured or in flight on this connection are reused; each
+ * newly ensured name is memoized exactly as `ensureSQLiteSchema` would, and forgotten again if
+ * the batch fails so a later call retries it.
+ */
+export const ensureSQLiteSchemas = (
+    db: Pick<SQLiteDBConnection, 'open' | 'close' | 'execute'>,
+    specs: readonly SQLiteSchema[]
+): Promise<void> => {
+    let initialized = schemas.get(db);
+    if (!initialized) {
+        initialized = new Map();
+        schemas.set(db, initialized);
+    }
+    const known = initialized;
+    const waits: Promise<void>[] = [];
+    const missing: SQLiteSchema[] = [];
+    for (const spec of specs) {
+        const existing = known.get(spec.name);
+        if (existing) waits.push(existing);
+        else if (!missing.some(m => m.name === spec.name)) missing.push(spec);
+    }
+    if (missing.length) {
+        const result = withSQLiteDatabase(db, async connection => {
+            await connection.execute(missing.map(spec => spec.statements).join('\n'));
+        });
+        for (const spec of missing) known.set(spec.name, result);
+        void result.catch(() => {
+            for (const spec of missing)
+                if (known.get(spec.name) === result) known.delete(spec.name);
+        });
+        waits.push(result);
+    }
+    return Promise.all(waits).then(() => undefined);
 };
 
 /** Invalidate schema knowledge after the owning connection's database is deleted. */

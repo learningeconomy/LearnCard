@@ -1,5 +1,25 @@
 # @learncard/email-templates
 
+## 1.4.0
+
+### Minor Changes
+
+- [#2095](https://github.com/learningeconomy/LearnCard/pull/2095) [`e096512e4291bcaa5e424b7abbfc0932ca2a2317`](https://github.com/learningeconomy/LearnCard/commit/e096512e4291bcaa5e424b7abbfc0932ca2a2317) Thanks [@goblincore](https://github.com/goblincore)! - `sendContractRequest` accepts `targetEmail` as an alternative to `targetProfileId`. An email-addressed request is stored as an invite, always answers `{ requestId, status: 'pending' }`, and becomes an ordinary request when a profile verifies that email. The sender sees only the email, never the profile or DID, until the request is accepted.
+
+    Add the `contract-request-invite` email template, sent when the address has no account (at most 3 per contract and address per day). Invites expire after 30 days through the daily maintenance job; `getContractRequest`, `getContractSentRequests` and `cancelContractRequest` cover invites that are not attached to a profile yet.
+
+## 1.3.0
+
+### Minor Changes
+
+- [#1904](https://github.com/learningeconomy/LearnCard/pull/1904) [`69b80366c48e0f458b3bb50f25166c90ecaa2d6d`](https://github.com/learningeconomy/LearnCard/commit/69b80366c48e0f458b3bb50f25166c90ecaa2d6d) Thanks [@gerardopar](https://github.com/gerardopar)! - Add branded campaign broadcast emails, duplicate-safe reservations, signed public unsubscribe, and private announcement email/push preferences.
+
+### Patch Changes
+
+- [#1904](https://github.com/learningeconomy/LearnCard/pull/1904) [`69b80366c48e0f458b3bb50f25166c90ecaa2d6d`](https://github.com/learningeconomy/LearnCard/commit/69b80366c48e0f458b3bb50f25166c90ecaa2d6d) Thanks [@gerardopar](https://github.com/gerardopar)! - Omit the announcement button and fallback link when there is no in-app destination.
+
+- [#1942](https://github.com/learningeconomy/LearnCard/pull/1942) [`4caf6a99c7a204d7f211737190d85eeebe736eb0`](https://github.com/learningeconomy/LearnCard/commit/4caf6a99c7a204d7f211737190d85eeebe736eb0) Thanks [@Custard7](https://github.com/Custard7)! - VetPass web now deploys from CI like LearnCard: staging on `main` pushes that affect the app, and production (`vetpass.app`) with LearnCard releases. CI web builds now bake the configured tenant and stage. LearnCard staging previously baked production config, which the edge overlay masked. The `alpha.vetpass.app` stage is retired, and email origin lookup still resolves any `*.vetpass.app` host to VetPass.
+
 ## 1.2.2
 
 ### Patch Changes

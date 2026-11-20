@@ -154,12 +154,38 @@ export const runReferralLab = async ({
                 },
                 autoboosts: [{ boostUri, signingAuthority }],
             });
-            await referrer.invoke.sendContractRequest({
+            const sent = await referrer.invoke.sendContractRequest({
                 contractUri,
                 targetProfileId: learnerProfile.profileId,
                 externalReferenceId: `lab-${label}-${suffix}`,
                 message: 'Synthetic career support invitation',
             });
+            assert.equal(sent.status, 'pending', 'A send returns the pending request');
+            const tracked = await referrer.invoke.getContractRequest(contractUri, sent.requestId);
+            assert.equal(tracked.requestId, sent.requestId);
+            assert('profile' in tracked.target, 'A profile-addressed request shows its profile');
+
+            // An email with no account: same answer, and only the email is visible.
+            const inviteEmail = `lab-invite-${randomUUID()}@example.com`;
+            const invited = await referrer.invoke.sendContractRequest({
+                contractUri,
+                targetEmail: inviteEmail,
+                externalReferenceId: `lab-invite-${suffix}`,
+            });
+            assert.equal(invited.status, 'pending', 'An email invitation always answers pending');
+            assert.notEqual(invited.requestId, sent.requestId);
+            assert.deepEqual(
+                (await referrer.invoke.getContractRequest(contractUri, invited.requestId)).target,
+                { email: inviteEmail },
+                'An email invitation shows only the email'
+            );
+            assert.equal(
+                await referrer.invoke.cancelContractRequest(contractUri, {
+                    requestId: invited.requestId,
+                }),
+                true,
+                'The sender cancels an invitation by request ID'
+            );
             assert.equal(
                 (
                     await learner.invoke.getAllContractRequestsForProfile(learnerProfile.profileId)
@@ -173,7 +199,7 @@ export const runReferralLab = async ({
                 undefined,
                 contractUri
             );
-            assert(invitation?.requestId);
+            assert.equal(invitation?.requestId, sent.requestId);
             const details = await learner.invoke.getContract(contractUri);
             const { termsUri } = await learner.invoke.consentToContract(contractUri, {
                 terms: structuredClone(terms),

@@ -2,13 +2,19 @@ import { BindParam, Op, QueryBuilder } from 'neogma';
 
 import { getIdFromUri } from '@helpers/uri.helpers';
 import {
+    convertExclusionRegExpToNeo4j,
     convertObjectRegExpToNeo4j,
     convertQueryResultToPropertiesObjectArray,
     buildWhereForQueryBuilder,
 } from '@helpers/neo4j.helpers';
 import { Boost, Profile, BoostInstance, ProfileManager } from '@models';
 import { BoostType } from 'types/boost';
-import { BoostQuery, LCNProfileManager, LCNProfileManagerQuery } from '@learncard/types';
+import {
+    BoostExclusion,
+    BoostQuery,
+    LCNProfileManager,
+    LCNProfileManagerQuery,
+} from '@learncard/types';
 import { inflateObject } from '@helpers/objects.helpers';
 import { ProfileType } from 'types/profile';
 import { ProfileManagerType } from 'types/profile-manager';
@@ -29,18 +35,29 @@ export const getBoostsByUri = async (uris: string[]): Promise<BoostInstance[]> =
     return Boost.findMany({ where: { id: { [Op.in]: ids } } });
 };
 
+const convertBoostExclusions = (exclude: BoostExclusion) =>
+    Object.fromEntries(
+        Object.entries(exclude).map(([field, value]) => [
+            field,
+            typeof value === 'object' && '$regex' in value
+                ? { $regex: convertExclusionRegExpToNeo4j(value.$regex) }
+                : value,
+        ])
+    );
+
 export const getBoostsForProfile = async (
     profile: ProfileType,
     {
         limit,
         cursor,
         query: matchQuery = {},
-    }: { limit: number; cursor?: string; query?: BoostQuery }
+        exclude = {},
+    }: { limit: number; cursor?: string; query?: BoostQuery; exclude?: BoostExclusion }
 ): Promise<Array<BoostType & { created: string }>> => {
-    const convertedQuery = convertObjectRegExpToNeo4j(matchQuery);
     const { whereClause, params: queryParams } = buildWhereForQueryBuilder(
         'boost',
-        convertedQuery as any
+        convertObjectRegExpToNeo4j(matchQuery),
+        convertBoostExclusions(exclude)
     );
 
     const _query = new QueryBuilder(new BindParam({ cursor, ...queryParams }))

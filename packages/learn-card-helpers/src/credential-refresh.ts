@@ -3,7 +3,15 @@ import {
     SupportedCredentialRefreshServiceValidator,
     type ManagedCredentialRefreshService,
     type SupportedCredentialRefreshService,
+    type CredentialRefreshReceipt,
+    type JWE,
 } from '@learncard/types';
+import { getBitstringStatusListEntries } from './bitstring-status-list';
+
+// VC v1 credentials need the Bitstring Status List context URI for verifiers to accept a
+// status entry. DIDKit (and most JSON-LD loaders) cache this context, so no remote fetch.
+const BITSTRING_STATUS_LIST_CONTEXT = 'https://www.w3.org/ns/credentials/status/v1';
+const VC_V2_CONTEXT = 'https://www.w3.org/ns/credentials/v2';
 
 /**
  * Canonical helpers for credential refresh (LC-2117, LC-2135, LC-2136).
@@ -106,6 +114,78 @@ export const canonicalizeCredentialContent = <T>(value: T): T => {
 /** Serializes a value to a deterministic canonical JSON string */
 export const canonicalizeCredentialJson = (value: unknown): string =>
     JSON.stringify(canonicalizeCredentialContent(value));
+
+/** Structural recipient check only; decryption and credential verification remain mandatory. */
+export const assertExactJweRecipients = (jwe: JWE, recipientKeyIds: string[]): void => {
+    const expected = new Set(recipientKeyIds);
+    const recipients = jwe.recipients ?? [];
+    const actual = recipients.map(recipient => recipient.header.kid);
+    if (
+        expected.size === 0 ||
+        expected.size !== recipientKeyIds.length ||
+        actual.length !== expected.size ||
+        new Set(actual).size !== actual.length ||
+        actual.some(kid => !kid || !expected.has(kid))
+    ) {
+        throw new Error('ENCRYPTION_RECIPIENTS_MISMATCH');
+    }
+};
+
+/** Compares exact public bindings while ignoring JSON object-key order, never array order. */
+export const credentialRefreshBindingsEqual = (
+    credential: { credentialStatus?: unknown; refreshService?: unknown },
+    baseline: { credentialStatus?: unknown; refreshService?: unknown }
+): boolean =>
+    canonicalizeCredentialJson(credential.credentialStatus) ===
+        canonicalizeCredentialJson(baseline.credentialStatus) &&
+    canonicalizeCredentialJson(credential.refreshService) ===
+        canonicalizeCredentialJson(baseline.refreshService);
+
+/** Checks signed identity and public bindings. Legacy managed-entry receipts bind only the
+ * unique managed service; exact receipts also bind additional services and array shape.
+ * This does not replace proof/status verification.
+ */
+export const assertManagedCredentialBinding = (
+    credential: RefreshableCredential,
+    receipt: CredentialRefreshReceipt
+): void => {
+    const subjects = Array.isArray(credential.credentialSubject)
+        ? credential.credentialSubject
+        : [credential.credentialSubject];
+    const holderMatches =
+        subjects.length > 0 &&
+        subjects.every(
+            (subject: unknown) =>
+                typeof subject === 'object' &&
+                subject !== null &&
+                'id' in subject &&
+                subject.id === receipt.holderDid
+        );
+    const managedServices = getManagedRefreshServices(credential);
+    const services = Array.isArray(credential.refreshService)
+        ? credential.refreshService
+        : [credential.refreshService];
+    const managedEntryCount = services.filter(
+        service => service?.type === 'LearnCardCredentialRefresh2026'
+    ).length;
+    const bindingsMatch =
+        receipt.refreshServiceBinding === 'managed-entry'
+            ? managedServices.length === 1 &&
+              managedEntryCount === 1 &&
+              credentialRefreshBindingsEqual(
+                  { ...credential, refreshService: managedServices[0] },
+                  receipt
+              )
+            : credentialRefreshBindingsEqual(credential, receipt);
+    if (
+        credential.id !== receipt.credentialId ||
+        getCredentialIssuerId(credential) !== receipt.issuerDid ||
+        !holderMatches ||
+        !bindingsMatch
+    ) {
+        throw new Error('MANAGED_CREDENTIAL_BINDING_MISMATCH');
+    }
+};
 
 // --- Managed refresh JSON-LD context preparation (LC-2198) --------------------
 
@@ -240,6 +320,22 @@ export const prepareManagedRefreshContext = <T>(credential: T): T => {
               : [existingContext];
     const inlineObjects = contextList.filter(isPlainObject);
 
+    let addedStatusContext = false;
+    if (
+        getBitstringStatusListEntries(credential).length > 0 &&
+        !contextList.some(
+            context => context === VC_V2_CONTEXT || context === BITSTRING_STATUS_LIST_CONTEXT
+        )
+    ) {
+        const firstInline = contextList.findIndex(isPlainObject);
+        contextList.splice(
+            firstInline === -1 ? contextList.length : firstInline,
+            0,
+            BITSTRING_STATUS_LIST_CONTEXT
+        );
+        addedStatusContext = true;
+    }
+
     const fragment: Record<string, unknown> = {};
 
     // Managed refresh service type term
@@ -305,11 +401,12 @@ export const prepareManagedRefreshContext = <T>(credential: T): T => {
         }
     }
 
-    if (Object.keys(fragment).length === 0) return credential;
+    const hasFragment = Object.keys(fragment).length > 0;
+    if (!hasFragment && !addedStatusContext) return credential;
 
     return {
         ...credential,
-        '@context': [...contextList, fragment],
+        '@context': hasFragment ? [...contextList, fragment] : contextList,
     } as T;
 };
 

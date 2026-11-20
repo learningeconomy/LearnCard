@@ -16,9 +16,6 @@
  */
 
 import { Capacitor } from '@capacitor/core';
-import { SDK_MODE, Web3Auth } from '@web3auth/single-factor-auth';
-import { CHAIN_NAMESPACES } from '@web3auth/base';
-import { EthereumPrivateKeyProvider } from '@web3auth/ethereum-provider';
 
 import type { KeyDerivationStrategy, ServerKeyStatus } from '@learncard/types';
 import { AuthSessionError } from '@learncard/types';
@@ -356,6 +353,15 @@ export const createWeb3AuthStrategy = (
         uid: string,
         progress: { stage: Web3AuthSetupStage }
     ): Promise<string> => {
+        // The Web3Auth SDK (torus, bn.js, elliptic, stream polyfills: ~1 MB) loads only when a key is
+        // actually derived through Web3Auth, not on every app start.
+        const [{ SDK_MODE, Web3Auth }, { CHAIN_NAMESPACES }, { EthereumPrivateKeyProvider }] =
+            await Promise.all([
+                import('@web3auth/single-factor-auth'),
+                import('@web3auth/base'),
+                import('@web3auth/ethereum-provider'),
+            ]);
+
         const privateKeyProvider = new EthereumPrivateKeyProvider({
             config: {
                 chainConfig: {
@@ -366,6 +372,9 @@ export const createWeb3AuthStrategy = (
             },
         });
 
+        const isLocalhost =
+            typeof window !== 'undefined' && window.location.hostname === 'localhost';
+
         const web3auth = new Web3Auth({
             clientId: config.clientId,
             web3AuthNetwork: config.web3AuthNetwork as Parameters<
@@ -373,11 +382,12 @@ export const createWeb3AuthStrategy = (
             >[0]['web3AuthNetwork'],
             privateKeyProvider,
             usePnPKey: config.usePnPKey ?? true,
-            // session.web3auth.io rejects CORS from Capacitor's localhost origins,
-            // so web-mode connect() fails after the key is derived. Native never
-            // restores that session anyway (the read is blocked too); node mode
-            // skips the session server and keeps derivation identical.
-            ...(Capacitor.isNativePlatform() ? { mode: SDK_MODE.NODE } : {}),
+            // session.web3auth.io rejects localhost CORS, including browser dev
+            // servers, so connect() fails while saving the already-derived key.
+            // Node mode skips new session writes and keeps derivation identical.
+            // An old SDK session can still attempt a restore in init(); the SDK
+            // catches that read failure. Other web hosts keep session persistence.
+            ...(Capacitor.isNativePlatform() || isLocalhost ? { mode: SDK_MODE.NODE } : {}),
         });
 
         progress.stage = 'init';

@@ -281,3 +281,119 @@ for (const privateTypes of [true, false]) {
         }
     );
 }
+
+const selfContainedFixture = (t, externals) => {
+    const root = mkdtempSync(join(tmpdir(), 'publish-manifests-test-'));
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    const manifests = {
+        cli: {
+            name: '@learncard/cli',
+            version: '4.0.0',
+            dependencies: { '@learncard/public': 'workspace:^', commander: '^9.3.0' },
+            devDependencies: { '@learncard/public': 'workspace:^' },
+        },
+        public: { name: '@learncard/public', version: '2.0.0' },
+    };
+    for (const [name, manifest] of Object.entries(manifests)) {
+        const file = join(root, name, 'package.json');
+        mkdirSync(dirname(file), { recursive: true });
+        writeFileSync(file, JSON.stringify(manifest));
+    }
+    if (externals !== undefined) {
+        mkdirSync(join(root, 'cli', 'dist'), { recursive: true });
+        // Dependency names inside string literals (scaffolded snippets) must not matter.
+        writeFileSync(join(root, 'cli', 'dist', 'index.js'), 'const s="import(\'commander\')";');
+        writeFileSync(
+            join(root, 'cli', 'dist', 'bundle-externals.json'),
+            JSON.stringify(externals)
+        );
+    }
+    return {
+        run: (...args) =>
+            spawnSync(process.execPath, [script, '--root=' + root, ...args], { encoding: 'utf8' }),
+        read: name => JSON.parse(readFileSync(join(root, name, 'package.json'), 'utf8')),
+    };
+};
+
+test('omits every dependency of a self-contained bundle from its published manifest', t => {
+    const f = selfContainedFixture(t, []);
+    const result = f.run();
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(f.read('cli').dependencies, undefined);
+    assert.equal(f.read('cli').devDependencies['@learncard/public'], '^2.0.0');
+    assert.match(result.stdout, /bundled; omitted from published dependencies/);
+});
+
+test('rejects a self-contained package whose build is missing', t => {
+    const f = selfContainedFixture(t);
+    const result = f.run();
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /Self-contained build missing/);
+    assert.equal(f.read('cli').dependencies.commander, '^9.3.0');
+});
+
+test('rejects a self-contained package whose build still loads a dependency', t => {
+    for (const externals of [['commander'], ['@learncard/didkit-plugin-node']]) {
+        const f = selfContainedFixture(t, externals);
+        const result = f.run();
+        assert.equal(result.status, 1);
+        assert.match(result.stderr, /is not self-contained/);
+        assert.equal(f.read('cli').dependencies.commander, '^9.3.0');
+    }
+});
+
+const clientFixture = (t, name) => {
+    const f = fixture(t, 'devDependencies');
+    const manifest = f.read('a-public');
+    manifest.name = name;
+    manifest.files = ['dist', 'src', 'README.md'];
+    manifest.exports = {
+        '.': {
+            development: './src/index.ts',
+            import: { types: './dist/index.d.ts', default: './dist/client.js' },
+            require: { types: './dist/index.d.cts', default: './dist/index.cjs' },
+        },
+    };
+    writeFileSync(join(f.root, 'a-public/package.json'), JSON.stringify(manifest));
+    mkdirSync(join(f.root, 'a-public/dist'));
+    for (const file of ['index.d.ts', 'index.d.cts', 'client.js', 'index.cjs']) {
+        writeFileSync(join(f.root, 'a-public/dist', file), '');
+    }
+    return f;
+};
+
+for (const name of ['@learncard/network-brain-client', '@learncard/learn-cloud-client']) {
+    test(`publishes built exports while preserving workspace source during dry-run: ${name}`, t => {
+        const f = clientFixture(t, name);
+        const scope = '--package=' + name;
+        assert.equal(f.run(scope, '--dry-run').status, 0);
+        const original = f.read('a-public').exports['.'];
+        assert.equal(original.development, './src/index.ts');
+        assert.deepEqual(f.read('a-public').files, ['dist', 'src', 'README.md']);
+        const result = f.run(scope);
+        assert.equal(result.status, 0, result.stderr);
+        assert.deepEqual(f.read('a-public').exports['.'], {
+            import: original.import,
+            require: original.require,
+        });
+        assert.deepEqual(f.read('a-public').files, ['dist', 'README.md']);
+        assert.equal(f.run(scope).status, 0, 'preparing an already prepared client is idempotent');
+    });
+
+    for (const missing of ['index.d.ts', 'index.d.cts', 'client.js', 'index.cjs']) {
+        test(`rejects incomplete ${name} publish before rewriting any manifests: ${missing}`, t => {
+            const f = clientFixture(t, name);
+            rmSync(join(f.root, 'a-public/dist', missing));
+            const result = f.run();
+            assert.equal(result.status, 1);
+            assert.match(result.stderr, /Client publish target missing/);
+            assert.equal(f.read('a-public').exports['.'].development, './src/index.ts');
+            assert.deepEqual(f.read('a-public').files, ['dist', 'src', 'README.md']);
+            assert.equal(f.read('a-public').dependencies['@learncard/public'], 'workspace:^');
+            assert.equal(
+                f.read('service').devDependencies['@learncard/service-config'],
+                'workspace:*'
+            );
+        });
+    }
+}

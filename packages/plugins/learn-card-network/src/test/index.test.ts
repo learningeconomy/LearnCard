@@ -298,6 +298,104 @@ describe('inbox batch method', () => {
     });
 });
 
+describe('external consent grant forwarding', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it.each([undefined, {}, { expectedExternalGrant: { revision: 0, hash: 'grant-hash' } }])(
+        'preserves the result and forwards only supplied expectations: %j',
+        async options => {
+            const mutate = vi.fn().mockResolvedValue('urn:credential:issued');
+            vi.mocked(getBrainClient).mockResolvedValue({
+                ...getMockClient(),
+                contracts: { writeCredentialToContract: { mutate } },
+            } as never);
+            const learnCard = getMockLearnCard();
+            const plugin = await getLearnCardNetworkPlugin(
+                learnCard,
+                'https://network.example/trpc'
+            );
+            const credential = SAMPLE_VCS.VALID_BOOST!;
+            await expect(
+                plugin.methods?.writeCredentialToContract(
+                    learnCard,
+                    TARGET_DID,
+                    'urn:contract',
+                    credential,
+                    'urn:boost',
+                    options
+                )
+            ).resolves.toBe('urn:credential:issued');
+            expect(mutate).toHaveBeenCalledExactlyOnceWith({
+                did: TARGET_DID,
+                contractUri: 'urn:contract',
+                credential,
+                boostUri: 'urn:boost',
+                ...(options?.expectedExternalGrant
+                    ? { expectedExternalGrant: options.expectedExternalGrant }
+                    : {}),
+            });
+        }
+    );
+
+    it('retains the authenticated profile requirement', async () => {
+        const mutate = vi.fn();
+        vi.mocked(getBrainClient).mockResolvedValue({
+            ...getMockClient(null),
+            contracts: { writeCredentialToContract: { mutate } },
+        } as never);
+        const learnCard = getMockLearnCard();
+        const plugin = await getLearnCardNetworkPlugin(learnCard, 'https://network.example/trpc');
+        await expect(
+            plugin.methods?.writeCredentialToContract(
+                learnCard,
+                TARGET_DID,
+                'urn:contract',
+                SAMPLE_VCS.VALID_BOOST!,
+                'urn:boost',
+                { expectedExternalGrant: { revision: 0, hash: 'grant-hash' } }
+            )
+        ).rejects.toThrow();
+        expect(mutate).not.toHaveBeenCalled();
+    });
+});
+
+describe('credential sync authorization', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it.each([true, false, undefined])(
+        'forwards automatic=%s without changing explicit selections',
+        async automatic => {
+            const mutate = vi.fn().mockResolvedValue(true);
+            const client = {
+                ...getMockClient(),
+                contracts: { syncCredentialsToContract: { mutate } },
+            };
+            vi.mocked(getBrainClient).mockResolvedValue(client as never);
+            const learnCard = getMockLearnCard();
+            const plugin = await getLearnCardNetworkPlugin(
+                learnCard,
+                'https://network.example/trpc'
+            );
+            const categories = { Achievement: ['urn:synthetic:selected'] };
+            await expect(
+                plugin.methods?.syncCredentialsToContract(
+                    learnCard,
+                    'terms',
+                    categories,
+                    2,
+                    automatic
+                )
+            ).resolves.toBe(true);
+            expect(mutate).toHaveBeenCalledExactlyOnceWith({
+                termsUri: 'terms',
+                categories,
+                audienceVersion: 2,
+                automatic,
+            });
+        }
+    );
+});
+
 describe('connection prompt methods', () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -650,6 +748,38 @@ describe('credential refresh methods', () => {
         expect(client.boost.sendBoost.mutate).not.toHaveBeenCalled();
         expect(learnCard.invoke.createDagJwe).not.toHaveBeenCalled();
         expect(client.utilities.getDid.query).not.toHaveBeenCalled();
+    });
+
+    it('sendBoost throws instead of signing when the boost is a display-only anchor', async () => {
+        const client = getMockClient();
+        client.boost.getBoost.query.mockResolvedValue({
+            boost: getUnsignedBoostTemplate({ displayOnlyAnchor: true, display: {} }),
+        });
+        vi.mocked(getBrainClient).mockResolvedValue(client as never);
+        const { learnCard } = getMockIssuingLearnCard();
+        const plugin = await getLearnCardNetworkPlugin(learnCard, 'https://network.example/trpc');
+
+        await expect(
+            plugin.methods?.sendBoost(learnCard, 'userb', 'did:example:boost:1')
+        ).rejects.toThrow('display-only anchor');
+
+        expect(learnCard.invoke.issueCredential).not.toHaveBeenCalled();
+    });
+
+    it('sendBoost signs normally when the boost has its own display object (not a display-only anchor)', async () => {
+        const client = getMockClient();
+        client.boost.getBoost.query.mockResolvedValue({
+            boost: getUnsignedBoostTemplate({
+                display: { backgroundColor: '#fff', backgroundImage: '', displayType: 'card' },
+            }),
+        });
+        vi.mocked(getBrainClient).mockResolvedValue(client as never);
+        const { learnCard } = getMockIssuingLearnCard();
+        const plugin = await getLearnCardNetworkPlugin(learnCard, 'https://network.example/trpc');
+
+        await plugin.methods?.sendBoost(learnCard, 'userb', 'did:example:boost:1');
+
+        expect(learnCard.invoke.issueCredential).toHaveBeenCalled();
     });
 
     it('sendBoost receipt preserves the exact credentialStatus descriptor from the signed VC', async () => {

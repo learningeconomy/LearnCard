@@ -51,7 +51,7 @@ vi.mock(
     '../../pages/adminToolsPage/AdminToolsAccountSwitcher/AdminToolsCreateProfileSimple',
     () => ({ default: () => null })
 );
-import AccountSwitcherModal from './AccountSwitcherModal';
+import AccountSwitcherModal from './AccountSwitcherModalContent';
 
 const profile = (
     profileId: string,

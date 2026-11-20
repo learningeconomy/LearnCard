@@ -1,6 +1,8 @@
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
-const { readFileSync } = require('node:fs');
+const { readFileSync, mkdtempSync, writeFileSync, rmSync } = require('node:fs');
+const { execFileSync } = require('node:child_process');
+const { tmpdir } = require('node:os');
 const path = require('node:path');
 const yaml = require('js-yaml');
 
@@ -25,7 +27,14 @@ test('queue proof binds the actual frozen range and publishes only after success
     assert.match(freeze.run, /--target=test --base="\$base" --head="\$head"/);
     assert.match(freeze.run, /timeout --kill-after=5s 20s bunx/);
     const run = step(queue, 'Run tests');
-    assert.equal(run.run, 'bunx nx affected --target=test --base="$NX_BASE" --head="$NX_HEAD"');
+    assert.equal(
+        run.run.trim(),
+        `if [ "$LC_NX_PILOT_ACTIVE" = 'true' ]; then
+  node scripts/nx-artifact-cache/run.mjs consume
+else
+  bunx nx affected --target=test --base="$NX_BASE" --head="$NX_HEAD"
+fi`
+    );
     assert.equal(run.env.NX_BASE, '${{ steps.test-range.outputs.base }}');
     assert.equal(run.env.NX_HEAD, '${{ steps.test-range.outputs.head }}');
     const proof = step(queue, 'Record queue test proof');
@@ -81,7 +90,13 @@ test('proof lookup is read-only, bounded and cannot replace the default tests wi
         }
     }
     assert.equal(consumer['continue-on-error'], undefined);
-    assert.ok(consumer.needs.includes('build-native-plugin'));
+    // Tests use the WASM fallback; only Lambda deploys consume the native artifact.
+    assert.ok(!consumer.needs.includes('build-native-plugin'));
+    assert.equal(consumer.steps.some(s => s.name === 'Download native plugin binary'), false);
+    for (const name of ['deploy-brain-service', 'deploy-learn-cloud', 'deploy-lca-api']) {
+        assert.ok(deploy.jobs[name].needs.includes('build-native-plugin'));
+        step(deploy.jobs[name], 'Download native plugin binary');
+    }
     assert.equal(
         deploy.jobs['build-native-plugin'].steps.some(s => s.name === 'Build native plugin'),
         true
@@ -95,5 +110,63 @@ test('proof lookup is read-only, bounded and cannot replace the default tests wi
         assert.ok(deploy.jobs[name].needs.includes('test-affected'));
         assert.match(deploy.jobs[name].if, /needs\.test-affected\.result == 'success'/);
         assert.doesNotMatch(deploy.jobs[name].if, /needs\.test-affected\.result == 'skipped'/);
+    }
+});
+
+test('Deploy excludes only projects returned by a verified proof and retains fresh test gates', t => {
+    assert.equal(
+        determine.outputs.reused_test_projects,
+        "${{ steps.test-proof.outputs.projects || '' }}"
+    );
+    const outputLine = step(determine, 'Check merge-queue test proof')
+        .with.script.split('\n')
+        .find(line => line.includes("core.setOutput('projects'"));
+    assert.ok(outputLine);
+    for (const [result, expected] of [
+        [{ reused: true, projects: ['core'] }, ''],
+        [{ reused: false, projects: ['core'] }, 'core'],
+        [{ reused: false }, ''],
+    ]) {
+        const outputs = {};
+        require('node:vm').runInNewContext(outputLine, {
+            result,
+            core: {
+                setOutput: (key, value) => {
+                    outputs[key] = value;
+                },
+            },
+        });
+        assert.equal(outputs.projects, expected);
+    }
+    const run = step(consumer, 'Run tests');
+    assert.equal(
+        run.env.REUSED_TEST_PROJECTS,
+        '${{ needs.determine-affected.outputs.reused_test_projects }}'
+    );
+    const dir = mkdtempSync(path.join(tmpdir(), 'deploy-test-command-'));
+    t.after(() => rmSync(dir, { recursive: true, force: true }));
+    writeFileSync(path.join(dir, 'bunx'), '#!/bin/sh\nprintf "%s\\n" "$@"\n', { mode: 0o755 });
+    for (const projects of ['', 'core,escrow-enclave-app']) {
+        const args = execFileSync('bash', ['-e', '-c', run.run], {
+            encoding: 'utf8',
+            env: {
+                ...process.env,
+                PATH: `${dir}:${process.env.PATH}`,
+                NX_BASE: 'base',
+                NX_HEAD: 'head',
+                REUSED_TEST_PROJECTS: projects,
+                GITHUB_STEP_SUMMARY: path.join(dir, 'summary'),
+            },
+        })
+            .trim()
+            .split('\n');
+        assert.deepEqual(args, [
+            'nx',
+            'affected',
+            '--target=test',
+            '--base=base',
+            '--head=head',
+            ...(projects ? [`--exclude=${projects}`] : []),
+        ]);
     }
 });

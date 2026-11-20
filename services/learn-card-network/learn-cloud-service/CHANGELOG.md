@@ -1,5 +1,104 @@
 # @learncard/network-brain-service
 
+## 2.5.47
+
+### Patch Changes
+
+- [#2015](https://github.com/learningeconomy/LearnCard/pull/2015) [`f071d44b47d04ed50e148d72bb267e1ff7d326cf`](https://github.com/learningeconomy/LearnCard/commit/f071d44b47d04ed50e148d72bb267e1ff7d326cf) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Batch /wallet credential resolution through LearnCloud storage.batchResolve so Passport no longer fires one storage.resolve POST per URI (LC-2382). storage.batchResolve now resolves Redis misses from MongoDB by credential ID and rejects URIs for other hosts.
+  Also fix in-app credential facts: look up the account-scoped resolved-credential RQ key, and on miss join fetchResolvedCredential (batch coalescer) instead of raw wallet.read.get so a cold facts backfill cannot race the wallet warmer with standalone storage.resolve.
+  Also: prefetch shares per-URI in-flight React Query work with individual readers; failed refreshes of invalidated entries return unresolved slots; same-host batches run independently of foreign/network reads; and batchResolve cold-miss lookups skip malformed IDs so they cannot empty the rest of the batch.
+  Also fix the qualification-category backfill: when a QueryClient is provided, resolve legacy records through tryFetchResolvedCredential (join the batch coalescer / reuse a warm RQ cache) instead of serial wallet.read.get, which re-issued standalone storage.resolve after a successful batchResolve (LC-2382 retake3).
+  Also: null-slot read.get retries for one 64-URI batch chunk no longer block later chunks, so a slow or stuck fallback cannot stall otherwise valid credentials.
+
+- [#2063](https://github.com/learningeconomy/LearnCard/pull/2063) [`6d4be59b2aa76c609149658480a0731c5f49ed9b`](https://github.com/learningeconomy/LearnCard/commit/6d4be59b2aa76c609149658480a0731c5f49ed9b) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - LearnCloud `index.get` now returns at most 100 records per page. A larger `limit` is clamped instead of rejected, so older clients keep paging with `hasMore`/`cursor`. Pages cached under the old, larger limit are no longer served, since the cache key uses the clamped limit (LC-2428).
+
+- [#2088](https://github.com/learningeconomy/LearnCard/pull/2088) [`90e522712e9b9449991e950a21fa27ff7797580d`](https://github.com/learningeconomy/LearnCard/commit/90e522712e9b9449991e950a21fa27ff7797580d) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - LearnCloud `index.get` and `index.count` now return a 500 when the database read fails, instead of an empty page or 0. A failed read is no longer cached as an empty index page, so Passport counts and categories show the unavailable/retry state instead of 0 for up to a day (LC-2434). A failed user lookup also throws now, instead of counting only the signed-in DID.
+
+    The index cache key is versioned (`index:v2:<did>`), so empty pages cached by earlier versions are never served again and expire on their own. Unexpected failures in the index and user routes return a fixed message; the database error is kept as the cause for logs and Sentry, not sent to the client.
+
+- [#2045](https://github.com/learningeconomy/LearnCard/pull/2045) [`acda1d1bd362add238a7c6ff8096c295e844e586`](https://github.com/learningeconomy/LearnCard/commit/acda1d1bd362add238a7c6ff8096c295e844e586) Thanks [@goblincore](https://github.com/goblincore)! - Stop installing the backend services and React Native tooling with the SDK.
+
+    - `@learncard/network-brain-client` and `@learncard/learn-cloud-client` no longer depend on `@learncard/network-brain-service` / `@learncard/learn-cloud-service`. Workspace development continues to resolve their source without a build. Release manifest preparation removes that source-only development condition, so published entry points use built JavaScript and bundled declarations under both default and development conditions. The brain client bundles its helper runtime dependencies in ESM and CommonJS. The declarations contain the router types they need, so consumers type-check without the server packages. `@learncard/learn-cloud-client` also exports `Filter`, which `@learncard/learn-cloud-plugin` now imports from there.
+    - `@learncard/core`, `@learncard/crypto-plugin` and `@learncard/lca-api-plugin` no longer depend on `isomorphic-webcrypto`, which pulled in Expo and React Native through its optional dependencies. They use the platform's `globalThis.crypto` (Node.js 20+, every current browser). **Breaking for environments without WebCrypto** (React Native, Node.js 18 and older): they must now load a WebCrypto polyfill before initializing LearnCard; `learnCard.invoke.crypto()` throws a clear error if it is missing.
+    - `@learncard/types` declares the `zod-openapi` type augmentation imported by its published development sources, so client types also resolve with the development condition enabled.
+    - The service packages publish only `dist`, `README.md` and `CHANGELOG.md`.
+
+    The WebCrypto requirement is a major release for `core`, `crypto-plugin`, and the public entry points that initialize LearnCard: `init`, `lca-api-plugin`, `react`, `holder-continuity`, and `create-http-bridge`. Changesets otherwise propagates internal dependency updates as patches; explicit majors prevent existing compatible ranges from silently losing the polyfill. The CLI already requires Node.js 20+. Plugins that call WebCrypto directly, including `sd-jwt-vc`, `openid4vc`, `linked-claims`, and `learn-cloud`, also require the platform API or a consumer-provided polyfill before use; loading core no longer supplies it. Only callers of `learnCard.invoke.crypto()` receive the explicit missing-WebCrypto error; direct callers can fail with a native error. Packages that only reference core/plugin types do not acquire a new runtime requirement.
+
+- Updated dependencies [[`e096512e4291bcaa5e424b7abbfc0932ca2a2317`](https://github.com/learningeconomy/LearnCard/commit/e096512e4291bcaa5e424b7abbfc0932ca2a2317), [`ff6f013bdedc9aee84e9849fa5736a8ad4a90c81`](https://github.com/learningeconomy/LearnCard/commit/ff6f013bdedc9aee84e9849fa5736a8ad4a90c81), [`e096512e4291bcaa5e424b7abbfc0932ca2a2317`](https://github.com/learningeconomy/LearnCard/commit/e096512e4291bcaa5e424b7abbfc0932ca2a2317), [`154941805bd8e2aa626afe3582e7794921debd27`](https://github.com/learningeconomy/LearnCard/commit/154941805bd8e2aa626afe3582e7794921debd27), [`1e4a9e97b825c18300ae0f00c2b9324120be196f`](https://github.com/learningeconomy/LearnCard/commit/1e4a9e97b825c18300ae0f00c2b9324120be196f), [`bd450e7b0467a94bbd30573fa0aebfcd6333db22`](https://github.com/learningeconomy/LearnCard/commit/bd450e7b0467a94bbd30573fa0aebfcd6333db22), [`261e0f46814595d06460dc617ba50800671f03b1`](https://github.com/learningeconomy/LearnCard/commit/261e0f46814595d06460dc617ba50800671f03b1), [`acda1d1bd362add238a7c6ff8096c295e844e586`](https://github.com/learningeconomy/LearnCard/commit/acda1d1bd362add238a7c6ff8096c295e844e586), [`6d5afc9c348c20ac6ac9c7b35651e5b850b13401`](https://github.com/learningeconomy/LearnCard/commit/6d5afc9c348c20ac6ac9c7b35651e5b850b13401), [`0bb92c2cc8047aa4bf307fd0952c1714219286a9`](https://github.com/learningeconomy/LearnCard/commit/0bb92c2cc8047aa4bf307fd0952c1714219286a9)]:
+    - @learncard/types@6.2.0
+    - @learncard/didkey-plugin@1.2.0
+    - @learncard/didkit-plugin@1.11.0
+    - @learncard/core@10.0.0
+    - @learncard/crypto-plugin@2.0.0
+    - @learncard/helpers@1.8.3
+    - @learncard/did-web-plugin@1.1.47
+    - @learncard/didkit-plugin-node@0.3.13
+    - @learncard/encryption-plugin@1.2.3
+    - @learncard/learn-card-plugin@1.2.47
+    - @learncard/vc-plugin@1.7.3
+    - @learncard/vc-templates-plugin@1.1.47
+    - @learncard/expiration-plugin@1.2.47
+
+## 2.5.46
+
+### Patch Changes
+
+- Updated dependencies [[`f3f3d678156b46a67a2f916b62789aeef4e40bc7`](https://github.com/learningeconomy/LearnCard/commit/f3f3d678156b46a67a2f916b62789aeef4e40bc7)]:
+    - @learncard/types@6.1.1
+    - @learncard/core@9.4.46
+    - @learncard/helpers@1.8.2
+    - @learncard/did-web-plugin@1.1.46
+    - @learncard/didkey-plugin@1.1.46
+    - @learncard/didkit-plugin@1.10.12
+    - @learncard/didkit-plugin-node@0.3.12
+    - @learncard/encryption-plugin@1.2.2
+    - @learncard/learn-card-plugin@1.2.46
+    - @learncard/vc-plugin@1.7.2
+    - @learncard/vc-templates-plugin@1.1.46
+    - @learncard/crypto-plugin@1.1.46
+    - @learncard/expiration-plugin@1.2.46
+
+## 2.5.45
+
+### Patch Changes
+
+- Updated dependencies [[`c245cba6fc162e6896c4f9439a8a8da42d4189c9`](https://github.com/learningeconomy/LearnCard/commit/c245cba6fc162e6896c4f9439a8a8da42d4189c9), [`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c), [`6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480`](https://github.com/learningeconomy/LearnCard/commit/6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480), [`f086c95870f57896331b2bbbdd97a94f6ddc3339`](https://github.com/learningeconomy/LearnCard/commit/f086c95870f57896331b2bbbdd97a94f6ddc3339), [`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c)]:
+    - @learncard/didkit-plugin@1.10.11
+    - @learncard/types@6.1.0
+    - @learncard/didkit-plugin-node@0.3.11
+    - @learncard/core@9.4.45
+    - @learncard/helpers@1.8.1
+    - @learncard/did-web-plugin@1.1.45
+    - @learncard/didkey-plugin@1.1.45
+    - @learncard/encryption-plugin@1.2.1
+    - @learncard/learn-card-plugin@1.2.45
+    - @learncard/vc-plugin@1.7.1
+    - @learncard/vc-templates-plugin@1.1.45
+    - @learncard/crypto-plugin@1.1.45
+    - @learncard/expiration-plugin@1.2.45
+
+## 2.5.44
+
+### Patch Changes
+
+- [#1872](https://github.com/learningeconomy/LearnCard/pull/1872) [`3505f004376543ff4c723921868e17c400142884`](https://github.com/learningeconomy/LearnCard/commit/3505f004376543ff4c723921868e17c400142884) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Install python3, make, and g++ during `bun install` in the shared monorepo Docker image so linux/arm64 builds can compile native addons (utf-8-validate) via node-gyp.
+
+- Updated dependencies [[`e9d738eea3b477dbd82bde171d3c5f8ffa2efbc5`](https://github.com/learningeconomy/LearnCard/commit/e9d738eea3b477dbd82bde171d3c5f8ffa2efbc5), [`69b80366c48e0f458b3bb50f25166c90ecaa2d6d`](https://github.com/learningeconomy/LearnCard/commit/69b80366c48e0f458b3bb50f25166c90ecaa2d6d), [`0caa0e478bce246793893e488f37ee90c9b00a1a`](https://github.com/learningeconomy/LearnCard/commit/0caa0e478bce246793893e488f37ee90c9b00a1a), [`fea9c25ec76f230944a1713500a280c80e2a9cc0`](https://github.com/learningeconomy/LearnCard/commit/fea9c25ec76f230944a1713500a280c80e2a9cc0), [`bde3fe0f15a780d9fafc699096a9a0307502f529`](https://github.com/learningeconomy/LearnCard/commit/bde3fe0f15a780d9fafc699096a9a0307502f529), [`784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3`](https://github.com/learningeconomy/LearnCard/commit/784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3), [`751579d9c14116dbf6d0e7f7d62f489c81c39db2`](https://github.com/learningeconomy/LearnCard/commit/751579d9c14116dbf6d0e7f7d62f489c81c39db2), [`2c60b1a760958cbfe2525bc951d2381332e1aa48`](https://github.com/learningeconomy/LearnCard/commit/2c60b1a760958cbfe2525bc951d2381332e1aa48)]:
+    - @learncard/types@6.0.0
+    - @learncard/helpers@1.8.0
+    - @learncard/vc-plugin@1.7.0
+    - @learncard/encryption-plugin@1.2.0
+    - @learncard/core@9.4.44
+    - @learncard/did-web-plugin@1.1.44
+    - @learncard/didkey-plugin@1.1.44
+    - @learncard/didkit-plugin@1.10.10
+    - @learncard/didkit-plugin-node@0.3.10
+    - @learncard/learn-card-plugin@1.2.44
+    - @learncard/vc-templates-plugin@1.1.44
+    - @learncard/crypto-plugin@1.1.44
+    - @learncard/expiration-plugin@1.2.44
+
 ## 2.5.43
 
 ### Patch Changes

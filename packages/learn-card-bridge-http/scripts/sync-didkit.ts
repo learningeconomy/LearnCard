@@ -1,7 +1,7 @@
 import { createHash } from 'crypto';
 import { readFile, writeFile } from 'fs/promises';
 
-const EXPECTED_DIDKIT_SHA256 = 'ba3e2ec2208f6da57d94e47c332b3226f048e11d7a23093d50b184d849b6bc0b';
+const EXPECTED_DIDKIT_SHA256 = 'ded761c91910068261077c0e2e0c574b6c8c6ba638c8805ad9550a4b90e4138e';
 const sourceUrl = new URL(
     '../../plugins/didkit/src/didkit/pkg/didkit_wasm_bg.wasm',
     import.meta.url

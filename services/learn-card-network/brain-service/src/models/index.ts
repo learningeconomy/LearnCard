@@ -155,9 +155,14 @@ const shouldCreateIndices =
 
 const indexQueries = [
     'CREATE CONSTRAINT campaign_id_unique IF NOT EXISTS FOR (c:Campaign) REQUIRE c.id IS UNIQUE',
+    'CREATE CONSTRAINT claim_link_request_id_unique IF NOT EXISTS FOR (r:ClaimLinkRequest) REQUIRE r.id IS UNIQUE',
     'CREATE INDEX campaign_status_idx IF NOT EXISTS FOR (c:Campaign) ON (c.status)',
     'CREATE CONSTRAINT consent_event_id IF NOT EXISTS FOR (e:ConsentFlowEvent) REQUIRE e.id IS UNIQUE',
     'CREATE CONSTRAINT consent_delivery_id IF NOT EXISTS FOR (d:ConsentFlowEventDelivery) REQUIRE d.id IS UNIQUE',
+    'CREATE CONSTRAINT contract_request_invite_id IF NOT EXISTS FOR (i:ContractRequestInvite) REQUIRE i.id IS UNIQUE',
+    'CREATE INDEX contract_request_invite_email_idx IF NOT EXISTS FOR (i:ContractRequestInvite) ON (i.email)',
+    'CREATE INDEX contract_request_invite_status_idx IF NOT EXISTS FOR (i:ContractRequestInvite) ON (i.status, i.expiresAt)',
+    'CREATE INDEX contract_request_invite_delivery_idx IF NOT EXISTS FOR (i:ContractRequestInvite) ON (i.deliveryPending, i.deliveryNextAt)',
     ...contractEventMaintenanceSchema,
     'CREATE INDEX profileId_idx IF NOT EXISTS FOR (p:Profile) ON (p.profileId)',
     'CREATE CONSTRAINT credential_share_preview_id_unique IF NOT EXISTS FOR (p:CredentialSharePreview) REQUIRE p.id IS UNIQUE',

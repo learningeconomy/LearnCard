@@ -1,5 +1,208 @@
 # learn-card-core
 
+## 4.2.0
+
+### Minor Changes
+
+- [#2094](https://github.com/learningeconomy/LearnCard/pull/2094) [`ff6f013bdedc9aee84e9849fa5736a8ad4a90c81`](https://github.com/learningeconomy/LearnCard/commit/ff6f013bdedc9aee84e9849fa5736a8ad4a90c81) Thanks [@goblincore](https://github.com/goblincore)! - **Breaking:** `sendContractRequest` now returns `{ requestId, status }` instead of `true`.
+
+    Add `getContractRequest(contractUri, requestId)` to read one contract request by its request ID, and let `cancelContractRequest` take `{ requestId }` instead of a target profile ID. `getContractSentRequests` rows gain `target` and may omit `profile`.
+
+    Prepare for requests addressed to an email: a request marked `addressedByEmail` shows only the email to other parties until it is accepted, in `getContractRequest`, `getContractSentRequests`, `getRequestStatusForProfile` and the decision notifications. Request status gains `expired`.
+
+- [#2071](https://github.com/learningeconomy/LearnCard/pull/2071) [`54bc8e4085ac93118838fbb8070565ebb62171cc`](https://github.com/learningeconomy/LearnCard/commit/54bc8e4085ac93118838fbb8070565ebb62171cc) Thanks [@goblincore](https://github.com/goblincore)! - Expose Integration webhooks and the change feed to clients. The network plugin gains `setIntegrationWebhook` (returns the signing secret once, when it creates the first one), `getIntegrationWebhook` (URL, state, delivery health, secret version), `rotateIntegrationWebhookSecret`, `sendIntegrationTestEvent` (`{ delivered, httpStatus, latencyMs, error }`), `getIntegrationEvents` and `getContractConnections`. The CLI lists them for `learncard call` (the secret-returning `setIntegrationWebhook` and `rotateIntegrationWebhookSecret` calls need `--show-secret`) and adds an `integration-webhooks` capability. The developer portal gets a Webhooks tab for integrations that use contracts: webhook URL (the first save shows the signing secret once), feed-only toggle, secret rotation, delivery health (state, last success and failure with its reason, waiting and retrying events, secret version), and a test event with HTTP status and latency. The server webhooks guide no longer shows an HMAC signature check for profile notification webhooks, which are verified with their `Authorization` bearer token.
+
+### Patch Changes
+
+- [#2095](https://github.com/learningeconomy/LearnCard/pull/2095) [`e096512e4291bcaa5e424b7abbfc0932ca2a2317`](https://github.com/learningeconomy/LearnCard/commit/e096512e4291bcaa5e424b7abbfc0932ca2a2317) Thanks [@goblincore](https://github.com/goblincore)! - `sendContractRequest` accepts `targetEmail` as an alternative to `targetProfileId`. An email-addressed request is stored as an invite, always answers `{ requestId, status: 'pending' }`, and becomes an ordinary request when a profile verifies that email. The sender sees only the email, never the profile or DID, until the request is accepted.
+
+    Add the `contract-request-invite` email template, sent when the address has no account (at most 3 per contract and address per day). Invites expire after 30 days through the daily maintenance job; `getContractRequest`, `getContractSentRequests` and `cancelContractRequest` cover invites that are not attached to a profile yet.
+
+- [#2038](https://github.com/learningeconomy/LearnCard/pull/2038) [`13dff3c7d32e9499944aa7c7e31c8db8a2bd40f7`](https://github.com/learningeconomy/LearnCard/commit/13dff3c7d32e9499944aa7c7e31c8db8a2bd40f7) Thanks [@smurflo2](https://github.com/smurflo2)! - fix: [LC-2371] Sync uploaded, pasted, and Partner Connect credentials to live consent contracts. Shared store/add/bulk-save callers retain successful saves when consent discovery or sharing fails, with durable, account-scoped retries. Partner Connect returns after queuing delivery; AI Topic/Session saves keep their previous sharing opt-out. Persist acknowledged terms to avoid duplicate mutations on retry and cancel retries after recategorization. Automatic sharing remains limited to LearnCloud-indexed credentials; SQLite-only sharing is not supported.
+
+    Keep background discovery out of contract-sync banners, and keep contract-scoped Partner Connect status syncing until that account's queued credential deliveries finish. Persist only credential identifiers and category in delivery jobs.
+
+    Persist failed contract destinations so an exhausted credential delivery reports an error only to affected partners. Unattributed failures remain visible in account-wide status without blocking unrelated contracts indefinitely.
+
+    Guard automatic deliveries against current category consent at the server write while preserving explicit selective sharing. Uploads persist account-scoped delivery jobs immediately after successful indexing, before network sharing starts.
+
+    Treat blank legacy category expiries as no expiry while preserving the server's automatic-sharing consent and expiry guards.
+
+    Persist pending delivery updates transactionally across tabs, retain legacy retry checkpoints, and recover abandoned attempts without losing other saved credentials. Successful background delivery reports completed progress.
+
+    Initialize cross-tab notifications only when browser event APIs are available, preserving credential-helper imports in storage-only environments.
+
+    Keep committed credential saves and consent successful if retry persistence fails, while still awaiting a healthy durable handoff. Import late jobs from older tabs without resurrecting removed deliveries, and update progress without repeatedly scanning the whole queue.
+
+    Retain personal uploads across key-to-network identity resolution without crossing switched profiles. Skip contended job locks so other deliveries can proceed, and stop future sharing mutations when an attempt loses its lease.
+
+    Preserve newer unfinished deliveries from older tabs even while a completed job with the same identity is retained.
+
+- Updated dependencies [[`e096512e4291bcaa5e424b7abbfc0932ca2a2317`](https://github.com/learningeconomy/LearnCard/commit/e096512e4291bcaa5e424b7abbfc0932ca2a2317), [`ff6f013bdedc9aee84e9849fa5736a8ad4a90c81`](https://github.com/learningeconomy/LearnCard/commit/ff6f013bdedc9aee84e9849fa5736a8ad4a90c81), [`154941805bd8e2aa626afe3582e7794921debd27`](https://github.com/learningeconomy/LearnCard/commit/154941805bd8e2aa626afe3582e7794921debd27), [`cad95b60227e1b99ffaaad07406ccc0366b08555`](https://github.com/learningeconomy/LearnCard/commit/cad95b60227e1b99ffaaad07406ccc0366b08555), [`154941805bd8e2aa626afe3582e7794921debd27`](https://github.com/learningeconomy/LearnCard/commit/154941805bd8e2aa626afe3582e7794921debd27), [`1e4a9e97b825c18300ae0f00c2b9324120be196f`](https://github.com/learningeconomy/LearnCard/commit/1e4a9e97b825c18300ae0f00c2b9324120be196f), [`154941805bd8e2aa626afe3582e7794921debd27`](https://github.com/learningeconomy/LearnCard/commit/154941805bd8e2aa626afe3582e7794921debd27), [`bd450e7b0467a94bbd30573fa0aebfcd6333db22`](https://github.com/learningeconomy/LearnCard/commit/bd450e7b0467a94bbd30573fa0aebfcd6333db22), [`acda1d1bd362add238a7c6ff8096c295e844e586`](https://github.com/learningeconomy/LearnCard/commit/acda1d1bd362add238a7c6ff8096c295e844e586)]:
+    - @learncard/network-brain-client@2.8.0
+    - @learncard/core@10.0.0
+    - @learncard/helpers@1.8.3
+
+## 4.1.1
+
+### Patch Changes
+
+- [#2047](https://github.com/learningeconomy/LearnCard/pull/2047) [`3901b6263e8aafcc7aab5bdf179625a45e4a2ebc`](https://github.com/learningeconomy/LearnCard/commit/3901b6263e8aafcc7aab5bdf179625a45e4a2ebc) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - fix(network-plugin): load the trusted Boost registry lazily, once, with a 5 s timeout so it never blocks LearnCard init
+
+- Updated dependencies []:
+    - @learncard/core@9.4.46
+    - @learncard/helpers@1.8.2
+    - @learncard/network-brain-client@2.7.2
+
+## 4.1.0
+
+### Minor Changes
+
+- [#2004](https://github.com/learningeconomy/LearnCard/pull/2004) [`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c) Thanks [@rhen92](https://github.com/rhen92)! - Track the outcome of account-level guardian approval emails (LC-2289). Adds `getGuardianApprovalStatus` (sending / accepted / failed / unknown, plus resend availability) and an additive `status: 'accepted'` field on the `sendGuardianApprovalEmail` response. `sendGuardianApprovalEmail` is now serialized and rate-limited: it returns `CONFLICT` while a send is in flight and `TOO_MANY_REQUESTS` during the resend cooldown or once the hourly attempt limit is reached, and it returns `BAD_REQUEST` for profiles that are not awaiting guardian approval. Each new approval email invalidates links from earlier sends, so `approveGuardianRequest` rejects superseded tokens with `BAD_REQUEST`. The app validates the guardian address format during onboarding and in the resend modal, says so on the onboarding completion screen when the email could not be sent, and shows the pending-approval banner in the dashboard recovery-banner slot (taking priority over it) with the real email status plus resend and email correction through the existing consent modal. The banner clears itself once the guardian approves.
+
+### Patch Changes
+
+- [#1983](https://github.com/learningeconomy/LearnCard/pull/1983) [`f086c95870f57896331b2bbbdd97a94f6ddc3339`](https://github.com/learningeconomy/LearnCard/commit/f086c95870f57896331b2bbbdd97a94f6ddc3339) Thanks [@smurflo2](https://github.com/smurflo2)! - fix: [LC-2288] Recover credential claims in place without false expiration errors or duplicate issuance, preserving confirmed save and refresh progress.
+
+    Expose claim reconciliation in CLI method and capability discovery, and require `call --write` because reconciliation can finish acceptance and usage accounting.
+
+- [#2004](https://github.com/learningeconomy/LearnCard/pull/2004) [`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-2289] Show accurate guardian approval email status and support resend during onboarding
+
+- Updated dependencies []:
+    - @learncard/core@9.4.45
+    - @learncard/helpers@1.8.1
+    - @learncard/network-brain-client@2.7.1
+
+## 4.0.0
+
+### Major Changes
+
+- [#1819](https://github.com/learningeconomy/LearnCard/pull/1819) [`784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3`](https://github.com/learningeconomy/LearnCard/commit/784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3) Thanks [@smurflo2](https://github.com/smurflo2)! - feat: [LC-2194] Support versioned ConsentFlow updates and user review.
+
+    Keep a connection's URI and history while publishing immutable access updates. New optional read/write choices stay off; required additions pause writes until the user reviews the changes. Add explicit update acceptance, review notifications, deadlines, once-only AutoBoost delivery, and safe retirement. Unsaved request previews no longer require a URI.
+
+    Preserve existing grants in partial scope updates, gate Lambda startup on legacy snapshots, and retain once-only delivery during explicit one-time updates. Localize review and history content, recover from cancelled guardian checks and concurrent updates, and keep handled notifications safe to reopen.
+
+    Retry transient Lambda migration failures without poisoning warm application imports. Record completed migrations for fast cold starts, report malformed request IDs without credential data, and identify retained ambiguous AutoBoost claims for reconciliation. Load runtime secrets before importing the scheduled deadline worker, including secrets-only Lambda deployments. Keep inbox maintenance coverage behavioral rather than pinning Lambda wrapper source text.
+
+    Recover valid, unversioned contracts created after the migration marker through scoped version-1 initialization. Atomically backfill only their existing connections, preserve global migration completion, and keep missing history on already-versioned or malformed contracts fail-closed.
+
+    Settle guardian PIN actions on external dismissal or unmount without cancelling valid submissions. Cover reapproval, signing failures and referral cancellation with the current PIN modal contract. Clear stacked overlays before opening a contract-update review. Cancel delayed modal-removal timers when their provider unmounts while preserving closing animations. Use stable localization keys independent of English labels and stop proposing optional defaults after their window expires.
+
+    Route pending and suspended connections from ordinary consent entry to explicit update review. Recover the same way when the latest-approval error arrives during an open consent dialog, without treating the connection as approved or bypassing guardian checks.
+
+    Reject overlapping top-level and nested SDK scope patches instead of silently dropping changes. Restore strict type-only imports, declare the runnable update snippet's SDK contract, and narrow unsuccessful notification reads in end-to-end consumers without raising the typecheck allowance.
+
+    Include cumulative changes in consent records so users can approve all required additions across multiple unreviewed versions. Clear the pending optional-choice marker only when the holder successfully saves their choices.
+
+    Resolve built-in request categories and personal fields to localized labels and descriptions in English, Spanish, French, and Arabic, including learning history and career/AI categories. Recognize the legitimate French cognates “Image” and “Qualifications” in the existing untranslated-value guard.
+
+    Dismiss Alerts when opening a contract-update review without waiting for read-status writes. Give unread indicators their own layout space so they cannot overlap notification dates.
+
+    Use one shared request form with the original creation controls for creating and editing requests, without per-item purpose fields or added default-enabled checkboxes. Keep the overall update explanation separate. Replace JSON authoring with readable changes and Preview Update / Publish Update actions in the Contracts tab. Show an accessible help icon and meaningful existing-access/defaults disclosures.
+
+    Start new optional review controls from their Opt-in/Opt-out settings without silently granting access. Use the edited request's defaults in previews, refresh saved choices when reopening without overwriting active edits, and reduce the extra spacing below the current version.
+
+    Separate Advanced Options from changes, published feedback, and actions. Add space below the current version while keeping the image's remove control in its original outside corner.
+
+    Show a clear unavailable state for networks that omit contract version metadata, including cached responses. Keep publishing disabled until a versioned response is available, and never assume an unversioned response is version 1.
+
+    Use direct Mongo connections for the local Docker APIs so the single-node replica's localhost address does not prevent them from starting. Gate Mongo-dependent services on a writable primary so they do not exit during replica initialization or election.
+
+    Pre-bundle the remaining workspace crypto and cloud-client dependencies before serving the local app, avoiding dependency-discovery reloads during browser startup.
+
+    Open an on-demand Update contract modal from each configured request in the Contracts tab, rather than the Testing tab. Reveal the update explanation only after edits, separate it from grouped current/next values, and keep user-review previews in the shared modal stack for correct focus and Escape behavior.
+
+    Breaking SDK/API changes: use `updateContract` instead of the removed `addAutoBoostsToContract` and `removeAutoBoostsFromContract` SDK methods. One-time consent status is now `consumed`, not `stale`. The deprecated HTTP AutoBoost routes remain available for one compatibility release and use the versioned update path. Legacy AutoBoost additions also pause writes and synchronization pending explicit holder review; coordinate partner upgrades and support `getConsentStatus` / `reviewUrl` before rollout.
+
+    Reject stale editor drafts with their original expected version, treat equivalent updates as no-ops, require future reconsent deadlines, and restrict legacy AutoBoost publications to contract owners. Paginate tied consent-data timestamps with stable opaque cursors and preserve all unreviewed optional additions across later updates.
+
+    Track each holder's last explicit review, backfill that baseline from transaction history, and timestamp legacy snapshots at the revision actually captured. Require notification and approval when an existing item's reason changes; keep redirect-only changes quiet. Retain ambiguous initial AutoBoost claims and reject mismatched concurrent initial credential deliveries.
+
+    Show material metadata, writer, and automatic-delivery changes alongside scope updates. Refresh holder terms before enabling review edits, populate newly enabled personal fields from the holder profile, and use a structured approval-required reason instead of matching error text.
+
+    Regenerate the Python API client from the current router graph, including all consent lifecycle states, versioned updates, and review metadata. Omit `None` for ordinary non-nullable optional inputs, preserve nullable values, and retain the allocation holder's explicit-null rejection instead of silently treating it as an omission.
+
+    Preserve existing delegated AutoBoost issuers when owners publish unchanged configurations, while keeping new configurations owner-issued and rejecting changes to an existing delegated signer. Defer new cross-account setup until an explicit issuer-authorization flow is available. Use pre-upgrade persisted fixtures for legacy-delegation regressions without reopening writer publication, and fix the signer mock's recursive self-call in consent regressions.
+
+    Keep saves from already handled reviews in ordinary sharing-update history, and preserve the saved one-time setting when update or reconsent inputs omit it.
+
+    Use opaque timestamp-and-ID cursors for holder consent lists, between-profile data, transaction history, and holder exports as well as owner data pages. Preserve legacy timestamp fallbacks and reject malformed or pre-upgrade date-only cursors with `BAD_REQUEST`; restart pagination without a cursor after upgrading.
+
+    Pin owned verification review links to the allocated app origin so real consent review URLs never escape to an unrelated localhost development server.
+
+    Explain approval notifications above Publish Update without changing checked-by-default Opt-out selections. Synchronize the CLI method catalog with the versioned contract SDK, removing obsolete AutoBoost commands and exposing update, history, status, and acceptance methods.
+
+    Use neutral changed-request summaries and Updated badges for existing-scope edits, including reason-only reviews. Reserve new-access headlines and new-item counts for pure scope additions without material request-detail edits, and retain existing optional choices during approval.
+
+### Minor Changes
+
+- [#1904](https://github.com/learningeconomy/LearnCard/pull/1904) [`69b80366c48e0f458b3bb50f25166c90ecaa2d6d`](https://github.com/learningeconomy/LearnCard/commit/69b80366c48e0f458b3bb50f25166c90ecaa2d6d) Thanks [@gerardopar](https://github.com/gerardopar)! - Add branded campaign broadcast emails, duplicate-safe reservations, signed public unsubscribe, and private announcement email/push preferences.
+
+- [#1839](https://github.com/learningeconomy/LearnCard/pull/1839) [`0caa0e478bce246793893e488f37ee90c9b00a1a`](https://github.com/learningeconomy/LearnCard/commit/0caa0e478bce246793893e488f37ee90c9b00a1a) Thanks [@gerardopar](https://github.com/gerardopar)! - Add campaign test-to-me and paced audience notification dispatch, ANNOUNCEMENT metadata, delivery acknowledgement bookkeeping, and retry-safe inbox deduplication.
+
+    Deploy lca-api's enum and campaign deduplication support before enabling brain-service dispatch. Push retains the existing best-effort delivery behavior.
+
+- [#1962](https://github.com/learningeconomy/LearnCard/pull/1962) [`2c60b1a760958cbfe2525bc951d2381332e1aa48`](https://github.com/learningeconomy/LearnCard/commit/2c60b1a760958cbfe2525bc951d2381332e1aa48) Thanks [@Custard7](https://github.com/Custard7)! - Add holder-authorized pre-accept managed delivery receipts and shared binding validation.
+  Allow refresh callers to pin the original public status and refresh service, and reject
+  changed managed versions without a strictly newer signed validFrom. Verify managed
+  deliveries before claim previews, acceptance and local indexing, and retain their
+  validated binding with the local index record.
+
+    Add a strict ciphertext-only holder handoff contract, an explicit-recipient DAG JWE
+    primitive that does not add the caller, and a shared exact recipient-key-set check.
+
+    Enable server-side holder-mode (student-only encrypted) managed sends and publishes.
+    `boost.prepareRefreshableSend({ encryption: 'holder' })` returns the exact
+    key-agreement recipient set (holder + current managers) to encrypt to and pins the
+    refresh aggregate to holder mode. New issuer routes
+    `credentialRefresh.sendHolderEncryptedRefreshable`,
+    `credentialRefresh.publishHolderEncryptedRefreshable` and
+    `credentialRefresh.getEncryptionRecipients` accept and deliver an already-encrypted
+    handoff without ever decrypting it; a manager-set change since prepare fails with
+    `CONFLICT`/`RECIPIENTS_CHANGED` instead of silently narrowing who can decrypt. A
+    holder-mode aggregate rejects inbox recipients, signed-credential-only sends, mixed
+    network/holder sends on the same aggregate, and signing-authority publication.
+
+    SDK support: `send({ refresh: true, encryption: 'holder' })` builds and signs the
+    credential locally exactly as the network-mode path does, then encrypts it to the
+    prepared recipient set with `createDagJweExact`, checks the resulting JWE's recipient
+    set and the signed credential's binding before ever calling the network, and sends
+    only the ciphertext handoff via `credentialRefresh.sendHolderEncryptedRefreshable`. A
+    `RECIPIENTS_CHANGED` conflict is retried once after re-fetching
+    `credentialRefresh.getEncryptionRecipients`. The new `publishHolderEncryptedRefreshable`
+    method does the same for later versions with an explicit `notify` flag. Both reject
+    client-side for inbox recipients, a caller-supplied `signedCredential`, and wallets
+    without local signing or the Encryption plugin; an old server response missing
+    `recipientKeyIds` is rejected rather than silently sent in network mode.
+
+    Recover authenticated absent-status bindings lazily for legacy deliveries, using the
+    stored JSON string `null` to distinguish verified absence from a missing binding.
+    Allow explicit null status repair only when it matches the original status digest.
+    Legacy receipts without a stored refresh descriptor explicitly bind only the unique
+    allocated managed entry; exact receipts continue to bind the entire signed shape.
+    Holder publishing preserves a supplied original refresh descriptor in legacy mode,
+    and fails with repair/reissue guidance when that descriptor is unavailable.
+    Holder sends also preserve template-supplied external status entries instead of
+    forcing new server status allocation.
+
+### Patch Changes
+
+- [#1959](https://github.com/learningeconomy/LearnCard/pull/1959) [`bde3fe0f15a780d9fafc699096a9a0307502f529`](https://github.com/learningeconomy/LearnCard/commit/bde3fe0f15a780d9fafc699096a9a0307502f529) Thanks [@Custard7](https://github.com/Custard7)! - Use server-bound public status coordinates for managed credential sends, preserving status descriptors across credential versions. Add the managed status repair contract.
+
+    Support external HTTPS Bitstring Status Lists for managed issuance, publication and repair without reserving external indexes. Preserve template-provided status descriptors and report statusManagement separately from the signed refresh receipt. Managed lifecycle actions on external entries fail with a provider-specific precondition error rather than reporting a network-only revocation or suspension.
+
+    Gate preparation-time status binding on client capability so existing clients can continue allocating status coordinates before signing. Preserve the selected mode across idempotent retries.
+
+- [#1960](https://github.com/learningeconomy/LearnCard/pull/1960) [`751579d9c14116dbf6d0e7f7d62f489c81c39db2`](https://github.com/learningeconomy/LearnCard/commit/751579d9c14116dbf6d0e7f7d62f489c81c39db2) Thanks [@Custard7](https://github.com/Custard7)! - Keep managed and signed-only send anchors limited to explicit public display metadata, disable request-input telemetry on credential routes, and remove signing-key debug output. Add bounded public update summaries and enumerated update reasons. Managed send request fingerprints now use a versioned server HMAC over public metadata only. The inline template's name is never copied to the anchor, but its category is copied when `display.category` is omitted, since consent-flow write authorization is keyed on a Boost's category and treats an absent one as unrestricted.
+
+- [#1898](https://github.com/learningeconomy/LearnCard/pull/1898) [`aed781bbc87a08aeec2d30fa812485b9ab32cb99`](https://github.com/learningeconomy/LearnCard/commit/aed781bbc87a08aeec2d30fa812485b9ab32cb99) Thanks [@gerardopar](https://github.com/gerardopar)! - Validate campaign feed responses before returning messages to app renderers, skipping malformed entries without suppressing valid campaigns.
+
+- Updated dependencies [[`0caa0e478bce246793893e488f37ee90c9b00a1a`](https://github.com/learningeconomy/LearnCard/commit/0caa0e478bce246793893e488f37ee90c9b00a1a), [`fea9c25ec76f230944a1713500a280c80e2a9cc0`](https://github.com/learningeconomy/LearnCard/commit/fea9c25ec76f230944a1713500a280c80e2a9cc0), [`bde3fe0f15a780d9fafc699096a9a0307502f529`](https://github.com/learningeconomy/LearnCard/commit/bde3fe0f15a780d9fafc699096a9a0307502f529), [`784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3`](https://github.com/learningeconomy/LearnCard/commit/784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3), [`751579d9c14116dbf6d0e7f7d62f489c81c39db2`](https://github.com/learningeconomy/LearnCard/commit/751579d9c14116dbf6d0e7f7d62f489c81c39db2), [`2c60b1a760958cbfe2525bc951d2381332e1aa48`](https://github.com/learningeconomy/LearnCard/commit/2c60b1a760958cbfe2525bc951d2381332e1aa48)]:
+    - @learncard/network-brain-client@2.7.0
+    - @learncard/helpers@1.8.0
+    - @learncard/core@9.4.44
+
 ## 3.2.3
 
 ### Patch Changes

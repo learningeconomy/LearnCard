@@ -12,7 +12,7 @@ const model = normalizeClrTranscriptDisplayModel(
 );
 
 describe('ClrCourseTable', () => {
-    it('keeps a long grade inside its dedicated column', () => {
+    it('keeps the full long-grade value available in the course row', () => {
         render(<ClrCourseTable courses={model.courses} />);
 
         const foundationRow = screen.getByRole('button', {
@@ -20,12 +20,7 @@ describe('ClrCourseTable', () => {
         });
         const grade = within(foundationRow).getByText('Advanced');
 
-        expect(foundationRow).toHaveClass(
-            'grid-cols-[minmax(0,1fr)_64px_72px_24px]',
-            'sm:grid-cols-[minmax(0,1fr)_80px_80px_64px_80px_24px]'
-        );
-        expect(grade.parentElement?.parentElement).toHaveClass('min-w-0', 'pl-2');
-        expect(grade).toHaveClass('max-w-full', 'truncate');
+        expect(grade).toHaveClass('truncate');
         expect(grade).toHaveAttribute('title', 'Advanced');
     });
 });

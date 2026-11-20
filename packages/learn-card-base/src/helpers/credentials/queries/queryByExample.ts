@@ -1,6 +1,6 @@
 import { VC } from '@learncard/types';
 import { getCredentialName } from '../../credentialHelpers';
-import _ from 'lodash';
+import { intersection, isEqual } from 'lodash';
 
 /**
  *
@@ -26,8 +26,8 @@ const _vcExampleComparator = (vc: VC, example: VC): boolean => {
     }
 
     const contextTypeAlignment =
-        _.intersection(vc['@context'], example['@context']).length >= 2 &&
-        _.intersection(vc.type, example.type).length >= 1;
+        intersection(vc['@context'], example['@context']).length >= 2 &&
+        intersection(vc.type, example.type).length >= 1;
 
     if (
         contextTypeAlignment &&
@@ -35,7 +35,7 @@ const _vcExampleComparator = (vc: VC, example: VC): boolean => {
         example.type.includes('OpenBadgeCredential')
     ) {
         if (vc.credentialSubject?.achievement?.id && example.credentialSubject?.achievement?.id) {
-            return _.isEqual(
+            return isEqual(
                 vc.credentialSubject?.achievement?.id,
                 example.credentialSubject?.achievement?.id
             );
@@ -54,13 +54,13 @@ export const queryListOfCredentialsByExample = (
     const exampleCredential = credentialQuery?.example;
     if (!exampleCredential) return [];
 
-    let intersection: VC[] = [];
+    const matches: VC[] = [];
     for (let x = 0; x < credentialsList.length; x++) {
         const vc = credentialsList[x];
         if (_vcExampleComparator(vc, exampleCredential)) {
-            intersection.push(vc);
+            matches.push(vc);
         }
     }
 
-    return intersection;
+    return matches;
 };

@@ -1,8 +1,11 @@
+import { CampaignAudienceResultValidator, type CampaignAudienceResult } from '@learncard/types';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import {
     AnnouncementPreferencesValidator,
     CampaignAudienceInputValidator,
+    CampaignDispatchPreviewValidator,
+    CampaignDispatchOptionsValidator,
     CampaignEventValidator,
     CampaignIdValidator,
     CampaignStatsValidator,
@@ -33,6 +36,7 @@ import {
     getLiveCampaignsForProfile,
     getCampaignStats,
 } from '@accesslayer/campaign/read';
+import { getCampaignDispatchPreview } from '@accesslayer/campaign/dispatch';
 import { updateCampaign } from '@accesslayer/campaign/update';
 import { deleteCampaign } from '@accesslayer/campaign/delete';
 import {
@@ -43,6 +47,7 @@ import {
 import { enrollInCampaign, recordCampaignEvent } from '@accesslayer/campaign/state';
 import { dispatchCampaign } from '@helpers/campaign-queue.helpers';
 import { sendCampaignTestToMe } from '@helpers/campaign-notifications.helpers';
+import { getCampaignTests, acknowledgeCampaignTest } from '@accesslayer/campaign/test';
 
 import {
     getAnnouncementPreferences,
@@ -101,11 +106,21 @@ export const campaignsRouter = t.router({
                 sendCampaignTestToMe(input.campaignId, ctx.user.profile)
             )
         ),
-    dispatch: campaignAdminRoute
+    previewDispatch: campaignAdminRoute
         .input(idInput)
+        .output(CampaignDispatchPreviewValidator)
+        .query(async ({ input }) =>
+            trace('route', 'campaigns:previewDispatch', () =>
+                getCampaignDispatchPreview(input.campaignId)
+            )
+        ),
+    dispatch: campaignAdminRoute
+        .input(idInput.extend(CampaignDispatchOptionsValidator.shape))
         .output(z.object({ dispatchId: z.uuid() }))
         .mutation(async ({ input }): Promise<{ dispatchId: string }> =>
-            trace('route', 'campaigns:dispatch', () => dispatchCampaign(input.campaignId))
+            trace('route', 'campaigns:dispatch', () =>
+                dispatchCampaign(input.campaignId, input.expectedPreviewToken)
+            )
         ),
     isAdmin: campaignUserRoute
         .meta({ requiredScope: 'campaigns:read' })
@@ -158,19 +173,19 @@ export const campaignsRouter = t.router({
         ),
     previewAudience: campaignAdminRoute
         .input(CampaignAudienceInputValidator)
-        .output(z.object({ count: z.number() }))
-        .query(async ({ input, ctx }): Promise<{ count: number }> =>
-            trace('route', 'campaigns:previewAudience', async () => ({
-                count: await previewCampaignAudience(input.campaignId, input.source, ctx.domain),
-            }))
+        .output(CampaignAudienceResultValidator)
+        .query(async ({ input, ctx }): Promise<CampaignAudienceResult> =>
+            trace('route', 'campaigns:previewAudience', () =>
+                previewCampaignAudience(input.campaignId, input.source, ctx.domain)
+            )
         ),
     addAudience: campaignAdminRoute
         .input(CampaignAudienceInputValidator)
-        .output(z.object({ count: z.number() }))
-        .mutation(async ({ input, ctx }): Promise<{ count: number }> =>
-            trace('route', 'campaigns:addAudience', async () => ({
-                count: await addCampaignAudience(input.campaignId, input.source, ctx.domain),
-            }))
+        .output(CampaignAudienceResultValidator)
+        .mutation(async ({ input, ctx }): Promise<CampaignAudienceResult> =>
+            trace('route', 'campaigns:addAudience', () =>
+                addCampaignAudience(input.campaignId, input.source, ctx.domain)
+            )
         ),
     pageAudience: campaignAdminRoute
         .input(PageCampaignAudienceInputValidator)
@@ -191,18 +206,43 @@ export const campaignsRouter = t.router({
         .input(noInput)
         .output(z.array(MyCampaignValidator))
         .query(async ({ ctx }): Promise<MyCampaign[]> =>
-            trace('route', 'campaigns:getMyCampaigns', () =>
-                getLiveCampaignsForProfile(ctx.user.profile.profileId)
-            )
+            trace('route', 'campaigns:getMyCampaigns', async () => {
+                const profileId = ctx.user.profile.profileId;
+                const tests = isCampaignAdmin(profileId) ? await getCampaignTests(profileId) : [];
+                const campaigns = await getLiveCampaignsForProfile(profileId);
+                return [
+                    ...tests.map(test => ({
+                        campaign: { id: test.campaignId, message: test.message, selfEnroll: false },
+                        state: { shownCount: 0 },
+                        testId: test.id,
+                    })),
+                    ...campaigns,
+                ];
+            })
         ),
     recordEvent: campaignUserRoute
         .meta({ requiredScope: 'campaigns:write' })
-        .input(idInput.extend({ event: CampaignEventValidator }))
+        .input(idInput.extend({ event: CampaignEventValidator, testId: z.uuid().optional() }))
         .output(z.boolean())
         .mutation(async ({ input, ctx }): Promise<boolean> =>
-            trace('route', 'campaigns:recordEvent', () =>
-                recordCampaignEvent(ctx.user.profile.profileId, input.campaignId, input.event)
-            )
+            trace('route', 'campaigns:recordEvent', async () => {
+                if (input.testId) {
+                    if (!isCampaignAdmin(ctx.user.profile.profileId)) return false;
+                    // Private tests never write campaign engagement or audience state.
+                    return input.event === 'shown'
+                        ? acknowledgeCampaignTest(
+                              ctx.user.profile.profileId,
+                              input.campaignId,
+                              input.testId
+                          )
+                        : true;
+                }
+                return recordCampaignEvent(
+                    ctx.user.profile.profileId,
+                    input.campaignId,
+                    input.event
+                );
+            })
         ),
     enroll: campaignUserRoute
         .meta({ requiredScope: 'campaigns:write' })

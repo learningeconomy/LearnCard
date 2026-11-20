@@ -275,6 +275,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                         query.queryKey[2] === lcNetworkProfile.profileId),
             });
             queryClient.setQueryData(ownProfileKey, savedProfile);
+            await queryClient.invalidateQueries({ queryKey: ['useGetPreferencesForDid'] });
             // Public lookups must refetch without copying private self-profile fields.
             await queryClient.invalidateQueries({
                 predicate: query =>

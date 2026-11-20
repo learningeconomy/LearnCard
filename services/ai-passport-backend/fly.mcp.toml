@@ -10,7 +10,7 @@ primary_region = 'sjc'
   AWS_ROLE_ARN = "arn:aws:iam::206533012615:role/ai-passport-privacy-runtime"
 
 [build]
-  dockerfile = "services/ai-passport-backend/Dockerfile.mcp"
+  dockerfile = "Dockerfile.mcp"
 
 [http_service]
   internal_port = 3000

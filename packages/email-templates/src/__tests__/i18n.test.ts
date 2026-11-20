@@ -99,6 +99,11 @@ const FIXTURES: { [K in TemplateId]: TemplateDataMap[K] } = {
         recipient: { email: 'student@example.com' },
     },
     'account-sign-in-changed': {},
+    'contract-request-invite': {
+        inviteUrl: 'https://learncard.app',
+        referrer: { name: 'Hire Heroes USA' },
+        contractOwner: { name: 'Hiring Our Heroes' },
+    },
 
     'escrow-hold-started': {
         requestedAt: 'September 25, 2026, 3:00 PM',

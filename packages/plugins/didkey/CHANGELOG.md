@@ -1,5 +1,45 @@
 # learn-card-core
 
+## 1.2.0
+
+### Minor Changes
+
+- [#2048](https://github.com/learningeconomy/LearnCard/pull/2048) [`261e0f46814595d06460dc617ba50800671f03b1`](https://github.com/learningeconomy/LearnCard/commit/261e0f46814595d06460dc617ba50800671f03b1) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Faster LCA cold start on the cached-key path:
+
+    - `@learncard/didkey-plugin`: add `getEd25519DidKeyFromSeed`, a plain-JS (`@noble/ed25519`) did:key derivation that matches the DIDKit path, and derive the secp256k1 keypair only on first use.
+    - `@learncard/didkit-plugin`: concurrent and repeated `init()` calls share one WASM init (no 250 ms polling); a failed init clears so the next call retries. Add `initDidKit` to start that init without building a plugin.
+    - `learn-card-app` / `learn-card-base`: the auth coordinator derives the DID in JS instead of building a signing wallet, and app entry warms DIDKit without awaiting it.
+
+### Patch Changes
+
+- Updated dependencies [[`acda1d1bd362add238a7c6ff8096c295e844e586`](https://github.com/learningeconomy/LearnCard/commit/acda1d1bd362add238a7c6ff8096c295e844e586)]:
+    - @learncard/core@10.0.0
+    - @learncard/helpers@1.8.3
+
+## 1.1.46
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/core@9.4.46
+    - @learncard/helpers@1.8.2
+
+## 1.1.45
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/core@9.4.45
+    - @learncard/helpers@1.8.1
+
+## 1.1.44
+
+### Patch Changes
+
+- Updated dependencies [[`fea9c25ec76f230944a1713500a280c80e2a9cc0`](https://github.com/learningeconomy/LearnCard/commit/fea9c25ec76f230944a1713500a280c80e2a9cc0), [`bde3fe0f15a780d9fafc699096a9a0307502f529`](https://github.com/learningeconomy/LearnCard/commit/bde3fe0f15a780d9fafc699096a9a0307502f529), [`784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3`](https://github.com/learningeconomy/LearnCard/commit/784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3), [`751579d9c14116dbf6d0e7f7d62f489c81c39db2`](https://github.com/learningeconomy/LearnCard/commit/751579d9c14116dbf6d0e7f7d62f489c81c39db2), [`2c60b1a760958cbfe2525bc951d2381332e1aa48`](https://github.com/learningeconomy/LearnCard/commit/2c60b1a760958cbfe2525bc951d2381332e1aa48)]:
+    - @learncard/helpers@1.8.0
+    - @learncard/core@9.4.44
+
 ## 1.1.43
 
 ### Patch Changes

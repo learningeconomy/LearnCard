@@ -16,9 +16,10 @@ description: Use when asked to be done, open a PR, ship, prove, fix bug, or buil
 
     Use the exact retained `runs/<runId>` directory (or `scripts/<runId-name>` for an ad-hoc script), not the stack root. Use `--dry-run` to preview without network, `--note` for context, and `--not-verified "..."` for gaps. Never reuse stale evidence for a new head; `--update-pr` refuses to write proof unless the PR's current head is the commit you tested, so push first. CI attaches screenshots only, never videos. No upload credentials means table-only proof; LearnCard Verification CI attaches media when the PR is marked ready (drafts and fork PRs are skipped). Partial configuration or a failed check is a blocker. macOS/Windows agents unable to run `lc verify` rely on that CI run and say so under **Not verified**; do not fabricate a local report. Keep sessions, traces, raw JSON reports and logs private.
 
-4. **Leave a reviewable PR description:**
-    - **What & why:** two plain sentences explaining the change and reason.
-    - **Proof:** the generated `<!-- proof:start -->` / `<!-- proof:end -->` section, plus actual repo-check commands/results outside the markers.
+4. **Leave a reviewable PR description** that follows [`.github/pull_request_template.md`](../../../.github/pull_request_template.md):
+    - **What is this?** Short summary of the change and why it exists (the old "What & why").
+    - **How do I test this?** Short, pointed steps a reviewer can follow cold (the old "How to try it"). Include setup, numbered actions, and what they should see.
+    - Then fill the **Full context** checklist: Jira issues, extra context and goal, TL; RL, feature breakdown, tradeoffs, types of changes, technical debt, Testing / Proof, devices, code coverage, documentation, and the PR checklists.
+    - **Proof:** keep the generated `<!-- proof:start -->` / `<!-- proof:end -->` section, plus actual repo-check commands/results outside the markers.
     - **Not verified:** explicit, honest gaps and blockers (or explicitly none, only when justified).
-    - **How to try it:** short reproducible steps.
 5. **Finish with the PR URL and proof summary.** Keep it draft while local checks are missing or red. When local checks pass, mark ready to trigger required Linux CI, explicitly noting pending verification; do not claim readiness checks passed until CI is green. Never claim verification you did not run. Publishing a failed report is useful evidence, not a passing gate.

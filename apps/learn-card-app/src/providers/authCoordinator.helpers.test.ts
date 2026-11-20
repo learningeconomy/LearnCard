@@ -123,6 +123,21 @@ describe('mergeAuthUserIntoCurrentUser', () => {
         expect(mergeAuthUserIntoCurrentUser(populated, { id: 'uid', email: 'a@b.c' })).toBeNull();
     });
 
+    it('never carries a synthetic ClassLink placeholder email into the current user', () => {
+        const stale = { ...baseUser, uid: 'uid', email: 'uid@users.classlink.invalid' };
+
+        expect(mergeAuthUserIntoCurrentUser(stale, { id: 'uid' })).toEqual({
+            ...stale,
+            email: '',
+        });
+        expect(
+            mergeAuthUserIntoCurrentUser(baseUser, {
+                id: 'uid',
+                email: 'uid@users.classlink.invalid',
+            })
+        ).toEqual({ ...baseUser, uid: 'uid' });
+    });
+
     it('returns null without a current user or auth user', () => {
         expect(mergeAuthUserIntoCurrentUser(null, { id: 'uid' })).toBeNull();
         expect(mergeAuthUserIntoCurrentUser(baseUser, null)).toBeNull();

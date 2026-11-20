@@ -201,10 +201,18 @@ const referrer = () =>
         'send',
         'Send referral',
         { style: 'positive', symbol: 'send', disabled: !state.ready || status() !== 'not sent' }
-    )}</div></div><div class="external">Salesforce / external mediator: context from the product brief. This demo calls the referral API directly.</div>${outcomeCard()}<div class="timeline"><h3>Referral record</h3><div class="data-row"><span>Decision</span><strong>${escape(
+    )}${button('sendByEmail', 'Invite by email', {
+        style: 'secondary',
+        symbol: 'send',
+        disabled: !state.ready || Boolean(state.invite),
+    })}</div></div><div class="external">Salesforce / external mediator: context from the product brief. This demo calls the referral API directly.</div>${outcomeCard()}<div class="timeline"><h3>Referral record</h3><div class="data-row"><span>Decision</span><strong>${escape(
         status()
     )}</strong></div><div class="data-row"><span>Reference</span><strong>${escape(
         state.reference || 'Created on setup'
+    )}</strong></div><div class="data-row"><span>Email invitation</span><strong>${escape(
+        state.invite
+            ? `${state.invite.target.email ?? 'accepted'} · ${state.invite.status}`
+            : 'Not sent'
     )}</strong></div></div>`;
 const partner = () =>
     `<div class="explain"><strong>Your role: receiving partner.</strong> Hiring Our Heroes owns the consent contract. Receiving a referral grants no access by itself; Alex must approve the requested permissions.</div><div class="detail"><h3>Record a career outcome</h3><p>Record Alex’s enrollment in career services. The credential first goes to Alex; sharing follows their choice after claim.</p>${outcomeCard()}<div class="button-row">${button(

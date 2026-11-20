@@ -20,6 +20,7 @@ import {
     ToastTypeEnum,
     useDeviceTypeByWidth,
     QRCodeScannerStore,
+    useFeatureConfig,
 } from 'learn-card-base';
 
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
@@ -36,6 +37,11 @@ import ScanIcon from 'learn-card-base/svgs/ScanIcon';
 import AddToPassportMenu from '../../components/add-to-passport/AddToPassportMenu';
 import NewCredentialsPill from '../../components/main-subheader/NewCredentialsPill';
 import PassportSharingMenu from './PassportSharingMenu';
+import {
+    PersonalEmailPrompt,
+    isPersonalEmailPromptEnabled,
+} from '../../components/classlink/PersonalEmailPrompt';
+import { TranscriptOptInCard } from '../../components/classlink/TranscriptOptInCard';
 
 import { useTheme } from '../../theme/hooks/useTheme';
 import { chatBotStore } from '../../stores/chatBotStore';
@@ -61,6 +67,11 @@ const WalletPage: React.FC = () => {
     const totalNewCredentialsCount = newCredsStore.use.totalNewCredentialsCount();
 
     const { isAiEnabled, reason } = useAiFeatureGate();
+    // ClassLink cards mount only for tenants that enable them, so other tenants never
+    // run their queries (each is a DID-authenticated lca-api call).
+    const features = useFeatureConfig();
+    const showPersonalEmailPrompt = isPersonalEmailPromptEnabled(features);
+    const showTranscriptOptIn = features.classlinkSso && features.classlinkTranscriptOptIn;
     const { presentToast } = useToast();
 
     useEffect(() => {
@@ -189,7 +200,11 @@ const WalletPage: React.FC = () => {
                     }
                 >
                     <div className="px-[20px] pt-[16px] pb-[32px] md:pt-[24px] md:pb-[48px]">
+                        {showPersonalEmailPrompt && <PersonalEmailPrompt />}
                         <div className="flex flex-col max-w-[840px] mx-auto">
+                            {showTranscriptOptIn && (
+                                <TranscriptOptInCard source="wallet" variant="banner" />
+                            )}
                             <IonRow>
                                 <div className="flex flex-wrap justify-between items-center w-full gap-[10px]">
                                     <div className="flex items-center gap-[8px] min-w-0">

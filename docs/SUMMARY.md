@@ -15,6 +15,7 @@
 - [Send & Issue Credentials](how-to-guides/send-credentials.md)
     - [Revoke or Update a Credential](how-to-guides/revoke-or-update-a-credential.md)
     - [Issue & Refresh a Managed Credential](how-to-guides/issue-and-refresh-a-managed-credential.md)
+        - [Send a Private, Refreshable Credential](how-to-guides/send-a-private-refreshable-credential.md)
     - [Who Signs Your Credentials?](how-to-guides/create-signing-authority.md)
     - [Bootstrap an Issuer Organization](how-to-guides/bootstrap-an-issuer-org.md)
     - [Know When a Credential Is Claimed](tutorials/listen-to-webhooks.md)
@@ -78,6 +79,7 @@
     - [Usage Examples](sdks/learncard-network/usage-examples.md)
     - [Universal Inbox API](sdks/learncard-network/universal-inbox-api.md)
     - [Contract Requests and Events](sdks/learncard-network/contract-requests-and-events.md)
+    - [Integration Webhooks and Change Feed](sdks/learncard-network/integration-webhooks.md)
     - [Notifications & Webhooks](sdks/learncard-network/notifications.md)
     - [Credential Activity](sdks/learncard-network/credential-activity.md)
     - [Status Lists](sdks/learncard-network/bitstring-status-lists.md)
@@ -128,6 +130,9 @@
 ## 📱 Products
 
 - [LearnCard App](apps/learn-card-app/README.md)
+    - [Sign in with ClassLink](apps/learn-card-app/classlink-sso.md)
+    - [Transcript Request Flow](apps/learn-card-app/transcript-request.md)
+    - [Manage campaigns](apps/learn-card-app/campaigns.md)
     - [Issue credentials from a spreadsheet](apps/learn-card-app/spreadsheet-issuance.md)
     - [Referral Invitations](apps/learn-card-app/consent-flow/referral-invitations.md)
     - [Use LearnCard with Claude or ChatGPT](how-to-guides/connect-systems/connect-ai-agent.md)

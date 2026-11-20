@@ -251,7 +251,7 @@ describe('credential refresh update emails', () => {
         expect(emailDeliveries()[0].contactMethod.value).toBe(HOLDER_VERIFIED_EMAIL);
     });
 
-    it('emails the holder verified email with only issuer name and title', async () => {
+    it('emails the holder verified email without credential-derived titles', async () => {
         await addEmail(HOLDER_PROFILE_ID, HOLDER_VERIFIED_EMAIL, { primary: true });
         await addEmail(HOLDER_PROFILE_ID, HOLDER_UNVERIFIED_EMAIL, { verified: false });
 
@@ -298,12 +298,12 @@ describe('credential refresh update emails', () => {
         expect(delivery.templateId).toEqual('credential-updated');
         expect(delivery.templateModel).toEqual({
             issuer: { name: expect.any(String) },
-            credential: { name: SECRET_TITLE },
         });
 
         // No grades, description/body content, or issuer summary may reach the template.
         const serialized = JSON.stringify(delivery);
         expect(serialized).not.toContain(SECRET_GRADE_MARKER);
+        expect(serialized).not.toContain(SECRET_TITLE);
         expect(serialized).not.toContain(SECRET_SUBJECT_MARKER);
         expect(serialized).not.toContain(SECRET_SUMMARY_MARKER);
         expect(serialized).not.toContain(HOLDER_UNVERIFIED_EMAIL);
@@ -382,9 +382,7 @@ describe('credential refresh update emails', () => {
         });
 
         expect(emailDeliveries()).toHaveLength(1);
-        expect(emailDeliveries()[0]!.templateModel).toMatchObject({
-            credential: { name: SECRET_TITLE },
-        });
+        expect(emailDeliveries()[0]!.templateModel).not.toHaveProperty('credential');
 
         // A replayed accept does not email twice.
         await holder.clients.fullAuth.credential.acceptCredential({ uri });
@@ -616,9 +614,7 @@ describe('credential refresh update emails', () => {
         expect(JSON.stringify(refreshEvents[0])).not.toContain(SECRET_TITLE);
 
         // Email still carries the title.
-        expect(emailDeliveries()[0]!.templateModel).toMatchObject({
-            credential: { name: SECRET_TITLE },
-        });
+        expect(emailDeliveries()[0]!.templateModel).toMatchObject({});
     });
 
     it('renders generic copy and persists no title when the publication has none', async () => {
@@ -657,7 +653,7 @@ describe('credential refresh update emails', () => {
         const aggregate = await getCredentialRefresh(allocation.refreshId);
         const head = await getCredentialRefreshHead(allocation.refreshId);
 
-        expect(aggregate?.credentialDisplayName).toEqual(SECRET_TITLE);
-        expect(head?.credentialDisplayName).toEqual(SECRET_TITLE);
+        expect(aggregate?.credentialDisplayName).toBeUndefined();
+        expect(head?.credentialDisplayName).toBeUndefined();
     });
 });

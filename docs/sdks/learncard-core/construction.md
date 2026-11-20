@@ -318,7 +318,7 @@ Expected output: `sent: true`. The E2E recipient reads `getIncomingCredentials(s
 | `getBoost`                                  | `(uri)`                                                    | Boost metadata plus unsigned `boost` |
 | `updateBoost`                               | `(uri, updates, credential?)`                              | Boolean                              |
 | `deleteBoost`                               | `(uri)`                                                    | Boolean                              |
-| `getPaginatedBoosts`                        | `({ limit?, cursor?, query? }?)`                           | Paginated boosts                     |
+| `getPaginatedBoosts`                        | `({ limit?, cursor?, query?, exclude? }?)`                 | Paginated boosts                     |
 | `countBoosts`                               | `(query?)`                                                 | Number                               |
 | `send`                                      | `({ type: 'boost', recipient, templateUri })`              | `SendResponse`                       |
 | `getPaginatedBoostRecipients`               | `(uri, limit?, cursor?, includeUnacceptedBoosts?, query?)` | Paginated recipients                 |
@@ -336,6 +336,8 @@ Expected output: `sent: true`. The E2E recipient reads `getIncomingCredentials(s
 | `revokeBoostRecipient`                      | `(boostUri, recipientProfileId, credentialUri?)`           | Boolean                              |
 
 Recipient lists exclude unaccepted credentials by default. The example passes `true` explicitly so that a just-sent credential is visible before the second profile accepts. Hierarchy and permissions are separate concerns: linking templates does not substitute for checking the caller's permissions.
+
+Pass `exclude` to omit boosts whose name or category matches before pagination. Each field accepts an exact string, a list via `$in`, or a pattern via `$regex`. For example, `exclude: { category: { $in: ['Resume', 'AI Topic'] }, name: { $regex: /^AI Passport credential$/i } }` omits both categories and the generic AI Passport name. A missing name or category does not match an exclusion.
 
 <!-- snippet: methods/templates.mjs -->
 
@@ -388,9 +390,23 @@ Expected output: `draft: true`, `live: true`, `recipient: found`. The live templ
 | `setPrimaryRegisteredSigningAuthority` | `(endpoint, name)`                              | Boolean                      |
 | `getPrimaryRegisteredSigningAuthority` | `()`                                            | Authority or `undefined`     |
 | `generateClaimLink`                    | `(boostUri, claimLinkSA, options?, challenge?)` | `{ boostUri, challenge }`    |
-| `claimBoostWithLink`                   | `(boostUri, challenge)`                         | Credential URI               |
+| `claimBoostWithLink`                   | `(boostUri, challenge, requestId?)`             | Credential URI               |
+| `getClaimBoostWithLinkStatus`          | `(boostUri, challenge, requestId)`              | `ClaimLinkRequestStatus`     |
 
 `generateClaimLink` returns claim parameters, not a fully assembled browser URL. Use the intended app's claim flow to present them, and protect the challenge like a secret. The hosted-authority and automatic-issuance example in [Writing Consented Data](../../core-concepts/consent-and-permissions/writing-consented-data.md) is independently snippet-tested.
+
+For recoverable claims, generate a unique `requestId` before the first attempt and retain it with the same account, network, `boostUri`, and `challenge`. Pass it to `claimBoostWithLink` from the start. After an uncertain response, call `getClaimBoostWithLinkStatus` with those original values:
+
+This status operation uses authenticated `POST /boost/claim/status`, not a read-only GET: it can finish acceptance and usage accounting for an already-stored credential. It never signs another credential. Existing SDK method names are unchanged.
+
+| Status     | Meaning and next action                                                                                                                                     |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `absent`   | No recorded result. Calling `claimBoostWithLink` with the **same request ID** is safe even if an earlier request is still reaching the service.             |
+| `pending`  | The service cannot yet establish a completed result. Check status again; do not replace the request ID or issue another claim.                              |
+| `complete` | `credentialUri` identifies the already-accepted credential. Retrieve it instead of claiming again, even if the link has since expired or reached its limit. |
+| `terminal` | `reason` is `expired`, `exhausted`, or `unavailable`. These are confirmed link conditions, not a classification of network exceptions.                      |
+
+Claiming, saving to the personal collection, and refreshing the app are separate steps. A failed save must reuse the returned credential and reconcile an uncertain index write; it must not start another claim. Calls without `requestId` retain the legacy `NOT_FOUND` / `Challenge not found` link-availability errors used by older clients, including ScoutPass, but do not identify a recoverable operation.
 
 ## Consent
 

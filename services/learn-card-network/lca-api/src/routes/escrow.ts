@@ -54,7 +54,7 @@ import {
     clearEscrowByAuthProvider,
     setEscrowOptInByAuthProvider,
     createEscrowHold,
-    createEscrowHoldsIndexes,
+    ensureEscrowHoldsIndexes,
     findPendingEscrowHoldByAuthProvider,
     findEscrowHoldById,
     cancelEscrowHold,
@@ -186,18 +186,16 @@ const lockPin = async (
         }
     }
 };
-let holdIndexes: Promise<void> | undefined;
-
-// Lambda and in-process callers do not run docker-entry's index initialization.
 const ensureHoldIndexes = async (): Promise<void> => {
-    holdIndexes ??= createEscrowHoldsIndexes().catch(() => {
-        holdIndexes = undefined;
+    try {
+        await ensureEscrowHoldsIndexes();
+    } catch (cause) {
         throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
             message: 'Recovery could not be started.',
+            cause,
         });
-    });
-    await holdIndexes;
+    }
 };
 const successValidator = z.object({ success: z.literal(true) });
 const cancelByLinkInput = z
@@ -1406,6 +1404,7 @@ export const escrowRouter = t.router({
             // Legacy Mongo rows can predate the required creation-time record.
             if (hold.status !== 'pending' || !hold.holdRecord)
                 throw new TRPCError({ code: 'FORBIDDEN', message: invalidMessage });
+            await ensureHoldIndexes();
             const now = new Date();
             if (now < hold.releaseAfter) {
                 throw new TRPCError({

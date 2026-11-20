@@ -1,135 +1,27 @@
 import { QueryBuilder, BindParam } from 'neogma';
 
 import { Credential } from '@models';
-import { setCredentialBitstringStatus } from '@helpers/status-list.helpers';
-import { revokeCredentialRefreshForCredential } from '@accesslayer/credential-refresh/update';
+import { mutateCredentialStatus } from '@helpers/credential-status-mutation.helpers';
 
-/**
- * Revoke a credential by setting its issuer-controlled status on the CREDENTIAL_SENT relationship.
- * This applies to both pending and claimed credentials without creating a received relationship.
- */
+/** Revoke the root credential and its public bit atomically. */
 export const revokeCredentialReceived = async (
     credentialId: string,
     profileId: string
-): Promise<boolean> => {
-    const revokedAt = new Date().toISOString();
+): Promise<boolean> => mutateCredentialStatus(credentialId, profileId, 'revocation', true);
 
-    const result = await new QueryBuilder(new BindParam({ profileId, revokedAt }))
-        .match({ identifier: 'credential', model: Credential, where: { id: credentialId } })
-        .raw(
-            `MATCH (sender)-[sent:CREDENTIAL_SENT {to: $profileId}]->(credential)
-             WHERE sender:Profile OR sender:AppStoreListing
-             SET sent.status = "revoked",
-                 sent.revokedAt = $revokedAt
-             RETURN sent`
-        )
-        .run();
-
-    if (result.records.length > 0) {
-        const bitSet = await setCredentialBitstringStatus(credentialId, 'revocation', true);
-        if (!bitSet) {
-            // The relationship is marked revoked but the credential has no 'revocation'
-            // status-list entry, so the verifiable bit was NOT set. Holders relying purely
-            // on verifyCredential can't see the revocation. Surface it instead of failing
-            // silently (the authoritative relationship status still drives the UI).
-            console.warn(
-                `[revokeCredentialReceived] credential ${credentialId} has no verifiable 'revocation' status entry; bitstring bit not set`
-            );
-        }
-    }
-
-    // Managed credential refresh coupling (LC-2117/LC-2135): revoking the original
-    // sent credential invalidates the whole refresh chain. Best-effort — the holder
-    // endpoint independently cross-checks this canonical relationship state on every
-    // authenticated request, so a failed write here cannot leave a revoked credential
-    // servable.
-    if (result.records.length > 0) {
-        try {
-            await revokeCredentialRefreshForCredential(credentialId);
-        } catch (error) {
-            console.error(
-                '[revokeCredentialReceived] failed to revoke credential refresh aggregate:',
-                error
-            );
-        }
-    }
-
-    return result.records.length > 0;
-};
-
-/**
- * Suspend a credential by setting its issuer-controlled status on the CREDENTIAL_SENT relationship.
- * If the credential has already been revoked, the revoked relationship state is preserved.
- */
+/** Suspend the root credential without changing an irreversible revocation. */
 export const suspendCredentialReceived = async (
     credentialId: string,
     profileId: string
-): Promise<boolean> => {
-    const suspendedAt = new Date().toISOString();
+): Promise<boolean> => mutateCredentialStatus(credentialId, profileId, 'suspension', true);
 
-    const result = await new QueryBuilder(new BindParam({ profileId, suspendedAt }))
-        .match({ identifier: 'credential', model: Credential, where: { id: credentialId } })
-        .raw(
-            `MATCH (sender)-[sent:CREDENTIAL_SENT {to: $profileId}]->(credential)
-             WHERE (sender:Profile OR sender:AppStoreListing)
-               AND coalesce(sent.status, "") <> "revoked"
-             SET sent.status = "suspended",
-                 sent.suspendedAt = $suspendedAt
-             RETURN sent`
-        )
-        .run();
-
-    if (result.records.length > 0) {
-        const bitSet = await setCredentialBitstringStatus(credentialId, 'suspension', true);
-        if (!bitSet) {
-            // Relationship marked suspended but the credential has no 'suspension' status
-            // entry, so the verifiable bit was NOT set. The authoritative relationship
-            // status still drives the UI; log so the gap is visible.
-            console.warn(
-                `[suspendCredentialReceived] credential ${credentialId} has no verifiable 'suspension' status entry; bitstring bit not set`
-            );
-        }
-    }
-
-    return result.records.length > 0;
-};
-
-/**
- * Clear a reversible suspension. Revocation remains irreversible and is not cleared.
- */
+/** Failed bit writes roll back the relationship, so unsuspension remains retryable. */
 export const unsuspendCredentialReceived = async (
     credentialId: string,
     profileId: string
-): Promise<boolean> => {
-    const unsuspendedAt = new Date().toISOString();
+): Promise<boolean> => mutateCredentialStatus(credentialId, profileId, 'suspension', false);
 
-    const result = await new QueryBuilder(new BindParam({ profileId, unsuspendedAt }))
-        .match({ identifier: 'credential', model: Credential, where: { id: credentialId } })
-        .raw(
-            `MATCH (sender)-[sent:CREDENTIAL_SENT {to: $profileId}]->(credential)
-             WHERE (sender:Profile OR sender:AppStoreListing)
-               AND sent.status = "suspended"
-             SET sent.status = null,
-                 sent.unsuspendedAt = $unsuspendedAt
-             RETURN sent`
-        )
-        .run();
-
-    if (result.records.length > 0) {
-        const bitCleared = await setCredentialBitstringStatus(credentialId, 'suspension', false);
-        if (!bitCleared) {
-            console.warn(
-                `[unsuspendCredentialReceived] credential ${credentialId} has no verifiable 'suspension' status entry; bitstring bit not cleared`
-            );
-        }
-    }
-
-    return result.records.length > 0;
-};
-
-/**
- * Check if a credential has been revoked for a specific profile
- */
+/** Check if a credential has been revoked for a specific profile. */
 export const isCredentialRevoked = async (
     credentialId: string,
     profileId: string

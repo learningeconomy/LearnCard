@@ -22,6 +22,7 @@ import jwtDecode from 'jwt-decode';
 import { getDidWebLearnCard, getEmptyLearnCard } from '@helpers/learnCard.helpers';
 import { isAuthorizedDID } from '@helpers/dids.helpers';
 import { verifyFirebaseToken, getContactMethodFromUser } from '@helpers/auth.helpers';
+import { isSyntheticEmail } from '@helpers/syntheticEmail.helpers';
 
 const LOGIN_VERIFICATION_CODE_TEMPLATE_ALIAS =
     environment.POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS || 'login-verification-code';
@@ -255,6 +256,10 @@ export const firebaseRouter = t.router({
         .mutation(async ({ input, ctx }) => {
             const { email, locale } = input;
 
+            // Synthetic ClassLink account addresses are undeliverable and never a sign-in
+            // method. Answer exactly as for any other address, without storing or sending.
+            if (isSyntheticEmail(email)) return { success: true };
+
             try {
                 // Atomic rate limit for sending codes (max 3 codes per 10 mins)
                 // Uses new key to avoid collision with legacy un-prefixed keys during rolling deploy
@@ -340,6 +345,11 @@ export const firebaseRouter = t.router({
         .mutation(async ({ input, ctx }) => {
             const { email, code } = input;
             const clientIp = ctx.clientIp ?? 'unknown';
+
+            // No code is ever issued for a synthetic ClassLink address (see send above).
+            if (isSyntheticEmail(email)) {
+                return { success: false, error: 'Invalid or expired code.' };
+            }
 
             // Rate limit keys
             const emailAttemptKey = `login-verify-attempts:${email}`;

@@ -1,4 +1,4 @@
-export { getOpenID4VCPlugin } from './plugin';
+export { getOpenID4VCPlugin } from './plugin.lazy';
 export * from './types';
 export * from './offer';
 export * from './vci';

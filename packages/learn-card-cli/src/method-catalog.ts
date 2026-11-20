@@ -60,6 +60,7 @@ export const STATIC_INVOKE_METHODS: readonly string[] = [
     'campaignsList',
     'campaignsPageAudience',
     'campaignsPreviewAudience',
+    'campaignsPreviewDispatch',
     'campaignsSendTestToMe',
     'campaignsSetStatus',
     'campaignsUpdate',
@@ -97,6 +98,8 @@ export const STATIC_INVOKE_METHODS: readonly string[] = [
     'createClaimHook',
     'createContract',
     'createDagJwe',
+    'createDagJweExact',
+    'createDcApiResponse',
     'createJwe',
     'createManagedProfile',
     'createManagedServiceProfile',
@@ -172,6 +175,7 @@ export const STATIC_INVOKE_METHODS: readonly string[] = [
     'getBoostSkills',
     'getBoosts',
     'getBoostsThatUseFramework',
+    'getClaimBoostWithLinkStatus',
     'getClaimHooksForBoost',
     'getConnectedBoostRecipients',
     'getConnectionPromptStatus',
@@ -184,10 +188,13 @@ export const STATIC_INVOKE_METHODS: readonly string[] = [
     'getConsentStatus',
     'getConsentedContracts',
     'getContract',
+    'getContractConnections',
+    'getContractRequest',
     'getContractSentRequests',
     'getContractVersions',
     'getContracts',
     'getCredentialRefreshHistory',
+    'getCredentialRefreshReceipt',
     'getCredentialsForContract',
     'getCurrentNetwork',
     'getDidAuthVp',
@@ -197,6 +204,7 @@ export const STATIC_INVOKE_METHODS: readonly string[] = [
     'getFrameworkSkillTree',
     'getFullSkillTree',
     'getGasPrice',
+    'getGuardianApprovalStatus',
     'getGuardianPendingCredential',
     'getHolderExportMetadata',
     'getInboxCredential',
@@ -205,7 +213,9 @@ export const STATIC_INVOKE_METHODS: readonly string[] = [
     'getIncomingPresentations',
     'getInstalledApps',
     'getIntegration',
+    'getIntegrationEvents',
     'getIntegrationForListing',
+    'getIntegrationWebhook',
     'getIntegrations',
     'getKey',
     'getLCNClient',
@@ -298,6 +308,7 @@ export const STATIC_INVOKE_METHODS: readonly string[] = [
     'presentSdJwtVc',
     'publishCredentialRefresh',
     'publishCredentialSharePreview',
+    'publishHolderEncryptedRefreshable',
     'putShareLinkAttachmentChunk',
     'receiveChapiEvent',
     'recordCampaignEvent',
@@ -326,6 +337,7 @@ export const STATIC_INVOKE_METHODS: readonly string[] = [
     'revokeAuthGrant',
     'revokeBoostRecipient',
     'revokeShareLink',
+    'rotateIntegrationWebhookSecret',
     'searchFrameworkSkills',
     'searchProfiles',
     'searchSkillsAvailableForBoost',
@@ -343,8 +355,10 @@ export const STATIC_INVOKE_METHODS: readonly string[] = [
     'sendCredentialsViaInboxAndWait',
     'sendGuardianApprovalEmail',
     'sendGuardianChallenge',
+    'sendIntegrationTestEvent',
     'sendPresentation',
     'sendRefreshableCredential',
+    'setIntegrationWebhook',
     'setPrimaryContactMethod',
     'setPrimaryRegisteredSigningAuthority',
     'signIdToken',
@@ -411,6 +425,7 @@ export const READ_ALLOWLIST: ReadonlySet<string> = new Set([
     'campaignsList',
     'campaignsPageAudience',
     'campaignsPreviewAudience',
+    'campaignsPreviewDispatch',
     'categorizeSdJwtVct',
     'contextLoader',
     'decodeSdJwtClaims',
@@ -435,9 +450,10 @@ export const READ_ALLOWLIST: ReadonlySet<string> = new Set([
 
 /**
  * Read-looking names that change state on the network: they are tRPC mutations
- * (public share-link views and chunks are metered) or they consume a one-time code.
+ * (claim reconciliation and public share-link views/chunks) or they consume a one-time code.
  */
 export const WRITE_OVERRIDES: ReadonlySet<string> = new Set([
+    'getClaimBoostWithLinkStatus',
     'getShareLinkAttachmentChunk',
     'getShareLinkContent',
     'resolveShareLink',
@@ -456,6 +472,8 @@ export const WRITE_OVERRIDES: ReadonlySet<string> = new Set([
 export const SECRET_METHODS: ReadonlySet<string> = new Set([
     // OpenID4VCI: the flow handle carries the PKCE verifier that redeems the auth code.
     'beginCredentialOfferAuthCode',
+    // DC API responses contain a signed, holder-bound vp_token.
+    'createDcApiResponse',
     // OpenID4VCI access tokens.
     'exchangeAuthCodeForToken',
     'exchangePreAuthCodeForToken',
@@ -470,6 +488,10 @@ export const SECRET_METHODS: ReadonlySet<string> = new Set([
     // OpenID4VP end to end: returns the signed vp_token and, when requested, the SIOPv2 id_token.
     'presentCredentials',
     'presentSdJwtVc',
+    // The two places an integration's webhook signing secret is returned: a rotation, and the
+    // registration that creates the first secret.
+    'rotateIntegrationWebhookSecret',
+    'setIntegrationWebhook',
     'signIdToken',
     'signPresentation',
 ]);

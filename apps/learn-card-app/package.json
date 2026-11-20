@@ -1,6 +1,6 @@
 {
     "name": "learn-card-app",
-    "version": "1.100.9",
+    "version": "1.101.3",
     "private": true,
     "engines": {
         "node": ">=24.12 <25"
@@ -42,6 +42,7 @@
         "@ionic/react": "8.7.2",
         "@ionic/react-router": "8.7.2",
         "@learncard/credential-library": "workspace:*",
+        "@learncard/didkey-plugin": "workspace:*",
         "@learncard/embed-sdk": "workspace:^",
         "@learncard/helpers": "workspace:*",
         "@learncard/network-brain-client": "workspace:*",
@@ -141,7 +142,9 @@
         "web-vitals": "^0.2.4",
         "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
         "zod": "4.6.6",
-        "zustand": "^3.7.2"
+        "zustand": "^3.7.2",
+        "@learncard/openid4vc-plugin": "workspace:*",
+        "@learncard/sd-jwt-vc-plugin": "workspace:*"
     },
     "scripts": {
         "dev": "docker compose -f compose-local.yaml up --build",
@@ -235,6 +238,7 @@
         "@fontsource/sacramento": "5.3.0",
         "@inlang/paraglide-js": "2.20.2",
         "@ionic/cli": "^7.2.1",
+        "@learncard/lca-api-service": "workspace:^",
         "@learncard/learn-cloud-service": "workspace:^",
         "@learncard/network-brain-service": "workspace:^",
         "@netlify/edge-functions": "^2.15.1",

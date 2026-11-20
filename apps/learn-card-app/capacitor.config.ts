@@ -17,13 +17,15 @@
  */
 import type { CapacitorConfig } from '@capacitor/cli';
 import { nativeBrowserCompatibility } from '../../packages/learn-card-base/src/config/nativeBrowserCompatibility';
+import { NATIVE_BRIDGE_LOGGING } from '../../packages/learn-card-base/src/config/nativeBridgeLogging';
 
 const config: CapacitorConfig = {
     appId: 'com.learncard.app',
     appName: 'LearnCard',
     webDir: 'build',
-    bundledWebRuntime: false,
     ...nativeBrowserCompatibility(),
+    // Never let Capacitor log plugin payloads (SQLite rows include the private key).
+    ...NATIVE_BRIDGE_LOGGING,
     plugins: {
         SystemBars: {
             // Capacitor injects --safe-area-inset-* and keeps them synchronized
@@ -66,7 +68,9 @@ const config: CapacitorConfig = {
             // Bump this value whenever you bump native binaries; do NOT add a parallel
             // tenant-level override — that's how channels drift and OTA updates land in
             // an empty channel (see PR #1063 incident).
-            defaultChannel: '1.0.13', // LC-2006: Tailwind 4 requires an iOS 16.4+ native build.
+            // LC-2157 remains latent: older binaries skip the optional bridge,
+            // and production provider registration stays disabled.
+            defaultChannel: '1.0.13',
         },
     },
 };

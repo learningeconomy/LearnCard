@@ -62,6 +62,8 @@ export type DashboardHeaderViewModel = {
     shortBio?: string;
     professionalTitle?: string;
     onAvatarClick: () => void;
+    /** Hover, focus, or press start on the avatar, before the click: a chance to prefetch. */
+    onAvatarIntent?: () => void;
     onScanQrTopRight: () => void;
     onNotificationsClick: () => void;
     unreadCount: number;
@@ -163,6 +165,8 @@ export type DashboardViewModel = {
     primaryButtonClass?: string;
     slots: DashboardSlots;
     recoveryPrompt: DashboardRecoveryPromptViewModel;
+    /** When true, the guardian approval banner replaces the recovery banner. */
+    pendingGuardianApproval?: boolean;
     dataTrust: DashboardDataTrustViewModel;
     activity: DashboardActivityViewModel;
     learningProfile: DashboardLearningProfileViewModel;

@@ -31,4 +31,3 @@ const SvgPortfolioThicker = (props: SVGProps<SVGSVGElement>) => (
     </svg>
 );
 export default SvgPortfolioThicker;
-

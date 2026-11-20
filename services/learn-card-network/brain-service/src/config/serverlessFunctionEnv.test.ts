@@ -25,6 +25,8 @@ beforeEach(() => {
     vi.stubEnv('RUNTIME_SECRETS_ID', '');
     vi.stubEnv('GIT_SHA', '');
     vi.stubEnv('SEED', 'seed');
+    vi.stubEnv('CAMPAIGN_UNSUBSCRIBE_SECRET', 'synthetic-campaign-unsubscribe-secret');
+    vi.stubEnv('POSTMARK_BROADCAST_STREAM', 'deploy-time-stream');
     vi.stubEnv('NEO4J_PASSWORD', 'neo4j-password');
     vi.stubEnv('SHARE_LINK_REQUEST_HASH_SECRET', 'hash-secret');
     vi.stubEnv('SENTRY_AUTH_TOKEN', 'build-token');
@@ -115,6 +117,8 @@ describe('brain-service serverless provider environment', () => {
             RUNTIME_SECRETS_ID: 'brain-service/dev/runtime-secrets',
         });
         expect(result).not.toHaveProperty('SEED');
+        expect(result).not.toHaveProperty('CAMPAIGN_UNSUBSCRIBE_SECRET');
+        expect(result).not.toHaveProperty('POSTMARK_BROADCAST_STREAM');
         expect(result).not.toHaveProperty('NEO4J_PASSWORD');
         expect(result).not.toHaveProperty('SHARE_LINK_REQUEST_HASH_SECRET');
     });
