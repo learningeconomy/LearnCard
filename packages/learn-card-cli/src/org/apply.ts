@@ -1,4 +1,5 @@
 import { hasSecret, writeSecret, withSecretsLock } from './secrets';
+import { ReferralApplyError, ReferralConfigurationError } from './referral-safety';
 import {
     planNewReferral,
     applyReferrals,
@@ -39,6 +40,8 @@ export interface OrgChange {
     name: string;
     action: OrgChangeAction;
     detail?: string;
+    /** Confirmed resource identifier, retained even if a later handoff step fails. */
+    id?: string;
 }
 
 export interface OrgApplyResult {
@@ -711,11 +714,16 @@ const reconcileServiceAccounts = async (
             ...(actAs !== undefined ? { actAs } : {}),
         };
         const grantId = await learnCard.invoke.addAuthGrant(payload);
+        serviceAccounts.push({ name: account.name, grantId, created: true });
+        changes.push({
+            resource: 'serviceAccount',
+            name: account.name,
+            action: 'created',
+            id: grantId,
+        });
         const token = await learnCard.invoke.getAPITokenForAuthGrant(grantId);
         await writeSecret(secretsOut, account.name, token);
         out.log(`Token for "${account.name}" written to ${secretsOut}`);
-        serviceAccounts.push({ name: account.name, grantId, created: true });
-        changes.push({ resource: 'serviceAccount', name: account.name, action: 'created' });
     }
 };
 
@@ -869,10 +877,13 @@ export const applyOrg = async (
         managed
     );
 
-    const referrals =
-        spec.referralPrograms?.length || spec.referralRecipients?.length
+    const hasReferrals = !!(spec.referralPrograms?.length || spec.referralRecipients?.length);
+    let referrals: ReferralHandoff[] | undefined;
+    try {
+        referrals = hasReferrals
             ? await withSecretsLock(dryRun ? undefined : opts.secretsOut, async () => {
-                  if (!opts.referrals) throw new Error('Missing referral setup connection.');
+                  if (!opts.referrals)
+                      throw new ReferralConfigurationError('Missing referral setup connection.');
                   return applyReferrals(
                       spec,
                       opts.referrals,
@@ -889,24 +900,34 @@ export const applyOrg = async (
                               opts.secretsOut,
                               changes,
                               serviceAccounts
-                          )
+                          ),
+                      { issuerDid, managerDid, managed, serviceAccounts }
                   );
               })
             : undefined;
-    await withSecretsLock(
-        !dryRun && spec.serviceAccounts?.length ? opts.secretsOut : undefined,
-        () =>
-            reconcileServiceAccounts(
-                spec.serviceAccounts ?? [],
-                learnCard,
-                dryRun,
-                opts.secretsOut,
-                changes,
-                serviceAccounts
-            )
-    );
+        await withSecretsLock(
+            !dryRun && spec.serviceAccounts?.length ? opts.secretsOut : undefined,
+            () =>
+                reconcileServiceAccounts(
+                    spec.serviceAccounts ?? [],
+                    learnCard,
+                    dryRun,
+                    opts.secretsOut,
+                    changes,
+                    serviceAccounts
+                )
+        );
 
-    await applyWebhooks(spec, project, opts.dryRun ?? false, changes);
+        await applyWebhooks(spec, project, opts.dryRun ?? false, changes);
+    } catch (error) {
+        if (!hasReferrals || error instanceof ReferralApplyError) throw error;
+        throw new ReferralApplyError('organization handoff', error, changes, referrals ?? [], {
+            issuerDid,
+            managerDid,
+            managed,
+            serviceAccounts,
+        });
+    }
 
     return {
         changes,

@@ -3,6 +3,7 @@ import { requestProfileFields, type ConsentFlowContract } from '@learncard/types
 import { isDeepStrictEqual } from 'node:util';
 import type { ReferralProgram } from './schema';
 import type { OrgChange } from './apply';
+import { ReferralConfigurationError } from './referral-safety';
 
 export type ReferralCard = Pick<
     LCALearnCard['invoke'],
@@ -34,7 +35,9 @@ export const referralContract = (
         const { key, required } = typeof ask === 'string' ? { key: ask, required: false } : ask;
         const [tenant, schema, field] = key.split(':');
         if (!tenant || !schema || !Object.hasOwn(tenants, tenant))
-            throw new Error(`Supply --tenant-config ${tenant}=<config.json> for ${key}.`);
+            throw new ReferralConfigurationError(
+                `Supply --tenant-config ${tenant}=<config.json> for ${key}.`
+            );
         Object.assign(
             categories,
             requestProfileFields(
@@ -87,13 +90,14 @@ export const findProgramContract = async (owner: ReferralCard, name: string) => 
             record => record.referralProgram === name || record.name === name
         )) {
             if (uri)
-                throw new Error(
+                throw new ReferralConfigurationError(
                     `More than one owned contract is named "${name}". Resolve the ambiguity before applying.`
                 );
             uri = contract.uri;
         }
         if (!page.hasMore) return uri;
-        if (!page.cursor || page.cursor === cursor) throw new Error('Incomplete contract listing.');
+        if (!page.cursor || page.cursor === cursor)
+            throw new ReferralConfigurationError('Incomplete contract listing.');
         cursor = page.cursor;
     }
 };
@@ -110,29 +114,37 @@ export const applyReferralContract = async (
     const { name, partner, referrers: recipients } = program;
     const writers = program.outcomes.issuer === partner ? [] : [program.outcomes.issuer];
     const uri = await findProgramContract(owner, name);
-    const record = (action: OrgChange['action'], detail: string) =>
-        changes.push({ resource: 'referralContract', name, action, detail });
+    const record = (action: OrgChange['action'], detail: string, id = uri) =>
+        changes.push({ resource: 'referralContract', name, action, detail, id });
     if (!uri) {
+        const createdUri = dryRun
+            ? undefined
+            : await owner.createContract({
+                  referralProgram: name,
+                  name,
+                  contract,
+                  writers,
+                  recipients,
+              });
         record(
             dryRun ? 'would-create' : 'created',
-            `owner ${partner}, writers ${writers.join(', ') || partner}, recipients ${recipients.join(', ')} (fixed after first consent); ${describeReferralScopes(contract)}`
+            `owner ${partner}, writers ${writers.join(', ') || partner}, recipients ${recipients.join(', ')} (fixed after first consent); ${describeReferralScopes(contract)}`,
+            createdUri
         );
-        return dryRun
-            ? undefined
-            : owner.createContract({ referralProgram: name, name, contract, writers, recipients });
+        return createdUri;
     }
     const current = await owner.getContract(uri);
     if (current.owner.profileId !== partner || current.status === 'retired')
-        throw new Error(`Expected an active contract owned by ${partner}.`);
+        throw new ReferralConfigurationError(`Expected an active contract owned by ${partner}.`);
     const audienceInput = { contractUri: uri, recipients };
     const audience = await owner.reconcileReferralAudience({ ...audienceInput, dryRun: true });
     if (current.referralProgram !== name)
-        throw new Error(
+        throw new ReferralConfigurationError(
             `An existing contract named "${name}" was not created for this referral program. Choose a unique program name.`
         );
     if (audience.changed && audience.frozen) {
         const detail = 'Recipients are frozen after first consent. This needs a new contract.';
-        if (!dryRun) throw new Error(detail);
+        if (!dryRun) throw new ReferralConfigurationError(detail);
         record('drifted', detail);
         return uri;
     }
@@ -174,10 +186,13 @@ export const applyReferralContract = async (
     ]
         .filter(Boolean)
         .join(', ');
-    if (reconsent && !allowReconsent && !dryRun) throw new Error(`${name}: ${detail}`);
+    if (reconsent && !allowReconsent && !dryRun)
+        throw new ReferralConfigurationError(`${name}: ${detail}`);
     if (!dryRun) {
-        if (audience.changed)
+        if (audience.changed) {
             await owner.reconcileReferralAudience({ ...audienceInput, dryRun: false });
+            record('updated', 'recipients reconciled before first consent');
+        }
         if (needsUpdate) await owner.updateContract(uri, delta, options);
     }
     record(detail ? (dryRun ? 'would-update' : 'updated') : 'unchanged', detail);

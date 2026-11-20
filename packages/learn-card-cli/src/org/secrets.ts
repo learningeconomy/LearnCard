@@ -1,8 +1,10 @@
 import fs from 'node:fs/promises';
+import { constants } from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { ensureGitignored, parseEnv, upsertEnv } from '../project';
 import { toEnvKey } from './schema';
+import { ReferralConfigurationError } from './referral-safety';
 
 const inspectSecrets = async (secretsOut: string) => {
     const info = await fs.lstat(secretsOut).catch((error: NodeJS.ErrnoException) => {
@@ -18,6 +20,34 @@ export const hasSecret = async (secretsOut: string, name: string): Promise<boole
     if (!(await inspectSecrets(secretsOut))) return false;
     const env = parseEnv(await fs.readFile(secretsOut, 'utf8'));
     return !!env[toEnvKey(name)]?.trim();
+};
+
+/** Read only a private, owned regular file, without following a final symlink. */
+export const hasPrivateSecret = async (file: string, name: string): Promise<boolean> => {
+    const handle = await fs
+        .open(file, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK)
+        .catch((error: NodeJS.ErrnoException) => {
+            if (error.code === 'ENOENT') return undefined;
+            throw new ReferralConfigurationError(
+                'Cannot securely inspect the private handoff file.'
+            );
+        });
+    if (!handle) return false;
+    try {
+        const info = await handle.stat();
+        if (
+            !info.isFile() ||
+            info.mode & 0o077 ||
+            info.nlink !== 1 ||
+            (process.getuid && info.uid !== process.getuid())
+        )
+            throw new ReferralConfigurationError(
+                'The handoff must be an owned private regular file (mode 0600).'
+            );
+        return !!parseEnv(await handle.readFile('utf8'))[toEnvKey(name)]?.trim();
+    } finally {
+        await handle.close();
+    }
 };
 
 /** Replace a token entry without duplicate keys, securing existing files before writing. */
