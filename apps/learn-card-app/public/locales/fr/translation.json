@@ -9687,7 +9687,6 @@
         "searchCreds": "Recherchez vos titres…",
         "nothingMatches": "Rien ne correspond à “{{query}}”.",
         "noneIssued": "Vous n'avez pas encore émis de titre.",
-        "lookForOlderCredentials": "Sélectionnez « Afficher plus » pour rechercher des titres plus anciens à envoyer.",
         "showMore": "Afficher plus",
         "previewDesc": "C'est exactement ce que votre destinataire recevra.",
         "chooseRecip": "Choisir le destinataire",

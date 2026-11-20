@@ -1,5 +1,6 @@
 import { test, expect } from './fixtures/mocked-test';
 import type { Locator, Page } from '@playwright/test';
+import { RegExpValidator } from '@learncard/types';
 import type { IssueInboxCredentialBatch, InboxBatchStatus } from '@learncard/types';
 import type { TrpcMock, BrainOutputs } from './mocks/trpc';
 import { installNetwork } from './mocks/network';
@@ -208,35 +209,55 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
             await expect(page.getByPlaceholder(NAME_PLACEHOLDER)).toBeVisible();
         });
 
-        test(`filters AI Passport credentials and keeps the reuse picker stable on ${viewport.name}`, async ({
+        test(`excludes AI Passport before pagination and keeps the reuse picker stable on ${viewport.name}`, async ({
             page,
         }) => {
             await page.setViewportSize(viewport);
+            const boosts = [
+                ...Array.from({ length: 18 }, (_, index) => ({
+                    uri: `boost:ai-${index}`,
+                    name: ' AI Passport credential ',
+                    category: 'Achievement',
+                })),
+                { uri: 'boost:topic', name: 'Personalized Session', category: 'aI-\u00a0To-pic' },
+                { uri: 'boost:first-aid', name: 'First Aid Badge' },
+                { uri: 'boost:untitled', category: 'Achievement' },
+                ...Array.from({ length: 16 }, (_, index) => ({
+                    uri: `boost:badge-${index}`,
+                    name: `Training Badge ${index + 1}`,
+                    category: 'Social Badge',
+                })),
+                { uri: 'boost:custom', name: 'Custom Credential', category: 'Community Award' },
+            ].map((boost, index) => ({
+                ...boost,
+                created: new Date(Date.UTC(2026, 10, 18, 12, 0, 0, 100 - index)).toISOString(),
+            }));
+            const cursors: (string | undefined)[] = [];
+
             network.on('boost.getPaginatedBoosts', input => {
-                const cursor = (input as { cursor?: string } | undefined)?.cursor;
+                const {
+                    cursor,
+                    limit = 18,
+                    exclude,
+                } = (input ?? {}) as {
+                    cursor?: string;
+                    limit?: number;
+                    exclude?: { name?: { $regex: string }; category?: { $regex: string } };
+                };
+                const name = RegExpValidator.safeParse(exclude?.name?.$regex).data;
+                const category = RegExpValidator.safeParse(exclude?.category?.$regex).data;
+                const eligible = boosts.filter(
+                    boost =>
+                        (!cursor || boost.created < cursor) &&
+                        !(boost.name && name?.test(boost.name)) &&
+                        !(boost.category && category?.test(boost.category))
+                );
+                const records = eligible.slice(0, limit);
+                cursors.push(cursor);
                 return {
-                    hasMore: !cursor,
-                    cursor: '2026-11-18T12:00:00.000Z',
-                    records: cursor
-                        ? [
-                              {
-                                  uri: 'boost:badge',
-                                  name: 'First Aid Badge',
-                                  category: 'Social Badge',
-                              },
-                              {
-                                  uri: 'boost:topic',
-                                  name: 'Personalized Session',
-                                  category: 'ai-topic',
-                              },
-                          ]
-                        : [
-                              {
-                                  uri: 'boost:ai',
-                                  name: 'AI Passport credential',
-                                  category: 'Achievement',
-                              },
-                          ],
+                    hasMore: eligible.length > limit,
+                    cursor: records.at(-1)?.created,
+                    records,
                 } satisfies BrainOutputs['boost']['getPaginatedBoosts'];
             });
 
@@ -247,19 +268,19 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
             await expectPickerLayout(page, picker, viewport.mobile);
             const initialBox = await picker.boundingBox();
             const showMore = picker.getByRole('button', { name: 'Show more' });
-            const moreHint = picker.getByText(
-                'Select “Show more” to look for older credentials to send.'
-            );
 
-            await expect(moreHint).toBeVisible();
+            await expect(picker.getByRole('button', { name: 'First Aid Badge' })).toBeVisible();
+            await expect(picker.getByRole('button', { name: 'Untitled credential' })).toBeVisible();
             await expect(showMore).toBeVisible();
             await expect(picker.getByText('AI Passport credential', { exact: true })).toHaveCount(
                 0
             );
-            await showMore.click();
-            await expect(picker.getByRole('button', { name: 'First Aid Badge' })).toBeVisible();
-            await expect(moreHint).toHaveCount(0);
             await expect(picker.getByText('Personalized Session', { exact: true })).toHaveCount(0);
+            await expect(picker.getByRole('button', { name: 'Custom Credential' })).toHaveCount(0);
+            await showMore.click();
+            await expect(picker.getByRole('button', { name: 'Custom Credential' })).toBeVisible();
+            await expect(showMore).toHaveCount(0);
+            expect(cursors).toEqual([undefined, boosts.at(-2)?.created]);
 
             await picker.getByPlaceholder('Search your credentials…').fill('AI Passport');
             await expect(picker.getByText(/Nothing matches/)).toBeVisible();
