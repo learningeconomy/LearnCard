@@ -139,6 +139,10 @@ const ClrCompetencyDetailPanel: React.FC<{
                         )}
                         onSelectRecord={onSelectRecord}
                         adminMode={adminMode}
+                        verificationNode={
+                            model.verification.snapshot?.records[competency.sourceCredentialId]
+                        }
+                        publisherDid={model.canonical.collection.publisher?.id?.value}
                     />
                 ))}
             </div>

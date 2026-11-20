@@ -81,26 +81,90 @@ self-issues and accepts the provisional CLR fixture before allowing you to publi
 final transcript with the same credential ID. It displays only safe lifecycle metadata:
 refresh ID, managed version, dates, and notification outcome.
 
+### CLR Verification Demo (Local and Staging)
+
+This sends five genuinely signed transcripts to a normal LearnCard test account.
+The publisher and two fictional district issuers have network-hosted `did:web`
+identities. Revocation and suspension use the selected network's signed status
+lists, not a temporary fixture server. You can close the viewer after sending;
+the examples remain verifiable until that network's test data is reset.
+The supporting courses use managed delivery receipts; the sender checks the
+published status result before reporting a successful batch.
+
+For layout-only review, open the LearnCard app's `/dev/clr-transcript` route
+(locally, `http://localhost:3000/dev/clr-transcript`). Its fixture picker and
+Full/Card/Embed tabs preview renderer variants. The library's
+`clr/multi-issuer-verification` fixture is an unsigned blueprint, not a
+pre-signed verification batch; real signatures and hosted lifecycle status
+require the issuance flow below.
+
+```bash
+bun run --cwd examples/credential-viewer dev
+```
+
+1. Keep your local LearnCard stack running for **Local**, or use a test account on
+   **Staging**. Open the viewer URL printed by Vite.
+2. Select **Local** or **Staging** in the connection bar **before connecting**.
+   Generate/connect a publisher account and create its profile if prompted.
+   A signing authority is not required for this locally signed demo.
+3. Click the **CLR Verification Demo** toolbar button (it is not a fixture-search
+   result). Enter the recipient profile ID on that same network and select
+   **Send verification demo**. Production is disabled; Custom is limited to
+   loopback services for local verification.
+4. Wait for all five named deliveries. Two supporting course credentials are also
+   delivered to establish real revocation/suspension bindings; lifecycle
+   notifications may appear. A failed batch lists any transcripts already sent.
+   Check those before retrying: another attempt creates new issuers and examples.
+5. In the recipient's normal LearnCard app, open **Alerts**. Five transcript alerts
+   are intentional: each is a separate verification case. Open an alert and check
+   that it shows the transcript layout and included-record verification, not a
+   generic certificate. Claim it, then open the same transcript in
+   **Passport → Studies** and compare. If asked to connect with the publisher,
+   **Skip for Now** is sufficient. Each batch has a unique suffix:
+
+    | Transcript            | Expected result                                                        |
+    | --------------------- | ---------------------------------------------------------------------- |
+    | All verified          | Verified publisher and all four signed record occurrences verified     |
+    | Revoked record        | Verified publisher; one included record revoked                        |
+    | Suspended record      | Verified publisher; one included record suspended                      |
+    | Tampered signature    | Verified publisher; one included signature cannot be confirmed         |
+    | Mixed signed/unsigned | Verified publisher; unsigned record has no alarming certification mark |
+
+6. Expand the certifying issuer groups and open a record. Duplicate source IDs
+   are separate occurrences. Fictional issuers need not be on a trusted registry:
+   not-listed is separate from whether their signatures verify.
+7. Open **Passport → Share → Share credentials**, select the demo transcripts,
+   enter a title, select **Preview**, then **Create private link**. Open that
+   link in a signed-out/private browser and reload. The same per-record results
+   appear inline without signing in.
+
+For an acceptance video, connect the publisher before recording, then show the
+selected network, send results, normal claim/Studies flow, issuer details and
+signed-out shared collection. Keep seeds, sign-in links and bearer share links
+private; do not film developer tools or the connection secret.
+
 ## Architecture
 
-| File                                     | Purpose                                                               |
-| ---------------------------------------- | --------------------------------------------------------------------- |
-| `src/App.tsx`                            | Main layout — search, filters, fixture grid, detail panel             |
-| `src/context/WalletContext.tsx`          | Wallet lifecycle, issue+store, and send operations                    |
-| `src/components/FilterBar.tsx`           | Multi-facet filter chips (spec, profile, validity, category)          |
-| `src/components/FixtureCard.tsx`         | Individual fixture card with checkbox and metadata badges             |
-| `src/components/DetailPanel.tsx`         | Slide-over panel with full JSON and metadata                          |
-| `src/components/IssuePanel.tsx`          | Bulk issue modal with progress tracking                               |
-| `src/components/SendPanel.tsx`           | Bulk send modal with recipient input and progress                     |
-| `src/components/NewFixturePanel.tsx`     | Fixture creation form with JSON editor and auto-inference             |
-| `src/components/ManagedRefreshPanel.tsx` | Provisional-to-final managed refresh issuer demo                      |
-| `src/components/ConnectBar.tsx`          | Wallet connection UI with seed input and environment selector         |
-| `src/components/JsonViewer.tsx`          | Syntax-highlighted JSON display                                       |
-| `src/components/BulkActionBar.tsx`       | Floating action bar for selected fixtures                             |
-| `src/lib/category.ts`                    | Credential categorization heuristics (Achievement, ID, Studies, etc.) |
-| `src/lib/colors.ts`                      | Spec/profile/category color mappings                                  |
-| `src/lib/infer-metadata.ts`              | Auto-infer fixture metadata from credential JSON                      |
-| `src/vite-plugin-fixtures.ts`            | Dev server middleware for reading/writing fixture files on disk       |
+| File                                          | Purpose                                                                      |
+| --------------------------------------------- | ---------------------------------------------------------------------------- |
+| `src/App.tsx`                                 | Main layout — search, filters, fixture grid, detail panel                    |
+| `src/context/WalletContext.tsx`               | Wallet lifecycle, issue+store, and send operations                           |
+| `src/components/FilterBar.tsx`                | Multi-facet filter chips (spec, profile, validity, category)                 |
+| `src/components/FixtureCard.tsx`              | Individual fixture card with checkbox and metadata badges                    |
+| `src/components/DetailPanel.tsx`              | Slide-over panel with full JSON and metadata                                 |
+| `src/components/IssuePanel.tsx`               | Bulk issue modal with progress tracking                                      |
+| `src/components/SendPanel.tsx`                | Bulk send modal with recipient input and progress                            |
+| `src/components/NewFixturePanel.tsx`          | Fixture creation form with JSON editor and auto-inference                    |
+| `src/components/ManagedRefreshPanel.tsx`      | Provisional-to-final managed refresh issuer demo                             |
+| `src/components/ClrVerificationDemoPanel.tsx` | Local/Staging acceptance-demo controls and delivery progress                 |
+| `src/lib/clr-verification-demo.ts`            | Independent issuers, hosted lifecycle bindings and five signed demo variants |
+| `src/components/ConnectBar.tsx`               | Wallet connection UI with seed input and environment selector                |
+| `src/components/JsonViewer.tsx`               | Syntax-highlighted JSON display                                              |
+| `src/components/BulkActionBar.tsx`            | Floating action bar for selected fixtures                                    |
+| `src/lib/category.ts`                         | Credential categorization heuristics (Achievement, ID, Studies, etc.)        |
+| `src/lib/colors.ts`                           | Spec/profile/category color mappings                                         |
+| `src/lib/infer-metadata.ts`                   | Auto-infer fixture metadata from credential JSON                             |
+| `src/vite-plugin-fixtures.ts`                 | Dev server middleware for reading/writing fixture files on disk              |
 
 ## Tech Stack
 

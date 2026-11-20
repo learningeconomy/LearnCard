@@ -5,11 +5,14 @@ import ClrTranscriptSourceField from './ClrTranscriptSourceField';
 import ClrTranscriptTrustBadge from './ClrTranscriptTrustBadge';
 
 import type { ClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
+import { ClrVerificationSummary } from './ClrVerificationSummary';
+import { hasSignedClrCredentials } from 'learn-card-base/helpers/credentials/clr/verification';
 
 const ClrTranscriptHeader: React.FC<{
     model: ClrTranscriptDisplayModel;
     showSource?: boolean;
-}> = ({ model, showSource = false }) => {
+    onRetryVerification?: () => void;
+}> = ({ model, showSource = false, onRetryVerification }) => {
     return (
         <div className="bg-white rounded-[20px] border border-grayscale-200 p-6 space-y-v3-4">
             {model.meta.partial && (
@@ -81,6 +84,16 @@ const ClrTranscriptHeader: React.FC<{
             <ClrTranscriptTrustBadge
                 verification={model.verification}
                 evidenceCount={model.summary.evidenceCount}
+                hideStatus={Boolean(
+                    model.verification.snapshot &&
+                    hasSignedClrCredentials(model.verification.snapshot)
+                )}
+            />
+            <ClrVerificationSummary
+                snapshot={model.verification.snapshot}
+                publisherDid={model.canonical.collection.publisher?.id?.value}
+                model={model}
+                retry={onRetryVerification}
             />
         </div>
     );

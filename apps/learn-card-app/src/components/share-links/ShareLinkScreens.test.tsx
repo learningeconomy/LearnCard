@@ -7,6 +7,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ShareLink } from '@learncard/types';
+import { clrMilitaryComprehensiveRecord } from '@learncard/credential-library';
 import type * as ShareLinkFlow from './shareLinkFlow';
 const mocks = vi.hoisted(() => ({
     wallet: {
@@ -47,6 +48,8 @@ const mocks = vi.hoisted(() => ({
     recovery: vi.fn(),
     decrypt: vi.fn(),
     validate: vi.fn(),
+    clrRenderer: vi.fn(),
+    verifyTree: vi.fn(),
     appBaseUrl: 'https://tenant.example',
     inferredCategory: 'Achievement',
     route: { id: 'AAAAAAAAAAAAAAAAAAAAAA' },
@@ -98,7 +101,12 @@ vi.mock('../../theme/hooks/useTheme', () => ({
 }));
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
     getDefaultCategoryForCredential: () => mocks.inferredCategory,
-    unwrapBoostCredential: (credential: unknown) => credential,
+    unwrapBoostCredential: (credential: { type?: string[]; boostCredential?: unknown }) =>
+        credential?.type?.includes('CertifiedBoostCredential') && credential.boostCredential
+            ? credential.boostCredential
+            : credential,
+    isClrCredential: (credential: { type?: string[] }) =>
+        credential?.type?.includes('ClrCredential') ?? false,
     getImageUrlFromCredential: () => undefined,
     getCredentialName: (credential: { name?: string }) => credential?.name ?? 'Credential',
     isBoostCredential: () => false,
@@ -111,6 +119,10 @@ vi.mock('./CredentialPreviewButton', () => ({
     CredentialPreviewButton: () => null,
     default: () => null,
 }));
+// Generic share screens isolate the CLR tree, whose real proofs have separate coverage.
+vi.mock('../clr-renderer/ClrRenderer', () => ({
+    ClrRenderer: (props: unknown) => mocks.clrRenderer(props),
+}));
 vi.mock('learn-card-base/helpers/share-links', async importOriginal => ({
     ...(await importOriginal<object>()),
     isShareLinkError: () => false,
@@ -118,21 +130,32 @@ vi.mock('learn-card-base/helpers/share-links', async importOriginal => ({
     validateShareManifest: (...args: unknown[]) => mocks.validate(...args),
     buildShareLinkUrl: (host: string, id: string, key: string) => `https://${host}/s/${id}#${key}`,
 }));
-vi.mock('./shareLinkFlow', async importOriginal => ({
-    ...(await importOriginal<object>()),
-    prepareShare: (...args: unknown[]) => mocks.prepare(...args),
-    prepareShareUpdate: (...args: unknown[]) => mocks.prepareUpdate(...args),
-    prepareShareMetadataUpdate: (...args: unknown[]) => mocks.prepareMetadata(...args),
-    readShareRecovery: (...args: unknown[]) => mocks.recovery(...args),
-}));
+vi.mock('./shareLinkFlow', async importOriginal => {
+    const original = await importOriginal<typeof ShareLinkFlow>();
+    return {
+        ...original,
+        verifyCredentialTree: (...args: Parameters<typeof original.verifyCredentialTree>) => {
+            mocks.verifyTree(...args);
+            return original.verifyCredentialTree(...args);
+        },
+        prepareShare: (...args: unknown[]) => mocks.prepare(...args),
+        prepareShareUpdate: (...args: unknown[]) => mocks.prepareUpdate(...args),
+        prepareShareMetadataUpdate: (...args: unknown[]) => mocks.prepareMetadata(...args),
+        readShareRecovery: (...args: unknown[]) => mocks.recovery(...args),
+    };
+});
 import { enterSharePrivacy } from './sharePrivacy';
 import { Clipboard } from '@capacitor/clipboard';
 import ShareLinkCreate from './ShareLinkCreate';
 import ShareLinkViewer from './ShareLinkViewer';
 import ShareLinkOwnerPreview from './ShareLinkOwnerPreview';
+import { proofLabel } from './ShareLinkPreview';
 const credential = { name: 'Community leadership', issuer: { name: 'Learning Collective' } };
 beforeEach(() => {
     vi.clearAllMocks();
+    mocks.clrRenderer.mockImplementation(() => {
+        throw new Error('A generic share fixture must not enter the CLR renderer');
+    });
     mocks.history.replace.mockReset();
     mocks.appBaseUrl = 'https://tenant.example';
     mocks.inferredCategory = 'Achievement';
@@ -750,6 +773,53 @@ describe('managed resume Shared settings', () => {
 describe('recipient screen', () => {
     beforeEach(() => {
         mocks.wallet.read.get.mockResolvedValue({ verifiableCredential: [credential] });
+    });
+    it('renders a wrapped CLR selection with its endorsement verdict and original wrapper', async () => {
+        const inner = clrMilitaryComprehensiveRecord.credential;
+        const wrapped = {
+            type: ['VerifiableCredential', 'CertifiedBoostCredential'],
+            name: 'Shared wrapper',
+            boostCredential: inner,
+            proof: { type: 'Ed25519Signature2020', proofValue: 'wrapper-signature' },
+        };
+        const endorsement = {
+            name: 'Public endorsement',
+            proof: { type: 'Ed25519Signature2020', proofValue: 'endorsement-signature' },
+        };
+        mocks.clrRenderer.mockReturnValue(<div>CLR transcript surface</div>);
+        mocks.validate.mockReturnValueOnce({
+            ok: true,
+            manifest: {
+                presentation: { verifiableCredential: [endorsement, wrapped] },
+                selection: [{ credentialIndex: 1 }],
+                endorsements: [{ credentialIndex: 0, targetCredentialIndex: 1 }],
+            },
+        });
+        render(<ShareLinkViewer />);
+
+        expect(await screen.findByText('CLR transcript surface')).toBeInTheDocument();
+        expect(mocks.clrRenderer).toHaveBeenCalledWith(
+            expect.objectContaining({ boost: inner, model: expect.any(Object) })
+        );
+        await waitFor(() =>
+            expect(mocks.verifyTree).toHaveBeenCalledWith(
+                expect.anything(),
+                inner,
+                expect.anything(),
+                expect.any(Function),
+                // The original signed wrapper is still part of the credential check.
+                wrapped
+            )
+        );
+        const endorsementElement = await screen.findByText('Public endorsement');
+        await waitFor(() =>
+            expect(
+                within(endorsementElement.parentElement!).getByText(proofLabel('verified'))
+            ).toBeInTheDocument()
+        );
+        expect(document.querySelector('pre')?.textContent).toBe(JSON.stringify(wrapped, null, 2));
+        expect(screen.queryByRole('heading', { name: 'Shared wrapper' })).toBeNull();
+        expect(enterSharePrivacy).toHaveBeenCalled();
     });
     it('shows a neutral retry state when passcode verification is unavailable', async () => {
         mocks.wallet.invoke.resolveShareLink.mockResolvedValue({ state: 'try_later' });

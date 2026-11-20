@@ -155,7 +155,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     const { isMobile } = useDeviceTypeByWidth();
 
     useEffect(() => {
-        if (isUnsignedPreview) return;
+        if (isUnsignedPreview || isClrCredential) return;
         let cancelled = false;
 
         const verify = async () => {
@@ -172,7 +172,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
         return () => {
             cancelled = true;
         };
-    }, [credential, isUnsignedPreview]);
+    }, [credential, isUnsignedPreview, isClrCredential]);
 
     useEffect(() => {
         if (!isEarnedBoost || isPreview) return;
@@ -406,9 +406,9 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
             <ClrTranscriptFullPage
                 model={clrModel}
                 boost={clrCredential}
+                certifiedWrapper={credential !== clrCredential ? credential : undefined}
                 // boostUri comes from boost cards; credentialUri from direct credential views
                 boostUri={boostUri ?? credentialUri}
-                verificationItems={verifications}
                 options={{ viewer: 'student', surface: ClrTranscriptSurface.Full }}
             />
         );

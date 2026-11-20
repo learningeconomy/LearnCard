@@ -295,10 +295,11 @@ The expired credential is structurally valid and remains in **Select All Valid**
 Each fixture includes themed artwork in both `credential.image` and `credentialSubject.achievement.image`. The unmodified illustrations are by [OpenMoji](https://openmoji.org/), licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); image captions retain the attribution. These are remotely hosted SVGs and require network access to load. Reissue or resend fixtures to see new artwork—previously issued credentials are not modified.
 
 
-### CLR v2 (4)
+### CLR v2 (5)
 
 -   `clr/minimal` — Minimal Comprehensive Learner Record
 -   `clr/multi-achievement` — Multiple achievements with associations
+-   `clr/multi-issuer-verification` — Unsigned blueprint for independent issuers, nested proofs, and revocation testing
 -   `clr/nd-student-transcript` — North Dakota student transcript (nested VCs, real-world structure)
 -   `clr/university-transcript` — University academic transcript (6 nested course VCs)
 

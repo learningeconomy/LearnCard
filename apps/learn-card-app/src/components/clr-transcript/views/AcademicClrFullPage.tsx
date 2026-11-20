@@ -31,7 +31,16 @@ const AcademicClrFullPage: React.FC<{
     boostUri?: string;
     /** Disable when the containing route already reserves the top device inset. */
     insetTop?: boolean;
-}> = ({ model, recordNavigator, boost, options, boostUri, insetTop = true }) => {
+    onRetryVerification?: () => void;
+}> = ({
+    model,
+    recordNavigator,
+    boost,
+    options,
+    boostUri,
+    insetTop = true,
+    onRetryVerification,
+}) => {
     const adminMode = options.viewer === 'admin' || options.viewer === 'registrar';
     const selectedView = selectClrTranscriptView(model, options);
     const handleSelectRecord = recordNavigator.selectRecord;
@@ -64,6 +73,7 @@ const AcademicClrFullPage: React.FC<{
                         boostUri={boostUri}
                         adminMode={adminMode}
                         onSelectRecord={handleSelectRecord}
+                        onRetryVerification={onRetryVerification}
                     />
 
                     {/* Programs section */}
@@ -71,6 +81,8 @@ const AcademicClrFullPage: React.FC<{
                         <ClrProgramsSection
                             programs={model.programs}
                             onSelectProgram={handleSelectProgram}
+                            verification={model.verification.snapshot}
+                            publisherDid={model.canonical.collection.publisher?.id?.value}
                         />
                     )}
 
@@ -158,12 +170,6 @@ const AcademicClrFullPage: React.FC<{
                                 >
                                     {model.verification.credentialSigned ? 'Signed' : 'Unsigned'}
                                 </span>
-                            </p>
-                            <p className="text-xs text-grayscale-600">
-                                Nested credentials: {model.verification.nestedCredentialSignedCount}{' '}
-                                signed
-                                {model.verification.nestedCredentialUnsignedCount > 0 &&
-                                    ` · ${model.verification.nestedCredentialUnsignedCount} unsigned`}
                             </p>
                             {model.verification.hasCredentialStatus && (
                                 <p className="text-xs text-grayscale-600">

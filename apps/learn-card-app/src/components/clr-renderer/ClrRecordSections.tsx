@@ -9,6 +9,8 @@ import { formatAchievementType } from 'learn-card-base/helpers/credentials/clr/p
 import ClrResultWithScaleList from '../clr-transcript/ClrResultWithScaleList';
 import { getClrSectionLabel } from './labels';
 import * as m from '../../paraglide/messages.js';
+import type { ClrVerificationSnapshot } from 'learn-card-base/helpers/credentials/clr/verification.types';
+import { ClrRecordVerification } from '../clr-transcript/ClrVerificationSummary';
 
 /** Shared source-backed sections; only the section labels differ by collection layout. */
 export const ClrRecordSections = ({
@@ -16,11 +18,15 @@ export const ClrRecordSections = ({
     records,
     layout,
     onSelectRecord,
+    verification,
+    publisherDid,
 }: {
     sections: ClrRecordSection[];
     records: ReadonlyMap<string, ClrNavigableRecord>;
     layout: ClrLayoutKind;
     onSelectRecord: (id: string) => void;
+    verification?: ClrVerificationSnapshot;
+    publisherDid?: string;
 }) => {
     const id = useId();
     const military = layout === 'military';
@@ -146,6 +152,14 @@ export const ClrRecordSections = ({
                                     {display && (
                                         <ClrResultWithScaleList results={display.results} compact />
                                     )}
+                                    <ClrRecordVerification
+                                        node={verification?.records[record.id]}
+                                        recordId={record.id}
+                                        recordName={
+                                            record.name?.value ?? record.credentialName?.value
+                                        }
+                                        publisherDid={publisherDid}
+                                    />
                                 </li>
                             );
                         })}

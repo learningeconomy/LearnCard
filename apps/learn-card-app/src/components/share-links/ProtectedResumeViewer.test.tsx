@@ -48,10 +48,14 @@ vi.mock('@ionic/react', () => ({
 }));
 vi.mock('./ShareCredentialsIllustration', () => ({ ShareCredentialsIllustration: () => null }));
 vi.mock('./sharePrivacy', () => ({ enterSharePrivacy: mocks.privacy }));
+vi.mock('../clr-renderer/ClrRenderer', () => ({
+    ClrRenderer: () => {
+        throw new Error('Protected resumes must use their protected preview');
+    },
+}));
 vi.mock('./shareLinkFlow', () => ({
     shareWallet: (wallet: unknown) => wallet,
     readShareAddress: () => ({ key: 'PRIVATE' }),
-    createVerificationBudget: () => ({ cancel: vi.fn(), expired: () => false }),
     verifySharedPresentation: async () => 'verified',
     verifyCredentialTree: async () => 'verified',
     parseSavedShareLinkMetadata: vi.fn(),

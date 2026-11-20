@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useSyncExternalStore } from 'react';
 import type { VC } from '@learncard/types';
 import {
     createClrRecordSelection,
@@ -15,7 +15,8 @@ import ClrCourseDetailPanel from '../clr-transcript/ClrCourseDetailPanel';
 import ClrProgramDetailPanel from '../clr-transcript/ClrProgramDetailPanel';
 import ClrAssessmentDetailPanel from '../clr-transcript/ClrAssessmentDetailPanel';
 import ClrCompetencyDetailPanel from '../clr-transcript/ClrCompetencyDetailPanel';
-
+import type { ClrVerificationSession } from '../clr-transcript/useClrVerification';
+import { isClrPublisherVerified } from 'learn-card-base/helpers/credentials/clr/verification';
 type ClrRecordNavigatorOptions = {
     model: ClrTranscriptDisplayModel;
     layout?: ClrLayoutKind;
@@ -23,6 +24,34 @@ type ClrRecordNavigatorOptions = {
     boost: VC;
     adminMode: boolean;
     openPanel: (panel: React.ReactElement) => void;
+    verificationSession?: ClrVerificationSession;
+};
+
+const LiveRecordDetails = ({
+    session,
+    model,
+    panel,
+}: {
+    session: ClrVerificationSession;
+    model: ClrTranscriptDisplayModel;
+    panel: React.ReactElement;
+}) => {
+    const snapshot = useSyncExternalStore(
+        session.subscribe,
+        session.getSnapshot,
+        session.getSnapshot
+    );
+    const liveModel = {
+        ...model,
+        verification: {
+            ...model.verification,
+            snapshot,
+            credentialVerified: isClrPublisherVerified(snapshot),
+        },
+    };
+    return React.cloneElement(panel as React.ReactElement<{ model?: ClrTranscriptDisplayModel }>, {
+        model: liveModel,
+    });
 };
 
 export const createClrRecordNavigator = ({
@@ -31,8 +60,18 @@ export const createClrRecordNavigator = ({
     records = createClrRecordMap(model),
     boost,
     adminMode,
-    openPanel,
+    openPanel: sendPanel,
+    verificationSession,
 }: ClrRecordNavigatorOptions): ClrRecordNavigator => {
+    const openPanel = (panel: React.ReactElement) => {
+        sendPanel(
+            verificationSession ? (
+                <LiveRecordDetails session={verificationSession} model={model} panel={panel} />
+            ) : (
+                panel
+            )
+        );
+    };
     const issuerLogo = getClrIssuerLogo(model);
     const navigator = createClrRecordSelection(
         model,

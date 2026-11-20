@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useClrVerification } from '../clr-transcript/useClrVerification';
 import type { VC } from '@learncard/types';
 import { ModalTypes, useModal, CredentialCategoryEnum } from 'learn-card-base';
 import {
@@ -20,6 +21,7 @@ import { ClrRecordSections } from './ClrRecordSections';
 import { createClrRecordNavigator } from './recordNavigation';
 import type { ClrPresentation, ClrRendererProps } from './types';
 import * as m from '../../paraglide/messages.js';
+import { isClrPublisherVerified } from 'learn-card-base/helpers/credentials/clr/verification';
 
 const ACADEMIC_ONLY_WARNINGS = new Set([
     'MISSING_GPA',
@@ -31,6 +33,27 @@ const ACADEMIC_ONLY_WARNINGS = new Set([
 /** One collection-layout decision for every CLR surface; normalization remains upstream. */
 export const ClrRenderer = (props: ClrRendererProps) => {
     const { model, options } = props;
+    const walletVerification = useClrVerification(
+        model,
+        props.verification,
+        props.verificationSession,
+        props.certifiedWrapper
+    );
+    const verification = props.verificationSession
+        ? walletVerification.snapshot
+        : (props.verification ?? walletVerification.snapshot);
+    const onRetryVerification = props.onRetryVerification ?? walletVerification.retry;
+    const displayModel = useMemo(
+        () => ({
+            ...model,
+            verification: {
+                ...model.verification,
+                credentialVerified: isClrPublisherVerified(verification),
+                snapshot: verification,
+            },
+        }),
+        [model, verification]
+    );
     const presentation = useMemo<ClrPresentation>(() => {
         const { kind } = inferClrLayout(model.canonical);
         return {
@@ -40,7 +63,7 @@ export const ClrRenderer = (props: ClrRendererProps) => {
         };
     }, [model]);
     if (options.surface === ClrTranscriptSurface.Embed) {
-        if (presentation.kind === 'academic') return <AcademicClrEmbed model={model} />;
+        if (presentation.kind === 'academic') return <AcademicClrEmbed model={displayModel} />;
         const adminMode = options.viewer === 'admin' || options.viewer === 'registrar';
         const warnings = model.warnings.filter(
             warning => !ACADEMIC_ONLY_WARNINGS.has(warning.code)
@@ -52,17 +75,26 @@ export const ClrRenderer = (props: ClrRendererProps) => {
                         <ClrTranscriptWarningsPanel warnings={warnings} />
                     )}
                     <ClrCollectionHeader
-                        model={model}
+                        model={displayModel}
                         layout={presentation.kind}
                         sections={presentation.sections}
-                        compact
+                        verification={verification}
+                        onRetryVerification={onRetryVerification}
                     />
-                    <ClrTranscriptEvidenceList evidence={model.evidence} compact />
                 </div>
             </ClrCollectionFrame>
         );
     }
-    return <InteractiveClrRenderer {...props} presentation={presentation} />;
+    return (
+        <InteractiveClrRenderer
+            {...props}
+            model={displayModel}
+            verification={verification}
+            verificationSession={walletVerification.session}
+            onRetryVerification={onRetryVerification}
+            presentation={presentation}
+        />
+    );
 };
 
 /** Modal-dependent interactions are only mounted for card and full surfaces. */
@@ -82,8 +114,9 @@ const InteractiveClrRenderer = (props: ClrRendererProps & { presentation: ClrPre
                 boost,
                 adminMode,
                 openPanel: panel => newModal(panel),
+                verificationSession: props.verificationSession,
             }),
-        [model, kind, records, boost, adminMode, newModal]
+        [model, kind, records, boost, adminMode, newModal, props.verificationSession]
     );
     const openDetails = (): void => {
         if (onViewDetails) {
@@ -96,13 +129,19 @@ const InteractiveClrRenderer = (props: ClrRendererProps & { presentation: ClrPre
                 boost={boost}
                 boostUri={boostUri}
                 options={{ ...options, surface: ClrTranscriptSurface.Full }}
+                verificationSession={props.verificationSession}
+                onRetryVerification={props.onRetryVerification}
             />
         );
     };
     if (kind === 'academic') {
-        if (options.surface === ClrTranscriptSurface.Card)
-            return <AcademicClrCard model={model} onViewDetails={openDetails} />;
-        return <AcademicClrFullPage {...props} boost={boost} recordNavigator={navigator} />;
+        const content =
+            options.surface === ClrTranscriptSurface.Card ? (
+                <AcademicClrCard model={model} onViewDetails={openDetails} />
+            ) : (
+                <AcademicClrFullPage {...props} boost={boost} recordNavigator={navigator} />
+            );
+        return content;
     }
     const warnings = model.warnings.filter(warning => !ACADEMIC_ONLY_WARNINGS.has(warning.code));
     return (
@@ -119,7 +158,9 @@ const InteractiveClrRenderer = (props: ClrRendererProps & { presentation: ClrPre
                     sections={sections}
                     compact={!full}
                     boost={full ? boost : undefined}
-                    verificationItems={props.verificationItems}
+                    verification={props.verification}
+                    onRetryVerification={props.onRetryVerification}
+                    onSelectRecord={navigator.selectRecord}
                     actions={
                         full && props.boost ? (
                             <ShareBoostLink
@@ -137,6 +178,8 @@ const InteractiveClrRenderer = (props: ClrRendererProps & { presentation: ClrPre
                         records={records}
                         layout={kind}
                         onSelectRecord={navigator.selectRecord}
+                        verification={props.verification}
+                        publisherDid={model.canonical.collection.publisher?.id?.value}
                     />
                 )}
                 <ClrTranscriptEvidenceList evidence={model.evidence} compact={!full} />

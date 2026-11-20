@@ -45,6 +45,14 @@ import {
     getProtectedResumePdf,
     hasProtectedResumePdf,
 } from '../../helpers/resume-publishing/protectedPdf';
+import {
+    boundedVerification,
+    verifyClrCredentialTree,
+    isClrRecordConfirmed,
+    type ClrVerificationSnapshot,
+    type VerificationBudget,
+} from 'learn-card-base/helpers/credentials/clr/verification';
+import { normalizeClrCredential } from 'learn-card-base/helpers/credentials/clr/normalize';
 
 /** Narrow boundary shared by browser adapters and tests; no app-wide wallet store coupling. */
 export interface ShareWallet {
@@ -97,7 +105,11 @@ export interface ShareWallet {
         getReceivedPresentations(): Promise<SentCredentialInfo[]>;
         getIncomingPresentations(): Promise<SentCredentialInfo[]>;
         verifyPresentation(vp: VP, options: { proofPurpose: string }): Promise<VerificationCheck>;
-        verifyCredential(vc: VC): Promise<VerificationCheck>;
+        verifyCredential(
+            vc: VC,
+            options?: Record<string, never>,
+            prettify?: false
+        ): Promise<VerificationCheck>;
     };
 }
 export const shareWallet = (wallet: unknown): ShareWallet => wallet as ShareWallet;
@@ -576,86 +588,6 @@ export const prepareShareMetadataUpdate = async (
     return { input, key: recovery.latest.key, ownerDid, payload: result.manifest };
 };
 
-/**
- * Shared wall-clock budget for the whole recipient verification pass: the holder
- * presentation plus every selected credential and endorsement. One budget (not a
- * per-check timeout) bounds total work, so a large-but-structurally-valid
- * collection cannot multiply a per-check 30s wait across hundreds of members.
- */
-export const VERIFICATION_TOTAL_BUDGET_MS = 30_000;
-
-export interface VerificationBudget {
-    /** Milliseconds left before the shared deadline; 0 once exhausted. */
-    remaining(): number;
-    /** True once the deadline passed or the pass was cancelled. */
-    expired(): boolean;
-    /** True only after {@link VerificationBudget.cancel}. */
-    cancelled(): boolean;
-    /** Cancel the pass; rejects {@link VerificationBudget.whenCancelled}. */
-    cancel(): void;
-    /** Rejects as soon as the budget is cancelled. */
-    whenCancelled(): Promise<never>;
-}
-
-/**
- * Create the single budget shared by a verification pass. `now` is injectable so
- * tests can advance the deadline deterministically without wall-clock waits.
- */
-export const createVerificationBudget = (
-    totalMs: number = VERIFICATION_TOTAL_BUDGET_MS,
-    now: () => number = () => Date.now()
-): VerificationBudget => {
-    const deadline = now() + totalMs;
-    let cancelled = false;
-    let rejectCancelled: ((error: Error) => void) | undefined;
-    const cancellation = new Promise<never>((_, reject) => {
-        rejectCancelled = reject;
-    });
-    // Never surface an unhandled rejection if a caller stops racing the promise.
-    void cancellation.catch(() => {});
-    return {
-        remaining: () => Math.max(0, deadline - now()),
-        expired: () => cancelled || now() >= deadline,
-        cancelled: () => cancelled,
-        cancel: () => {
-            if (cancelled) return;
-            cancelled = true;
-            rejectCancelled?.(new Error('verification cancelled'));
-        },
-        whenCancelled: () => cancellation,
-    };
-};
-
-/**
- * Bound a single wallet check by the shared budget. The injected wallet verify
- * API has no abort signal, so the in-flight promise itself cannot be stopped;
- * callers must ignore its late result. What is guaranteed here is that no check
- * is scheduled once the budget is spent or cancelled, and a timed-out check
- * resolves to `unavailable`, never to `verified`.
- */
-const boundedVerification = async <T>(
-    verification: Promise<T>,
-    budget: VerificationBudget
-): Promise<T> => {
-    if (budget.expired()) throw new Error('verification budget exhausted');
-    const remaining = budget.remaining();
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    try {
-        return await Promise.race([
-            verification,
-            budget.whenCancelled(),
-            new Promise<never>((_, reject) => {
-                timer = setTimeout(
-                    () => reject(new Error('verification budget exhausted')),
-                    remaining
-                );
-            }),
-        ]);
-    } finally {
-        clearTimeout(timer);
-    }
-};
-
 export const proofState = (result: VerificationCheck): ProofState =>
     result.errors.length
         ? 'failed'
@@ -663,72 +595,50 @@ export const proofState = (result: VerificationCheck): ProofState =>
           ? 'unavailable'
           : 'verified';
 
-interface CredentialTreeContext {
-    readonly states: ProofState[];
-    /** A check was skipped, cancelled or timed out, so the tree is not fully verified. */
-    incomplete: boolean;
-}
-
-/**
- * Verify nested CLR members independently, without fetching unsigned display
- * references. Any member that was not actually checked (budget spent/cancelled)
- * marks the tree `incomplete`, so a partially checked tree can never be
- * reported as fully verified.
- */
-const verifyCredentialNode = async (
-    wallet: ShareWallet,
-    credential: VC,
-    budget: VerificationBudget,
-    context: CredentialTreeContext
-): Promise<void> => {
-    if (budget.expired()) {
-        context.incomplete = true;
-        return;
-    }
-    try {
-        context.states.push(
-            proofState(
-                await boundedVerification(wallet.invoke.verifyCredential(credential), budget)
-            )
-        );
-    } catch {
-        context.states.push('unavailable');
-    }
-    const visit = async (value: unknown): Promise<void> => {
-        if (!value || typeof value !== 'object') return;
-        for (const [key, child] of Object.entries(value)) {
-            if (budget.expired()) {
-                context.incomplete = true;
-                return;
-            }
-            if (key === 'verifiableCredential' && Array.isArray(child)) {
-                for (const nested of child) {
-                    if (budget.expired()) {
-                        context.incomplete = true;
-                        return;
-                    }
-                    await verifyCredentialNode(wallet, nested as VC, budget, context);
-                }
-            } else if (child && typeof child === 'object') await visit(child);
-        }
-    };
-    await visit(credential);
-};
-
+/** Share adapter: retain detailed CLR evidence while supplying legacy non-CLR badges. */
 export const verifyCredentialTree = async (
     wallet: ShareWallet,
     credential: VC,
-    budget: VerificationBudget
+    budget: VerificationBudget,
+    onUpdate?: (snapshot: ClrVerificationSnapshot) => void,
+    certifiedWrapper?: VC
 ): Promise<ProofState> => {
-    const context: CredentialTreeContext = { states: [], incomplete: false };
-    try {
-        await verifyCredentialNode(wallet, credential, budget, context);
-    } catch {
-        return 'unavailable';
+    const types = Array.isArray(credential.type) ? credential.type : [credential.type];
+    const isClr = types.includes('ClrCredential');
+    const result = await verifyClrCredentialTree(
+        normalizeClrCredential(credential),
+        value =>
+            isClr
+                ? wallet.invoke.verifyCredential(value as VC, {}, false)
+                : wallet.invoke.verifyCredential(value as VC),
+        budget,
+        isClr ? onUpdate : undefined,
+        certifiedWrapper
+    );
+    const outcomes = [result.outer];
+    if (result.certification === 'failed') return 'failed';
+    let incomplete = result.outer.proof !== 'verified' || result.certification === 'unavailable';
+    while (outcomes.length) {
+        const node = outcomes.pop()!;
+        if (
+            node.proof === 'invalid' ||
+            node.lifecycle === 'revoked' ||
+            node.lifecycle === 'suspended' ||
+            node.validity ||
+            (!isClr && node.errors.length > 0)
+        )
+            return 'failed';
+        if (
+            node.proof === 'checking' ||
+            node.proof === 'unavailable' ||
+            (!isClr && node.proof === 'unsigned') ||
+            node.lifecycle === 'unavailable'
+        )
+            incomplete = true;
+        outcomes.push(...node.descendants);
     }
-    if (context.states.includes('failed')) return 'failed';
-    if (context.incomplete || context.states.includes('unavailable')) return 'unavailable';
-    return 'verified';
+    const confirmed = !incomplete && (!isClr || isClrRecordConfirmed(result.outer));
+    return confirmed ? 'verified' : 'unavailable';
 };
 
 export const verifySharedPresentation = async (

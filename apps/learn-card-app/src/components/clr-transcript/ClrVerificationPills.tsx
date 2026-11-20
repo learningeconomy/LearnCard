@@ -11,6 +11,9 @@ import type { VC, VerificationItem } from '@learncard/types';
 import { VerificationStatusEnum } from '@learncard/types';
 import { formatClrDate } from 'learn-card-base/helpers/credentials/clr/renderer';
 
+const PILL_BASE =
+    'flex items-center gap-1 rounded-full px-2 py-1 font-poppins font-[500] text-[12px] leading-tight';
+
 const ClrVerificationPills: React.FC<{ boost: VC; verificationItems?: VerificationItem[] }> = ({
     boost,
     verificationItems,
@@ -50,11 +53,6 @@ const ClrVerificationPills: React.FC<{ boost: VC; verificationItems?: Verificati
               ? items.every(item => item.status === VerificationStatusEnum.Success)
               : null;
 
-    const expirationDate =
-        boost.validUntil ??
-        (typeof boost.expirationDate === 'string' ? boost.expirationDate : undefined);
-    const isExpired = expirationDate ? new Date(expirationDate) < new Date() : false;
-
     const proofIcon =
         verified === null ? null : verified ? (
             <CircleCheckmark className="w-4 h-4 shrink-0" />
@@ -70,27 +68,11 @@ const ClrVerificationPills: React.FC<{ boost: VC; verificationItems?: Verificati
               ? m['clrRenderer.valid']()
               : m['clrRenderer.invalid']();
 
-    const expirationIcon = isExpired ? (
-        <WarningCircle className="w-4 h-4 shrink-0" />
-    ) : (
-        <CircleCheckmark className="w-4 h-4 shrink-0" />
-    );
-
-    let expirationLabel: string;
-    if (isExpired)
-        expirationLabel = m['clrRenderer.expired']({ date: formatClrDate(expirationDate!) });
-    else if (expirationDate)
-        expirationLabel = m['clrRenderer.expires']({ date: formatClrDate(expirationDate) });
-    else expirationLabel = m['clrRenderer.doesNotExpire']();
-
-    const pillBase =
-        'flex items-center gap-1 rounded-full px-2 py-1 font-poppins font-[500] text-[12px] leading-tight whitespace-nowrap';
-
     return (
         <div className="flex flex-wrap gap-2">
             {Boolean(boost.proof) && (
                 <div
-                    className={`${pillBase} ${
+                    className={`${PILL_BASE} whitespace-nowrap ${
                         verified === null
                             ? 'bg-grayscale-100 text-grayscale-900'
                             : verified
@@ -105,21 +87,35 @@ const ClrVerificationPills: React.FC<{ boost: VC; verificationItems?: Verificati
                     </p>
                 </div>
             )}
-            <div
-                className={`${pillBase} ${
-                    isExpired
-                        ? 'bg-amber-100 text-grayscale-900'
-                        : 'bg-emerald-100 text-grayscale-900'
-                }`}
-            >
-                {expirationIcon}
-                <p>
-                    <span className="font-semibold">{m['clrRenderer.expiration']()}:</span>{' '}
-                    <span className="text-grayscale-900 text-xs font-normal">
-                        {expirationLabel}
-                    </span>
-                </p>
-            </div>
+            <ClrCredentialValidity boost={boost} />
+        </div>
+    );
+};
+
+/** Date presentation only. Rendering it must never start another proof verification pass. */
+export const ClrCredentialValidity = ({ boost }: { boost: VC }) => {
+    const expirationDate =
+        boost.validUntil ??
+        (typeof boost.expirationDate === 'string' ? boost.expirationDate : undefined);
+    const expired = expirationDate ? new Date(expirationDate) < new Date() : false;
+    const label = expired
+        ? m['clrRenderer.expired']({ date: formatClrDate(expirationDate!) })
+        : expirationDate
+          ? m['clrRenderer.expires']({ date: formatClrDate(expirationDate) })
+          : m['clrRenderer.doesNotExpire']();
+    return (
+        <div
+            className={`${PILL_BASE} w-fit max-w-full ${expired ? 'bg-amber-100' : 'bg-grayscale-100'} text-grayscale-900`}
+        >
+            {expired ? (
+                <WarningCircle className="h-4 w-4 shrink-0" />
+            ) : (
+                <CircleCheckmark className="h-4 w-4 shrink-0" />
+            )}
+            <p>
+                <span className="font-semibold">{m['clrRenderer.expiration']()}:</span>{' '}
+                <span className="text-xs font-normal">{label}</span>
+            </p>
         </div>
     );
 };

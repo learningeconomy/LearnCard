@@ -9,11 +9,15 @@ import {
     achievementTypeLabel,
     formatAchievementType,
 } from 'learn-card-base/helpers/credentials/clr/helpers';
+import type { ClrVerificationSnapshot } from 'learn-card-base/helpers/credentials/clr/verification.types';
+import { ClrRecordVerification } from './ClrVerificationSummary';
 
 const ClrProgramsSection: React.FC<{
     programs: ProgramDisplayModel[];
     onSelectProgram: (program: ProgramDisplayModel) => void;
-}> = ({ programs, onSelectProgram }) => {
+    verification?: ClrVerificationSnapshot;
+    publisherDid?: string;
+}> = ({ programs, onSelectProgram, verification, publisherDid }) => {
     const primaryType = programs[0]?.achievementType.value ?? 'Program';
     const countLabel = achievementTypeLabel(primaryType, programs.length);
     const formatEarnedAt = (earnedAt?: string): string => {
@@ -52,6 +56,12 @@ const ClrProgramsSection: React.FC<{
                                 <p className="text-sm font-semibold text-grayscale-900 leading-snug wrap-break-word">
                                     {p.name?.value ?? 'Program'}
                                 </p>
+                                <ClrRecordVerification
+                                    node={verification?.records[p.sourceCredentialId]}
+                                    recordId={p.sourceCredentialId}
+                                    recordName={p.name?.value ?? 'Program'}
+                                    publisherDid={publisherDid}
+                                />
                                 <p className="text-xs text-grayscale-500">
                                     {formatAchievementType(p.achievementType.value)}
                                     {formatEarnedAt(p.earnedAt?.value)}

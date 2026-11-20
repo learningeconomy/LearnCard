@@ -26,6 +26,7 @@ import type {
     ProgramDisplayModel,
 } from 'learn-card-base/helpers/credentials/clr/renderer';
 import type { VC } from '@learncard/types';
+import { ClrRecordVerificationDetails } from './ClrVerificationSummary';
 
 const ClrProgramDetailPanel: React.FC<{
     program: ProgramDisplayModel;
@@ -71,6 +72,12 @@ const ClrProgramDetailPanel: React.FC<{
                         <p className="text-[22px] text-grayscale-900 leading-tight font-semibold">
                             {program.name?.value ?? 'Program Details'}
                         </p>
+                        <ClrRecordVerificationDetails
+                            node={model.verification.snapshot?.records[program.sourceCredentialId]}
+                            recordId={program.sourceCredentialId}
+                            recordName={program.name?.value ?? 'Program'}
+                            publisherDid={model.canonical.collection.publisher?.id?.value}
+                        />
                         <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                             <span className="text-base leading-none text-grayscale-600">
                                 <FlatIcon>
@@ -208,6 +215,10 @@ const ClrProgramDetailPanel: React.FC<{
                                     )}
                                     onSelectRecord={onSelectRecord}
                                     adminMode={adminMode}
+                                    verificationNode={
+                                        model.verification.snapshot?.records[c.sourceCredentialId]
+                                    }
+                                    publisherDid={model.canonical.collection.publisher?.id?.value}
                                 />
                             ))}
                         </div>
