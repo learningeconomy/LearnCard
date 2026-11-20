@@ -50,12 +50,12 @@ import PassportCredentialCard, {
     resolveEndorsementTargetName,
 } from './PassportCredentialCard';
 
-const renderCard = (record: ActivityIndexRecord) => {
+const renderCard = (record: ActivityIndexRecord, cardIndex?: number) => {
     const queryClient = new QueryClient({
         defaultOptions: { queries: { retry: false } },
     });
 
-    return render(<PassportCredentialCard record={record} />, {
+    return render(<PassportCredentialCard record={record} cardIndex={cardIndex} />, {
         wrapper: ({ children }) => (
             <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
         ),
@@ -136,6 +136,22 @@ describe('PassportCredentialCard', () => {
 
         expect(screen.getByText('Endorsement of undefined behavior')).toBeInTheDocument();
         expect(mocks.resolveSharedCredential).not.toHaveBeenCalled();
+    });
+
+    it('exposes a stable credential card hook for native smoke tests', () => {
+        renderCard(
+            {
+                uri: 'lc:cred:sample',
+                category: 'Social Badge',
+                title: 'Sample badge',
+            },
+            0
+        );
+
+        expect(screen.getByRole('group', { name: 'Credential card' })).toHaveAttribute(
+            'id',
+            'credential-card-0'
+        );
     });
 
     it('uses the signed issuer as the display subject for endorsement credentials', () => {
