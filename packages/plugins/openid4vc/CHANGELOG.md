@@ -1,5 +1,14 @@
 # @learncard/openid4vc-plugin
 
+## 0.4.3
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/core@10.0.1
+    - @learncard/didkit-plugin@1.11.1
+    - @learncard/vc-plugin@1.7.4
+
 ## 0.4.2
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @learncard/escrow-canary
 
+## 0.3.6
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/init@3.0.1
+    - @learncard/sss-key-manager@0.3.4
+
 ## 0.3.5
 
 ### Patch Changes

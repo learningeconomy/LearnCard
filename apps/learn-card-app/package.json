@@ -1,6 +1,6 @@
 {
     "name": "learn-card-app",
-    "version": "1.101.3",
+    "version": "1.101.4",
     "private": true,
     "engines": {
         "node": ">=24.12 <25"

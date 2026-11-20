@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.101.4
+
+### Patch Changes
+
+- [#2060](https://github.com/learningeconomy/LearnCard/pull/2060) [`431acaba809691ed992414049fee13ca99baf754`](https://github.com/learningeconomy/LearnCard/commit/431acaba809691ed992414049fee13ca99baf754) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-2339] & [LC-2273] Close button on Endorsement Request Modal and Surfacing Developer Program Button
+
+- Updated dependencies [[`afb25c9b840c75db9eccfe792428b0327a98afb6`](https://github.com/learningeconomy/LearnCard/commit/afb25c9b840c75db9eccfe792428b0327a98afb6)]:
+    - @learncard/network-brain-client@2.9.0
+    - @learncard/helpers@1.8.4
+    - @learncard/credential-library@2.1.11
+    - @learncard/didkey-plugin@1.2.1
+    - @learncard/lca-api-plugin@3.0.1
+    - @learncard/ler-rs-plugin@0.1.39
+    - @learncard/open-badge-v2-plugin@1.1.49
+    - @learncard/openid4vc-plugin@0.4.3
+    - @learncard/render-method-plugin@16.0.0
+    - @learncard/sd-jwt-vc-plugin@0.2.26
+    - @learncard/react@4.0.1
+    - @learncard/sss-key-manager@0.3.4
+
 ## 1.101.3
 
 ### Patch Changes
