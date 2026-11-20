@@ -10639,7 +10639,7 @@
     },
     "announcements": {
         "title": "Product announcements",
-        "description": "Choose how to receive news and announcements from us.",
+        "description": "Choose how to receive news and announcements from app administrators.",
         "email": "Email",
         "push": "Push notifications",
         "loading": "Loading preferences…",
