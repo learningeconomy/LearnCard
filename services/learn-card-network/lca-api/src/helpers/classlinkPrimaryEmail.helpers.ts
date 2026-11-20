@@ -193,15 +193,33 @@ export const isSchoolEmailAliasLive = (identity: IdentitySchool, now = new Date(
     return days > 0 && Number.isFinite(last) && now.getTime() - last <= days * DAY_MS;
 };
 
-/** `isSchoolEmailAliasLive` plus an `email:<school>` sign-in subject linked to the identity. */
+/**
+ * The one ClassLink identity with this school email, or undefined when none or several have it
+ * (school addresses can be recycled, so a shared address belongs to nobody). Shared by login
+ * resolution (`resolveClassLinkAliasUid`), the `hasSchoolEmail` status flag and the school
+ * notice recipients, so they always agree.
+ */
+export const findSoleSchoolEmailIdentity = async (
+    email: string
+): Promise<MongoClassLinkIdentityType | undefined> => {
+    const matches = await getClassLinkIdentitiesCollection().find({ email }).limit(2).toArray();
+    return matches.length === 1 ? matches[0] : undefined;
+};
+
+/**
+ * `isSchoolEmailAliasLive`, plus a verified `email:<school>` sign-in subject linked to the
+ * identity, and the identity is the only one with that address (`findSoleSchoolEmailIdentity`).
+ */
 export const hasLiveSchoolEmailAlias = async (
-    identity: IdentitySchool & Pick<MongoClassLinkIdentityType, 'subject'>,
+    identity: IdentitySchool & Pick<MongoClassLinkIdentityType, 'subject' | 'identityKey'>,
     now = new Date()
 ): Promise<boolean> => {
     const school = normalize(identity.email);
     if (!school || !isSchoolEmailAliasLive(identity, now)) return false;
     const subject = await findAuthSubjectByIdentityKey(`email:${school}`);
-    return Boolean(subject?.emailVerified && subject.subject === identity.subject);
+    if (!subject?.emailVerified || subject.subject !== identity.subject) return false;
+    const sole = await findSoleSchoolEmailIdentity(school);
+    return sole?.identityKey === identity.identityKey;
 };
 
 /** How recent a sign-in must be to change or remove the sign-in email (LC-2409). */
@@ -373,12 +391,7 @@ export const getSchoolNoticeRecipients = async (
         const recipients = new Set<string>();
         for (const identity of identities) {
             const school = normalize(identity.email);
-            if (!school || !(await hasLiveSchoolEmailAlias(identity, now))) continue;
-            const holders = await getClassLinkIdentitiesCollection()
-                .find({ email: school }, { projection: { _id: 1 } })
-                .limit(2)
-                .toArray();
-            if (holders.length === 1) recipients.add(school);
+            if (school && (await hasLiveSchoolEmailAlias(identity, now))) recipients.add(school);
         }
         return [...recipients];
     } catch {
@@ -851,9 +864,8 @@ export const resolveClassLinkAliasUid = async (
     if (!email || isSyntheticEmail(email)) return undefined;
     const subject = await findAuthSubjectByIdentityKey(`email:${email}`);
     if (!subject?.emailVerified) return undefined;
-    const matches = await getClassLinkIdentitiesCollection().find({ email }).limit(2).toArray();
-    if (matches.length !== 1) return undefined;
-    const identity = matches[0]!;
+    const identity = await findSoleSchoolEmailIdentity(email);
+    if (!identity) return undefined;
     if (
         identity.subject !== subject.subject ||
         identity.primaryEmail?.state !== 'active' ||

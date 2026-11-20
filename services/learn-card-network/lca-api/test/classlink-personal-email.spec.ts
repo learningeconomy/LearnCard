@@ -19,6 +19,7 @@ import { deleteClassLinkDataForAccount } from '../src/helpers/classlinkDeletion.
 import {
     recordEmailCodeSignIn,
     recordFirebaseSignIn,
+    resolveClassLinkAliasUid,
 } from '../src/helpers/classlinkPrimaryEmail.helpers';
 import { getCurrentProfile } from '../src/helpers/currentProfile';
 import { updateClassLinkIdentity } from '../src/models/ClassLinkIdentity';
@@ -1759,6 +1760,29 @@ describe('ClassLink personal email', () => {
             // The default limit is 365 days.
             withTenant({});
             expect((await caller().getAccountContinuity()).hasSchoolEmail).toBe(true);
+        });
+
+        it('hasSchoolEmail is false when another identity has the same (recycled) school email', async () => {
+            await verifyEmail();
+            await getOrCreateAuthSubjectLinkedTo(`email:${school}`, 'same-subject', {
+                email: school,
+                emailVerified: true,
+            });
+            expect((await caller().getAccountContinuity()).hasSchoolEmail).toBe(true);
+            const own = await getClassLinkIdentitiesCollection().findOne({
+                firebaseUid: 'uid-test',
+            });
+            const { _id, ...rest } = own!;
+            await getClassLinkIdentitiesCollection().insertOne({
+                ...rest,
+                identityKey: 'classlink:tenant-test:recycled',
+                firebaseUid: 'other-uid',
+                subject: 'other-subject',
+                primaryDid: 'did:key:other-student',
+            } as typeof own & {});
+            // Login resolution refuses the shared address, so the flag must agree.
+            expect(await resolveClassLinkAliasUid(school)).toBeUndefined();
+            expect((await caller().getAccountContinuity()).hasSchoolEmail).toBe(false);
         });
 
         it('primaryUid is returned', async () => {

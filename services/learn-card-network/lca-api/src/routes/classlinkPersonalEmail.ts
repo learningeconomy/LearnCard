@@ -387,8 +387,9 @@ export const personalEmailProcedures = {
      * - `signInEmailSource`: `personal` (promoted) or `account` (T already signs in with its
      *   own real, non-school email, or the verified address is the Firebase email of another
      *   login of the account; verify only links an alias).
-     * - `hasSchoolEmail`: the school email still signs in (trusted domain, `email:` subject,
-     *   ClassLink sign-in within the district's idle limit).
+     * - `hasSchoolEmail`: the school email still signs in to this account (trusted domain,
+     *   `email:` subject, ClassLink sign-in within the district's idle limit, and no other
+     *   ClassLink identity has the address; same rules as login resolution).
      * - `contactStale` (remote escrow only): the sealed escrow contact is not the sign-in email.
      *   A UX hint from `escrowContactDigest`, never a security control.
      * - `canRemove`: false for a placeholder account with usable escrow (change only).
