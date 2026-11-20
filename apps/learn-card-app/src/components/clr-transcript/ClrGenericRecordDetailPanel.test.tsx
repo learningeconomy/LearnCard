@@ -96,6 +96,9 @@ describe('generic CLR record details', () => {
 
         const identifiers = screen.getByText('Credential identifiers').closest('details')!;
         expect(identifiers).toHaveAttribute('open');
+        expect(
+            within(identifiers).getByTitle('did:example:clr-verification-learner')
+        ).toHaveTextContent('clr-…rner');
         fireEvent.click(within(identifiers).getByRole('button', { name: 'Copy Achievement ID' }));
         expect(await within(identifiers).findByText('Copied to clipboard')).toBeInTheDocument();
         expect(Clipboard.write).toHaveBeenLastCalledWith({

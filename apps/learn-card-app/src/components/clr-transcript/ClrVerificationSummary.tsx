@@ -25,6 +25,7 @@ import type {
     ClrCredentialVerification,
 } from 'learn-card-base/helpers/credentials/clr/verification.types';
 import { ClrRecordDrawerSection } from './ClrRecordDrawerSection';
+import { ClrDrawerIdentifier } from './ClrDrawerIdentifier';
 
 /** Signature, lifecycle and learner binding are separate facts, even when several fail. */
 const statusText = (node: ClrCredentialVerification): string => {
@@ -230,7 +231,11 @@ const RecordVerificationEvidence = (
                                 label={m['clrTranscript.details.issuerDid']()}
                             >
                                 {node.issuerDid ? (
-                                    <bdi>{node.issuerDid}</bdi>
+                                    <ClrDrawerIdentifier
+                                        key={node.issuerDid}
+                                        label={m['clrTranscript.details.issuerDid']()}
+                                        value={node.issuerDid}
+                                    />
                                 ) : (
                                     m['clrRenderer.issuerUnknown']()
                                 )}
@@ -241,7 +246,10 @@ const RecordVerificationEvidence = (
                                     icon={keyOutline}
                                     label={m['clrTranscript.details.verificationMethod']()}
                                 >
-                                    <bdi>{method}</bdi>
+                                    <ClrDrawerIdentifier
+                                        label={m['clrTranscript.details.verificationMethod']()}
+                                        value={method}
+                                    />
                                 </VerificationField>
                             ))}
                             {node.checks.length > 0 && (

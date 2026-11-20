@@ -1,7 +1,4 @@
-import React, { useState } from 'react';
-import { Clipboard } from '@capacitor/clipboard';
-import { IonIcon } from '@ionic/react';
-import { checkmarkOutline, copyOutline } from 'ionicons/icons';
+import React from 'react';
 import * as m from '../../paraglide/messages.js';
 
 import { formatClrDate } from 'learn-card-base/helpers/credentials/clr/renderer';
@@ -10,6 +7,7 @@ import type {
     ClrNormalizedRecord,
 } from 'learn-card-base/helpers/credentials/clr/types';
 import { ClrRecordDrawerSection } from './ClrRecordDrawerSection';
+import { ClrDrawerIdentifier } from './ClrDrawerIdentifier';
 
 const safeWebUrl = (value?: string): string | undefined => {
     if (!value) return undefined;
@@ -29,46 +27,6 @@ const DetailRow = ({ label, children }: { label: string; children: React.ReactNo
         </dd>
     </div>
 );
-
-const CopyableIdentifier = ({ label, value }: { label: string; value: string }) => {
-    const [result, setResult] = useState<'copied' | 'failed'>();
-
-    const copy = async () => {
-        try {
-            await Clipboard.write({ string: value });
-            setResult('copied');
-        } catch {
-            setResult('failed');
-        }
-    };
-
-    return (
-        <DetailRow label={label}>
-            <span className="flex items-center gap-2">
-                <bdi className="min-w-0 flex-1 wrap-anywhere">{value}</bdi>
-                <button
-                    type="button"
-                    aria-label={m['clrTranscript.details.copyIdentifier']({ label })}
-                    onClick={() => void copy()}
-                    className="flex size-11 shrink-0 items-center justify-center rounded-[20px] text-grayscale-700 hover:bg-grayscale-100 focus-visible:outline-2 focus-visible:outline-emerald-600"
-                >
-                    <IonIcon
-                        aria-hidden="true"
-                        icon={result === 'copied' ? checkmarkOutline : copyOutline}
-                        className="size-5"
-                    />
-                </button>
-            </span>
-            <span
-                role="status"
-                className={result === 'failed' ? 'block text-xs text-red-700' : 'sr-only'}
-            >
-                {result === 'copied' && m['toasts.copied']()}
-                {result === 'failed' && m['toasts.copyFailed']()}
-            </span>
-        </DetailRow>
-    );
-};
 
 const IdentifierRows = ({ identifiers }: { identifiers: ClrIdentifierModel[] }) => (
     <dl className="space-y-v3-3">
@@ -248,11 +206,13 @@ export const ClrRecordDetails = ({
                             <dl className="grid gap-3">
                                 {ids.map(({ label, value }) =>
                                     value ? (
-                                        <CopyableIdentifier
-                                            key={label}
-                                            label={label}
-                                            value={value}
-                                        />
+                                        <DetailRow key={label} label={label}>
+                                            <ClrDrawerIdentifier
+                                                key={value}
+                                                label={label}
+                                                value={value}
+                                            />
+                                        </DetailRow>
                                     ) : null
                                 )}
                             </dl>
