@@ -61,7 +61,10 @@ Resources:
                           - Sid: ReadPilotUploads
                             Effect: Allow
                             Action: devicefarm:GetUpload
-                            Resource: !Sub arn:${AWS::Partition}:devicefarm:us-west-2:${AWS::AccountId}:upload:${PilotProjectId}/*
+                            Resource:
+                                # Device Farm also checks the parent project when polling an upload.
+                                - !Sub arn:${AWS::Partition}:devicefarm:us-west-2:${AWS::AccountId}:project:${PilotProjectId}
+                                - !Sub arn:${AWS::Partition}:devicefarm:us-west-2:${AWS::AccountId}:upload:${PilotProjectId}/*
                           - Sid: CleanUpPilotPools
                             Effect: Allow
                             Action:
