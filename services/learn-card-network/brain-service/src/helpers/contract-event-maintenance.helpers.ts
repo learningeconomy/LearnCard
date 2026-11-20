@@ -6,6 +6,17 @@ export const contractEventMaintenanceSchema = [
     'CREATE INDEX consent_delivery_due IF NOT EXISTS FOR (d:ConsentFlowEventDelivery) ON (d.state, d.nextAttemptAt)',
     'CREATE INDEX consent_delivery_age IF NOT EXISTS FOR (d:ConsentFlowEventDelivery) ON (d.state, d.eventCreatedAt)',
     'CREATE INDEX consent_delivery_attempts IF NOT EXISTS FOR (d:ConsentFlowEventDelivery) ON (d.state, d.attempts)',
+    'CREATE INDEX consent_event_integration_fanout IF NOT EXISTS FOR (e:ConsentFlowEvent) ON (e.integrationFanoutPending)',
+    'CREATE CONSTRAINT integration_event_id IF NOT EXISTS FOR (r:IntegrationEvent) REQUIRE r.id IS UNIQUE',
+    'CREATE INDEX integration_event_feed IF NOT EXISTS FOR (r:IntegrationEvent) ON (r.integrationId, r.sequence)',
+    'CREATE INDEX integration_event_due IF NOT EXISTS FOR (r:IntegrationEvent) ON (r.deliveryState, r.nextAttemptAt)',
+    'CREATE INDEX integration_event_purge IF NOT EXISTS FOR (r:IntegrationEvent) ON (r.purgeAt)',
+    'CREATE INDEX integration_event_delivery_count IF NOT EXISTS FOR (r:IntegrationEvent) ON (r.integrationId, r.deliveryState, r.attempts)',
+    'CREATE CONSTRAINT consent_job_state_id IF NOT EXISTS FOR (s:ConsentFlowJobState) REQUIRE s.id IS UNIQUE',
+    'CREATE INDEX consent_terms_expiry IF NOT EXISTS FOR (t:ConsentFlowTerms) ON (t.expiresAt)',
+    'CREATE INDEX consent_terms_next_share_until IF NOT EXISTS FOR (t:ConsentFlowTerms) ON (t.nextShareUntil)',
+    'CREATE INDEX consent_terms_id IF NOT EXISTS FOR (t:ConsentFlowTerms) ON (t.id)',
+    'CREATE INDEX consent_contract_version_expiry IF NOT EXISTS FOR (v:ConsentFlowContractVersion) ON (v.expiresAt)',
 ];
 
 let schemaReady: Promise<void> | undefined;

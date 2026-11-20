@@ -17,6 +17,7 @@ import {
     UnsignedVC,
     LCNNotificationTypeEnumValidator,
     ContactMethodQueryType,
+    ConsentFlowExternalGrantExpectation,
 } from '@learncard/types';
 import { ProfileType, SigningAuthorityForUserType } from 'types/profile';
 import {
@@ -152,6 +153,7 @@ export const sendBoost = async ({
     skipNotification = false,
     autoAcceptCredential = false,
     contractTerms,
+    expectedExternalGrant,
     contractWriterProfileId,
     allowConsumedOneTime = false,
     metadata,
@@ -172,6 +174,7 @@ export const sendBoost = async ({
     skipNotification?: boolean;
     autoAcceptCredential?: boolean;
     contractTerms?: DbTermsType;
+    expectedExternalGrant?: ConsentFlowExternalGrantExpectation;
     contractWriterProfileId?: string;
     allowConsumedOneTime?: boolean;
     metadata?: Record<string, unknown>;
@@ -298,6 +301,7 @@ export const sendBoost = async ({
                             credential: credentialInstance,
                             boost,
                             terms: contractTerms,
+                            expectedExternalGrant,
                             metadata,
                             activityId,
                             integrationId,

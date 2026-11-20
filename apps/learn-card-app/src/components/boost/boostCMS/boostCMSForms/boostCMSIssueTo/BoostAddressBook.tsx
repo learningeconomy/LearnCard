@@ -21,7 +21,7 @@ import Plus from 'learn-card-base/svgs/Plus';
 import BoostAddressBookContactOptions from './BoostAddressBookContactOptions';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import MiniGhost from 'learn-card-base/assets/images/emptystate-ghost.png';
-import Lottie from 'react-lottie-player';
+import Lottie from '../../../../lottie/LazyLottie';
 const Pulpo = '/lotties/cuteopulpo.json';
 
 import BoostAddressBookContactList from './BoostAddressBookContactList';

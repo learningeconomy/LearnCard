@@ -17,7 +17,7 @@ import { vi } from 'vitest';
 import { exportJWK, generateKeyPair, importJWK, jwtVerify, type JWK } from 'jose';
 import type { UnsignedVP, VP } from '@learncard/types';
 
-import { getOpenID4VCPlugin } from './plugin';
+import { getOpenID4VCPlugin } from './plugin.lazy';
 import { requestW3cVc } from './dcql';
 import type { OpenID4VCDependentLearnCard, OpenID4VCPluginMethods } from './types';
 
@@ -213,7 +213,7 @@ const makeResponse = (status: number, body: string, contentType: string): Respon
         headers: new Headers({ 'content-type': contentType }),
         text: async () => body,
         json: async () => JSON.parse(body),
-    } as Response);
+    }) as Response;
 
 /* ----------------------------- credential fixture ------------------------- */
 

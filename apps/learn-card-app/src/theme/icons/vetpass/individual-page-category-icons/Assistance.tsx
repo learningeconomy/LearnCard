@@ -36,4 +36,3 @@ const SvgAssistance = (props: SVGProps<SVGSVGElement>) => (
     </svg>
 );
 export default SvgAssistance;
-

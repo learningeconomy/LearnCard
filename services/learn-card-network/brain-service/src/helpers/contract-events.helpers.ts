@@ -26,6 +26,7 @@ import { sanitizeProfileForTier, stripSensitiveProfileListFields } from './profi
 import { getStoredContractRequest } from '@accesslayer/consentflowcontract/read';
 import { resolveRecipientLocale } from './getRecipientLocale.helpers';
 import { ensureContractEventMaintenance } from './contract-event-maintenance.helpers';
+import { fanOutIntegrationEvents } from './integration-events.helpers';
 import { updateDidForProfile } from './did.helpers';
 import { buildContractUpdatePreview } from '@learncard/helpers';
 
@@ -38,6 +39,8 @@ const INITIAL_RETRY_DELAY_MS = 60_000;
 const MAX_RETRY_DELAY_MS = 60 * 60_000;
 // At most 50 data recipients, the owner, and a requester outside the data audience.
 const MAX_INLINE_EVENT_DELIVERIES = 50 + 1 + 1;
+// Inline integration fan-out stops here or after one second; the worker continues.
+const MAX_INLINE_INTEGRATION_FANOUT = 50;
 
 export type ContractEventDispatchSummary = {
     delivered: number;
@@ -81,21 +84,24 @@ export const appendConsentEvent = (
         WITH contract, terms, transaction
         MATCH (consenter:Profile {profileId: $eventConsenter})
         OPTIONAL MATCH (contract)-[request:REQUESTED_FOR]->(consenter)
-        SET terms.\`referral.requestId\` = CASE WHEN request.requestId IS NOT NULL AND (request.status = 'accepted' OR (request.status = 'pending' AND $eventKind IN ['consent_created', 'consent_updated']))
+        WITH contract, terms, transaction, consenter, request,
+            request.status = 'pending' AND (request.expiresAt IS NULL OR request.expiresAt > transaction.date) AS requestOpen
+        SET terms.\`referral.requestId\` = CASE WHEN request.requestId IS NOT NULL AND (request.status = 'accepted' OR (requestOpen AND $eventKind IN ['consent_created', 'consent_updated']))
             THEN request.requestId ELSE terms.\`referral.requestId\` END,
-            terms.\`referral.requestedBy\` = CASE WHEN request.requestId IS NOT NULL AND (request.status = 'accepted' OR (request.status = 'pending' AND $eventKind IN ['consent_created', 'consent_updated']))
+            terms.\`referral.requestedBy\` = CASE WHEN request.requestId IS NOT NULL AND (request.status = 'accepted' OR (requestOpen AND $eventKind IN ['consent_created', 'consent_updated']))
             THEN request.requestedBy ELSE terms.\`referral.requestedBy\` END,
-            terms.\`referral.externalReferenceId\` = CASE WHEN request.requestId IS NOT NULL AND (request.status = 'accepted' OR (request.status = 'pending' AND $eventKind IN ['consent_created', 'consent_updated']))
+            terms.\`referral.externalReferenceId\` = CASE WHEN request.requestId IS NOT NULL AND (request.status = 'accepted' OR (requestOpen AND $eventKind IN ['consent_created', 'consent_updated']))
             THEN request.externalReferenceId ELSE terms.\`referral.externalReferenceId\` END,
             transaction.\`referral.requestId\` = terms.\`referral.requestId\`,
             transaction.\`referral.requestedBy\` = terms.\`referral.requestedBy\`,
             transaction.\`referral.externalReferenceId\` = terms.\`referral.externalReferenceId\`
         WITH contract, terms, transaction, consenter, request,
-            request.requestId IS NOT NULL AND request.status = 'pending' AND $eventKind IN ['consent_created', 'consent_updated'] AS requestAccepted
+            request.requestId IS NOT NULL AND coalesce(requestOpen, false) AND $eventKind IN ['consent_created', 'consent_updated'] AS requestAccepted
         FOREACH (_ IN CASE WHEN $eventKind = 'consent_created' THEN [1] ELSE [] END |
             MERGE (contract)-[accepted:REQUESTED_FOR]->(consenter)
             ON CREATE SET accepted.status = 'accepted', accepted.readStatus = 'unseen'
-            SET accepted.status = CASE WHEN accepted.requestId IS NULL OR accepted.status = 'pending'
+            SET accepted.status = CASE WHEN accepted.requestId IS NULL OR (accepted.status = 'pending' AND
+                (accepted.expiresAt IS NULL OR accepted.expiresAt > transaction.date))
                 THEN 'accepted' ELSE accepted.status END)
         FOREACH (_ IN CASE WHEN requestAccepted THEN [1] ELSE [] END |
             SET request.status = 'accepted')
@@ -106,6 +112,7 @@ export const appendConsentEvent = (
         CREATE (event:ConsentFlowEvent {id: transaction.id, contractId: contract.id, termsId: terms.id,
             fromId: $eventConsenter, ownerId: owner.profileId, domain: $eventDomain,
             kind: $eventKind, requestAccepted: requestAccepted, messageKey: $eventMessageKey, payload: $eventPayload, cleanupPending: true,
+            integrationFanoutPending: true,
             createdAt: transaction.date, requestId: terms.\`referral.requestId\`,
             requestedBy: terms.\`referral.requestedBy\`, externalReferenceId: terms.\`referral.externalReferenceId\`})
         WITH contract, terms, transaction, event, owner,
@@ -123,7 +130,12 @@ export const appendConsentEvent = (
     `);
 };
 
-/** Shared Cypher for request creation/decisions; caller holds the contract lock. */
+/**
+ * Shared Cypher for request creation/decisions; caller holds the contract lock.
+ * For a request addressed to an email, integration records carry no subject, and the
+ * request_sent written when the invite attaches is not fanned out: integrations already got one,
+ * without a subject, when the invite was created.
+ */
 export const requestEventCypher = `
     WITH contract, request, target
     MATCH (contract)-[:CREATED_BY]->(owner:Profile)
@@ -131,9 +143,15 @@ export const requestEventCypher = `
     ON CREATE SET event += {contractId: contract.id, fromId: $eventFrom,
         ownerId: owner.profileId, domain: $domain, kind: $eventKind, createdAt: $now,
         requestId: request.requestId, requestedBy: request.requestedBy,
-        externalReferenceId: request.externalReferenceId, message: request.message, fanoutCreated: false, cleanupPending: true}
+        externalReferenceId: request.externalReferenceId, message: request.message, fanoutCreated: false, cleanupPending: true,
+        targetId: target.profileId,
+        integrationFanoutPending: CASE WHEN $eventKind = 'request_sent' AND coalesce(request.addressedByEmail, false) THEN null ELSE true END,
+        subjectHidden: CASE WHEN coalesce(request.addressedByEmail, false) THEN true ELSE null END,
+        hideActor: coalesce(request.addressedByEmail, false) AND $eventFrom = target.profileId}
     WITH request, event, owner, target,
         CASE WHEN coalesce(event.fanoutCreated, false) THEN []
+            WHEN $eventKind = 'request_cancelled' AND coalesce(request.addressedByEmail, false)
+                AND $eventFrom <> target.profileId THEN []
             WHEN $eventKind = 'request_sent' THEN [target.profileId]
             ELSE [owner.profileId] + CASE WHEN request.requestedBy <> owner.profileId
                 THEN [request.requestedBy] ELSE [] END END AS deliveries
@@ -163,6 +181,8 @@ type StoredEvent = {
     externalReferenceId?: string;
     message?: string;
     requestAccepted?: boolean;
+    /** True when the target of an email-addressed request made this decision. */
+    hideActor?: boolean;
 };
 type StoredDelivery = {
     id: string;
@@ -294,6 +314,9 @@ const buildNotification = async (
     });
     const requesterDecision = delivery.role === 'requester';
     const legacyAi = event.messageKey === 'consentFlowInsightsShared';
+    // The target of an email-addressed request stays private until it accepts.
+    const hideActor = event.hideActor === true;
+    const sender = hideActor ? owner : from;
     const transaction =
         event.payload && delivery.role !== 'requester' && delivery.role !== 'target'
             ? ConsentFlowTransactionValidator.parse({
@@ -312,8 +335,8 @@ const buildNotification = async (
     const notification: LCNNotification = {
         type: LCNNotificationTypeEnumValidator.enum.CONSENT_FLOW_TRANSACTION,
         from: {
-            ...stripSensitiveProfileListFields(sanitizeProfileForTier(from, 'unauthenticated')),
-            did: from.did,
+            ...stripSensitiveProfileListFields(sanitizeProfileForTier(sender, 'unauthenticated')),
+            did: sender.did,
         },
         to,
         sent: event.createdAt,
@@ -324,14 +347,18 @@ const buildNotification = async (
                     : eventKind === 'request_accepted'
                       ? 'contractRequestAccepted'
                       : eventKind === 'request_denied'
-                        ? 'contractRequestDenied'
-                        : 'contractRequestCancelled'),
+                        ? hideActor
+                            ? 'contractRequestDeniedByInvitee'
+                            : 'contractRequestDenied'
+                        : hideActor
+                          ? 'contractRequestCancelledByInvitee'
+                          : 'contractRequestCancelled'),
             resolveRecipientLocale(to),
             {
-                name: from.displayName,
-                referrer: from.displayName || from.profileId,
+                name: sender.displayName,
+                referrer: sender.displayName || sender.profileId,
                 contractOwner: owner.displayName || owner.profileId,
-                consenter: from.displayName,
+                consenter: sender.displayName,
                 contractName: contract?.name ?? '',
                 totalCredentials: String(
                     transaction?.terms
@@ -568,5 +595,32 @@ export const tryDispatchContractEvent = async (eventId: string): Promise<void> =
         });
     } catch {
         console.warn('contract_events: dispatch_pending');
+    }
+    // Integrations are told in the same request when possible; the worker retries otherwise.
+    // Older events of the same contract that are still waiting go first, to keep feed order.
+    try {
+        await fanOutIntegrationEvents({
+            eventId,
+            limit: MAX_INLINE_INTEGRATION_FANOUT,
+            budgetMs: 1_000,
+        });
+    } catch {
+        console.warn('integration_events: fanout_pending');
+    }
+};
+
+/**
+ * Inline fan-out of a contract's integration-only events (retirement, re-consent pause) right
+ * after the mutation that wrote them committed. Bounded; the worker finishes what is left.
+ */
+export const tryFanOutContractIntegrationEvents = async (contractId: string): Promise<void> => {
+    try {
+        await fanOutIntegrationEvents({
+            contractId,
+            limit: MAX_INLINE_INTEGRATION_FANOUT,
+            budgetMs: 1_000,
+        });
+    } catch {
+        console.warn('integration_events: fanout_pending');
     }
 };

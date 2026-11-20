@@ -45,4 +45,3 @@ const SvgAiInsights = (props: SVGProps<SVGSVGElement>) => (
     </svg>
 );
 export default SvgAiInsights;
-

@@ -27,7 +27,7 @@ import { useGetSearchProfiles, useGetBoostRecipients } from 'learn-card-base';
 
 import { useBrandingConfig } from 'learn-card-base';
 
-import Lottie from 'react-lottie-player';
+import Lottie from '../../lottie/LazyLottie';
 const Pulpo = '/lotties/cuteopulpo.json';
 import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 

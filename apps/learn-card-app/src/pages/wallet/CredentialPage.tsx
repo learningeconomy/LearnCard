@@ -128,6 +128,10 @@ type CredentialPageProps = {
 };
 
 const CredentialPage: React.FC<CredentialPageProps> = ({ category }) => {
+    // The search store is shared across categories; discard it when this
+    // category route leaves the React Router switch.
+    useEffect(() => () => credentialSearchStore.set.reset(), []);
+
     const { getThemedCategoryColors } = useTheme();
     const colors = getThemedCategoryColors(category as CredentialCategoryEnum);
 

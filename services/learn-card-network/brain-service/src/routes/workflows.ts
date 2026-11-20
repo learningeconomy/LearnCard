@@ -49,6 +49,7 @@ import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.h
 import { injectObv3AlignmentsIntoCredentialForBoost } from '@services/skills-provider/inject';
 import { createProfileContactMethodRelationship } from '@accesslayer/contact-method/relationships/create';
 import { verifyContactMethod } from '@accesslayer/contact-method/update';
+import { attachContractRequestInvitesForProfile } from '@helpers/contract-request-invites.helpers';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { getNotificationMessage } from '@helpers/notificationMessages';
 import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
@@ -598,6 +599,10 @@ async function handleInboxClaimPresentation(
     if (!contactMethod.isVerified && claimTokenData.autoVerifyContactMethod) {
         await verifyContactMethod(contactMethod.id);
     }
+
+    // Turn pending contract request invites for the holder's verified emails into requests.
+    // Only verified emails match. Never throws; a failure leaves the invite pending.
+    if (holderProfile) await attachContractRequestInvitesForProfile(holderProfile, ctx.domain);
 
     // Get pending credentials for this contact method
     const pendingCredentials = await getPendingInboxCredentialsForContactMethodId(contactMethod.id);

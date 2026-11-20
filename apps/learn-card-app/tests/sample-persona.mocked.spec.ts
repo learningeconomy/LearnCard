@@ -110,6 +110,9 @@ test.describe('Sample persona @mocked', () => {
             'utilities.getDid',
             () => 'did:web:localhost%3A4100' satisfies CloudOutputs['utilities']['getDid']
         );
+        // This scenario has no custom storage. Owning its count keeps an index-refresh
+        // batch from falling through to the HAR when customStorage joins it.
+        trpc.on('customStorage.count', () => 0 satisfies CloudOutputs['customStorage']['count']);
 
         const userProfile = {
             profileId: TEST_USER_PROFILE_ID,

@@ -19,7 +19,7 @@ import type { CategoryColor } from '../validators/colors.validators';
  */
 export const createUniformCategoryColors = (
     base: CategoryColor,
-    overrides?: Partial<Record<CredentialCategoryEnum, Partial<CategoryColor>>>,
+    overrides?: Partial<Record<CredentialCategoryEnum, Partial<CategoryColor>>>
 ): Record<CredentialCategoryEnum, CategoryColor> => {
     const table = {} as Record<CredentialCategoryEnum, CategoryColor>;
 

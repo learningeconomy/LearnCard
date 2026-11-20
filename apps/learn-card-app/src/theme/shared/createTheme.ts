@@ -1,4 +1,9 @@
-import type { Theme, ThemeCategory, SideMenuLink, NavbarLink } from '../validators/theme.validators';
+import type {
+    Theme,
+    ThemeCategory,
+    SideMenuLink,
+    NavbarLink,
+} from '../validators/theme.validators';
 import type { ThemeDefaults } from '../validators/theme.validators';
 import { validateThemeData } from '../validators/theme.validators';
 

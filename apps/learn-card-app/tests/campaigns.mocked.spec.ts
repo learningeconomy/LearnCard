@@ -1,6 +1,6 @@
 import { test, expect } from './fixtures/mocked-test';
 import { installNetwork } from './mocks/network';
-import type { BrainOutputs, TrpcMock } from './mocks/trpc';
+import type { BrainOutputs, CloudOutputs, LcaOutputs, TrpcMock } from './mocks/trpc';
 import { waitForAuthenticatedState } from './test.helpers';
 import { TEST_USER_PROFILE_ID } from './constants';
 import { CampaignValidator } from '@learncard/types';
@@ -11,8 +11,18 @@ import type {
     CampaignAudienceInput,
 } from '@learncard/types';
 
-// Own every companion in the boot/reload batch so admin checks cannot fall through HAR.
+// Own the empty boot reads that can co-batch with campaign/admin queries. The HAR
+// only has the historical batch shapes, so an unowned companion aborts the whole
+// current batch and leaves the screen on stale data.
 const mockCampaignBoot = (mock: TrpcMock): void => {
+    mock.on(
+        'utilities.getDid',
+        () => 'did:web:localhost%3A4100' satisfies CloudOutputs['utilities']['getDid']
+    );
+    mock.on(
+        'index.get',
+        () => ({ records: [], hasMore: false }) satisfies CloudOutputs['index']['get']
+    );
     mock.on(
         'profile.pendingConnectionPrompts',
         () => [] satisfies BrainOutputs['profile']['pendingConnectionPrompts']
@@ -60,8 +70,29 @@ const mockCampaignBoot = (mock: TrpcMock): void => {
             }) satisfies BrainOutputs['inbox']['getMyInboxDeliveries']
     );
     mock.on(
+        'inbox.finalize',
+        () =>
+            ({
+                processed: 0,
+                claimed: 0,
+                errors: 0,
+                guardianPending: 0,
+                verifiableCredentials: [],
+                deliveries: [],
+            }) satisfies BrainOutputs['inbox']['finalize']
+    );
+    mock.on(
         'activity.getMyCredentialLifecycleStatuses',
         () => ({}) satisfies BrainOutputs['activity']['getMyCredentialLifecycleStatuses']
+    );
+    mock.on(
+        'transcripts.getStatus',
+        () =>
+            ({
+                eligible: false,
+                reason: 'not_enabled',
+                stateDisplayName: '',
+            }) satisfies LcaOutputs['transcripts']['getStatus']
     );
 };
 

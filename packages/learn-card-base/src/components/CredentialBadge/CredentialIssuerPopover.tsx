@@ -3,7 +3,7 @@ import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
 
 import { IonPopover } from '@ionic/react';
-import BecomeTrustedIssuerForm from './BecomeTrustedIssuerForm';
+import BecomeTrustedIssuerForm from './LazyBecomeTrustedIssuerForm';
 
 import useModal from '../modals/useModal';
 
