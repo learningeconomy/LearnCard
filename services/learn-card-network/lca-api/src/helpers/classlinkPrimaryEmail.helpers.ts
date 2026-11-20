@@ -797,9 +797,10 @@ export const settleFirebaseEmailWrite = async ({
 export type SignInEmailDrift = { uid: string; current: string; expected: ExpectedSignInEmail };
 
 /**
- * Whether `identity`'s promoted uid holds a real Firebase email the committed state does not
+ * Whether `identity`'s promoted uid holds a Firebase email the committed state does not
  * expect (LC-2409; e.g. a promote or demote write that outlived the lock and landed after
- * another change): an `active` record on T whose address T does not hold, or, with no record,
+ * another change): an `active` record on T whose address T does not hold (including a
+ * synthetic or empty email, which `current` then is), or, with no record,
  * the uid of the last demote holding one of the addresses that demote took off it. Never for a
  * `pending` record (a verify in progress, or an interrupted one `needsReconcile` demotes), a
  * `demotePending`, a uid that is not a Firebase login of the account, or an account whose T
@@ -824,11 +825,20 @@ export const findSignInEmailDrift = async (
     if (!hasFirebaseProvider(userKey, uid)) return undefined;
     try {
         const user = await getFirebaseUserOrUndefined(auth, uid);
-        const current = normalize(user?.email);
-        if (!user || !current || isSyntheticEmail(current)) return undefined;
+        if (!user) return undefined;
+        // An active record expects T on its address, so a synthetic or empty email there (a
+        // late demote write restoring the placeholder) is drift too. With no record, the
+        // synthetic placeholder is a legitimate restore and never drift.
+        const current = normalize(user.email) ?? '';
         if (record) {
             if (current === normalize(record.email)) return undefined;
-        } else if (!(demoted?.emails ?? []).map(normalize).includes(current)) return undefined;
+        } else if (
+            !current ||
+            isSyntheticEmail(current) ||
+            !(demoted?.emails ?? []).map(normalize).includes(current)
+        ) {
+            return undefined;
+        }
         const expected = await expectedSignInEmail(auth, identity, uid);
         if (!expected) {
             console.warn('classlink.primary_email.drift_unresolved', {
@@ -879,7 +889,7 @@ export const repairSignInEmailDrift = async ({
     const before = fresh.primaryEmail;
     await lock.assertHeld();
     const current = await getFirebaseUserOrUndefined(auth, drift.uid);
-    if (normalize(current?.email) !== drift.current) lockBusy();
+    if ((normalize(current?.email) ?? '') !== drift.current) lockBusy();
     await auth.updateUser(drift.uid, drift.expected);
     await settleFirebaseEmailWrite({
         auth,

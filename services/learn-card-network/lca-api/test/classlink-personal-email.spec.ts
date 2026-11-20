@@ -25,6 +25,7 @@ import {
 import { getCurrentProfile } from '../src/helpers/currentProfile';
 import { updateClassLinkIdentity } from '../src/models/ClassLinkIdentity';
 import { e2eAdminAuth } from '../src/helpers/firebaseAdminAuth.helpers';
+import { syntheticEmailForUid } from '../src/helpers/syntheticEmail.helpers';
 import { isEscrowEnabled, isEscrowRemoteMode } from '../src/services/escrow-enclave';
 import { contactDigest } from '../src/helpers/escrowContactDigest';
 
@@ -1980,6 +1981,44 @@ describe('ClassLink personal email', () => {
                     emailPrimary: true,
                     reconcilePending: false,
                 });
+            });
+
+            it.each([
+                ['the synthetic placeholder', () => syntheticEmailForUid('uid-test')],
+                ['no email', () => undefined],
+            ])(
+                'an active record whose T holds %s (a late demote write) is repaired to it',
+                async (_label, held) => {
+                    await verifyEmail();
+                    // A demote write restoring the placeholder outlived the lock and landed after
+                    // a newer verify activated its record.
+                    e2eAdminAuth.setUser({ uid: 'uid-test', email: held(), emailVerified: false });
+                    expect(await caller().getAccountContinuity()).toMatchObject({
+                        emailPrimary: false,
+                        reconcilePending: true,
+                    });
+                    expect(await caller().reconcilePersonalEmail()).toEqual({
+                        changed: true,
+                        customToken: 'e2e-custom-token-uid-test',
+                    });
+                    expect(e2eAdminAuth.peek('uid-test')).toMatchObject({
+                        email,
+                        emailVerified: true,
+                    });
+                    expect(await caller().getAccountContinuity()).toMatchObject({
+                        emailPrimary: true,
+                        reconcilePending: false,
+                    });
+                }
+            );
+
+            it('the synthetic placeholder a completed demote restored is not drift', async () => {
+                await verifyEmail();
+                await caller().removePersonalEmail();
+                e2eAdminAuth.setUser({ uid: 'uid-test', email: syntheticEmailForUid('uid-test') });
+                expect((await caller().getAccountContinuity()).reconcilePending).toBe(false);
+                expect(await caller().reconcilePersonalEmail()).toEqual({ changed: false });
+                expect(e2eAdminAuth.peek('uid-test')?.email).toBe(syntheticEmailForUid('uid-test'));
             });
 
             it('an account that signs in with its own email is not drift', async () => {
