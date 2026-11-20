@@ -759,6 +759,7 @@ export const attachReferralOutcomeToContract = async (
                     AND (CASE WHEN terms.expiresAt IS NULL OR trim(terms.expiresAt) = '' THEN true ELSE datetime(terms.expiresAt) > datetime($now) END)
                     AND (CASE WHEN contract.expiresAt IS NULL OR trim(contract.expiresAt) = '' THEN true ELSE datetime(contract.expiresAt) > datetime($now) END)`
                 )
+                // The second WITH permits WHERE; an importing WITH cannot have a WHERE clause.
                 .raw(
                     `WITH terms, contract,
                     $uri IN coalesce(terms.\`terms.outcomes\`, []) AS present,
@@ -789,9 +790,7 @@ export const attachReferralOutcomeToContract = async (
                 consenterProfileId: relationship.consenter.profileId,
                 transaction,
                 domain,
-                messageKey: remove
-                    ? 'consentFlowTransactionUpdatedTerms'
-                    : 'consentFlowTransactionSyncedSingle',
+                messageKey: remove ? 'consentFlowOutcomeRemoved' : 'consentFlowOutcomeAttached',
             }
         )
             .raw('RETURN count(transaction) AS changed }')

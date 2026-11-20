@@ -1533,6 +1533,112 @@ describe('generic contract requests and correlated events', () => {
         expect(delivered.every(n => n.to.profileId !== recipient.profileId)).toBe(true);
     });
 
+    it('delivers outcome-specific retry and queued messages without leaking stale selections', async () => {
+        const uri = await create();
+        const { termsUri } = await accept(uri);
+        await flush(uri);
+        delivered.length = 0;
+        const outcome = 'lc:cloud:cloud.learncard.com:credential:private-outcome';
+
+        queue.mockRejectedValue(new Error('synthetic outage'));
+        await learner.clients.fullAuth.contracts.updateReferralOutcome({ termsUri, uri: outcome });
+        const attachEvent = (await eventRows(uri))
+            .find(row => row.get('e').properties.kind === 'credentials_synced')!
+            .get('e').properties;
+        // Simulate a persisted event from before outcome-specific message keys existed.
+        await neogma.queryRunner.run(
+            `MATCH (e:ConsentFlowEvent {id:$id}) SET e.messageKey = 'consentFlowTransactionSyncedSingle'`,
+            { id: attachEvent.id }
+        );
+        queue.mockImplementation(async notification => {
+            delivered.push(structuredClone(notification));
+            return undefined;
+        });
+        await due(attachEvent.id);
+        await dispatchContractEvents({ eventId: attachEvent.id });
+        const queuedAttach = structuredClone(
+            delivered.find(n => n.to.profileId === recipient.profileId)!
+        );
+        expect(queuedAttach.message?.title).toBe('Referral outcome added');
+        expect(queuedAttach.data?.transaction?.outcomeChange).toEqual({
+            uri: outcome,
+            remove: false,
+        });
+        expect(queuedAttach.data?.transaction?.terms).toBeUndefined();
+        expect(JSON.stringify(queuedAttach.message)).not.toContain(outcome);
+        expect(delivered.find(n => n.to.profileId === owner.profileId)?.message).toMatchObject({
+            title: 'Referral outcome added',
+            body: expect.stringContaining('added an outcome to'),
+        });
+
+        const transport = vi.spyOn(notifications, 'sendNotification').mockResolvedValue(true);
+        await deliverQueuedNotification(JSON.stringify(queuedAttach));
+        expect(transport.mock.calls.at(-1)![0].data?.transaction?.outcomeChange).toEqual({
+            uri: outcome,
+            remove: false,
+        });
+
+        delivered.length = 0;
+        await learner.clients.fullAuth.contracts.updateReferralOutcome({
+            termsUri,
+            uri: outcome,
+            remove: true,
+        });
+        await flush(uri);
+        const queuedRemoval = structuredClone(
+            delivered.find(n => n.to.profileId === recipient.profileId)!
+        );
+        expect(queuedRemoval.message?.title).toBe('Referral outcome removed');
+        expect(queuedRemoval.data?.transaction?.outcomeChange).toEqual({
+            uri: outcome,
+            remove: true,
+        });
+        expect(JSON.stringify(queuedRemoval.message)).not.toContain(outcome);
+
+        // Already-queued legacy copy is corrected and its stale attach URI is filtered at delivery.
+        queuedAttach.message = { title: 'New Consent Transaction', body: 'synced 0 credentials' };
+        await deliverQueuedNotification(JSON.stringify(queuedAttach));
+        const staleDelivery = transport.mock.calls.at(-1)![0];
+        expect(staleDelivery.data?.transaction?.outcomeChange).toBeUndefined();
+        expect(staleDelivery.message?.title).toBe('Referral outcome added');
+        queuedRemoval.message = { title: 'New Consent Transaction', body: 'updated terms' };
+        await deliverQueuedNotification(JSON.stringify(queuedRemoval));
+        const removalDelivery = transport.mock.calls.at(-1)![0];
+        expect(removalDelivery.data?.transaction?.outcomeChange).toEqual({
+            uri: outcome,
+            remove: true,
+        });
+        expect(removalDelivery.message?.title).toBe('Referral outcome removed');
+    });
+
+    it('filters an outcome attach from an outbox retry after it is removed', async () => {
+        const uri = await create();
+        const { termsUri } = await accept(uri);
+        await flush(uri);
+        const outcome = 'lc:cloud:cloud.learncard.com:credential:retry-outcome';
+        queue.mockRejectedValue(new Error('synthetic outage'));
+        await learner.clients.fullAuth.contracts.updateReferralOutcome({ termsUri, uri: outcome });
+        const event = (await eventRows(uri))
+            .find(row => row.get('e').properties.kind === 'credentials_synced')!
+            .get('e').properties;
+        queue.mockImplementation(async notification => {
+            delivered.push(structuredClone(notification));
+            return undefined;
+        });
+        await learner.clients.fullAuth.contracts.updateReferralOutcome({
+            termsUri,
+            uri: outcome,
+            remove: true,
+        });
+        delivered.length = 0;
+        await due(event.id);
+        await dispatchContractEvents({ eventId: event.id });
+        const retried = delivered.find(n => n.to.profileId === recipient.profileId)!;
+        expect(retried.message?.title).toBe('Referral outcome added');
+        expect(retried.data?.transaction?.outcomeChange).toBeUndefined();
+        expect(JSON.stringify(retried)).not.toContain(outcome);
+    });
+
     it('filters queued old personal/credential payloads after edits and blocks them after withdrawal', async () => {
         const uri = await create();
         await send(uri);

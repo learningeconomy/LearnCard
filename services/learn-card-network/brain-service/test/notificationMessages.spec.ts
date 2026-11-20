@@ -39,6 +39,8 @@ const SUPPORTED_KEYS = [
     'consentFlowTransactionWithdrawn',
     'consentFlowTransactionSyncedSingle',
     'consentFlowTransactionSyncedPlural',
+    'consentFlowOutcomeAttached',
+    'consentFlowOutcomeRemoved',
     'credentialRevokedNamed',
     'credentialRevokedUnnamed',
     'credentialSuspendedNamed',

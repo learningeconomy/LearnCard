@@ -55,6 +55,8 @@ export type NotificationMessageKey =
     | 'consentFlowTransactionWithdrawn'
     | 'consentFlowTransactionSyncedSingle'
     | 'consentFlowTransactionSyncedPlural'
+    | 'consentFlowOutcomeAttached'
+    | 'consentFlowOutcomeRemoved'
     | 'credentialRevokedNamed'
     | 'credentialRevokedUnnamed'
     | 'credentialSuspendedNamed'
@@ -218,6 +220,14 @@ const en: LocaleCatalog = {
     consentFlowTransactionSyncedPlural: {
         title: 'New Consent Transaction',
         body: '{consenter} has synced {totalCredentials} credential(s) across {categoryCount} categories to {contractName}!',
+    },
+    consentFlowOutcomeAttached: {
+        title: 'Referral outcome added',
+        body: '{consenter} added an outcome to {contractName}.',
+    },
+    consentFlowOutcomeRemoved: {
+        title: 'Referral outcome removed',
+        body: '{consenter} removed an outcome from {contractName}.',
     },
     credentialRevokedNamed: {
         title: 'Credential revoked',
@@ -398,6 +408,14 @@ const es: LocaleCatalog = {
         title: 'Nueva transacción de consentimiento',
         body: '¡{consenter} ha sincronizado {totalCredentials} credenciales en {categoryCount} categorías con {contractName}!',
     },
+    consentFlowOutcomeAttached: {
+        title: 'Resultado de derivación añadido',
+        body: '{consenter} añadió un resultado a {contractName}.',
+    },
+    consentFlowOutcomeRemoved: {
+        title: 'Resultado de derivación eliminado',
+        body: '{consenter} eliminó un resultado de {contractName}.',
+    },
     credentialRevokedNamed: {
         title: 'Credencial revocada',
         body: 'Tu credencial "{credentialName}" fue revocada por {issuer}.',
@@ -577,6 +595,14 @@ const fr: LocaleCatalog = {
         title: 'Nouvelle transaction de consentement',
         body: '{consenter} a synchronisé {totalCredentials} titres dans {categoryCount} catégories avec {contractName} !',
     },
+    consentFlowOutcomeAttached: {
+        title: 'Résultat de recommandation ajouté',
+        body: '{consenter} a ajouté un résultat à {contractName}.',
+    },
+    consentFlowOutcomeRemoved: {
+        title: 'Résultat de recommandation retiré',
+        body: '{consenter} a retiré un résultat de {contractName}.',
+    },
     credentialRevokedNamed: {
         title: 'Titre révoqué',
         body: 'Votre titre « {credentialName} » a été révoqué par {issuer}.',
@@ -746,6 +772,14 @@ const ar: LocaleCatalog = {
     consentFlowTransactionSyncedPlural: {
         title: 'معاملة موافقة جديدة',
         body: 'قام {consenter} بمزامنة {totalCredentials} شهادة عبر {categoryCount} فئات مع {contractName}!',
+    },
+    consentFlowOutcomeAttached: {
+        title: 'تمت إضافة نتيجة الإحالة',
+        body: 'أضاف {consenter} نتيجة إلى {contractName}.',
+    },
+    consentFlowOutcomeRemoved: {
+        title: 'تمت إزالة نتيجة الإحالة',
+        body: 'أزال {consenter} نتيجة من {contractName}.',
     },
     credentialRevokedNamed: {
         title: 'تم إلغاء الشهادة',

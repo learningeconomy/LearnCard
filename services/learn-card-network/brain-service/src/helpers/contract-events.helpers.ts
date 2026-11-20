@@ -238,6 +238,23 @@ export const authorizeContractNotification = async (
         !expiryActive(relationship.contract.expiresAt)
     )
         return false;
+    const outcome = notification.data?.transaction?.outcomeChange;
+    if (outcome) {
+        // Queued messages may have been rendered with the old generic sync/update copy.
+        notification.message = getNotificationMessage(
+            outcome.remove ? 'consentFlowOutcomeRemoved' : 'consentFlowOutcomeAttached',
+            resolveRecipientLocale(notification.to),
+            {
+                consenter:
+                    typeof notification.from === 'object'
+                        ? notification.from.displayName
+                        : undefined,
+                contractName: relationship.contract.name,
+            }
+        );
+        if (!outcome.remove && !terms.terms.outcomes?.includes(outcome.uri))
+            delete notification.data!.transaction!.outcomeChange;
+    }
     const personal = notification.data?.transaction?.terms?.read.personal;
     if (personal)
         for (const [key, value] of Object.entries(personal))
