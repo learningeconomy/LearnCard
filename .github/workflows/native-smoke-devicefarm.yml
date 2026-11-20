@@ -161,7 +161,7 @@ jobs:
               with:
                   role-to-assume: ${{ vars.DEVICEFARM_SMOKE_ROLE_ARN }}
                   role-session-name: devicefarm-${{ github.run_id }}-${{ github.job }}
-                  role-duration-seconds: ${{ env.SMOKE_RUNS == '1' && '3600' || '21600' }}
+                  role-duration-seconds: ${{ (env.SMOKE_RUNS != '1' || env.SMOKE_ANDROID_FRAMEWORK == 'both') && '21600' || '3600' }}
                   aws-region: us-west-2
                   allowed-account-ids: '206533012615'
 

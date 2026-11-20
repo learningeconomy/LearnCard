@@ -8,7 +8,7 @@ The LearnCard pilot runs every Monday, Wednesday, and Friday at 9:17 a.m. Easter
 2. In GitHub, create the `devicefarm-smoke-staging` environment and permit deployments from the `main` branch only. Set `DEVICEFARM_SMOKE_ROLE_ARN` and set `DEVICEFARM_PROJECT_ARN` if using a different project ID from the template default. Supply the existing development signing inputs used by the workflow, including the match access, Apple API key, and app and team variables. See the **Build XCUITest IPA and test runner** step for the full list.
 3. Run **Native smoke (AWS Device Farm)** from **Actions** using `main`. Review the Android, iOS, and **Smoke summary** jobs. The summary reports the pool ARN and confirms deletion when Device Farm no longer finds that pool.
 
-Scheduled runs and the default dispatch request a one-hour OIDC session. Dispatches that repeat tests can request up to six hours, matching the existing workflow timeout.
+Scheduled runs and the default dispatch request a one-hour OIDC session. Jobs request six hours for repeated tests or when Android runs both frameworks in sequence, leaving time to delete the temporary device pool.
 
 ## Slack
 
