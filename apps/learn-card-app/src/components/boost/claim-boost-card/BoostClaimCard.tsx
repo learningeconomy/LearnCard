@@ -513,6 +513,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
         <ClrTranscriptFullPage
             model={clrModel}
             boost={displayCredential}
+            certifiedWrapper={credential !== displayCredential ? credential : undefined}
             boostUri={credentialUri}
             options={{ viewer: 'student', surface: ClrTranscriptSurface.Full }}
         />

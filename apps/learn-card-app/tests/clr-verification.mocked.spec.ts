@@ -281,7 +281,7 @@ test('keeps unavailable DID results neutral and retries in place after recovery 
 test('shows signed validity failures without treating them as signature errors @mocked', async ({
     page,
 }) => {
-    const fixture = await createClrVerificationFixture(true);
+    const fixture = await createClrVerificationFixture({ invalidDates: true });
     liveServers.add(fixture.close);
     const summary = await openFixture(page, fixture.credential);
     await expect(page.getByTestId('clr-outer-verification')).toContainText(
@@ -295,4 +295,18 @@ test('shows signed validity failures without treating them as signature errors @
     await expect(
         summary.getByRole('button', { name: 'Retry verification', exact: true })
     ).toHaveCount(0);
+});
+
+test('shows failed certification alongside a valid transcript publisher @mocked', async ({
+    page,
+}, testInfo) => {
+    const fixture = await createClrVerificationFixture({ tamperCertification: true });
+    liveServers.add(fixture.close);
+    const summary = await openFixture(page, fixture.credential);
+    await expect(page.getByTestId('clr-outer-verification')).toContainText(
+        /^Verified · Issued by/,
+        { timeout: 30_000 }
+    );
+    await expect(summary).toContainText('Credential certification: Verification failed');
+    await page.screenshot({ path: testInfo.outputPath('wrapped-clr-certification.png') });
 });

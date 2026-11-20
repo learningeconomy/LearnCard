@@ -806,7 +806,9 @@ describe('recipient screen', () => {
                 expect.anything(),
                 inner,
                 expect.anything(),
-                expect.any(Function)
+                expect.any(Function),
+                // The original signed wrapper is still part of the credential check.
+                wrapped
             )
         );
         const endorsementElement = await screen.findByText('Public endorsement');

@@ -10573,6 +10573,7 @@
         "registryUnavailable": "Registre impossible à consulter",
         "verifiedLabel": "Vérifié",
         "publisherSummary": "{{status}} · Émis par {{publisher}}",
+        "certificationSummary": "Certification du justificatif : {{status}}",
         "certifyingIssuers": "Émetteurs certificateurs : {{count}}",
         "verificationRecordsCount": "Relevés : {{count}}",
         "recordVerificationLabel": "{{record}} · {{issuer}} · {{status}}",

@@ -36,7 +36,8 @@ export const ClrRenderer = (props: ClrRendererProps) => {
     const walletVerification = useClrVerification(
         model,
         props.verification,
-        props.verificationSession
+        props.verificationSession,
+        props.certifiedWrapper
     );
     const verification = props.verificationSession
         ? walletVerification.snapshot

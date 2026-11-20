@@ -34,6 +34,8 @@ export interface ClrCredentialVerification {
 
 export interface ClrVerificationSnapshot {
     outer: ClrCredentialVerification;
+    /** SDK verdict for a certified envelope, never attributed to the CLR publisher. */
+    certification?: 'checking' | 'verified' | 'failed' | 'unavailable';
     /** Keys are the normalizer's unique canonical IDs, never raw credential IDs/aliases. */
     records: Readonly<Record<string, ClrCredentialVerification>>;
     complete: boolean;

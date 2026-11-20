@@ -10662,6 +10662,7 @@
         "registryUnavailable": "تعذر التحقق من السجل",
         "verifiedLabel": "تم التحقق",
         "publisherSummary": "{{status}} · صادر عن {{publisher}}",
+        "certificationSummary": "اعتماد الشهادة: {{status}}",
         "certifyingIssuers": "جهات الإصدار المصدّقة: {{count}}",
         "verificationRecordsCount": "السجلات: {{count}}",
         "recordVerificationLabel": "{{record}} · {{issuer}} · {{status}}",

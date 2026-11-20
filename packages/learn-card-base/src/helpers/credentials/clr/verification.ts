@@ -214,22 +214,28 @@ const snapshotOf = (
 };
 
 export const createClrVerificationSnapshot = (
-    model: ClrNormalizedModel
+    model: ClrNormalizedModel,
+    hasCertification = false
 ): ClrVerificationSnapshot => {
     const { outer, all } = discover(model);
-    return snapshotOf(model, outer, all, false);
+    const snapshot = snapshotOf(model, outer, all, false);
+    if (hasCertification) snapshot.certification = 'checking';
+    return snapshot;
 };
 
 /** Settle a pass that could not initialize a verifier, without leaving checking badges behind. */
 export const createUnavailableClrVerificationSnapshot = (
-    model: ClrNormalizedModel
+    model: ClrNormalizedModel,
+    hasCertification = false
 ): ClrVerificationSnapshot => {
     const { outer, all } = discover(model);
     for (const occurrence of all) {
         if (occurrence.node.proof === 'checking')
             occurrence.node = { ...occurrence.node, proof: 'unavailable' };
     }
-    return snapshotOf(model, outer, all, true);
+    const snapshot = snapshotOf(model, outer, all, true);
+    if (hasCertification) snapshot.certification = 'unavailable';
+    return snapshot;
 };
 
 // Only positive cryptographic failure evidence is red. Resolver/status errors can also
@@ -241,6 +247,59 @@ const EXPIRED = /^expiration error: Credential is (?:expired|no longer valid)$/i
 const NOT_YET_VALID = /^expiration error: Credential is not valid yet$/i;
 const STATUS_ERROR =
     /status list|credentialstatus|revocation|suspension|credential (?:is |has been )?(?:revoked|suspended)/i;
+
+const hasActiveStatusEvidence = (
+    credential: ClrJsonObject,
+    result: VerificationCheck,
+    allowAdditionalEntries = false
+): boolean => {
+    const status = result.status;
+    if (
+        !status?.length ||
+        !result.checks.some(check => check === 'credentialStatus' || check === 'status')
+    )
+        return false;
+    const declaredStatus = Array.isArray(credential.credentialStatus)
+        ? credential.credentialStatus
+        : [credential.credentialStatus];
+    // The VerifyBoost plugin may append inner status evidence to the wrapper result.
+    // Do not accept a bare flag or status evidence for a different entry.
+    return (
+        declaredStatus.length > 0 &&
+        (allowAdditionalEntries || status.length === declaredStatus.length) &&
+        declaredStatus.every(declared => {
+            if (!object(declared)) return false;
+            const legacy = declared.type === 'RevocationList2020Status';
+            const purpose = legacy ? 'revocation' : declared.statusPurpose;
+            const url = legacy ? declared.revocationListCredential : declared.statusListCredential;
+            const index = legacy ? declared.revocationListIndex : declared.statusListIndex;
+            return (
+                typeof url === 'string' &&
+                (typeof index === 'string' || typeof index === 'number') &&
+                status.some(
+                    entry =>
+                        entry.entryType === declared.type &&
+                        entry.statusPurpose === purpose &&
+                        entry.statusListCredential === url &&
+                        entry.statusListIndex === String(index) &&
+                        !entry.isSet
+                )
+            );
+        })
+    );
+};
+
+const certificationVerdict = (credential: ClrJsonObject, result: VerificationCheck) => {
+    if (result.errors.length || result.status?.some(entry => entry.isSet)) return 'failed';
+    if (
+        !result.checks.includes('proof') ||
+        result.warnings.length ||
+        (credential.credentialStatus !== undefined &&
+            !hasActiveStatusEvidence(credential, result, true))
+    )
+        return 'unavailable';
+    return 'verified';
+};
 
 export const classifyClrVerification = (
     initial: ClrCredentialVerification,
@@ -264,33 +323,6 @@ export const classifyClrVerification = (
     const proofErrors = result.errors.filter(
         error => !STATUS_ERROR.test(error) && !EXPIRED.test(error) && !NOT_YET_VALID.test(error)
     );
-    const declaredStatus = Array.isArray(credential.credentialStatus)
-        ? credential.credentialStatus
-        : [credential.credentialStatus];
-    // DIDKit emits one structured result per checked entry. A bare check flag
-    // or a partial list is not sufficient to confirm a credential is active.
-    const statusEvidence =
-        status.length > 0 &&
-        status.length === declaredStatus.length &&
-        declaredStatus.every(declared => {
-            if (!object(declared)) return false;
-            const legacy = declared.type === 'RevocationList2020Status';
-            const purpose = legacy ? 'revocation' : declared.statusPurpose;
-            const url = legacy ? declared.revocationListCredential : declared.statusListCredential;
-            const index = legacy ? declared.revocationListIndex : declared.statusListIndex;
-            return (
-                typeof url === 'string' &&
-                (typeof index === 'string' || typeof index === 'number') &&
-                status.some(
-                    entry =>
-                        entry.entryType === declared.type &&
-                        entry.statusPurpose === purpose &&
-                        entry.statusListCredential === url &&
-                        entry.statusListIndex === String(index) &&
-                        !entry.isSet
-                )
-            );
-        });
     const lifecycle =
         revoked || legacyRevoked
             ? 'revoked'
@@ -298,10 +330,9 @@ export const classifyClrVerification = (
               ? 'suspended'
               : credential.credentialStatus === undefined
                 ? 'unchecked'
-                : result.checks.some(check => check === 'credentialStatus' || check === 'status') &&
-                    !result.errors.some(error => STATUS_ERROR.test(error)) &&
+                : !result.errors.some(error => STATUS_ERROR.test(error)) &&
                     !result.warnings.length &&
-                    statusEvidence
+                    hasActiveStatusEvidence(credential, result)
                   ? 'active'
                   : 'unavailable';
     const invalid = proofErrors.some(
@@ -367,21 +398,39 @@ export const verifyClrCredentialTree = async (
     model: ClrNormalizedModel,
     verify: ClrCredentialVerifier,
     budget: VerificationBudget = createVerificationBudget(),
-    onUpdate?: (snapshot: ClrVerificationSnapshot) => void
+    onUpdate?: (snapshot: ClrVerificationSnapshot) => void,
+    certifiedWrapper?: ClrJsonObject
 ): Promise<ClrVerificationSnapshot> => {
     const { outer, all } = discover(model);
     const signed = all.filter(occurrence => occurrence.node.proof === 'checking');
-    let cursor = 0;
+    // The wrapper and signed records share the same four worker slots and deadline.
+    let cursor = certifiedWrapper ? -1 : 0;
+    let certification: ClrVerificationSnapshot['certification'] = certifiedWrapper
+        ? 'checking'
+        : undefined;
     const publish = (complete: boolean): ClrVerificationSnapshot => {
         const snapshot = snapshotOf(model, outer, all, complete);
+        if (certification) snapshot.certification = certification;
         if (!budget.cancelled()) onUpdate?.(snapshot);
         return snapshot;
     };
     publish(false);
+    const workCount = signed.length + (certifiedWrapper ? 1 : 0);
     await Promise.all(
-        Array.from({ length: Math.min(VERIFY_CONCURRENCY, signed.length) }, async () => {
+        Array.from({ length: Math.min(VERIFY_CONCURRENCY, workCount) }, async () => {
             while (cursor < signed.length && !budget.expired()) {
-                const occurrence = signed[cursor++];
+                const index = cursor++;
+                if (index === -1 && certifiedWrapper) {
+                    try {
+                        const result = await boundedVerification(verify(certifiedWrapper), budget);
+                        certification = certificationVerdict(certifiedWrapper, result);
+                    } catch {
+                        certification = 'unavailable';
+                    }
+                    publish(false);
+                    continue;
+                }
+                const occurrence = signed[index];
                 try {
                     const result = await boundedVerification(verify(occurrence.credential), budget);
                     occurrence.node = classifyClrVerification(
@@ -400,5 +449,6 @@ export const verifyClrCredentialTree = async (
         if (occurrence.node.proof === 'checking')
             occurrence.node = { ...occurrence.node, proof: 'unavailable' };
     }
+    if (certification === 'checking') certification = 'unavailable';
     return publish(true);
 };

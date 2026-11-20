@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest';
-import type { VC } from '@learncard/types';
+import type { VC, VerificationCheck } from '@learncard/types';
 import {
     createVerificationBudget,
     type ClrVerificationSnapshot,
@@ -50,6 +50,58 @@ describe('share CLR verification adapter', () => {
         expect(result.records[canonical.records[0].id].proof).toBe('verified');
         expect(result.records[canonical.records[1].id].proof).toBe('invalid');
         expect(result.records[canonical.records[1].id].issuerDid).toBe('did:web:district.example');
+    });
+
+    const checkedStatus = {
+        entryType: 'BitstringStatusListEntry',
+        statusPurpose: 'revocation',
+        statusListCredential: 'https://example.test/status',
+        statusListIndex: '1',
+        isSet: false,
+    };
+    it.each<[string, Partial<VerificationCheck>, string]>([
+        ['bad signature', { errors: ['invalid signature'] }, 'failed'],
+        [
+            'revoked status',
+            { checks: ['proof', 'status'], status: [{ ...checkedStatus, isSet: true }] },
+            'failed',
+        ],
+        [
+            'missing wrapper status',
+            { checks: ['proof', 'status'], status: [{ ...checkedStatus, statusListIndex: '2' }] },
+            'unavailable',
+        ],
+        ['active status', { checks: ['proof', 'status'], status: [checkedStatus] }, 'verified'],
+    ])('reports %s on the wrapper separately from the publisher', async (_, outcome, state) => {
+        const credential = clr();
+        const wrapper = {
+            ...credential,
+            type: ['VerifiableCredential', 'CertifiedBoostCredential'],
+            boostCredential: credential,
+            credentialStatus: {
+                type: checkedStatus.entryType,
+                statusPurpose: checkedStatus.statusPurpose,
+                statusListCredential: checkedStatus.statusListCredential,
+                statusListIndex: checkedStatus.statusListIndex,
+            },
+        } as VC;
+        const verifyCredential = async (value: VC) =>
+            value === wrapper ? { ...valid, ...outcome } : valid;
+        const updates: ClrVerificationSnapshot[] = [];
+        await expect(
+            verifyCredentialTree(
+                shareWallet({ invoke: { verifyCredential } }),
+                credential,
+                createVerificationBudget(),
+                snapshot => updates.push(snapshot),
+                wrapper
+            )
+        ).resolves.toBe(state);
+        expect(updates.at(-1)).toMatchObject({
+            complete: true,
+            certification: state,
+            outer: { proof: 'verified' },
+        });
     });
 
     it('keeps a returned DID-resolution failure neutral', async () => {

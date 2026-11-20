@@ -128,9 +128,13 @@ export interface MaterializedClrVerificationFixture {
 }
 
 /** Uses actual LearnCard/DIDKit proofs and a live ephemeral DID-web/status server. */
-export const createClrVerificationFixture = async (
-    invalidDates = false
-): Promise<MaterializedClrVerificationFixture> => {
+export const createClrVerificationFixture = async ({
+    invalidDates = false,
+    tamperCertification = false,
+}: {
+    invalidDates?: boolean;
+    tamperCertification?: boolean;
+} = {}): Promise<MaterializedClrVerificationFixture> => {
     const server = await startLocalClrFixtureServer();
     try {
         const publisherDid = `${server.baseDid}:state`;
@@ -199,9 +203,30 @@ export const createClrVerificationFixture = async (
             revokedStatusList: statusList,
             duplicateValidChild: !invalidDates,
         });
+        const wrapper = tamperCertification
+            ? await signers[publisherDid]!({
+                  '@context': [
+                      'https://www.w3.org/ns/credentials/v2',
+                      {
+                          CertifiedBoostCredential:
+                              'https://docs.learncard.com/definitions#certifiedBoostCredential',
+                          boostCredential: {
+                              '@id': 'https://docs.learncard.com/definitions#boostCredential',
+                              '@type': '@json',
+                          },
+                      },
+                  ],
+                  type: ['VerifiableCredential', 'CertifiedBoostCredential'],
+                  issuer: publisherDid,
+                  credentialSubject: { id: learnerDid },
+                  boostCredential: credential,
+              })
+            : undefined;
         server.resetCounters();
         return {
-            credential,
+            credential: wrapper
+                ? { ...wrapper, credentialSubject: { id: `${learnerDid}-tampered` } }
+                : credential,
             statusList,
             didDocuments,
             issuerDids,

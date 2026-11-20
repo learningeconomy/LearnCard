@@ -10625,6 +10625,7 @@
         "registryUnavailable": "Registry could not be checked",
         "verifiedLabel": "Verified",
         "publisherSummary": "{{status}} · Issued by {{publisher}}",
+        "certificationSummary": "Credential certification: {{status}}",
         "certifyingIssuers": "Certifying issuers: {{count}}",
         "verificationRecordsCount": "Records: {{count}}",
         "recordVerificationLabel": "{{record}} · {{issuer}} · {{status}}",

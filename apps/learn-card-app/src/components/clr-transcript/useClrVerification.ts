@@ -37,11 +37,15 @@ const createSession = (initial: ClrVerificationSnapshot): ClrVerificationSession
 export const useClrVerification = (
     model: ClrTranscriptDisplayModel,
     supplied?: ClrVerificationSnapshot,
-    sharedSession?: ClrVerificationSession
+    sharedSession?: ClrVerificationSession,
+    certifiedWrapper?: VC
 ) => {
     const localSession = useMemo(
-        () => createSession(supplied ?? createClrVerificationSnapshot(model.canonical)),
-        [model.canonical]
+        () =>
+            createSession(
+                supplied ?? createClrVerificationSnapshot(model.canonical, !!certifiedWrapper)
+            ),
+        [model.canonical, certifiedWrapper]
     );
     const session = sharedSession ?? localSession;
     const snapshot = useSyncExternalStore(
@@ -60,9 +64,9 @@ export const useClrVerification = (
         }
         let current = true;
         const budget = createVerificationBudget();
-        const initial = createClrVerificationSnapshot(model.canonical);
+        const initial = createClrVerificationSnapshot(model.canonical, !!certifiedWrapper);
         localSession.update(initial);
-        if (!hasSignedClrCredentials(initial)) {
+        if (!certifiedWrapper && !hasSignedClrCredentials(initial)) {
             localSession.update({ ...initial, complete: true });
             return () => {
                 current = false;
@@ -82,19 +86,25 @@ export const useClrVerification = (
                     budget,
                     next => {
                         if (current) localSession.update(next);
-                    }
+                    },
+                    certifiedWrapper
                 );
                 if (current) localSession.update(result);
             })
             .catch(() => {
                 if (current)
-                    localSession.update(createUnavailableClrVerificationSnapshot(model.canonical));
+                    localSession.update(
+                        createUnavailableClrVerificationSnapshot(
+                            model.canonical,
+                            !!certifiedWrapper
+                        )
+                    );
             });
         return () => {
             current = false;
             budget.cancel();
         };
-    }, [model.canonical, supplied, sharedSession, localSession, pass]);
+    }, [model.canonical, supplied, sharedSession, localSession, pass, certifiedWrapper]);
 
     return { snapshot: sharedSession ? snapshot : (supplied ?? snapshot), retry, session };
 };

@@ -118,16 +118,23 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
     const clrModels = useMemo(() => {
         const models = new Map<
             number,
-            { model: ClrTranscriptDisplayModel; boost: VC; pending: ClrVerificationSnapshot }
+            {
+                model: ClrTranscriptDisplayModel;
+                boost: VC;
+                certifiedWrapper?: VC;
+                pending: ClrVerificationSnapshot;
+            }
         >();
         ready?.payload.presentation.verifiableCredential.forEach((credential, index) => {
             const inner = unwrapBoostCredential(credential);
             if (inner && isClrCredential(inner)) {
                 const model = normalizeClrTranscriptDisplayModel(inner);
+                const certifiedWrapper = inner === credential ? undefined : credential;
                 models.set(index, {
                     model,
                     boost: inner,
-                    pending: createClrVerificationSnapshot(model.canonical),
+                    certifiedWrapper,
+                    pending: createClrVerificationSnapshot(model.canonical, !!certifiedWrapper),
                 });
             }
         });
@@ -425,17 +432,19 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                 });
                 for (let index = 0; index < members.length; index++) {
                     if (cancelled) return;
+                    const clr = clrModels.get(index);
                     const result = await verifyCredentialTree(
                         wallet,
-                        clrModels.get(index)?.boost ?? members[index],
+                        clr?.boost ?? members[index],
                         budget,
                         snapshot => {
-                            if (!cancelled && clrModels.has(index))
+                            if (!cancelled)
                                 setClrVerifications(previous => ({
                                     ...previous,
                                     [index]: snapshot,
                                 }));
-                        }
+                        },
+                        clr?.certifiedWrapper
                     );
                     if (!cancelled)
                         setProofs(previous =>
@@ -448,9 +457,12 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                     setProofs(members.map(() => 'unavailable'));
                     setClrVerifications(
                         Object.fromEntries(
-                            [...clrModels].map(([index, { model }]) => [
+                            [...clrModels].map(([index, { model, certifiedWrapper }]) => [
                                 index,
-                                createUnavailableClrVerificationSnapshot(model.canonical),
+                                createUnavailableClrVerificationSnapshot(
+                                    model.canonical,
+                                    !!certifiedWrapper
+                                ),
                             ])
                         )
                     );

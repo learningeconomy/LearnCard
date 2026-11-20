@@ -496,6 +496,7 @@ export const ClrVerificationSummary = ({
     else if (snapshot.complete && differentIssuers.size)
         headline += ` · ${m['clrRenderer.certifyingIssuers']({ count: differentIssuers.size })}`;
     const retryable =
+        snapshot.certification === 'unavailable' ||
         snapshot.outer.proof === 'unavailable' ||
         snapshot.outer.lifecycle === 'unavailable' ||
         exceptions.some(
@@ -523,7 +524,16 @@ export const ClrVerificationSummary = ({
         ? verificationTheme(snapshot.outer, isClrPublisherVerified(snapshot))
         : { icon: timeOutline, tone: 'bg-grayscale-100 text-grayscale-700' };
     const hasDepth = differentIssuers.size > 0;
-    if (!entries.length && snapshot.outer.proof === 'unsigned') return null;
+    const certification = snapshot.certification;
+    if (!entries.length && snapshot.outer.proof === 'unsigned' && !certification) return null;
+    const certificationStatus =
+        certification === 'verified'
+            ? m['clrRenderer.verifiedLabel']()
+            : certification === 'failed'
+              ? m['shareLinks.failed']()
+              : certification === 'unavailable'
+                ? m['clrRenderer.couldNotVerify']()
+                : m['clrRenderer.checkingVerification']();
     return (
         <section data-testid="clr-verification-summary" className="flex flex-col gap-2.5">
             <p
@@ -543,6 +553,19 @@ export const ClrVerificationSummary = ({
                     {headline}
                 </span>
             </p>
+            {certification && (
+                <p
+                    role="status"
+                    className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium ${
+                        certification === 'failed'
+                            ? 'border-red-100 bg-red-50 text-red-700'
+                            : 'border-grayscale-200 bg-grayscale-10 text-grayscale-900'
+                    }`}
+                >
+                    <IonIcon aria-hidden="true" icon={shieldOutline} className="size-4 shrink-0" />
+                    {m['clrRenderer.certificationSummary']({ status: certificationStatus })}
+                </p>
+            )}
             <span className="sr-only" role="status" aria-live="polite">
                 {snapshot.complete ? headline : ''}
             </span>

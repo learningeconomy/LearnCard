@@ -13,6 +13,7 @@ export interface ClrRendererProps {
     model: ClrTranscriptDisplayModel;
     options: ViewOptions;
     boost?: VC;
+    certifiedWrapper?: VC;
     boostUri?: string;
     verification?: ClrVerificationSnapshot;
     onRetryVerification?: () => void;

@@ -90,6 +90,11 @@ as invalid because one district record failed. Passing a snapshot to
 Snapshots retain each occurrence's own issuer name, image and verification methods;
 these are display metadata, not registry trust.
 
+For a certified wrapper, verify the original wrapper with the SDK in the same
+pass. Keep its certification verdict separate from the inner CLR publisher and
+records. A shared wrapper never qualifies as verified unless both the
+certification and the enclosed CLR pass.
+
 Use one `createVerificationBudget()` per pass (30 seconds), including a share's
 holder presentation and selected members. Work is bounded to four credential
 checks at once. Cancellation stops new checks and discards late results; the

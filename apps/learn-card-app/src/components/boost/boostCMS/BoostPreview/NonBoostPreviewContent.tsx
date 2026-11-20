@@ -406,6 +406,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
             <ClrTranscriptFullPage
                 model={clrModel}
                 boost={clrCredential}
+                certifiedWrapper={credential !== clrCredential ? credential : undefined}
                 // boostUri comes from boost cards; credentialUri from direct credential views
                 boostUri={boostUri ?? credentialUri}
                 options={{ viewer: 'student', surface: ClrTranscriptSurface.Full }}

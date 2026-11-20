@@ -600,9 +600,11 @@ export const verifyCredentialTree = async (
     wallet: ShareWallet,
     credential: VC,
     budget: VerificationBudget,
-    onUpdate?: (snapshot: ClrVerificationSnapshot) => void
+    onUpdate?: (snapshot: ClrVerificationSnapshot) => void,
+    certifiedWrapper?: VC
 ): Promise<ProofState> => {
-    const isClr = credential.type?.includes('ClrCredential') ?? false;
+    const types = Array.isArray(credential.type) ? credential.type : [credential.type];
+    const isClr = types.includes('ClrCredential');
     const result = await verifyClrCredentialTree(
         normalizeClrCredential(credential),
         value =>
@@ -610,10 +612,12 @@ export const verifyCredentialTree = async (
                 ? wallet.invoke.verifyCredential(value as VC, {}, false)
                 : wallet.invoke.verifyCredential(value as VC),
         budget,
-        isClr ? onUpdate : undefined
+        isClr ? onUpdate : undefined,
+        certifiedWrapper
     );
     const outcomes = [result.outer];
-    let incomplete = result.outer.proof !== 'verified';
+    if (result.certification === 'failed') return 'failed';
+    let incomplete = result.outer.proof !== 'verified' || result.certification === 'unavailable';
     while (outcomes.length) {
         const node = outcomes.pop()!;
         if (
@@ -633,7 +637,7 @@ export const verifyCredentialTree = async (
             incomplete = true;
         outcomes.push(...node.descendants);
     }
-    const confirmed = isClr ? isClrRecordConfirmed(result.outer) : !incomplete;
+    const confirmed = !incomplete && (!isClr || isClrRecordConfirmed(result.outer));
     return confirmed ? 'verified' : 'unavailable';
 };
 
