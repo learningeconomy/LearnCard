@@ -138,6 +138,19 @@ describe('PassportCredentialCard', () => {
         expect(mocks.resolveSharedCredential).not.toHaveBeenCalled();
     });
 
+    it('exposes a stable credential card hook for native smoke tests', () => {
+        renderCard({
+            uri: 'lc:cred:sample',
+            category: 'Social Badge',
+            title: 'Sample badge',
+        });
+
+        expect(screen.getByRole('group', { name: 'Credential card' })).toHaveAttribute(
+            'id',
+            'credential-card-0'
+        );
+    });
+
     it('uses the signed issuer as the display subject for endorsement credentials', () => {
         renderCard({
             uri: 'lc:endorsement:accepted',

@@ -35,6 +35,7 @@ on:
             - Maid-Service
             - Migrate Signing Authority Seeds
             - Mock E2E
+            - Native smoke (BrowserStack Maestro)
             - Nx main artifact producer
             - OpenID4VC Interop Tests
             - PR Review Reminder

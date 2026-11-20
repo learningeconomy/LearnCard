@@ -17,6 +17,8 @@ export type ActivityIndexRecord = Partial<LCR> & { uri: string; sharedUri?: stri
 type PassportCredentialCardProps = {
     record: ActivityIndexRecord;
     className?: string;
+    /** Stable WebView hook for the native smoke flow. Defaults to the first card. */
+    cardIndex?: number;
 };
 
 export const resolveEndorsementTargetName = async (sharedUri?: string): Promise<string | null> => {
@@ -27,7 +29,11 @@ export const resolveEndorsementTargetName = async (sharedUri?: string): Promise<
     return name || null;
 };
 
-const PassportCredentialCard: React.FC<PassportCredentialCardProps> = ({ record, className }) => {
+const PassportCredentialCard: React.FC<PassportCredentialCardProps> = ({
+    record,
+    className,
+    cardIndex = 0,
+}) => {
     const category = resolveActivityCategory(record.category);
     const isEndorsement = record.category === 'Endorsement';
     const storedTitle =
@@ -52,7 +58,13 @@ const PassportCredentialCard: React.FC<PassportCredentialCardProps> = ({ record,
             ? m['endorsement.fullview.endorsement']()
             : undefined);
     return (
-        <div className={className}>
+        <div
+            className={className}
+            id={`credential-card-${cardIndex}`}
+            data-testid="credential-card"
+            role="group"
+            aria-label="Credential card"
+        >
             <BoostEarnedCard
                 record={record}
                 titleOverride={titleOverride}
