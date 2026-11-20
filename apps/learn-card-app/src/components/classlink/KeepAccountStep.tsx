@@ -8,7 +8,11 @@ import type {
     ClassLinkAccountContinuityReason,
 } from '@learncard/lca-api-plugin';
 import { useQueryClient } from '@tanstack/react-query';
-import { useClassLinkAccountContinuity, useRemovePersonalEmail } from 'learn-card-base';
+import {
+    useClassLinkAccountContinuity,
+    useRemovePersonalEmail,
+    type GetSignInIdToken,
+} from 'learn-card-base';
 
 import {
     useAnalytics,
@@ -339,9 +343,10 @@ type RemoveResult = Awaited<ReturnType<ReturnType<typeof useRemovePersonalEmail>
  */
 const useRemoveEmail = (
     maskedEmail: string,
-    onRemoved: (result: RemoveResult) => void
+    onRemoved: (result: RemoveResult) => void,
+    getIdToken?: GetSignInIdToken
 ): { ask: () => void; removing: boolean; failed?: RemoveFailure } => {
-    const remove = useRemovePersonalEmail();
+    const remove = useRemovePersonalEmail({ getIdToken });
     const [presentAlert] = useIonAlert();
     const [failed, setFailed] = useState<RemoveFailure>();
 
@@ -481,7 +486,14 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
         rememberConfirmedContact,
         getConfirmedContact,
         getPendingAccountContact,
+        authProvider,
     } = useAppAuth();
+    // This device's Firebase ID token, so a client-side sign-in (email link, Google, Apple)
+    // can be reported when lca-api asks for a recent sign-in (`withRecentSignInRetry`).
+    const getIdToken: GetSignInIdToken | undefined =
+        authProvider?.getProviderType() === 'firebase'
+            ? () => authProvider.getIdToken()
+            : undefined;
     const sessionContext = useKeepAccountSessionContext();
     const sessionUid = sessionContext.sessionUid;
     const did = state.status === 'ready' ? state.did : undefined;
@@ -622,16 +634,20 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
         });
     };
 
-    const removeEmail = useRemoveEmail(data?.maskedEmail ?? '', result => {
-        setExpanded(false);
-        setConfirmExpanded(false);
-        track(AnalyticsEvents.KEEP_ACCOUNT_STEP_COMPLETED, { source, step: 'remove' });
-        void runFinish({
-            kind: 'remove',
-            customToken: result.customToken,
-            primaryUid: data?.primaryUid,
-        });
-    });
+    const removeEmail = useRemoveEmail(
+        data?.maskedEmail ?? '',
+        result => {
+            setExpanded(false);
+            setConfirmExpanded(false);
+            track(AnalyticsEvents.KEEP_ACCOUNT_STEP_COMPLETED, { source, step: 'remove' });
+            void runFinish({
+                kind: 'remove',
+                customToken: result.customToken,
+                primaryUid: data?.primaryUid,
+            });
+        },
+        getIdToken
+    );
 
     // A reconcile run while loading (`reconcilePending`) may leave a token this device could
     // not apply: offer Try again / Sign out, as for a verify or remove.
@@ -872,6 +888,7 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
 
     const emailForm = (layout: 'shell' | 'inline'): React.ReactNode => (
         <PersonalEmailForm
+            getIdToken={getIdToken}
             autoFocus={layout === 'inline'}
             // The row above already says "Sign-in email".
             hideEmailLabel={layout === 'inline'}

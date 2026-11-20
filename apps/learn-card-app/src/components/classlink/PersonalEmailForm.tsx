@@ -1,5 +1,9 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
-import { useStartPersonalEmail, useVerifyPersonalEmail } from 'learn-card-base';
+import {
+    useStartPersonalEmail,
+    useVerifyPersonalEmail,
+    type GetSignInIdToken,
+} from 'learn-card-base';
 import type { LCAPluginMethods } from '@learncard/lca-api-plugin';
 import * as m from '../../paraglide/messages.js';
 import { RecoveryPinInput } from '../recovery/RecoveryPinInput';
@@ -100,6 +104,11 @@ export type PersonalEmailFormProps = {
     autoFocus?: boolean;
     /** Keep the email field's label for screen readers only, when the host already shows it. */
     hideEmailLabel?: boolean;
+    /**
+     * This device's Firebase ID token: when lca-api asks for a recent sign-in, a client-side
+     * sign-in (email link, Google, Apple) is reported and the call retried once.
+     */
+    getIdToken?: GetSignInIdToken;
 };
 
 const FieldError: React.FC<{ id: string; message?: string }> = ({ id, message }) => (
@@ -135,9 +144,10 @@ export const PersonalEmailForm: React.FC<PersonalEmailFormProps> = ({
     submitClassName = PRIMARY_BUTTON_CLASS,
     autoFocus = false,
     hideEmailLabel = false,
+    getIdToken,
 }) => {
-    const start = useStartPersonalEmail();
-    const verify = useVerifyPersonalEmail();
+    const start = useStartPersonalEmail({ getIdToken });
+    const verify = useVerifyPersonalEmail({ getIdToken });
     const formId = useId();
     const emailId = `${formId}-email`;
     const emailErrorId = `${formId}-email-error`;
@@ -196,7 +206,9 @@ export const PersonalEmailForm: React.FC<PersonalEmailFormProps> = ({
     };
 
     const sendCode = async (): Promise<void> => {
-        if (busy) return;
+        // Refused for want of a recent sign-in: only signing in again helps (and each try
+        // spends the address-check budget). Enter in the email field still submits the form.
+        if (busy || signInAgain) return;
         const address = email.trim();
         const resending = step === 'code';
         setError(null);
@@ -216,7 +228,7 @@ export const PersonalEmailForm: React.FC<PersonalEmailFormProps> = ({
     };
 
     const verifyCode = async (value: string): Promise<void> => {
-        if (busy || value.length !== CODE_LENGTH) return;
+        if (busy || signInAgain || value.length !== CODE_LENGTH) return;
         setError(null);
         try {
             const result = await verify.mutateAsync({ email: sentTo, code: value });
@@ -243,8 +255,19 @@ export const PersonalEmailForm: React.FC<PersonalEmailFormProps> = ({
     };
 
     const sentToMessage = m['classlinkPersonalEmail.sentTo']({ email: isolateLtr(sentTo) });
-    const emailError = error?.field === 'email' ? error.message : undefined;
-    const codeError = error?.field === 'code' ? error.message : undefined;
+    // While "Sign in again" replaces the actions, its reason stays under the field, whatever
+    // the user edits (editing clears other errors).
+    const signInAgainMessage = signInAgain
+        ? m['classlinkKeepAccount.recentSignInRequired']()
+        : undefined;
+    const emailError =
+        error?.field === 'email'
+            ? error.message
+            : step === 'email'
+              ? signInAgainMessage
+              : undefined;
+    const codeError =
+        error?.field === 'code' ? error.message : step === 'code' ? signInAgainMessage : undefined;
 
     const form = (
         <form id={formId} onSubmit={submit} noValidate className="w-full">
@@ -338,7 +361,7 @@ export const PersonalEmailForm: React.FC<PersonalEmailFormProps> = ({
                             data-testid="classlink-email-resend"
                             // Plain text while it counts down, so it reads as status.
                             className={`${LINK_BUTTON_CLASS} tabular-nums`}
-                            disabled={busy || resendSeconds > 0}
+                            disabled={busy || signInAgain || resendSeconds > 0}
                             onClick={() => void sendCode()}
                         >
                             {start.isPending

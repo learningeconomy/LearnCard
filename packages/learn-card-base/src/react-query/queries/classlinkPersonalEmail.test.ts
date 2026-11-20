@@ -7,6 +7,7 @@ import {
     RECONCILE_RETRY_MS,
     loadAccountContinuity,
     resetAccountContinuityReconcile,
+    withRecentSignInRetry,
 } from './classlinkPersonalEmail';
 
 const continuity = (
@@ -128,5 +129,65 @@ describe('loadAccountContinuity', () => {
         vi.advanceTimersByTime(RECONCILE_RETRY_MS + 1);
         await loadAccountContinuity(invoke, 'did:a');
         expect(invoke.classlinkReconcilePersonalEmail).toHaveBeenCalledTimes(3);
+    });
+});
+
+describe('withRecentSignInRetry', () => {
+    const refusal = () =>
+        Object.assign(new Error('For your security, sign in again to change your email.'), {
+            data: { code: 'FORBIDDEN', reason: 'recent_sign_in_required' },
+        });
+    const makeReport = (recorded: boolean) => ({
+        classlinkRecordRecentSignIn: vi.fn(async () => ({ recorded })),
+    });
+
+    it('reports the sign-in and retries once when it now counts', async () => {
+        const invoke = makeReport(true);
+        const call = vi.fn().mockRejectedValueOnce(refusal()).mockResolvedValueOnce('ok');
+        const getIdToken = vi.fn(async () => 'id-token');
+        await expect(withRecentSignInRetry(invoke, getIdToken, call)).resolves.toBe('ok');
+        expect(invoke.classlinkRecordRecentSignIn).toHaveBeenCalledWith({ idToken: 'id-token' });
+        expect(call).toHaveBeenCalledTimes(2);
+    });
+
+    it('keeps the refusal when the sign-in does not count (email code, ClassLink, too old)', async () => {
+        const invoke = makeReport(false);
+        const error = refusal();
+        const call = vi.fn().mockRejectedValue(error);
+        await expect(withRecentSignInRetry(invoke, async () => 'id-token', call)).rejects.toBe(
+            error
+        );
+        expect(call).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps the refusal when the report or the token fails', async () => {
+        const invoke = { classlinkRecordRecentSignIn: vi.fn().mockRejectedValue(new Error('old')) };
+        const error = refusal();
+        const call = vi.fn().mockRejectedValue(error);
+        await expect(withRecentSignInRetry(invoke, async () => 'id-token', call)).rejects.toBe(
+            error
+        );
+        await expect(
+            withRecentSignInRetry(
+                makeReport(true),
+                async () => {
+                    throw new Error('no session');
+                },
+                call
+            )
+        ).rejects.toBe(error);
+    });
+
+    it('never reports for other errors or without a token source', async () => {
+        const invoke = makeReport(true);
+        const other = Object.assign(new Error('taken'), { data: { code: 'CONFLICT' } });
+        await expect(
+            withRecentSignInRetry(invoke, async () => 'id-token', vi.fn().mockRejectedValue(other))
+        ).rejects.toBe(other);
+        const error = refusal();
+        await expect(
+            withRecentSignInRetry(invoke, undefined, vi.fn().mockRejectedValue(error))
+        ).rejects.toBe(error);
+        expect(invoke.classlinkRecordRecentSignIn).not.toHaveBeenCalled();
     });
 });

@@ -72,6 +72,11 @@ const mocks = vi.hoisted(() => ({
     logout: vi.fn(),
     continuityOptions: undefined as { enabled?: boolean; applySignInToken?: unknown } | undefined,
     dataUpdatedAt: 1,
+    authProvider: null as {
+        getProviderType: () => string;
+        getIdToken: () => Promise<string>;
+    } | null,
+    mutationOptions: {} as Record<string, { getIdToken?: () => Promise<string> } | undefined>,
 }));
 
 type AlertOptions = {
@@ -103,9 +108,18 @@ vi.mock('learn-card-base', () => ({
         data: mocks.isStudent === undefined ? undefined : { isStudent: mocks.isStudent },
         isLoading: false,
     }),
-    useStartPersonalEmail: () => ({ mutateAsync: mocks.start, isPending: false }),
-    useVerifyPersonalEmail: () => ({ mutateAsync: mocks.verify, isPending: false }),
-    useRemovePersonalEmail: () => ({ mutateAsync: mocks.remove, isPending: false }),
+    useStartPersonalEmail: (options?: { getIdToken?: () => Promise<string> }) => {
+        mocks.mutationOptions.start = options;
+        return { mutateAsync: mocks.start, isPending: false };
+    },
+    useVerifyPersonalEmail: (options?: { getIdToken?: () => Promise<string> }) => {
+        mocks.mutationOptions.verify = options;
+        return { mutateAsync: mocks.verify, isPending: false };
+    },
+    useRemovePersonalEmail: (options?: { getIdToken?: () => Promise<string> }) => {
+        mocks.mutationOptions.remove = options;
+        return { mutateAsync: mocks.remove, isPending: false };
+    },
     getSSSConfig: () => ({ escrowEnclaveMode: 'nitro' }),
     isSameEscrowPinError: (error: unknown) =>
         error instanceof Error && error.name === 'SameEscrowPinError',
@@ -129,6 +143,7 @@ vi.mock('../../providers/AuthCoordinatorProvider', () => ({
         confirmEscrowPin: mocks.confirmEscrowPin,
         getConfirmedContact: () => mocks.confirmedContact,
         getPendingAccountContact: () => mocks.pendingContact,
+        authProvider: mocks.authProvider,
     }),
 }));
 vi.mock('../../hooks/useLogout', () => ({
@@ -268,6 +283,8 @@ const MASKED = isolateLtr('m***@example.org');
 
 beforeEach(() => {
     vi.clearAllMocks();
+    mocks.authProvider = null;
+    mocks.mutationOptions = {};
     mocks.continuity = state();
     mocks.webAuthn = true;
     mocks.loading = false;
@@ -892,6 +909,44 @@ describe('KeepAccountStep', () => {
             expect(again.textContent).toBe(m['classlinkKeepAccount.signInAgain']());
             fireEvent.click(again);
             expect(mocks.logout).toHaveBeenCalledTimes(1);
+        });
+
+        it('editing the address keeps the reason, and Enter does not ask again', async () => {
+            mocks.start.mockRejectedValueOnce(RECENT());
+            renderStep();
+            await sendCode();
+            const input = screen.getByTestId('classlink-email-input');
+            fireEvent.change(input, { target: { value: 'other@example.org' } });
+            expect(
+                document.getElementById(input.getAttribute('aria-describedby') ?? '')?.textContent
+            ).toBe(m['classlinkKeepAccount.recentSignInRequired']());
+            expect(screen.queryByTestId('classlink-email-submit')).toBeNull();
+            expect(screen.getByTestId('keep-account-sign-in-again')).toBeTruthy();
+            // Implicit submission (Enter in the only field) must not spend another check.
+            await act(async () => {
+                fireEvent.submit(input.closest('form')!);
+            });
+            expect(mocks.start).toHaveBeenCalledTimes(1);
+        });
+
+        it("passes this device's Firebase ID token to the email mutations", async () => {
+            const getIdToken = vi.fn(async () => 'id-token');
+            mocks.authProvider = { getProviderType: () => 'firebase', getIdToken };
+            renderStep();
+            expect(screen.getByTestId('classlink-email-input')).toBeTruthy();
+            await expect(mocks.mutationOptions.start?.getIdToken?.()).resolves.toBe('id-token');
+            await expect(mocks.mutationOptions.verify?.getIdToken?.()).resolves.toBe('id-token');
+            await expect(mocks.mutationOptions.remove?.getIdToken?.()).resolves.toBe('id-token');
+        });
+
+        it('passes no token source without a Firebase session', () => {
+            mocks.authProvider = {
+                getProviderType: () => 'keycloak',
+                getIdToken: vi.fn(async () => 'kc'),
+            };
+            renderStep();
+            expect(mocks.mutationOptions.start?.getIdToken).toBeUndefined();
+            expect(mocks.mutationOptions.verify?.getIdToken).toBeUndefined();
         });
 
         it('verifying the code explains it under the code and offers Sign in again', async () => {

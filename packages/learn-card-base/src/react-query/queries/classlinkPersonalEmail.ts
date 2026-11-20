@@ -121,23 +121,68 @@ export const useClassLinkAccountContinuity = (
     });
 };
 
-export const useStartPersonalEmail = () => {
+/** Reads this device's Firebase ID token (`authProvider.getIdToken`), for a sign-in report. */
+export type GetSignInIdToken = () => Promise<string>;
+
+const isRecentSignInRequired = (error: unknown): boolean =>
+    (error as { data?: { reason?: unknown } } | null)?.data?.reason === 'recent_sign_in_required';
+
+/**
+ * Run a sign-in email change (`start`, `verify`, `remove`); when lca-api refuses it for want
+ * of a recent sign-in (`recent_sign_in_required`), report this device's Firebase sign-in
+ * (`classlinkRecordRecentSignIn`: an email-link, Google, Apple or phone sign-in never reaches
+ * lca-api otherwise) and retry once if it now counts. Otherwise the original refusal is
+ * thrown, so the app still offers "Sign in again". Without `getIdToken` (no Firebase session)
+ * it only runs `call`.
+ */
+export const withRecentSignInRetry = async <T>(
+    invoke: Pick<LCAPluginMethods, 'classlinkRecordRecentSignIn'>,
+    getIdToken: GetSignInIdToken | undefined,
+    call: () => Promise<T>
+): Promise<T> => {
+    try {
+        return await call();
+    } catch (error) {
+        if (!getIdToken || !isRecentSignInRequired(error)) throw error;
+        let recorded = false;
+        try {
+            recorded = (await invoke.classlinkRecordRecentSignIn({ idToken: await getIdToken() }))
+                .recorded;
+        } catch {
+            // No session token, or an older server: the refusal stands.
+        }
+        if (!recorded) throw error;
+        return call();
+    }
+};
+
+/** Options for the sign-in email mutations. */
+export type SignInEmailChangeOptions = {
+    /** This device's Firebase ID token, to report a client-side sign-in when refused. */
+    getIdToken?: GetSignInIdToken;
+};
+
+export const useStartPersonalEmail = (options: SignInEmailChangeOptions = {}) => {
     const learnCard = walletStore.use.wallet();
     return useMutation({
         mutationFn: async (input: { email: string }) => {
             if (!learnCard) throw new Error('Account is not ready');
-            return learnCard.invoke.classlinkStartPersonalEmail(input);
+            return withRecentSignInRetry(learnCard.invoke, options.getIdToken, () =>
+                learnCard.invoke.classlinkStartPersonalEmail(input)
+            );
         },
     });
 };
 
-export const useVerifyPersonalEmail = () => {
+export const useVerifyPersonalEmail = (options: SignInEmailChangeOptions = {}) => {
     const learnCard = walletStore.use.wallet();
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (input: { email: string; code: string }) => {
             if (!learnCard) throw new Error('Account is not ready');
-            return learnCard.invoke.classlinkVerifyPersonalEmail(input);
+            return withRecentSignInRetry(learnCard.invoke, options.getIdToken, () =>
+                learnCard.invoke.classlinkVerifyPersonalEmail(input)
+            );
         },
         onSuccess: (result, input) => {
             if (result.success) {
@@ -159,13 +204,15 @@ export const useVerifyPersonalEmail = () => {
  * Remove the personal sign-in email: lca-api restores the previous sign-in email and contact
  * and returns a custom token for the login it signed out (see `KeepAccountStep`).
  */
-export const useRemovePersonalEmail = () => {
+export const useRemovePersonalEmail = (options: SignInEmailChangeOptions = {}) => {
     const learnCard = walletStore.use.wallet();
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async () => {
             if (!learnCard) throw new Error('Account is not ready');
-            return learnCard.invoke.classlinkRemovePersonalEmail();
+            return withRecentSignInRetry(learnCard.invoke, options.getIdToken, () =>
+                learnCard.invoke.classlinkRemovePersonalEmail()
+            );
         },
         onSettled: () => {
             const did = learnCard?.id.did();
