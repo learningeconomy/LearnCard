@@ -251,9 +251,11 @@ describe('shared CLR renderer', () => {
         expect(
             within(qualification.container).getByText('SYN-LOG-2048').closest('details')
         ).toBeNull();
-        expect(
-            within(qualification.container).getByText('SYN-QUAL-48').closest('details')
-        ).toBeNull();
+        const identifiers = within(qualification.container)
+            .getByText('Credential identifiers')
+            .closest('details')!;
+        expect(identifiers).toHaveAttribute('open');
+        expect(within(identifiers).getByText('SYN-QUAL-48')).toBeVisible();
         expect(within(qualification.container).getByText('Awarded')).toBeInTheDocument();
         expect(within(qualification.container).getByText('Valid from')).toBeInTheDocument();
         expect(within(qualification.container).getByText('Valid until')).toBeInTheDocument();
