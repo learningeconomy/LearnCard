@@ -53,18 +53,24 @@ the old `E2E` requirement with **all five** E2E checks listed above. Preserve `T
 `Typecheck ratchet`, the merge queue and every other protection. Enqueue the
 approved workflow change normally, then verify that the actual `merge_group`
 revision runs the full suites and that all five required checks are accepted.
-Verify failed or cancelled eligibility and suite checks block merging, and that
-the documentation-only exemption reports the expected skips. Do not remove the
+A successful run does not establish failure or exemption behavior: use separate
+controlled queue candidates to verify that failed or cancelled eligibility and
+suite checks block merging and that a documentation-only change reports the
+expected skips. Record any cases not exercised as unverified. Do not remove the
 old requirement on its own. Avoid admitting unrelated candidates until this
 workflow lands or those candidates report the new check names; keep the cutover
 window short.
 
 If the cutover must be reversed before this workflow merges, restore the previous
 required-check set, including `E2E`, and use a candidate whose workflow still
-reports that aggregate. After this workflow merges, restoring the old `E2E`
-requirement alone would block future merges: coordinate restoration of the
-aggregate workflow job and its matching required-check settings together, with
-the queue drained while old and new revisions may report different names.
+reports that aggregate. After this workflow merges, prepare and approve a revert
+PR that restores the aggregate job and confirm its PR revision reports `E2E`.
+Pause admissions and drain the queue, then replace the five new E2E requirements
+with `E2E` in one settings update, preserving all other protections. Enqueue the
+revert PR alone and verify its `merge_group` result. The revert cannot enter the
+queue while its missing five checks are required; conversely, changing settings
+without a candidate that reports `E2E` blocks merges. If the revert cannot land,
+restore the five-check set and investigate before retrying.
 
 ### Run full E2E on a PR before queuing
 

@@ -48,6 +48,7 @@ abort 'producer probe must default off' unless probe_input.fetch('type') == 'boo
 
 eligibility = jobs.fetch('eligibility')
 abort 'eligibility name must not retain hosted shadow terminology' unless eligibility.fetch('name') == 'Determine E2E eligibility'
+abort 'required eligibility job must not be skipped' if eligibility.key?('if')
 outputs = eligibility.fetch('outputs')
 abort 'run_e2e output missing' unless outputs.key?('run_e2e')
 abort 'eligibility reason output missing' unless outputs.key?('reason')
@@ -144,9 +145,8 @@ abort 'browser job must use the selected specs with the EC2 defaults' unless bro
 ) == expected_browser_env
 
 abort 'browser job must depend on eligibility' unless browser.fetch('needs') == 'eligibility'
-abort 'browser job must honor eligibility output' unless browser.fetch('if').include?(
-  "needs.eligibility.outputs.run_e2e == 'true'"
-)
+abort 'browser job must honor eligibility output' unless browser.fetch('if') == "${{ needs.eligibility.outputs.run_e2e == 'true' }}"
+abort 'browser job must not allow failures' if browser.fetch('continue-on-error', false)
 abort 'runner label must remain configurable' unless browser.fetch('runs-on').include?(
   'vars.E2E_HOSTED_RUNNER'
 )
