@@ -300,6 +300,23 @@ describe('School Connect', () => {
         expect(await Preferences.findOne({ did })).toBeNull();
     });
 
+    it.each([
+        ['without a role claim', undefined, false],
+        ['with a non-student role', 'teacher', true],
+        ['with the student role', 'student', true],
+    ] as const)(
+        'records whether the role was recognized: a connect %s (LC-2409 review)',
+        async (_label, role, known) => {
+            if (role === undefined) delete claims.classLink_role;
+            else claims.classLink_role = role;
+            await caller().connect(exchange);
+            expect(await findClassLinkIdentityByIdentityKey(identityKey)).toMatchObject({
+                isMinorHint: role === 'student',
+                studentStatusKnown: known,
+            });
+        }
+    );
+
     it('refuses a school account that belongs to another LearnCard account', async () => {
         await upsertClassLinkIdentity({
             identityKey,

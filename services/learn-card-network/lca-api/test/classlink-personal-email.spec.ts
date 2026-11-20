@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { UpdateFilter } from 'mongodb';
 import mongodb from '@mongo';
 import cache from '@cache';
 import { t } from '@routes';
@@ -8,6 +9,7 @@ import { getClassLinkConfig } from '../src/helpers/classlink.config';
 import {
     getClassLinkIdentitiesCollection,
     upsertClassLinkIdentity,
+    type MongoClassLinkIdentityType,
 } from '../src/models/ClassLinkIdentity';
 import {
     getAuthSubjectsCollection,
@@ -124,7 +126,10 @@ beforeEach(async () => {
         identityKey: 'classlink:tenant-test:source-1',
         tenantId: 'tenant-test',
         sub: 'upstream',
-        role: 'student',
+        // A verified non-student role (account continuity needs a recognized role).
+        role: 'teacher',
+        isMinorHint: false,
+        studentStatusKnown: true,
         email: 'student@example.edu',
         sealedStateStudentId: null,
         state: 'XX',
@@ -436,12 +441,45 @@ describe('ClassLink personal email', () => {
             );
         });
 
+        it.each([
+            [
+                'a token without a role',
+                { $set: { studentStatusKnown: false } } as UpdateFilter<MongoClassLinkIdentityType>,
+            ],
+            [
+                'a legacy identity without the hint',
+                {
+                    $unset: { isMinorHint: '', studentStatusKnown: '' },
+                } as UpdateFilter<MongoClassLinkIdentityType>,
+            ],
+        ])(
+            'fails closed for %s: refused under nonStudents, allowed under a plain all (LC-2409 review)',
+            async (_label, update) => {
+                await getClassLinkIdentitiesCollection().updateOne(
+                    { firebaseUid: 'uid-test' },
+                    update
+                );
+                expect(await reasonOf(caller().startPersonalEmail({ email }))).toBe(
+                    'status_unknown'
+                );
+                expect(send).not.toHaveBeenCalled();
+                setContinuity({ defaultPolicy: { personalEmail: 'all', approval: 'none' } });
+                await caller().startPersonalEmail({ email });
+                await expect(
+                    caller().verifyPersonalEmail({ email, code: getCode() })
+                ).resolves.toMatchObject({ success: true });
+            }
+        );
+
         it('applies the most restrictive district when the person has several', async () => {
             await upsertClassLinkIdentity({
                 identityKey: 'classlink:tenant-closed:source-2',
                 tenantId: 'tenant-closed',
                 sub: 'upstream-2',
-                role: 'student',
+                // A verified non-student role (account continuity needs a recognized role).
+                role: 'teacher',
+                isMinorHint: false,
+                studentStatusKnown: true,
                 email: 'student@closed.example.edu',
                 sealedStateStudentId: null,
                 state: 'XX',
@@ -2328,7 +2366,10 @@ describe('ClassLink personal email', () => {
                 identityKey: 'classlink:tenant-test:source-1',
                 tenantId: 'tenant-test',
                 sub: 'upstream',
-                role: 'student',
+                // A verified non-student role (account continuity needs a recognized role).
+                role: 'teacher',
+                isMinorHint: false,
+                studentStatusKnown: true,
                 email: 'student@example.edu',
                 sealedStateStudentId: null,
                 state: 'XX',

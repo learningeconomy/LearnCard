@@ -9,6 +9,7 @@ import { getClassLinkConfig, getClassLinkTenant } from '@helpers/classlink.confi
 import { ClassLinkProviderUnavailable, ClassLinkTokenInvalid } from '@helpers/classlink.errors';
 import {
     classLinkExchangeInput,
+    hasClassLinkRole,
     isClassLinkStudent,
     verifyClassLinkExchange,
 } from '@helpers/classlinkExchange.helpers';
@@ -260,6 +261,8 @@ export const connectProcedures = {
                     ...(userKey.primaryDid ? { primaryDid: userKey.primaryDid } : {}),
                     lastAuthTime,
                     isMinorHint: isStudent,
+                    // Whether that hint rests on a role claim (continuity fails closed otherwise).
+                    studentStatusKnown: isStudent || hasClassLinkRole(claims),
                 });
                 // Moving off the identity's deterministic Firebase user: that user may still hold
                 // the trusted school email, which would otherwise keep resolving to it.

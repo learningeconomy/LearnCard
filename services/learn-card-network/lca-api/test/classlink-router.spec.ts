@@ -5,6 +5,7 @@ import {
     classlinkRouter,
 } from '../src/routes/classlink';
 import { getClassLinkConfig } from '../src/helpers/classlink.config';
+import { getContinuityStudentStatus } from '../src/helpers/classlinkContext.helpers';
 import { exchangeClassLinkCode, verifyClassLinkIdToken } from '../src/helpers/classlink.helpers';
 import {
     ClassLinkProviderUnavailable,
@@ -779,6 +780,40 @@ describe('ClassLink sign-in broker', () => {
         expect(await findClassLinkIdentityByIdentityKey(identityKey)).toMatchObject({
             lastAuthTime: new Date(claims.iat * 1000),
             isMinorHint: false,
+        });
+    });
+    it.each([
+        ['without a role claim', undefined, false, 'unknown'],
+        ['with a blank role claim', '  ', false, 'unknown'],
+        ['with a non-student role', 'teacher', true, 'not_student'],
+        ['with the student role', 'student', true, 'student'],
+    ] as const)(
+        'records whether the role was recognized: a sign-in %s (LC-2409 review)',
+        async (_label, role, known, continuity) => {
+            if (role === undefined) delete claims.classLink_role;
+            else claims.classLink_role = role;
+            await caller().exchangeCode(exchange);
+            const stored = await findClassLinkIdentityByIdentityKey(identityKey);
+            expect(stored).toMatchObject({
+                isMinorHint: role === 'student',
+                studentStatusKnown: known,
+            });
+            expect(
+                getContinuityStudentStatus({
+                    identities: [stored!],
+                    heldElsewhere: [],
+                    orphaned: [],
+                })
+            ).toBe(continuity);
+        }
+    );
+    it('a later sign-in without a role keeps a recorded student a student', async () => {
+        await caller().exchangeCode(exchange);
+        delete claims.classLink_role;
+        await caller().exchangeCode(exchange);
+        expect(await findClassLinkIdentityByIdentityKey(identityKey)).toMatchObject({
+            isMinorHint: true,
+            studentStatusKnown: true,
         });
     });
     it('clears a stored state ID and legacy plaintext when a sign-in supplies no ID', async () => {

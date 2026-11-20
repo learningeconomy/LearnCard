@@ -268,6 +268,22 @@ export const getMatchedStudentStatus = (
         ? 'student'
         : 'not_student';
 
+/**
+ * Student status for account continuity (LC-2409), failing closed: any student identity gives
+ * `student`; otherwise any identity whose role was not recognized at its latest sign-in (no
+ * role claim, `studentStatusKnown: false`) or that predates the field gives `unknown`; only
+ * when every identity carried a non-student role, `not_student`. The privacy lock keeps using
+ * `getMatchedStudentStatus` (it only knows `isMinorHint`).
+ */
+export const getContinuityStudentStatus = (
+    matched: AccountClassLinkIdentities
+): 'student' | 'not_student' | 'unknown' => {
+    const identities = getAllMatchedIdentities(matched);
+    if (identities.some(identity => identity.isMinorHint === true)) return 'student';
+    if (identities.some(identity => identity.studentStatusKnown !== true)) return 'unknown';
+    return 'not_student';
+};
+
 /** Whether the DID belongs to a ClassLink student. Lookup failures return 'unknown'. */
 export const getClassLinkStudentStatus = async (did: string): Promise<ClassLinkStudentStatus> => {
     try {

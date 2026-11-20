@@ -38,6 +38,15 @@ export interface MongoClassLinkIdentityType {
      */
     lastFirebaseSignIn?: { uid: string; at: Date };
     isMinorHint?: boolean;
+    /**
+     * Whether `isMinorHint` rests on a recognized role (LC-2409): true when a sign-in found a
+     * student (sticky with the hint) or its verified id_token carried a role claim; false when
+     * the latest one carried no role, so `isMinorHint: false` only means "not known to be a
+     * student". Absent on identities written before this field. Account continuity treats
+     * false or absent as an unknown status (`getContinuityStudentStatus`); the student privacy
+     * lock still reads only `isMinorHint`.
+     */
+    studentStatusKnown?: boolean;
     personalEmail?: string;
     personalEmailVerifiedAt?: Date;
     /**

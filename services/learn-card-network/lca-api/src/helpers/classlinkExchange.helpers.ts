@@ -84,3 +84,10 @@ export const verifyClassLinkExchange = async (
 
 export const isClassLinkStudent = (claims: ClassLinkClaims): boolean =>
     claims.classLink_role?.toLowerCase() === 'student';
+
+/**
+ * Whether the verified id_token says what role the person has (the claim is optional). Without
+ * it, `isClassLinkStudent` is false but the person may still be a student.
+ */
+export const hasClassLinkRole = (claims: ClassLinkClaims): boolean =>
+    Boolean(claims.classLink_role?.trim());

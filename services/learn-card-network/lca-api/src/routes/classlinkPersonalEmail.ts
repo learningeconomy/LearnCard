@@ -76,7 +76,8 @@ const CONTINUITY_REFUSALS: Record<AccountContinuityReason, string> = {
     disabled: 'Adding a personal email is not available yet.',
     district_off: 'Your school has not turned on personal emails.',
     students_excluded: 'Your school does not let students add a personal email.',
-    status_unknown: 'We could not check your account. Please try again later.',
+    status_unknown:
+        'We could not confirm your school role, so a personal email cannot be added yet.',
     below_minimum_age: 'You are not old enough to add a personal email.',
     age_unknown: 'Add your date of birth to your profile to add a personal email.',
     approval_required: 'A parent or guardian needs to approve this first.',

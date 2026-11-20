@@ -7,7 +7,10 @@ import {
 } from '../src/helpers/accountContinuity.helpers';
 import { getCurrentProfile } from '../src/helpers/currentProfile';
 import type { AccountContinuityPolicy } from '../src/types/accountContinuity';
-import type { ClassLinkStudentStatus } from '../src/helpers/classlinkContext.helpers';
+import {
+    getContinuityStudentStatus,
+    type ClassLinkStudentStatus,
+} from '../src/helpers/classlinkContext.helpers';
 
 const { env } = vi.hoisted(() => ({
     env: {
@@ -206,8 +209,8 @@ describe('loadAccountContinuity', () => {
         tenant: { id: 'learncard', resolvedVia: 'default' as const, emailBranding: {} },
         user: { did: 'did:key:z', isChallengeValid: true },
     };
-    const identity = (tenantId: string, isMinorHint = false) =>
-        ({ tenantId, isMinorHint }) as never;
+    const identity = (tenantId: string, isMinorHint = false, studentStatusKnown = true) =>
+        ({ tenantId, isMinorHint, studentStatusKnown }) as never;
     const matched = (owned: never[], heldElsewhere: never[] = []) => ({
         identities: owned,
         heldElsewhere,
@@ -237,6 +240,78 @@ describe('loadAccountContinuity', () => {
             matched([identity('a')], [identity('b', true)])
         );
         expect(result.decision).toEqual({ allowed: false, reason: 'students_excluded' });
+    });
+
+    describe('a ClassLink role that was not recognized fails closed (LC-2409 review)', () => {
+        /** A sign-in whose token had no role (isMinorHint false, role not recognized). */
+        const roleless = (tenantId: string) => identity(tenantId, false, false);
+        /** An identity written before `studentStatusKnown` existed (no hint either). */
+        const legacy = (tenantId: string) => ({ tenantId }) as never;
+        const cases = [
+            ['a token without a role', roleless],
+            ['a legacy identity without the hint', legacy],
+        ] as const;
+
+        it.each(cases)('%s is an unknown status', (_label, make) => {
+            expect(getContinuityStudentStatus(matched([make('a')]))).toBe('unknown');
+            // Any recognized non-student identity does not outweigh it.
+            expect(getContinuityStudentStatus(matched([identity('a')], [make('b')]))).toBe(
+                'unknown'
+            );
+            // A student anywhere still wins.
+            expect(getContinuityStudentStatus(matched([make('a')], [identity('b', true)]))).toBe(
+                'student'
+            );
+        });
+
+        it.each(cases)('%s is refused under nonStudents', async (_label, make) => {
+            await expect(loadAccountContinuity(ctx, matched([make('a')]))).resolves.toMatchObject({
+                decision: { allowed: false, reason: 'status_unknown' },
+            });
+        });
+
+        it.each(cases)(
+            '%s is refused under a restricted all (minimum age, guardian)',
+            async (_label, make) => {
+                env.CLASSLINK_ACCOUNT_CONTINUITY_DEFAULT =
+                    '{"personalEmail":"all","minimumAge":13}';
+                vi.mocked(getCurrentProfile).mockResolvedValue(null);
+                await expect(
+                    loadAccountContinuity(ctx, matched([make('a')]))
+                ).resolves.toMatchObject({ decision: { allowed: false, reason: 'age_unknown' } });
+                const tenYearsAgo = new Date();
+                tenYearsAgo.setUTCFullYear(tenYearsAgo.getUTCFullYear() - 10);
+                vi.mocked(getCurrentProfile).mockResolvedValue({
+                    dob: tenYearsAgo.toISOString().slice(0, 10),
+                });
+                await expect(
+                    loadAccountContinuity(ctx, matched([make('a')]))
+                ).resolves.toMatchObject({
+                    decision: { allowed: false, reason: 'below_minimum_age' },
+                });
+                env.CLASSLINK_ACCOUNT_CONTINUITY_DEFAULT =
+                    '{"personalEmail":"all","approval":"guardian"}';
+                await expect(
+                    loadAccountContinuity(ctx, matched([make('a')]))
+                ).resolves.toMatchObject({
+                    decision: { allowed: false, reason: 'approval_required' },
+                });
+            }
+        );
+
+        it.each(cases)('%s is allowed under a plain all', async (_label, make) => {
+            env.CLASSLINK_ACCOUNT_CONTINUITY_DEFAULT = '{"personalEmail":"all"}';
+            await expect(loadAccountContinuity(ctx, matched([make('a')]))).resolves.toMatchObject({
+                decision: { allowed: true },
+            });
+        });
+
+        it('a recognized non-student role is allowed under nonStudents', async () => {
+            await expect(
+                loadAccountContinuity(ctx, matched([identity('a')]))
+            ).resolves.toMatchObject({ decision: { allowed: true } });
+            expect(getCurrentProfile).not.toHaveBeenCalled();
+        });
     });
 
     it('reads the profile only when a minimum age applies to a student', async () => {
