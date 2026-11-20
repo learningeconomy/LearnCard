@@ -1040,11 +1040,13 @@ const AuthSessionManager: React.FC<{
                     web3AuthKey: resolved.privateKey,
                     source: 'derived',
                 });
-            } catch {
+            } catch (error) {
                 // Provider and Torus errors can embed credentials. Shared strategy
                 // diagnostics retain safe outcome metadata; never forward raw errors.
                 emitAuthError('web3auth:migration_key', 'Could not prepare account upgrade');
-                fallBack();
+                if (isCurrentAttempt()) {
+                    migrationCoordinatorRef.current.handleMigrationKeyError(error);
+                }
             }
         };
 

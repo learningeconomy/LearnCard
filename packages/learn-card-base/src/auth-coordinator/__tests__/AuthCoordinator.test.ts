@@ -24,7 +24,7 @@ import {
     type SSSStorageFunctions,
 } from '@learncard/sss-key-manager';
 import { AuthSessionError } from '../types';
-import { RecoveryInProgressError, SameEscrowPinError } from '../errors';
+import { LegacyKeyUnassignedError, RecoveryInProgressError, SameEscrowPinError } from '../errors';
 import pendingWriteSplits from './fixtures/pending-write-splits.json';
 
 const logoutLogs = vi.hoisted(() => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() }));
@@ -124,6 +124,105 @@ const setup = (options: SetupOptions = {}) => {
 // ---------------------------------------------------------------------------
 
 describe('AuthCoordinator', () => {
+    describe('legacy key lookup failures', () => {
+        const oldUser = { ...mockUser, createdAt: new Date('2020-01-01') };
+        const withoutRecord = {
+            ...defaultServerStatus,
+            exists: false,
+            primaryDid: null,
+            authShare: null,
+        };
+
+        const setupLegacy = (serverStatus = withoutRecord, hasLocalKey = false) =>
+            setup({
+                authProvider: { getCurrentUser: vi.fn().mockResolvedValue(oldUser) },
+                keyDerivation: {
+                    hasLocalKey: vi.fn().mockResolvedValue(hasLocalKey),
+                    fetchServerKeyStatus: vi.fn().mockResolvedValue(serverStatus),
+                },
+                config: { legacyAccountThresholdMs: 5 * 60 * 1000 },
+            });
+
+        it('sets up an older account when the legacy provider never assigned a key', async () => {
+            const { coordinator, keyDerivation } = setupLegacy();
+            expect((await coordinator.initialize()).status).toBe('needs_migration');
+            coordinator.handleMigrationKeyError(new LegacyKeyUnassignedError());
+            expect(coordinator.getState().status).toBe('needs_setup');
+            expect((await coordinator.setupNewKey('fresh-key', 'did:key:z123')).status).toBe(
+                'ready'
+            );
+            expect(keyDerivation.splitKey).toHaveBeenCalledWith('fresh-key');
+        });
+
+        it.each(['network', '503', 'timeout', 'MFA required', 'no key'])(
+            'keeps %s retryable without creating an identity',
+            async message => {
+                const { coordinator, keyDerivation } = setupLegacy();
+                await coordinator.initialize();
+                coordinator.handleMigrationKeyError(new Error(message));
+                expect(coordinator.getState()).toMatchObject({ status: 'error', canRetry: true });
+                expect(keyDerivation.splitKey).not.toHaveBeenCalled();
+                expect(keyDerivation.storeAuthShare).not.toHaveBeenCalled();
+                expect((await coordinator.retry()).status).toBe('needs_migration');
+            }
+        );
+
+        it('does not replace a locally stored key', async () => {
+            const { coordinator } = setupLegacy(withoutRecord, true);
+            await coordinator.initialize();
+            coordinator.handleMigrationKeyError(new LegacyKeyUnassignedError());
+            expect(coordinator.getState()).toMatchObject({ status: 'error', canRetry: true });
+        });
+
+        it('does not replace a server identity or a key already found', async () => {
+            for (const data of [{ expectedDid: 'did:key:z123' }, { web3AuthKey: 'legacy-key' }]) {
+                const { coordinator, keyDerivation } = setupLegacy();
+                await coordinator.initialize();
+                coordinator.setMigrationData(data);
+                coordinator.handleMigrationKeyError(new LegacyKeyUnassignedError());
+                expect(coordinator.getState().status).toBe('error');
+                expect(keyDerivation.splitKey).not.toHaveBeenCalled();
+            }
+        });
+
+        it('does not set up an account with an existing server record', async () => {
+            const { coordinator, keyDerivation } = setup({
+                keyDerivation: {
+                    fetchServerKeyStatus: vi.fn().mockResolvedValue({
+                        ...defaultServerStatus,
+                        needsMigration: true,
+                        primaryDid: null,
+                    }),
+                },
+            });
+            await coordinator.initialize();
+            coordinator.handleMigrationKeyError(new LegacyKeyUnassignedError());
+            expect(coordinator.getState().status).toBe('error');
+            expect(keyDerivation.splitKey).not.toHaveBeenCalled();
+        });
+
+        it.each([new LegacyKeyUnassignedError(), new Error('MFA required')])(
+            'preserves recovery for a provisional identity',
+            async error => {
+                const { coordinator, keyDerivation } = setup({
+                    keyDerivation: {
+                        hasLocalKey: vi.fn().mockResolvedValue(false),
+                        fetchServerKeyStatus: vi.fn().mockResolvedValue({
+                            ...defaultServerStatus,
+                            needsMigration: true,
+                            sssActivationState: 'provisional',
+                        }),
+                    },
+                });
+                expect((await coordinator.initialize()).status).toBe('needs_migration');
+                coordinator.handleMigrationKeyError(error);
+                expect(coordinator.getState().status).toBe('needs_recovery');
+                expect(keyDerivation.splitKey).not.toHaveBeenCalled();
+                expect(keyDerivation.storeAuthShare).not.toHaveBeenCalled();
+            }
+        );
+    });
+
     describe('escrow recovery', () => {
         it('waits for outstanding enrollment writes before forgetting the device', async () => {
             let finishEnrollment!: () => void;
