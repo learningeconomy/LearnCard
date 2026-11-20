@@ -1262,7 +1262,7 @@ jobs:
             # ${TENANT:-learncard} ${STAGE:+--stage $STAGE}, so both must be passed here or
             # the build re-bakes LearnCard production over the tenant prepared above.
             - name: Build App
-              run: bunx nx build ${{ steps.vars.outputs.project_name }}
+              run: bunx nx build ${{ steps.vars.outputs.project_name }} --skip-nx-cache
               env:
                   TENANT: ${{ vars.TENANT || 'learncard' }}
                   STAGE: ${{ vars.STAGE || '' }}
@@ -1272,6 +1272,10 @@ jobs:
                   VITE_WEB3AUTH_CLIENT_ID: ${{ secrets.VITE_WEB3AUTH_CLIENT_ID }}
                   VITE_WEB3AUTH_RPC_TARGET: ${{ secrets.VITE_WEB3AUTH_RPC_TARGET }}
                   GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+                  SENTRY_AUTH_TOKEN: ${{ steps.vars.outputs.project_name == 'learn-card-app' && secrets.SENTRY_AUTH_TOKEN || '' }}
+                  SENTRY_ORG: ${{ steps.vars.outputs.project_name == 'learn-card-app' && secrets.SENTRY_ORG || '' }}
+                  SENTRY_PROJECT: ${{ steps.vars.outputs.project_name == 'learn-card-app' && secrets.SENTRY_PROJECT || '' }}
+                  SENTRY_UPLOAD_REQUIRED: ${{ steps.vars.outputs.project_name == 'learn-card-app' }}
 
             # Guards against the build re-baking the wrong tenant OR the wrong stage (the
             # original bug was learncard/production baked on staging). The expected stage is

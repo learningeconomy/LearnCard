@@ -8,10 +8,14 @@ import {
     getLogger,
 } from 'learn-card-base';
 import { usePrivacyConsent } from 'learn-card-base/hooks/usePrivacyGate';
-import { isSharePrivateSession } from '../components/share-links/sharePrivacy';
+import {
+    isSharePrivateSession,
+    useSharePrivateSession,
+} from '../components/share-links/sharePrivacy';
 import { isTenantAnalyticsEnabled } from '../config/tenantConfigState';
 import { useFeedbackReportingEligibility } from '../feedback/reporting/eligibility';
 import { setSentryOptionalTelemetryEnabled } from './sentry';
+import { canSendCrashReport, setCrashReportingEnabled } from './nativeCrashReporting';
 
 // Kept apart from ./sentry (Sentry.init, imported first by the app entry) because this hook needs the
 // wallet, preferences, and privacy hooks, which would otherwise pull the whole wallet stack into the entry.
@@ -25,10 +29,47 @@ export const useSentryIdentify = (options: UseSentryIdentifyOptions = {}) => {
     const { analyticsEnabled, identityKey } = usePrivacyConsent();
     const currentUser = useCurrentUser();
     const { getDID } = useWallet();
-    const { data: preferences, isLoading: preferencesLoading } = useGetPreferencesForDid();
+    const {
+        data: preferences,
+        isLoading: preferencesLoading,
+        isSuccess: preferencesResolved,
+    } = useGetPreferencesForDid();
     const reportingEligibility = useFeedbackReportingEligibility();
+    const privateSession = useSharePrivateSession();
+    const [crashGateEnabled, setCrashGateEnabled] = useState(canSendCrashReport);
+    const canTrustPreferences = Boolean(
+        currentUser &&
+        reportingEligibility.profileId &&
+        !preferencesLoading &&
+        (preferencesResolved || preferences !== undefined)
+    );
+    // Preserve the last resolved choice on logout or while the next account loads.
+    const bugReportsEnabled =
+        !privateSession &&
+        (canTrustPreferences ? (preferences?.bugReportsEnabled ?? true) : crashGateEnabled);
+
+    useEffect(() => {
+        if (!canTrustPreferences) return;
+        let cancelled = false;
+        const pending = setCrashReportingEnabled(preferences?.bugReportsEnabled ?? true);
+        setCrashGateEnabled(canSendCrashReport());
+        void pending.then(() => {
+            if (!cancelled) setCrashGateEnabled(canSendCrashReport());
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [
+        canTrustPreferences,
+        currentUser,
+        reportingEligibility.profileId,
+        preferences?.bugReportsEnabled,
+    ]);
+
     const optionalTelemetryAllowed =
         analyticsEnabled &&
+        bugReportsEnabled &&
+        crashGateEnabled &&
         identityKey !== null &&
         isTenantAnalyticsEnabled() &&
         !isSharePrivateSession();
@@ -48,7 +89,7 @@ export const useSentryIdentify = (options: UseSentryIdentifyOptions = {}) => {
             // A previous session's stop flush must finish while transport is
             // blocked before a newly authorized identity can start recording.
             void stoppingReplay.current.then(() => {
-                if (cancelled || isSharePrivateSession()) return;
+                if (cancelled || !canSendCrashReport() || isSharePrivateSession()) return;
                 activeReplayIdentity.current = identityKey;
                 setSentryOptionalTelemetryEnabled(true);
                 if (sampleReplaySession) replay?.start();
@@ -65,16 +106,6 @@ export const useSentryIdentify = (options: UseSentryIdentifyOptions = {}) => {
             ]).then(() => undefined);
         };
     }, [optionalTelemetryAllowed, identityKey, sampleReplaySession]);
-    // Remote crash reporting preserves the existing preference semantics so
-    // login/onboarding/logout failures remain observable. Cached preferences
-    // are trusted only for a fully resolved authenticated profile; only the
-    // user-attachable diagnostic buffer uses the stricter adult eligibility.
-    const canTrustPreferences = Boolean(
-        currentUser && reportingEligibility.profileId && !preferencesLoading
-    );
-    const bugReportsEnabled =
-        !isSharePrivateSession() &&
-        (canTrustPreferences ? (preferences?.bugReportsEnabled ?? true) : true);
 
     useEffect(() => {
         let cancelled = false;
@@ -90,7 +121,13 @@ export const useSentryIdentify = (options: UseSentryIdentifyOptions = {}) => {
                 if (options.debug) log.debug('Identify user! 🎸', { uid: currentUser.uid });
                 getDID()
                     .then(did => {
-                        if (cancelled || typeof did !== 'string' || did.trim() === '') {
+                        if (
+                            cancelled ||
+                            !canSendCrashReport() ||
+                            isSharePrivateSession() ||
+                            typeof did !== 'string' ||
+                            did.trim() === ''
+                        ) {
                             return;
                         }
 
@@ -119,5 +156,11 @@ export const useSentryIdentify = (options: UseSentryIdentifyOptions = {}) => {
             cancelled = true;
             Sentry.setUser(null);
         };
-    }, [currentUser, bugReportsEnabled, reportingEligibility.bug, reportingEligibility.profileId]);
+    }, [
+        currentUser,
+        bugReportsEnabled,
+        crashGateEnabled,
+        reportingEligibility.bug,
+        reportingEligibility.profileId,
+    ]);
 };

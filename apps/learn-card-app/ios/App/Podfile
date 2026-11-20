@@ -37,6 +37,7 @@ def capacitor_pods
   pod 'CapgoCapacitorUpdater', :path => '../../../../node_modules/@capgo/capacitor-updater'
   pod 'CapacitorNativeSettings', :path => '../../../../node_modules/capacitor-native-settings'
   pod 'CapacitorPluginSafeArea', :path => '../../../../node_modules/capacitor-plugin-safe-area'
+  pod 'SentryCapacitor', :path => '../../../../node_modules/@sentry/capacitor'
 end
  
 target 'App' do

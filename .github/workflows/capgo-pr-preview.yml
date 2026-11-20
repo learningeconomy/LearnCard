@@ -219,6 +219,8 @@ jobs:
             tenant: learncard
             stage: staging
             self_assign: ${{ 'true' }}
+            # PR-head build scripts must not receive the Sentry upload token.
+            sentry_upload: false
         secrets:
             CAPGO_TOKEN: ${{ secrets.CAPGO_TOKEN }}
 

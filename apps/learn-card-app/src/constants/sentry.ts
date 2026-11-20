@@ -2,6 +2,12 @@ import { isSharePrivateSession, scrubShareTelemetry } from '../components/share-
 import * as Sentry from '@sentry/react';
 import { configureSentryTransport } from 'learn-card-base';
 import { getResolvedTenantConfig, isTenantAnalyticsEnabled } from '../config/tenantConfigState';
+import {
+    canSendCrashReport,
+    initializeNativeCrashReporting,
+    updateCrashReportingRoute,
+} from './nativeCrashReporting';
+import { routingHistory } from './routingHistory';
 let optionalTelemetryEnabled = false;
 const OPTIONAL_SENTRY_ENVELOPE_ITEMS: Record<string, true> = {
     replay_event: true,
@@ -20,7 +26,13 @@ export const setSentryOptionalTelemetryEnabled = (enabled: boolean): void => {
     optionalTelemetryEnabled = enabled && isTenantAnalyticsEnabled();
 };
 
-export const initSentryFromTenant = (): void => {
+let initialized = false;
+export const initSentryFromTenant = async (): Promise<void> => {
+    if (initialized) return;
+    initialized = true;
+    await initializeNativeCrashReporting();
+    updateCrashReportingRoute(routingHistory.location.pathname);
+    routingHistory.listen(location => updateCrashReportingRoute(location.pathname));
     const config = getResolvedTenantConfig();
     const dsn = config.observability.sentryDsn;
     const env = config.observability.sentryEnv;
@@ -35,8 +47,14 @@ export const initSentryFromTenant = (): void => {
 
     Sentry.init({
         dsn,
+        // Native Sentry starts separately, with native privacy callbacks.
+        release: `learncard-web@${__PACKAGE_VERSION__}+${__BUILD_SHA__}`,
+        sendDefaultPii: false,
+        initialScope: {
+            tags: { tenant_id: config.tenantId, error_layer: 'javascript', web_sha: __BUILD_SHA__ },
+        },
         beforeSend: event => {
-            if (isSharePrivateSession()) return null;
+            if (!canSendCrashReport()) return null;
             // Preserve error-triggered replay only within an authorized session;
             // startup errors must not start a recorder.
             if (optionalTelemetryEnabled && event.exception) {
@@ -44,10 +62,9 @@ export const initSentryFromTenant = (): void => {
             }
             return scrubShareTelemetry(event);
         },
-        beforeSendTransaction: event =>
-            isSharePrivateSession() ? null : scrubShareTelemetry(event),
+        beforeSendTransaction: event => (canSendCrashReport() ? scrubShareTelemetry(event) : null),
         beforeBreadcrumb: breadcrumb =>
-            isSharePrivateSession() ? null : scrubShareTelemetry(breadcrumb),
+            canSendCrashReport() ? scrubShareTelemetry(breadcrumb) : null,
         environment: env,
         tracePropagationTargets: traceDomains,
         integrations: [
@@ -61,7 +78,7 @@ export const initSentryFromTenant = (): void => {
                 maskAllText: true,
                 blockAllMedia: true,
                 beforeAddRecordingEvent: event =>
-                    optionalTelemetryEnabled && !isSharePrivateSession() ? event : null,
+                    optionalTelemetryEnabled && canSendCrashReport() ? event : null,
             }),
             // captureConsoleIntegration removed: logger is now the only path to Sentry,
             // ensuring PII scrubbing and bugReportsEnabled gate are always applied.
@@ -69,7 +86,7 @@ export const initSentryFromTenant = (): void => {
         // Performance Monitoring
         // Optional performance and replay data are enabled only after the
         // authenticated profile's analytics consent has resolved.
-        tracesSampler: () => (optionalTelemetryEnabled && !isSharePrivateSession() ? 0.5 : 0),
+        tracesSampler: () => (optionalTelemetryEnabled && canSendCrashReport() ? 0.5 : 0),
         replaysSessionSampleRate: 0,
         replaysOnErrorSampleRate: 0,
         // Sentry Replay.stop() force-flushes a session recording. This
@@ -79,7 +96,8 @@ export const initSentryFromTenant = (): void => {
             const transport = Sentry.makeFetchTransport(options);
             return {
                 send: envelope => {
-                    if (optionalTelemetryEnabled && !isSharePrivateSession()) {
+                    if (!canSendCrashReport()) return Promise.resolve({ statusCode: 200 });
+                    if (optionalTelemetryEnabled) {
                         return transport.send(envelope);
                     }
                     const [headers, items] = envelope;
