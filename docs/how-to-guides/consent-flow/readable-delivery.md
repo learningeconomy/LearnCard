@@ -54,7 +54,7 @@ Send `POST /api/readable-delivery/data` on the configured network with:
 - `X-LearnCard-Act-As: <recipient profileId>`
 - `Content-Type: application/json`
 
-The JSON body takes `contractUri`, the learner's `did`, an optional `limit` (1–25; default 10), and the previous page's optional `cursor`. The equivalent SDK method is `getReadableDeliveryData(input)` on a client acting as the recipient.
+The JSON body takes `contractUri`, the learner's `did`, an optional `limit` (1–25; default 10), and the previous page's optional, opaque `cursor`. Keep the same contract and learner DID when continuing. The equivalent SDK method is `getReadableDeliveryData(input)` on a client acting as the recipient.
 
 The response contains `records`, `hasMore`, and a continuation `cursor` when applicable. Each record has its consented `uri`, `category`, and a status:
 
@@ -67,7 +67,7 @@ The response contains `records`, `hasMore`, and a continuation `cursor` when app
 
 For a version 2 recipient, each readable record also contains `fullCredential`, the original credential JSON, including subject data, issuer-defined fields, and any proof. A mediator can map its fields into Salesforce. Use `credential.verification` to decide how to handle the result, including self-reported and unverified outcomes. Version 1 recipients receive summaries only. To switch, provision a fresh version 2 recipient and obtain fresh learner consent. The version is fixed at provisioning.
 
-The API limits full credential content to 2 MiB per page. Follow the returned cursor even if fewer records than requested are returned. The summary includes available name, types, issuer, dates, and boost URI. Each summary has a `verification` object:
+The API limits full credential content to 2 MiB per page and bounds page processing time. Follow the returned cursor even if fewer records than requested are returned: processing resumes at the first record that did not fit or could not finish in time. If the page makes no progress before its deadline, HTTP 503 with `READABLE_DELIVERY_PAGE_TIMEOUT` means to retry with the same cursor (or no cursor on the first page). The summary includes available name, types, issuer, dates, and boost URI. Each summary has a `verification` object:
 
 | Field        | Values / meaning                                                                                        |
 | ------------ | ------------------------------------------------------------------------------------------------------- |
@@ -89,7 +89,7 @@ Expected issuers are the contract owner and explicit writers (both their stored 
 
 Proof and status verification run in a disposable WASM worker. Public verification documents use bounded HTTPS GETs with DNS-pinned public addresses and no redirects; private addresses, credentials in URLs, and arbitrary outbound methods are rejected. Only the exact owned network origin is allowed over HTTP in local development. Verification has a time/request budget and incomplete checks never produce a positive label. Unsupported proof/status formats produce an explicit failure or unavailable result, not a verified credential. No status mechanism means `not_applicable`, not proof that the issuer can never revoke the credential. Integrators should use the label and individual checks together and set their own acceptance policy.
 
-Pages reflect current consent, rather than a historical snapshot. Suspended, withdrawn, or pending-renewal consent is denied. The API checks consent again before releasing results and returns `Cache-Control: private, no-store`.
+Pages reflect current consent, rather than a historical snapshot. Continuations use a stable category and URI order. If the selection or delivery context changes, HTTP 409 with `READABLE_DELIVERY_CURSOR_STALE` tells you to restart without a cursor and reconcile the fresh result rather than appending it to the old pages. Suspended, withdrawn, or pending-renewal consent is denied. The API checks consent again before releasing results and returns `Cache-Control: private, no-store`.
 
 ## Stop access
 
