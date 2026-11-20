@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { ClassLinkAccountContinuity, LCAPluginMethods } from '@learncard/lca-api-plugin';
 import { walletStore } from '../../stores/walletStore';
 
 /**
@@ -20,21 +21,100 @@ export const useClassLinkPersonalEmail = (options: { enabled?: boolean } = {}) =
     });
 };
 
+/** The lca-api methods `loadAccountContinuity` uses (a LearnCard's `invoke`). */
+type ContinuityInvoke = Pick<
+    LCAPluginMethods,
+    'classlinkGetAccountContinuity' | 'classlinkReconcilePersonalEmail'
+>;
+
+/**
+ * Signs this device back in with the custom token a reconcile returned (the app passes
+ * `refreshAccountContact`, which checks the token's uid against the session first and keeps
+ * an unapplied token for a retry).
+ */
+export type ApplySignInToken = (params: {
+    customToken: string;
+    primaryUid?: string;
+}) => Promise<unknown>;
+
+/** A reconcile is tried at most once per account in this window, whatever its outcome. */
+export const RECONCILE_RETRY_MS = 60_000;
+
+const reconcileTriedAt = new Map<string, number>();
+
+/** Test helper: forget which accounts tried a reconcile. */
+export const resetAccountContinuityReconcile = (): void => reconcileTriedAt.clear();
+
+/**
+ * Read `getAccountContinuity`; when it reports `reconcilePending` (an interrupted or
+ * deferred sign-in email change), run `classlinkReconcilePersonalEmail` once, apply its
+ * custom token (before any other call), then read continuity again. Never loops: one
+ * reconcile per load, and at most one per account (`did`) every `RECONCILE_RETRY_MS`, so a
+ * reconcile that keeps failing (or a server that keeps reporting it) is not retried on
+ * every refetch. A failed reconcile is not an error: the first answer is returned as is.
+ */
+export const loadAccountContinuity = async (
+    invoke: ContinuityInvoke,
+    did: string,
+    options: { applySignInToken?: ApplySignInToken; onReconciled?: () => void } = {}
+): Promise<ClassLinkAccountContinuity> => {
+    const first = await invoke.classlinkGetAccountContinuity();
+    if (!first.reconcilePending) return first;
+    const triedAt = reconcileTriedAt.get(did);
+    if (triedAt !== undefined && Date.now() - triedAt < RECONCILE_RETRY_MS) return first;
+    reconcileTriedAt.set(did, Date.now());
+    let result: Awaited<ReturnType<ContinuityInvoke['classlinkReconcilePersonalEmail']>>;
+    try {
+        result = await invoke.classlinkReconcilePersonalEmail();
+    } catch {
+        return first;
+    }
+    if (result.customToken && options.applySignInToken) {
+        try {
+            await options.applySignInToken({
+                customToken: result.customToken,
+                ...(first.primaryUid ? { primaryUid: first.primaryUid } : {}),
+            });
+        } catch {
+            // The coordinator keeps an unapplied token; the keep-account step offers a retry.
+        }
+    }
+    if (!result.changed) return first;
+    options.onReconciled?.();
+    return invoke.classlinkGetAccountContinuity();
+};
+
 /**
  * What a ClassLink account still needs to keep working after losing school access
  * (`classlink.getAccountContinuity`): whether this account may add a personal email (and a
  * stable reason when not), and the next step. FORBIDDEN or NOT_FOUND means the account has
  * no ClassLink identity. Same cost rule as `useClassLinkPersonalEmail`: pass `enabled: false`
  * until the tenant flags and session checks allow it.
+ *
+ * When the server reports `reconcilePending`, the load undoes that sign-in email change
+ * (`loadAccountContinuity`); pass `applySignInToken` (`refreshAccountContact`) so a custom
+ * token it returns signs this device back in. Every caller should pass it: whichever
+ * mounted caller starts a fetch runs it.
  */
-export const useClassLinkAccountContinuity = (options: { enabled?: boolean } = {}) => {
+export const useClassLinkAccountContinuity = (
+    options: { enabled?: boolean; applySignInToken?: ApplySignInToken } = {}
+) => {
     const learnCard = walletStore.use.wallet();
+    const queryClient = useQueryClient();
     const enabled = options.enabled ?? true;
+    const did = learnCard?.id.did();
     return useQuery({
-        queryKey: ['classlinkAccountContinuity', learnCard?.id.did()],
+        queryKey: ['classlinkAccountContinuity', did],
         queryFn: async () => {
-            if (!learnCard) throw new Error('Account is not ready');
-            return learnCard.invoke.classlinkGetAccountContinuity();
+            if (!learnCard || !did) throw new Error('Account is not ready');
+            return loadAccountContinuity(learnCard.invoke, did, {
+                applySignInToken: options.applySignInToken,
+                onReconciled: () => {
+                    void queryClient.invalidateQueries({
+                        queryKey: ['classlinkPersonalEmail', did],
+                    });
+                },
+            });
         },
         enabled: enabled && !!learnCard,
         retry: false,
