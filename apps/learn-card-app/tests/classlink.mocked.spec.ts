@@ -129,6 +129,8 @@ test.describe('ClassLink sign-in hand-off @mocked', () => {
 });
 
 test.describe('ClassLink login hint @mocked', () => {
+    // The first paint of /login can take well over 5 s on a cold CI runner (Firefox).
+    const FIRST_PAINT_MS = 30_000;
     const keepAccountFlags = (on: boolean) => ({
         classlinkPersonalEmail: on,
         classlinkKeepAccount: on,
@@ -165,7 +167,9 @@ test.describe('ClassLink login hint @mocked', () => {
         await withClassLinkSso(page, true);
         await page.goto('/login');
         const hint = page.getByTestId('login-classlink-personal-email-hint');
-        await expect(hint).toHaveText('Left your school? Sign in with your personal email.');
+        await expect(hint).toHaveText('Left your school? Sign in with your personal email.', {
+            timeout: FIRST_PAINT_MS,
+        });
         await hint.click();
         await expect(page.locator('input[type="email"]').first()).toBeFocused();
     });
@@ -175,7 +179,7 @@ test.describe('ClassLink login hint @mocked', () => {
         await withClassLinkSso(page, true);
         // The email form opens on its code step; the social buttons (and the hint) are hidden.
         await page.goto('/login?verifyCode=1');
-        await expect(page.getByLabel(/digit 1/i).first()).toBeVisible();
+        await expect(page.getByLabel(/digit 1/i).first()).toBeVisible({ timeout: FIRST_PAINT_MS });
         await expect(page.getByTestId('login-classlink-personal-email-hint')).toHaveCount(0);
     });
 
@@ -183,7 +187,9 @@ test.describe('ClassLink login hint @mocked', () => {
         await installNetwork(page);
         await withClassLinkSso(page, true);
         await page.goto('/login');
-        await page.getByText('I lost access to my school email or login').click();
+        await page
+            .getByText('I lost access to my school email or login')
+            .click({ timeout: FIRST_PAINT_MS });
         await page.getByTestId('recovery-identity-sign-in-with-email').click();
         await expect(page.getByTestId('recovery-identity-sign-in-with-email')).toHaveCount(0);
         await expect(page.locator('input[type="email"]').first()).toBeFocused();
@@ -193,7 +199,9 @@ test.describe('ClassLink login hint @mocked', () => {
         await installNetwork(page);
         await withClassLinkSso(page, true, false);
         await page.goto('/login');
-        await expect(page.locator('input[type="email"]').first()).toBeVisible();
+        await expect(page.locator('input[type="email"]').first()).toBeVisible({
+            timeout: FIRST_PAINT_MS,
+        });
         await expect(page.getByTestId('login-classlink-personal-email-hint')).toHaveCount(0);
     });
 
@@ -201,7 +209,9 @@ test.describe('ClassLink login hint @mocked', () => {
         await installNetwork(page);
         await withClassLinkSso(page, false);
         await page.goto('/login');
-        await expect(page.locator('input[type="email"]').first()).toBeVisible();
+        await expect(page.locator('input[type="email"]').first()).toBeVisible({
+            timeout: FIRST_PAINT_MS,
+        });
         await expect(page.getByTestId('login-classlink-personal-email-hint')).toHaveCount(0);
     });
 });
