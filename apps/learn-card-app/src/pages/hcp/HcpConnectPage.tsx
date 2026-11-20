@@ -2,14 +2,16 @@ import React, { useMemo } from 'react';
 import { IonContent, IonPage } from '@ionic/react';
 import { useHistory, useLocation } from 'react-router-dom';
 
-import { useHcpChange, useHcpContractOffer } from 'learn-card-base/hcp/useHcp';
+import { useHcpChange, useHcpContractOffer, useHcpOAuthApprove } from 'learn-card-base/hcp/useHcp';
 import * as m from '../../paraglide/messages.js';
 import ConsentScreen from './ConsentScreen';
 import {
     contractGrantRequest,
     grantRequestFor,
     parseConsentLink,
+    requestFromOAuth,
     requestFromOffer,
+    type OAuthSignIn,
 } from './consentLink';
 import { HcpHeader } from './HcpPage';
 import HcpProfileGate from './HcpProfileGate';
@@ -56,6 +58,35 @@ const ContractConsent: React.FC<{ contractUri: string; client: string | null }> 
     );
 };
 
+/**
+ * An MCP host (e.g. Claude Code) signing in through the HCP OAuth AS. Allow issues a
+ * grant to the host's DID for the scopes shown, then hands the browser back to the AS.
+ */
+const OAuthConsent: React.FC<{ signIn: OAuthSignIn }> = ({ signIn }) => {
+    const history = useHistory();
+    const approve = useHcpOAuthApprove();
+    const request = requestFromOAuth(
+        signIn,
+        m['hcp.connect.oauthPurpose']({ app: signIn.clientName })
+    );
+
+    return (
+        <ConsentScreen
+            request={request}
+            oauth={{ scopes: signIn.scopes }}
+            pending={approve.isPending || approve.isSuccess}
+            failed={approve.isError}
+            onAllow={() =>
+                approve.mutate(
+                    { ticket: signIn.ticket },
+                    { onSuccess: ({ completeUrl }) => window.location.assign(completeUrl) }
+                )
+            }
+            onDeny={() => history.replace('/hcp')}
+        />
+    );
+};
+
 /** `/hcp/connect?...`: an app asks to see some of the person's info. */
 const HcpConnectPage: React.FC = () => {
     const location = useLocation();
@@ -71,6 +102,8 @@ const HcpConnectPage: React.FC = () => {
                     <HcpProfileGate>
                         {parsed.kind === 'bad' ? (
                             <BadLink />
+                        ) : parsed.kind === 'oauth' ? (
+                            <OAuthConsent signIn={parsed.signIn} />
                         ) : parsed.kind === 'contract' ? (
                             <ContractConsent
                                 contractUri={parsed.contractUri}

@@ -10702,7 +10702,10 @@
             "badTitle": "Este enlace no funciona",
             "badBody": "Pide a la app un enlace nuevo e inténtalo de nuevo.",
             "unverified": "Permite solo apps en las que confíes. LearnCard no puede confirmar quién creó este enlace.",
-            "offeredBy": "Ofrecido por la cuenta de LearnCard de {{owner}}."
+            "offeredBy": "Ofrecido por la cuenta de LearnCard de {{owner}}.",
+            "appIdLabel": "ID de la app",
+            "scopesLabel": "Acceso solicitado",
+            "oauthPurpose": "Usar tu información en {{app}}"
         },
         "error": {
             "title": "Algo salió mal",

@@ -25,6 +25,9 @@ const state = vi.hoisted(() => ({
     offer: undefined as unknown,
     offerPending: false,
     offerRefetch: vi.fn(),
+    approve: vi.fn(),
+    approvePending: false,
+    approveFailed: false,
 }));
 
 vi.mock('learn-card-base', async () => {
@@ -49,6 +52,12 @@ vi.mock('learn-card-base/hcp/useHcp', () => ({
         refetch: state.offerRefetch,
     }),
     useHcpChange: () => ({ mutate: state.mutate, isPending: false, isError: state.changeFailed }),
+    useHcpOAuthApprove: () => ({
+        mutate: state.approve,
+        isPending: state.approvePending,
+        isSuccess: false,
+        isError: state.approveFailed,
+    }),
     useHcpGrants: () => ({
         isPending: false,
         isError: state.loadFailed,
@@ -113,6 +122,9 @@ beforeEach(() => {
     state.offer = undefined;
     state.offerPending = false;
     state.offerRefetch.mockReset();
+    state.approve.mockReset();
+    state.approvePending = false;
+    state.approveFailed = false;
 });
 
 describe('HCP consent screen', () => {
@@ -463,6 +475,87 @@ describe('HCP without a LearnCard profile', () => {
         state.auth = { tag: 'ready', profile: { tag: 'loading' } };
         renderRoute(consentUrl);
         expect(screen.getByRole('status')).toBeTruthy();
+        expect(screen.queryByRole('button', { name: 'Allow' })).toBeNull();
+    });
+});
+
+/** An unsigned stand-in for the AS's ticket: the page only decodes it for display. */
+const ticketFor = (claims: Record<string, unknown>) =>
+    ['e30', Buffer.from(JSON.stringify(claims)).toString('base64url'), 'sig'].join('.');
+const OAUTH_DID = 'did:web:127.0.0.1%3A18767:hcp:oauth-clients:hcp_oauth_abc123';
+const oauthClaims = {
+    typ: 'hcp-oauth-request',
+    request_id: 'r1',
+    client_id: 'hcp_oauth_abc123',
+    client_name: 'Claude Code',
+    client_did: OAUTH_DID,
+    scope: 'hcp:general_preferences:read hcp:general_preferences:write',
+    exp: Math.floor(Date.now() / 1000) + 600,
+};
+
+describe('HCP OAuth sign-in (MCP host)', () => {
+    it('shows the app name, its DID and the scopes it asked for', () => {
+        renderAt(`/hcp/connect?oauth_request=${ticketFor(oauthClaims)}`);
+        expect(screen.getByText('Claude Code would like to see some of your info')).toBeTruthy();
+        expect(screen.getByText(OAUTH_DID)).toBeTruthy();
+        expect(screen.getByText('hcp:general_preferences:read')).toBeTruthy();
+        expect(screen.getByText('hcp:general_preferences:write')).toBeTruthy();
+        expect(screen.getByText('Use your info in Claude Code')).toBeTruthy();
+        expect(
+            screen.getByText(
+                'It can look, and suggest additions. Nothing is saved until you accept.'
+            )
+        ).toBeTruthy();
+    });
+
+    it('Allow approves the ticket, then hands the browser back to the AS', () => {
+        const assign = vi.fn();
+        const original = window.location;
+        Object.defineProperty(window, 'location', {
+            configurable: true,
+            value: { ...original, assign },
+        });
+        try {
+            const ticket = ticketFor(oauthClaims);
+            renderAt(`/hcp/connect?oauth_request=${ticket}`);
+            fireEvent.click(screen.getByRole('button', { name: 'Allow' }));
+            expect(state.approve).toHaveBeenCalledTimes(1);
+            const [input, callbacks] = state.approve.mock.calls[0];
+            expect(input).toEqual({ ticket });
+            expect(assign).not.toHaveBeenCalled();
+            callbacks.onSuccess({
+                completeUrl: 'http://as.test/oauth/consent/complete?assertion=a',
+            });
+            expect(assign).toHaveBeenCalledWith(
+                'http://as.test/oauth/consent/complete?assertion=a'
+            );
+            expect(state.mutate).not.toHaveBeenCalled();
+        } finally {
+            Object.defineProperty(window, 'location', { configurable: true, value: original });
+        }
+    });
+
+    it("Don't Allow goes to /hcp without approving", () => {
+        const { location } = renderAt(`/hcp/connect?oauth_request=${ticketFor(oauthClaims)}`);
+        fireEvent.click(screen.getByRole('button', { name: "Don't Allow" }));
+        expect(state.approve).not.toHaveBeenCalled();
+        expect(location()).toBe('/hcp');
+    });
+
+    it('shows the failure and stays retryable when approve fails', () => {
+        state.approveFailed = true;
+        renderAt(`/hcp/connect?oauth_request=${ticketFor(oauthClaims)}`);
+        expect(screen.getByRole('alert')).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Allow' })).toBeTruthy();
+    });
+
+    it.each([
+        ['an expired ticket', { ...oauthClaims, exp: Math.floor(Date.now() / 1000) - 1 }],
+        ['a ticket of another kind', { ...oauthClaims, typ: 'hcp-consent' }],
+        ['an unknown scope', { ...oauthClaims, scope: 'hcp:not_a_category:read' }],
+    ])('shows the bad-link state for %s', (_label, claims) => {
+        renderAt(`/hcp/connect?oauth_request=${ticketFor(claims)}`);
+        expect(screen.getByText("This link doesn't work")).toBeTruthy();
         expect(screen.queryByRole('button', { name: 'Allow' })).toBeNull();
     });
 });

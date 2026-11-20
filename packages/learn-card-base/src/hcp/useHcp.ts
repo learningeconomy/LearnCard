@@ -86,6 +86,24 @@ export const useHcpActivity = () => {
     });
 };
 
+/**
+ * Allows an HCP OAuth client (an MCP host such as Claude Code) from its signed request
+ * ticket (`/hcp/connect?oauth_request=`). The brain issues or reuses the grant and
+ * returns the AS URL that finishes signing in; the caller navigates there.
+ */
+export const useHcpOAuthApprove = () => {
+    const client = useHcpClient();
+    const queryClient = useQueryClient();
+    const key = useHcpKey();
+    return useMutation({
+        mutationFn: async (input: { ticket: string }) =>
+            (await client()).oauth.approve.mutate(input),
+        onMutate: () => ({ key }),
+        onSuccess: (_result, _input, pinned) =>
+            queryClient.invalidateQueries({ queryKey: pinned?.key ?? key }),
+    });
+};
+
 /** Every change the UI makes. Refreshes the profile's HCP queries on success. */
 export const useHcpChange = () => {
     const { initWallet } = useWallet();

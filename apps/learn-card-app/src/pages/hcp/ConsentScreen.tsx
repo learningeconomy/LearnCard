@@ -22,14 +22,18 @@ const durationText = (duration: Duration): string => {
     }
 };
 
-/** Presentational: what the app asks for, and Allow / Don't allow. */
+/**
+ * Presentational: what the app asks for, and Allow / Don't allow. An OAuth sign-in
+ * (an MCP host) also shows the app's DID and the exact scopes it asked for.
+ */
 const ConsentScreen: React.FC<{
     request: AccessRequest;
     pending: boolean;
     failed: boolean;
     onAllow: () => void;
     onDeny: () => void;
-}> = ({ request, pending, failed, onAllow, onDeny }) => (
+    oauth?: { scopes: string[] };
+}> = ({ request, pending, failed, onAllow, onDeny, oauth }) => (
     <div className="space-y-5">
         <div>
             <h2 className="text-[20px] font-semibold text-grayscale-900 mb-1">
@@ -62,6 +66,28 @@ const ConsentScreen: React.FC<{
                 </p>
                 <p className="text-sm text-grayscale-900">{durationText(request.duration)}</p>
             </div>
+            {oauth && (
+                <>
+                    <div>
+                        <p className="text-xs font-medium text-grayscale-500 mb-1">
+                            {m['hcp.connect.appIdLabel']()}
+                        </p>
+                        <p className="text-xs text-grayscale-900 font-mono break-all">
+                            {request.client.id}
+                        </p>
+                    </div>
+                    <div>
+                        <p className="text-xs font-medium text-grayscale-500 mb-1">
+                            {m['hcp.connect.scopesLabel']()}
+                        </p>
+                        <ul className="text-xs text-grayscale-900 font-mono break-all">
+                            {oauth.scopes.map(scope => (
+                                <li key={scope}>{scope}</li>
+                            ))}
+                        </ul>
+                    </div>
+                </>
+            )}
         </section>
         <p className="text-xs text-grayscale-500">{m['hcp.connect.stopAnytime']()}</p>
         <p className="text-xs text-grayscale-500">

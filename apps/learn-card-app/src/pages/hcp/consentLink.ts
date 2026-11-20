@@ -25,11 +25,85 @@ export type AccessRequest = {
 };
 
 export type LinkProblem =
-    'app' | 'name' | 'categories' | 'purpose' | 'duration' | 'contract' | 'suggest';
+    'app' | 'name' | 'categories' | 'purpose' | 'duration' | 'contract' | 'suggest' | 'oauth';
+
+/**
+ * An HCP OAuth sign-in (an MCP host such as Claude Code): the AS's signed request
+ * ticket, decoded for display only. The brain verifies the ticket on Allow.
+ */
+export type OAuthSignIn = {
+    ticket: string;
+    clientName: string;
+    clientDid: string;
+    scopes: string[];
+    categories: [string, ...string[]];
+    canWrite: boolean;
+};
+
 export type ParsedLink =
     | { kind: 'ok'; request: AccessRequest }
     | { kind: 'contract'; contractUri: string; client: string | null }
+    | { kind: 'oauth'; signIn: OAuthSignIn }
     | { kind: 'bad'; problem: LinkProblem };
+
+/** The OAuth grant's purpose and duration: what the brain issues (oauth-consent.ts). */
+export const OAUTH_PURPOSE_CODE = 'https://learncard.com/hcp/purposes/app-access';
+export const OAUTH_DURATION: Duration = '1h';
+
+const decodeJwtPayload = (token: string): Record<string, unknown> | null => {
+    const parts = token.split('.');
+    if (parts.length !== 3 || !parts[1]) return null;
+    try {
+        const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+        const json = decodeURIComponent(
+            Array.from(atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, '=')))
+                .map(char => `%${char.charCodeAt(0).toString(16).padStart(2, '0')}`)
+                .join('')
+        );
+        const payload: unknown = JSON.parse(json);
+        return payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : null;
+    } catch {
+        return null;
+    }
+};
+
+const SCOPE = /^hcp:([a-z0-9_]+):(read|write)$/;
+
+/** `/hcp/connect?oauth_request=<ticket>`; null when the ticket is unreadable or expired. */
+export const parseOAuthRequest = (ticket: string, now: Date): OAuthSignIn | null => {
+    const claims = decodeJwtPayload(ticket);
+    if (!claims || claims.typ !== 'hcp-oauth-request') return null;
+    const { client_name: name, client_did: did, scope, exp } = claims;
+    if (typeof name !== 'string' || !name.trim() || typeof did !== 'string' || !DID.test(did))
+        return null;
+    if (typeof scope !== 'string' || typeof exp !== 'number') return null;
+    if (exp * 1000 <= now.getTime()) return null;
+
+    const scopes = [...new Set(scope.split(/\s+/).filter(Boolean))];
+    const matches = scopes.map(value => SCOPE.exec(value));
+    if (matches.length === 0 || matches.some(match => !match || !isRegisteredCategory(match[1]!)))
+        return null;
+    const categories = [...new Set(matches.map(match => match![1]!))];
+    const [first, ...rest] = categories;
+    if (first === undefined) return null;
+    return {
+        ticket,
+        clientName: name.trim().slice(0, 200),
+        clientDid: did,
+        scopes,
+        categories: [first, ...rest],
+        canWrite: matches.some(match => match![2] === 'write'),
+    };
+};
+
+/** What the consent screen shows for an OAuth sign-in. */
+export const requestFromOAuth = (signIn: OAuthSignIn, description: string): AccessRequest => ({
+    client: { id: signIn.clientDid, name: signIn.clientName },
+    categories: signIn.categories,
+    purpose: { code: OAUTH_PURPOSE_CODE, description },
+    duration: OAUTH_DURATION,
+    ...(signIn.canWrite ? { canSuggest: true } : {}),
+});
 
 const DID = /^did:[a-z0-9]+:\S+$/;
 const HOUR = 60 * 60 * 1000;
@@ -68,8 +142,13 @@ const parseContractLink = (params: URLSearchParams): ParsedLink => {
     return { kind: 'contract', contractUri, client };
 };
 
-export const parseConsentLink = (search: string): ParsedLink => {
+export const parseConsentLink = (search: string, now: Date = new Date()): ParsedLink => {
     const params = new URLSearchParams(search);
+    if (params.has('oauth_request')) {
+        const tickets = params.getAll('oauth_request');
+        const signIn = tickets.length === 1 ? parseOAuthRequest(tickets[0]!, now) : null;
+        return signIn ? { kind: 'oauth', signIn } : { kind: 'bad', problem: 'oauth' };
+    }
     if (params.has('contract')) return parseContractLink(params);
     // A repeated field is ambiguous: refuse it rather than pick one copy.
     const repeated = (Object.keys(FIELD_PROBLEM) as (keyof typeof FIELD_PROBLEM)[]).find(
