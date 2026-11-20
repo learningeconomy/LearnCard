@@ -68,6 +68,7 @@ import { countReviewsDueToday } from './helpers/dueReviews';
 import AddToPassportMenu from '../../components/add-to-passport/AddToPassportMenu';
 import useAddToLearnCardActions from './hooks/useAddToLearnCardActions';
 import useSkillProfileModal from './hooks/useSkillProfileModal';
+import { useKeepAccountBanner } from './hooks/useKeepAccountBanner';
 import useAppStore from '../launchPad/useAppStore';
 import { useSkillProfileCompletion } from '../ai-pathways/ai-pathways-skill-profile/SkillProfileProgressBar';
 import { DEFAULT_REGISTRY } from './quickActions/registry';
@@ -118,6 +119,7 @@ const DashboardPage: React.FC = () => {
         openScanQr: openScanQrCredential,
     } = useAddToLearnCardActions();
     const { openSkillProfile } = useSkillProfileModal();
+    const keepAccount = useKeepAccountBanner();
     const { percentage: skillProfilePercentage } = useSkillProfileCompletion();
     const { newModal: openHeaderModal } = useModal({
         desktop: ModalTypes.FullScreen,
@@ -557,6 +559,8 @@ const DashboardPage: React.FC = () => {
             onSetup: openRecoverySetup,
         },
         pendingGuardianApproval: currentLCNUser?.approved === false,
+        keepAccount: keepAccount.banner,
+        keepAccountPending: keepAccount.pending,
         dataTrust,
         activity: {
             notifications: unreadNotifications,

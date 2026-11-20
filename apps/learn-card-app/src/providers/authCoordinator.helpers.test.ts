@@ -9,6 +9,7 @@ import {
     settleEscrowRecoveryMarker,
     secureFlowOffersPin,
     pinChangePromptOpens,
+    isProviderOverlayOpen,
     type EscrowRecoveryKind,
 } from './authCoordinator.helpers';
 
@@ -396,5 +397,26 @@ describe('pinChangePromptOpens', () => {
         expect(
             pinChangePromptOpens({ did: undefined, changeRequired: true, pinSignInPending: false })
         ).toBe(false);
+    });
+});
+
+describe('isProviderOverlayOpen', () => {
+    const closed = {
+        recoverySetup: false,
+        secureAccount: false,
+        pinChange: false,
+        pinSetupReason: null,
+        deviceLink: false,
+        emailLinkGate: false,
+        pinSignInReview: false,
+    };
+
+    it('is closed when nothing is on screen', () => {
+        expect(isProviderOverlayOpen(closed)).toBe(false);
+    });
+
+    it.each(Object.keys(closed))('is open while %s is', key => {
+        const open = { ...closed, [key]: key === 'pinSetupReason' ? 'first-time' : true };
+        expect(isProviderOverlayOpen(open)).toBe(true);
     });
 });

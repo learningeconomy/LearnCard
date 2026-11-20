@@ -12,6 +12,8 @@ export type RecoveryPinSetupReason =
     | 'after-recovery'
     | 'after-hold-recovery'
     | 'pin-reset-required'
+    /** The PIN was entered wrong too many times; a new one makes it usable again. */
+    | 'pin-locked'
     /**
      * The current PIN has recorded wrong entries, so it never gets a fresh attempt
      * budget again; only a different PIN does (the coordinator rejects the PIN just
@@ -35,6 +37,7 @@ export const RecoveryPinSetupOverlay: React.FC<RecoveryPinSetupOverlayProps> = (
     const afterRecovery = reason === 'after-recovery';
     const afterHoldRecovery = reason === 'after-hold-recovery';
     const pinResetRequired = reason === 'pin-reset-required';
+    const pinLocked = reason === 'pin-locked';
     const newPinRequired = reason === 'new-pin-required';
     const [step, setStep] = useState<'enter' | 'confirm' | 'saving' | 'success'>('enter');
     const [pin, setPin] = useState('');
@@ -107,9 +110,11 @@ export const RecoveryPinSetupOverlay: React.FC<RecoveryPinSetupOverlayProps> = (
                                   ? m['recovery.pin.afterHoldRecovery.title']()
                                   : pinResetRequired
                                     ? m['recovery.pin.pinResetRequired.title']()
-                                    : newPinRequired
-                                      ? m['recovery.pin.newPinRequired.title']()
-                                      : m['recovery.pin.setPin']()}
+                                    : pinLocked
+                                      ? m['recovery.pin.pinLocked.title']()
+                                      : newPinRequired
+                                        ? m['recovery.pin.newPinRequired.title']()
+                                        : m['recovery.pin.setPin']()}
                         </h2>
                         <p className="text-sm text-grayscale-600 leading-relaxed">
                             {afterRecovery
@@ -118,9 +123,11 @@ export const RecoveryPinSetupOverlay: React.FC<RecoveryPinSetupOverlayProps> = (
                                   ? m['recovery.pin.afterHoldRecovery.body']()
                                   : pinResetRequired
                                     ? m['recovery.pin.pinResetRequired.body']()
-                                    : newPinRequired
-                                      ? m['recovery.pin.newPinRequired.body']()
-                                      : m['recovery.pin.setPinDesc']()}
+                                    : pinLocked
+                                      ? m['recovery.pin.pinLocked.body']()
+                                      : newPinRequired
+                                        ? m['recovery.pin.newPinRequired.body']()
+                                        : m['recovery.pin.setPinDesc']()}
                         </p>
                         {afterRecovery && (
                             <p className="text-xs text-grayscale-500 leading-relaxed">

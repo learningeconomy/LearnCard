@@ -146,6 +146,25 @@ export type DashboardRecoveryPromptViewModel = {
     }) => void;
 };
 
+/** The ClassLink "keep your account" banner; present only while it should show. */
+export type DashboardKeepAccountViewModel = {
+    /**
+     * What is left: a personal email; then a PIN (escrow accounts), the current PIN once so
+     * the backup follows the new sign-in email (`confirmPin`; `confirmEmail` without a PIN:
+     * type the sign-in email), or a passkey or recovery phrase (`method`: accounts that
+     * cannot have escrow here).
+     */
+    step: 'email' | 'pin' | 'confirmPin' | 'confirmEmail' | 'method';
+    /** `pin` only: the PIN is locked, so the ask is for a new one. */
+    pinLocked?: boolean;
+    /** `method` only: a recovery phrase, where this device cannot make a passkey. */
+    phrase?: boolean;
+    /** "Keep your account after school" for a student, else "Keep your account". */
+    title: string;
+    onStart: () => void;
+    onSnooze: () => void;
+};
+
 export type DashboardViewModel = {
     brandName: string;
     collection?: {
@@ -167,6 +186,10 @@ export type DashboardViewModel = {
     recoveryPrompt: DashboardRecoveryPromptViewModel;
     /** When true, the guardian approval banner replaces the recovery banner. */
     pendingGuardianApproval?: boolean;
+    /** When set (and no guardian approval is pending), replaces the recovery banner. */
+    keepAccount?: DashboardKeepAccountViewModel;
+    /** True while the keep-account check is loading: the banner slot stays empty. */
+    keepAccountPending?: boolean;
     dataTrust: DashboardDataTrustViewModel;
     activity: DashboardActivityViewModel;
     learningProfile: DashboardLearningProfileViewModel;

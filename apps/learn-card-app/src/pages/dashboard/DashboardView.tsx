@@ -16,6 +16,7 @@ import AppsCard from './components/AppsCard';
 import DataTrustCard from './components/DataTrustCard';
 import RecoveryBanner from '../../components/recovery/RecoveryBanner';
 import PendingApprovalBanner from '../../components/pending-approval-banner/PendingApprovalBanner';
+import { ClassLinkKeepAccountBanner } from '../../components/classlink/ClassLinkKeepAccountBanner';
 import type { DashboardViewModel } from './DashboardView.types';
 
 type DashboardViewProps = {
@@ -39,6 +40,8 @@ const DashboardView: React.FC<DashboardViewProps> = ({ vm }) => {
         slots,
         recoveryPrompt,
         pendingGuardianApproval = false,
+        keepAccount,
+        keepAccountPending = false,
         dataTrust,
         activity,
         learningProfile,
@@ -114,7 +117,16 @@ const DashboardView: React.FC<DashboardViewProps> = ({ vm }) => {
                 <GenericErrorBoundary>
                     {pendingGuardianApproval ? (
                         <PendingApprovalBanner />
-                    ) : (
+                    ) : keepAccount ? (
+                        <ClassLinkKeepAccountBanner
+                            step={keepAccount.step}
+                            pinLocked={keepAccount.pinLocked}
+                            phrase={keepAccount.phrase}
+                            title={keepAccount.title}
+                            onStart={keepAccount.onStart}
+                            onSnooze={keepAccount.onSnooze}
+                        />
+                    ) : keepAccountPending ? null : (
                         <RecoveryBanner {...recoveryPrompt} />
                     )}
                 </GenericErrorBoundary>

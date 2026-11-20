@@ -329,11 +329,22 @@ export const tenantFeatureConfigSchema = z
         classlinkTranscriptOptIn: z.boolean().default(false),
 
         /**
-         * Invite ClassLink-signed-in (non-student) accounts to add a verified personal email
-         * so they keep access after leaving school. Requires `classlinkSso`. Never shown to
-         * ClassLink student sessions or accounts locked as minors.
+         * Let ClassLink-signed-in accounts add a verified personal email that becomes their
+         * sign-in email, so they keep their account after leaving school. Requires
+         * `classlinkSso`, and only matters together with `classlinkKeepAccount`, which is
+         * where the app asks for it (onboarding, dashboard, School Connect). This is only the
+         * app switch: lca-api decides who may add one (each district's account continuity
+         * policy, which by default excludes students), and the app asks it first.
          */
         classlinkPersonalEmail: z.boolean().default(false),
+
+        /**
+         * Offer the "keep your account" step (a personal sign-in email, then a PIN, or a
+         * passkey or recovery phrase without escrow) where ClassLink users already are:
+         * onboarding, transcript arrival, School Connect and a dashboard banner. Requires
+         * `classlinkPersonalEmail`; lca-api still decides who may.
+         */
+        classlinkKeepAccount: z.boolean().default(false),
 
         /** Show the School Connect app, where users connect a school account (ClassLink today). */
         schoolConnect: z.boolean().default(false),

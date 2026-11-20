@@ -42,6 +42,7 @@ vi.mock('learn-card-base', async () => {
 });
 
 import { RecoveryFlowModal } from './RecoveryFlowModal';
+import * as m from '../../paraglide/messages.js';
 
 describe('RecoveryFlowModal', () => {
     beforeEach(() => {
@@ -294,6 +295,62 @@ describe('RecoveryFlowModal', () => {
         expect(screen.getByRole('heading', { name: /Check Your Email/i })).toBeInTheDocument();
         expect(screen.getByRole('textbox')).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Verify Code/i })).toBeInTheDocument();
+        // The server answers the same whether or not it sent a code, so explain why none came.
+        expect(screen.getByTestId('recovery-identity-no-code-hint')).toHaveTextContent(
+            /No code\? We can only send one if this is the recovery email/
+        );
+    });
+
+    it('tells school-login tenants to ask their school when no code comes', () => {
+        render(
+            <RecoveryFlowModal
+                {...defaultProps}
+                schoolLoginRecovery
+                identityPhase="verify_email"
+                identityEmail="test@example.com"
+            />
+        );
+        expect(screen.getByTestId('recovery-identity-no-code-hint')).toHaveTextContent(
+            /Didn't get it\? Check spam\. School accounts: if no code arrives, ask your school/
+        );
+    });
+
+    it('asks school-login tenants for the personal email saved to the account', () => {
+        const { rerender } = render(
+            <RecoveryFlowModal {...defaultProps} identityPhase="enter_email" />
+        );
+        expect(screen.getByText(m['recovery.identity.emailDescription']())).toBeInTheDocument();
+        rerender(
+            <RecoveryFlowModal {...defaultProps} schoolLoginRecovery identityPhase="enter_email" />
+        );
+        expect(
+            screen.getByText(m['recovery.identity.emailDescriptionSchool']())
+        ).toBeInTheDocument();
+    });
+
+    it('offers school-login tenants to sign in with the personal email instead', () => {
+        const onSignInWithEmail = vi.fn();
+        const { rerender } = render(
+            <RecoveryFlowModal
+                {...defaultProps}
+                identityPhase="enter_email"
+                onSignInWithEmail={onSignInWithEmail}
+            />
+        );
+        expect(screen.queryByTestId('recovery-identity-sign-in-with-email')).toBeNull();
+        rerender(
+            <RecoveryFlowModal
+                {...defaultProps}
+                schoolLoginRecovery
+                identityPhase="enter_email"
+                onSignInWithEmail={onSignInWithEmail}
+            />
+        );
+        expect(screen.getByText(m['recovery.identity.signInInsteadSchool']())).toBeInTheDocument();
+        const button = screen.getByTestId('recovery-identity-sign-in-with-email');
+        expect(button).toHaveTextContent(m['login.email.button']());
+        fireEvent.click(button);
+        expect(onSignInWithEmail).toHaveBeenCalledTimes(1);
     });
 
     it('renders identity new_login phase', () => {

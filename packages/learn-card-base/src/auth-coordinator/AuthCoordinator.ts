@@ -29,7 +29,12 @@ import {
 } from '@learncard/sss-key-manager';
 
 import { AuthSessionError } from './types';
-import { RecoveryInProgressError, SameEscrowPinError } from './errors';
+import {
+    EscrowContactNotConfirmedError,
+    RecoveryInProgressError,
+    SameEscrowPinError,
+} from './errors';
+import { PinChangeRequiredError } from '@learncard/types';
 import type { MigrationIdentityVerdict, MigrationKeySource } from './types';
 
 const DEFAULT_AUTH_SESSION_TIMEOUT_MS = 2500;
@@ -128,6 +133,43 @@ const PIN_GUARD_STORAGE_PREFIX = 'learncard:pin-change-guard:';
  */
 const PIN_GUARD_PENDING_STORAGE_PREFIX = 'learncard:pin-change-guard-pending:';
 
+/**
+ * LC-2409: the sign-in address the user typed or proved on this device, per DID. Only an
+ * address stored here (or re-typed) may be sealed into escrow by a contact re-seal, so a
+ * Firebase email changed by a compromised lca-api is never sealed on its own say-so.
+ */
+const CONFIRMED_CONTACT_STORAGE_PREFIX = 'lc.confirmedContact.';
+
+const normalizeContactEmail = (email: string | null | undefined): string | undefined =>
+    email?.trim().toLowerCase() || undefined;
+
+/** lca-api's E2E stand-in for a Firebase custom token (`IS_E2E_TEST`). */
+const E2E_CUSTOM_TOKEN_PREFIX = 'e2e-custom-token-';
+
+/**
+ * LC-2409: the `uid` claim of a Firebase custom token (a JWT signed by lca-api's service
+ * account), read without verifying it, so `refreshAccountContact` never signs this device
+ * in as anyone but the session's own user. `undefined` when the token is not readable.
+ */
+export const customTokenUid = (token: string): string | undefined => {
+    if (token.startsWith(E2E_CUSTOM_TOKEN_PREFIX))
+        return token.slice(E2E_CUSTOM_TOKEN_PREFIX.length) || undefined;
+    const payload = token.split('.')[1];
+    if (!payload || token.split('.').length !== 3) return undefined;
+    try {
+        const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+        const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+        const binary = atob(padded);
+        const bytes = Uint8Array.from(binary, char => char.charCodeAt(0));
+        const claims: unknown = JSON.parse(new TextDecoder().decode(bytes));
+        const uid =
+            claims && typeof claims === 'object' && 'uid' in claims ? claims.uid : undefined;
+        return typeof uid === 'string' && uid ? uid : undefined;
+    } catch {
+        return undefined;
+    }
+};
+
 /** `localStorage` when this runtime has a working one; otherwise the guard is memory-only. */
 const defaultPinGuardStorage = (): PinChangeGuardStorage | null => {
     try {
@@ -172,6 +214,21 @@ export class AuthCoordinator {
         /** Only recovery from an existing escrow enrollment skips the rollout gate. */
         bypassRolloutGate: boolean;
     };
+    /**
+     * The account whose escrow enrollment last reported `no-contact` (no contact email to
+     * bind). Later refreshes skip the call for it until its auth user gains an email, so
+     * a placeholder-email account is not retried (and re-verified) on every refresh.
+     */
+    private escrowNoContactAccount?: { did: string; userId?: string };
+    /**
+     * LC-2409: a sign-in email change whose custom token this device has not applied yet
+     * (lca-api already revoked this login's sessions). Kept here, not in a component, so
+     * any surface can retry it after a remount; cleared once applied.
+     */
+    private pendingAccountContact?: {
+        did: string;
+        params: { expectedEmail?: string; customToken: string; primaryUid: string };
+    };
     private escrowOperations = new Set<Promise<unknown>>();
     private endingSession = false;
     private destroyed = false;
@@ -209,6 +266,9 @@ export class AuthCoordinator {
      */
     private signInPinDigest?: { did: string; tag: string };
     private readonly pinGuardStorage: PinChangeGuardStorage | null;
+    /** LC-2409 device-confirmed sign-in addresses (see CONFIRMED_CONTACT_STORAGE_PREFIX). */
+    private readonly confirmedContactStorage: PinChangeGuardStorage | null;
+    private readonly confirmedContacts = new Map<string, string>();
     /** Account whose "choose a new PIN" prompt was dismissed for this session. */
     private escrowPinChangeDismissed?: string;
     /** Recovery state replaced by a provisional re-derive; see needRecovery(). */
@@ -252,6 +312,10 @@ export class AuthCoordinator {
             config.pinChangeGuardStorage === undefined
                 ? defaultPinGuardStorage()
                 : config.pinChangeGuardStorage;
+        this.confirmedContactStorage =
+            config.confirmedContactStorage === undefined
+                ? defaultPinGuardStorage()
+                : config.confirmedContactStorage;
     }
 
     getState(): UnifiedAuthState {
@@ -464,7 +528,12 @@ export class AuthCoordinator {
                     !gate.allowed &&
                     (repairingRecovery ||
                         ('requirePriorEnrollment' in gate && gate.requirePriorEnrollment === true));
-                if (gate.allowed || requirePriorEnrollment) {
+                const noContact = this.escrowNoContactAccount;
+                const knownNoContact =
+                    !ready.authUser?.email &&
+                    noContact?.did === ready.did &&
+                    noContact.userId === ready.authUser?.id;
+                if ((gate.allowed || requirePriorEnrollment) && !knownNoContact) {
                     const enrollmentResult = await this.runEscrowOperation(async () =>
                         isCurrentAccount()
                             ? this.keyDerivation.ensureEscrowEnrollment?.({
@@ -491,6 +560,14 @@ export class AuthCoordinator {
                         enrollmentVerificationFailed = true;
                         log.warn('escrow.enrollment.failed', err);
                     });
+                    if (isCurrentAccount()) {
+                        this.escrowNoContactAccount =
+                            enrollmentResult &&
+                            !enrollmentResult.enrolled &&
+                            enrollmentResult.reason === 'no-contact'
+                                ? { did: ready.did, userId: ready.authUser?.id }
+                                : undefined;
+                    }
                     // Keep the scoped intent through transient failures for the next refresh;
                     // drop it once repaired or once there is no prior enrollment to repair.
                     if (
@@ -1038,8 +1115,21 @@ export class AuthCoordinator {
      * Set or change a PIN by rotating escrow material with an owner proof. After a PIN
      * sign-in whose PIN has recorded wrong entries, the PIN just used is rejected with
      * SameEscrowPinError before anything changes.
+     *
+     * LC-2409: with `contact` (a new PIN chosen to re-seal the backup to the sign-in email,
+     * e.g. "Forgot it? Choose a new PIN" on the PIN confirm), the same gates as
+     * `confirmEscrowPin` run first (`assertContactConfirmable`): only from the login that
+     * holds the sign-in email, and only to an address confirmed on this device or re-typed.
      */
-    async setEscrowPin(pin: string): Promise<void> {
+    async setEscrowPin(
+        pin: string,
+        contact?: { primaryUid: string; retypedEmail?: string }
+    ): Promise<void> {
+        if (contact) {
+            if (this.state.status !== 'ready')
+                throw new Error('Sign in on a trusted device to manage recovery');
+            this.assertContactConfirmable(this.state, contact);
+        }
         // Only awaits while a PIN-change guard exists for this account, so ordinary PIN
         // changes still clear the published status synchronously.
         if (this.state.status === 'ready' && this.readPinGuard(this.state.did))
@@ -1095,6 +1185,262 @@ export class AuthCoordinator {
             )
                 this.recoveredEscrowAccount = recovered;
             throw err;
+        } finally {
+            await this.refreshEscrowPinStatus(ready, generation);
+        }
+    }
+
+    /**
+     * LC-2409: remember `email` as this account's device-confirmed sign-in address: one
+     * the user typed or proved (by code) on this device. Called by the flows that set or
+     * remove the sign-in email. `did` defaults to the ready account.
+     */
+    rememberConfirmedContact(email: string, did?: string): void {
+        const owner = did ?? (this.state.status === 'ready' ? this.state.did : undefined);
+        const normalized = normalizeContactEmail(email);
+        if (!owner || !normalized) return;
+        this.confirmedContacts.set(owner, normalized);
+        try {
+            this.confirmedContactStorage?.setItem(
+                CONFIRMED_CONTACT_STORAGE_PREFIX + owner,
+                normalized
+            );
+        } catch {
+            // Memory still holds it for this session; a restart asks the user to re-type.
+        }
+    }
+
+    /** LC-2409: the device-confirmed sign-in address for `did`, if any. */
+    getConfirmedContact(did?: string): string | undefined {
+        const owner = did ?? (this.state.status === 'ready' ? this.state.did : undefined);
+        if (!owner) return undefined;
+        const remembered = this.confirmedContacts.get(owner);
+        if (remembered) return remembered;
+        try {
+            return (
+                normalizeContactEmail(
+                    this.confirmedContactStorage?.getItem(CONFIRMED_CONTACT_STORAGE_PREFIX + owner)
+                ) ?? undefined
+            );
+        } catch {
+            return undefined;
+        }
+    }
+
+    private forgetConfirmedContact(did: string | undefined): void {
+        if (!did) return;
+        this.confirmedContacts.delete(did);
+        try {
+            this.confirmedContactStorage?.removeItem(CONFIRMED_CONTACT_STORAGE_PREFIX + did);
+        } catch {
+            // Best effort: a leftover address only skips one re-type prompt on this device.
+        }
+    }
+
+    /**
+     * LC-2409: pick up a sign-in email change made by lca-api (verify or remove of the
+     * personal email), before any escrow or status call that depends on it.
+     *
+     * - `other-uid`: `primaryUid` is given and this session is another login of the
+     *   account. Nothing runs: that change did not touch (or sign out) this session.
+     * - With `customToken` (the change revoked this login's sessions), signs back in with
+     *   it; otherwise reads the current user. A token needs `primaryUid`, and its `uid` claim
+     *   is checked against the session's user before signing in (`other-uid` otherwise,
+     *   `mismatch` when unreadable), so the session never switches to another user.
+     * - `mismatch`: the session's user is not this account's user any more, or its email
+     *   is not `expectedEmail` (case-insensitive). Without `expectedEmail` (after a removal,
+     *   whose restored address the client never typed) any email is accepted; it is not
+     *   device-confirmed, so a re-seal then asks the user to type it. The state is left unchanged; the caller
+     *   shows an error and never calls an escrow method.
+     * - `ok`: publishes the user, forgets a cached "no contact email" result, resets the
+     *   published enrollment, and waits for the escrow refresh (whose enrollment, if any,
+     *   seals the new email).
+     */
+    async refreshAccountContact(params: {
+        expectedEmail?: string;
+        customToken?: string;
+        primaryUid?: string;
+    }): Promise<'ok' | 'mismatch' | 'other-uid'> {
+        const ready = this.state;
+        if (ready.status !== 'ready') return 'mismatch';
+        // A custom token switches the Firebase session: only with the uid it is meant for.
+        if (params.customToken && params.primaryUid === undefined) return 'mismatch';
+        if (params.primaryUid !== undefined && ready.authUser?.id !== params.primaryUid)
+            return 'other-uid';
+        if (params.customToken && params.primaryUid !== undefined) {
+            this.pendingAccountContact = {
+                did: ready.did,
+                params: {
+                    ...(params.expectedEmail !== undefined
+                        ? { expectedEmail: params.expectedEmail }
+                        : {}),
+                    customToken: params.customToken,
+                    primaryUid: params.primaryUid,
+                },
+            };
+        }
+        const result = await this.applyAccountContact(ready, params);
+        // Applied, or meant for another login (this session was never signed out): done.
+        if (result !== 'mismatch' && this.pendingAccountContact?.did === ready.did)
+            this.pendingAccountContact = undefined;
+        return result;
+    }
+
+    /**
+     * LC-2409: the sign-in email change this device still has to apply (its custom token
+     * was not used yet, so this login's revoked session cannot make escrow calls). Retry it
+     * with `refreshAccountContact(pending)`. `undefined` when nothing is pending for the
+     * ready account.
+     */
+    getPendingAccountContact():
+        { expectedEmail?: string; customToken: string; primaryUid: string } | undefined {
+        const pending = this.pendingAccountContact;
+        if (!pending || this.state.status !== 'ready' || this.state.did !== pending.did)
+            return undefined;
+        return { ...pending.params };
+    }
+
+    private async applyAccountContact(
+        ready: Extract<UnifiedAuthState, { status: 'ready' }>,
+        params: { expectedEmail?: string; customToken?: string; primaryUid?: string }
+    ): Promise<'ok' | 'mismatch' | 'other-uid'> {
+        const expected =
+            params.expectedEmail === undefined
+                ? undefined
+                : normalizeContactEmail(params.expectedEmail);
+        if ((params.expectedEmail !== undefined && !expected) || !ready.authUser?.id)
+            return 'mismatch';
+        const authProvider = this.config.authProvider;
+        let user: AuthUser | null;
+        try {
+            if (params.customToken) {
+                if (!authProvider.reauthenticateWithToken) return 'mismatch';
+                // Checked before signing in: a token for another uid (a session that is
+                // another login of the account, or a lying lca-api) never replaces this
+                // session's user.
+                const tokenUid = customTokenUid(params.customToken);
+                if (!tokenUid) return 'mismatch';
+                if (tokenUid !== ready.authUser.id) return 'other-uid';
+                user = await authProvider.reauthenticateWithToken(params.customToken);
+            } else {
+                user = await authProvider.getCurrentUser();
+            }
+        } catch (err) {
+            log.warn('account.contact.refresh.failed', err);
+            return 'mismatch';
+        }
+        const current = this.state;
+        if (
+            current.status !== 'ready' ||
+            current.did !== ready.did ||
+            current.privateKey !== ready.privateKey ||
+            !user ||
+            user.id !== ready.authUser.id ||
+            (expected !== undefined && normalizeContactEmail(user.email) !== expected)
+        )
+            return 'mismatch';
+        this.escrowNoContactAccount = undefined;
+        this.setState({
+            ...current,
+            authUser: user,
+            authSessionValid: params.customToken ? true : current.authSessionValid,
+            escrowEnrollment: undefined,
+        });
+        if (this.state.status === 'ready') await this.refreshEscrow(this.state);
+        return 'ok';
+    }
+
+    /**
+     * LC-2409 gates for sealing `authUser.email` into escrow: only from the login that
+     * holds the sign-in email, and only to an address confirmed on this device (or
+     * re-typed now, which then becomes the confirmed one).
+     */
+    private assertContactConfirmable(
+        ready: Extract<UnifiedAuthState, { status: 'ready' }>,
+        params: { primaryUid: string; retypedEmail?: string }
+    ): void {
+        if (!ready.authUser?.id || ready.authUser.id !== params.primaryUid)
+            throw new EscrowContactNotConfirmedError('other-uid');
+        const email = normalizeContactEmail(ready.authUser.email);
+        if (!email) throw new EscrowContactNotConfirmedError('unconfirmed');
+        if (params.retypedEmail !== undefined) {
+            if (normalizeContactEmail(params.retypedEmail) !== email)
+                throw new EscrowContactNotConfirmedError('unconfirmed');
+            this.rememberConfirmedContact(email, ready.did);
+            return;
+        }
+        if (this.getConfirmedContact(ready.did) !== email)
+            throw new EscrowContactNotConfirmedError('unconfirmed');
+    }
+
+    /**
+     * LC-2409: re-seal the escrow backup to the sign-in email by entering the current PIN
+     * (`replace` + `keep`; the PIN does not change). Refused before anything changes with
+     * `EscrowContactNotConfirmedError` (see `assertContactConfirmable`) and with
+     * `PinChangeRequiredError` when only a new PIN can help (`pinChangeRequired` from
+     * account continuity, or a pending "choose a new PIN"). A wrong PIN is
+     * `EscrowPinMismatchError`; the strategy can also throw `PinChangeRequiredError`.
+     */
+    async confirmEscrowPin(params: {
+        pin: string;
+        primaryUid: string;
+        retypedEmail?: string;
+        pinChangeRequired?: boolean;
+    }): Promise<void> {
+        const ready = this.state;
+        if (
+            ready.status !== 'ready' ||
+            !this.keyDerivation.confirmEscrowPin ||
+            !this.config.signDidAuthVp
+        ) {
+            throw new Error('Sign in on a trusted device to manage recovery');
+        }
+        this.assertContactConfirmable(ready, params);
+        if (params.pinChangeRequired || ready.escrowPinChangeRequired)
+            throw new PinChangeRequiredError();
+        const generation = ++this.escrowStatusGeneration;
+        try {
+            await this.runEscrowOperation(async () =>
+                this.keyDerivation.confirmEscrowPin!({
+                    ...(await this.getAuthCredentials()),
+                    privateKey: ready.privateKey,
+                    signDidAuthVp: this.config.signDidAuthVp!,
+                    pin: params.pin,
+                    options: this.recoveryContactOptions(ready),
+                })
+            );
+        } finally {
+            await this.refreshEscrowPinStatus(ready, generation);
+        }
+    }
+
+    /**
+     * LC-2409: re-seal the escrow backup of an account with no PIN to the sign-in email
+     * (the existing forced rotation). Same gates as `confirmEscrowPin`.
+     */
+    async resealEscrowContact(params: {
+        primaryUid: string;
+        retypedEmail?: string;
+    }): Promise<void> {
+        const ready = this.state;
+        if (
+            ready.status !== 'ready' ||
+            !this.keyDerivation.resealEscrowContact ||
+            !this.config.signDidAuthVp
+        ) {
+            throw new Error('Sign in on a trusted device to manage recovery');
+        }
+        this.assertContactConfirmable(ready, params);
+        const generation = ++this.escrowStatusGeneration;
+        try {
+            await this.runEscrowOperation(async () =>
+                this.keyDerivation.resealEscrowContact!({
+                    ...(await this.getAuthCredentials()),
+                    privateKey: ready.privateKey,
+                    signDidAuthVp: this.config.signDidAuthVp!,
+                    options: this.recoveryContactOptions(ready),
+                })
+            );
         } finally {
             await this.refreshEscrowPinStatus(ready, generation);
         }
@@ -2511,6 +2857,7 @@ export class AuthCoordinator {
         this.endingSession = true;
         this.pinAttemptBaseline = undefined;
         this.excusedPinTypos = undefined;
+        this.pendingAccountContact = undefined;
         // An in-flight PIN sign-in is abandoned; a completed one's persisted guard stays.
         this.abandonSignInPin(this.signInPinDigest?.did);
         this.escrowPinChangeDismissed = undefined;
@@ -2565,7 +2912,9 @@ export class AuthCoordinator {
         this.endingSession = true;
         // The device is no longer trusted: drop this account's persisted PIN guard too.
         this.forgetPinGuard('did' in this.state ? this.state.did : undefined);
+        this.forgetConfirmedContact('did' in this.state ? this.state.did : undefined);
         this.signInPinDigest = undefined;
+        this.pendingAccountContact = undefined;
         this.escrowPinChangeDismissed = undefined;
         this.stopEscrowPolling?.();
         this.recoveryGeneration++;

@@ -128,6 +128,94 @@ test.describe('ClassLink sign-in hand-off @mocked', () => {
     });
 });
 
+test.describe('ClassLink login hint @mocked', () => {
+    // The first paint of /login can take well over 5 s on a cold CI runner (Firefox).
+    const FIRST_PAINT_MS = 30_000;
+    const keepAccountFlags = (on: boolean) => ({
+        classlinkPersonalEmail: on,
+        classlinkKeepAccount: on,
+    });
+    const withClassLinkSso = async (
+        page: import('@playwright/test').Page,
+        on: boolean,
+        // The hint is only for tenants where students can add a personal email.
+        keepAccount = true
+    ) => {
+        await page.route('**/tenant-config.json', async route => {
+            const response = await route.fetch();
+            const json = await response.json();
+            await route.fulfill({
+                status: response.status(),
+                headers: response.headers(),
+                contentType: 'application/json',
+                body: JSON.stringify({
+                    ...json,
+                    features: {
+                        ...json.features,
+                        classlinkSso: on,
+                        ...keepAccountFlags(keepAccount),
+                    },
+                }),
+            });
+        });
+    };
+
+    test('a ClassLink tenant points people who left school to their personal email', async ({
+        page,
+    }) => {
+        await installNetwork(page);
+        await withClassLinkSso(page, true);
+        await page.goto('/login');
+        const hint = page.getByTestId('login-classlink-personal-email-hint');
+        await expect(hint).toHaveText('Left your school? Sign in with your personal email.', {
+            timeout: FIRST_PAINT_MS,
+        });
+        await hint.click();
+        await expect(page.locator('input[type="email"]').first()).toBeFocused();
+    });
+
+    test('no hint while the email form asks for its code', async ({ page }) => {
+        await installNetwork(page);
+        await withClassLinkSso(page, true);
+        // The email form opens on its code step; the social buttons (and the hint) are hidden.
+        await page.goto('/login?verifyCode=1');
+        await expect(page.getByLabel(/digit 1/i).first()).toBeVisible({ timeout: FIRST_PAINT_MS });
+        await expect(page.getByTestId('login-classlink-personal-email-hint')).toHaveCount(0);
+    });
+
+    test('"Sign in with Email" in the lost-login sheet opens the email form', async ({ page }) => {
+        await installNetwork(page);
+        await withClassLinkSso(page, true);
+        await page.goto('/login');
+        await page
+            .getByText('I lost access to my school email or login')
+            .click({ timeout: FIRST_PAINT_MS });
+        await page.getByTestId('recovery-identity-sign-in-with-email').click();
+        await expect(page.getByTestId('recovery-identity-sign-in-with-email')).toHaveCount(0);
+        await expect(page.locator('input[type="email"]').first()).toBeFocused();
+    });
+
+    test('no hint on a ClassLink tenant without the keep-account flags', async ({ page }) => {
+        await installNetwork(page);
+        await withClassLinkSso(page, true, false);
+        await page.goto('/login');
+        await expect(page.locator('input[type="email"]').first()).toBeVisible({
+            timeout: FIRST_PAINT_MS,
+        });
+        await expect(page.getByTestId('login-classlink-personal-email-hint')).toHaveCount(0);
+    });
+
+    test('no hint without ClassLink', async ({ page }) => {
+        await installNetwork(page);
+        await withClassLinkSso(page, false);
+        await page.goto('/login');
+        await expect(page.locator('input[type="email"]').first()).toBeVisible({
+            timeout: FIRST_PAINT_MS,
+        });
+        await expect(page.getByTestId('login-classlink-personal-email-hint')).toHaveCount(0);
+    });
+});
+
 test.describe('ClassLink signed-in states @mocked', () => {
     // The mocked tier has no signed-in boot for a ClassLink account, so the rendered transcript
     // card and personal-email prompt states are UNVERIFIED here; verify them on staging.

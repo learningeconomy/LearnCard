@@ -40,9 +40,24 @@ export const RecoveryPinInput: React.FC<RecoveryPinInputProps> = ({
         onChange(emittedValue.current);
     };
 
+    /** Fill every box from a whole code (paste, or OS one-time-code autofill). */
+    const fillAll = (code: string) => {
+        updateDigits(Array.from({ length }, (_, i) => code[i] ?? ''));
+        if (code.length === length && onComplete) {
+            onComplete(code);
+        }
+        inputRefs.current[Math.min(code.length, length - 1)]?.focus();
+    };
+
     const handleChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value;
         if (val && !/^\d+$/.test(val)) return;
+
+        // OS autofill (`one-time-code`) puts the whole code in the first box.
+        if (isCode && val.length === length) {
+            fillAll(val);
+            return;
+        }
 
         const char = val.slice(-1);
 
@@ -84,14 +99,7 @@ export const RecoveryPinInput: React.FC<RecoveryPinInputProps> = ({
     const handlePaste = (e: ClipboardEvent<HTMLInputElement>) => {
         e.preventDefault();
         const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, length);
-        if (pastedData) {
-            updateDigits(Array.from({ length }, (_, i) => pastedData[i] ?? ''));
-            if (pastedData.length === length && onComplete) {
-                onComplete(pastedData);
-            }
-            const nextIndex = Math.min(pastedData.length, length - 1);
-            inputRefs.current[nextIndex]?.focus();
-        }
+        if (pastedData) fillAll(pastedData);
     };
 
     return (
@@ -106,7 +114,8 @@ export const RecoveryPinInput: React.FC<RecoveryPinInputProps> = ({
                     type={isCode ? 'text' : 'password'}
                     inputMode="numeric"
                     pattern="\d*"
-                    maxLength={1}
+                    // The autofill target must accept the whole code.
+                    maxLength={isCode && index === 0 ? length : 1}
                     autoComplete={isCode && index === 0 ? 'one-time-code' : 'off'}
                     data-1p-ignore
                     data-lpignore="true"
