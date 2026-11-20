@@ -202,7 +202,7 @@ describe('suggested credentials (LC-2423)', () => {
         );
     });
 
-    it('keeps the suggestion and toasts when dismissal fails', async () => {
+    it('keeps the suggestion and toasts when dismissal fails, then archives on retry', async () => {
         mocks.dismiss.mockRejectedValueOnce(new Error('network'));
         renderContainer(suggestion());
         const { handleArchive } = mocks.boostProps.mock.calls.at(-1)![0] as {
@@ -211,6 +211,13 @@ describe('suggested credentials (LC-2423)', () => {
         await handleArchive();
         expect(mocks.updateNotification).not.toHaveBeenCalled();
         expect(mocks.toast).toHaveBeenCalled();
+
+        await handleArchive();
+        expect(mocks.dismiss).toHaveBeenCalledTimes(2);
+        expect(mocks.updateNotification).toHaveBeenCalledWith(
+            expect.objectContaining({ payload: { archived: true, read: true } }),
+            expect.anything()
+        );
     });
 
     it('does not dismiss a suggestion the person already accepted', async () => {
