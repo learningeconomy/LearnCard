@@ -9,6 +9,8 @@ ext {
     androidxFragmentVersion = '1.8.9'
     junitVersion = '4.13.2'
     androidxJunitVersion = '1.3.0'
+    androidxTestRunnerVersion = '1.7.0'
+    androidxTestRulesVersion = '1.7.0'
     androidxEspressoCoreVersion = '3.7.0'
     cordovaAndroidVersion = '14.0.1'
 
