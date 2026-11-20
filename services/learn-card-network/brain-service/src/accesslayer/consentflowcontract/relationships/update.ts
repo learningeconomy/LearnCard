@@ -5,6 +5,7 @@ import { appendConsentEvent, tryDispatchContractEvent } from '@helpers/contract-
 import { QueryBuilder, BindParam } from 'neogma';
 import { TRPCError } from '@trpc/server';
 import {
+    MAX_REFERRAL_OUTCOMES,
     ConsentFlowTerms as ConsentFlowTermsType,
     ConsentFlowTransaction as ConsentFlowTransactionType,
     ConsentFlowGuardianApproval,
@@ -721,15 +722,11 @@ export const attachReferralOutcomeToContract = async (
     domain?: string,
     remove = false
 ): Promise<boolean> => {
-    const outcomes = new Set(relationship.terms.terms.outcomes ?? []);
-    if (remove) outcomes.delete(uri);
-    else outcomes.add(uri);
-    const updatedOutcomes = [...outcomes];
     const transaction = {
         id: uuid(),
         action: remove ? 'update' : 'sync',
         date: new Date().toISOString(),
-        terms: { outcomes: updatedOutcomes } as ConsentFlowTermsType,
+        outcomeChange: { uri, remove },
     } as const satisfies ConsentFlowTransactionType;
     const now = new Date().toISOString();
     const result = await runAudienceMutation(
@@ -741,6 +738,7 @@ export const attachReferralOutcomeToContract = async (
                         audienceVersion: audienceVersion ?? null,
                         uri,
                         remove,
+                        maxOutcomes: MAX_REFERRAL_OUTCOMES,
                         now,
                         params: flattenObject({ updatedAt: now }),
                         transactionParams: flattenObject(transaction),
@@ -761,10 +759,18 @@ export const attachReferralOutcomeToContract = async (
                     AND (CASE WHEN terms.expiresAt IS NULL OR trim(terms.expiresAt) = '' THEN true ELSE datetime(terms.expiresAt) > datetime($now) END)
                     AND (CASE WHEN contract.expiresAt IS NULL OR trim(contract.expiresAt) = '' THEN true ELSE datetime(contract.expiresAt) > datetime($now) END)`
                 )
+                .raw(
+                    `WITH terms, contract,
+                    $uri IN coalesce(terms.\`terms.outcomes\`, []) AS present,
+                    size(coalesce(terms.\`terms.outcomes\`, [])) >= $maxOutcomes AS capped
+                    CALL {
+                    WITH terms, contract, present, capped
+                    WITH terms, contract, present, capped
+                    WHERE ($remove AND present) OR (NOT $remove AND NOT present AND NOT capped)`
+                )
                 .set(
                     `terms.\`terms.outcomes\` = CASE WHEN $remove
                     THEN [outcome IN coalesce(terms.\`terms.outcomes\`, []) WHERE outcome <> $uri]
-                    WHEN $uri IN coalesce(terms.\`terms.outcomes\`, []) THEN coalesce(terms.\`terms.outcomes\`, [])
                     ELSE coalesce(terms.\`terms.outcomes\`, []) + [$uri] END`
                 )
                 .set('terms += $params')
@@ -787,11 +793,20 @@ export const attachReferralOutcomeToContract = async (
                     ? 'consentFlowTransactionUpdatedTerms'
                     : 'consentFlowTransactionSyncedSingle',
             }
-        ).return('terms.id AS id')
+        )
+            .raw('RETURN count(transaction) AS changed }')
+            .return('changed, present, capped')
     );
     assertAudienceMutation(result.records.length);
-    await tryDispatchContractEvent(transaction.id);
-    return result.summary.counters.containsUpdates();
+    const record = result.records[0]!;
+    if (!remove && !record.get('present') && record.get('capped'))
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `A term may have at most ${MAX_REFERRAL_OUTCOMES} outcomes.`,
+        });
+    const changed = record.get('changed').toNumber() > 0;
+    if (changed) await tryDispatchContractEvent(transaction.id);
+    return changed;
 };
 
 export const withdrawTerms = async (

@@ -611,6 +611,7 @@ const matchesConsentedDataQuery = (
         ([key, required]) => required === (term.terms.read.personal?.[key] != null)
     ) &&
     Object.entries(query.credentials?.categories ?? {}).every(([name, required]) => {
+        if (name === 'Outcome' && term.terms.outcomes?.length) return required;
         const category = term.terms.read.credentials.categories[name];
         const shared =
             term.terms.read.credentials.sharing !== false &&
@@ -635,7 +636,9 @@ const projectConsentedData = (
                 ? (category.shared ?? [])
                 : []
         ),
-        ...(term.terms.outcomes?.length
+        // Selected outcomes are independent of the global category-sharing switch.
+        ...(term.terms.outcomes?.length &&
+        shouldIncludeCategory(query.credentials?.categories, 'Outcome')
             ? { selected: term.terms.outcomes.map(uri => ({ category: 'Outcome' as const, uri })) }
             : {}),
     },
@@ -696,7 +699,7 @@ const getPermittedContractData = async (
         required,
     }));
     const sharedCategories = Object.entries(query.credentials?.categories ?? {})
-        .filter(([, required]) => required)
+        .filter(([name, required]) => required && name !== 'Outcome')
         .map(([name]) => ({
             sharingKey: `terms.read.credentials.categories.${name}.sharing`,
             sharedKey: `terms.read.credentials.categories.${name}.shared`,
@@ -1010,7 +1013,10 @@ AND ${contractWhereClause}
                             return shared?.map(uri => ({ category, uri })) ?? [];
                         }
                     ),
-                    ...(term.terms.outcomes ?? []).map(uri => ({ category: 'Outcome', uri })),
+                    // Outcomes are independent of category sharing, but respect the query projection.
+                    ...(shouldIncludeCategory(params.credentials?.categories, 'Outcome')
+                        ? (term.terms.outcomes ?? []).map(uri => ({ category: 'Outcome', uri }))
+                        : []),
                 ],
                 personal: term.terms.read.personal,
             });

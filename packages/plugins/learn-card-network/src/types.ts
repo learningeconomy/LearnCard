@@ -900,13 +900,22 @@ export type LearnCardNetworkPluginMethods = {
         /** Require current category-wide consent for automatic delivery. Omit for explicit selections. */
         automatic?: boolean
     ) => Promise<boolean>;
-    /** Attach one encrypted outcome to this referral's audience only. */
+    /**
+     * Attach one encrypted outcome to this referral's audience only.
+     * Pass the audienceVersion the learner reviewed. Omitting it snapshots the server's
+     * current version, not the audience previously reviewed by the caller.
+     * Returns false when this URI is already attached; at most 100 outcomes may be selected.
+     */
     attachReferralOutcome: (
         termsUri: string,
         uri: string,
         audienceVersion?: number
     ) => Promise<boolean>;
-    /** Remove a previously attached outcome from this referral. */
+    /**
+     * Remove a previously attached outcome from this referral.
+     * Pass the reviewed audienceVersion to reject intervening audience changes.
+     * Returns false when the URI is already absent.
+     */
     detachReferralOutcome: (
         termsUri: string,
         uri: string,

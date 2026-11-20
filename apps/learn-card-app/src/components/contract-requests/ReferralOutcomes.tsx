@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { IonIcon } from '@ionic/react';
 import { alertCircleOutline, closeOutline } from 'ionicons/icons';
+import { MAX_REFERRAL_OUTCOMES } from '@learncard/types';
 import { useWallet, useModal, switchedProfileStore, walletStore } from 'learn-card-base';
 import { loadContractAudience } from 'learn-card-base/hooks/consentAudience';
 import { useConsentAudienceReview } from 'learn-card-base/hooks/useConsentAudienceReview';
@@ -99,14 +100,20 @@ export const ReferralOutcomes: React.FC<{
         try {
             await guardedAction(async () => {
                 const { reader, selection, audience } = await readSelection();
+                const fingerprint = JSON.stringify([audience.audienceVersion, audience.recipients]);
+                let prepared = uploaded.current;
+                if (prepared?.audience !== fingerprint || prepared.profileDid !== profileDid)
+                    prepared = undefined;
+                if (
+                    (selection.terms.outcomes?.length ?? 0) >= MAX_REFERRAL_OUTCOMES &&
+                    (!prepared || !selection.terms.outcomes?.includes(prepared.uri))
+                ) {
+                    setError(m['referralOutcomes.limit']({ count: MAX_REFERRAL_OUTCOMES }));
+                    return;
+                }
                 await reviewAudience(audience.contract);
                 assertActive();
-                const fingerprint = JSON.stringify([audience.audienceVersion, audience.recipients]);
-                if (
-                    !uploaded.current ||
-                    uploaded.current.audience !== fingerprint ||
-                    uploaded.current.profileDid !== profileDid
-                ) {
+                if (!prepared) {
                     const result = await uploadReferralOutcome(
                         file,
                         audience.recipients,
@@ -120,22 +127,28 @@ export const ReferralOutcomes: React.FC<{
                         );
                         return;
                     }
-                    uploaded.current = {
+                    prepared = {
                         uri: result.credentialUri,
                         audience: fingerprint,
                         profileDid: profileDid!,
                     };
+                    uploaded.current = prepared;
                 }
-                assertActive();
-                await guardedAction(() => {});
-                if (
-                    !(await reader.invoke.attachReferralOutcome(
+                const outcomeUri = prepared.uri;
+                // Review/upload can outlive guardian approval; recheck immediately at the write.
+                await guardedAction(async () => {
+                    assertActive();
+                    const changed = await reader.invoke.attachReferralOutcome(
                         selection.uri,
-                        uploaded.current.uri,
+                        outcomeUri,
                         audience.audienceVersion
-                    ))
-                )
-                    throw new Error('Outcome was not attached');
+                    );
+                    if (!changed) {
+                        const latest = await readSelection();
+                        if (!latest.selection.terms.outcomes?.includes(outcomeUri))
+                            throw new Error('Outcome was not attached');
+                    }
+                });
                 uploaded.current = undefined;
                 setFile(undefined);
                 if (input.current) input.current.value = '';
@@ -157,14 +170,16 @@ export const ReferralOutcomes: React.FC<{
             await guardedAction(async () => {
                 const { reader, selection, audience } = await readSelection();
                 assertActive();
-                if (
-                    !(await reader.invoke.detachReferralOutcome(
-                        selection.uri,
-                        uri,
-                        audience.audienceVersion
-                    ))
-                )
-                    throw new Error('Outcome was not removed');
+                const changed = await reader.invoke.detachReferralOutcome(
+                    selection.uri,
+                    uri,
+                    audience.audienceVersion
+                );
+                if (!changed) {
+                    const latest = await readSelection();
+                    if (latest.selection.terms.outcomes?.includes(uri))
+                        throw new Error('Outcome was not removed');
+                }
                 setNotice(m['referralOutcomes.removed']());
                 await refresh();
             });

@@ -16,6 +16,7 @@
         "removed": "Outcome removed from this referral.",
         "error": "Couldn't update this referral. Check your connection and try again.",
         "fileError": "Choose a JSON file containing one credential, up to 1 MB.",
+        "limit": "You can attach up to {{count}} outcomes to this referral.",
         "unavailable": "Connect to this referral and review any pending changes before adding an outcome.",
         "loading": "Loading referral…"
     },

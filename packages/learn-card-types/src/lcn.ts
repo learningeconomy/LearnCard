@@ -1412,10 +1412,13 @@ export type ConsentFlowTransactionsQueryInput = z.input<
     typeof ConsentFlowTransactionsQueryValidator
 >;
 
+export const MAX_REFERRAL_OUTCOMES = 100;
+
 export const ConsentFlowTransactionValidator = z.object({
     expiresAt: z.string().optional(),
     oneTime: z.boolean().optional(),
     terms: ConsentFlowTermsValidator.optional(),
+    outcomeChange: z.object({ uri: z.string(), remove: z.boolean() }).optional(),
     guardianApproval: ConsentFlowGuardianApprovalValidator.optional(),
     referral: ConsentFlowReferralValidator.optional(),
     id: z.string(),

@@ -1,10 +1,11 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { randomBytes } from 'node:crypto';
 import type { ConsentFlowDataQuery, ConsentFlowTermsInput } from '@learncard/types';
 import { ConsentFlowTerms, ConsentFlowTransaction } from '@models';
 import { neogma } from '@instance';
 import { suspendExpiredConsentFlowTerms } from '@helpers/consentflow-deadline.helpers';
 import { encodeConsentedDataCursor } from '@accesslayer/consentflowcontract/relationships/read';
+import * as contractEvents from '@helpers/contract-events.helpers';
 import { getUser } from './helpers/getClient';
 import { minimalContract, minimalTerms, normalContract, normalFullTerms } from './helpers/contract';
 
@@ -651,7 +652,7 @@ describe('consented data boundaries', () => {
         const sibling = await consent({
             terms: {
                 ...structuredClone(normalFullTerms),
-                outcomes: ['urn:unreviewed:client-value'],
+                outcomes: ['lc:cloud:cloud.learncard.com:credential:unreviewed'],
             },
         });
         const uris = [
@@ -664,11 +665,44 @@ describe('consented data boundaries', () => {
                 uri: 'lc:cloud:cloud.learncard.com:credential:owner-attempt',
             })
         ).rejects.toThrow();
-        await Promise.all(
-            uris.map(uri =>
-                learner.clients.fullAuth.contracts.updateReferralOutcome({ termsUri, uri })
-            )
-        );
+        // Inspect queued payloads before delivery legitimately scrubs their sensitive contents.
+        const dispatch = vi
+            .spyOn(contractEvents, 'tryDispatchContractEvent')
+            .mockResolvedValue(undefined);
+        try {
+            await Promise.all(
+                uris.map(uri =>
+                    learner.clients.fullAuth.contracts.updateReferralOutcome({ termsUri, uri })
+                )
+            );
+            const audit = await neogma.queryRunner.run(
+                `MATCH (transaction:ConsentFlowTransaction)-[:IS_FOR]->(terms:ConsentFlowTerms {id:$id})
+                 MATCH (event:ConsentFlowEvent {id:transaction.id})
+                 WHERE transaction.\`outcomeChange.uri\` IS NOT NULL
+                 RETURN transaction.\`outcomeChange.uri\` AS uri,
+                        transaction.\`outcomeChange.remove\` AS remove, event.payload AS payload`,
+                { id: termsUri.split(':').at(-1)! }
+            );
+            expect(audit.records).toHaveLength(2);
+            expect(audit.records.map(record => record.get('uri')).sort()).toEqual([...uris].sort());
+            for (const record of audit.records) {
+                const payload = JSON.parse(record.get('payload'));
+                expect(payload.outcomeChange).toEqual({ uri: record.get('uri'), remove: false });
+                expect(payload.terms).toBeUndefined();
+            }
+        } finally {
+            dispatch.mockRestore();
+        }
+
+        const filtered = await readAll(contractUri, {
+            credentials: { categories: { Achievement: true } },
+        });
+        for (const response of filtered) {
+            const credentials = response.records[0]!.credentials;
+            if (Array.isArray(credentials))
+                expect(credentials.filter(item => item.category === 'Outcome')).toEqual([]);
+            else expect(credentials.selected).toBeUndefined();
+        }
 
         const terms = structuredClone(normalFullTerms);
         await learner.clients.fullAuth.contracts.updateConsentedContractTerms({
@@ -727,5 +761,160 @@ describe('consented data boundaries', () => {
             query: { id: contractUri.split(':').at(-1)! },
         });
         expect(afterLastDetach.records[0]?.terms.outcomes).toEqual([]);
+        await learner.clients.fullAuth.contracts.updateConsentedContractTerms({
+            uri: termsUri,
+            terms,
+        });
+        const afterEdit = await owner.clients.fullAuth.contracts.getConsentedDataForDid({
+            did: learnerDid,
+            query: { id: contractUri.split(':').at(-1)! },
+        });
+        expect(afterEdit.records[0]?.terms.outcomes).toEqual([]);
+    });
+
+    it('preserves a generic Outcome category when no individual outcome is attached', async () => {
+        const uri = 'lc:cloud:cloud.learncard.com:credential:category-outcome';
+        const contractUri = await owner.clients.fullAuth.contracts.createConsentFlowContract({
+            name: 'Generic Outcome category',
+            contract: {
+                read: {
+                    personal: {},
+                    credentials: { categories: { Outcome: { required: false } } },
+                },
+                write: { personal: {}, credentials: { categories: {} } },
+            },
+        });
+        await learner.clients.fullAuth.contracts.consentToContract({
+            contractUri,
+            terms: {
+                read: {
+                    personal: {},
+                    credentials: {
+                        sharing: true,
+                        categories: { Outcome: { sharing: true, shared: [uri] } },
+                    },
+                },
+                write: { personal: {}, credentials: { categories: {} } },
+            },
+        });
+        for (const response of await readAll(contractUri, {
+            credentials: { categories: { Outcome: true } },
+        })) {
+            expect(response.records).toHaveLength(1);
+            const credentials = response.records[0]!.credentials;
+            if (Array.isArray(credentials))
+                expect(credentials).toContainEqual({ category: 'Outcome', uri });
+            else expect(credentials.categories.Outcome).toEqual([uri]);
+        }
+    });
+
+    it('keeps outcomes selectable with category sharing disabled', async () => {
+        const terms = structuredClone(normalFullTerms);
+        terms.read.credentials.sharing = false;
+        const { contractUri, termsUri } = await consent({ terms });
+        const uri = 'lc:cloud:cloud.learncard.com:credential:independent';
+        await learner.clients.fullAuth.contracts.updateReferralOutcome({ termsUri, uri });
+        for (const response of await readAll(contractUri, {
+            credentials: { categories: { Outcome: true } },
+        })) {
+            expect(response.records).toHaveLength(1);
+            const credentials = response.records[0]!.credentials;
+            const selected = Array.isArray(credentials) ? credentials : credentials.selected;
+            expect(selected).toContainEqual({ category: 'Outcome', uri });
+        }
+    });
+
+    it('enforces the cap under lock and leaves audit and version untouched for no-ops', async () => {
+        const { termsUri } = await consent();
+        const id = termsUri.split(':').at(-1)!;
+        const existing = Array.from(
+            { length: 99 },
+            (_, i) => `lc:cloud:cloud.learncard.com:credential:seed-${i}`
+        );
+        await neogma.queryRunner.run(
+            'MATCH (terms:ConsentFlowTerms {id:$id}) SET terms.`terms.outcomes` = $existing',
+            { id, existing }
+        );
+        const candidates = [
+            'lc:cloud:cloud.learncard.com:credential:cap-a',
+            'lc:cloud:cloud.learncard.com:credential:cap-b',
+        ];
+        const results = await Promise.allSettled(
+            candidates.map(uri =>
+                learner.clients.fullAuth.contracts.updateReferralOutcome({ termsUri, uri })
+            )
+        );
+        expect(
+            results.filter(result => result.status === 'fulfilled' && result.value === true)
+        ).toHaveLength(1);
+        expect(results.filter(result => result.status === 'rejected')).toHaveLength(1);
+        const snapshot = async () => {
+            const result = await neogma.queryRunner.run(
+                `MATCH (terms:ConsentFlowTerms {id:$id})
+                 OPTIONAL MATCH (transaction:ConsentFlowTransaction)-[:IS_FOR]->(terms)
+                 WITH terms, count(transaction) AS transactions
+                 OPTIONAL MATCH (event:ConsentFlowEvent {termsId:$id})
+                 RETURN terms.mutationVersion AS version, terms.\`terms.outcomes\` AS outcomes,
+                        transactions, count(event) AS events`,
+                { id }
+            );
+            const row = result.records[0]!;
+            return {
+                version: row.get('version')?.toString(),
+                outcomes: row.get('outcomes') as string[],
+                transactions: row.get('transactions').toNumber(),
+                events: row.get('events').toNumber(),
+            };
+        };
+        const before = await snapshot();
+        expect(before.outcomes).toHaveLength(100);
+        const attached = candidates.find(uri => before.outcomes.includes(uri))!;
+        expect(
+            await learner.clients.fullAuth.contracts.updateReferralOutcome({
+                termsUri,
+                uri: attached,
+            })
+        ).toBe(false);
+        expect(
+            await learner.clients.fullAuth.contracts.updateReferralOutcome({
+                termsUri,
+                uri: 'lc:cloud:cloud.learncard.com:credential:absent',
+                remove: true,
+            })
+        ).toBe(false);
+        expect(await snapshot()).toEqual(before);
+        expect(
+            await learner.clients.fullAuth.contracts.updateReferralOutcome({
+                termsUri,
+                uri: attached,
+                remove: true,
+            })
+        ).toBe(true);
+        expect((await snapshot()).outcomes).toHaveLength(99);
+        const retries = await Promise.all(
+            [0, 1].map(() =>
+                learner.clients.fullAuth.contracts.updateReferralOutcome({
+                    termsUri,
+                    uri: attached,
+                })
+            )
+        );
+        expect(retries.sort()).toEqual([false, true]);
+        const afterRetries = await snapshot();
+        expect(afterRetries.outcomes.filter(uri => uri === attached)).toHaveLength(1);
+        expect(afterRetries.transactions).toBe(before.transactions + 2);
+        expect(afterRetries.events).toBe(before.events + 2);
+    });
+
+    it.each([
+        'urn:encrypted:outcome',
+        'lc:cloud:cloud.learncard.com:profile:wrong',
+        'lc:cloud:cloud.learncard.com:credential:bad/id',
+        `lc:cloud:cloud.learncard.com:credential:${'a'.repeat(2050)}`,
+    ])('rejects unsupported outcome URI %s', async uri => {
+        const { termsUri } = await consent();
+        await expect(
+            learner.clients.fullAuth.contracts.updateReferralOutcome({ termsUri, uri })
+        ).rejects.toThrow();
     });
 });

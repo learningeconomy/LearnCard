@@ -16,6 +16,7 @@
         "removed": "Resultado eliminado de esta derivación.",
         "error": "No se pudo actualizar esta derivación. Comprueba tu conexión e inténtalo de nuevo.",
         "fileError": "Elige un archivo JSON con una credencial de hasta 1 MB.",
+        "limit": "Puedes adjuntar hasta {{count}} resultados a esta derivación.",
         "unavailable": "Conéctate a esta derivación y revisa los cambios pendientes antes de añadir un resultado.",
         "loading": "Cargando derivación…"
     },

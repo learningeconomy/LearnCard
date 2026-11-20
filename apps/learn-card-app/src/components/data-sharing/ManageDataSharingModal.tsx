@@ -613,11 +613,6 @@ const PermissionsList: React.FC<{ contract: ConsentedContract }> = ({ contract }
 
     return (
         <div className="flex flex-col gap-3">
-            {outcomeCount > 0 && hasReadCategories && (
-                <p className="text-sm text-grayscale-700">
-                    {m['referralOutcomes.count']({ count: outcomeCount })}
-                </p>
-            )}
             {/* Read Permissions */}
             <div className="bg-cyan-50 border border-cyan-100 rounded-lg p-3">
                 <div className="flex items-center gap-2 mb-2">
@@ -626,6 +621,11 @@ const PermissionsList: React.FC<{ contract: ConsentedContract }> = ({ contract }
                         {m['dataSharing.readAccess']()}
                     </span>
                 </div>
+                {outcomeCount > 0 && (
+                    <p className="mb-2 text-xs text-grayscale-700">
+                        {m['referralOutcomes.count']({ count: outcomeCount })}
+                    </p>
+                )}
 
                 {hasReadCategories ? (
                     <div className="flex flex-wrap gap-1.5">
@@ -644,13 +644,11 @@ const PermissionsList: React.FC<{ contract: ConsentedContract }> = ({ contract }
                             );
                         })}
                     </div>
-                ) : (
+                ) : !outcomeCount ? (
                     <p className="text-xs text-cyan-600 italic">
-                        {outcomeCount > 0
-                            ? m['referralOutcomes.count']({ count: outcomeCount })
-                            : m['dataSharing.noReadPermissions']()}
+                        {m['dataSharing.noReadPermissions']()}
                     </p>
-                )}
+                ) : null}
             </div>
 
             {/* Write Permissions */}

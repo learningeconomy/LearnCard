@@ -16,6 +16,7 @@
         "removed": "Résultat supprimé de cette orientation.",
         "error": "Impossible de mettre à jour cette orientation. Vérifiez votre connexion et réessayez.",
         "fileError": "Choisissez un fichier JSON contenant une attestation, de 1 Mo maximum.",
+        "limit": "Vous pouvez joindre jusqu’à {{count}} résultats à cette orientation.",
         "unavailable": "Connectez-vous à cette orientation et examinez les modifications en attente avant d’ajouter un résultat.",
         "loading": "Chargement de l’orientation…"
     },

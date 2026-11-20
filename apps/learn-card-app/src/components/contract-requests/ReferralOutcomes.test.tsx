@@ -2,6 +2,7 @@ import React from 'react';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { MAX_REFERRAL_OUTCOMES } from '@learncard/types';
 
 const state = vi.hoisted(() => ({
     did: 'did:key:learner',
@@ -10,6 +11,7 @@ const state = vi.hoisted(() => ({
     attach: vi.fn(),
     detach: vi.fn(),
     close: vi.fn(),
+    guard: vi.fn(),
     outcomes: [] as string[],
 }));
 const details = {
@@ -62,7 +64,7 @@ vi.mock('../../hooks/useUploadVcFromText', () => ({
     useUploadVcFromText: () => ({ uploadReferralOutcome: state.upload }),
 }));
 vi.mock('../../hooks/useGuardianGate', () => ({
-    default: () => ({ guardedAction: async (action: () => Promise<void>) => action() }),
+    default: () => ({ guardedAction: state.guard }),
 }));
 vi.mock('@ionic/react', () => ({ IonIcon: () => null }));
 import { ReferralOutcomes } from './ReferralOutcomes';
@@ -83,6 +85,7 @@ beforeEach(() => {
     vi.resetAllMocks();
     state.did = 'did:key:learner';
     state.outcomes = [];
+    state.guard.mockImplementation(async (action: () => Promise<void>) => action());
     state.review.mockResolvedValue(undefined);
     state.upload.mockResolvedValue({ success: true, credentialUri: 'encrypted-outcome' });
     state.attach.mockResolvedValue(true);
@@ -129,6 +132,81 @@ describe('referral outcome selection', () => {
             "Couldn't update this referral. Check your connection and try again."
         );
         expect(state.attach).not.toHaveBeenCalled();
+    });
+
+    it('rechecks the active account inside renewed guardian approval before attaching', async () => {
+        state.guard
+            .mockImplementationOnce(async (action: () => Promise<void>) => action())
+            .mockImplementationOnce(async (action: () => Promise<void>) => {
+                state.did = 'did:key:other';
+                await action();
+            });
+        await show();
+        fireEvent.click(screen.getByRole('button', { name: 'Add an outcome' }));
+        await screen.findByRole('alert');
+        expect(state.upload).toHaveBeenCalledOnce();
+        expect(state.attach).not.toHaveBeenCalled();
+    });
+
+    it('confirms the persisted outcome after a committed attach loses its response', async () => {
+        state.attach.mockImplementationOnce(async () => {
+            state.outcomes = ['encrypted-outcome'];
+            throw new Error('response lost');
+        });
+        state.attach.mockResolvedValueOnce(false);
+        await show();
+        fireEvent.click(screen.getByRole('button', { name: 'Add an outcome' }));
+        await screen.findByRole('alert');
+        fireEvent.click(screen.getByRole('button', { name: 'Add an outcome' }));
+        await screen.findByText('Outcome shared with this referral.');
+        expect(state.upload).toHaveBeenCalledOnce();
+        expect(screen.queryByRole('alert')).toBeNull();
+        expect(screen.getByRole('button', { name: 'Remove outcome 1' })).toBeVisible();
+    });
+
+    it('does not claim success when a no-op attach has no persisted selection', async () => {
+        state.attach.mockResolvedValue(false);
+        await show();
+        fireEvent.click(screen.getByRole('button', { name: 'Add an outcome' }));
+        await screen.findByRole('alert');
+        expect(screen.queryByText('Outcome shared with this referral.')).toBeNull();
+    });
+
+    it('explains the outcome cap before uploading another credential', async () => {
+        state.outcomes = Array.from(
+            { length: MAX_REFERRAL_OUTCOMES },
+            (_, index) => `existing-outcome-${index}`
+        );
+        await show();
+        fireEvent.click(screen.getByRole('button', { name: 'Add an outcome' }));
+        expect(await screen.findByRole('alert')).toHaveTextContent(
+            `You can attach up to ${MAX_REFERRAL_OUTCOMES} outcomes to this referral.`
+        );
+        expect(state.upload).not.toHaveBeenCalled();
+        expect(state.attach).not.toHaveBeenCalled();
+    });
+
+    it('confirms that an outcome was already removed when detach returns no change', async () => {
+        state.outcomes = ['first-outcome'];
+        state.detach.mockImplementation(async () => {
+            state.outcomes = [];
+            return false;
+        });
+        await show();
+        fireEvent.click(screen.getByRole('button', { name: 'Remove outcome 1' }));
+        await screen.findByText('Outcome removed from this referral.');
+        expect(screen.queryByRole('alert')).toBeNull();
+        await screen.findByText('No outcomes attached yet.');
+    });
+
+    it('does not claim removal when a no-op detach leaves the selection present', async () => {
+        state.outcomes = ['first-outcome'];
+        state.detach.mockResolvedValue(false);
+        await show();
+        fireEvent.click(screen.getByRole('button', { name: 'Remove outcome 1' }));
+        await screen.findByRole('alert');
+        expect(screen.queryByText('Outcome removed from this referral.')).toBeNull();
+        expect(screen.getByRole('button', { name: 'Remove outcome 1' })).toBeVisible();
     });
 
     it('removes only the selected outcome and refreshes the persisted list', async () => {
