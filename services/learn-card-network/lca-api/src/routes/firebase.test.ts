@@ -200,6 +200,29 @@ describe('Keycloak bridge (LC-2409)', () => {
         expect(auth.createUser).toHaveBeenCalledWith({ uid: 'kc-sub', displayName: null });
         expect(auth.updateUser).not.toHaveBeenCalled();
         expect(auth.createCustomToken).toHaveBeenCalledWith('kc-sub', expect.anything());
+        // Nor does it travel as a custom token claim (it would reach the ID token's `email`).
+        expect((auth.createCustomToken.mock.calls[0] as unknown[])[1]).not.toHaveProperty('email');
+    });
+
+    it('never puts an email claim in the custom token, verified or not', async () => {
+        auth.getUser.mockRejectedValue({ code: 'auth/user-not-found' });
+        await createFirebaseTokenForKeycloakUser(
+            { sub: 'kc-sub', email: 'nobody@example.com', name: 'N', roles: ['scout'] },
+            auth as never
+        );
+        mocks.resolveOrCreate.mockResolvedValue({ status: 'alias', uid: 'classlink-t' });
+        await createFirebaseTokenForKeycloakUser(
+            { sub: 'kc-sub', email: 'student@example.edu', email_verified: true, name: 'S' },
+            auth as never
+        );
+        expect(auth.createCustomToken).toHaveBeenNthCalledWith(1, 'kc-sub', {
+            name: 'N',
+            roles: ['scout'],
+        });
+        expect(auth.createCustomToken).toHaveBeenNthCalledWith(2, 'classlink-t', {
+            name: 'S',
+            roles: [],
+        });
     });
 
     it('maps a verified email through the alias and never rewrites the aliased user', async () => {

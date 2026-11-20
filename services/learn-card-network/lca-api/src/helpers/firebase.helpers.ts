@@ -105,6 +105,7 @@ export type KeycloakBridgeUser = {
  * guard apply; a moved or orphaned account fails). Any other user signs in as the Keycloak
  * subject's own uid, is never matched to an existing user by email, and its unverified email
  * is never written to Firebase. `emailVerified: false` is never written onto a matched user.
+ * The custom token carries no `email` claim (see below).
  */
 export const createFirebaseTokenForKeycloakUser = async (
     keycloakUser: KeycloakBridgeUser,
@@ -141,7 +142,11 @@ export const createFirebaseTokenForKeycloakUser = async (
         throw new Error('Firebase user creation or lookup failed');
     }
 
-    return auth.createCustomToken(uid, { email, name: displayName, roles });
+    // No `email` developer claim: Firebase copies developer claims into the ID token, so an
+    // unverified address (or, on the alias, the school address the account no longer signs
+    // in with) would reach every reader of the token's `email`. The user record's own email,
+    // written above only when verified, is the one that counts. Nothing reads this claim.
+    return auth.createCustomToken(uid, { name: displayName, roles });
 };
 
 export const createFirebaseToken = async (keycloakToken: string): Promise<string> =>
