@@ -6,13 +6,12 @@
  * (agents). Governance operations need a profile; the service enforces that, so
  * the rule lives next to the rest of the policy.
  */
-import { randomUUID } from 'node:crypto';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { openRoute, privateScopedRoute, t } from '@routes';
 
-import { contracts, providerId } from './ports';
+import { oauthConsentConfig } from './ports';
 import {
     ContractOfferInputSchema,
     ContractOfferSchema,
@@ -32,13 +31,15 @@ import {
     ListEntriesResultSchema,
     ListGrantsInputSchema,
     MetaSchema,
+    OAuthApproveInputSchema,
+    OAuthApproveResultSchema,
     QueryInputSchema,
     QueryResultSchema,
     ReviseEntryInputSchema,
     WithdrawEntryInputSchema,
     WithdrawResultSchema,
 } from './schemas';
-import type { HcpV1Caller, HcpV1Deps } from './service/deps';
+import type { HcpV1Caller } from './service/deps';
 import {
     acceptSuggestion,
     createEntry,
@@ -51,21 +52,10 @@ import { HcpV1Error, type HcpV1ErrorType } from './service/errors';
 import { exportContext, listAudit, listOwnEntries } from './service/governance';
 import { createGrant, getContractOffer, getGrant, listGrants, revokeGrant } from './service/grants';
 import { hcpV1Meta } from './service/meta';
-import { createStoreActivitySink, grantWritePolicy } from './service/seams';
-import { createNeo4jHcpV1Store } from './store/neo4j';
+import { approveOAuthRequest } from './service/oauth-consent';
+import { createNeo4jHcpV1DepsFactory } from './neo4j-deps';
 
-const store = createNeo4jHcpV1Store();
-const activity = createStoreActivitySink(store);
-
-const depsFor = (): HcpV1Deps => ({
-    store,
-    contracts,
-    activity,
-    writePolicy: grantWritePolicy,
-    providerId: providerId(),
-    now: () => new Date(),
-    newId: randomUUID,
-});
+const depsFor = createNeo4jHcpV1DepsFactory();
 
 const TRPC_CODES: Record<HcpV1ErrorType, TRPCError['code']> = {
     'malformed-request': 'BAD_REQUEST',
@@ -374,6 +364,34 @@ const auditRouter = t.router({
         .query(({ ctx, input }) => listAudit(depsFor(), callerOf(ctx.user), input)),
 });
 
+const oauthRouter = t.router({
+    approve: hcpRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/hcp/v1/oauth/approve',
+                tags: TAGS,
+                summary: 'Allow an HCP OAuth client',
+                description:
+                    "LearnCard addition, Context Subject only. Verifies the HCP OAuth AS's signed request ticket, issues (or reuses) a grant to the OAuth client's DID with the requested scopes, and returns the AS URL that completes the sign-in.",
+            },
+            requiredScope: WRITE,
+        })
+        .input(OAuthApproveInputSchema)
+        .output(OAuthApproveResultSchema)
+        .mutation(({ ctx, input }) => {
+            const config = oauthConsentConfig();
+            if (!config)
+                throw new TRPCError({
+                    code: 'PRECONDITION_FAILED',
+                    message:
+                        'HCP OAuth sign-in is not configured on this brain: set HCP_OAUTH_ISSUER_URL and HCP_OAUTH_TOKEN_SECRET.',
+                });
+            return approveOAuthRequest(depsFor(), callerOf(ctx.user), input, config);
+        }),
+});
+
 export const hcpV1Router = t.router({
     meta: openRoute
         .meta({
@@ -393,6 +411,7 @@ export const hcpV1Router = t.router({
     entries: entriesRouter,
     grants: grantsRouter,
     audit: auditRouter,
+    oauth: oauthRouter,
 
     export: hcpRoute
         .meta({

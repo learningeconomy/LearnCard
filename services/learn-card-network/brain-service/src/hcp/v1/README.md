@@ -40,8 +40,16 @@ Mounted once in `src/app.ts` as `hcp`; every procedure is `hcp.v1.<area>.<op>`.
 | `hcp.v1.entries.list`     | `POST /hcp/v1/entries/list`       | none (LearnCard addition)       | subject only                                                    |
 | `hcp.v1.audit.list`       | `POST /hcp/v1/audit`              | §8.3 Read audit log             | subject only                                                    |
 | `hcp.v1.export`           | `POST /hcp/v1/export`             | §5.4.1 Export                   | subject only                                                    |
+| `hcp.v1.oauth.approve`    | `POST /hcp/v1/oauth/approve`      | none (LearnCard addition, §13)  | subject only                                                    |
 
 Wire types live in `schemas.ts`; read it alongside this table.
+
+`oauth.approve` is the DID-authenticated consent step for the HCP OAuth AS
+(`../oauth/`): it verifies the AS's signed request ticket, issues (or reuses) a grant
+from the caller to the OAuth client's DID, and returns the AS URL that completes the
+sign-in. It needs `HCP_OAUTH_ISSUER_URL` (the AS base URL) and `HCP_OAUTH_TOKEN_SECRET`
+(the AS's HS256 secret); without them it fails with `PRECONDITION_FAILED`. See
+`service/oauth-consent.ts`.
 
 ### Who is calling
 

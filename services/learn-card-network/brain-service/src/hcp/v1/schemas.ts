@@ -520,6 +520,17 @@ export const ContractOfferSchema = z.object({
 export type ContractOffer = z.infer<typeof ContractOfferSchema>;
 
 export const GrantIdInputSchema = z.object({ grantId: Id });
+
+/**
+ * LearnCard addition: the signed-in subject allows an HCP OAuth client. `ticket` is
+ * the AS's signed request (`/hcp/connect?oauth_request=`); see service/oauth-consent.ts.
+ */
+export const OAuthApproveInputSchema = z.object({ ticket: z.string().min(1).max(8192) });
+export const OAuthApproveResultSchema = z.object({
+    /** The AS's `/oauth/consent/complete?assertion=` URL; open it to finish signing in. */
+    completeUrl: z.string(),
+    grantId: z.string(),
+});
 export const ListGrantsInputSchema = z
     .object({ status: GrantStatusSchema.default('active') })
     .default({ status: 'active' });

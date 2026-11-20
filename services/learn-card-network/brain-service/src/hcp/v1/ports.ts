@@ -3,6 +3,7 @@
  * `@instance` and the router's tRPC builders). Keep it small: if v1 needs more
  * from the brain, it is named here.
  */
+import { environment } from '@environment';
 import { getContractDetailsByUri } from '@accesslayer/consentflowcontract/relationships/read';
 import { getServerDidWebDID } from '@helpers/learnCard.helpers';
 import { getUriParts } from '@helpers/uri.helpers';
@@ -39,4 +40,15 @@ export const contracts: HcpContracts = {
             hcp: contract.contract.hcp ?? null,
         };
     },
+};
+
+/**
+ * The HCP OAuth AS this brain approves sign-ins for: its base URL and the HS256
+ * secret it shares with the AS. Null when either is unset (OAuth consent is off).
+ */
+export const oauthConsentConfig = (): { issuerUrl: string; secret: string } | null => {
+    const issuerUrl = environment.HCP_OAUTH_ISSUER_URL?.trim();
+    const secret = environment.HCP_OAUTH_TOKEN_SECRET;
+    if (!issuerUrl || !secret) return null;
+    return { issuerUrl, secret };
 };

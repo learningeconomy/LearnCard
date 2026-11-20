@@ -246,7 +246,7 @@ export const getContractOffer = async (
 };
 
 /** The grant as it stands now: narrowed by its contract (LC-2421), expiry settled. */
-const asItStands = async (deps: HcpV1Deps, grant: StoredGrant): Promise<StoredGrant> =>
+export const asItStands = async (deps: HcpV1Deps, grant: StoredGrant): Promise<StoredGrant> =>
     settleGrantExpiry(deps, await effectiveGrant(deps, grant));
 
 /** Lists the subject's grants by status, settling any that lapsed (default `active`). */
