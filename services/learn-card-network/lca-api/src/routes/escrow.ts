@@ -6,8 +6,12 @@ import {
     AuthorityStateResponseValidator,
     SignedEnrollmentIntentValidator,
     type AuthorityMutationResult,
+    type AuthorityStateResponse,
 } from '../services/escrow-enclave/authorityContract';
-import { escrowBlobIdentity } from '../services/escrow-enclave/blobIdentity';
+import {
+    escrowBlobIdentity,
+    type EscrowEnvelopeFields,
+} from '../services/escrow-enclave/blobIdentity';
 import {
     isDefiniteAuthorityRefusal,
     settleEscrowEnrollmentLease,
@@ -173,7 +177,10 @@ export {
 };
 /** Clients match this message (cause `reason: 'pin_change_required'`): offer "choose a new PIN". */
 export const ESCROW_PIN_CHANGE_REQUIRED_MESSAGE = 'Choose a new PIN to continue.';
-/** Mapped from the authority's policy refusal of a confirm (the PIN did not match). */
+/**
+ * Mapped from the authority's policy refusal of a confirm that passed
+ * `assertConfirmMatchesAuthority` (a wrong PIN, or a target the client sealed wrongly).
+ */
 export const ESCROW_CONFIRM_WRONG_PIN_MESSAGE = 'Incorrect PIN.';
 
 const pinChangeRequired = (): TRPCError =>
@@ -182,6 +189,53 @@ const pinChangeRequired = (): TRPCError =>
         message: ESCROW_PIN_CHANGE_REQUIRED_MESSAGE,
         cause: { reason: 'pin_change_required' },
     });
+
+/** `escrowBlobIdentity`, or null for a missing or malformed envelope. */
+const identityOrNull = (envelope: EscrowEnvelopeFields | null | undefined): string | null => {
+    if (!envelope) return null;
+    try {
+        return escrowBlobIdentity(envelope);
+    } catch {
+        return null;
+    }
+};
+
+/**
+ * A confirm's checks that lca-api can make itself, run before the confirm is charged.
+ *
+ * The authority answers every refusal of `apply_enrollment_intent` with the same `policy`
+ * code (services/escrow-enclave-app/src/policy/authority.rs): a wrong PIN (`same_pin`) looks
+ * exactly like a stale source copy, a target that does not match the intent, or a wrong epoch
+ * or share version. So every refusal lca-api can predict from the authority state it just read
+ * is answered here, uncharged (no PIN comparison was made), and only the refusals it cannot
+ * see (the PIN, and the sealed fields of the client's own target: DID, share version, contact,
+ * attempts floor; and the intent signature) reach the authority. Those still count as a wrong
+ * PIN: lca-api cannot tell them apart, and not counting them would leave PIN guesses
+ * unbounded. A precise count needs the enclave to report `pinMismatch` for `same_pin`.
+ */
+const assertConfirmMatchesAuthority = (
+    intent: z.infer<typeof SignedEnrollmentIntentValidator>['intent'],
+    state: AuthorityStateResponse['state'],
+    sourceEnvelope: EscrowEnvelopeFields | null,
+    targetEnvelope: EscrowEnvelopeFields
+): void => {
+    if (identityOrNull(targetEnvelope) !== intent.targetBlobIdentity)
+        throw new TRPCError({ code: 'BAD_REQUEST', message: invalidMessage });
+    const current = identityOrNull(state.envelope);
+    if (
+        state.status !== 'active' ||
+        current === null ||
+        current !== intent.sourceBlobIdentity ||
+        identityOrNull(sourceEnvelope) !== current ||
+        intent.enrollmentEpoch !== state.enrollmentEpoch + 1 ||
+        state.shareVersion === null ||
+        intent.shareVersion < state.shareVersion
+    )
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Automatic recovery changed; please refresh.',
+        });
+};
 
 /** Charge one confirm attempt before the authority is called; throws when over a limit. */
 const reserveEscrowConfirm = async (
@@ -942,6 +996,18 @@ export const escrowRouter = t.router({
                 // generation checks above, because the enclave does not charge it.
                 const confirm = intent.action === 'replace' && preservePin && !input.pinSalt;
                 const confirmDid = userKey.primaryDid;
+                const sourceEnvelope =
+                    input.sourceEnvelope === undefined
+                        ? current.state.envelope
+                        : input.sourceEnvelope;
+                // Refusals lca-api can predict are answered uncharged (see the helper).
+                if (confirm)
+                    assertConfirmMatchesAuthority(
+                        intent,
+                        current.state,
+                        sourceEnvelope,
+                        input.envelope
+                    );
                 if (confirm)
                     await reserveEscrowConfirm(
                         confirmDid,
@@ -980,10 +1046,7 @@ export const escrowRouter = t.router({
                         apply: () =>
                             enclave.applyEnrollmentIntent!({
                                 signedIntent: signed,
-                                sourceEnvelope:
-                                    input.sourceEnvelope === undefined
-                                        ? current.state.envelope
-                                        : input.sourceEnvelope,
+                                sourceEnvelope,
                                 targetEnvelope: input.envelope,
                             }),
                     });

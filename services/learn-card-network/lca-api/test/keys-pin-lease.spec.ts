@@ -1461,6 +1461,85 @@ describe('LC-2409: confirm-current-PIN limits', () => {
         expect(applyCalls).toBe(0);
     });
 
+    /** A confirm the authority would refuse for a reason other than the PIN. */
+    const mismatchedConfirm = async (
+        mismatch: 'staleSource' | 'target' | 'epoch',
+        proof = pinProof
+    ) => {
+        const envelope = await encryptEscrowBlob(
+            {
+                recoveryShare: shares.recoveryShare,
+                did,
+                shareVersion: 1,
+                pinVerifier: proof,
+                recoveryEmail: 'personal@example.com',
+                recoveryLanguage: 'en',
+            },
+            enclaveKeys.publicKey,
+            keyId
+        );
+        const signed = await signedIntent(mismatch === 'target' ? await sealPin() : envelope, {
+            action: 'replace',
+            pinAction: 'keep',
+            recoveryEmail: 'personal@example.com',
+        });
+        if (mismatch === 'epoch') signed.intent.enrollmentEpoch += 1;
+        return owner().escrow.enroll({
+            ...auth,
+            envelope,
+            shareVersion: 1,
+            enclaveKeyId: keyId,
+            signedIntent: signed,
+            sourceEnvelope: mismatch === 'staleSource' ? await sealPin() : authority.envelope,
+        });
+    };
+
+    const expectUncharged = async () => {
+        expect(applyCalls).toBe(0);
+        expect(await redis().get(`escrow-confirm:${did}`)).toBeNull();
+        expect(
+            await redis().get(`escrow-confirm-fail:${did}:${authority.pinGeneration}`)
+        ).toBeNull();
+        expect(await redis().scard(`escrow-confirm-versions:${did}`)).toBe(0);
+        expect(await isEscrowConfirmBlocked(did)).toBe(false);
+    };
+
+    it('a stale source copy is a CONFLICT, never charged as a wrong PIN', async () => {
+        await enrollPin();
+        applyCalls = 0;
+        await expect(mismatchedConfirm('staleSource')).rejects.toMatchObject({
+            code: 'CONFLICT',
+        });
+        await expectUncharged();
+    });
+
+    it('a target that does not match its intent is refused uncharged', async () => {
+        await enrollPin();
+        applyCalls = 0;
+        await expect(mismatchedConfirm('target')).rejects.toMatchObject({
+            code: 'BAD_REQUEST',
+        });
+        await expectUncharged();
+    });
+
+    it('a wrong enrollment epoch is a CONFLICT, never charged as a wrong PIN', async () => {
+        await enrollPin();
+        applyCalls = 0;
+        await expect(mismatchedConfirm('epoch')).rejects.toMatchObject({ code: 'CONFLICT' });
+        await expectUncharged();
+    });
+
+    it('more non-PIN refusals than the PIN budget still leave the right PIN usable', async () => {
+        await enrollPin();
+        applyCalls = 0;
+        for (let i = 0; i < ESCROW_CONFIRM_LIFETIME_LIMIT + 2; i += 1)
+            await expect(mismatchedConfirm('staleSource', wrongProof)).rejects.toMatchObject({
+                code: 'CONFLICT',
+            });
+        await expectUncharged();
+        await expect(confirm(pinProof)).resolves.toMatchObject({ success: true });
+    });
+
     it('a successful confirm resets the hourly and per-version counters', async () => {
         await enrollPin();
         await expect(confirm(wrongProof, 1)).rejects.toMatchObject({ code: 'FORBIDDEN' });
