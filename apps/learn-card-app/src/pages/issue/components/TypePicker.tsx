@@ -1,7 +1,7 @@
 import React from 'react';
 import { Layers } from 'lucide-react';
 
-import { useModal, ModalTypes } from 'learn-card-base';
+import { useModal } from 'learn-card-base';
 
 import * as m from '../../../paraglide/messages.js';
 
@@ -13,6 +13,7 @@ import {
     type CredentialTypeEntry,
 } from './credentialTypeCatalog';
 import { TypeBrowserModal } from './TypeBrowserModal';
+import { ISSUE_PICKER_MODAL_LAYOUT } from './issuePickerModal';
 
 interface TypePickerProps {
     selectedObv3Type: string | null;
@@ -63,8 +64,7 @@ export const TypePicker: React.FC<TypePickerProps> = ({ selectedObv3Type, onSele
                 onSelect={onSelectType}
                 handleCloseModal={closeModal}
             />,
-            {},
-            { mobile: ModalTypes.Freeform, desktop: ModalTypes.FullScreen }
+            ...ISSUE_PICKER_MODAL_LAYOUT
         );
     };
 

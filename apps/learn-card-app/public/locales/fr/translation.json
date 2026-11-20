@@ -1908,6 +1908,16 @@
         }
     },
     "profile": {
+        "developerProgram": {
+            "invitation": "Envie de créer avec LearnCard ? Passez au rôle Développeur pour découvrir les outils de développement.",
+            "chooseRole": "Devenir développeur",
+            "confirmTitle": "Passer au rôle Développeur ?",
+            "confirmDescription": "Votre rôle actuel sera remplacé par Développeur pour vous permettre de découvrir les outils de développement.",
+            "confirmAction": "Passer à Développeur",
+            "saving": "Modification...",
+            "saveError": "Impossible d’enregistrer votre rôle. Réessayez.",
+            "syncError": "Votre rôle est maintenant Développeur, mais nous n’avons pas pu actualiser cet appareil. Réessayez."
+        },
         "title": "Mon compte",
         "editProfile": "Modifier le profil",
         "exportSeedPhrase": "Phrase d'exportation de semences",
@@ -9677,6 +9687,7 @@
         "searchCreds": "Recherchez vos titres…",
         "nothingMatches": "Rien ne correspond à “{{query}}”.",
         "noneIssued": "Vous n'avez pas encore émis de titre.",
+        "lookForOlderCredentials": "Sélectionnez « Afficher plus » pour rechercher des titres plus anciens à envoyer.",
         "showMore": "Afficher plus",
         "previewDesc": "C'est exactement ce que votre destinataire recevra.",
         "chooseRecip": "Choisir le destinataire",

@@ -1954,6 +1954,16 @@
         }
     },
     "profile": {
+        "developerProgram": {
+            "invitation": "Interested in building with LearnCard? Switch to the Developer role to explore developer tools.",
+            "chooseRole": "Become a Developer",
+            "confirmTitle": "Switch to Developer?",
+            "confirmDescription": "Your current role will be replaced with Developer so you can explore developer tools.",
+            "confirmAction": "Switch to Developer",
+            "saving": "Switching...",
+            "saveError": "We couldn’t save your role. Please try again.",
+            "syncError": "Your role is now Developer, but we couldn’t refresh this device. Please try again."
+        },
         "age": "Age:",
         "back": "Back",
         "close": "Close",
@@ -9682,6 +9692,7 @@
         "searchCreds": "Search your credentials…",
         "nothingMatches": "Nothing matches “{{query}}”.",
         "noneIssued": "You haven't issued any credentials yet.",
+        "lookForOlderCredentials": "Select “Show more” to look for older credentials to send.",
         "showMore": "Show more",
         "previewDesc": "This is exactly what your recipient will receive.",
         "chooseRecip": "Choose recipient",

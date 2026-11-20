@@ -8,7 +8,8 @@ import {
     QueryClient,
     InfiniteData,
 } from '@tanstack/react-query';
-import { BoostQuery, CredentialRecord } from '@learncard/types';
+import { BoostExclusion, BoostQuery, CredentialRecord } from '@learncard/types';
+import { RegExpTransformer } from '@learncard/helpers';
 import { categoryMetadata, newCredsStore, switchedProfileStore, useWallet } from 'learn-card-base';
 
 import { getIssuanceDate } from 'learn-card-base/helpers/credentialHelpers';
@@ -317,23 +318,34 @@ export const useGetPaginatedManagedBoosts = (
 /* Use this instead of use useGetPaginatedManagedBoosts */
 export const useGetPaginatedManagedBoostsQuery = (
     query?: BoostQuery,
-    options?: PaginationOptionsType,
+    options?: PaginationOptionsType & { exclude?: BoostExclusion },
     enabled: boolean = true
 ) => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
-    const queryKey = ['useGetPaginatedManagedBoostsQuery', query ?? ''] as const;
-    dropMalformedInfiniteCacheEntry(queryClient, queryKey, 'useGetPaginatedManagedBoostsQuery');
+    const reader = useCredentialReader();
+    const { exclude, limit = 10 } = options ?? {};
+    // JSON encoding a RegExp directly would give every pattern the same cache key.
+    const queryKey = exclude
+        ? [
+              'useGetPaginatedManagedBoostsWithExclusions',
+              reader?.id.did() ?? '',
+              RegExpTransformer.serialize({ query, exclude }),
+              limit,
+          ]
+        : ['useGetPaginatedManagedBoostsQuery', query ?? ''];
+    dropMalformedInfiniteCacheEntry(queryClient, queryKey);
 
     return useInfiniteQuery({
         queryKey,
         queryFn: async ({ pageParam }) => {
-            const wallet = await initWallet();
+            const wallet = exclude ? reader : await initWallet();
+            if (!wallet) throw new Error('Managed boost reader is unavailable');
 
             const data = await wallet.invoke.getPaginatedBoosts({
-                query,
-                limit: 10,
                 ...options,
+                query,
+                limit,
                 cursor: pageParam,
             });
 
@@ -341,7 +353,7 @@ export const useGetPaginatedManagedBoostsQuery = (
         },
         initialPageParam: undefined as undefined | string,
         getNextPageParam: lastPage => (lastPage?.hasMore ? lastPage?.cursor : undefined),
-        enabled,
+        enabled: enabled && (!exclude || Boolean(reader)),
     });
 };
 

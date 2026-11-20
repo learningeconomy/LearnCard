@@ -18,6 +18,11 @@ import { findDuplicateMessageImports } from './scripts/check-i18n-imports.mjs';
 import { paraglideMissingKeyOnWarn } from './paraglideOnWarn';
 import { paraglideLazyLocales } from './src/i18n/paraglideLazyLocales';
 import { minifySvgPathDataInSource } from './src/buildPlugins/minifySvgPathData';
+import {
+    chunkPrefetchFiles,
+    CHUNK_PREFETCH_ELEMENT_ID,
+    type BundleChunk,
+} from './src/buildPlugins/chunkPrefetchList';
 import { parseLearnCardAppEnvironment } from './src/config/buildEnvironment';
 import { registryProxyDevServer } from '../../packages/learn-card-base/src/registry-proxy/registryProxyDevServer';
 
@@ -237,6 +242,51 @@ const minifySvgPathData = (): Plugin => ({
     },
 });
 
+// Lazy chunks the app warms ahead of time with plain fetch() (src/helpers/prefetchChunk.ts).
+// Writes each one's file URLs into index.html as JSON. Dev has no chunks, so it lists the
+// source module, which is what the dev server's import() requests.
+const PREFETCH_CHUNKS = {
+    'my-learncard': 'src/components/learncard/MyLearnCardModalContent.tsx',
+} as const;
+
+const chunkPrefetchList = (): Plugin => {
+    let base = '/';
+    let root = __dirname;
+    return {
+        name: 'learncard-chunk-prefetch-list',
+        configResolved(config) {
+            base = config.base;
+            root = config.root;
+        },
+        transformIndexHtml: {
+            order: 'post',
+            handler(_html, ctx) {
+                const list = Object.fromEntries(
+                    Object.entries(PREFETCH_CHUNKS).map(([key, source]) => {
+                        if (!ctx.bundle || !ctx.chunk) return [key, [`${base}${source}`]];
+                        const files = chunkPrefetchFiles(
+                            ctx.bundle as Record<string, BundleChunk>,
+                            ctx.chunk.fileName,
+                            path.resolve(root, source)
+                        );
+                        if (files.length === 0)
+                            throw new Error(`[chunk-prefetch-list] no chunk for ${source}`);
+                        return [key, files.map(file => `${base}${file}`)];
+                    })
+                );
+                return [
+                    {
+                        tag: 'script',
+                        attrs: { type: 'application/json', id: CHUNK_PREFETCH_ELEMENT_ID },
+                        children: JSON.stringify(list).replace(/</g, '\\u003c'),
+                        injectTo: 'head',
+                    },
+                ];
+            },
+        },
+    };
+};
+
 export default defineConfig(async ({ mode, command }) => {
     const loadedEnvironment = loadEnv(mode, __dirname, '');
     const environment = parseLearnCardAppEnvironment(
@@ -279,6 +329,7 @@ export default defineConfig(async ({ mode, command }) => {
             tailwindcss(),
             registryProxyDevServer(),
             i18nImportGuard(),
+            chunkPrefetchList(),
             react(),
             svgr(),
             tsconfigPaths({ root: '../../' }),

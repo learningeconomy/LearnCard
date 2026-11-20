@@ -11,7 +11,7 @@ export * from './pkg/didkit_wasm';
  * how Prettier wraps the `init` signature. Do not inline it back into the parameter list.
  */
 export const DEFAULT_DIDKIT_WASM_URL =
-    'https://assets.learncard.ai/didkit/sha256-a8abfd1289b162cc715760602b5313bde2b6bf8c749c9061a262f56186d1b54a/didkit_wasm_bg.wasm';
+    'https://assets.learncard.ai/didkit/sha256-ded761c91910068261077c0e2e0c574b6c8c6ba638c8805ad9550a4b90e4138e/didkit_wasm_bg.wasm';
 
 // One shared WASM init. Concurrent and repeated callers await the same promise; a failed
 // init clears it so the next caller can retry instead of inheriting a poisoned rejection.

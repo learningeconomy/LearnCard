@@ -1908,6 +1908,16 @@
         }
     },
     "profile": {
+        "developerProgram": {
+            "invitation": "¿Te interesa crear con LearnCard? Cambia al rol de Desarrollador para explorar las herramientas de desarrollo.",
+            "chooseRole": "Convertirme en desarrollador",
+            "confirmTitle": "¿Cambiar a Desarrollador?",
+            "confirmDescription": "Tu rol actual se reemplazará por Desarrollador para que puedas explorar las herramientas de desarrollo.",
+            "confirmAction": "Cambiar a Desarrollador",
+            "saving": "Cambiando...",
+            "saveError": "No pudimos guardar tu rol. Inténtalo de nuevo.",
+            "syncError": "Tu rol ahora es Desarrollador, pero no pudimos actualizar este dispositivo. Inténtalo de nuevo."
+        },
         "title": "Mi cuenta",
         "editProfile": "Editar perfil",
         "exportSeedPhrase": "Exportar frase inicial",
@@ -9677,6 +9687,7 @@
         "searchCreds": "Busca tus credenciales…",
         "nothingMatches": "No hay coincidencias para “{{query}}”.",
         "noneIssued": "Aún no has emitido ninguna credencial.",
+        "lookForOlderCredentials": "Selecciona «Mostrar más» para buscar credenciales más antiguas que puedas enviar.",
         "showMore": "Mostrar más",
         "previewDesc": "Esto es exactamente lo que recibirá tu destinatario.",
         "chooseRecip": "Elegir destinatario",
