@@ -545,6 +545,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                 )}
                 <div className="flex items-center justify-center py-[20px] w-full mx-auto">
                     <button
+                        id="login-email-submit"
                         type="submit"
                         className={`ion-padding w-full font-bold rounded-[15px] disabled:opacity-50 ${
                             !loginButtonBgColor ? 'bg-grayscale-900' : ''
