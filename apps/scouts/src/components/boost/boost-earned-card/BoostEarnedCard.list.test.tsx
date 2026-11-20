@@ -10,6 +10,9 @@ const real = vi.hoisted(() => ({
     Wrapper: undefined as undefined | React.ComponentType<Record<string, unknown>>,
 }));
 
+vi.mock('learn-card-base/hooks/useRegistry', () => ({
+    useKnownDIDRegistry: () => ({ data: undefined }),
+}));
 vi.mock('learn-card-base', async () => {
     const metadata = await vi.importActual<
         typeof import('learn-card-base/types/boostAndCredentialMetadata')
