@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.90.53
+
+### Patch Changes
+
+- [#2048](https://github.com/learningeconomy/LearnCard/pull/2048) [`261e0f46814595d06460dc617ba50800671f03b1`](https://github.com/learningeconomy/LearnCard/commit/261e0f46814595d06460dc617ba50800671f03b1) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Scouts' auth coordinator derives the cached-key did:key in plain JS (`getEd25519DidKeyFromSeed`) instead of building a signing wallet just to read the DID. Signing (`signDidAuthVp`) still uses `getSigningLearnCard`.
+
+- [#2050](https://github.com/learningeconomy/LearnCard/pull/2050) [`7f4c6f1b001370569030024216c97fb7a134cad7`](https://github.com/learningeconomy/LearnCard/commit/7f4c6f1b001370569030024216c97fb7a134cad7) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Stop Capacitor from logging plugin payloads to device logs. Debuggable builds of LearnCard (every tenant) and ScoutPass used to print SQLite query rows, including the stored private key, to logcat and the iOS console. Native bridge logging is now off for every build, and LearnCard debug builds log a redacted line per plugin call (plugin, method, SQL operation keyword such as `INSERT`, value and row counts) instead. The SQL statement text and bound values are never logged, so a key or seed inside a statement cannot reach the log.
+
+- Updated dependencies [[`261e0f46814595d06460dc617ba50800671f03b1`](https://github.com/learningeconomy/LearnCard/commit/261e0f46814595d06460dc617ba50800671f03b1), [`acda1d1bd362add238a7c6ff8096c295e844e586`](https://github.com/learningeconomy/LearnCard/commit/acda1d1bd362add238a7c6ff8096c295e844e586), [`9ea97f319158a461ec42b4256c63b81ed53afe97`](https://github.com/learningeconomy/LearnCard/commit/9ea97f319158a461ec42b4256c63b81ed53afe97), [`9ea97f319158a461ec42b4256c63b81ed53afe97`](https://github.com/learningeconomy/LearnCard/commit/9ea97f319158a461ec42b4256c63b81ed53afe97), [`98674f16ea4ff1b8407749da2edcfbe5e023a7ac`](https://github.com/learningeconomy/LearnCard/commit/98674f16ea4ff1b8407749da2edcfbe5e023a7ac)]:
+    - @learncard/didkey-plugin@1.2.0
+    - @learncard/lca-api-plugin@3.0.0
+    - @learncard/react@4.0.0
+    - @learncard/sss-key-manager@0.3.3
+    - @learncard/helpers@1.8.3
+
+## 1.90.52
+
+### Patch Changes
+
+- Updated dependencies [[`f3f3d678156b46a67a2f916b62789aeef4e40bc7`](https://github.com/learningeconomy/LearnCard/commit/f3f3d678156b46a67a2f916b62789aeef4e40bc7)]:
+    - @learncard/sss-key-manager@0.3.2
+    - @learncard/helpers@1.8.2
+    - @learncard/lca-api-plugin@2.1.1
+    - @learncard/react@3.0.7
+
 ## 1.90.51
 
 ### Patch Changes

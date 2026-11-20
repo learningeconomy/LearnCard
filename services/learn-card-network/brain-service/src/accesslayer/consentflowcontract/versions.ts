@@ -2,6 +2,11 @@ import { isDeepStrictEqual } from 'node:util';
 import { getIdFromUri } from '@helpers/uri.helpers';
 import { flattenObject } from '@helpers/objects.helpers';
 import {
+    ACCEPTED_VERSION_PREDICATE,
+    isConsentExpiryActive,
+    isConsentUnexpired,
+} from '@helpers/consent-expiry.helpers';
+import {
     classifyContractChange,
     diffContractChange,
     buildContractUpdatePreview,
@@ -28,7 +33,10 @@ import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
 import { getBoostById } from '@accesslayer/boost/read';
 import { canProfileIssueBoost } from '@accesslayer/boost/relationships/read';
-import { tryDispatchContractEvent } from '@helpers/contract-events.helpers';
+import {
+    tryDispatchContractEvent,
+    tryFanOutContractIntegrationEvents,
+} from '@helpers/contract-events.helpers';
 
 export type StoredContractVersion = {
     id: string;
@@ -650,6 +658,65 @@ export const updateConsentFlowContractVersion = async (
         status: 'active',
         updatedAt: createdAt,
     });
+    // Live consents that were expired by the shared rule and are live again under this version.
+    // Integrations were told `consent_expired`; they need to hear that the consent is back.
+    //
+    // This read runs before the locked statement below, so a consent that re-consents in that gap
+    // can get one extra or one missing `expiry_extended` event. A concurrent version change is
+    // rejected by the version check of the locked statement.
+    //
+    // A consent can only go from expired to unexpired through the version it accepted, so the
+    // read is skipped unless some version of this contract has already expired, and it only
+    // fetches terms whose accepted version has expired (or has no version node at all).
+    const nowMs = Date.now();
+    const unexpiredTermsIds: string[] = [];
+    if (kind !== 'requires_consent' && isConsentExpiryActive(next.expiresAt, nowMs)) {
+        // The string bound is one second wide of now; the exact comparison is made in JS below.
+        const nowBound = new Date(nowMs + 1_000).toISOString();
+        const expiredVersion = await neogma.queryRunner.run(
+            `MATCH (:ConsentFlowContract {id:$id})-[:HAS_VERSION]->(version:ConsentFlowContractVersion)
+             WHERE version.expiresAt IS NOT NULL AND version.expiresAt <= $nowBound
+             RETURN version.id AS id LIMIT 1`,
+            { id: contractId, nowBound }
+        );
+        const candidates = expiredVersion.records.length
+            ? await neogma.queryRunner.run(
+                  `MATCH (c:ConsentFlowContract {id:$id})<-[:CONSENTS_TO]-(terms:ConsentFlowTerms)
+                   WHERE terms.status = 'live'
+                   OPTIONAL MATCH (c)-[:HAS_VERSION]->(accepted:ConsentFlowContractVersion)
+                   WHERE ${ACCEPTED_VERSION_PREDICATE}
+                   WITH terms, head(collect(accepted)) AS accepted
+                   WHERE accepted IS NULL
+                       OR (accepted.expiresAt IS NOT NULL AND accepted.expiresAt <= $nowBound)
+                   RETURN terms.id AS termsId, terms.expiresAt AS termsExpiresAt,
+                       accepted IS NOT NULL AS hasAcceptedVersion,
+                       accepted.expiresAt AS acceptedVersionExpiresAt`,
+                  { id: contractId, nowBound }
+              )
+            : { records: [] };
+        for (const row of candidates.records) {
+            const termsId: unknown = row.get('termsId');
+            const termsExpiresAt: unknown = row.get('termsExpiresAt');
+            const wasExpired = !isConsentUnexpired(
+                {
+                    termsExpiresAt,
+                    hasAcceptedVersion: row.get('hasAcceptedVersion') === true,
+                    acceptedVersionExpiresAt: row.get('acceptedVersionExpiresAt'),
+                },
+                nowMs
+            );
+            const isLive = isConsentUnexpired(
+                {
+                    termsExpiresAt,
+                    hasAcceptedVersion: true,
+                    acceptedVersionExpiresAt: next.expiresAt,
+                },
+                nowMs
+            );
+            if (typeof termsId === 'string' && wasExpired && isLive)
+                unexpiredTermsIds.push(termsId);
+        }
+    }
     const committed = await neogma.queryRunner.run(
         `MATCH (c:ConsentFlowContract {id:$id})
          SET c._contractVersionLock=coalesce(c._contractVersionLock,0)+1
@@ -716,9 +783,24 @@ export const updateConsentFlowContractVersion = async (
                      SET term['guardianApproval.contractUpdatedAt']=$createdAt)
                  SET term.consentedVersion=$nextVersion,
                      term.newOptionsUntil=CASE WHEN $kind = 'expanded_optional' THEN $optionsUntil ELSE term.newOptionsUntil END,
-                     term.updatedAt=$createdAt)
+                     term.updatedAt=$createdAt
+                 FOREACH (_ IN CASE WHEN term.id IN $unexpiredTermsIds THEN [1] ELSE [] END |
+                     CREATE (:ConsentFlowEvent {
+                         id:term.id + $unexpiredEventSuffix, contractId:c.id, termsId:term.id,
+                         domain:$eventDomain, kind:'consent_updated', reason:'expiry_extended',
+                         requestId:term.\`referral.requestId\`, requestedBy:term.\`referral.requestedBy\`,
+                         externalReferenceId:term.\`referral.externalReferenceId\`,
+                         integrationFanoutPending:true, createdAt:$createdAt
+                     })))
              FOREACH (_ IN CASE WHEN $kind = 'requires_consent' AND term.status = 'live' THEN [1] ELSE [] END |
-                 SET term.status='needs_reconsent', term.reconsentDeadline=coalesce(term.reconsentDeadline,$deadline), term.updatedAt=$createdAt))
+                 SET term.status='needs_reconsent', term.reconsentDeadline=coalesce(term.reconsentDeadline,$deadline), term.updatedAt=$createdAt
+                 CREATE (:ConsentFlowEvent {
+                     id:term.id + $pausedEventSuffix, contractId:c.id, termsId:term.id,
+                     domain:$eventDomain, kind:'consent_paused', reason:'needs_reconsent',
+                     requestId:term.\`referral.requestId\`, requestedBy:term.\`referral.requestedBy\`,
+                     externalReferenceId:term.\`referral.externalReferenceId\`,
+                     integrationFanoutPending:true, createdAt:$createdAt
+                 })))
          CREATE (event:ConsentFlowEvent {
              id:$eventId, contractId:c.id, fromId:owner.profileId, ownerId:owner.profileId,
              domain:$eventDomain, kind:'contract_updated', payload:$eventPayload,
@@ -778,6 +860,11 @@ export const updateConsentFlowContractVersion = async (
             eventId,
             eventDomain: domain,
             eventPayload: JSON.stringify(notificationData),
+            // Integration-only event per terms paused by this version.
+            pausedEventSuffix: `:paused:${currentVersion + 1}`,
+            // Integration-only event per terms whose expired consent this version revives.
+            unexpiredTermsIds,
+            unexpiredEventSuffix: `:unexpired:${currentVersion + 1}`,
         }
     );
     if (!committed.records.length)
@@ -786,5 +873,6 @@ export const updateConsentFlowContractVersion = async (
             message: 'Contract changed concurrently; retry the update',
         });
     await tryDispatchContractEvent(eventId);
+    await tryFanOutContractIntegrationEvents(contractId);
     return result;
 };

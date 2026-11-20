@@ -1,8 +1,8 @@
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { VerificationStatusEnum, type VC } from '@learncard/types';
+import { VerificationStatusEnum, type VC, type VerificationItem } from '@learncard/types';
 import { BoostCategoryOptionsEnum, DisplayTypeEnum } from 'learn-card-base';
 
 type MenuProps = {
@@ -19,6 +19,7 @@ type FooterLayoutProps = React.PropsWithChildren<{
 const mocks = vi.hoisted(() => ({
     newModal: vi.fn(),
     verify: vi.fn(),
+    boostDisplayName: vi.fn<() => string>(),
     fullPage: vi.fn(),
     displayCard: vi.fn(),
 }));
@@ -32,7 +33,11 @@ vi.mock('learn-card-base', () => ({
         },
     },
     useWallet: () => ({ initWallet: async () => ({ invoke: { verifyCredential: mocks.verify } }) }),
-    useGetCredentialWithEdits: () => ({ credentialWithEdits: undefined }),
+    useGetCredentialWithEdits: (credential?: VC) => ({
+        credentialWithEdits: credential?.boostId
+            ? { ...credential, name: mocks.boostDisplayName() }
+            : undefined,
+    }),
     PreviewTypeEnum: { Media: 'media' },
     useModal: () => ({ newModal: mocks.newModal, closeModal: vi.fn() }),
     ModalTypes: { Right: 'right' },
@@ -192,7 +197,7 @@ vi.mock('learn-card-base/helpers/credentials/clr/helpers', () => ({
     getDownloadableEvidence: () => [],
 }));
 
-import NonBoostPreview from './NonBoostPreview';
+import NonBoostPreview from './NonBoostPreviewContent';
 import BoostPreview from './BoostPreview';
 
 const credential = {
@@ -471,4 +476,78 @@ describe.each([
             view.unmount();
         }
     );
+});
+
+it('verifies an earned Boost once on open and again only when its signed credential changes', async () => {
+    const proof = {
+        type: 'DataIntegrityProof',
+        proofPurpose: 'assertionMethod',
+        verificationMethod: 'did:example:issuer#key',
+        proofValue: 'original-proof',
+    };
+    const signedCredential: VC = {
+        ...credential,
+        name: 'Signed title',
+        boostId: 'lc:network:untrusted.example/trpc:boost:example',
+        proof,
+    };
+    const updatedCredential: VC = {
+        ...signedCredential,
+        proof: { ...proof, proofValue: 'updated-proof' },
+    };
+    const validProofWithUntrustedNetwork: VerificationItem[] = [
+        { check: 'Boost Authenticity', status: VerificationStatusEnum.Error },
+        { check: 'proof', status: VerificationStatusEnum.Success },
+    ];
+    const failed = [{ check: 'proof', status: VerificationStatusEnum.Failed }];
+    const initialVerification = Promise.withResolvers<VerificationItem[]>();
+    // A duplicate call stays pending so the old verification loop fails by count.
+    mocks.verify
+        .mockReset()
+        .mockImplementation(() => new Promise(() => {}))
+        .mockReturnValueOnce(initialVerification.promise);
+    mocks.boostDisplayName.mockReturnValue('Edited title');
+
+    const preview = (value: VC) => (
+        <BoostPreview
+            credential={value}
+            verificationItems={[]}
+            categoryType={BoostCategoryOptionsEnum.achievement}
+            customThumbComponent={null}
+            customBodyCardComponent={null}
+            customFooterComponent={null}
+            customIssueHistoryComponent={null}
+            isEarnedBoost
+        />
+    );
+
+    const { rerender } = render(preview(signedCredential));
+    await act(async () => initialVerification.resolve(validProofWithUntrustedNetwork));
+
+    expect(mocks.verify).toHaveBeenCalledTimes(1);
+    expect(mocks.verify.mock.calls[0][0]).toBe(signedCredential);
+    expect(mocks.displayCard.mock.lastCall?.[0].credential.name).toBe('Edited title');
+    expect(mocks.displayCard.mock.lastCall?.[0].verificationItems).toEqual(
+        validProofWithUntrustedNetwork
+    );
+
+    mocks.boostDisplayName.mockReturnValue('New display title');
+    await act(async () => rerender(preview(signedCredential)));
+    expect(mocks.displayCard.mock.lastCall?.[0].credential.name).toBe('New display title');
+    expect(mocks.verify).toHaveBeenCalledTimes(1);
+
+    await act(async () => rerender(preview(structuredClone(signedCredential))));
+    expect(mocks.verify).toHaveBeenCalledTimes(1);
+
+    mocks.verify.mockResolvedValueOnce(failed);
+    await act(async () => rerender(preview(updatedCredential)));
+    expect(mocks.verify).toHaveBeenCalledTimes(2);
+    expect(mocks.verify.mock.calls[1][0]).toBe(updatedCredential);
+    expect(mocks.displayCard.mock.lastCall?.[0].verificationItems).toEqual(failed);
+
+    const changedClaim = { ...updatedCredential, description: 'A changed signed claim' };
+    mocks.verify.mockResolvedValueOnce(failed);
+    await act(async () => rerender(preview(changedClaim)));
+    expect(mocks.verify).toHaveBeenCalledTimes(3);
+    expect(mocks.verify.mock.calls[2][0]).toBe(changedClaim);
 });

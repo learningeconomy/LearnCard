@@ -44,7 +44,7 @@ export const remapCategoryKeys = (obj: Record<string, unknown>): Record<string, 
  * per-`CredentialCategoryEnum` color map.
  */
 export const expandCategoryColors = (
-    colors: ThemeJsonColors,
+    colors: ThemeJsonColors
 ): Record<string, Record<string, string>> => {
     const base = colors.categoryBase ?? {};
     const overrides = colors.categories ?? {};
@@ -66,9 +66,7 @@ export const expandCategoryColors = (
  * Expand `placeholderBase` into per-category placeholder entries,
  * or pass through explicit `placeholders` as-is.
  */
-export const expandPlaceholders = (
-    colors: ThemeJsonColors,
-): Record<string, unknown> => {
+export const expandPlaceholders = (colors: ThemeJsonColors): Record<string, unknown> => {
     if (colors.placeholders) {
         // Remap JSON keys (camelCase) to enum values (spaced strings)
         return remapCategoryKeys(colors.placeholders);

@@ -7,7 +7,7 @@ const buildOptions = {
     // target: 'es6',
     target: 'es2020',
     sourcemap: true,
-    external: ['isomorphic-fetch', 'isomorphic-webcrypto', '@learncard/core', '@learncard/helpers', '@learncard/network-brain-client'],
+    external: ['isomorphic-fetch', '@learncard/core', '@learncard/helpers', '@learncard/network-brain-client'],
 };
 
 const configurations = [

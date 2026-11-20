@@ -90,7 +90,7 @@ infrastructure failure. The ticket's first-attempt success target is still open.
 After the repository's frozen dependency install, run:
 
 ```sh
-node --test scripts/ci-test-retries/retry.test.cjs
+node --test scripts/ci-test-retries/*.test.cjs
 ```
 
 The regression suite starts real Vitest processes with this shared configuration,
@@ -109,6 +109,11 @@ It also queries the real workspace Nx graph: shared config/reporter/summary chan
 must select every workspace Vitest project, and each project's resolved `test`
 target inputs must include `ciTestConfig`. A coverage/build target selecting the
 same project cannot substitute for the test target's cache dependency.
+CI skips only those two workspace-wide checks for a verified PR or merge group
+containing exclusively reviewed source, test or Markdown paths. Manual runs,
+unknown paths and unavailable comparisons run the full suite. When a Vitest config
+starts importing local project source, include that source in
+`workspace-checks.cjs`. Retry behavior fixtures and the named Test step run every time.
 Isolated fixtures prove actual cache hits/misses for inherited and explicit inputs,
 shared/config edits, and the retry flag (not report location). The non-Vitest fixture is a failing Node command,
 not the production Rust graph. Source-pattern inventories and exact YAML-step

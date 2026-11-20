@@ -1,5 +1,46 @@
 # @welibraryos/lca-api-service
 
+## 1.9.0
+
+### Minor Changes
+
+- [#2056](https://github.com/learningeconomy/LearnCard/pull/2056) [`98674f16ea4ff1b8407749da2edcfbe5e023a7ac`](https://github.com/learningeconomy/LearnCard/commit/98674f16ea4ff1b8407749da2edcfbe5e023a7ac) Thanks [@Custard7](https://github.com/Custard7)! - Transcript issuers can be marked as sending `official` or `unofficial` records. The optional `recordType` on a `TRANSCRIPT_ISSUERS` entry is validated by `config:check` and returned from `transcripts.getStatus` (and the plugin's `transcriptsGetStatus` type). The app labels the wallet banner and the request step accordingly ("Get your unofficial transcript"). Without it, transcript copy no longer claims the record is official: "Get your transcript", "Your transcript, in your pocket.", "your school records", and the transcript viewer's fallback title is "Academic Transcript".
+
+### Patch Changes
+
+- [#2065](https://github.com/learningeconomy/LearnCard/pull/2065) [`dfefe5c718901dd67a5d44865194aecffe38cc29`](https://github.com/learningeconomy/LearnCard/commit/dfefe5c718901dd67a5d44865194aecffe38cc29) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Remove an outdated DIDKit WASM copy from lca-api's `src/`. Nothing loaded it; lca-api keeps loading DIDKit from `@learncard/didkit-plugin` (or the copy its build places next to the bundle).
+
+- [#2057](https://github.com/learningeconomy/LearnCard/pull/2057) [`e1e080633b9b795fb564808cea9ca33f1d4a06d3`](https://github.com/learningeconomy/LearnCard/commit/e1e080633b9b795fb564808cea9ca33f1d4a06d3) Thanks [@Custard7](https://github.com/Custard7)! - Allow S3 to decrypt SSE-KMS archive objects for the archived legacy key route. The previous grant only permitted decrypting the payload with its own encryption context, so reading the object itself was denied and the route returned an error.
+
+- Updated dependencies [[`e096512e4291bcaa5e424b7abbfc0932ca2a2317`](https://github.com/learningeconomy/LearnCard/commit/e096512e4291bcaa5e424b7abbfc0932ca2a2317), [`ff6f013bdedc9aee84e9849fa5736a8ad4a90c81`](https://github.com/learningeconomy/LearnCard/commit/ff6f013bdedc9aee84e9849fa5736a8ad4a90c81), [`e096512e4291bcaa5e424b7abbfc0932ca2a2317`](https://github.com/learningeconomy/LearnCard/commit/e096512e4291bcaa5e424b7abbfc0932ca2a2317), [`154941805bd8e2aa626afe3582e7794921debd27`](https://github.com/learningeconomy/LearnCard/commit/154941805bd8e2aa626afe3582e7794921debd27), [`1e4a9e97b825c18300ae0f00c2b9324120be196f`](https://github.com/learningeconomy/LearnCard/commit/1e4a9e97b825c18300ae0f00c2b9324120be196f), [`bd450e7b0467a94bbd30573fa0aebfcd6333db22`](https://github.com/learningeconomy/LearnCard/commit/bd450e7b0467a94bbd30573fa0aebfcd6333db22), [`261e0f46814595d06460dc617ba50800671f03b1`](https://github.com/learningeconomy/LearnCard/commit/261e0f46814595d06460dc617ba50800671f03b1), [`acda1d1bd362add238a7c6ff8096c295e844e586`](https://github.com/learningeconomy/LearnCard/commit/acda1d1bd362add238a7c6ff8096c295e844e586), [`9ea97f319158a461ec42b4256c63b81ed53afe97`](https://github.com/learningeconomy/LearnCard/commit/9ea97f319158a461ec42b4256c63b81ed53afe97), [`9ea97f319158a461ec42b4256c63b81ed53afe97`](https://github.com/learningeconomy/LearnCard/commit/9ea97f319158a461ec42b4256c63b81ed53afe97), [`6d5afc9c348c20ac6ac9c7b35651e5b850b13401`](https://github.com/learningeconomy/LearnCard/commit/6d5afc9c348c20ac6ac9c7b35651e5b850b13401), [`0bb92c2cc8047aa4bf307fd0952c1714219286a9`](https://github.com/learningeconomy/LearnCard/commit/0bb92c2cc8047aa4bf307fd0952c1714219286a9)]:
+    - @learncard/types@6.2.0
+    - @learncard/email-templates@1.4.0
+    - @learncard/didkit-plugin@1.11.0
+    - @learncard/core@10.0.0
+    - @learncard/init@3.0.0
+    - @learncard/sss-key-manager@0.3.3
+    - @learncard/helpers@1.8.3
+    - @learncard/did-web-plugin@1.1.47
+    - @learncard/didkit-plugin-node@0.3.13
+
+## 1.8.1
+
+### Patch Changes
+
+- [#2006](https://github.com/learningeconomy/LearnCard/pull/2006) [`49bc45c978c41b947ba650e0d601554c8f869e56`](https://github.com/learningeconomy/LearnCard/commit/49bc45c978c41b947ba650e0d601554c8f869e56) Thanks [@Custard7](https://github.com/Custard7)! - Add `POST /keys/archived-key`, which releases an archived legacy key to the verified Firebase login that owns it so the SSS account upgrade does not depend on the legacy provider. Release is limited to accounts that still need the legacy key, verifies the decrypted key reproduces the archived DID (and any recorded primary DID), rate-limits per login and IP, and tags the archive `released`; SSS activation tags it `exhausted`. Disabled unless `LEGACY_KEY_ARCHIVE_ENABLED` is set.
+
+- [#2039](https://github.com/learningeconomy/LearnCard/pull/2039) [`4c980dd2eeac86a00dc58603f1076de2d92df4c4`](https://github.com/learningeconomy/LearnCard/commit/4c980dd2eeac86a00dc58603f1076de2d92df4c4) Thanks [@gerardopar](https://github.com/gerardopar)! - fix(scouts): enable production signing-authority seed encryption
+
+- Updated dependencies [[`f3f3d678156b46a67a2f916b62789aeef4e40bc7`](https://github.com/learningeconomy/LearnCard/commit/f3f3d678156b46a67a2f916b62789aeef4e40bc7)]:
+    - @learncard/types@6.1.1
+    - @learncard/sss-key-manager@0.3.2
+    - @learncard/core@9.4.46
+    - @learncard/helpers@1.8.2
+    - @learncard/init@2.5.12
+    - @learncard/did-web-plugin@1.1.46
+    - @learncard/didkit-plugin@1.10.12
+    - @learncard/didkit-plugin-node@0.3.12
+
 ## 1.8.0
 
 ### Minor Changes

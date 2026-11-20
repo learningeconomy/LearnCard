@@ -1,6 +1,6 @@
 {
     "name": "@learncard/didkey-plugin",
-    "version": "1.1.45",
+    "version": "1.2.0",
     "description": "Derives did:key and other DIDKit-supported DIDs and keypairs from a seed.",
     "type": "module",
     "main": "./dist/index.cjs",
@@ -39,6 +39,7 @@
         "url": "https://github.com/learningeconomy/LearnCard/issues"
     },
     "devDependencies": {
+        "@learncard/didkit-plugin": "workspace:*",
         "@learncard/types": "workspace:*",
         "@types/node": "^17.0.31",
         "aqu": "0.4.3",
@@ -50,6 +51,8 @@
     "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/helpers": "workspace:^",
+        "@noble/ed25519": "^2.0.0",
+        "@scure/base": "1.2.6",
         "hex-lite": "^1.5.0"
     },
     "sideEffects": false

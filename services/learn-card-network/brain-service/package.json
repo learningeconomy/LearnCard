@@ -1,6 +1,6 @@
 {
     "name": "@learncard/network-brain-service",
-    "version": "5.1.0",
+    "version": "5.2.0",
     "description": "",
     "engines": {
         "node": ">=24.12 <25"
@@ -8,6 +8,11 @@
     "packageManager": "bun@1.4.4",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
+    "files": [
+        "dist",
+        "README.md",
+        "CHANGELOG.md"
+    ],
     "scripts": {
         "inbox:setup-queues": "bun scripts/setup-inbox-queues.ts",
         "inbox:worker": "bun --conditions=development src/inbox-queue-local.ts",

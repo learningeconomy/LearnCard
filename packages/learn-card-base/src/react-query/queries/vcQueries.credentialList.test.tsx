@@ -230,6 +230,7 @@ describe('insertItem on a list with more pages', () => {
                 records: [{ id: 'new', uri: 'uri-new' }, { uri: 'uri-1' }],
                 hasMore: true,
                 cursor: 'next',
+                walkedAt: expect.any(Number),
             },
         ]);
         expect(result.current.data?.pageParams).toHaveLength(1);
@@ -291,6 +292,67 @@ describe('useGetPaginatedManagedBoostsQuery with a malformed cache entry (LC-235
         expect(getPaginatedBoosts).toHaveBeenCalledOnce();
         expect(result.current.data?.pages[0]?.records?.[0]?.uri).toBe('boost-1');
     });
+});
+
+it('paginates filtered managed boosts with a cache separate from other patterns and profiles', async () => {
+    const getPaginatedBoosts = vi.fn().mockImplementation(async ({ cursor }) => ({
+        records: [{ uri: cursor ?? 'boost-1' }],
+        hasMore: !cursor,
+        cursor: cursor ? undefined : 'boost-2',
+    }));
+    host.wallet = {
+        id: { did: () => 'did:example:reader' },
+        invoke: { getPaginatedBoosts },
+    } as unknown as BespokeLearnCard;
+    const { result, rerender } = renderHook(
+        ({ pattern }: { pattern?: RegExp }) =>
+            useGetPaginatedManagedBoostsQuery(
+                undefined,
+                pattern ? { limit: 18, exclude: { name: { $regex: pattern } } } : { limit: 18 }
+            ),
+        { wrapper, initialProps: {} }
+    );
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    rerender({ pattern: /ai passport/i });
+    await waitFor(() => expect(result.current.data?.pages).toHaveLength(1));
+    await act(async () => result.current.fetchNextPage());
+    expect(getPaginatedBoosts).toHaveBeenNthCalledWith(2, {
+        query: undefined,
+        limit: 18,
+        exclude: { name: { $regex: /ai passport/i } },
+        cursor: undefined,
+    });
+    expect(getPaginatedBoosts).toHaveBeenNthCalledWith(3, {
+        query: undefined,
+        limit: 18,
+        exclude: { name: { $regex: /ai passport/i } },
+        cursor: 'boost-2',
+    });
+    await waitFor(() => expect(result.current.data?.pages).toHaveLength(2));
+
+    rerender({ pattern: /resume/i });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.pages).toHaveLength(1);
+
+    const getChildBoosts = vi.fn().mockResolvedValue({
+        records: [{ uri: 'child-boost' }],
+        hasMore: false,
+    });
+    host.wallet = {
+        id: { did: () => 'did:example:child' },
+        invoke: { getPaginatedBoosts: getChildBoosts },
+    } as unknown as BespokeLearnCard;
+    host.switchedDid = 'did:example:child';
+    // The profile switch resets unscoped queries before React renders the new profile.
+    await act(async () => client.resetQueries({ queryKey: ['useGetPaginatedManagedBoostsQuery'] }));
+    expect(getChildBoosts).not.toHaveBeenCalled();
+
+    rerender({ pattern: /ai passport/i });
+    await waitFor(() => expect(result.current.data?.pages[0]?.records[0]?.uri).toBe('child-boost'));
+    expect(result.current.data?.pages).toHaveLength(1);
+    expect(getPaginatedBoosts).toHaveBeenCalledTimes(4);
+    expect(getChildBoosts).toHaveBeenCalledOnce();
 });
 
 /** Mirrors CredentialPage reading pages[0].records.length after a corrupt restore. */

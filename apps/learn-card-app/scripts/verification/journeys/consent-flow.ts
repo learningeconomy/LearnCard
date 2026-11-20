@@ -7,6 +7,7 @@ import { expect } from '../expect';
 import type { FeatureDefinition } from '../types';
 import { boostTemplate } from './sdk';
 import { UI_TIMEOUT } from './shared';
+import verifyConsentUploads from '../consent-upload-regression';
 
 export const consentFlowFeature: FeatureDefinition = {
     id: 'consent-flow',
@@ -18,6 +19,7 @@ export const consentFlowFeature: FeatureDefinition = {
         'consent-app-accept',
         'consent-partner-reads',
         'consent-partner-issues',
+        'consent-upload-after-consent',
     ],
     run: async context => {
         const { issuer, learner } = context.actors;
@@ -230,9 +232,11 @@ export const consentFlowFeature: FeatureDefinition = {
             expect(verification.checks).toContain('proof');
             return { uri, boostUri: delivered.boostId, proofChecks: verification.checks };
         });
+        const uploads = await verifyConsentUploads(context);
 
         return {
             observations: {
+                uploads,
                 contractUri,
                 partnerProfileId: issuer.profileId,
                 learnerProfileId: learner.profileId,

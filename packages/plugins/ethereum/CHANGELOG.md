@@ -1,5 +1,23 @@
 # learn-card-core
 
+## 1.1.48
+
+### Patch Changes
+
+- [#2073](https://github.com/learningeconomy/LearnCard/pull/2073) [`9ea97f319158a461ec42b4256c63b81ed53afe97`](https://github.com/learningeconomy/LearnCard/commit/9ea97f319158a461ec42b4256c63b81ed53afe97) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Load the default Uniswap token list on first token lookup instead of at import. A failed load is retried once and never cached; the next lookup loads again.
+
+- [#2073](https://github.com/learningeconomy/LearnCard/pull/2073) [`9ea97f319158a461ec42b4256c63b81ed53afe97`](https://github.com/learningeconomy/LearnCard/commit/9ea97f319158a461ec42b4256c63b81ed53afe97) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Build the ethers Wallet on first use instead of at plugin init, so wallet start-up skips the secp256k1 table precompute.
+
+- Updated dependencies [[`acda1d1bd362add238a7c6ff8096c295e844e586`](https://github.com/learningeconomy/LearnCard/commit/acda1d1bd362add238a7c6ff8096c295e844e586)]:
+    - @learncard/core@10.0.0
+
+## 1.1.47
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/core@9.4.46
+
 ## 1.1.46
 
 ### Patch Changes

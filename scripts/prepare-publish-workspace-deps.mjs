@@ -5,6 +5,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 
+import { prepareClientExports } from './client-package-exports.mjs';
+
+import { SELF_CONTAINED_PACKAGES } from './self-contained-packages.mjs';
+
 const ts = createRequire(import.meta.url)('typescript');
 
 const PACKAGE_DEPENDENCY_FIELDS = [
@@ -29,9 +33,7 @@ const dryRun = args.has('--dry-run');
 // Discover all workspace versions, but validate and rewrite only the packages
 // this publish job built. Omit --package to prepare the full registry release.
 const selectedPackages = new Set(
-    [...args]
-        .filter(arg => arg.startsWith('--package='))
-        .map(arg => arg.slice('--package='.length))
+    [...args].filter(arg => arg.startsWith('--package=')).map(arg => arg.slice('--package='.length))
 );
 const rootArg = process.argv.find(arg => arg.startsWith('--root='));
 const root = path.resolve(
@@ -132,6 +134,37 @@ const bundledPrivateDependencies = new Map(
         '@learncard/learn-cloud-service',
     ].map(name => [name, new Set(['@learncard/service-config'])])
 );
+
+// Packages published as a single bundled file. Their workspace manifest keeps `dependencies`
+// so Changesets still releases them when a dependency changes, but nothing in that list is
+// needed at install time, so the published manifest omits it. Require build evidence first.
+const selfContainedPackages = SELF_CONTAINED_PACKAGES;
+
+const verifySelfContainedBuild = (packageJsonPath, { entry, externals, allowedExternals }) => {
+    const dir = path.dirname(packageJsonPath);
+    for (const file of [entry, externals]) {
+        if (!fs.existsSync(path.join(dir, file))) {
+            throw new Error(
+                'Self-contained build missing: ' + path.relative(root, path.join(dir, file))
+            );
+        }
+    }
+    const loaded = readJson(path.join(dir, externals));
+    if (!Array.isArray(loaded)) {
+        throw new Error(
+            'Invalid externals list: ' + path.relative(root, path.join(dir, externals))
+        );
+    }
+    const unexpected = loaded.filter(name => !allowedExternals.has(name));
+    if (unexpected.length > 0) {
+        throw new Error(
+            path.relative(root, path.join(dir, entry)) +
+                ' still loads ' +
+                unexpected.join(', ') +
+                ' at runtime; it is not self-contained.'
+        );
+    }
+};
 
 const declarationReferencesDependency = (file, dependencyName, dependencyDir, options) => {
     const source = ts.createSourceFile(
@@ -280,6 +313,17 @@ for (const [packageJsonPath, packageJson] of packageJsonByPath.entries()) {
     if (typeof packageJson.name !== 'string' || !packageJson.name.startsWith('@learncard/'))
         continue;
 
+    if (prepareClientExports(packageJson, path.dirname(packageJsonPath))) {
+        changes.push({
+            packageJsonPath,
+            packageName: packageJson.name,
+            field: 'exports',
+            dependencyName: '.development',
+            from: './src/index.ts',
+            to: '(omitted; published clients use built import/require entries)',
+        });
+    }
+
     for (const field of PACKAGE_DEPENDENCY_FIELDS) {
         const dependencies = packageJson[field];
 
@@ -325,6 +369,27 @@ for (const [packageJsonPath, packageJson] of packageJsonByPath.entries()) {
             });
         }
     }
+}
+
+for (const [packageJsonPath, packageJson] of packageJsonByPath.entries()) {
+    const selfContained = selfContainedPackages.get(packageJson.name);
+    if (!selfContained) continue;
+    if (selectedPackages.size > 0 && !selectedPackages.has(packageJson.name)) continue;
+    if (!packageJson.dependencies || Object.keys(packageJson.dependencies).length === 0) continue;
+
+    verifySelfContainedBuild(packageJsonPath, selfContained);
+
+    for (const [dependencyName, spec] of Object.entries(packageJson.dependencies)) {
+        changes.push({
+            packageJsonPath,
+            packageName: packageJson.name,
+            field: 'dependencies',
+            dependencyName,
+            from: spec,
+            to: '(bundled; omitted from published dependencies)',
+        });
+    }
+    delete packageJson.dependencies;
 }
 
 if (changes.length === 0) {

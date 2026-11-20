@@ -1,5 +1,25 @@
 # consent-referral-demo
 
+## 0.0.12
+
+### Patch Changes
+
+- [#2096](https://github.com/learningeconomy/LearnCard/pull/2096) [`69ff978e060786e97419a755875945a0184ae9b8`](https://github.com/learningeconomy/LearnCard/commit/69ff978e060786e97419a755875945a0184ae9b8) Thanks [@goblincore](https://github.com/goblincore)! - Document contract request IDs and email invitations in the contract request reference, the brokered referral guide and the lifecycle page. Add an "Invite by email" action to the consent referral demo and an email invitation check to the referral lab.
+
+- Updated dependencies [[`e096512e4291bcaa5e424b7abbfc0932ca2a2317`](https://github.com/learningeconomy/LearnCard/commit/e096512e4291bcaa5e424b7abbfc0932ca2a2317), [`ff6f013bdedc9aee84e9849fa5736a8ad4a90c81`](https://github.com/learningeconomy/LearnCard/commit/ff6f013bdedc9aee84e9849fa5736a8ad4a90c81), [`e096512e4291bcaa5e424b7abbfc0932ca2a2317`](https://github.com/learningeconomy/LearnCard/commit/e096512e4291bcaa5e424b7abbfc0932ca2a2317), [`154941805bd8e2aa626afe3582e7794921debd27`](https://github.com/learningeconomy/LearnCard/commit/154941805bd8e2aa626afe3582e7794921debd27), [`1e4a9e97b825c18300ae0f00c2b9324120be196f`](https://github.com/learningeconomy/LearnCard/commit/1e4a9e97b825c18300ae0f00c2b9324120be196f), [`bd450e7b0467a94bbd30573fa0aebfcd6333db22`](https://github.com/learningeconomy/LearnCard/commit/bd450e7b0467a94bbd30573fa0aebfcd6333db22), [`acda1d1bd362add238a7c6ff8096c295e844e586`](https://github.com/learningeconomy/LearnCard/commit/acda1d1bd362add238a7c6ff8096c295e844e586), [`98674f16ea4ff1b8407749da2edcfbe5e023a7ac`](https://github.com/learningeconomy/LearnCard/commit/98674f16ea4ff1b8407749da2edcfbe5e023a7ac)]:
+    - @learncard/types@6.2.0
+    - @learncard/lca-api-plugin@3.0.0
+    - @learncard/init@3.0.0
+
+## 0.0.11
+
+### Patch Changes
+
+- Updated dependencies [[`f3f3d678156b46a67a2f916b62789aeef4e40bc7`](https://github.com/learningeconomy/LearnCard/commit/f3f3d678156b46a67a2f916b62789aeef4e40bc7)]:
+    - @learncard/types@6.1.1
+    - @learncard/init@2.5.12
+    - @learncard/lca-api-plugin@2.1.1
+
 ## 0.0.10
 
 ### Patch Changes

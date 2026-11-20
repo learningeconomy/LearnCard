@@ -1,7 +1,9 @@
 #!/usr/bin/env bun
 
 import { getLogger } from 'learn-card-base/src/logging/logger';
+import { patchPbxprojBundleIds } from '../src/native-smoke/patchPbxprojBundleIds';
 import { nativeBrowserCompatibility } from '../../../packages/learn-card-base/src/config/nativeBrowserCompatibility';
+import { withNativeBridgeLoggingPolicy } from '../../../packages/learn-card-base/src/config/nativeBridgeLogging';
 const log = getLogger();
 
 /**
@@ -547,11 +549,16 @@ for (const { src, dests } of CONFIG_TEMPLATE_MAP) {
         mkdirSync(dirname(destPath), { recursive: true });
         cpSync(srcPath, destPath);
         if (src === 'config/capacitor.config.json') {
-            // Enforce the browser floor even for a tenant without native overrides.
+            // Enforce the browser floor and the bridge-logging policy (no plugin payloads in
+            // device logs) even for a tenant without native overrides.
             const raw = JSON.parse(readFileSync(destPath, 'utf-8'));
             writeFileSync(
                 destPath,
-                JSON.stringify({ ...raw, ...nativeBrowserCompatibility(raw) }, null, 2) + '\n',
+                JSON.stringify(
+                    withNativeBridgeLoggingPolicy({ ...raw, ...nativeBrowserCompatibility(raw) }),
+                    null,
+                    2
+                ) + '\n',
                 'utf-8'
             );
         }
@@ -663,10 +670,7 @@ if (nativeConfig) {
             let pbx = readFileSync(pbxprojPath, 'utf-8');
             const bundleId = nativeConfig.bundleId;
 
-            pbx = pbx.replace(
-                /PRODUCT_BUNDLE_IDENTIFIER = [^;]+;/g,
-                `PRODUCT_BUNDLE_IDENTIFIER = ${bundleId};`
-            );
+            pbx = patchPbxprojBundleIds(pbx, bundleId);
 
             pbx = pbx.replace(
                 /PROVISIONING_PROFILE_SPECIFIER = "match AppStore [^"]+"/g,

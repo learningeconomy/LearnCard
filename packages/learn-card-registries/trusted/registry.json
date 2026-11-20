@@ -4,6 +4,11 @@
         "updated": "2026-03-21T22:53:34.881Z"
     },
     "registry": {
+        "did:web:staging.network.learncard.com:users:mock-sc-transcripts": {
+            "name": "Sample Transcript Issuer (Staging Test)",
+            "location": "Washington, DC, USA",
+            "url": "https://www.learncard.com/"
+        },
         "did:web:network.learncard.com:users:ministryoffood": {
             "name": "Ministry of Food",
             "location": "London, England, United Kingdom",

@@ -12,14 +12,18 @@
  * full page reload that Paraglide's default setLocale triggers.
  */
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { setLocale as paraglideSetLocale, getLocale } from '../paraglide/runtime.js';
+import { getLogger } from 'learn-card-base/logging/logger';
+import { isLocaleMessagesLoaded, loadLocaleMessages } from './localeMessages';
 
 import {
     detectInitialLocale,
     detectInitialLocaleSync,
     getEffectiveSupportedLanguages,
 } from './detectLocale';
+
+const log = getLogger('i18n');
 
 // Mirror of Paraglide's runtime `MessagePart` (a JSDoc typedef in
 // ../paraglide/runtime.js, not a TS export). Field types match the generated
@@ -73,7 +77,7 @@ const LocaleContext = createContext<LocaleContextValue | null>(null);
  * handled in the effect below — it takes priority over (2)/(3) but slots in
  * after first render when running on iOS/Android.
  */
-function resolveInitialLocale(): SupportedLanguage {
+export function resolveInitialLocale(): SupportedLanguage {
     const supported = getEffectiveSupportedLanguages(SUPPORTED_LANGUAGES);
     const detected = detectInitialLocaleSync(supported, 'en');
     // Paraglide's getLocale() is the runtime baseLocale (typically 'en'). If the
@@ -105,24 +109,50 @@ export const LocaleProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         paraglideSetLocale(initial, { reload: false });
         return initial;
     });
-    const changeLocale = useCallback((lang: SupportedLanguage) => {
-        // 1. Switch in-memory FIRST so a storage failure can never abort the
-        //    actual locale change. localStorage.setItem throws (SecurityError) in
-        //    private/restricted contexts; if that ran first and threw, the user
-        //    would be stuck in the old locale.
-        paraglideSetLocale(lang, { reload: false });
-        setLocaleState(lang);
+    // Latest requested locale: a slower message load must never override a newer choice.
+    const requestedLocaleRef = useRef<SupportedLanguage | null>(null);
 
-        // 2. Best-effort persistence — never fatal to the switch above.
-        if (typeof localStorage !== 'undefined') {
-            try {
-                localStorage.setItem('i18n.language', lang);
-            } catch {
-                // Private mode / storage disabled — the choice just won't persist
-                // across reloads. The in-memory switch already succeeded.
-            }
+    /**
+     * Switch once the locale's messages can render. Production builds load non-base locales on
+     * demand (paraglideLazyLocales); when they're already loaded (always, in dev/tests) this runs
+     * synchronously, exactly as before. If a load fails we still switch: the locale's strings then
+     * fall back to the base locale, which is Paraglide's fallback for missing translations too.
+     */
+    const whenLocaleReady = useCallback((lang: SupportedLanguage, apply: () => void) => {
+        requestedLocaleRef.current = lang;
+        if (isLocaleMessagesLoaded(lang)) {
+            apply();
+            return;
         }
+        void loadLocaleMessages(lang)
+            .catch(error => log.warn('Locale messages failed to load; using base locale', error))
+            .then(() => {
+                if (requestedLocaleRef.current === lang) apply();
+            });
     }, []);
+
+    const changeLocale = useCallback(
+        (lang: SupportedLanguage) =>
+            whenLocaleReady(lang, () => {
+                // 1. Switch in-memory FIRST so a storage failure can never abort the
+                //    actual locale change. localStorage.setItem throws (SecurityError) in
+                //    private/restricted contexts; if that ran first and threw, the user
+                //    would be stuck in the old locale.
+                paraglideSetLocale(lang, { reload: false });
+                setLocaleState(lang);
+
+                // 2. Best-effort persistence — never fatal to the switch above.
+                if (typeof localStorage !== 'undefined') {
+                    try {
+                        localStorage.setItem('i18n.language', lang);
+                    } catch {
+                        // Private mode / storage disabled — the choice just won't persist
+                        // across reloads. The in-memory switch already succeeded.
+                    }
+                }
+            }),
+        [whenLocaleReady]
+    );
 
     // First-launch native-locale upgrade. Only runs if the user hasn't yet
     // manually picked a locale (i.e. no localStorage entry) — once a choice is
@@ -137,8 +167,11 @@ export const LocaleProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 // Don't persist (we don't want to record an auto choice as a
                 // manual one — that would block future re-detection if the user
                 // moves device locales).
-                paraglideSetLocale(detected as SupportedLanguage, { reload: false });
-                setLocaleState(detected as SupportedLanguage);
+                const lang = detected as SupportedLanguage;
+                whenLocaleReady(lang, () => {
+                    paraglideSetLocale(lang, { reload: false });
+                    setLocaleState(lang);
+                });
             }
         });
         // Intentionally only runs once on mount; `locale` is captured at first

@@ -14,7 +14,12 @@ import { t, openRoute, didRoute, didAndChallengeRoute, type Context } from '@rou
 import { getDeliveryService, getFrom } from '../services/delivery';
 import { getEscrowBlobStaleReason, notifyEscrowHoldEvent } from '../services/escrow-enclave';
 import { cancelHoldInEnclave } from '../services/escrow-enclave/cancellation';
-import { verifyAuthToken, getContactMethodFromUser, AuthProviderType } from '@helpers/auth.helpers';
+import {
+    verifyAuthToken,
+    getContactMethodFromUser,
+    AuthProviderType,
+    type VerifyTokenOptions,
+} from '@helpers/auth.helpers';
 import { encryptAuthShare, decryptAuthShare } from '@helpers/shareEncryption.helpers';
 import { maskEmail } from '@helpers/maskEmail';
 import { isSyntheticEmail } from '@helpers/syntheticEmail.helpers';
@@ -23,6 +28,12 @@ import { pinClassLinkIdentitiesToAccount } from '@helpers/classlinkContext.helpe
 import cache from '@cache';
 import { setValidChallengeForDid } from '@cache/challenges';
 import { checkRateLimit, clearRateLimit } from '@helpers/rateLimit.helpers';
+import {
+    isLegacyKeyArchiveEnabled,
+    releaseArchivedKey,
+    markArchivedKeyExhausted,
+    markArchivedKeyReleased,
+} from '@helpers/legacyKeyArchive.helpers';
 import {
     MAX_RECOVERY_OTP_ATTEMPTS,
     claimRecoveryOtpSendWindow,
@@ -35,6 +46,7 @@ import {
 } from '@cache/recoverySessions';
 import {
     findUserKeyByAuthProvider,
+    findUserKeyByDid,
     findUniqueUserKeyByVerifiedRecoveryEmail,
     findAuthShareByVersion,
     upsertUserKeyByAuthProvider,
@@ -185,15 +197,18 @@ const sendRecoveryKeyToEscrowRelay = async (
     }
 };
 
-export async function verifyAndGetContactMethod(input: {
-    authToken: string;
-    providerType: AuthProviderType;
-}): Promise<{
+export async function verifyAndGetContactMethod(
+    input: {
+        authToken: string;
+        providerType: AuthProviderType;
+    },
+    options: VerifyTokenOptions = {}
+): Promise<{
     user: { id: string; email?: string; phone?: string; providerType: string };
     contactMethod: ContactMethod;
     authProvider: AuthProviderMapping;
 }> {
-    const user = await verifyAuthToken(input.authToken, input.providerType);
+    const user = await verifyAuthToken(input.authToken, input.providerType, options);
 
     const contactMethod = getContactMethodFromUser(user);
     if (!contactMethod) {
@@ -1618,6 +1633,70 @@ export const keysRouter = t.router({
             return { success: true };
         }),
 
+    getArchivedKey: openRoute
+        .meta({
+            openapi: {
+                method: 'POST',
+                path: '/keys/archived-key',
+                tags: ['Keys'],
+                summary: 'Get archived legacy key for the account upgrade',
+            },
+        })
+        .input(AuthInputValidator)
+        .output(
+            z.object({
+                available: z.boolean(),
+                privateKey: z.string().optional(),
+                did: z.string().optional(),
+            })
+        )
+        .mutation(async ({ ctx, input }) => {
+            if (!isLegacyKeyArchiveEnabled()) return { available: false };
+            if (input.providerType !== 'firebase') return { available: false };
+            // Releases a durable key, so a revoked session or disabled user must not pass.
+            const { authProvider } = await verifyAndGetContactMethod(input, { checkRevoked: true });
+            const allowed = await Promise.all([
+                checkRateLimit(`archived-key:uid:${authProvider.id}`, 20, 3600),
+                // Without a resolved IP the per-login limit still applies; never pool callers.
+                ctx.clientIp
+                    ? checkRateLimit(`archived-key:ip:${ctx.clientIp}`, 200, 3600)
+                    : Promise.resolve(true),
+            ]);
+            if (allowed.some(value => !value)) {
+                throw new TRPCError({
+                    code: 'TOO_MANY_REQUESTS',
+                    message: 'Too many attempts. Please try again later.',
+                });
+            }
+            const userKey = await findUserKeyByAuthProvider(authProvider.type, authProvider.id);
+            if (
+                userKey &&
+                userKey.keyProvider != null &&
+                userKey.keyProvider !== 'web3auth' &&
+                userKey.sssActivationState !== 'provisional'
+            ) {
+                return { available: false };
+            }
+            const released = await releaseArchivedKey(authProvider.id, userKey?.primaryDid);
+            if (!released) return { available: false };
+
+            // A removed login must not regain an upgraded identity through the no-record fallback.
+            const identity = await findUserKeyByDid(released.did);
+            if (
+                identity &&
+                ((identity.keyProvider === 'sss' &&
+                    identity.sssActivationState !== 'provisional') ||
+                    !identity.authProviders?.some(
+                        provider =>
+                            provider.type === authProvider.type && provider.id === authProvider.id
+                    ))
+            ) {
+                return { available: false };
+            }
+            await markArchivedKeyReleased(authProvider.id);
+            return { available: true, ...released };
+        }),
+
     activate: didAndChallengeRoute
         .meta({
             openapi: {
@@ -1657,6 +1736,8 @@ export const keysRouter = t.router({
                     message: 'The key record changed before activation. Please try again.',
                 });
             }
+
+            if (authProvider.type === 'firebase') await markArchivedKeyExhausted(authProvider.id);
 
             return { success: true };
         }),

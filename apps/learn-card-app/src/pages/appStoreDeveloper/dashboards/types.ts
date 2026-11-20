@@ -5,6 +5,7 @@ export interface DashboardConfig {
     showApiTokens: boolean;
     showEmbedCode: boolean;
     showContracts: boolean;
+    showWebhooks: boolean;
     showBranding: boolean;
     showSigningAuthority: boolean;
     showConnections: boolean;
@@ -83,6 +84,7 @@ export function getConfigForGuideType(guideType?: string): DashboardConfig {
         showApiTokens: false,
         showEmbedCode: false,
         showContracts: false,
+        showWebhooks: false,
         showBranding: true,
         showSigningAuthority: false,
         showConnections: false,
@@ -121,6 +123,8 @@ export function getConfigForGuideType(guideType?: string): DashboardConfig {
                 showAppConfig: false,
                 showTemplates: false,
                 showContracts: true,
+                // Contract events only exist for integrations that work with contracts
+                showWebhooks: true,
                 showBranding: false,
             };
 
@@ -128,6 +132,8 @@ export function getConfigForGuideType(guideType?: string): DashboardConfig {
             return {
                 ...baseConfig,
                 showContracts: true,
+                // Contract events only exist for integrations that work with contracts
+                showWebhooks: true,
                 showConnections: true,
                 showApiTokens: true,
                 showTemplates: true,

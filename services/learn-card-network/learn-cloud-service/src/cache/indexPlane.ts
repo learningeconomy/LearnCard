@@ -7,7 +7,13 @@ import { getAllDidsForDid } from '@accesslayer/user/read';
 /** 1 Day */
 export const INDEX_TTL = 60 * 60 * 24;
 
-export const getIndexHashKey = (did: string): string => `index:${did}`;
+/**
+ * Bump to orphan every cached page. v2 (LC-2434): before it, a failed read was cached as an empty
+ * page. Old `index:<did>` hashes are never read again and expire on their TTL.
+ */
+export const INDEX_CACHE_VERSION = 2;
+
+export const getIndexHashKey = (did: string): string => `index:v${INDEX_CACHE_VERSION}:${did}`;
 
 export const getIndexFieldKey = (
     query: Record<string, any>,

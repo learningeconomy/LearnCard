@@ -1,6 +1,5 @@
 import type { VerificationCheck } from '@learncard/types';
 import type { DidDocument } from '@learncard/types';
-import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc';
 import type { JWK } from 'jose';
 import { base64url } from 'jose';
 import { base58 } from '@scure/base';
@@ -233,6 +232,8 @@ export const verifySdJwtVc = async (
     }
 
     const { verifier, getLastError } = await createJoseVerifier(issuerJwk, issuerAlg);
+    // @sd-jwt/sd-jwt-vc pulls the status-list decoder (pako); load it with the first SD-JWT.
+    const { SDJwtVcInstance } = await import('@sd-jwt/sd-jwt-vc');
     const instance = new SDJwtVcInstance({
         hasher: sha256Hasher,
         hashAlg: 'sha-256',

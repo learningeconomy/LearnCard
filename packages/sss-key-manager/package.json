@@ -1,6 +1,6 @@
 {
     "name": "@learncard/sss-key-manager",
-    "version": "0.3.1",
+    "version": "0.3.3",
     "description": "Shamir Secret Sharing key manager for LearnCard - replaces Web3Auth SFA",
     "main": "./dist/index.js",
     "module": "./dist/sss-key-manager.esm.js",
@@ -64,5 +64,6 @@
             "require": "./dist/index.js",
             "default": "./dist/sss-key-manager.esm.js"
         }
-    }
+    },
+    "sideEffects": false
 }

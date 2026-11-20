@@ -42,10 +42,11 @@ export const RecentlyAdded: React.FC = () => {
                 </button>
             </div>
             <div className="-mx-6 flex gap-3 overflow-x-auto px-6 pb-1 scrollbar-none [&::-webkit-scrollbar]:hidden md:mx-0 md:gap-2 md:overflow-visible md:px-0 md:flex-wrap">
-                {items.map(record => (
+                {items.map((record, index) => (
                     <PassportCredentialCard
                         key={record.uri}
                         record={record}
+                        cardIndex={index}
                         className="shrink-0 snap-start"
                     />
                 ))}

@@ -2,7 +2,7 @@ import { isEqual } from 'lodash';
 import { initLearnCard, type LearnCardFromSeed } from '@learncard/init';
 import type { CredentialRecord } from '@learncard/types';
 import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url';
-import { installWalletDidWebDocumentFetchCache } from '@learncard/didkit-plugin';
+import { initDidKit, installWalletDidWebDocumentFetchCache } from '@learncard/didkit-plugin';
 import { getLCAPlugin } from '@learncard/lca-api-plugin';
 import { getLinkedClaimsPlugin } from '@learncard/linked-claims-plugin';
 import { getLerRsPlugin } from '@learncard/ler-rs-plugin';
@@ -56,6 +56,8 @@ export const getSigningLearnCard = async (seed: string) => {
 
     return SIGNING_LEARN_CARDS[seed];
 };
+
+export { prewarmDidKit } from './didkitPrewarm';
 
 export interface GetBespokeLearnCardOptions {
     /**

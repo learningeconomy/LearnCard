@@ -4,12 +4,24 @@ import { TRPCError } from '@trpc/server';
 import { ConsentFlowContractValidator } from '@learncard/types';
 import { diffContractChange, buildContractUpdatePreview } from '@learncard/helpers';
 import { getConsentFlowContractVersionRecord } from './versions';
-import { tryDispatchContractEvent } from '@helpers/contract-events.helpers';
+import {
+    tryDispatchContractEvent,
+    tryFanOutContractIntegrationEvents,
+} from '@helpers/contract-events.helpers';
 import { constructUri } from '@helpers/uri.helpers';
 import { environment } from '@environment';
 import { v4 as uuid } from 'uuid';
 
-/** Retire in place so terms and transaction history remain exportable. */
+/**
+ * Retire in place so terms and transaction history remain exportable.
+ *
+ * The same statement also records integration-only events (no profile deliveries): one
+ * `contract_retired`, and one `consent_withdrawn` with reason `contract_retired` per terms it
+ * withdraws that was live, awaiting re-consent or suspended (consumed terms are withdrawn too,
+ * but are not part of the connections snapshot, so they get no event). The contract node and
+ * its CREATED_BY / CAN_WRITE / SHARES_DATA_WITH relationships are kept, so the worker can
+ * still resolve the audience of these events after retirement.
+ */
 export const deleteConsentFlowContract = async (
     contract: DbContractType,
     domain = environment.DOMAIN_NAME ?? 'network.learncard.com',
@@ -72,8 +84,20 @@ export const deleteConsentFlowContract = async (
              c.latestUpdate=$latestUpdate
          REMOVE c._contractVersionLock
          FOREACH (term IN terms |
+             FOREACH (_ IN CASE WHEN term.status IN ['live','needs_reconsent','suspended'] THEN [1] ELSE [] END |
+                 CREATE (:ConsentFlowEvent {
+                     id:term.id + ':withdrawn:contract_retired', contractId:c.id, termsId:term.id,
+                     domain:$eventDomain, kind:'consent_withdrawn', reason:'contract_retired',
+                     requestId:term.\`referral.requestId\`, requestedBy:term.\`referral.requestedBy\`,
+                     externalReferenceId:term.\`referral.externalReferenceId\`,
+                     integrationFanoutPending:true, createdAt:$createdAt
+                 }))
              SET term.status='withdrawn', term.mutationVersion=coalesce(term.mutationVersion,0)+1, term.updatedAt=$createdAt
              CREATE (transaction:ConsentFlowTransaction {id:randomUUID(), action:'withdraw', date:$createdAt})-[:IS_FOR]->(term))
+         CREATE (:ConsentFlowEvent {
+             id:c.id + ':retired', contractId:c.id, domain:$eventDomain, kind:'contract_retired',
+             integrationFanoutPending:true, createdAt:$createdAt
+         })
          CREATE (event:ConsentFlowEvent {
              id:$eventId, contractId:c.id, fromId:ownerProfileId, ownerId:ownerProfileId,
              domain:$eventDomain, kind:'contract_updated', payload:$eventPayload,
@@ -120,5 +144,6 @@ export const deleteConsentFlowContract = async (
     const record = result.records[0];
     if (!record || Number(record.get('count') ?? 0) === 0) return 0;
     await tryDispatchContractEvent(eventId);
+    await tryFanOutContractIntegrationEvents(contractId);
     return Number(record.get('count'));
 };

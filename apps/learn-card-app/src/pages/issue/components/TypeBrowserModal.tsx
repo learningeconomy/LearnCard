@@ -86,8 +86,8 @@ export const TypeBrowserModal: React.FC<TypeBrowserModalProps> = ({
     };
 
     return (
-        <div className="font-poppins w-full max-w-[560px] mx-auto bg-white rounded-[20px] flex flex-col max-h-[80vh] overflow-hidden">
-            <div className="sticky top-0 bg-white px-6 pt-6 pb-4 border-b border-grayscale-100">
+        <div className="font-poppins flex min-h-0 flex-auto flex-col">
+            <div className="shrink-0 px-6 pt-6 pb-4 border-b border-grayscale-100">
                 <div className="flex items-center justify-between mb-1">
                     <h2 className="text-xl font-semibold text-grayscale-900">
                         {m['issueFlow.browser.title']()}
@@ -116,7 +116,7 @@ export const TypeBrowserModal: React.FC<TypeBrowserModalProps> = ({
                 </div>
             </div>
 
-            <div className="overflow-y-auto px-6 py-5 space-y-v3-6">
+            <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-v3-6">
                 {matches ? (
                     matches.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

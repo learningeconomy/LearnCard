@@ -9,6 +9,7 @@ import {
     useAllContractRequestsForProfile,
     useCurrentUser,
     useCredentialCollection,
+    useVisibleCredentialCount,
     useGetConnections,
     useGetConnectionsRequests,
     useGetCurrentLCNUser,
@@ -30,6 +31,7 @@ import { summarizeConsent } from '../../components/data-sharing/consentSummary';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { useModal, ModalTypes, useBrandingConfig } from 'learn-card-base';
 import useOpenMyLearnCard from '../../components/learncard/useOpenMyLearnCard';
+import { prefetchMyLearnCard } from '../../components/learncard/MyLearnCardModal';
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import { ErrorBoundary } from 'react-error-boundary';
 
@@ -80,8 +82,16 @@ import LinkOutlinedIcon from 'learn-card-base/svgs/LinkOutlinedIcon';
 import AddCredentialIcon from 'learn-card-base/svgs/AddCredentialIcon';
 import ProfileAlertsIsland from '../../components/main-header/ProfileAlertsIsland';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
+import { markDashboardPath, useDashboardPathMark } from '../../helpers/dashboardPathMarks';
+import { markFirstScreenPainted } from 'learn-card-base/helpers/firstScreen';
+
+/** The activity card lists at most three passive records. */
+const RECENT_ACTIVITY_RECORDS = 3;
 
 const DashboardPage: React.FC = () => {
+    markDashboardPath('page_body_render', true);
+    useDashboardPathMark('dashboard_commit');
+    useEffect(() => markFirstScreenPainted(), []);
     const history = useHistory();
     const { track } = useAnalytics();
     const {
@@ -124,14 +134,20 @@ const DashboardPage: React.FC = () => {
     const currentUser = useCurrentUser();
     const { currentLCNUser } = useGetCurrentLCNUser();
 
-    const collection = useCredentialCollection(undefined, { mode: 'complete' });
-    const allCredentialRecords = collection.records;
-    const allCredentialsLoading = !collection.isComplete && !collection.isError;
-    const totalCredentialCount = collection.isComplete ? allCredentialRecords.length : null;
-    const skillsCount = collection.isComplete
-        ? allCredentialRecords.filter(record => record.category === CredentialCategoryEnum.skill)
-              .length
-        : null;
+    // Totals come from index counts; only the newest records are listed (LC-2412, LC-2413).
+    const collection = useVisibleCredentialCount();
+    const skillsCollection = useVisibleCredentialCount(CredentialCategoryEnum.skill);
+    const recentCollection = useCredentialCollection(undefined, {
+        mode: 'recent',
+        limit: RECENT_ACTIVITY_RECORDS,
+    });
+    const allCredentialRecords = recentCollection.records;
+    const allCredentialsLoading =
+        !recentCollection.isComplete &&
+        !recentCollection.isError &&
+        allCredentialRecords.length < RECENT_ACTIVITY_RECORDS;
+    const totalCredentialCount = collection.count;
+    const skillsCount = skillsCollection.count;
 
     const { data: skillProfileData } =
         useVerifiableData<SkillProfileProfileData>(SKILL_PROFILE_PROFILE_KEY);
@@ -303,7 +319,7 @@ const DashboardPage: React.FC = () => {
         if (pathwaysEnabled) history.push('/pathways/today');
     };
 
-    const hasCredentials = allCredentialRecords.length > 0;
+    const hasCredentials = (totalCredentialCount ?? 0) > 0 || allCredentialRecords.length > 0;
     const hasGoal = pathwaysEnabled ? !!activePathway : !!goalSummary;
     const hasSkillProfile = skillProfilePercentage >= 100;
     const hasDiscoveredApps = installedApps.length > 0;
@@ -328,7 +344,9 @@ const DashboardPage: React.FC = () => {
     const secondStepDone = pathwaysEnabled ? hasGoal : hasDiscoveredApps;
 
     const showGetStarted =
-        collection.isComplete && !getStartedDismissed && (!hasCredentials || !secondStepDone);
+        totalCredentialCount !== null &&
+        !getStartedDismissed &&
+        (!hasCredentials || !secondStepDone);
     const heroSlot: 'getStarted' | 'goal' = showGetStarted ? 'getStarted' : 'goal';
 
     const withChecklistTracking = (item: {
@@ -511,6 +529,7 @@ const DashboardPage: React.FC = () => {
             shortBio: currentLCNUser?.shortBio,
             professionalTitle: skillProfileData?.professionalTitle,
             onAvatarClick: openMyLearnCard,
+            onAvatarIntent: prefetchMyLearnCard,
             onScanQrTopRight: openQrScanner,
             onNotificationsClick: openNotifications,
             unreadCount: unreadNotifications.length,

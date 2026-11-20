@@ -35,4 +35,3 @@ export type StyleSetMap = {
     [StyleSetEnum.launchPad]: ThemeStyles['launchPad'];
     [StyleSetEnum.defaults]: ThemeStyles['defaults'];
 };
-

@@ -123,4 +123,10 @@ export {
     type AccountSecuredProps,
 } from './account-secured';
 
+export {
+    ContractRequestInvite,
+    getContractRequestInviteSubject,
+    type ContractRequestInviteProps,
+} from './contract-request-invite';
+
 export { Announcement, getAnnouncementSubject, type AnnouncementProps } from './announcement';
