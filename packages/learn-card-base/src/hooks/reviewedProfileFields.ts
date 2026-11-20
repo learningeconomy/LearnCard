@@ -1,4 +1,5 @@
 import { indexLatestProfileField } from './profileFieldIndex';
+import { getProfileFieldGeneration } from './profileFieldGeneration';
 import type { ConsentFlowTerms } from '@learncard/types';
 import type { BespokeLearnCard } from '../types/learn-card';
 import {
@@ -59,8 +60,11 @@ export const prepareReviewedFields = async (
             },
         });
     }
-    for (const job of jobs)
+    for (const job of jobs) {
         terms.read.credentials.categories[job.category]!.shared = [job.acceptedField.sharedUri];
+        terms.read.credentials.categories[job.category]!.fieldGeneration =
+            await getProfileFieldGeneration(job.record.uri, job.acceptedField.issuanceDate);
+    }
     return jobs;
 };
 

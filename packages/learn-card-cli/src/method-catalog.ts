@@ -293,6 +293,7 @@ export const STATIC_INVOKE_METHODS: readonly string[] = [
     'learnCloudCreate',
     'learnCloudCreateMany',
     'learnCloudDelete',
+    'learnCloudGetIndexRecordForUpdate',
     'learnCloudRead',
     'learnCloudReadPage',
     'learnCloudUpdate',

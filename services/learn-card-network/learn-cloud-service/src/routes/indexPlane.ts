@@ -44,6 +44,33 @@ import { withInternalError } from '@helpers/error.helpers';
 const INDEX_READ_ERROR = 'Could not read index';
 
 export const indexRouter = t.router({
+    // CAS callers must read directly from MongoDB: an older cache-miss read can
+    // populate a stale page after a competing write has invalidated the cache.
+    getForUpdate: didAndChallengeRoute
+        .input(z.object({ id: z.string() }))
+        .output(JWEValidator)
+        .query(async ({ ctx, input }) => {
+            const records = await withInternalError(INDEX_READ_ERROR, () =>
+                getCredentialRecordsForDid(
+                    ctx.user.did,
+                    { id: input.id },
+                    'newestFirst',
+                    undefined,
+                    2
+                )
+            );
+            const encryptedRecords = records.map(
+                ({
+                    did: _did,
+                    _id,
+                    cursor: _cursor,
+                    created: _created,
+                    modified: _modified,
+                    ...record
+                }) => record
+            );
+            return encryptObject({ records: encryptedRecords }, ctx.domain, [ctx.user.did]);
+        }),
     get: didAndChallengeRoute
         .meta({
             openapi: {

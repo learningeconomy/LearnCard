@@ -23,6 +23,8 @@ import { isLearnCardAiPassportContractUri } from 'learn-card-base/constants/aiPa
 import { queueAiInsightCredentialRefresh } from './ai-passport';
 import { getLogger } from '../../logging/logger';
 import { getAcceptLifecycleRejection, LifecycleRejection } from './consentFlowLifecycle';
+import { getProfileFieldGenerationForUri } from '../../hooks/profileFieldGeneration';
+import { getVerifiableDataIndexId } from '../../hooks/createVerifiableDataCredential';
 import {
     clearConsentFlowRecordMarker,
     getConsentFlowRecordMarker,
@@ -185,9 +187,16 @@ export const useSyncConsentContractsMutation = () => {
                 }
 
                 const categoryMap: Record<string, string[]> = {};
+                const fieldGenerations: Record<string, string> = {};
+                // The all-wallet page can be a stale cache fill. Discover the current
+                // field independently, even when that page missed the category entirely.
+                const categories = { ...recordsByCategory };
+                for (const category of Object.keys(contractTerms.read.credentials.categories)) {
+                    if (category.startsWith('VerifiableData:')) categories[category] ??= [];
+                }
 
                 await Promise.all(
-                    Object.entries(recordsByCategory).map(async ([category, credUris]) => {
+                    Object.entries(categories).map(async ([category, scannedUris]) => {
                         const { categoryInfo } = getCategoryInfoForTerms(contractTerms, category);
 
                         if (
@@ -197,6 +206,18 @@ export const useSyncConsentContractsMutation = () => {
                             (!categoryInfo.shareUntil ||
                                 categoryInfo.shareUntil > new Date().toISOString())
                         ) {
+                            let credUris = scannedUris;
+                            if (category.startsWith('VerifiableData:')) {
+                                const records =
+                                    await learnCard.invoke.learnCloudGetIndexRecordForUpdate(
+                                        getVerifiableDataIndexId(category)
+                                    );
+                                if (records.length > 1)
+                                    throw new Error('Ambiguous profile field index record.');
+                                credUris = records
+                                    .filter(record => record.category === category)
+                                    .map(record => record.uri);
+                            }
                             const sharedUris = await Promise.all(
                                 credUris.map(uri =>
                                     getOrCreateSharedUriForWallet(
@@ -216,6 +237,12 @@ export const useSyncConsentContractsMutation = () => {
 
                             if (validUris.length) {
                                 categoryMap[category] = validUris;
+                                if (category.startsWith('VerifiableData:') && credUris.length === 1)
+                                    fieldGenerations[category] =
+                                        await getProfileFieldGenerationForUri(
+                                            learnCard,
+                                            credUris[0]!
+                                        );
                             }
                         }
                     })
@@ -231,7 +258,10 @@ export const useSyncConsentContractsMutation = () => {
                             termsUri,
                             categoryMap,
                             audience.audienceVersion,
-                            true
+                            true,
+                            ...(Object.keys(fieldGenerations).length
+                                ? ([fieldGenerations] as const)
+                                : ([] as const))
                         );
                         if (isLearnCardAiPassportContractUri(contract.uri)) {
                             await queueAiInsightCredentialRefresh({

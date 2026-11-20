@@ -27,6 +27,8 @@ export type LearnCloudPluginDependentMethods = {
 
 /** @group LearnCloud Plugin */
 export type LearnCloudPluginMethods = {
+    /** Read a record directly from LearnCloud, bypassing cached index pages. */
+    learnCloudGetIndexRecordForUpdate: (id: string) => Promise<CredentialRecord[]>;
     /** Atomically replace the exact record read, or insert if absent. False means another writer won. */
     learnCloudCompareAndSwapIndexRecord: (
         expected: CredentialRecord | null,

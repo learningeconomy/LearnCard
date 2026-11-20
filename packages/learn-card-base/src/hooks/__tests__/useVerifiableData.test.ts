@@ -55,6 +55,7 @@ const createMockWallet = () => {
         id: { did: () => TEST_DID },
         invoke: {
             issueCredential,
+            learnCloudGetIndexRecordForUpdate: vi.fn().mockResolvedValue([]),
             learnCloudCompareAndSwapIndexRecord: vi.fn().mockResolvedValue(true),
         },
         store: { LearnCloud: { uploadEncrypted } },
@@ -318,6 +319,25 @@ describe('saveVerifiableData', () => {
 // ---------------------------------------------------------------------------
 
 describe('getVerifiableDataForKey', () => {
+    it('loads a profile answer from the fresh index when a stale page exists', async () => {
+        const wallet = createMockWallet();
+        const category = 'VerifiableData:demo:profile:branch';
+        wallet.index.LearnCloud.get.mockResolvedValue([{ uri: 'lc:stale' }]);
+        wallet.invoke.learnCloudGetIndexRecordForUpdate.mockResolvedValue([{ uri: 'lc:current' }]);
+        wallet.read.get.mockResolvedValue({
+            validFrom: '2026-11-20T00:00:00.000Z',
+            credentialSubject: { dataKey: category, dataPayload: { branch: 'Current' } },
+        });
+
+        await expect(getVerifiableDataForKey(wallet as never, category)).resolves.toEqual({
+            branch: 'Current',
+        });
+        expect(wallet.index.LearnCloud.get).not.toHaveBeenCalled();
+        expect(wallet.invoke.learnCloudGetIndexRecordForUpdate).toHaveBeenCalledWith(
+            `__verifiable_data_${category}__`
+        );
+        expect(wallet.read.get).toHaveBeenCalledWith('lc:current');
+    });
     let wallet: MockWallet;
 
     beforeEach(() => {

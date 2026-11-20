@@ -699,6 +699,62 @@ describe('Index', () => {
     });
 
     describe('replaceIfCurrent', () => {
+        it('reads the current record even when an older index page is cached', async () => {
+            const index = userA.clients.fullAuth.index;
+            const id = 'fresh-compare-and-swap';
+            const did = userA.learnCard.id.did();
+            await CredentialRecords.deleteMany({ did, id });
+            await index.add({ record: { ...testRecordA, id } });
+            const stalePage = await index.get({ query: { id }, encrypt: false, limit: 2 });
+            if (isEncrypted(stalePage)) throw new Error('Expected a plaintext index page');
+            expect(stalePage.records).toHaveLength(1);
+            // Simulate a stale cache fill that landed after a newer database write.
+            await CredentialRecords.updateOne(
+                { did, id },
+                { $set: { 'encryptedRecord.ciphertext': 'new-answer' } }
+            );
+            const stillCached = await index.get({ query: { id }, encrypt: false, limit: 2 });
+            if (isEncrypted(stillCached)) throw new Error('Expected a plaintext index page');
+            expect(stillCached.records[0]?.encryptedRecord.ciphertext).not.toBe('new-answer');
+            const envelope = await index.getForUpdate({ id });
+            expect(isEncrypted(envelope)).toBe(true);
+            const fresh = (
+                await userA.learnCard.invoke.decryptDagJwe<{ records: (typeof testRecordA)[] }>(
+                    envelope
+                )
+            ).records;
+            expect(fresh).toHaveLength(1);
+            expect(fresh[0]?.encryptedRecord.ciphertext).toBe('new-answer');
+            expect(fresh[0]).not.toHaveProperty('did');
+            await expect(noAuthClient.index.getForUpdate({ id })).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            const otherEnvelope = await userB.clients.fullAuth.index.getForUpdate({ id });
+            const other = await userB.learnCard.invoke.decryptDagJwe<{
+                records: (typeof testRecordA)[];
+            }>(otherEnvelope);
+            expect(other.records).toEqual([]);
+
+            const linked = await getUser('c'.repeat(64));
+            const linkedDid = linked.learnCard.id.did();
+            await Users.updateOne(
+                { dids: did },
+                { $addToSet: { dids: linkedDid, associatedDids: linkedDid } }
+            );
+            try {
+                const linkedEnvelope = await linked.clients.fullAuth.index.getForUpdate({ id });
+                const linkedPage = await linked.learnCard.invoke.decryptDagJwe<{
+                    records: (typeof testRecordA)[];
+                }>(linkedEnvelope);
+                expect(linkedPage.records[0]?.encryptedRecord.ciphertext).toBe('new-answer');
+            } finally {
+                await Users.updateOne(
+                    { dids: did },
+                    { $pull: { dids: linkedDid, associatedDids: linkedDid } }
+                );
+            }
+        });
+
         it('allows one insert and one replacement for each encrypted version', async () => {
             const index = userA.clients.fullAuth.index;
             const id = 'compare-and-swap';

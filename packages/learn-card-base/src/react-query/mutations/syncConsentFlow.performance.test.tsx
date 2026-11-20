@@ -117,12 +117,15 @@ it('syncs the exact live profile field and rejects normalized aliases in both di
         await import('learn-card-base/hooks/useSharedUrisInTerms');
     vi.mocked(getOrCreateSharedUriForWallet).mockResolvedValue('shared:date');
     const sync = vi.fn();
+    const fresh = vi.fn().mockResolvedValue([]);
     host.wallet = {
         id: { did: () => 'holder' },
+        read: { get: async () => ({ validFrom: '2026-01-01T00:00:00.000Z' }) },
         index: { LearnCloud: { getPage: async () => ({ records: [], hasMore: false }) } },
         invoke: {
             getContract: async () => ({ owner: { did: 'owner' }, audienceVersion: 1 }),
             syncCredentialsToContract: sync,
+            learnCloudGetIndexRecordForUpdate: fresh,
         },
     } as unknown as BespokeLearnCard;
     const client = new QueryClient();
@@ -150,17 +153,35 @@ it('syncs the exact live profile field and rejects normalized aliases in both di
     });
     expect(getOrCreateSharedUriForWallet).not.toHaveBeenCalled();
     expect(sync).not.toHaveBeenCalled();
+    fresh.mockResolvedValue([{ id: `__verifiable_data_${category}__`, category, uri: 'cred:new' }]);
     await act(async () => {
         await result.current.mutateAsync({
-            recordsByCategory: { [category]: ['cred:date'] },
+            // The scan returned an obsolete source; the current record must win.
+            recordsByCategory: { [category]: ['cred:old'] },
             allContracts: [grant(category)],
         });
     });
+    expect(getOrCreateSharedUriForWallet).toHaveBeenCalledWith(
+        host.wallet,
+        ['owner'],
+        client,
+        'cred:new',
+        category
+    );
     expect(sync).toHaveBeenCalledExactlyOnceWith(
         'terms-live',
         { [category]: ['shared:date'] },
         1,
-        true
+        true,
+        { [category]: expect.stringMatching(/^2026-01-01T00:00:00\.000Z:[a-f0-9]{64}$/) }
     );
+    sync.mockClear();
+    await act(async () => {
+        await result.current.mutateAsync({
+            recordsByCategory: {},
+            allContracts: [grant(category)],
+        });
+    });
+    expect(sync).toHaveBeenCalledOnce();
     client.clear();
 });

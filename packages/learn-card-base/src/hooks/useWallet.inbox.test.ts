@@ -1040,6 +1040,7 @@ it('delivers a changed profile answer only to an existing live grant for that ex
         id: { did: () => 'did:example:claiming-account' },
         invoke: {
             learnCloudCompareAndSwapIndexRecord: vi.fn().mockResolvedValue(true),
+            learnCloudGetIndexRecordForUpdate: async () => [{ id, uri: 'old-answer' }],
             issueCredential: vi.fn(async credential => credential),
         },
         index: { LearnCloud: { get: async () => [{ id, uri: 'old-answer' }], update: vi.fn() } },
@@ -1066,12 +1067,14 @@ it('delivers a changed profile answer only to an existing live grant for that ex
         { ...grant('expired'), expiresAt: '2000-01-01T00:00:00Z' },
         { ...grant('withdrawn'), status: 'withdrawn' },
     ]);
+    mocks.read.mockResolvedValue({ validFrom: '2026-01-01T00:00:00.000Z' });
     await useWallet().syncCredentialToContracts(job);
     expect(mocks.sharedUri).toHaveBeenCalledTimes(1);
     expect(mocks.syncContract).toHaveBeenCalledExactlyOnceWith(
         'keep-updated',
         { [category]: ['shared-uri'] },
         1,
-        true
+        true,
+        { [category]: expect.stringMatching(/^2026-01-01T00:00:00\.000Z:[a-f0-9]{64}$/) }
     );
 });

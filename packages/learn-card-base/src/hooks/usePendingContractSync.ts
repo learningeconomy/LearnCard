@@ -5,6 +5,8 @@ import { ConsentFlowTerms } from '@learncard/types';
 import { useWallet } from './useWallet';
 import { getOrCreateSharedUriForWallet } from './useSharedUrisInTerms';
 import { indexAcceptedField } from './reviewedProfileFields';
+import { getVerifiableDataIndexId } from './createVerifiableDataCredential';
+import { getProfileFieldGenerationForUri } from './profileFieldGeneration';
 import { loadContractAudience } from './consentAudience';
 import { getOrFetchConsentedContracts } from './useConsentedContracts';
 import { contractCategoryNameToCategoryMetadata } from '../types/boostAndCredentialMetadata';
@@ -233,7 +235,11 @@ export const usePendingContractSync = (enabled = true): void => {
                         });
                     }
                     const source = job.record;
-                    const records = await wallet.index.LearnCloud.get({ id: source.id });
+                    const records = job.category.startsWith('VerifiableData:')
+                        ? await wallet.invoke.learnCloudGetIndexRecordForUpdate(source.id)
+                        : await wallet.index.LearnCloud.get({ id: source.id });
+                    if (job.category.startsWith('VerifiableData:') && records.length > 1)
+                        throw new Error('Ambiguous profile field index record.');
                     const current = records.find(record => record.uri === source.uri);
                     // Recategorization changes which consent applies; never replay the old grant.
                     if (!current || current.category !== job.category) {
@@ -312,9 +318,13 @@ export const usePendingContractSync = (enabled = true): void => {
                         const credentialCategory =
                             contractCategoryNameToCategoryMetadata(categoryName)?.credentialType ??
                             categoryName;
-                        const records = await wallet.index.LearnCloud.get({
-                            category: credentialCategory,
-                        });
+                        const records = categoryName.startsWith('VerifiableData:')
+                            ? await wallet.invoke.learnCloudGetIndexRecordForUpdate(
+                                  getVerifiableDataIndexId(categoryName)
+                              )
+                            : await wallet.index.LearnCloud.get({ category: credentialCategory });
+                        if (categoryName.startsWith('VerifiableData:') && records.length > 1)
+                            throw new Error('Ambiguous profile field index record.');
                         log.info('Loaded contract sync credentials for category', {
                             contractUri: job.contractUri,
                             termsUri: job.termsUri,
@@ -342,6 +352,7 @@ export const usePendingContractSync = (enabled = true): void => {
                 const sharedUrisByCategory: Record<string, string[]> = {
                     // Re-materialize resumed jobs for the current audience; old URIs may target removed recipients.
                 };
+                const fieldGenerations: Record<string, string> = {};
 
                 await runWithConcurrency(
                     tasks,
@@ -373,6 +384,10 @@ export const usePendingContractSync = (enabled = true): void => {
                             if (!sharedUri) {
                                 throw new Error('No shared URI was returned');
                             }
+
+                            if (categoryName.startsWith('VerifiableData:'))
+                                fieldGenerations[categoryName] =
+                                    await getProfileFieldGenerationForUri(wallet, sourceUri);
 
                             sharedUrisByCategory[categoryName] = [
                                 ...new Set([
@@ -442,7 +457,10 @@ export const usePendingContractSync = (enabled = true): void => {
                         job.termsUri,
                         categoriesToSync,
                         audience.audienceVersion,
-                        true
+                        true,
+                        ...(Object.keys(fieldGenerations).length
+                            ? ([fieldGenerations] as const)
+                            : ([] as const))
                     );
                     queryClient.invalidateQueries({
                         queryKey: ['useTermsTransactions', job.termsUri],

@@ -1,4 +1,5 @@
 import { updateProfileFieldIndex } from './profileFieldIndex';
+import { getProfileFieldGenerationForUri } from './profileFieldGeneration';
 import { ConsentFlowTerms } from '@learncard/types';
 import { InfiniteData, QueryClient, useQueryClient } from '@tanstack/react-query';
 import { switchedProfileStore, useWallet } from 'learn-card-base';
@@ -91,6 +92,15 @@ const loadCategoryRecordsForWallet = async (
     wallet: BespokeLearnCard,
     category: string
 ): Promise<{ records: LCR[]; pageCount: number }> => {
+    if (category.startsWith('VerifiableData:')) {
+        // A category page can be stale even after a successful CAS: an older
+        // cache-miss read may have filled it after the write invalidated it.
+        const records = (await wallet.invoke.learnCloudGetIndexRecordForUpdate(
+            getVerifiableDataIndexId(category)
+        )) as LCR[];
+        if (records.length > 1) throw new Error('Ambiguous profile field index record.');
+        return { records, pageCount: records.length ? 1 : 0 };
+    }
     const getPage = wallet.index.LearnCloud.getPage;
 
     if (!getPage) {
@@ -385,6 +395,21 @@ export const getTermsWithSharedUrisForWallet = async (
 
         if (category.startsWith('VerifiableData:') && missingCount > 0) {
             throw new Error('A reviewed profile field could not be prepared for sharing.');
+        }
+        if (category.startsWith('VerifiableData:') && urisToMaterialize.length === 1) {
+            const source = records.find(
+                record =>
+                    record.uri === urisToMaterialize[0] ||
+                    Object.values(record.sharedUris ?? {}).some(uris =>
+                        uris.includes(urisToMaterialize[0]!)
+                    )
+            );
+            if (!source)
+                throw new Error('A reviewed profile field could not be prepared for sharing.');
+            categoryGrant.fieldGeneration = await getProfileFieldGenerationForUri(
+                wallet,
+                source.uri
+            );
         }
         syncCachedCategoryRecords(queryClient, queryKey, records);
         terms.terms.read.credentials.categories[category].shared = newCredUris;

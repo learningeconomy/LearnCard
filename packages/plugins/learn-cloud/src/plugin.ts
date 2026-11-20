@@ -4,6 +4,7 @@ import { LearnCard } from '@learncard/core';
 import { isEncrypted, resolveStorageReadResult } from '@learncard/helpers';
 import {
     CredentialRecord,
+    EncryptedCredentialRecord,
     JWE,
     PaginatedEncryptedRecordsType,
     PaginatedEncryptedCredentialRecordsType,
@@ -206,6 +207,18 @@ export const getLearnCloudPlugin = async (
         displayName: 'LearnCloud',
         description: 'LearnCloud Integration',
         methods: {
+            learnCloudGetIndexRecordForUpdate: async (_learnCard, id) => {
+                const currentClient = await updateLearnCard(_learnCard);
+                const { records } = await decryptJWE<{ records: EncryptedCredentialRecord[] }>(
+                    _learnCard,
+                    await currentClient.index.getForUpdate.query({ id: await hash(_learnCard, id) })
+                );
+                return Promise.all(
+                    records.map(record =>
+                        decryptJWE<CredentialRecord>(_learnCard, record.encryptedRecord)
+                    )
+                );
+            },
             learnCloudCompareAndSwapIndexRecord: async (_learnCard, expected, next) => {
                 const currentClient = await updateLearnCard(_learnCard);
                 const cloudDid = await getLearnCloudDid(currentClient);
@@ -213,20 +226,12 @@ export const getLearnCloudPlugin = async (
                 if (expected) {
                     if (expected.id !== next.id)
                         throw new Error('Cannot change the index record ID');
-                    const page = await currentClient.index.get.query({
-                        query: await generateJWE(
-                            _learnCard,
-                            cloudDid,
-                            await generateIndexQuery(_learnCard, { id: next.id }, unencryptedFields)
-                        ),
-                        limit: 2,
-                    });
-                    const { records } = isEncrypted(page)
-                        ? await decryptJWE<PaginatedEncryptedCredentialRecordsType>(
-                              _learnCard,
-                              page
-                          )
-                        : page;
+                    const { records } = await decryptJWE<{ records: EncryptedCredentialRecord[] }>(
+                        _learnCard,
+                        await currentClient.index.getForUpdate.query({
+                            id: await hash(_learnCard, next.id),
+                        })
+                    );
                     const current = records[0];
                     if (records.length !== 1 || !current) return false;
                     if (!isEqual(await decryptJWE(_learnCard, current.encryptedRecord), expected))

@@ -22,6 +22,7 @@ vi.mock('learn-card-base', () => ({
             invoke: {
                 issueCredential: async (credential: unknown) => credential,
                 learnCloudCompareAndSwapIndexRecord: mocks.add,
+                learnCloudGetIndexRecordForUpdate: async () => [],
                 getContract: mocks.getContract,
                 consentToContract: mocks.consent,
             },
@@ -332,8 +333,16 @@ describe('profile answers are committed only after the complete review is accept
             expect(mocks.add).not.toHaveBeenCalled();
             expect(mocks.enqueue).not.toHaveBeenCalled();
             expect(submission.terms.read.credentials.categories).toEqual({
-                [first]: { sharing: true, shared: ['shared:' + first] },
-                [second]: { sharing: true, shared: ['shared:' + second] },
+                [first]: {
+                    sharing: true,
+                    shared: ['shared:' + first],
+                    fieldGeneration: expect.stringMatching(/^[^:]+:[^:]+:[^:]+:[a-f0-9]{64}$/),
+                },
+                [second]: {
+                    sharing: true,
+                    shared: ['shared:' + second],
+                    fieldGeneration: expect.stringMatching(/^[^:]+:[^:]+:[^:]+:[a-f0-9]{64}$/),
+                },
             });
             return { termsUri: 'accepted' };
         });

@@ -28,6 +28,7 @@ import type { InfiniteData } from '@tanstack/react-query';
 import type { CredentialMetadata, LCR } from 'learn-card-base/types/credential-records';
 import { getOrCreateSharedUriForWallet } from './useSharedUrisInTerms';
 import { loadContractAudience } from './consentAudience';
+import { getProfileFieldGenerationForUri } from './profileFieldGeneration';
 import { getOrFetchConsentedContracts } from './useConsentedContracts';
 import { queueAiInsightCredentialRefresh } from 'learn-card-base/react-query/mutations/ai-passport';
 import { isLearnCardAiPassportContractUri } from 'learn-card-base/constants/aiPassport';
@@ -404,7 +405,17 @@ export const useWallet = () => {
                                     [category]: [sharedUri],
                                 },
                                 audience.audienceVersion,
-                                true
+                                true,
+                                ...(category.startsWith('VerifiableData:')
+                                    ? ([
+                                          {
+                                              [category]: await getProfileFieldGenerationForUri(
+                                                  learnCard,
+                                                  record.uri
+                                              ),
+                                          },
+                                      ] as const)
+                                    : ([] as const))
                             );
                             // Remember the acknowledged mutation before any cache/refresh work.
                             syncedTerms.add(termsUri);

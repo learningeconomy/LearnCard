@@ -3085,7 +3085,8 @@ export async function getLearnCardNetworkPlugin(
                 termsUri,
                 categories,
                 audienceVersion,
-                automatic
+                automatic,
+                fieldGenerations?: Record<string, string>
             ) => {
                 await ensureUser();
 
@@ -3094,6 +3095,7 @@ export async function getLearnCardNetworkPlugin(
                     categories,
                     audienceVersion,
                     automatic,
+                    fieldGenerations,
                 });
             },
 

@@ -1185,11 +1185,22 @@ export const PaginatedConsentFlowDataValidator = PaginationResponseValidator.ext
 });
 export type PaginatedConsentFlowData = z.infer<typeof PaginatedConsentFlowDataValidator>;
 
+/** Monotonic profile answer ordering: canonical UTC issuance time and opaque source digest. */
+export const ProfileFieldGenerationValidator = z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z:[0-9a-f]{64}$/)
+    .refine(value => {
+        const timestamp = value.slice(0, 24);
+        const date = new Date(timestamp);
+        return Number.isFinite(date.getTime()) && date.toISOString() === timestamp;
+    }, 'Invalid profile field generation timestamp');
+
 export const ConsentFlowTermValidator = z.object({
     sharing: z.boolean().optional(),
     shared: z.string().array().optional(),
     shareAll: z.boolean().optional(),
     shareUntil: z.string().optional(),
+    fieldGeneration: ProfileFieldGenerationValidator.optional(),
 });
 export type ConsentFlowTerm = z.infer<typeof ConsentFlowTermValidator>;
 

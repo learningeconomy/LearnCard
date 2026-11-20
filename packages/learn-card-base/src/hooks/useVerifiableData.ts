@@ -133,11 +133,12 @@ export const getVerifiableData = async <T>(
     wallet: BespokeLearnCard,
     key: string
 ): Promise<VerifiableDataResult<T>> => {
-    const records = await wallet.index.LearnCloud.get<VerifiableDataRecord<T>>({
-        id: getVerifiableDataIndexId(key),
-    });
-
     const scopedField = key.startsWith('VerifiableData:');
+    const id = getVerifiableDataIndexId(key);
+    const records = scopedField
+        ? ((await wallet.invoke.learnCloudGetIndexRecordForUpdate(id)) as VerifiableDataRecord<T>[])
+        : await wallet.index.LearnCloud.get<VerifiableDataRecord<T>>({ id });
+    if (scopedField && records.length > 1) throw new Error('Ambiguous profile field index record.');
     if (!scopedField && records?.length > 0 && records[0].verifiableData !== undefined) {
         // Return the data from the index record directly (faster)
         return {

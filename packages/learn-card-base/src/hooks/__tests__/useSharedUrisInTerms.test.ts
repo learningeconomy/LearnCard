@@ -599,12 +599,18 @@ describe('reviewed profile field sharing', () => {
                   }
                 : {},
         };
-        const credential = { credentialSubject: { dataKey, dataPayload } };
+        const credential = {
+            validFrom: '2026-01-01T00:00:00.000Z',
+            credentialSubject: { dataKey, dataPayload },
+        };
         const upload = vi.fn().mockResolvedValue('shared:branch');
         const update = vi.fn().mockResolvedValue(true);
         const wallet = {
             id: { did: () => 'did:example:holder' },
-            invoke: { learnCloudCompareAndSwapIndexRecord: update },
+            invoke: {
+                learnCloudCompareAndSwapIndexRecord: update,
+                learnCloudGetIndexRecordForUpdate: async () => [record],
+            },
             index: { LearnCloud: { get: async () => [record], update } },
             read: { get: async () => credential },
             store: { LearnCloud: { uploadEncrypted: upload } },
@@ -642,9 +648,10 @@ describe('reviewed profile field sharing', () => {
 
     it('encrypts just the reviewed field for its recipient', async () => {
         const { result, upload, credential } = prepare(indexId, category, branch);
-        expect((await result).terms.read.credentials.categories[category].shared).toEqual([
-            'shared:branch',
-        ]);
+        const grant = (await result).terms.read.credentials.categories[category];
+        expect(grant.shared).toEqual(['shared:branch']);
+        expect(grant.fieldGeneration).toMatch(/^2026-01-01T00:00:00\.000Z:[a-f0-9]{64}$/);
+        expect(grant.fieldGeneration).not.toContain('credential:source');
         expect(upload).toHaveBeenCalledExactlyOnceWith(credential, { recipients: [owner] });
     });
 
@@ -699,6 +706,36 @@ describe('concurrent field updates', () => {
     const second = record('answer:b', '2026-02-01T00:00:00Z');
     const third = record('answer:c', '2026-03-01T00:00:00Z');
 
+    it('materializes the current answer when the cached category page is stale', async () => {
+        const getPage = vi.fn().mockResolvedValue({ records: [first], hasMore: false });
+        const getForUpdate = vi.fn().mockImplementation(async () => [structuredClone(second)]);
+        const wallet = {
+            id: { did: () => 'did:example:holder' },
+            invoke: {
+                learnCloudGetIndexRecordForUpdate: getForUpdate,
+                learnCloudCompareAndSwapIndexRecord: vi.fn().mockResolvedValue(true),
+            },
+            index: { LearnCloud: { getPage } },
+            read: {
+                get: async (uri: string) => ({
+                    id: uri,
+                    credentialSubject: { dataKey: field, dataPayload: { branch: uri } },
+                }),
+            },
+            store: { LearnCloud: { uploadEncrypted: vi.fn().mockResolvedValue('shared:b') } },
+        } as unknown as TestWallet;
+        const result = await getOrCreateSharedUriForWallet(
+            wallet,
+            audience,
+            new QueryClient(),
+            second.uri,
+            field
+        );
+        expect(result).toBe('shared:b');
+        expect(getPage).not.toHaveBeenCalled();
+        expect(getForUpdate).toHaveBeenCalledWith(id);
+    });
+
     const setup = () => {
         let current = structuredClone(first);
         const swap = vi.fn(async (expected: RecordState, next: RecordState) => {
@@ -709,7 +746,10 @@ describe('concurrent field updates', () => {
         const upload = vi.fn(async (vc: { id: string }) => 'shared:' + vc.id);
         const wallet = {
             id: { did: () => 'did:example:holder' },
-            invoke: { learnCloudCompareAndSwapIndexRecord: swap },
+            invoke: {
+                learnCloudCompareAndSwapIndexRecord: swap,
+                learnCloudGetIndexRecordForUpdate: async () => [structuredClone(current)],
+            },
             index: { LearnCloud: { get: async () => [structuredClone(current)] } },
             read: {
                 get: async (uri: string) => ({
