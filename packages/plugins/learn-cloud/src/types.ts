@@ -1,6 +1,6 @@
 import type { Filter } from '@learncard/learn-cloud-client';
 import {
-    CredentialRecord,
+    type CredentialRecord,
     JWE,
     JWKWithPrivateKey,
     UnsignedVC,

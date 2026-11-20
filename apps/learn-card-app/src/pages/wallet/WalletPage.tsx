@@ -209,6 +209,7 @@ const WalletPage: React.FC = () => {
                                 <div className="flex flex-wrap justify-between items-center w-full gap-[10px]">
                                     <div className="flex items-center gap-[8px] min-w-0">
                                         <h1
+                                            id="wallet-heading"
                                             className={`${passportTextColor} font-poppins text-[30px] font-normal tracking-[0.25px]`}
                                         >
                                             {m['sidemenu.links.passport']()}
