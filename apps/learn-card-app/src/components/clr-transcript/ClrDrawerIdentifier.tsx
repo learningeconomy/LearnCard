@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Clipboard } from '@capacitor/clipboard';
 import { IonIcon } from '@ionic/react';
 import { checkmarkOutline, copyOutline } from 'ionicons/icons';
@@ -22,6 +22,12 @@ const identifierLabel = (value: string): string => {
 /** Display a compact label while keeping the signed identifier intact for inspection and copy. */
 export const ClrDrawerIdentifier = ({ label, value }: { label: string; value: string }) => {
     const [result, setResult] = useState<'copied' | 'failed'>();
+
+    useEffect(() => {
+        if (result !== 'copied') return;
+        const timer = window.setTimeout(() => setResult(undefined), 2000);
+        return () => window.clearTimeout(timer);
+    }, [result]);
 
     const copy = async () => {
         try {

@@ -25,6 +25,7 @@ import {
     decryptSharePayload,
     validateShareManifest,
 } from 'learn-card-base/helpers/share-links';
+import { isClrCredential, unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
 import * as m from '../../paraglide/messages.js';
 import {
     findSavedSharePresentation,
@@ -115,11 +116,20 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
         Record<number, ClrVerificationSnapshot>
     >({});
     const clrModels = useMemo(() => {
-        const models = new Map<number, ClrTranscriptDisplayModel>();
+        const models = new Map<
+            number,
+            { model: ClrTranscriptDisplayModel; boost: VC; pending: ClrVerificationSnapshot }
+        >();
         ready?.payload.presentation.verifiableCredential.forEach((credential, index) => {
-            const types = Array.isArray(credential.type) ? credential.type : [credential.type];
-            if (types.includes('ClrCredential'))
-                models.set(index, normalizeClrTranscriptDisplayModel(credential));
+            const inner = unwrapBoostCredential(credential);
+            if (inner && isClrCredential(inner)) {
+                const model = normalizeClrTranscriptDisplayModel(inner);
+                models.set(index, {
+                    model,
+                    boost: inner,
+                    pending: createClrVerificationSnapshot(model.canonical),
+                });
+            }
         });
         return models;
     }, [ready]);
@@ -402,12 +412,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
         setProofs(members.map(() => 'checking'));
         setHolder('checking');
         setClrVerifications(
-            Object.fromEntries(
-                [...clrModels].map(([index, model]) => [
-                    index,
-                    createClrVerificationSnapshot(model.canonical),
-                ])
-            )
+            Object.fromEntries([...clrModels].map(([index, { pending }]) => [index, pending]))
         );
         const verify = async (): Promise<void> => {
             try {
@@ -422,7 +427,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                     if (cancelled) return;
                     const result = await verifyCredentialTree(
                         wallet,
-                        members[index],
+                        clrModels.get(index)?.boost ?? members[index],
                         budget,
                         snapshot => {
                             if (!cancelled && clrModels.has(index))
@@ -443,7 +448,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                     setProofs(members.map(() => 'unavailable'));
                     setClrVerifications(
                         Object.fromEntries(
-                            [...clrModels].map(([index, model]) => [
+                            [...clrModels].map(([index, { model }]) => [
                                 index,
                                 createUnavailableClrVerificationSnapshot(model.canonical),
                             ])
@@ -809,22 +814,22 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                         expiresAt={ready.metadata.expiresAt}
                                         proofs={proofRecord}
                                         showOriginal
+                                        showCustomCredentialDetails={(_credential, index) =>
+                                            clrModels.has(index)
+                                        }
                                         renderCredential={(credential, index, proof) => {
-                                            const model = clrModels.get(index);
-                                            if (model)
+                                            const clr = clrModels.get(index);
+                                            if (clr)
                                                 return (
                                                     <ClrRenderer
-                                                        model={model}
-                                                        boost={credential}
+                                                        model={clr.model}
+                                                        boost={clr.boost}
                                                         options={{
                                                             viewer: 'employer',
                                                             surface: ClrTranscriptSurface.Full,
                                                         }}
                                                         verification={
-                                                            clrVerifications[index] ??
-                                                            createClrVerificationSnapshot(
-                                                                model.canonical
-                                                            )
+                                                            clrVerifications[index] ?? clr.pending
                                                         }
                                                         onRetryVerification={() =>
                                                             setVerificationAttempt(

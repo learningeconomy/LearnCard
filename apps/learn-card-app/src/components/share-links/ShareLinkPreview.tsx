@@ -46,6 +46,8 @@ export interface ShareLinkPreviewProps {
         index: number,
         proof?: ProofState
     ) => React.ReactNode | undefined;
+    /** Include shared endorsements and original JSON after this custom surface. */
+    showCustomCredentialDetails?: (credential: VC, index: number) => boolean;
 }
 
 export const proofLabel = (state: ProofState): string =>
@@ -78,6 +80,54 @@ export const ProofBadge = ({ state }: { state: ProofState }) => (
     </span>
 );
 
+const SharedCredentialDetails = ({
+    credential,
+    endorsements,
+    presentation,
+    proofs,
+    showOriginal,
+}: {
+    credential: VC;
+    endorsements: SharePayload['endorsements'];
+    presentation: SharePayload['presentation'];
+    proofs?: Readonly<Record<number, ProofState>>;
+    showOriginal: boolean;
+}) => (
+    <>
+        {endorsements.length > 0 && (
+            <div className="pt-4 border-t border-grayscale-100 space-y-v3-2">
+                <h3 className="text-xs font-medium text-grayscale-700">
+                    {m['shareLinks.endorsements']()}
+                </h3>
+                {endorsements.map(item => {
+                    const text = credentialText(
+                        presentation.verifiableCredential[item.credentialIndex]
+                    );
+                    const proof = proofs?.[item.credentialIndex];
+                    return (
+                        <div key={item.credentialIndex} className="space-y-v3-1">
+                            {text.name && (
+                                <p className="text-sm text-grayscale-700 wrap-break-word">
+                                    {text.name}
+                                </p>
+                            )}
+                            {proof && <ProofBadge state={proof} />}
+                        </div>
+                    );
+                })}
+            </div>
+        )}
+        {showOriginal && (
+            <details className="text-xs text-grayscale-600">
+                <summary className="cursor-pointer py-2">{m['shareLinks.original']()}</summary>
+                <pre className="mt-2 p-4 bg-grayscale-100 rounded-xl overflow-auto max-h-80 text-xs whitespace-pre-wrap break-all">
+                    {JSON.stringify(credential, null, 2)}
+                </pre>
+            </details>
+        )}
+    </>
+);
+
 export const ShareLinkPreview = ({
     payload,
     title,
@@ -95,6 +145,7 @@ export const ShareLinkPreview = ({
     countLabel,
     className = '',
     renderCredential,
+    showCustomCredentialDetails,
 }: ShareLinkPreviewProps) => {
     const credentialCategories = getShareCredentialCategories(payload.presentation);
     return (
@@ -202,12 +253,28 @@ export const ShareLinkPreview = ({
                         credentialIndex,
                         proofs?.[credentialIndex]
                     );
-                    if (custom !== undefined)
-                        return <React.Fragment key={credentialIndex}>{custom}</React.Fragment>;
-                    const text = credentialText(credential);
                     const endorsements = payload.endorsements.filter(
                         item => item.targetCredentialIndex === credentialIndex
                     );
+                    if (custom !== undefined) {
+                        return (
+                            <React.Fragment key={credentialIndex}>
+                                {custom}
+                                {showCustomCredentialDetails?.(credential, credentialIndex) && (
+                                    <section className="bg-white rounded-[20px] p-6 md:p-8 space-y-v3-4 border border-grayscale-200">
+                                        <SharedCredentialDetails
+                                            credential={credential}
+                                            endorsements={endorsements}
+                                            presentation={payload.presentation}
+                                            proofs={proofs}
+                                            showOriginal={showOriginal}
+                                        />
+                                    </section>
+                                )}
+                            </React.Fragment>
+                        );
+                    }
+                    const text = credentialText(credential);
                     const proof = proofs?.[credentialIndex];
 
                     const credentialTitle =
@@ -250,36 +317,13 @@ export const ShareLinkPreview = ({
                                     <ProofBadge state={proof} />
                                 </div>
                             )}
-                            {endorsements.length > 0 && (
-                                <div className="pt-4 border-t border-grayscale-100 space-y-v3-2">
-                                    <h3 className="text-xs font-medium text-grayscale-700">
-                                        {m['shareLinks.endorsements']()}
-                                    </h3>
-                                    {endorsements.map(item => {
-                                        const endorsementText = credentialText(
-                                            payload.presentation.verifiableCredential[
-                                                item.credentialIndex
-                                            ]
-                                        );
-                                        const endorsementProof = proofs?.[item.credentialIndex];
-                                        return (
-                                            <div
-                                                key={item.credentialIndex}
-                                                className="space-y-v3-1"
-                                            >
-                                                {endorsementText.name && (
-                                                    <p className="text-sm text-grayscale-700 wrap-break-word">
-                                                        {endorsementText.name}
-                                                    </p>
-                                                )}
-                                                {endorsementProof && (
-                                                    <ProofBadge state={endorsementProof} />
-                                                )}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
+                            <SharedCredentialDetails
+                                credential={credential}
+                                endorsements={endorsements}
+                                presentation={payload.presentation}
+                                proofs={proofs}
+                                showOriginal={false}
+                            />
                             {showOriginal && (
                                 <ShareCredentialVisual
                                     credential={credential}
@@ -294,14 +338,13 @@ export const ShareLinkPreview = ({
                                 />
                             )}
                             {showOriginal && (
-                                <details className="text-xs text-grayscale-600">
-                                    <summary className="cursor-pointer py-2">
-                                        {m['shareLinks.original']()}
-                                    </summary>
-                                    <pre className="mt-2 p-4 bg-grayscale-100 rounded-xl overflow-auto max-h-80 text-xs whitespace-pre-wrap break-all">
-                                        {JSON.stringify(credential, null, 2)}
-                                    </pre>
-                                </details>
+                                <SharedCredentialDetails
+                                    credential={credential}
+                                    endorsements={[]}
+                                    presentation={payload.presentation}
+                                    proofs={proofs}
+                                    showOriginal
+                                />
                             )}
                         </article>
                     );
