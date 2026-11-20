@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+import { useHcpEnabled } from '../hcp/useHcpEnabled';
 import React from 'react';
 import { PendingContractRequests } from '../../components/contract-requests/ContractRequest';
 import * as m from '../../paraglide/messages.js';
@@ -31,6 +33,7 @@ const DataSharingCenterView: React.FC<DataSharingCenterViewProps> = ({
     onSavedOpened,
     showOwnerLinks = true,
 }) => {
+    const hcpEnabled = useHcpEnabled();
     const { isLoading, isMinor, contracts, onContractsUpdate, ai, profile, diagnostics, shared } =
         vm;
     const hasSharedSection = Boolean(
@@ -67,6 +70,19 @@ const DataSharingCenterView: React.FC<DataSharingCenterViewProps> = ({
                     )}
 
                     <div className="flex flex-col gap-6">
+                        {hcpEnabled && (
+                            <Link
+                                to="/hcp"
+                                className="block p-5 bg-white rounded-[20px] border border-grayscale-200"
+                            >
+                                <h2 className="text-[15px] font-semibold text-grayscale-900">
+                                    {m['hcp.title']()}
+                                </h2>
+                                <p className="text-sm text-grayscale-600 mt-1">
+                                    {m['hcp.subtitle']()}
+                                </p>
+                            </Link>
+                        )}
                         <PendingContractRequests />
                         <TrustSummaryCard contracts={contracts} />
 

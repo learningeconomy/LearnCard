@@ -60,7 +60,10 @@ export const buildContractFormChanges = (
                 if (
                     oldValue?.required === newValue?.required &&
                     oldValue?.defaultEnabled === newValue?.defaultEnabled &&
-                    oldValue?.reason === newValue?.reason
+                    oldValue?.reason === newValue?.reason &&
+                    // LC-2423: write categories also carry whether the app may add directly.
+                    (oldValue as { canWrite?: boolean } | undefined)?.canWrite ===
+                        (newValue as { canWrite?: boolean } | undefined)?.canWrite
                 )
                     continue;
                 patch[key] = newValue ?? null;

@@ -11,13 +11,22 @@ export const AdminToolsConsentFlowCategoryPickerModal: React.FC<{
     onChange: (categories: ConsentFlowContract['read']['credentials']['categories']) => void;
     allowedCategories?: readonly string[];
     titleOverrides?: Partial<Record<string, string>>;
-}> = ({ selectedCategories, onChange, allowedCategories, titleOverrides }) => {
+    /** Write categories start as suggest-only (LC-2423). */
+    mode?: 'read' | 'write';
+}> = ({ selectedCategories, onChange, allowedCategories, titleOverrides, mode = 'read' }) => {
     const [categories, setCategories] = useState(selectedCategories);
     const _selectedCategories = Object.keys(categories);
     const categoryList = allowedCategories ?? CONTRACT_CATEGORIES;
 
     const handleSetCategory = (category: string) => {
-        const next = { ...categories, [category]: { required: false, defaultEnabled: true } };
+        const next = {
+            ...categories,
+            [category]: {
+                required: false,
+                defaultEnabled: true,
+                ...(mode === 'write' ? { canWrite: false } : {}),
+            },
+        };
         setCategories(next);
         onChange(next);
     };

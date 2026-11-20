@@ -30,6 +30,7 @@ const host = vi.hoisted(() => ({
     lifecycleLookupFails: false,
     client: undefined as unknown as import('@tanstack/react-query').QueryClient,
     unreadable: new Set<string>(),
+    suggested: new Set<string>(),
     failAccept: new Set<string>(),
     failAcceptOnce: new Set<string>(),
     failStoreOnce: new Set<string>(),
@@ -47,6 +48,7 @@ const wallet = {
                 credentialUri,
                 contractUri: 'lc:network:test:contract:jota-joti',
                 termsUri: 'lc:network:test:terms:scout',
+                ...(host.suggested.has(credentialUri) ? { action: 'suggest' } : {}),
             })),
         })),
         getMyCredentialLifecycleStatuses: vi.fn(async ({ uris }: { uris: string[] }) => {
@@ -144,6 +146,7 @@ describe('useSyncConsentFlow', () => {
         host.lifecycle.clear();
         host.lifecycleLookupFails = false;
         host.unreadable.clear();
+        host.suggested.clear();
         host.failAccept.clear();
         host.failAcceptOnce.clear();
         host.failStoreOnce.clear();
@@ -222,6 +225,16 @@ describe('useSyncConsentFlow', () => {
         await waitFor(() =>
             expect(storedUris()).toEqual(['urn:test:a:first-write', 'urn:test:a:second-write'])
         );
+    });
+
+    it('never accepts or stores a suggestion, only direct writes (LC-2423)', async () => {
+        host.pending = ['urn:test:s:write', 'urn:test:s:suggestion'];
+        host.suggested.add('urn:test:s:suggestion');
+        renderSync();
+
+        await waitFor(() => expect(storedUris()).toEqual(['urn:test:s:write']));
+        expect(host.accept).toHaveBeenCalledWith({ uri: 'urn:test:s:write' });
+        expect(host.accept).not.toHaveBeenCalledWith({ uri: 'urn:test:s:suggestion' });
     });
 
     it('does not let one unreadable credential block the others', async () => {

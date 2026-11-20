@@ -17,6 +17,8 @@ const ACTION_COLOR: Record<ConsentFlowTransactionAction, string> = {
     update: 'text-indigo-700',
     withdraw: 'text-rose-700',
     write: 'text-cyan-700',
+    suggest: 'text-amber-700',
+    dismiss: 'text-grayscale-600',
 };
 
 const getActionText = (transaction: ConsentFlowTransaction): string => {
@@ -30,6 +32,8 @@ const getActionText = (transaction: ConsentFlowTransaction): string => {
         update: m['common.update'](),
         withdraw: m['consentFlow.withdraw'](),
         write: m['consentFlow.write'](),
+        suggest: m['consentFlow.suggested'](),
+        dismiss: m['consentFlow.dismissed'](),
     }[transaction.action];
 };
 
@@ -68,6 +72,8 @@ const getDescriptiveText = (
     }
 
     if (transaction.action === 'write') return m['consentFlow.receivedCredential']();
+    if (transaction.action === 'suggest') return m['consentFlow.suggestedCredential']();
+    if (transaction.action === 'dismiss') return m['consentFlow.dismissedCredential']();
 
     return '';
 };
@@ -98,9 +104,11 @@ const TransactionHistoryItem: React.FC<TransactionHistoryItemProps> = ({
             <section className="text-xs font-poppins text-grayscale-700">
                 {getDescriptiveText(transaction, contractOwner, contractName)}
             </section>
-            {(transaction.action === 'write' || transaction.action === 'sync') && (
+            {(transaction.action === 'write' ||
+                transaction.action === 'suggest' ||
+                transaction.action === 'sync') && (
                 <section className="text-xs font-poppins text-grayscale-700">
-                    {(transaction.action === 'write'
+                    {(transaction.action !== 'sync'
                         ? (transaction.uris ?? [])
                         : Object.values(
                               transaction.terms?.read?.credentials?.categories ?? {}

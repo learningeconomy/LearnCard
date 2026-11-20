@@ -760,6 +760,8 @@ export const ConsentFlowContractScopeValidator = z.object({
     key: z.string(),
     required: z.boolean(),
     reason: z.string().optional(),
+    /** Write credential categories only: false means the app may only suggest (LC-2423). */
+    canWrite: z.boolean().optional(),
 });
 export type ConsentFlowContractScope = z.infer<typeof ConsentFlowContractScopeValidator>;
 
@@ -861,6 +863,47 @@ export type ConsentFlowContractNotificationData = z.infer<
     typeof ConsentFlowContractNotificationDataValidator
 >;
 
+/**
+ * Optional HCP (Human Context Protocol) section of a ConsentFlow contract (LC-2421).
+ * The contract owner names the agent DIDs that may act under it and the HCP access a
+ * person grants when they allow it. HCP grants are separate from ConsentFlow terms:
+ * consenting to this section never creates terms, and changing it never moves them.
+ */
+export const ConsentFlowContractHcpValidator = z.object({
+    /** DIDs of the agents (Context Clients) allowed to act under this contract. */
+    agents: z.array(z.string().min(1).max(2048)).min(1).max(50),
+    /** HCP categories: registered ids or custom absolute URIs. */
+    categories: z.array(z.string().min(1).max(2048)).min(1).max(20),
+    /** Read only for now. */
+    actions: z.array(z.enum(['read'])).min(1),
+    purposes: z
+        .array(
+            z.object({
+                code: z.string().min(1).max(2048),
+                description: z.string().min(1).max(1000),
+            })
+        )
+        .min(1)
+        .max(50),
+    /** How long a grant lasts: 1h/4h/24h temporary, or ongoing (persistent). */
+    duration: z.enum(['1h', '4h', '24h', 'ongoing']),
+});
+export type ConsentFlowContractHcp = z.infer<typeof ConsentFlowContractHcpValidator>;
+
+/**
+ * A write credential category. `canWrite: false` lets the app only suggest credentials
+ * in this category; missing means true so existing contracts keep direct write (LC-2423).
+ */
+export const ConsentFlowContractWriteCategoryValidator = z.object({
+    required: z.boolean(),
+    defaultEnabled: z.boolean().optional(),
+    reason: z.string().optional(),
+    canWrite: z.boolean().optional(),
+});
+export type ConsentFlowContractWriteCategory = z.infer<
+    typeof ConsentFlowContractWriteCategoryValidator
+>;
+
 export const ConsentFlowContractValidator = z.object({
     read: z
         .object({
@@ -896,14 +939,7 @@ export const ConsentFlowContractValidator = z.object({
             credentials: z
                 .object({
                     categories: z
-                        .record(
-                            z.string(),
-                            z.object({
-                                required: z.boolean(),
-                                defaultEnabled: z.boolean().optional(),
-                                reason: z.string().optional(),
-                            })
-                        )
+                        .record(z.string(), ConsentFlowContractWriteCategoryValidator)
                         .default({}),
                 })
                 .prefault({ categories: {} }),
@@ -919,6 +955,7 @@ export const ConsentFlowContractValidator = z.object({
                 .default({}),
         })
         .prefault({ credentials: { categories: {} }, personal: {} }),
+    hcp: ConsentFlowContractHcpValidator.optional(),
 });
 export type ConsentFlowContract = z.infer<typeof ConsentFlowContractValidator>;
 export type ConsentFlowContractInput = z.input<typeof ConsentFlowContractValidator>;
@@ -929,6 +966,8 @@ const ConsentFlowContractScopePatchValidator = z
         reason: z.string().optional(),
     })
     .nullable();
+const ConsentFlowContractWriteCategoryPatchValidator =
+    ConsentFlowContractWriteCategoryValidator.nullable();
 
 export const ConsentFlowContractChangesValidator = z.object({
     contract: z
@@ -953,7 +992,7 @@ export const ConsentFlowContractChangesValidator = z.object({
                     credentials: z
                         .object({
                             categories: z
-                                .record(z.string(), ConsentFlowContractScopePatchValidator)
+                                .record(z.string(), ConsentFlowContractWriteCategoryPatchValidator)
                                 .optional(),
                         })
                         .optional(),
@@ -962,6 +1001,8 @@ export const ConsentFlowContractChangesValidator = z.object({
                         .optional(),
                 })
                 .optional(),
+            /** Replaces the whole HCP section; null removes it. */
+            hcp: ConsentFlowContractHcpValidator.nullable().optional(),
         })
         .optional(),
     name: z.string().optional(),
@@ -1197,7 +1238,15 @@ export const ConsentFlowTermsValidator = z.object({
     write: z
         .object({
             credentials: z
-                .object({ categories: z.record(z.string(), z.boolean()).default({}) })
+                .object({
+                    /** On means the app may at least suggest credentials in this category. */
+                    categories: z.record(z.string(), z.boolean()).default({}),
+                    /**
+                     * Per category: false keeps the app to suggestions; missing means true.
+                     * Direct write also needs the contract category's canWrite (LC-2423).
+                     */
+                    canWrite: z.record(z.string(), z.boolean()).optional(),
+                })
                 .prefault({ categories: {} }),
             personal: z.record(z.string(), z.boolean()).default({}),
         })
@@ -1348,6 +1397,8 @@ export const ConsentFlowTransactionActionValidator = z.enum([
     'withdraw',
     'write',
     'reconsent',
+    'suggest',
+    'dismiss',
 ]);
 export type ConsentFlowTransactionAction = z.infer<typeof ConsentFlowTransactionActionValidator>;
 
@@ -1449,6 +1500,8 @@ export const ContractCredentialValidator = z.object({
     boostUri: z.string(),
     category: z.string().optional(),
     date: z.string(),
+    /** 'suggest' records wait for the holder to accept; missing means 'write'. */
+    action: z.enum(['write', 'suggest']).optional(),
 });
 export type ContractCredential = z.infer<typeof ContractCredentialValidator>;
 
@@ -1487,6 +1540,7 @@ export const LCNNotificationTypeEnumValidator = z.enum([
     'CREDENTIAL_UNSUSPENDED',
     'CREDENTIAL_REFRESHED',
     'CONSENT_FLOW_CONTRACT_UPDATED',
+    'CREDENTIAL_SUGGESTED',
 ]);
 
 export type LCNNotificationTypeEnum = z.infer<typeof LCNNotificationTypeEnumValidator>;

@@ -15,6 +15,7 @@ import ConsentFlowWriteSharingItem from './ConsentFlowWriteSharingItem';
 
 import { getPrivacyAndDataInfo } from '../../helpers/contract.helpers';
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
+import type { WriteModeControl } from './ConsentFlowWriteSharingItem';
 import * as m from '../../paraglide/messages.js';
 
 type ConsentFlowAiSessionsWriteDetailsModalProps = {
@@ -23,6 +24,8 @@ type ConsentFlowAiSessionsWriteDetailsModalProps = {
             required: boolean;
             term: ConsentFlowTerms['write']['credentials']['categories'][string];
             setTerm: Updater<ConsentFlowTerms['write']['credentials']['categories'][string]>;
+            /** LC-2423: Off / Suggest only / Add directly. */
+            writeMode?: WriteModeControl;
         };
     };
     contractDetails: ConsentFlowContractDetails;
@@ -78,12 +81,12 @@ const ConsentFlowAiSessionsWriteDetailsModal: React.FC<
                     </div>
                     <ul className="bg-white rounded-[8px] w-full flex flex-col overflow-hidden">
                         {Object.entries(aiSessionCategories).map(
-                            ([category, { required, term, setTerm }]) => (
+                            ([category, { required, term, setTerm, writeMode }]) => (
                                 <ConsentFlowWriteSharingItem
                                     key={category}
                                     term={term}
-                                    setTerm={() => {
-                                        const newTerm = !term;
+                                    setTerm={next => {
+                                        const newTerm = typeof next === 'boolean' ? next : !term;
 
                                         // update local state
                                         setAiSessionCategories(draft => {
@@ -93,6 +96,17 @@ const ConsentFlowAiSessionsWriteDetailsModal: React.FC<
                                         // update overall state
                                         setTerm(newTerm);
                                     }}
+                                    writeMode={
+                                        writeMode && {
+                                            ...writeMode,
+                                            setCanWrite: canWrite => {
+                                                setAiSessionCategories(draft => {
+                                                    draft[category].writeMode!.canWrite = canWrite;
+                                                });
+                                                writeMode.setCanWrite(canWrite);
+                                            },
+                                        }
+                                    }
                                     category={category}
                                     required={required}
                                     hideIcon

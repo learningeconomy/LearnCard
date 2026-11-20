@@ -1,3 +1,7 @@
+import {
+    contractWriteActionCypher,
+    type ContractWriteAction,
+} from '@helpers/contract-write-mode.helpers';
 import { termsReferralSnapshotCypher } from '@helpers/consent-referral.helpers';
 import { QueryBuilder, BindParam } from 'neogma';
 import type { Transaction } from 'neo4j-driver';
@@ -238,6 +242,7 @@ export const createContractCredentialRelationships = async ({
     integrationId,
     listingId,
     allowConsumedOneTime = false,
+    forceSuggest = false,
 }: {
     issuer: CredentialIssuer;
     writerProfileId: string;
@@ -251,7 +256,9 @@ export const createContractCredentialRelationships = async ({
     integrationId?: string;
     listingId?: string;
     allowConsumedOneTime?: boolean;
-}): Promise<void> => {
+    /** The sender asked for a suggestion even where it could write (LC-2423). */
+    forceSuggest?: boolean;
+}): Promise<ContractWriteAction> => {
     const date = new Date().toISOString();
     const owner = getIssuerOwnerProfile(issuer);
     const listingIds = [
@@ -274,6 +281,7 @@ export const createContractCredentialRelationships = async ({
                 boostId: boost.id,
                 listingIds,
                 allowConsumedOneTime,
+                forceSuggest,
                 sent: flattenObject({
                     to: recipient.profileId,
                     date,
@@ -306,7 +314,7 @@ export const createContractCredentialRelationships = async ({
                 CALL {
                     WITH terms, contract, externalGrantMatches
                     WITH terms, contract WHERE NOT externalGrantMatches
-                    RETURN null AS id, true AS externalGrantMismatch
+                    RETURN null AS id, null AS action, true AS externalGrantMismatch
                     UNION
                     WITH terms, contract, externalGrantMatches
                     WITH terms, contract WHERE externalGrantMatches
@@ -322,7 +330,7 @@ export const createContractCredentialRelationships = async ({
                 FOREACH (listing IN listings |
                     CREATE (listing)-[delivery:CREDENTIAL_SENT]->(credential)
                     SET delivery = $sent)
-                CREATE (transaction:ConsentFlowTransaction {id:$transactionId, action:'write', date:$date, boostId:$boostId})
+                CREATE (transaction:ConsentFlowTransaction {id:$transactionId, action:${contractWriteActionCypher()}, date:$date, boostId:$boostId})
                     -[:${ConsentFlowTransaction.getRelationshipByAlias('isFor').name}]->(terms)
                 FOREACH (_ IN CASE WHEN $expectedExternalRevision IS NULL THEN [] ELSE [1] END |
                     SET transaction.consentMutationVersion = coalesce(terms.mutationVersion, 0),
@@ -330,9 +338,9 @@ export const createContractCredentialRelationships = async ({
                         transaction.externalGrantHash = terms['terms.externalGrant.hash'])
                 ${termsReferralSnapshotCypher()}
                 CREATE (credential)-[:${Credential.getRelationshipByAlias('issuedViaTransaction').name} {date:$date}]->(transaction)
-                    RETURN transaction.id AS id, false AS externalGrantMismatch
+                    RETURN transaction.id AS id, transaction.action AS action, false AS externalGrantMismatch
                 }
-                RETURN id, externalGrantMismatch
+                RETURN id, action, externalGrantMismatch
             `)
     );
     if (result.records[0]?.get('externalGrantMismatch')) {
@@ -347,4 +355,5 @@ export const createContractCredentialRelationships = async ({
             message: 'User has not yet approved the latest version of this contract',
         });
     }
+    return result.records[0]!.get('action') as ContractWriteAction;
 };

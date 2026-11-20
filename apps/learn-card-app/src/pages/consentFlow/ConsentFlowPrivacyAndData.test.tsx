@@ -136,6 +136,10 @@ describe('ConsentFlowPrivacyAndData write permissions', () => {
                 Achievement: !enabled,
                 'AI Insight': true,
             });
+            // LC-2423: a category Allow All turns on starts as Suggest only.
+            expect(savedTerms.write.credentials.canWrite).toEqual(
+                enabled ? undefined : { Achievement: false }
+            );
         }
     );
 });

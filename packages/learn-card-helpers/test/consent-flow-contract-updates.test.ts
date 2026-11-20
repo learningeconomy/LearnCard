@@ -1,8 +1,10 @@
 import { ConsentFlowContractChangesValidator } from '@learncard/types';
 import { describe, expect, it } from 'vitest';
 import {
+    classifyHcpChange,
     buildContractUpdatePreview,
     classifyContractChange,
+    contractWriteMode,
     diffContractChange,
     hasOpenNewOptionsWindow,
 } from '../src';
@@ -184,6 +186,100 @@ describe('classifyContractChange', () => {
             }
         }
     );
+});
+
+describe('canWrite (LC-2423)', () => {
+    const withWrite = (config?: { required: boolean; canWrite?: boolean }) =>
+        snapshot({
+            contract: {
+                ...empty,
+                write: {
+                    credentials: { categories: config ? { Achievement: config } : {} },
+                    personal: {},
+                },
+            },
+        });
+
+    it.each([
+        ['true -> false is relaxed', { canWrite: true }, { canWrite: false }, 'relaxed'],
+        ['missing -> false is relaxed', {}, { canWrite: false }, 'relaxed'],
+        [
+            'false -> true is expanded_optional',
+            { canWrite: false },
+            { canWrite: true },
+            'expanded_optional',
+        ],
+        ['false -> missing is expanded_optional', { canWrite: false }, {}, 'expanded_optional'],
+        ['missing -> true is unchanged', {}, { canWrite: true }, 'relaxed'],
+    ] as const)('%s', (_name, before, after, expected) => {
+        for (const required of [false, true]) {
+            expect(
+                classifyContractChange(
+                    withWrite({ required, ...before }),
+                    withWrite({ required, ...after })
+                )
+            ).toBe(expected);
+        }
+    });
+
+    it('a new optional write category is expanded_optional with or without canWrite', () => {
+        for (const canWrite of [undefined, false, true]) {
+            expect(
+                classifyContractChange(withWrite(), withWrite({ required: false, canWrite }))
+            ).toBe('expanded_optional');
+        }
+    });
+
+    it('lists a canWrite flip as a changed scope', () => {
+        const diff = diffContractChange(
+            withWrite({ required: false, canWrite: false }),
+            withWrite({ required: false, canWrite: true })
+        );
+        expect(diff.changed).toEqual([
+            {
+                area: 'write',
+                type: 'credential',
+                key: 'Achievement',
+                required: false,
+                reason: undefined,
+                canWrite: true,
+            },
+        ]);
+    });
+
+    it('contractWriteMode: write needs the terms flag and both canWrites', () => {
+        const contract = (canWrite?: boolean) => ({
+            write: {
+                credentials: { categories: { Achievement: { required: false, canWrite } } },
+                personal: {},
+            },
+        });
+        const terms = (on: boolean, canWrite?: boolean) => ({
+            write: {
+                credentials: {
+                    categories: { Achievement: on },
+                    ...(canWrite === undefined ? {} : { canWrite: { Achievement: canWrite } }),
+                },
+            },
+        });
+        const mode = (c?: boolean, on = true, t?: boolean, m?: 'suggest') =>
+            contractWriteMode({
+                contract: contract(c),
+                terms: terms(on, t),
+                category: 'Achievement',
+                mode: m,
+            });
+
+        expect(mode(undefined)).toBe('write');
+        expect(mode(true, true, true)).toBe('write');
+        expect(mode(false)).toBe('suggest');
+        expect(mode(true, true, false)).toBe('suggest');
+        expect(mode(true, true, true, 'suggest')).toBe('suggest');
+        expect(mode(true, false, true)).toBe('refused');
+        expect(
+            contractWriteMode({ contract: contract(), terms: terms(true), category: 'Other' })
+        ).toBe('refused');
+    });
 });
 
 describe('diffContractChange', () => {
@@ -394,5 +490,45 @@ describe('optional proposal window', () => {
         ['acknowledged', undefined, false],
     ] as const)('handles the %s state', (_state, deadline, expected) => {
         expect(hasOpenNewOptionsWindow(deadline, now)).toBe(expected);
+    });
+});
+
+describe('classifyHcpChange', () => {
+    const base = {
+        agents: ['did:key:agent'],
+        categories: ['goals_and_constraints', 'education_learner_profile'],
+        actions: ['read' as const],
+        purposes: [{ code: 'https://purpose.example/tutor', description: 'Tutoring' }],
+        duration: '4h' as const,
+    };
+
+    it('treats narrowing, and removing the section, as relaxed', () => {
+        expect(classifyHcpChange(base, base)).toBe('relaxed');
+        expect(classifyHcpChange(base, { ...base, categories: ['goals_and_constraints'] })).toBe(
+            'relaxed'
+        );
+        expect(classifyHcpChange(base, { ...base, duration: '1h' })).toBe('relaxed');
+        expect(classifyHcpChange(base, undefined)).toBe('relaxed');
+        expect(classifyHcpChange(undefined, undefined)).toBe('relaxed');
+    });
+
+    it('asks for consent for anything that reaches further', () => {
+        expect(classifyHcpChange(undefined, base)).toBe('requires_consent');
+        expect(
+            classifyHcpChange(base, { ...base, agents: [...base.agents, 'did:key:other'] })
+        ).toBe('requires_consent');
+        expect(
+            classifyHcpChange(base, {
+                ...base,
+                categories: [...base.categories, 'general_preferences'],
+            })
+        ).toBe('requires_consent');
+        expect(
+            classifyHcpChange(base, {
+                ...base,
+                purposes: [{ code: 'https://purpose.example/tutor', description: 'Ads' }],
+            })
+        ).toBe('requires_consent');
+        expect(classifyHcpChange(base, { ...base, duration: 'ongoing' })).toBe('requires_consent');
     });
 });

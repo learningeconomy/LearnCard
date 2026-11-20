@@ -57,6 +57,7 @@ import { ConsentFlowTransaction, Credential } from '@models';
 import type { DbTermsType } from 'types/consentflowcontract';
 import { BindParam, QueryBuilder } from 'neogma';
 import { runAudienceMutation } from '@accesslayer/consentflowcontract/relationships/recipients';
+import { contractWriteActionCypher } from '@helpers/contract-write-mode.helpers';
 import { termsReferralSnapshotCypher } from './consent-referral.helpers';
 
 import { createDagJweForRecipients, getKeyAgreementKeyId, getLearnCard } from './learnCard.helpers';
@@ -450,6 +451,7 @@ const ensureInitialRefreshRelationships = async (params: {
                   termsId: contractTerms.id,
                   expectedVersion: contractTerms.consentedVersion,
                   transactionId: randomUUID(),
+                  forceSuggest: false,
               })
           ).raw(
               `MATCH (terms:ConsentFlowTerms {id:$termsId})-[:CONSENTS_TO]->(contract:ConsentFlowContract)
@@ -472,7 +474,7 @@ const ensureInitialRefreshRelationships = async (params: {
                WHERE coalesce(refresh.boostId, '') = coalesce($boostId, '')
                MATCH (issuer:Profile {profileId: $issuerProfileId})
                OPTIONAL MATCH (boost:Boost {id: $boostId})
-               WITH terms, root, issuer, boost
+               WITH terms, contract, root, issuer, boost
                WHERE boost IS NULL OR boost.category IS NULL OR terms['terms.write.credentials.categories.' + boost.category] = true
                MERGE (issuer)-[sent:CREDENTIAL_SENT {to: $holderProfileId}]->(root)
                ON CREATE SET sent.date = $now
@@ -482,9 +484,9 @@ const ensureInitialRefreshRelationships = async (params: {
                    MERGE (root)-[:INSTANCE_OF]->(boost)
                )
                OPTIONAL MATCH (root)-[:${Credential.getRelationshipByAlias('issuedViaTransaction').name}]->(existing:ConsentFlowTransaction)-[:${ConsentFlowTransaction.getRelationshipByAlias('isFor').name}]->(terms)
-               WITH root, terms, existing
+               WITH root, terms, contract, boost, existing
                FOREACH (_ IN CASE WHEN existing IS NULL THEN [1] ELSE [] END |
-                   CREATE (transaction:ConsentFlowTransaction {id:$transactionId, action:'write', date:$now, boostId:$boostId})
+                   CREATE (transaction:ConsentFlowTransaction {id:$transactionId, action:${contractWriteActionCypher()}, date:$now, boostId:$boostId})
                        -[:${ConsentFlowTransaction.getRelationshipByAlias('isFor').name}]->(terms)
                    CREATE (root)-[:${Credential.getRelationshipByAlias('issuedViaTransaction').name} {date:$now}]->(transaction)
                    ${termsReferralSnapshotCypher()}
@@ -762,6 +764,7 @@ const deliverManagedRefreshVersion1Credential = async (params: {
                       termsId: contractTerms.id,
                       expectedVersion: contractTerms.consentedVersion,
                       transactionId: randomUUID(),
+                      forceSuggest: false,
                   })
               ).raw(
                   `MATCH (terms:ConsentFlowTerms {id:$termsId})-[:CONSENTS_TO]->(contract:ConsentFlowContract)
@@ -780,7 +783,7 @@ const deliverManagedRefreshVersion1Credential = async (params: {
                    MATCH (root:Credential {id: $rootCredentialNodeId})
                    MATCH (issuer:Profile {profileId: $issuerProfileId})
                    OPTIONAL MATCH (boost:Boost {id: $boostId})
-                   WITH terms, refresh, root, issuer, boost
+                   WITH terms, contract, refresh, root, issuer, boost
                    WHERE boost IS NULL OR boost.category IS NULL OR terms['terms.write.credentials.categories.' + boost.category] = true
                    CREATE (refresh)-[:ROOT]->(root)
                    CREATE (refresh)-[:HEAD]->(root)
@@ -788,7 +791,7 @@ const deliverManagedRefreshVersion1Credential = async (params: {
                    FOREACH (_ IN CASE WHEN boost IS NULL THEN [] ELSE [1] END |
                        CREATE (root)-[:INSTANCE_OF]->(boost)
                    )
-                   CREATE (transaction:ConsentFlowTransaction {id:$transactionId, action:'write', date:$now, boostId:$boostId})
+                   CREATE (transaction:ConsentFlowTransaction {id:$transactionId, action:${contractWriteActionCypher()}, date:$now, boostId:$boostId})
                        -[:${ConsentFlowTransaction.getRelationshipByAlias('isFor').name}]->(terms)
                    ${termsReferralSnapshotCypher()}
                    CREATE (root)-[:${Credential.getRelationshipByAlias('issuedViaTransaction').name} {date:$now}]->(transaction)

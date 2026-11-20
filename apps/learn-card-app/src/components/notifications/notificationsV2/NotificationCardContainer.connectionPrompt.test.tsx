@@ -12,6 +12,10 @@ const mocks = vi.hoisted(() => ({
     promptProps: vi.fn(),
     announcementProps: vi.fn(),
     profile: vi.fn(),
+    boostProps: vi.fn(),
+    dismiss: vi.fn(async () => true),
+    updateNotification: vi.fn(),
+    toast: vi.fn(),
 }));
 
 vi.mock('learn-card-base', () => ({
@@ -38,8 +42,13 @@ vi.mock('learn-card-base', () => ({
         mocks.profile();
         return { data: undefined, isLoading: false };
     },
+    ToastTypeEnum: { Error: 'error' },
+    useToast: () => ({ presentToast: mocks.toast }),
     useMarkNotificationRead: () => ({ mutate: vi.fn() }),
-    useUpdateNotification: () => ({ mutate: vi.fn(), mutateAsync: vi.fn() }),
+    useUpdateNotification: () => ({ mutate: mocks.updateNotification, mutateAsync: vi.fn() }),
+    useWallet: () => ({
+        initWallet: async () => ({ invoke: { dismissContractSuggestion: mocks.dismiss } }),
+    }),
 }));
 
 vi.mock('./NotificationAnnouncementCard', () => ({
@@ -49,7 +58,10 @@ vi.mock('./NotificationAnnouncementCard', () => ({
     },
 }));
 vi.mock('./NotificationBoostCard', () => ({
-    default: () => <div data-testid="boost-notification" />,
+    default: (props: unknown) => {
+        mocks.boostProps(props);
+        return <div data-testid="boost-notification" />;
+    },
 }));
 vi.mock('./ConnectionRequestCard', () => ({ default: () => null }));
 vi.mock('./NotificationConsentFlowCard', () => ({ default: () => null }));
@@ -161,5 +173,60 @@ describe('announcement routing', () => {
             expect.objectContaining({ notification })
         );
         expect(mocks.profile).not.toHaveBeenCalled();
+    });
+});
+
+describe('suggested credentials (LC-2423)', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    const suggestion = (overrides: Partial<NotificationType> = {}): NotificationType => ({
+        ...makeNotification(),
+        type: 'CREDENTIAL_SUGGESTED',
+        message: { title: 'Suggested for you', body: 'Alice suggested a credential' },
+        data: { vcUris: ['lc:network:test:credential:suggested'] },
+        ...overrides,
+    });
+
+    it('shows a suggestion on the claimable card and dismisses it when archived', async () => {
+        renderContainer(suggestion());
+        expect(screen.getByTestId('boost-notification')).toBeInTheDocument();
+
+        const { handleArchive } = mocks.boostProps.mock.calls.at(-1)![0] as {
+            handleArchive: () => Promise<void>;
+        };
+        await handleArchive();
+        expect(mocks.dismiss).toHaveBeenCalledWith('lc:network:test:credential:suggested');
+        expect(mocks.updateNotification).toHaveBeenCalledWith(
+            expect.objectContaining({ payload: { archived: true, read: true } }),
+            expect.anything()
+        );
+    });
+
+    it('keeps the suggestion and toasts when dismissal fails, then archives on retry', async () => {
+        mocks.dismiss.mockRejectedValueOnce(new Error('network'));
+        renderContainer(suggestion());
+        const { handleArchive } = mocks.boostProps.mock.calls.at(-1)![0] as {
+            handleArchive: () => Promise<void>;
+        };
+        await handleArchive();
+        expect(mocks.updateNotification).not.toHaveBeenCalled();
+        expect(mocks.toast).toHaveBeenCalled();
+
+        await handleArchive();
+        expect(mocks.dismiss).toHaveBeenCalledTimes(2);
+        expect(mocks.updateNotification).toHaveBeenCalledWith(
+            expect.objectContaining({ payload: { archived: true, read: true } }),
+            expect.anything()
+        );
+    });
+
+    it('does not dismiss a suggestion the person already accepted', async () => {
+        renderContainer(suggestion({ actionStatus: 'COMPLETED' }));
+        const { handleArchive } = mocks.boostProps.mock.calls.at(-1)![0] as {
+            handleArchive: () => Promise<void>;
+        };
+        await handleArchive();
+        expect(mocks.dismiss).not.toHaveBeenCalled();
+        expect(mocks.updateNotification).toHaveBeenCalled();
     });
 });

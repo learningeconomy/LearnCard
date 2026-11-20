@@ -82,6 +82,7 @@ const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = 
                 onChange={onChange}
                 allowedCategories={allowedCategories}
                 titleOverrides={categoryTitleOverrides}
+                mode={mode}
             />,
             {
                 sectionClassName: 'max-w-[500px]!',
@@ -97,6 +98,7 @@ const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = 
                 onChange={onChange}
                 values={values}
                 titleOverride={categoryTitleOverrides[category]}
+                mode={mode}
             />,
             {
                 sectionClassName: 'max-w-[500px]!',
@@ -117,6 +119,13 @@ const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = 
             : settings.defaultEnabled
               ? 'Opt-out'
               : 'Opt-in';
+        // LC-2423: missing canWrite means the app may add directly.
+        const writeModeText =
+            mode === 'write'
+                ? (settings as { canWrite?: boolean }).canWrite === false
+                    ? 'Suggest only'
+                    : 'Adds directly'
+                : null;
 
         return (
             <div
@@ -133,6 +142,11 @@ const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = 
                     <span className="ml-2 text-xs bg-emerald-700 text-white px-2 py-1 rounded-full">
                         {settingsDisplayText}
                     </span>
+                    {writeModeText && (
+                        <span className="ml-2 text-xs bg-grayscale-200 text-grayscale-800 px-2 py-1 rounded-full">
+                            {writeModeText}
+                        </span>
+                    )}
                 </p>
 
                 <div className="flex flex-1 items-center gap-2">

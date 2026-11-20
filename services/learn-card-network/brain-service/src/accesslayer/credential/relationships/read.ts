@@ -144,6 +144,12 @@ export const getCredentialsForContractTerms = async (
                 { identifier: 'boost', model: Boost },
             ],
         })
+        // LC-2423: a dismissed suggestion is gone, and its 'dismiss' record is not a delivery.
+        .where(
+            `transaction.action <> 'dismiss' AND NOT EXISTS { MATCH (credential)-[:${
+                Credential.getRelationshipByAlias('issuedViaTransaction').name
+            }]->(:ConsentFlowTransaction {action: 'dismiss'}) }`
+        )
         .with('credential, boost, issuedVia.date as date, transaction');
 
     if (!includeReceived && profileId) {
@@ -200,12 +206,14 @@ export const getAllCredentialsForProfileTerms = async (
         limit?: number;
         cursor?: string;
         includeReceived?: boolean;
+        /** LC-2423: 'suggest' lists suggestions the holder has not dismissed. */
+        actions?: Array<'write' | 'suggest'>;
     } = {}
 ) => {
-    const { limit = 25, cursor, includeReceived = true } = options;
+    const { limit = 25, cursor, includeReceived = true, actions = ['write'] } = options;
 
     // Get credentials linked via transactions for any terms owned by this profile
-    let query = new QueryBuilder(new BindParam({ cursor })).match({
+    let query = new QueryBuilder(new BindParam({ cursor, actions })).match({
         related: [
             { identifier: 'profile', model: Profile, where: { profileId } },
             { ...ConsentFlowTerms.getRelationshipByAlias('createdBy'), direction: 'out' },
@@ -218,7 +226,6 @@ export const getAllCredentialsForProfileTerms = async (
             {
                 identifier: 'transaction',
                 model: ConsentFlowTransaction,
-                where: { action: 'write' },
             },
             {
                 ...Credential.getRelationshipByAlias('issuedViaTransaction'),
@@ -231,13 +238,20 @@ export const getAllCredentialsForProfileTerms = async (
         ],
     });
 
-    if (!includeReceived) {
-        query = query.where(
-            `NOT EXISTS { MATCH (credential)-[:${
-                Credential.getRelationshipByAlias('credentialReceived').name
-            }]-(profile) }`
-        );
-    }
+    const issuedVia = Credential.getRelationshipByAlias('issuedViaTransaction').name;
+    query = query.where(
+        [
+            'transaction.action IN $actions',
+            `NOT EXISTS { MATCH (credential)-[:${issuedVia}]->(:ConsentFlowTransaction {action: 'dismiss'}) }`,
+            ...(includeReceived
+                ? []
+                : [
+                      `NOT EXISTS { MATCH (credential)-[:${
+                          Credential.getRelationshipByAlias('credentialReceived').name
+                      }]-(profile) }`,
+                  ]),
+        ].join(' AND ')
+    );
 
     query = query.with('credential, boost, issuedVia.date as date, terms, transaction');
 

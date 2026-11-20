@@ -2979,6 +2979,7 @@ export async function getLearnCardNetworkPlugin(
                     contractUri,
                     credential,
                     boostUri,
+                    ...(options?.mode ? { mode: options.mode } : {}),
                     ...(options?.expectedExternalGrant !== undefined
                         ? { expectedExternalGrant: options.expectedExternalGrant }
                         : {}),
@@ -3063,6 +3064,12 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
 
                 return client.contracts.getAllCredentialsForTerms.query(options);
+            },
+
+            dismissContractSuggestion: async (_learnCard, credentialUri) => {
+                await ensureUser();
+
+                return client.contracts.dismissContractSuggestion.mutate({ credentialUri });
             },
 
             verifyConsent: async (_learnCard, uri, profileId) => {
@@ -4064,6 +4071,10 @@ export async function getLearnCardNetworkPlugin(
                     .parseAsync(result);
             },
 
+            getHcpClient: async () => {
+                await ensureUser();
+                return client.hcp.v1;
+            },
             getLCNClient: () => client,
 
             // Activity

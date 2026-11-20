@@ -1035,14 +1035,19 @@ export const useSyncConsentFlow = (enabled = true) => {
             });
             const allRecords: ConsentRecord[] = [];
             do {
-                result.records.forEach(r =>
-                    allRecords.push({
-                        credentialUri: r.credentialUri,
-                        contractUri: r.contractUri,
-                        termsUri: r.termsUri,
-                        category: r.category,
-                    })
-                );
+                // Only direct writes are stored for the holder. A suggestion (LC-2423)
+                // waits for them to accept it; the brain lists writes only by default,
+                // and this keeps an older or wider listing from auto-accepting one.
+                result.records
+                    .filter(r => (r.action ?? 'write') === 'write')
+                    .forEach(r =>
+                        allRecords.push({
+                            credentialUri: r.credentialUri,
+                            contractUri: r.contractUri,
+                            termsUri: r.termsUri,
+                            category: r.category,
+                        })
+                    );
                 if (!result.hasMore) break;
                 result = await learnCard.invoke.getConsentFlowCredentials({
                     includeReceived: false,
