@@ -4,6 +4,7 @@ import type { LCAPluginMethods } from '@learncard/lca-api-plugin';
 import * as m from '../../paraglide/messages.js';
 import { RecoveryPinInput } from '../recovery/RecoveryPinInput';
 import { LINK_BUTTON_CLASS, PRIMARY_BUTTON_CLASS } from './keepAccountStyles';
+import { SignInAgainButton } from './SignInAgainButton';
 
 export type PersonalEmailVerifyResult = Awaited<
     ReturnType<LCAPluginMethods['classlinkVerifyPersonalEmail']>
@@ -29,12 +30,26 @@ export const isolateLtr = (text: string): string => `\u2068${text}\u2069`;
 export const getTrpcCode = (error: unknown): string | undefined =>
     (error as { data?: { code?: string } } | null)?.data?.code;
 
+/** The stable refusal reason lca-api sends as `error.data.reason`, if any. */
+export const getRefusalReason = (error: unknown): string | undefined => {
+    const reason = (error as { data?: { reason?: unknown } } | null)?.data?.reason;
+    return typeof reason === 'string' ? reason : undefined;
+};
+
+/**
+ * Changing the sign-in email needs a sign-in in the last 24 hours (`FORBIDDEN`, reason
+ * `recent_sign_in_required`): only signing in again helps.
+ */
+export const isRecentSignInRequired = (error: unknown): boolean =>
+    getRefusalReason(error) === 'recent_sign_in_required';
+
 /**
  * Map a start/verify failure to copy by its tRPC code, never by the server's English
  * message. BAD_REQUEST means a school or unusable address when sending, and a wrong or
  * expired code when verifying.
  */
 export const personalEmailErrorMessage = (error: unknown, step: 'email' | 'code'): string => {
+    if (isRecentSignInRequired(error)) return m['classlinkKeepAccount.recentSignInRequired']();
     switch (getTrpcCode(error)) {
         // Another LearnCard account already signs in with (or recovers by) the address.
         case 'CONFLICT':
@@ -133,6 +148,8 @@ export const PersonalEmailForm: React.FC<PersonalEmailFormProps> = ({
     const [code, setCode] = useState('');
     const [step, setStep] = useState<'email' | 'code'>('email');
     const [error, setError] = useState<{ field: 'email' | 'code'; message: string } | null>(null);
+    // The server wants a recent sign-in: "Sign in again" replaces the send button.
+    const [signInAgain, setSignInAgain] = useState(false);
     const [resendAt, setResendAt] = useState(0);
     const [now, setNow] = useState(() => Date.now());
     const busy = start.isPending || verify.isPending;
@@ -170,6 +187,11 @@ export const PersonalEmailForm: React.FC<PersonalEmailFormProps> = ({
             setCode('');
         }
         focusNextRef.current = field;
+        if (isRecentSignInRequired(err)) {
+            // Not a policy refusal: re-reading continuity would not change anything.
+            setSignInAgain(true);
+            return;
+        }
         if (getTrpcCode(err) === 'FORBIDDEN') onForbidden?.();
     };
 
@@ -345,7 +367,8 @@ export const PersonalEmailForm: React.FC<PersonalEmailFormProps> = ({
     // The code is checked as soon as it is complete, so its step has no submit button.
     const actions = (
         <>
-            {step === 'email' && (
+            {signInAgain && <SignInAgainButton className={submitClassName} />}
+            {step === 'email' && !signInAgain && (
                 <button
                     type="submit"
                     form={formId}

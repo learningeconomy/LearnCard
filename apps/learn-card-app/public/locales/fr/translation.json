@@ -93,7 +93,9 @@
         "signOut": "Se déconnecter",
         "confirmEmailTitle": "Confirmez votre adresse de connexion",
         "confirmEmailBody": "Saisissez l’adresse avec laquelle vous vous connectez pour finaliser sa configuration.",
-        "confirmEmailAction": "Confirmer"
+        "confirmEmailAction": "Confirmer",
+        "recentSignInRequired": "Pour votre sécurité, reconnectez-vous avant de modifier votre adresse e-mail de connexion.",
+        "signInAgain": "Se reconnecter"
     },
     "transcriptOptIn": {
         "title": "Obtenez votre relevé de notes de {{state}}",

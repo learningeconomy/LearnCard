@@ -93,7 +93,9 @@
         "signOut": "Sign out",
         "confirmEmailTitle": "Confirm your sign-in email",
         "confirmEmailBody": "Type the email you sign in with to finish setting it up.",
-        "confirmEmailAction": "Confirm"
+        "confirmEmailAction": "Confirm",
+        "recentSignInRequired": "For your security, sign in again before you change your sign-in email.",
+        "signInAgain": "Sign in again"
     },
     "transcriptOptIn": {
         "title": "Get your {{state}} transcript",

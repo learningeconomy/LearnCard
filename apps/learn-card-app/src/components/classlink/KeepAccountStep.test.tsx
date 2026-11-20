@@ -70,6 +70,8 @@ const mocks = vi.hoisted(() => ({
     pendingContact: undefined as
         { expectedEmail?: string; customToken: string; primaryUid: string } | undefined,
     logout: vi.fn(),
+    continuityOptions: undefined as { enabled?: boolean; applySignInToken?: unknown } | undefined,
+    dataUpdatedAt: 1,
 }));
 
 type AlertOptions = {
@@ -87,11 +89,16 @@ vi.mock('@tanstack/react-query', () => ({
     }),
 }));
 vi.mock('learn-card-base', () => ({
-    useClassLinkAccountContinuity: () => ({
-        data: mocks.continuity,
-        isLoading: mocks.loading,
-        isFetching: mocks.fetching,
-    }),
+    useClassLinkAccountContinuity: (options: { enabled?: boolean; applySignInToken?: unknown }) => {
+        mocks.continuityOptions = options;
+        return {
+            data: mocks.continuity,
+            isLoading: mocks.loading,
+            isFetching: mocks.fetching,
+            isSuccess: !mocks.loading && !!mocks.continuity,
+            dataUpdatedAt: mocks.dataUpdatedAt,
+        };
+    },
     useSchoolConnection: () => ({
         data: mocks.isStudent === undefined ? undefined : { isStudent: mocks.isStudent },
         isLoading: false,
@@ -272,6 +279,8 @@ beforeEach(() => {
     mocks.escrowEnrollment = 'enrolled';
     mocks.confirmedContact = 'me@example.org';
     mocks.pendingContact = undefined;
+    mocks.continuityOptions = undefined;
+    mocks.dataUpdatedAt = 1;
     mocks.refetch.mockResolvedValue(undefined);
     mocks.start.mockResolvedValue({ success: true });
     mocks.verify.mockResolvedValue(VERIFY_RESULT);
@@ -834,6 +843,81 @@ describe('KeepAccountStep', () => {
             expectedEmail: 'me@example.org',
             customToken: 'token-t',
             primaryUid: 'uid-t',
+        });
+    });
+
+    it('applies a reconcile token while loading through refreshAccountContact', () => {
+        renderStep();
+        expect(mocks.continuityOptions?.applySignInToken).toBe(mocks.refreshAccountContact);
+    });
+
+    it('offers Try again when a reconcile token could not be applied while loading', async () => {
+        mocks.continuity = DONE;
+        const { rerender } = renderStep();
+        expect(screen.getByTestId('keep-account-step').dataset.step).toBe('done');
+        // The load undid an interrupted change; signing back in failed, so the coordinator
+        // kept the token.
+        mocks.pendingContact = { customToken: 'token-r', primaryUid: 'uid-t' };
+        mocks.dataUpdatedAt = 2;
+        rerender(<KeepAccountStep variant="sheet" source="dashboard" />);
+        expect(screen.getByTestId('keep-account-step').dataset.step).toBe('finishFailed');
+        await act(async () => {
+            fireEvent.click(screen.getByTestId('keep-account-finish-retry'));
+        });
+        // The restored address was never typed here: no expected email.
+        expect(mocks.refreshAccountContact).toHaveBeenCalledWith({
+            customToken: 'token-r',
+            primaryUid: 'uid-t',
+        });
+    });
+
+    describe('a recent sign-in is required', () => {
+        const RECENT = (): Error =>
+            Object.assign(new Error('x'), {
+                data: { code: 'FORBIDDEN', reason: 'recent_sign_in_required' },
+            });
+
+        it('sending a code explains it and offers Sign in again instead of Send', async () => {
+            mocks.start.mockRejectedValueOnce(RECENT());
+            renderStep();
+            await sendCode();
+            const input = screen.getByTestId('classlink-email-input');
+            expect(
+                document.getElementById(input.getAttribute('aria-describedby') ?? '')?.textContent
+            ).toBe(m['classlinkKeepAccount.recentSignInRequired']());
+            expect(screen.queryByTestId('classlink-email-submit')).toBeNull();
+            // Not a policy refusal: nothing to re-read.
+            expect(mocks.invalidate).not.toHaveBeenCalled();
+            const again = screen.getByTestId('keep-account-sign-in-again');
+            expect(again.textContent).toBe(m['classlinkKeepAccount.signInAgain']());
+            fireEvent.click(again);
+            expect(mocks.logout).toHaveBeenCalledTimes(1);
+        });
+
+        it('verifying the code explains it under the code and offers Sign in again', async () => {
+            mocks.verify.mockRejectedValueOnce(RECENT());
+            renderStep();
+            await verifyEmail();
+            expect(screen.getByTestId('classlink-email-code')).toBeTruthy();
+            expect(screen.getByText(m['classlinkKeepAccount.recentSignInRequired']())).toBeTruthy();
+            fireEvent.click(screen.getByTestId('keep-account-sign-in-again'));
+            expect(mocks.logout).toHaveBeenCalledTimes(1);
+        });
+
+        it('removing explains it in the row and offers Sign in again', async () => {
+            mocks.continuity = DONE;
+            mocks.remove.mockRejectedValueOnce(RECENT());
+            renderStep({ variant: 'inline' });
+            fireEvent.click(screen.getByTestId('keep-account-remove'));
+            await act(async () => {
+                lastAlert().buttons[1].handler?.();
+            });
+            expect(screen.getByRole('alert').textContent).toBe(
+                m['classlinkKeepAccount.recentSignInRequired']()
+            );
+            fireEvent.click(screen.getByTestId('keep-account-sign-in-again'));
+            expect(mocks.logout).toHaveBeenCalledTimes(1);
+            expect(mocks.refreshAccountContact).not.toHaveBeenCalled();
         });
     });
 

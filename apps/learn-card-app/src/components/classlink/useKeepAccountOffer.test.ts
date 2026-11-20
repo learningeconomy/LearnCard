@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
     isLoading: false,
     continuityHook: vi.fn(),
     getSession: vi.fn(),
+    refreshAccountContact: vi.fn(),
 }));
 
 vi.mock('learn-card-base', () => ({
@@ -33,6 +34,7 @@ vi.mock('../../providers/AuthCoordinatorProvider', () => ({
             authUser: { id: mocks.uid },
             escrowEnrollment: mocks.escrowEnrollment,
         },
+        refreshAccountContact: mocks.refreshAccountContact,
     }),
 }));
 vi.mock('../../auth/classlink/classlinkProfileDefaults', () => ({
@@ -175,6 +177,12 @@ describe('needsKeepAccount', () => {
 });
 
 describe('useKeepAccountOffer', () => {
+    it('applies a reconcile token while loading through refreshAccountContact', async () => {
+        await renderOffer();
+        const enabledCall = mocks.continuityHook.mock.calls.find(([o]) => o.enabled === true);
+        expect(enabledCall?.[0].applySignInToken).toBe(mocks.refreshAccountContact);
+    });
+
     it('offers the step for a ready ClassLink session the server says needs it', async () => {
         const { result } = await renderOffer();
         expect(result.current).toEqual({

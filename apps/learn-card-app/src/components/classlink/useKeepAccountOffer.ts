@@ -35,11 +35,15 @@ export const useKeepAccountOffer = (
     step?: KeepAccountStepKind;
 } => {
     const features = useFeatureConfig();
-    const { state } = useAppAuth();
+    const { state, refreshAccountContact } = useAppAuth();
     const context = useKeepAccountSessionContext();
     const active = enabled && isKeepAccountEnabled(features) && state.status === 'ready';
     const classlinkSession = useClassLinkSession(active);
-    const query = useClassLinkAccountContinuity({ enabled: active && classlinkSession === true });
+    const query = useClassLinkAccountContinuity({
+        enabled: active && classlinkSession === true,
+        // A pending sign-in email undo runs while loading; its token signs this device back in.
+        applySignInToken: refreshAccountContact,
+    });
     const continuity = active && classlinkSession === true ? query.data : undefined;
 
     return {

@@ -93,7 +93,9 @@
         "signOut": "Cerrar sesión",
         "confirmEmailTitle": "Confirma tu correo de inicio de sesión",
         "confirmEmailBody": "Escribe el correo con el que inicias sesión para terminar de configurarlo.",
-        "confirmEmailAction": "Confirmar"
+        "confirmEmailAction": "Confirmar",
+        "recentSignInRequired": "Por tu seguridad, vuelve a iniciar sesión antes de cambiar tu correo de inicio de sesión.",
+        "signInAgain": "Volver a iniciar sesión"
     },
     "transcriptOptIn": {
         "title": "Obtén tu expediente académico de {{state}}",

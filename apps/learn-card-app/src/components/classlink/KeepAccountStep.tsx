@@ -23,7 +23,13 @@ import { RecoveryPinStep, type RecoveryPinStepState } from '../onboarding/v2/Rec
 import { writeRecoveryPinPromptFlag } from '../recovery/recoveryPinPromptFlag';
 import { ConfirmEmailForm } from './ConfirmEmailForm';
 import { ConfirmPinForm } from './ConfirmPinForm';
-import { PersonalEmailForm, isolateLtr } from './PersonalEmailForm';
+import {
+    PersonalEmailForm,
+    getRefusalReason,
+    isRecentSignInRequired,
+    isolateLtr,
+} from './PersonalEmailForm';
+import { SignInAgainButton } from './SignInAgainButton';
 import {
     ONBOARDING_PRIMARY_BUTTON_CLASS,
     PRIMARY_BUTTON_CLASS,
@@ -141,10 +147,6 @@ const silentResealTried = new Set<string>();
 
 /** Test helper: forget which accounts were re-sealed this session. */
 export const resetKeepAccountSilentReseal = (): void => silentResealTried.clear();
-
-/** The stable refusal reason lca-api sends as `error.data.reason`, if any. */
-const getRefusalReason = (error: unknown): string | undefined =>
-    (error as { data?: { reason?: unknown } } | null)?.data?.reason as string | undefined;
 
 const StoredNote: React.FC = () => (
     <p className="mt-1 flex items-start gap-2 text-xs text-grayscale-500 leading-relaxed text-start">
@@ -325,6 +327,9 @@ const Row: React.FC<{
     );
 };
 
+/** Why a removal failed: `signInAgain` when lca-api wants a recent sign-in first. */
+type RemoveFailure = 'error' | 'placeholder' | 'signInAgain';
+
 type RemoveResult = Awaited<ReturnType<ReturnType<typeof useRemovePersonalEmail>['mutateAsync']>>;
 
 /**
@@ -335,17 +340,23 @@ type RemoveResult = Awaited<ReturnType<ReturnType<typeof useRemovePersonalEmail>
 const useRemoveEmail = (
     maskedEmail: string,
     onRemoved: (result: RemoveResult) => void
-): { ask: () => void; removing: boolean; failed?: 'error' | 'placeholder' } => {
+): { ask: () => void; removing: boolean; failed?: RemoveFailure } => {
     const remove = useRemovePersonalEmail();
     const [presentAlert] = useIonAlert();
-    const [failed, setFailed] = useState<'error' | 'placeholder'>();
+    const [failed, setFailed] = useState<RemoveFailure>();
 
     const run = async (): Promise<void> => {
         setFailed(undefined);
         try {
             onRemoved(await remove.mutateAsync());
         } catch (error) {
-            setFailed(getRefusalReason(error) === 'placeholder_escrow' ? 'placeholder' : 'error');
+            setFailed(
+                isRecentSignInRequired(error)
+                    ? 'signInAgain'
+                    : getRefusalReason(error) === 'placeholder_escrow'
+                      ? 'placeholder'
+                      : 'error'
+            );
         }
     };
 
@@ -374,15 +385,23 @@ const useRemoveEmail = (
     return { ask, removing: remove.isPending, failed };
 };
 
-const RemoveFailed: React.FC<{ reason: 'error' | 'placeholder' }> = ({ reason }) => (
-    <div className="px-4 py-3">
-        <p role="alert" className="text-xs text-red-600 text-start">
-            {reason === 'placeholder'
-                ? m['classlinkKeepAccount.cannotRemovePlaceholder']()
-                : m['classlinkPersonalEmail.error']()}
-        </p>
-    </div>
-);
+const RemoveFailed: React.FC<{ reason: RemoveFailure }> = ({ reason }) =>
+    reason === 'signInAgain' ? (
+        <div className="px-4 py-3 flex items-center gap-3">
+            <p role="alert" className="flex-1 text-xs text-red-600 text-start">
+                {m['classlinkKeepAccount.recentSignInRequired']()}
+            </p>
+            <SignInAgainButton className={ROW_ACTION_CLASS} />
+        </div>
+    ) : (
+        <div className="px-4 py-3">
+            <p role="alert" className="text-xs text-red-600 text-start">
+                {reason === 'placeholder'
+                    ? m['classlinkKeepAccount.cannotRemovePlaceholder']()
+                    : m['classlinkPersonalEmail.error']()}
+            </p>
+        </div>
+    );
 
 /**
  * "Sign out" on the screen where signing this device back in failed: its own component, so
@@ -410,6 +429,19 @@ type FinishParams = {
     customToken?: string;
     primaryUid?: string;
 };
+
+/** A sign-in email change the coordinator still holds, as the step's finish parameters. */
+const toFinishParams = (
+    pending: { expectedEmail?: string; customToken: string; primaryUid: string } | undefined
+): FinishParams | undefined =>
+    pending
+        ? {
+              kind: pending.expectedEmail ? 'verify' : 'remove',
+              email: pending.expectedEmail,
+              customToken: pending.customToken,
+              primaryUid: pending.primaryUid,
+          }
+        : undefined;
 
 /**
  * "Keep your account after school" for ClassLink users: add a personal email (one code
@@ -457,7 +489,12 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
     const sessionEmail =
         state.status === 'ready' ? (state.authUser?.email ?? undefined) : undefined;
     const queryClient = useQueryClient();
-    const continuity = useClassLinkAccountContinuity({ enabled: true });
+    // A pending sign-in email undo (`reconcilePending`) runs while loading; its custom token
+    // signs this device back in (`refreshAccountContact` checks the token's uid first).
+    const continuity = useClassLinkAccountContinuity({
+        enabled: true,
+        applySignInToken: refreshAccountContact,
+    });
     const defaultTitle = useKeepAccountTitle(variant !== 'inline' && !title).title;
     const [overlayOpen, setOverlayOpen] = useState(false);
     // Inline: the email form opens from its row.
@@ -472,17 +509,9 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
     const [savedEmail, setSavedEmail] = useState('');
     // A sign-in email change this device has not applied yet (its token is kept by the
     // coordinator, so a remount, a reopened sheet or another surface can still retry it).
-    const [pendingFinish] = useState<FinishParams | undefined>(() => {
-        const pending = getPendingAccountContact?.();
-        return pending
-            ? {
-                  kind: pending.expectedEmail ? 'verify' : 'remove',
-                  email: pending.expectedEmail,
-                  customToken: pending.customToken,
-                  primaryUid: pending.primaryUid,
-              }
-            : undefined;
-    });
+    const [pendingFinish] = useState<FinishParams | undefined>(() =>
+        toFinishParams(getPendingAccountContact?.())
+    );
     // Signing this device back in after the sign-in email changed.
     const [finish, setFinish] = useState<'idle' | 'running' | 'failed'>(
         pendingFinish ? 'failed' : 'idle'
@@ -603,6 +632,17 @@ export const KeepAccountStep: React.FC<KeepAccountStepProps> = ({
             primaryUid: data?.primaryUid,
         });
     });
+
+    // A reconcile run while loading (`reconcilePending`) may leave a token this device could
+    // not apply: offer Try again / Sign out, as for a verify or remove.
+    useEffect(() => {
+        if (finish !== 'idle' || !continuity.isSuccess) return;
+        const pending = toFinishParams(getPendingAccountContact?.());
+        if (!pending) return;
+        finishParamsRef.current = pending;
+        setFinish('failed');
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [continuity.dataUpdatedAt]);
 
     useEffect(() => {
         if (!analyticsStep || shownRef.current) return;

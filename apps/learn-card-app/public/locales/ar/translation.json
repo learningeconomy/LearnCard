@@ -93,7 +93,9 @@
         "signOut": "تسجيل الخروج",
         "confirmEmailTitle": "أكّد بريد تسجيل الدخول",
         "confirmEmailBody": "اكتب البريد الذي تسجّل الدخول به لإكمال إعداده.",
-        "confirmEmailAction": "تأكيد"
+        "confirmEmailAction": "تأكيد",
+        "recentSignInRequired": "لحماية حسابك، سجّل الدخول مرة أخرى قبل تغيير بريد تسجيل الدخول.",
+        "signInAgain": "تسجيل الدخول مرة أخرى"
     },
     "transcriptOptIn": {
         "title": "احصل على كشف درجاتك الخاص بـ {{state}}",
