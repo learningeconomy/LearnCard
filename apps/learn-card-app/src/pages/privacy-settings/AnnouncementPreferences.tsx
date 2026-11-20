@@ -1,9 +1,10 @@
 import React, { useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Toggle, useWallet } from 'learn-card-base';
+import { useWallet } from 'learn-card-base';
 import type { AnnouncementPreferences as Preferences } from '@learncard/types';
 import * as m from '../../paraglide/messages.js';
 import GlassCard from './components/GlassCard';
+import SettingRow from './components/SettingRow';
 
 /** Mount with a profile key so switching accounts cannot carry pending writes across profiles. */
 export const AnnouncementPreferences: React.FC<{ profileId: string }> = ({ profileId }) => {
@@ -50,28 +51,20 @@ export const AnnouncementPreferences: React.FC<{ profileId: string }> = ({ profi
                 ) : (
                     query.data && (
                         <div className="divide-y divide-grayscale-100">
-                            <div className="px-5 py-4 min-h-[64px]">
-                                <Toggle
-                                    className="w-full justify-between [&>button]:shrink-0"
-                                    label={m['announcements.email']()}
-                                    checked={!query.data.announcementEmailOptOut}
-                                    disabled={saving || query.isFetching}
-                                    onChange={enabled =>
-                                        void update('announcementEmailOptOut', enabled)
-                                    }
-                                />
-                            </div>
-                            <div className="px-5 py-4 min-h-[64px]">
-                                <Toggle
-                                    className="w-full justify-between [&>button]:shrink-0"
-                                    label={m['announcements.push']()}
-                                    checked={!query.data.announcementPushOptOut}
-                                    disabled={saving || query.isFetching}
-                                    onChange={enabled =>
-                                        void update('announcementPushOptOut', enabled)
-                                    }
-                                />
-                            </div>
+                            <SettingRow
+                                title={m['announcements.email']()}
+                                checked={!query.data.announcementEmailOptOut}
+                                disabled={saving || query.isFetching}
+                                onChange={enabled =>
+                                    void update('announcementEmailOptOut', enabled)
+                                }
+                            />
+                            <SettingRow
+                                title={m['announcements.push']()}
+                                checked={!query.data.announcementPushOptOut}
+                                disabled={saving || query.isFetching}
+                                onChange={enabled => void update('announcementPushOptOut', enabled)}
+                            />
                         </div>
                     )
                 )}
