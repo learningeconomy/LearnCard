@@ -36,9 +36,16 @@ export type ClassLinkAccountContinuityReason =
  *   Older servers without `data.reason` send the message `Choose a new PIN to continue.`.
  *   A wrong PIN on that path is `FORBIDDEN` with the message `Incorrect PIN.`; more than 5
  *   confirms an hour is `TOO_MANY_REQUESTS`.
+ * - `recent_sign_in_required` (`FORBIDDEN`): starting, verifying or removing the personal
+ *   (sign-in) email needs a sign-in in the last 24 hours, with ClassLink or with an email code
+ *   to the current sign-in email; send the user to sign in again.
  */
 export type ClassLinkSignInEmailRefusalReason =
-    'account_moved' | 'busy' | 'placeholder_escrow' | 'pin_change_required';
+    | 'account_moved'
+    | 'busy'
+    | 'placeholder_escrow'
+    | 'pin_change_required'
+    | 'recent_sign_in_required';
 
 /** `classlink.getAccountContinuity`; never includes the district, policy or date of birth. */
 export type ClassLinkAccountContinuity = {
@@ -87,6 +94,12 @@ export type ClassLinkAccountContinuity = {
      * confirm; reuse the pending rotation for the new PIN.
      */
     pinChangeRequired?: boolean;
+    /**
+     * An interrupted or deferred sign-in email change waits to be undone: call
+     * `classlinkReconcilePersonalEmail` (it may change the sign-in email and sign this session
+     * out). Older servers reconciled inside this query and omit it.
+     */
+    reconcilePending?: boolean;
 };
 
 export type SchoolConnection = {
@@ -453,6 +466,12 @@ export type LCAPluginMethods = {
         removed: true;
         customToken?: string;
     }>;
+    /**
+     * Undo an interrupted or deferred sign-in email change (`reconcilePending`). `changed` is
+     * false when there was nothing to do. `customToken` as above: when present, sign back in
+     * with it before any other call. Busy is `PRECONDITION_FAILED` with reason `busy`.
+     */
+    classlinkReconcilePersonalEmail: () => Promise<{ changed: boolean; customToken?: string }>;
     classlinkGetAuthorizeUrl: (args: {
         redirectUri: string;
         codeChallenge: string;

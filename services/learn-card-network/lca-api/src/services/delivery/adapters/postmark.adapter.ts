@@ -47,6 +47,7 @@ const LOCAL_TEMPLATE_ALIASES: Record<string, TemplateId> = {
     'escrow-pin-sign-in': 'escrow-pin-sign-in',
     'account-secured': 'account-secured',
     'escrow-reset-started': 'escrow-reset-started',
+    'sign-in-email-changed': 'sign-in-email-changed',
 };
 
 /** Whether the given alias is a sentinel we registered (vs. a real Postmark alias). */
@@ -264,6 +265,14 @@ export class PostmarkAdapter implements DeliveryService {
                 return {
                     requestedAt: (model.requestedAt as string) ?? '',
                     releaseAfter: (model.releaseAfter as string) ?? '',
+                };
+
+            case 'sign-in-email-changed':
+                return {
+                    changedAt: (model.changedAt as string) ?? '',
+                    ...(typeof model.maskedEmail === 'string'
+                        ? { maskedEmail: model.maskedEmail }
+                        : {}),
                 };
 
             default:

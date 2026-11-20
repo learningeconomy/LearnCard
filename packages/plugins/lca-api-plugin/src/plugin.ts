@@ -440,6 +440,11 @@ export const getLCAPlugin = async (
                     await updateLearnCard(_learnCard);
                     return client.classlink.removePersonalEmail.mutate();
                 },
+                classlinkReconcilePersonalEmail: async _learnCard => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+                    return client.classlink.reconcilePersonalEmail.mutate();
+                },
                 classlinkExchangeCode: async (_learnCard, args) => {
                     await initialized;
                     await updateLearnCard(_learnCard);
@@ -760,6 +765,9 @@ export const getLCAPlugin = async (
                     throw new Error('Unable to connect to LCA API.');
                 },
                 classlinkRemovePersonalEmail: async () => {
+                    throw new Error('Unable to connect to LCA API.');
+                },
+                classlinkReconcilePersonalEmail: async () => {
                     throw new Error('Unable to connect to LCA API.');
                 },
                 classlinkExchangeCode: async () => {

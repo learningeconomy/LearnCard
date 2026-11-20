@@ -14,7 +14,10 @@ import {
     FirebaseCustomAuthResponseSchema,
 } from '@helpers/firebase.helpers';
 import { getAdminAuth } from '@helpers/firebaseAdminAuth.helpers';
-import { resolveOrCreateFirebaseUserByEmail } from '@helpers/classlinkPrimaryEmail.helpers';
+import {
+    recordEmailCodeSignIn,
+    resolveOrCreateFirebaseUserByEmail,
+} from '@helpers/classlinkPrimaryEmail.helpers';
 import cache from '@cache';
 import { checkRateLimit, clearRateLimit, decrementRateLimit } from '@helpers/rateLimit.helpers';
 import { TRPCError } from '@trpc/server';
@@ -379,6 +382,9 @@ export const firebaseRouter = t.router({
 
                 // Create Firebase custom auth token
                 const token = await auth.createCustomToken(resolved.uid);
+                // A fresh email-code sign-in (LC-2409: lets the account change its sign-in
+                // email, see hasRecentSignIn). Only an existing `email:` subject is touched.
+                await recordEmailCodeSignIn(email);
 
                 return { success: true, token };
             } catch (err: any) {

@@ -6,7 +6,7 @@ const STABLE_REASON = /^[a-z]+(?:_[a-z]+)*$/;
 /**
  * tRPC never sends `cause` to clients. Refusals that carry a stable `cause.reason` code (the
  * ClassLink continuity reasons, `account_moved`, `busy`, `placeholder_escrow`,
- * `pin_change_required`) copy it to `data.reason`, so clients branch on the code rather than
+ * `pin_change_required`, `recent_sign_in_required`) copy it to `data.reason`, so clients branch on the code rather than
  * the message. Anything else in `cause` stays on the server.
  */
 export const formatTrpcError = <Shape extends TRPCDefaultErrorShape>({

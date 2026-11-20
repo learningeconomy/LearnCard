@@ -35,11 +35,13 @@ Use the user's symptoms and server-side `UserKey` fields to diagnose the issue.
 
 Triage checks:
 
-1. `ClassLinkIdentity.primaryEmail`: `state` (`active` = done, `pending` = an interrupted verify the next continuity check reconciles), `uid` (T, the login that holds the personal email), `prevFirebaseEmail` and `prevContactMethod` (what removal restores), and on a `pending` address change `replacedEmail` (the earlier personal address T may still hold).
+1. `ClassLinkIdentity.primaryEmail`: `state` (`active` = done, `pending` = an interrupted verify; after 10 minutes `getAccountContinuity` reports `reconcilePending` and the app's `classlink.reconcilePersonalEmail` call undoes it, releasing the `email:` reservation named by `reservedBy`), `uid` (T, the login that holds the personal email), `prevFirebaseEmail` and `prevContactMethod` (what removal restores), and on a `pending` address change `replacedEmail` (the earlier personal address T may still hold).
 2. `ClassLinkIdentity.demotePending`: a demote (after a rebind, revoke, School Connect move or account deletion) that has not run yet. A personal-email sign-in to an orphaned T is refused with a generic error, never creates an empty wallet, and retries the demote; the orphan cleanup script also finishes it.
 3. `UserKey.escrowContactDigest` versus the sign-in email (remote mode only): a mismatch, or no digest on a promoted account, means the backup still seals the old contact; the app shows "Enter your PIN" (`nextStep: 'confirmPin'`).
 4. The session uid versus `primaryUid` from `classlink.getAccountContinuity`: the PIN confirm only runs from T's session. Other devices (a PIN sign-in added another login) are asked to sign in with the personal email.
 5. A confirm refused with `Choose a new PIN to continue.` hit the lca-api limit (10 failed confirms per PIN, or 2 share versions spent without a commit): the student chooses a new PIN.
+6. Adding, changing or removing the personal email refused with `For your security, sign in again to change your email.` (reason `recent_sign_in_required`): the account has no sign-in in the last 24 hours with ClassLink or with an email code to its current sign-in email. The student signs in again that way and retries.
+7. Every set, change or removal of the sign-in email sends a "Your sign-in email was changed" notice to the previous address and the live school address (never only to the new one). A student who got it without making the change should sign in with their school account and contact their school or support.
 
 ## 3. Escalation: Unrecoverable Scenarios
 

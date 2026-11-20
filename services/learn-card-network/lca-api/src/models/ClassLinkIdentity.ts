@@ -59,6 +59,12 @@ export interface ClassLinkPrimaryEmail {
      * Treated like `email` by plan and demote; dropped once the change is `active`.
      */
     replacedEmail?: string;
+    /**
+     * While `pending`: the token of the `email:<email>` AuthSubject reservation the verify that
+     * wrote this record inserted (or took over). Demote and the reconcile release that
+     * reservation with the record; dropped once `active`.
+     */
+    reservedBy?: string;
     state: 'pending' | 'active';
     at: Date;
 }
@@ -222,14 +228,19 @@ export const findClassLinkIdentityByIdentityKey = (
 ): Promise<MongoClassLinkIdentityType | null> =>
     getClassLinkIdentitiesCollection().findOne({ identityKey });
 
+/**
+ * Set fields on an identity. `expected` adds conditions to the match (a compare-and-set):
+ * returns null when the identity is missing or no longer matches them.
+ */
 export const updateClassLinkIdentity = async (
     identityKey: string,
     partial: Partial<
         Omit<MongoClassLinkIdentityType, 'identityKey' | 'createdAt' | StateStudentIdField>
-    >
+    >,
+    expected: Filter<MongoClassLinkIdentityType> = {}
 ): Promise<MongoClassLinkIdentityType | null> => {
     const result = await getClassLinkIdentitiesCollection().findOneAndUpdate(
-        { identityKey },
+        { ...expected, identityKey },
         {
             $set: { ...partial, updatedAt: new Date() },
             $unset: LEGACY_STATE_STUDENT_ID_UNSET,

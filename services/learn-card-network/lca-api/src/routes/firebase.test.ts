@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
     verifyIdToken: vi.fn(),
     getDidAuthVp: vi.fn(),
     resolveOrCreate: vi.fn(),
+    recordEmailCodeSignIn: vi.fn(),
     cache: { get: vi.fn(), set: vi.fn(), delete: vi.fn() },
     verifyPresentation: vi.fn(),
     isAuthorizedDID: vi.fn(),
@@ -42,6 +43,7 @@ vi.mock('@helpers/rateLimit.helpers', () => ({
 }));
 vi.mock('@helpers/classlinkPrimaryEmail.helpers', () => ({
     resolveOrCreateFirebaseUserByEmail: mocks.resolveOrCreate,
+    recordEmailCodeSignIn: mocks.recordEmailCodeSignIn,
 }));
 vi.mock('@helpers/firebaseAdminAuth.helpers', () => ({ getAdminAuth: () => mocks.adminAuth }));
 vi.mock('jwt-decode', () => ({
@@ -138,6 +140,15 @@ describe('email sign-in resolution (LC-2409)', () => {
         expect(mocks.resolveOrCreate).toHaveBeenCalledWith(mocks.adminAuth, 'student@example.edu', {
             allowCreate: true,
         });
+        // The sign-in counts as recent for a sign-in email change (hasRecentSignIn).
+        expect(mocks.recordEmailCodeSignIn).toHaveBeenCalledWith('Student@Example.EDU');
+    });
+
+    it('a wrong code records no sign-in', async () => {
+        await expect(
+            caller.verifyLoginCode({ email: 'student@example.edu', code: '000000' })
+        ).resolves.toMatchObject({ success: false });
+        expect(mocks.recordEmailCodeSignIn).not.toHaveBeenCalled();
     });
 
     it.each(['moved', 'blocked'] as const)(
@@ -149,6 +160,7 @@ describe('email sign-in resolution (LC-2409)', () => {
             ).resolves.toEqual({ success: false, error: 'Unable to find or create user.' });
             expect(mocks.adminAuth.createCustomToken).not.toHaveBeenCalled();
             expect(mocks.adminAuth.createUser).not.toHaveBeenCalled();
+            expect(mocks.recordEmailCodeSignIn).not.toHaveBeenCalled();
         }
     );
 

@@ -9,7 +9,7 @@ import { firebaseErrorCode } from '@helpers/classlinkFirebaseUser.helpers';
 import { isSyntheticEmail, syntheticEmailForUid } from '@helpers/syntheticEmail.helpers';
 import { getAdminAuth, type AdminAuth } from '@helpers/firebaseAdminAuth.helpers';
 import { DEFAULT_SCHOOL_EMAIL_ALIAS_MAX_IDLE_DAYS } from 'types/classlink';
-import { findAuthSubjectByIdentityKey } from '../models/AuthSubject';
+import { findAuthSubjectByIdentityKey, getAuthSubjectsCollection } from '../models/AuthSubject';
 import {
     ensureClassLinkIdentityIndexes,
     getClassLinkIdentitiesCollection,
@@ -97,7 +97,11 @@ export interface EmailChangeLock {
     assertHeld: () => Promise<void>;
 }
 
-const lockBusy = (): never => {
+/**
+ * `PRECONDITION_FAILED`, reason `busy`: the lock is held elsewhere, or this call lost it (a
+ * compare-and-set found a write it did not make). Nothing more is written; the client retries.
+ */
+export const lockBusy = (): never => {
     throw new TRPCError({
         code: 'PRECONDITION_FAILED',
         message: 'Another change to your email is in progress. Please try again.',
@@ -194,6 +198,74 @@ export const hasLiveSchoolEmailAlias = async (
     if (!school || !isSchoolEmailAliasLive(identity, now)) return false;
     const subject = await findAuthSubjectByIdentityKey(`email:${school}`);
     return Boolean(subject?.emailVerified && subject.subject === identity.subject);
+};
+
+/** How recent a sign-in must be to change or remove the sign-in email (LC-2409). */
+export const RECENT_SIGN_IN_MAX_AGE_MS = DAY_MS;
+
+const isRecent = (value: unknown, now: Date): value is Date =>
+    value instanceof Date &&
+    Number.isFinite(value.getTime()) &&
+    now.getTime() - value.getTime() <= RECENT_SIGN_IN_MAX_AGE_MS;
+
+/**
+ * Whether the account signed in recently enough to change its sign-in email: a ClassLink
+ * sign-in (`identity.lastAuthTime`, the id_token's `iat`) within `RECENT_SIGN_IN_MAX_AGE_MS`, or
+ * an email-code sign-in with the identity's **active** promoted address (its `email:` subject,
+ * linked to the identity, with `lastLoginAt` within the window and after the promotion, so the
+ * verify that linked the address does not count as a sign-in).
+ */
+export const hasRecentSignIn = async (
+    identity: Pick<
+        MongoClassLinkIdentityType,
+        'lastAuthTime' | 'primaryEmail' | 'firebaseUid' | 'subject'
+    >,
+    now = new Date()
+): Promise<boolean> => {
+    if (isRecent(identity.lastAuthTime, now)) return true;
+    const record = identity.primaryEmail;
+    if (record?.state !== 'active' || record.uid !== identity.firebaseUid) return false;
+    const subject = await findAuthSubjectByIdentityKey(`email:${normalize(record.email)}`);
+    return Boolean(
+        subject &&
+        subject.subject === identity.subject &&
+        isRecent(subject.lastLoginAt, now) &&
+        subject.lastLoginAt.getTime() > new Date(record.at).getTime()
+    );
+};
+
+/**
+ * Record an email-code sign-in on the address's `email:` subject (`lastLoginAt`), when one
+ * exists; never creates a subject. Best effort: never throws.
+ */
+export const recordEmailCodeSignIn = async (rawEmail: string): Promise<void> => {
+    const email = normalize(rawEmail);
+    if (!email) return;
+    try {
+        await getAuthSubjectsCollection().updateOne(
+            { identityKey: `email:${email}` },
+            { $set: { lastLoginAt: new Date() } }
+        );
+    } catch {
+        console.warn('auth_subject.last_login_update_failed');
+    }
+};
+
+/**
+ * Release the `email:<address>` reservation an unfinished verify inserted: only while it still
+ * carries that call's `reservedBy` token and points at `subject`, so a reservation a later call
+ * took over, or one that was committed (the token is removed then), is never deleted.
+ */
+export const releaseEmailReservation = async (
+    email: string,
+    subject: string,
+    reservedBy: string
+): Promise<void> => {
+    await getAuthSubjectsCollection().deleteOne({
+        identityKey: `email:${normalize(email)}`,
+        subject,
+        reservedBy,
+    });
 };
 
 /**
@@ -328,11 +400,14 @@ export const promotePersonalEmail = async ({
     identity,
     plan,
     lock,
+    reservedBy,
 }: {
     auth: AdminAuth;
     identity: MongoClassLinkIdentityType;
     plan: Extract<PrimaryEmailPlan, { kind: 'primary' }>;
     lock: EmailChangeLock;
+    /** The token of the `email:` reservation this call inserted (demote releases it). */
+    reservedBy?: string;
 }): Promise<{
     record: ClassLinkPrimaryEmail;
     previous?: ClassLinkPrimaryEmail;
@@ -365,15 +440,24 @@ export const promotePersonalEmail = async ({
               }
             : {}),
         ...(replacedEmail ? { replacedEmail } : {}),
+        ...(reservedBy ? { reservedBy } : {}),
         state: 'pending',
         at: new Date(),
     };
     await lock.assertHeld();
     await ensureClassLinkIdentityIndexes();
-    await getClassLinkIdentitiesCollection().updateOne(
-        { identityKey: identity.identityKey },
+    // Compare-and-set on the record this call read (or its absence): a write that lands after
+    // the lock expired must not replace another holder's record.
+    const written = await getClassLinkIdentitiesCollection().updateOne(
+        {
+            identityKey: identity.identityKey,
+            ...(previous
+                ? { 'primaryEmail.uid': previous.uid, 'primaryEmail.at': previous.at }
+                : { primaryEmail: { $exists: false } }),
+        },
         { $set: { primaryEmail: record, updatedAt: new Date() } }
     );
+    if (!written.matchedCount) lockBusy();
 
     if (plan.reclaimUid) {
         await lock.assertHeld();
@@ -444,9 +528,10 @@ const resolveRestoredEmail = async (
 };
 
 /**
- * Put T back exactly as it was before the promotion, then clear `primaryEmail` and
- * `demotePending`. Each step is idempotent and only acts while T / the contact still hold the
- * personal address, so a retry converges. Returns a custom token for T when T is still a
+ * Put T back exactly as it was before the promotion, release an unfinished verify's `email:`
+ * reservation (`reservedBy`), then clear `primaryEmail` and `demotePending` (only while the
+ * record is still the one read). Each step is idempotent and only acts while T / the contact
+ * still hold the personal address, so a retry converges. Returns a custom token for T when T is still a
  * login of the account and its Firebase email changed (the change revoked T's sessions).
  * Without Firebase Admin, the Firebase step is skipped and the record is kept as
  * `demotePending`, so the reconcile retries it.
@@ -511,9 +596,19 @@ export const demotePersonalEmail = async ({
         }
     }
 
+    // An unfinished verify's `email:` reservation goes with its pending record.
+    if (record.reservedBy) {
+        await lock?.assertHeld();
+        await releaseEmailReservation(record.email, identity.subject, record.reservedBy);
+    }
+
     await lock?.assertHeld();
     await getClassLinkIdentitiesCollection().updateOne(
-        { identityKey: identity.identityKey, 'primaryEmail.uid': record.uid },
+        {
+            identityKey: identity.identityKey,
+            'primaryEmail.uid': record.uid,
+            'primaryEmail.at': record.at,
+        },
         { $unset: { primaryEmail: '', demotePending: '' }, $set: { updatedAt: new Date() } }
     );
     console.info('classlink.primary_email.demoted', { reason });
