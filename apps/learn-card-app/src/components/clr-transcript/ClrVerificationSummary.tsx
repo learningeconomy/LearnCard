@@ -77,7 +77,7 @@ const VerificationMark = ({
             prominent
                 ? 'gap-2 px-3 py-1 text-sm font-semibold leading-5'
                 : 'gap-1.5 px-2 py-0.5 text-xs font-medium leading-4'
-        } ${prominent && icon === checkmarkCircleOutline ? 'bg-emerald-100 text-emerald-900' : tone}`}
+        } ${prominent && icon === checkmarkCircleOutline ? 'bg-emerald-100/60 text-emerald-701' : tone}`}
     >
         <IonIcon
             aria-hidden="true"
