@@ -1,0 +1,6 @@
+services:
+    brain:
+        environment:
+            NODE_EXTRA_CA_CERTS: /run/referral-test/cert.pem
+        volumes:
+            - ${REFERRAL_E2E_TLS_DIR:?prepare the referral TLS fixture}/cert.pem:/run/referral-test/cert.pem:ro

@@ -1,3 +1,8 @@
+import type {
+    ReferralAudienceContractUpdate,
+    ReferralAudienceInput,
+    ReferralAudienceResult,
+} from '@learncard/types';
 import type { CampaignAudienceResult } from '@learncard/types';
 import type {
     CreateReadableDeliveryRecipient,
@@ -761,6 +766,7 @@ export type LearnCardNetworkPluginMethods = {
     send: (input: SendBoostInputWithEncryption) => Promise<SendResponse>;
 
     createContract: (contract: {
+        referralProgram?: string;
         contract: ConsentFlowContract;
         reasonForAccessing?: string;
         needsGuardianConsent?: boolean;
@@ -795,8 +801,10 @@ export type LearnCardNetworkPluginMethods = {
             reconsentDeadline?: string;
             dryRun?: boolean;
             expectedVersion?: number;
+            referralAudience?: ReferralAudienceContractUpdate;
         }
     ) => Promise<ConsentFlowContractUpdateResult>;
+    reconcileReferralAudience: (input: ReferralAudienceInput) => Promise<ReferralAudienceResult>;
     addContractRecipient: (contractUri: string, recipient: string) => Promise<boolean>;
     removeContractRecipient: (contractUri: string, recipient: string) => Promise<boolean>;
     /** Gets the current request, including its version.

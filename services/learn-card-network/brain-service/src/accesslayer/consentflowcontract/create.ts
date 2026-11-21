@@ -10,6 +10,7 @@ import { flattenObject, inflateObject } from '@helpers/objects.helpers';
 export const createConsentFlowContract = async ({
     contract,
     ownerProfileId,
+    referralProgram,
     recipientIds = [],
     writerIds = [],
     autoboosts = [],
@@ -25,6 +26,7 @@ export const createConsentFlowContract = async ({
 }: {
     contract: ConsentFlowContractType;
     ownerProfileId: string;
+    referralProgram?: string;
     recipientIds?: string[];
     writerIds?: string[];
     autoboosts?: { id: string; signingAuthorityEndpoint: string; signingAuthorityName: string }[];
@@ -63,6 +65,7 @@ export const createConsentFlowContract = async ({
     const query = new QueryBuilder(
         new BindParam({
             ownerProfileId,
+            referralProgram: referralProgram ?? null,
             recipientIds: uniqueRecipientIds,
             writerIds: uniqueWriterIds,
             boostIds: uniqueAutoBoosts.map(boost => boost.id),
@@ -71,6 +74,7 @@ export const createConsentFlowContract = async ({
             params: flattenObject({
                 id,
                 name,
+                ...(referralProgram && { referralProgram }),
                 subtitle,
                 description,
                 reasonForAccessing,
@@ -98,6 +102,14 @@ export const createConsentFlowContract = async ({
         .raw(
             `
             MATCH (owner:Profile {profileId: $ownerProfileId})
+            ${
+                referralProgram
+                    ? `SET owner.referralSetupLock = coalesce(owner.referralSetupLock, 0) + 1
+               WITH owner WHERE NOT EXISTS {
+                   MATCH (owner)<-[:CREATED_BY]-(:ConsentFlowContract {referralProgram: $referralProgram})
+               }`
+                    : ''
+            }
             OPTIONAL MATCH (recipient:Profile) WHERE recipient.profileId IN $recipientIds
             WITH owner, collect(DISTINCT recipient) AS recipients
             WHERE size(recipients) = size($recipientIds)
@@ -145,7 +157,9 @@ export const createConsentFlowContract = async ({
     if (!created) {
         throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: 'Could not find all contract configuration targets',
+            message: referralProgram
+                ? 'Referral program already exists or a configuration target is missing. Preview again.'
+                : 'Could not find all contract configuration targets',
         });
     }
     const createdContract = inflateObject<DbContractType>(created.properties);

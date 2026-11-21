@@ -316,6 +316,7 @@ export const STATIC_INVOKE_METHODS: readonly string[] = [
     'publishHolderEncryptedRefreshable',
     'putShareLinkAttachmentChunk',
     'receiveChapiEvent',
+    'reconcileReferralAudience',
     'recordCampaignEvent',
     'recoverInboxCredentials',
     'refreshCredential',

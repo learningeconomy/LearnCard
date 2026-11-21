@@ -1,4 +1,9 @@
 import { z } from 'zod';
+import {
+    ConsentRequestPersonalFieldValidator,
+    ConsentRequestWalletCategoryValidator,
+    IntegrationWebhookUrlValidator,
+} from '@learncard/types';
 import { validateScope } from '../token';
 
 // Server constraint: `LCNProfileValidator.profileId` (packages/learn-card-types/src/lcn.ts).
@@ -162,9 +167,73 @@ const webhookSchema = z
     })
     .strict();
 
+const fieldRequest = <T extends z.ZodString | z.ZodEnum>(key: T) =>
+    z.union([key, z.object({ key, required: z.boolean() }).strict()]);
+
+const schemaReference = z
+    .string()
+    .regex(
+        /^[A-Za-z][A-Za-z0-9_-]{0,63}:[A-Za-z][A-Za-z0-9_-]{0,63}(:[A-Za-z][A-Za-z0-9_-]{0,63})?$/
+    );
+const referralProgram = z
+    .object({
+        name: z.string().trim().min(1).max(100),
+        partner: profileIdSchema,
+        // Profile IDs registered as consent contract recipients so they can receive shared referral outcomes.
+        referrers: z.array(profileIdSchema).min(1).max(50),
+        outcomes: z
+            .object({
+                issuer: profileIdSchema,
+                category: ConsentRequestWalletCategoryValidator,
+                required: z.boolean().optional(),
+            })
+            .strict(),
+        asks: z
+            .object({
+                personal: z.array(fieldRequest(ConsentRequestPersonalFieldValidator)).optional(),
+                verifiableData: z.array(fieldRequest(schemaReference)).optional(),
+            })
+            .strict()
+            .optional(),
+        delivery: z
+            .object({
+                readable: z.boolean().optional(),
+                webhook: IntegrationWebhookUrlValidator.refine(
+                    url => url.startsWith('https://'),
+                    'use an HTTPS webhook'
+                ).optional(),
+                webhookEnv: z
+                    .string()
+                    .regex(/^[A-Z][A-Z0-9_]*$/)
+                    .optional(),
+            })
+            .strict()
+            .refine(value => !(value.webhook && value.webhookEnv), 'Choose webhook or webhookEnv')
+            .optional(),
+        reason: z.string().trim().min(1).max(140).optional(),
+    })
+    .strict()
+    .superRefine((program, ctx) => {
+        if (
+            program.referrers.includes(program.partner) ||
+            new Set(program.referrers).size !== program.referrers.length
+        )
+            ctx.addIssue({
+                code: 'custom',
+                path: ['referrers'],
+                message: 'List unique recipients distinct from the partner.',
+            });
+    });
+export type ReferralProgram = z.infer<typeof referralProgram>;
+
 export const OrgSpecValidator = z
     .object({
         issuer: issuerSchema,
+        referralPrograms: z.array(referralProgram).optional(),
+        // Direct organization management is required for readable delivery.
+        referralRecipients: z
+            .array(managedProfileSchema.pick({ profileId: true, displayName: true }))
+            .optional(),
         profileManager: profileManagerSchema.optional(),
         serviceAccounts: z
             .array(serviceAccountSchema)
@@ -187,6 +256,47 @@ export const OrgSpecValidator = z
     .strict()
     .superRefine((spec, ctx) => {
         const managedIds = new Set(spec.profileManager?.managed.map(entry => entry.profileId));
+        const programs = new Set<string>();
+        const recipients = new Set<string>();
+        for (const recipient of spec.referralRecipients ?? []) {
+            if (
+                recipients.has(recipient.profileId) ||
+                managedIds.has(recipient.profileId) ||
+                recipient.profileId === spec.issuer.profileId
+            )
+                ctx.addIssue({
+                    code: 'custom',
+                    path: ['referralRecipients'],
+                    message: 'Recipient profile declarations must be unique.',
+                });
+            recipients.add(recipient.profileId);
+        }
+        for (const program of spec.referralPrograms ?? []) {
+            if (programs.has(program.name))
+                ctx.addIssue({
+                    code: 'custom',
+                    path: ['referralPrograms'],
+                    message: 'Use unique program names.',
+                });
+            programs.add(program.name);
+            for (const id of [program.partner, program.outcomes.issuer]) {
+                if (id !== spec.issuer.profileId && !managedIds.has(id))
+                    ctx.addIssue({
+                        code: 'custom',
+                        path: ['referralPrograms'],
+                        message: `Partner and writer must be the issuer or one of its declared managed profiles: ${id}`,
+                    });
+            }
+            if (
+                program.outcomes.issuer !== spec.issuer.profileId &&
+                spec.issuer.signingAuthority.type !== 'learncard-hosted'
+            )
+                ctx.addIssue({
+                    code: 'custom',
+                    path: ['referralPrograms'],
+                    message: 'Managed outcome writers require a hosted signing authority.',
+                });
+        }
         spec.serviceAccounts?.forEach((account, index) => {
             if (!account.actAs) return;
             const path = ['serviceAccounts', index, 'actAs'];

@@ -23,6 +23,7 @@ import type {
     ConsentFlowContractDetails,
     ConsentFlowTermsStatus,
     ConsentFlowContractDiff,
+    ReferralAudienceContractUpdate,
 } from '@learncard/types';
 import { z } from 'zod';
 import { migrateLegacyConsentFlowContracts } from '@helpers/consentflow-legacy-migration.helpers';
@@ -156,14 +157,15 @@ const mergeConsentFlowContractPatch = (
 };
 export const getConsentFlowContractVersionRecord = async (
     contractId: string,
-    versionNumber: number
+    versionNumber: number,
+    migrateLegacy = true
 ): Promise<StoredContractVersion | null> => {
     let result = await neogma.queryRunner.run(
         `MATCH (:ConsentFlowContract {id:$contractId})-[:HAS_VERSION]->(v:ConsentFlowContractVersion {version:$version})
          RETURN properties(v) AS version LIMIT 1`,
         { contractId, version: versionNumber }
     );
-    if (!result.records.length && versionNumber === 1) {
+    if (!result.records.length && versionNumber === 1 && migrateLegacy) {
         await migrateLegacyConsentFlowContracts(contractId);
         result = await neogma.queryRunner.run(
             `MATCH (:ConsentFlowContract {id:$contractId})-[:HAS_VERSION]->(v:ConsentFlowContractVersion {version:$version})
@@ -368,6 +370,7 @@ export const updateConsentFlowContractVersion = async (
         reconsentDeadline,
         dryRun,
         expectedVersion,
+        referralAudience,
     }: {
         uri: string;
         changes: ContractChanges;
@@ -375,6 +378,7 @@ export const updateConsentFlowContractVersion = async (
         reconsentDeadline?: string;
         dryRun?: boolean;
         expectedVersion?: number;
+        referralAudience?: ReferralAudienceContractUpdate;
     },
     actorProfileId: string,
     domain: string,
@@ -384,6 +388,7 @@ export const updateConsentFlowContractVersion = async (
     const storedResult = await neogma.queryRunner.run(
         `MATCH (c:ConsentFlowContract {id:$id})
          RETURN properties(c) AS contract, c.status AS contractStatus, c.currentVersion AS currentVersion,
+         c.referralProgram AS referralProgram,
          [(c)-[r:AUTO_RECEIVE]->(b:Boost) | {id:b.id,signingAuthorityEndpoint:r.signingAuthorityEndpoint,signingAuthorityName:r.signingAuthorityName,issuer:r.issuer}] AS autoBoosts,
          [(c)-[:CREATED_BY]->(owner:Profile) | owner.profileId][0] AS ownerProfileId,
          EXISTS { MATCH (c)-[:CREATED_BY]->(:Profile {profileId:$actor}) } AS owner,
@@ -407,6 +412,14 @@ export const updateConsentFlowContractVersion = async (
             message: 'Use addContractRecipient or removeContractRecipient to update recipients',
         });
     }
+    const isReferral = typeof stored.get('referralProgram') === 'string';
+    if (referralAudience && !isReferral)
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Owned referral contract not found' });
+    if (referralAudience && expectedVersion === undefined)
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'A combined referral update requires the previewed contract version.',
+        });
     const currentVersion = Number(stored.get('currentVersion') ?? 1);
     if (expectedVersion !== undefined && expectedVersion !== currentVersion) {
         throw new TRPCError({
@@ -414,7 +427,12 @@ export const updateConsentFlowContractVersion = async (
             message: 'Contract changed since this draft was opened; reload before publishing',
         });
     }
-    const current = await getConsentFlowContractVersionRecord(contractId, currentVersion);
+    // A referral already has a version snapshot; its preflight must not run a migration.
+    const current = await getConsentFlowContractVersionRecord(
+        contractId,
+        currentVersion,
+        !(referralAudience || (dryRun && isReferral))
+    );
     if (!current)
         throw new TRPCError({
             code: 'PRECONDITION_FAILED',
@@ -535,6 +553,16 @@ export const updateConsentFlowContractVersion = async (
             message: 'Reason must be at most 140 characters',
         });
     }
+    if (
+        referralAudience &&
+        !dryRun &&
+        kind === 'requires_consent' &&
+        !referralAudience.allowReconsent
+    )
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'This referral update requires explicit permission to request re-consent.',
+        });
     if (kind === 'requires_consent' && !reason) {
         throw new TRPCError({
             code: 'BAD_REQUEST',
@@ -580,6 +608,12 @@ export const updateConsentFlowContractVersion = async (
         !diff.details?.length &&
         autoBoostsUnchanged
     ) {
+        if (referralAudience)
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message:
+                    'Use referral audience reconciliation when no contract terms are changing.',
+            });
         return { version: currentVersion, kind, affectedUsers: 0, preview };
     }
     const affectedUsers = await neogma.queryRunner
@@ -722,6 +756,41 @@ export const updateConsentFlowContractVersion = async (
                 unexpiredTermsIds.push(termsId);
         }
     }
+    // Only the combined path adds graph work. The existing version lock is an
+    // exclusive write lock on the same contract node as consent and audience edits.
+    const audienceValidation = referralAudience
+        ? `
+         OPTIONAL MATCH (c)-[audienceEdge:SHARES_DATA_WITH]->(previousRecipient:Profile)
+         WITH c, terms, owner, holderIds, oldAuto, oldWriters, boosts, writers,
+             collect(previousRecipient.profileId) AS currentRecipientIds,
+             collect(CASE WHEN NOT (previousRecipient.profileId IN $recipientIds) THEN audienceEdge END) AS removedAudienceEdges
+         OPTIONAL MATCH (recipient:Profile) WHERE recipient.profileId IN $recipientIds
+         WITH c, terms, owner, holderIds, oldAuto, oldWriters, boosts, writers, currentRecipientIds,
+             removedAudienceEdges, collect(DISTINCT recipient) AS recipientTargets
+         WITH *, c.referralProgram IS NOT NULL
+             AND NOT EXISTS { MATCH (:AppStoreListing)-[:HAS_CONSENT_CONTRACT]->(c) }
+             AND NOT coalesce(c.hasConsented, false)
+             AND size(terms) = 0
+             AND size(recipientTargets) = size($recipientIds)
+             AND NOT (owner.profileId IN $recipientIds)
+             AND size(currentRecipientIds) = size($expectedRecipientIds)
+             AND all(id IN currentRecipientIds WHERE id IN $expectedRecipientIds) AS audienceAllowed,
+             (size(currentRecipientIds) <> size($recipientIds)
+                 OR any(id IN currentRecipientIds WHERE NOT (id IN $recipientIds))) AS audienceChanged
+         FOREACH (_ IN CASE WHEN audienceAllowed AND audienceChanged THEN [] ELSE [1] END |
+             REMOVE c._contractVersionLock)
+         WITH * WHERE audienceAllowed AND audienceChanged
+        `
+        : '';
+    const audienceMutation = referralAudience
+        ? `
+         FOREACH (edge IN removedAudienceEdges | DELETE edge)
+         FOREACH (target IN [r IN recipientTargets WHERE NOT (r.profileId IN currentRecipientIds)] |
+             MERGE (c)-[added:SHARES_DATA_WITH]->(target)
+             ON CREATE SET added.addedAt = toString(datetime()))
+         SET c.audienceVersion = coalesce(c.audienceVersion, 0) + 1
+        `
+        : '';
     const committed = await neogma.queryRunner.run(
         `MATCH (c:ConsentFlowContract {id:$id})
          SET c._contractVersionLock=coalesce(c._contractVersionLock,0)+1
@@ -752,6 +821,7 @@ export const updateConsentFlowContractVersion = async (
          FOREACH (_ IN CASE WHEN size(writers) = size($writerIds) THEN [] ELSE [1] END | REMOVE c._contractVersionLock)
          WITH c, terms, owner, holderIds, oldAuto, oldWriters, boosts, writers
          WHERE size(writers) = size($writerIds)
+         ${audienceValidation}
          CREATE (v:ConsentFlowContractVersion {id:$versionId, version:$nextVersion, createdAt:$createdAt,
              contract:$contract, autoboosts:$autoboostSnapshot, writers:$writerSnapshot, reason:$reason, kind:$kind,
              name:$name, subtitle:$subtitle, description:$description, reasonForAccessing:$reasonForAccessing,
@@ -770,6 +840,7 @@ export const updateConsentFlowContractVersion = async (
                  CREATE (c)-[:AUTO_RECEIVE {signingAuthorityEndpoint:config.signingAuthorityEndpoint,
                      signingAuthorityName:config.signingAuthorityName, issuer:config.issuer}]->(boost)))
          FOREACH (writer IN writers | CREATE (c)-[:CAN_WRITE]->(writer))
+         ${audienceMutation}
          REMOVE c._contractVersionLock
          FOREACH (term IN terms |
              FOREACH (_ IN CASE WHEN term.status IN ['live','needs_reconsent','suspended'] THEN [1] ELSE [] END |
@@ -830,6 +901,10 @@ export const updateConsentFlowContractVersion = async (
             autoBoostConfigs: next.autoboosts,
             boostIds: next.autoboosts.map(config => config.id),
             writerIds,
+            ...(referralAudience && {
+                recipientIds: [...new Set(referralAudience.recipients)],
+                expectedRecipientIds: [...new Set(referralAudience.expectedRecipients)],
+            }),
             reason: reason ?? null,
             kind,
             contractProperties,
@@ -875,7 +950,9 @@ export const updateConsentFlowContractVersion = async (
     if (!committed.records.length)
         throw new TRPCError({
             code: 'CONFLICT',
-            message: 'Contract changed concurrently; retry the update',
+            message: referralAudience
+                ? 'Could not publish the referral update. Review the current contract and audience and try again.'
+                : 'Contract changed concurrently; retry the update',
         });
     await tryDispatchContractEvent(eventId);
     await tryFanOutContractIntegrationEvents(contractId);
