@@ -16,8 +16,7 @@ import { SignJWT, jwtVerify } from 'jose';
 
 import { requireSubject } from '../auth';
 import { accessForScopes, parseScopeString, scopesForAccess } from '../scopes';
-import type { Grant } from '../schemas';
-import type { HcpV1Caller, HcpV1Deps } from './deps';
+import { urn, type HcpV1Caller, type HcpV1Deps } from './deps';
 import { malformed } from './errors';
 import { asItStands, createGrant } from './grants';
 
@@ -158,13 +157,33 @@ const DID = /^did:[a-z0-9]+:\S+$/;
 const sameScopes = (a: readonly string[], b: readonly string[]) =>
     a.length === b.length && a.every((scope, index) => scope === b[index]);
 
+const verifiedTicket = async (
+    config: OAuthConsentConfig,
+    token: string
+): Promise<OAuthRequestTicket> => {
+    const verified = await verifyOAuthRequestTicket(config, token);
+    if (!verified.ok)
+        throw malformed('The sign-in request is invalid or expired. Start again from the app.');
+    if (!DID.test(verified.claims.clientDid) || verified.claims.clientDid.length > 2048)
+        throw malformed('The sign-in request names an invalid client.');
+    return verified.claims;
+};
+
+const completeUrlFor = (config: OAuthConsentConfig, assertion: string): string => {
+    const url = new URL(`${trimSlash(config.issuerUrl)}/oauth/consent/complete`);
+    url.searchParams.set('assertion', assertion);
+    return url.toString();
+};
+
 /**
- * The signed-in subject allows an OAuth client: verify the AS's ticket, issue (or
- * reuse) a grant to the client's DID, and sign the assertion the AS completes from.
+ * The signed-in subject allows an OAuth client: verify the AS's ticket, issue a fresh
+ * grant to the client's DID, and sign the assertion the AS completes from.
  *
- * The subject is always the caller; nothing in the ticket can name another. An
- * active direct grant to the same client with exactly these scopes is reused rather
- * than duplicated; any other earlier grant is left alone (not revoked).
+ * The subject is always the caller; nothing in the ticket can name another. Each
+ * Allow gets a full OAUTH_GRANT_DURATION_MS: an earlier active direct grant to the
+ * same client with exactly these scopes is revoked as superseded by the new one
+ * (each revocation is its own audited transition), so a re-login neither keeps the
+ * minutes the old grant had left nor piles up duplicates. Other grants are left alone.
  */
 export const approveOAuthRequest = async (
     deps: HcpV1Deps,
@@ -173,12 +192,7 @@ export const approveOAuthRequest = async (
     config: OAuthConsentConfig
 ): Promise<{ completeUrl: string; grantId: string }> => {
     const subjectDid = requireSubject(caller);
-    const verified = await verifyOAuthRequestTicket(config, input.ticket);
-    if (!verified.ok)
-        throw malformed('The sign-in request is invalid or expired. Start again from the app.');
-    const ticket = verified.claims;
-    if (!DID.test(ticket.clientDid) || ticket.clientDid.length > 2048)
-        throw malformed('The sign-in request names an invalid client.');
+    const ticket = await verifiedTicket(config, input.ticket);
 
     const scopes = parseScopeString(ticket.scope);
     const access = accessForScopes(scopes, {
@@ -189,36 +203,51 @@ export const approveOAuthRequest = async (
         throw malformed('The sign-in request asks for scopes this provider does not issue.');
     const wanted = scopesForAccess(access);
 
-    const active = await Promise.all(
-        (await deps.store.listGrants(subjectDid, 'active')).map(grant => asItStands(deps, grant))
-    );
-    const existing = active.find(
-        grant =>
-            grant.status === 'active' &&
-            grant.source.type === 'direct' &&
-            grant.client.id === ticket.clientDid &&
-            sameScopes(scopesForAccess(grant.access), wanted)
-    );
+    const grant = await createGrant(deps, caller, {
+        client: { id: ticket.clientDid, name: ticket.clientName.slice(0, 200) },
+        access,
+        grantType: 'temporary',
+        expiresAt: new Date(deps.now().getTime() + OAUTH_GRANT_DURATION_MS).toISOString(),
+        // Writes land as suggestions until the person accepts (LC-2423).
+        canWrite: false,
+        source: { type: 'direct' },
+    });
 
-    let grant: Pick<Grant, 'grantId'>;
-    if (existing) grant = existing;
-    else
-        grant = await createGrant(deps, caller, {
-            client: { id: ticket.clientDid, name: ticket.clientName.slice(0, 200) },
-            access,
-            grantType: 'temporary',
-            expiresAt: new Date(deps.now().getTime() + OAUTH_GRANT_DURATION_MS).toISOString(),
-            // Writes land as suggestions until the person accepts (LC-2423).
-            canWrite: false,
-            source: { type: 'direct' },
+    const earlier = (
+        await Promise.all(
+            (await deps.store.listGrants(subjectDid, 'active')).map(stored =>
+                asItStands(deps, stored)
+            )
+        )
+    ).filter(
+        stored =>
+            stored.grantId !== grant.grantId &&
+            stored.status === 'active' &&
+            stored.source.type === 'direct' &&
+            stored.client.id === ticket.clientDid &&
+            sameScopes(scopesForAccess(stored.access), wanted)
+    );
+    for (const stored of earlier) {
+        const at = deps.now().toISOString();
+        await deps.store.transitionGrantStatus(stored.grantId, 'revoked', at, {
+            eventId: urn(deps.newId()),
+            eventType: 'grant.revoked',
+            timestamp: at,
+            subjectDid,
+            providerId: deps.providerId,
+            initiator: { role: 'management-client', id: caller.did },
+            entryId: null,
+            categories: [],
+            purpose: null,
+            grantId: stored.grantId,
+            data: { reason: 'superseded', supersededBy: grant.grantId },
         });
+    }
 
     const assertion = await signConsentAssertion(config, {
         requestId: ticket.requestId,
         grantId: grant.grantId,
         subjectDid,
     });
-    const completeUrl = new URL(`${trimSlash(config.issuerUrl)}/oauth/consent/complete`);
-    completeUrl.searchParams.set('assertion', assertion);
-    return { completeUrl: completeUrl.toString(), grantId: grant.grantId };
+    return { completeUrl: completeUrlFor(config, assertion), grantId: grant.grantId };
 };

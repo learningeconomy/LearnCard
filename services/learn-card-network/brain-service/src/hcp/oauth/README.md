@@ -90,7 +90,7 @@ For Claude Code against real MCP tools, see `../mcp/README.md` (Unit 2). Unit 1 
 | Topic                      | Choice                                                                                                                       |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | Placement                  | `brain-service/src/hcp/oauth/` (HCP-specific AS). Not lifted into `@learncard/mcp` yet. Passport tokens are not grant-bound. |
-| Token mint                 | Consent in the app issues (or reuses) a grant to the OAuth client's derived DID; the token represents that grant.            |
+| Token mint                 | Consent in the app issues a fresh grant to the OAuth client's derived DID; the token represents that grant.                  |
 | OAuth client vs HCP client | `client_id` = MCP host; JWT `sub` = `grant.client.id`.                                                                       |
 | Consent                    | LearnCard app `/hcp/connect` + `hcp.v1.oauth.approve` (DID auth). Typed form only with `devTypedConsent`, never production.  |
 | Token alg                  | HS256 with `HCP_OAUTH_TOKEN_SECRET` for local Unit 1.                                                                        |

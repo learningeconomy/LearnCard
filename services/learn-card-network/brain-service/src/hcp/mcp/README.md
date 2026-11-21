@@ -97,7 +97,9 @@ claude mcp logout hcp-local && claude mcp remove hcp-local -s local
 docker rm -f hcp-oauth-neo4j
 ```
 
-Running `claude mcp login` again with the same scopes reuses the active grant.
+Running `claude mcp login` again with the same scopes issues a fresh 1-hour grant and
+revokes the earlier one as superseded (Activity shows both), so a re-login always gets
+a full hour and the old token stops working.
 
 Without a TTY or browser, use `claude mcp login --no-browser` (or set `BROWSER` to a
 script that saves the URL). A set `ANTHROPIC_API_KEY` overrides the claude.ai login for

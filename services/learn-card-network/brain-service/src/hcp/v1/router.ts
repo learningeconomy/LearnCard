@@ -374,7 +374,7 @@ const oauthRouter = t.router({
                 tags: TAGS,
                 summary: 'Allow an HCP OAuth client',
                 description:
-                    "LearnCard addition, Context Subject only. Verifies the HCP OAuth AS's signed request ticket, issues (or reuses) a grant to the OAuth client's DID with the requested scopes, and returns the AS URL that completes the sign-in.",
+                    "LearnCard addition, Context Subject only. Verifies the HCP OAuth AS's signed request ticket, issues a fresh 1-hour grant to the OAuth client's DID with the requested scopes (superseding an earlier one to the same client with the same scopes), and returns the AS URL that completes the sign-in.",
             },
             requiredScope: WRITE,
         })

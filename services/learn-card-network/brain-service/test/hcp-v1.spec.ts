@@ -1005,12 +1005,52 @@ describe('HCP v1 OAuth consent (hcp.v1.oauth.approve)', () => {
         const audit = await subject.clients.fullAuth.hcp.v1.audit.list({ grantId: result.grantId });
         expect(audit.events.map(e => e.eventType)).toEqual(['grant.issued']);
 
-        // Same client and scopes again: the active grant is reused, not duplicated.
+        // Same client and scopes again: a fresh grant supersedes the earlier one.
         const again = await subject.clients.fullAuth.hcp.v1.oauth.approve({
             ticket: await ticket(),
         });
-        expect(again.grantId).toBe(result.grantId);
-        expect(await subject.clients.fullAuth.hcp.v1.grants.list()).toHaveLength(1);
+        expect(again.grantId).not.toBe(result.grantId);
+        const after = await subject.clients.fullAuth.hcp.v1.grants.list();
+        expect(after.map(g => g.grantId)).toEqual([again.grantId]);
+        const revoked = await subject.clients.fullAuth.hcp.v1.grants.list({ status: 'revoked' });
+        expect(revoked.map(g => g.grantId)).toEqual([result.grantId]);
+        const supersededAudit = await subject.clients.fullAuth.hcp.v1.audit.list({
+            grantId: result.grantId,
+        });
+        expect(supersededAudit.events.map(e => [e.eventType, e.data])).toEqual([
+            ['grant.revoked', { reason: 'superseded', supersededBy: again.grantId }],
+            ['grant.issued', expect.anything()],
+        ]);
+    });
+
+    it('re-login near expiry gets a full hour, persisted in Neo4j', async () => {
+        const HOUR = 60 * 60 * 1000;
+        const realNow = Date.now();
+        const first = await subject.clients.fullAuth.hcp.v1.oauth.approve({
+            ticket: await ticket(),
+        });
+        // 55 minutes later (the brain's clock; tickets and assertions stay valid).
+        vi.useFakeTimers({ now: realNow + 55 * 60 * 1000, toFake: ['Date'] });
+        try {
+            const [old] = await subject.clients.fullAuth.hcp.v1.grants.list();
+            expect(new Date(old!.expiresAt!).getTime() - Date.now()).toBeLessThanOrEqual(
+                5 * 60 * 1000 + 5000
+            );
+            const second = await subject.clients.fullAuth.hcp.v1.oauth.approve({
+                ticket: await ticket(),
+            });
+            const grants = await subject.clients.fullAuth.hcp.v1.grants.list();
+            expect(grants.map(g => g.grantId)).toEqual([second.grantId]);
+            const remaining = new Date(grants[0]!.expiresAt!).getTime() - Date.now();
+            expect(remaining).toBeGreaterThan(HOUR - 5000);
+            expect(remaining).toBeLessThanOrEqual(HOUR);
+            const firstNow = await subject.clients.fullAuth.hcp.v1.grants.get({
+                grantId: first.grantId,
+            });
+            expect(firstNow.status).toBe('revoked');
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it('refuses a profile-less caller, and bad, expired or wrong-typ tickets', async () => {

@@ -12,6 +12,7 @@ import { listAudit } from '../v1/service/governance';
 import { revokeGrant } from '../v1/service/grants';
 import {
     CONSENT_ASSERTION_TYP,
+    OAUTH_GRANT_DURATION_MS,
     OAUTH_GRANT_PURPOSE_CODE,
     OAUTH_REQUEST_AUDIENCE,
     approveOAuthRequest,
@@ -502,15 +503,84 @@ describe('HCP OAuth DID-authenticated consent', () => {
                 config
             );
         };
+        const expiresInMs = async (grantId: string) =>
+            new Date((await harness.store.getGrant(grantId))!.expiresAt!).getTime() -
+            harness.deps.now().getTime();
 
         const first = await approve('hcp:health_context:read');
+        expect(await expiresInMs(first.grantId)).toBe(OAUTH_GRANT_DURATION_MS);
+
+        // 55 minutes later the person signs in again: they get a full hour, not 5 minutes.
+        harness.advance(55 * 60 * 1000);
+        expect(await expiresInMs(first.grantId)).toBe(5 * 60 * 1000);
         const second = await approve('hcp:health_context:read');
-        expect(second.grantId).toBe(first.grantId);
+        expect(second.grantId).not.toBe(first.grantId);
+        expect(await expiresInMs(second.grantId)).toBe(OAUTH_GRANT_DURATION_MS);
+
+        // The old grant is revoked as superseded (audited), so its tokens stop.
+        expect((await harness.store.getGrant(first.grantId))!.status).toBe('revoked');
+        const audit = await listAudit(harness.deps, subject, { grantId: first.grantId, limit: 50 });
+        expect(audit.events.map(e => [e.eventType, e.data])).toContainEqual([
+            'grant.revoked',
+            { reason: 'superseded', supersededBy: second.grantId },
+        ]);
+        const active = (await harness.store.listGrants(SUBJECT_DID, 'active')).filter(
+            g => g.client.id === deriveOAuthClientDid(baseUrl, clientId)
+        );
+        expect(active.map(g => g.grantId)).toEqual([second.grantId]);
 
         const wider = await approve('hcp:health_context:read hcp:general_preferences:read');
-        expect(wider.grantId).not.toBe(first.grantId);
-        // The earlier grant is left alone, not revoked.
-        expect((await harness.store.getGrant(first.grantId))!.status).toBe('active');
+        expect(wider.grantId).not.toBe(second.grantId);
+        // A grant with different scopes is left alone, not revoked.
+        expect((await harness.store.getGrant(second.grantId))!.status).toBe('active');
+    });
+
+    it("re-consent cuts off the old grant's token, and revoking the new grant cuts off its own", async () => {
+        const redirectUri = 'http://127.0.0.1/cb-relogin-token';
+        const clientId = await register(redirectUri);
+        const login = async () => {
+            const verifier = createCodeVerifier();
+            const { location } = await authorize({
+                clientId,
+                redirectUri,
+                scope: 'hcp:general_preferences:read',
+                verifier,
+            });
+            const approval = await approveOAuthRequest(
+                harness.deps,
+                subject,
+                { ticket: ticketFrom(location) },
+                config
+            );
+            const done = await complete(
+                new URL(approval.completeUrl).searchParams.get('assertion')
+            );
+            const token = await exchange({
+                location: done.headers.get('location')!,
+                clientId,
+                redirectUri,
+                verifier,
+            });
+            return { approval, token: token.access_token };
+        };
+        const resolve = (token: string) => resolveBearerToGrant(harness.deps, tokenConfig, token);
+
+        const old = await login();
+        expect((await resolve(old.token)).ok).toBe(true);
+        const fresh = await login();
+        expect(await resolve(old.token)).toEqual({
+            ok: false,
+            status: 401,
+            error: 'revoked_grant',
+        });
+        expect((await resolve(fresh.token)).ok).toBe(true);
+
+        await revokeGrant(harness.deps, subject, fresh.approval.grantId);
+        expect(await resolve(fresh.token)).toEqual({
+            ok: false,
+            status: 401,
+            error: 'revoked_grant',
+        });
     });
 });
 

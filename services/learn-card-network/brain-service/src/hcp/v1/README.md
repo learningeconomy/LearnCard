@@ -45,8 +45,9 @@ Mounted once in `src/app.ts` as `hcp`; every procedure is `hcp.v1.<area>.<op>`.
 Wire types live in `schemas.ts`; read it alongside this table.
 
 `oauth.approve` is the DID-authenticated consent step for the HCP OAuth AS
-(`../oauth/`): it verifies the AS's signed request ticket, issues (or reuses) a grant
-from the caller to the OAuth client's DID, and returns the AS URL that completes the
+(`../oauth/`): it verifies the AS's signed request ticket, issues a fresh 1-hour grant
+from the caller to the OAuth client's DID (revoking an earlier one to the same client
+with the same scopes as superseded), and returns the AS URL that completes the
 sign-in. It needs `HCP_OAUTH_ISSUER_URL` (the AS base URL) and `HCP_OAUTH_TOKEN_SECRET`
 (the AS's HS256 secret); without them it fails with `PRECONDITION_FAILED`. See
 `service/oauth-consent.ts`.
