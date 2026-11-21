@@ -60,11 +60,12 @@ PORT=4329 bun --conditions=development src/docker-entry.ts
 
 # 4. HCP MCP + AS on :18797 over the same Neo4j (another terminal: re-export
 #    NEO4J_PASSWORD and everything in step 2; an env file with `set -a; . file; set +a` helps)
-# The AS issuer is always http://127.0.0.1:<port> (dev-server.ts does not read
-# HCP_OAUTH_ISSUER_URL). The brain's HCP_OAUTH_ISSUER_URL must match it exactly (not
-# localhost), or approve fails with "invalid or expired".
+# The AS advertises HCP_OAUTH_ISSUER_URL (default http://127.0.0.1:<port>) and still
+# listens on 127.0.0.1:<port>. Set the same HCP_OAUTH_ISSUER_URL on the brain and the
+# MCP server (step 2 does): if they differ, approve fails with "invalid or expired".
 HCP_MCP_DEV_STORE=neo4j bun --conditions=development src/hcp/mcp/dev-server.ts 18797
-# Prints store: "neo4j" and consent: http://localhost:3329/hcp/connect.
+# Prints baseUrl (the issuer), listen, store: "neo4j" and consent:
+# http://localhost:3329/hcp/connect.
 # A one-off "An equivalent index already exists" log at start is harmless.
 
 # 5. App on :3329 (from apps/learn-card-app), pointed at the brain, as in ../v1/README.md:

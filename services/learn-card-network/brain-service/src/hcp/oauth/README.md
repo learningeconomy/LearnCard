@@ -47,7 +47,9 @@ served. AS client ids (`hcp_oauth_<hex>`) are DID-safe; any other id would be re
 by base64url(sha256(client_id)).
 
 The brain must share the AS's secret and know its URL: `HCP_OAUTH_TOKEN_SECRET` and
-`HCP_OAUTH_ISSUER_URL`.
+`HCP_OAUTH_ISSUER_URL`. The dev servers read `HCP_OAUTH_ISSUER_URL` too (absolute
+http(s); default `http://127.0.0.1:<port>`; one trailing slash dropped); set the same
+value on both.
 
 The old typed form (subject DID + grant id, no authentication) is served at
 `/oauth/consent` only with `devTypedConsent: true` (dev servers:

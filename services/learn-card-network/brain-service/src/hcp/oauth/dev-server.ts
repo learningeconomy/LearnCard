@@ -8,7 +8,8 @@
  *
  * Consent goes to the LearnCard app at HCP_OAUTH_CONSENT_APP_URL (default
  * http://localhost:3000). HCP_OAUTH_DEV_TYPED_CONSENT=1 serves the dev typed
- * subject/grant form instead (no DID auth; never in production).
+ * subject/grant form instead (no DID auth; never in production). HCP_OAUTH_ISSUER_URL
+ * sets the advertised issuer (default http://127.0.0.1:<port>); it must reach this port.
  */
 import { createServer } from 'node:http';
 
@@ -21,7 +22,7 @@ import {
     subject,
 } from '../v1/service/test-harness';
 import { createHcpOAuthApp } from './app';
-import { hcpOAuthEnvironment } from './environment';
+import { devIssuerUrl, hcpOAuthEnvironment } from './environment';
 
 const DEFAULT_PORT = 8765;
 const LOCAL_DEV_TOKEN_SECRET = 'local-dev-only-hcp-oauth-secret-change-me';
@@ -37,7 +38,8 @@ const main = async () => {
     const env = hcpOAuthEnvironment();
     const harness = makeHarness();
     const grant = await createGrant(harness.deps, subject, grantInput());
-    const baseUrl = `http://127.0.0.1:${port}`;
+    // Listens on 127.0.0.1:<port>; advertises HCP_OAUTH_ISSUER_URL when set.
+    const baseUrl = devIssuerUrl(env, port);
     const app = createHcpOAuthApp({
         store: harness.store,
         hcp: harness.deps,
@@ -59,6 +61,7 @@ const main = async () => {
         JSON.stringify(
             {
                 baseUrl,
+                listen: `http://127.0.0.1:${port}`,
                 prm: `${baseUrl}/.well-known/oauth-protected-resource`,
                 as: `${baseUrl}/.well-known/oauth-authorization-server`,
                 probe: `${baseUrl}/hcp/oauth/v1/probe`,

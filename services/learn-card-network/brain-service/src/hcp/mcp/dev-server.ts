@@ -15,6 +15,9 @@
  *    (default http://localhost:3000).
  *  - HCP_OAUTH_TOKEN_SECRET: HS256 secret; the brain must use the same one to verify
  *    request tickets and sign consent assertions (default: a local-dev constant).
+ *  - HCP_OAUTH_ISSUER_URL: the AS's public base URL (issuer, PRM resource, client DID
+ *    host); must equal the brain's HCP_OAUTH_ISSUER_URL. Default http://127.0.0.1:<port>.
+ *    The server still listens on 127.0.0.1:<port>; the URL must reach it.
  *  - HCP_OAUTH_DEV_TYPED_CONSENT=1: serve the dev typed subject/grant form instead of
  *    the app handoff. No DID auth; refused when NODE_ENV is production.
  */
@@ -31,7 +34,7 @@ import {
     makeHarness,
     subject,
 } from '../v1/service/test-harness';
-import { hcpOAuthEnvironment } from '../oauth/environment';
+import { devIssuerUrl, hcpOAuthEnvironment } from '../oauth/environment';
 import { createHcpMcpApp, HCP_MCP_PATH } from './app';
 
 const DEFAULT_PORT = 8766;
@@ -78,7 +81,8 @@ const main = async () => {
     const { deps, seeded } = mode === 'neo4j' ? await neo4jDeps() : await memoryDeps();
     const devTypedConsent = env.HCP_OAUTH_DEV_TYPED_CONSENT === '1';
     const consentAppUrl = env.HCP_OAUTH_CONSENT_APP_URL;
-    const baseUrl = `http://127.0.0.1:${port}`;
+    // Listens on 127.0.0.1:<port>; advertises HCP_OAUTH_ISSUER_URL when set.
+    const baseUrl = devIssuerUrl(env, port);
     const app = createHcpMcpApp({
         store: deps.store,
         hcp: deps,
@@ -100,6 +104,7 @@ const main = async () => {
         JSON.stringify(
             {
                 baseUrl,
+                listen: `http://127.0.0.1:${port}`,
                 store: mode,
                 consent: devTypedConsent ? 'dev typed form' : `${consentAppUrl}/hcp/connect`,
                 prm: `${baseUrl}/.well-known/oauth-protected-resource`,
