@@ -1,5 +1,5 @@
 import React from 'react';
-import { cleanup as cleanupScreen, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup as cleanupScreen, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { HcpEntry, HcpGrant } from 'learn-card-base/hcp/useHcp';
@@ -26,6 +26,7 @@ const state = vi.hoisted(() => ({
     offerPending: false,
     offerRefetch: vi.fn(),
     approve: vi.fn(),
+    deny: vi.fn(),
     approvePending: false,
     approveFailed: false,
 }));
@@ -57,6 +58,12 @@ vi.mock('learn-card-base/hcp/useHcp', () => ({
         isPending: state.approvePending,
         isSuccess: false,
         isError: state.approveFailed,
+    }),
+    useHcpOAuthDeny: () => ({
+        mutate: state.deny,
+        isPending: false,
+        isSuccess: false,
+        isError: false,
     }),
     useHcpGrants: () => ({
         isPending: false,
@@ -123,6 +130,7 @@ beforeEach(() => {
     state.offerPending = false;
     state.offerRefetch.mockReset();
     state.approve.mockReset();
+    state.deny.mockReset();
     state.approvePending = false;
     state.approveFailed = false;
 });
@@ -535,9 +543,37 @@ describe('HCP OAuth sign-in (MCP host)', () => {
         }
     });
 
-    it("Don't Allow goes to /hcp without approving", () => {
+    it("Don't Allow asks the brain to deny, then hands the browser back to the AS", () => {
+        const assign = vi.fn();
+        const original = window.location;
+        Object.defineProperty(window, 'location', {
+            configurable: true,
+            value: { ...original, assign },
+        });
+        try {
+            const ticket = ticketFor(oauthClaims);
+            renderAt(`/hcp/connect?oauth_request=${ticket}`);
+            fireEvent.click(screen.getByRole('button', { name: "Don't Allow" }));
+            expect(state.approve).not.toHaveBeenCalled();
+            expect(state.deny).toHaveBeenCalledTimes(1);
+            const [input, callbacks] = state.deny.mock.calls[0];
+            expect(input).toEqual({ ticket });
+            callbacks.onSuccess({
+                completeUrl: 'http://as.test/oauth/consent/complete?assertion=d',
+            });
+            expect(assign).toHaveBeenCalledWith(
+                'http://as.test/oauth/consent/complete?assertion=d'
+            );
+        } finally {
+            Object.defineProperty(window, 'location', { configurable: true, value: original });
+        }
+    });
+
+    it("Don't Allow falls back to /hcp when the brain cannot deny", () => {
         const { location } = renderAt(`/hcp/connect?oauth_request=${ticketFor(oauthClaims)}`);
         fireEvent.click(screen.getByRole('button', { name: "Don't Allow" }));
+        const [, callbacks] = state.deny.mock.calls[0];
+        act(() => callbacks.onError(new Error('bad ticket')));
         expect(state.approve).not.toHaveBeenCalled();
         expect(location()).toBe('/hcp');
     });

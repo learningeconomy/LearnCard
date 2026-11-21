@@ -2,7 +2,12 @@ import React, { useMemo } from 'react';
 import { IonContent, IonPage } from '@ionic/react';
 import { useHistory, useLocation } from 'react-router-dom';
 
-import { useHcpChange, useHcpContractOffer, useHcpOAuthApprove } from 'learn-card-base/hcp/useHcp';
+import {
+    useHcpChange,
+    useHcpContractOffer,
+    useHcpOAuthApprove,
+    useHcpOAuthDeny,
+} from 'learn-card-base/hcp/useHcp';
 import * as m from '../../paraglide/messages.js';
 import ConsentScreen from './ConsentScreen';
 import {
@@ -60,11 +65,14 @@ const ContractConsent: React.FC<{ contractUri: string; client: string | null }> 
 
 /**
  * An MCP host (e.g. Claude Code) signing in through the HCP OAuth AS. Allow issues a
- * grant to the host's DID for the scopes shown, then hands the browser back to the AS.
+ * grant to the host's DID for the scopes shown; either answer hands the browser back
+ * to the AS (at the URL the brain returns), which tells the host, so it never hangs.
+ * Only if the brain cannot answer Don't allow (e.g. a bad ticket) does it go to /hcp.
  */
 const OAuthConsent: React.FC<{ signIn: OAuthSignIn }> = ({ signIn }) => {
     const history = useHistory();
     const approve = useHcpOAuthApprove();
+    const deny = useHcpOAuthDeny();
     const request = requestFromOAuth(
         signIn,
         m['hcp.connect.oauthPurpose']({ app: signIn.clientName })
@@ -74,7 +82,7 @@ const OAuthConsent: React.FC<{ signIn: OAuthSignIn }> = ({ signIn }) => {
         <ConsentScreen
             request={request}
             oauth={{ scopes: signIn.scopes }}
-            pending={approve.isPending || approve.isSuccess}
+            pending={approve.isPending || approve.isSuccess || deny.isPending || deny.isSuccess}
             failed={approve.isError}
             onAllow={() =>
                 approve.mutate(
@@ -82,7 +90,15 @@ const OAuthConsent: React.FC<{ signIn: OAuthSignIn }> = ({ signIn }) => {
                     { onSuccess: ({ completeUrl }) => window.location.assign(completeUrl) }
                 )
             }
-            onDeny={() => history.replace('/hcp')}
+            onDeny={() =>
+                deny.mutate(
+                    { ticket: signIn.ticket },
+                    {
+                        onSuccess: ({ completeUrl }) => window.location.assign(completeUrl),
+                        onError: () => history.replace('/hcp'),
+                    }
+                )
+            }
         />
     );
 };

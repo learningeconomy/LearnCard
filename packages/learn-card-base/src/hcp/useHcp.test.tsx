@@ -10,7 +10,13 @@ vi.mock('../stores/walletStore', () => ({
     switchedProfileStore: { use: { switchedDid: () => host.switchedDid } },
 }));
 
-import { useHcpChange, useHcpContractOffer, useHcpEntries, useHcpOAuthApprove } from './useHcp';
+import {
+    useHcpChange,
+    useHcpContractOffer,
+    useHcpEntries,
+    useHcpOAuthApprove,
+    useHcpOAuthDeny,
+} from './useHcp';
 
 const SUBJECT = 'did:key:z6MkSubject';
 
@@ -37,6 +43,11 @@ const makeHcp = () => ({
             mutate: vi.fn().mockResolvedValue({
                 completeUrl: 'http://as.test/oauth/consent/complete?assertion=a',
                 grantId: 'g2',
+            }),
+        },
+        deny: {
+            mutate: vi.fn().mockResolvedValue({
+                completeUrl: 'http://as.test/oauth/consent/complete?assertion=d',
             }),
         },
     },
@@ -168,5 +179,16 @@ describe('HCP hooks', () => {
             completeUrl: 'http://as.test/oauth/consent/complete?assertion=a',
             grantId: 'g2',
         });
+    });
+
+    it('denies an OAuth request ticket and returns where to hand back to the client', async () => {
+        const { hcp, wrapper } = setup();
+        const { result } = renderHook(() => useHcpOAuthDeny(), { wrapper });
+        let out: unknown;
+        await act(async () => {
+            out = await result.current.mutateAsync({ ticket: 't.k.n' });
+        });
+        expect(hcp.oauth.deny.mutate).toHaveBeenCalledWith({ ticket: 't.k.n' });
+        expect(out).toEqual({ completeUrl: 'http://as.test/oauth/consent/complete?assertion=d' });
     });
 });

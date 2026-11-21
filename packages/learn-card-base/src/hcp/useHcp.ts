@@ -88,7 +88,7 @@ export const useHcpActivity = () => {
 
 /**
  * Allows an HCP OAuth client (an MCP host such as Claude Code) from its signed request
- * ticket (`/hcp/connect?oauth_request=`). The brain issues or reuses the grant and
+ * ticket (`/hcp/connect?oauth_request=`). The brain issues a fresh 1-hour grant and
  * returns the AS URL that finishes signing in; the caller navigates there.
  */
 export const useHcpOAuthApprove = () => {
@@ -101,6 +101,18 @@ export const useHcpOAuthApprove = () => {
         onMutate: () => ({ key }),
         onSuccess: (_result, _input, pinned) =>
             queryClient.invalidateQueries({ queryKey: pinned?.key ?? key }),
+    });
+};
+
+/**
+ * Don't allow an HCP OAuth client: the brain checks the ticket, issues nothing, and
+ * returns the AS URL that answers the client `access_denied`; the caller navigates
+ * there so the client (e.g. `claude mcp login`) stops waiting.
+ */
+export const useHcpOAuthDeny = () => {
+    const client = useHcpClient();
+    return useMutation({
+        mutationFn: async (input: { ticket: string }) => (await client()).oauth.deny.mutate(input),
     });
 };
 
