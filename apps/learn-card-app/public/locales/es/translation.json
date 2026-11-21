@@ -10592,6 +10592,7 @@
     },
     "announcements": {
         "title": "Anuncios del producto",
+        "description": "Elige cómo recibir noticias y anuncios de los administradores de la aplicación.",
         "email": "Correo electrónico",
         "push": "Notificaciones push",
         "loading": "Cargando preferencias…",

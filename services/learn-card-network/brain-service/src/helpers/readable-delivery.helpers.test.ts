@@ -218,7 +218,7 @@ describe('readable delivery authorization and projection', () => {
         mocks.decrypt.mockResolvedValue({ ...vc, evidenceNotes: 'x'.repeat(1024 * 1024) });
         const first = await readReadableDelivery('recipient', domain, { ...input, limit: 2 });
         expect(first.records.map(record => record.uri)).toEqual([grant.credentials[0]!.uri]);
-        expect(first.cursor).toBe('1');
+        expect(first.cursor).toMatch(/^rd1\.1\./);
         const second = await readReadableDelivery('recipient', domain, {
             ...input,
             cursor: first.cursor,
@@ -226,6 +226,107 @@ describe('readable delivery authorization and projection', () => {
         expect(second.records.map(record => record.uri)).toEqual([grant.credentials[1]!.uri]);
         expect(second.hasMore).toBe(false);
     });
+    it('restarts continuation when a selected outcome is replaced between pages', async () => {
+        const first = await readReadableDelivery('recipient', domain, input);
+        const changed = {
+            ...grant,
+            credentials: [
+                { ...grant.credentials[0]!, uri: grant.credentials[0]!.uri.replace('one', 'new') },
+                grant.credentials[1]!,
+            ],
+        };
+        mocks.grants.mockResolvedValue({ records: [changed] });
+        mocks.read.mockClear();
+        await expect(
+            readReadableDelivery('recipient', domain, { ...input, cursor: first.cursor })
+        ).rejects.toMatchObject({
+            code: 'CONFLICT',
+            message: expect.stringContaining('READABLE_DELIVERY_CURSOR_STALE'),
+        });
+        expect(mocks.read).not.toHaveBeenCalled();
+        const restarted = await readReadableDelivery('recipient', domain, input);
+        expect(restarted.records[0]?.uri).toBe(changed.credentials[0]!.uri);
+    });
+
+    it('keeps continuation stable when equivalent grants arrive in a different database order', async () => {
+        const first = await readReadableDelivery('recipient', domain, input);
+        mocks.grants.mockResolvedValue({
+            records: [{ ...grant, credentials: [...grant.credentials].reverse() }],
+        });
+        const second = await readReadableDelivery('recipient', domain, {
+            ...input,
+            cursor: first.cursor,
+        });
+        expect(second.records.map(record => record.uri)).toEqual([grant.credentials[1]!.uri]);
+        expect(second.hasMore).toBe(false);
+    });
+
+    it('rejects a changed unprocessed selection before returning an in-flight page', async () => {
+        const changed = { ...grant, credentials: [grant.credentials[0]] };
+        mocks.grants
+            .mockResolvedValueOnce({ records: [grant] })
+            .mockResolvedValueOnce({ records: [changed] });
+        await expect(readReadableDelivery('recipient', domain, input)).rejects.toMatchObject({
+            code: 'CONFLICT',
+            message: expect.stringContaining('READABLE_DELIVERY_CURSOR_STALE'),
+        });
+    });
+
+    it('tells clients using a legacy numeric cursor to restart rather than guessing a grant', async () => {
+        await expect(
+            readReadableDelivery('recipient', domain, { ...input, cursor: '1' })
+        ).rejects.toMatchObject({
+            code: 'CONFLICT',
+            message: expect.stringContaining('READABLE_DELIVERY_CURSOR_STALE'),
+        });
+        expect(mocks.read).not.toHaveBeenCalled();
+    });
+
+    it('resumes at the first record interrupted by the page deadline', async () => {
+        const controller = new AbortController();
+        const timeout = vi.spyOn(AbortSignal, 'timeout').mockReturnValueOnce(controller.signal);
+        mocks.read
+            .mockResolvedValueOnce({ ciphertext: 'encrypted' })
+            .mockImplementationOnce(async () => {
+                controller.abort();
+                throw new Error('Budget elapsed');
+            });
+        try {
+            const first = await readReadableDelivery('recipient', domain, { ...input, limit: 2 });
+            expect(first.records.map(record => record.uri)).toEqual([grant.credentials[0]!.uri]);
+            expect(first.hasMore).toBe(true);
+            const next = await readReadableDelivery('recipient', domain, {
+                ...input,
+                cursor: first.cursor,
+            });
+            expect(next.records.map(record => record.uri)).toEqual([grant.credentials[1]!.uri]);
+            expect(next.hasMore).toBe(false);
+        } finally {
+            timeout.mockRestore();
+        }
+    });
+
+    it('asks to retry the same cursor when no record finishes within the page deadline', async () => {
+        const first = await readReadableDelivery('recipient', domain, input);
+        const controller = new AbortController();
+        const timeout = vi.spyOn(AbortSignal, 'timeout').mockReturnValueOnce(controller.signal);
+        mocks.verify.mockImplementationOnce(async () => {
+            controller.abort();
+            return { proof: 'unavailable', status: 'not_applicable', label: 'unverified' };
+        });
+        try {
+            const next = { ...input, cursor: first.cursor };
+            await expect(readReadableDelivery('recipient', domain, next)).rejects.toMatchObject({
+                code: 'SERVICE_UNAVAILABLE',
+                message: expect.stringContaining('READABLE_DELIVERY_PAGE_TIMEOUT'),
+            });
+            const retried = await readReadableDelivery('recipient', domain, next);
+            expect(retried.records.map(record => record.uri)).toEqual([grant.credentials[1]!.uri]);
+        } finally {
+            timeout.mockRestore();
+        }
+    });
+
     it('rejects a malformed local DID that resolves to a different profile', async () => {
         await expect(
             readReadableDelivery('recipient', domain, {
@@ -240,7 +341,7 @@ describe('readable delivery authorization and projection', () => {
         const result = await readReadableDelivery('recipient', domain, input);
         expect(result).toMatchObject({
             hasMore: true,
-            cursor: '1',
+            cursor: expect.stringMatching(/^rd1\.1\./),
             records: [
                 {
                     status: 'readable',
