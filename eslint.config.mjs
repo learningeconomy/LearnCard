@@ -207,6 +207,8 @@ export default tseslint.config(
             // Lambda and cache can boot without the full schema's required SEED/MONGO.
             'services/learn-card-network/lca-api/src/config/oidcEnvironment.ts',
             'services/learn-card-network/lca-api/src/config/cacheEnvironment.ts',
+            // HCP OAuth AS + local dev servers: must boot in-memory without SEED/NEO4J_*.
+            'services/learn-card-network/brain-service/src/hcp/oauth/environment.ts',
             // These bootstraps read the stage selector and apply non-secret stage config into
             // env before the validating module can be imported. Only the pre-schema stage read
             // lives here; all other values still flow through the validated environment module.

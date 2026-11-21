@@ -73,6 +73,10 @@ export const brainServiceEnvironmentShape = {
     CAMPAIGN_QUEUE_URL: optionalEnvironmentUrl,
     CAMPAIGN_UNSUBSCRIBE_SECRET: optionalEnvironmentString,
     CAMPAIGN_APP_ORIGINS: optionalEnvironmentString,
+    /** HCP OAuth AS base URL that hcp.v1.oauth.approve completes sign-ins on (local AS only). */
+    HCP_OAUTH_ISSUER_URL: optionalEnvironmentUrl,
+    /** HS256 secret shared with that AS (request tickets, consent assertions). */
+    HCP_OAUTH_TOKEN_SECRET: optionalEnvironmentString,
     POSTMARK_BROADCAST_STREAM: z.string().trim().min(1).default('broadcast'),
     CAMPAIGN_EMAIL_PAGE_SIZE: z.preprocess(
         value => (value === '' ? undefined : value),

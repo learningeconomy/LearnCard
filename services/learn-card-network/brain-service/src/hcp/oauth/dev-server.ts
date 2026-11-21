@@ -1,0 +1,82 @@
+/**
+ * Local HCP OAuth AS for curl / Claude Code discovery checks.
+ *
+ * Does not bind 4319/3319. Seeds a memory grant and prints subject/grant ids.
+ *
+ *   bun --conditions=development src/hcp/oauth/dev-server.ts
+ *   bun --conditions=development src/hcp/oauth/dev-server.ts 18765
+ *
+ * Consent goes to the LearnCard app at HCP_OAUTH_CONSENT_APP_URL (default
+ * http://localhost:3000). HCP_OAUTH_DEV_TYPED_CONSENT=1 serves the dev typed
+ * subject/grant form instead (no DID auth; never in production). HCP_OAUTH_ISSUER_URL
+ * sets the advertised issuer (default http://127.0.0.1:<port>); it must reach this port.
+ */
+import { createServer } from 'node:http';
+
+import { createGrant } from '../v1/service/grants';
+import {
+    CLIENT_DID,
+    SUBJECT_DID,
+    grantInput,
+    makeHarness,
+    subject,
+} from '../v1/service/test-harness';
+import { createHcpOAuthApp } from './app';
+import { devIssuerUrl, hcpOAuthEnvironment } from './environment';
+
+const DEFAULT_PORT = 8765;
+const LOCAL_DEV_TOKEN_SECRET = 'local-dev-only-hcp-oauth-secret-change-me';
+
+const portArg = process.argv[2];
+const port = portArg ? Number.parseInt(portArg, 10) : DEFAULT_PORT;
+if (!Number.isFinite(port) || port <= 0) {
+    console.error(`Invalid port: ${portArg}`);
+    process.exit(1);
+}
+
+const main = async () => {
+    const env = hcpOAuthEnvironment();
+    const harness = makeHarness();
+    const grant = await createGrant(harness.deps, subject, grantInput());
+    // Listens on 127.0.0.1:<port>; advertises HCP_OAUTH_ISSUER_URL when set.
+    const baseUrl = devIssuerUrl(env, port);
+    const app = createHcpOAuthApp({
+        store: harness.store,
+        hcp: harness.deps,
+        issuerUrl: baseUrl,
+        resourceUrl: baseUrl,
+        tokenSecret: LOCAL_DEV_TOKEN_SECRET,
+        now: harness.deps.now,
+        consentAppUrl: env.HCP_OAUTH_CONSENT_APP_URL,
+        devTypedConsent: env.HCP_OAUTH_DEV_TYPED_CONSENT === '1',
+    });
+
+    const server = createServer(app);
+    await new Promise<void>((resolve, reject) => {
+        server.listen(port, '127.0.0.1', resolve);
+        server.on('error', reject);
+    });
+
+    console.log(
+        JSON.stringify(
+            {
+                baseUrl,
+                listen: `http://127.0.0.1:${port}`,
+                prm: `${baseUrl}/.well-known/oauth-protected-resource`,
+                as: `${baseUrl}/.well-known/oauth-authorization-server`,
+                probe: `${baseUrl}/hcp/oauth/v1/probe`,
+                subjectDid: SUBJECT_DID,
+                clientDid: CLIENT_DID,
+                grantId: grant.grantId,
+                curlPrm: `curl -s ${baseUrl}/.well-known/oauth-protected-resource | jq .`,
+            },
+            null,
+            2
+        )
+    );
+};
+
+main().catch(error => {
+    console.error(error);
+    process.exit(1);
+});

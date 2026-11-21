@@ -3,6 +3,7 @@
  *  - only `src/app.ts` (the router) and the profile delete (the subject-data
  *    cascade) import `src/hcp`, and only its index;
  *  - nothing outside `src/hcp` imports a version folder;
+ *  - non-version siblings under `src/hcp` (e.g. `oauth/`) may import a version;
  *  - inside a version, brain internals are imported only by its ports, its Neo4j
  *    adapter (`@instance`) and its router (`@routes` for tRPC builders).
  */
@@ -50,7 +51,9 @@ const ALLOWED_INTERNAL: Record<string, RegExp> = {
 
 describe('HCP module coupling', () => {
     const srcFiles = walk(SRC);
-    const versions = readdirSync(HCP).filter(name => statSync(join(HCP, name)).isDirectory());
+    const versions = readdirSync(HCP).filter(
+        name => /^v\d+$/.test(name) && statSync(join(HCP, name)).isDirectory()
+    );
 
     it('has at least one version folder', () => {
         expect(versions).toContain('v1');

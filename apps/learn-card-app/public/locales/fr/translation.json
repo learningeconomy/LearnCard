@@ -10702,7 +10702,10 @@
             "badTitle": "Ce lien ne fonctionne pas",
             "badBody": "Demandez un nouveau lien à l'appli et réessayez.",
             "unverified": "N'autorisez que les applis en qui vous avez confiance. LearnCard ne peut pas confirmer qui a créé ce lien.",
-            "offeredBy": "Proposé par le compte LearnCard de {{owner}}."
+            "offeredBy": "Proposé par le compte LearnCard de {{owner}}.",
+            "appIdLabel": "ID de l'app",
+            "scopesLabel": "Accès demandé",
+            "oauthPurpose": "Utiliser vos infos dans {{app}}"
         },
         "error": {
             "title": "Un problème est survenu",

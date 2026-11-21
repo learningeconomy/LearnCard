@@ -87,6 +87,8 @@
         "@learncard/email-templates": "workspace:*",
         "@learncard/helpers": "workspace:*",
         "@learncard/learn-card-plugin": "workspace:*",
+        "@learncard/mcp": "workspace:*",
+        "@modelcontextprotocol/sdk": "^1.20.2",
         "@learncard/partner-connect-core": "workspace:*",
         "@learncard/service-config": "workspace:*",
         "@learncard/types": "workspace:*",

@@ -1,16 +1,23 @@
 import { randomUUID } from 'node:crypto';
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { SignJWT } from 'jose';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
 import { fastifyTRPCOpenApiPlugin } from 'trpc-to-openapi';
 
 import { Profile } from '@models';
 import { neogma } from '@instance';
+import { environment } from '@environment';
 import { setValidChallengeForDid } from '@cache/challenges';
 import { deleteProfile } from '@accesslayer/profile/delete';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 
 import { appRouter, createContext } from '../src/app';
+import {
+    OAUTH_REQUEST_AUDIENCE,
+    signOAuthRequestTicket,
+    verifyConsentAssertion,
+} from '../src/hcp/v1/service/oauth-consent';
 import { getClient, getUser } from './helpers/getClient';
 
 const PURPOSE = 'https://purpose.example/tutoring';
@@ -735,6 +742,8 @@ describe('HCP v1 router (hcp.v1.*)', () => {
             '/hcp/v1/grants',
             '/hcp/v1/grants/{grantId}',
             '/hcp/v1/meta',
+            '/hcp/v1/oauth/approve',
+            '/hcp/v1/oauth/deny',
         ]);
     });
 });
@@ -909,5 +918,205 @@ describe('HCP v1 Core errors over HTTP (Draft 3 §5.5)', () => {
         });
         expect(response.statusCode).toBe(401);
         expect(response.json().error.data).not.toHaveProperty('hcp');
+    });
+});
+
+describe('HCP v1 OAuth consent (hcp.v1.oauth.approve)', () => {
+    const ISSUER = 'http://127.0.0.1:18799';
+    const SECRET = 'integration-test-hcp-oauth-secret-32b!';
+    const CONFIG = { issuerUrl: ISSUER, secret: SECRET };
+    const CLIENT_DID = 'did:web:127.0.0.1%3A18799:hcp:oauth-clients:hcp_oauth_0011223344556677';
+
+    const ticket = (overrides: Partial<Parameters<typeof signOAuthRequestTicket>[1]> = {}) =>
+        signOAuthRequestTicket(CONFIG, {
+            requestId: randomUUID(),
+            clientId: 'hcp_oauth_0011223344556677',
+            clientName: 'Claude Code',
+            clientDid: CLIENT_DID,
+            scope: 'hcp:general_preferences:read hcp:health_context:read',
+            ...overrides,
+        });
+
+    beforeAll(async () => {
+        subject = await getUser('a'.repeat(64));
+        agent = await getUser('b'.repeat(64));
+    });
+
+    const ORIGINAL = {
+        HCP_OAUTH_ISSUER_URL: environment.HCP_OAUTH_ISSUER_URL,
+        HCP_OAUTH_TOKEN_SECRET: environment.HCP_OAUTH_TOKEN_SECRET,
+    };
+
+    beforeEach(async () => {
+        Object.assign(environment, {
+            HCP_OAUTH_ISSUER_URL: ISSUER,
+            HCP_OAUTH_TOKEN_SECRET: SECRET,
+        });
+        await resetHcp();
+        await Profile.delete({ detach: true, where: {} });
+        await subject.clients.fullAuth.profile.createProfile({ profileId: 'hcp-subject' });
+    });
+
+    afterEach(() => {
+        Object.assign(environment, ORIGINAL);
+    });
+
+    it('requires DID auth with a valid challenge', async () => {
+        const input = { ticket: await ticket() };
+        await expect(getClient().hcp.v1.oauth.approve(input)).rejects.toMatchObject({
+            code: 'UNAUTHORIZED',
+            hcp: { type: 'invalid-token' },
+        });
+        await expect(subject.clients.partialAuth.hcp.v1.oauth.approve(input)).rejects.toMatchObject(
+            { code: 'UNAUTHORIZED' }
+        );
+        expect(await subject.clients.fullAuth.hcp.v1.grants.list()).toEqual([]);
+    });
+
+    it('issues a grant from the authenticated subject to the ticket client and signs the assertion', async () => {
+        const subjectDid = subject.learnCard.id.did();
+        const result = await subject.clients.fullAuth.hcp.v1.oauth.approve({
+            ticket: await ticket(),
+        });
+
+        const completeUrl = new URL(result.completeUrl);
+        expect(`${completeUrl.origin}${completeUrl.pathname}`).toBe(
+            `${ISSUER}/oauth/consent/complete`
+        );
+        const verified = await verifyConsentAssertion(
+            CONFIG,
+            completeUrl.searchParams.get('assertion')!
+        );
+        expect(verified).toMatchObject({
+            ok: true,
+            claims: { grantId: result.grantId, subjectDid },
+        });
+
+        const grants = await subject.clients.fullAuth.hcp.v1.grants.list();
+        expect(grants).toHaveLength(1);
+        expect(grants[0]).toMatchObject({
+            grantId: result.grantId,
+            subject: { id: subjectDid },
+            client: { id: CLIENT_DID, name: 'Claude Code' },
+            scopes: ['hcp:general_preferences:read', 'hcp:health_context:read'],
+            grantType: 'temporary',
+            canWrite: false,
+            status: 'active',
+        });
+        const audit = await subject.clients.fullAuth.hcp.v1.audit.list({ grantId: result.grantId });
+        expect(audit.events.map(e => e.eventType)).toEqual(['grant.issued']);
+
+        // Same client and scopes again: a fresh grant supersedes the earlier one.
+        const again = await subject.clients.fullAuth.hcp.v1.oauth.approve({
+            ticket: await ticket(),
+        });
+        expect(again.grantId).not.toBe(result.grantId);
+        const after = await subject.clients.fullAuth.hcp.v1.grants.list();
+        expect(after.map(g => g.grantId)).toEqual([again.grantId]);
+        const revoked = await subject.clients.fullAuth.hcp.v1.grants.list({ status: 'revoked' });
+        expect(revoked.map(g => g.grantId)).toEqual([result.grantId]);
+        const supersededAudit = await subject.clients.fullAuth.hcp.v1.audit.list({
+            grantId: result.grantId,
+        });
+        expect(supersededAudit.events.map(e => [e.eventType, e.data])).toEqual([
+            ['grant.revoked', { reason: 'superseded', supersededBy: again.grantId }],
+            ['grant.issued', expect.anything()],
+        ]);
+    });
+
+    it('re-login near expiry gets a full hour, persisted in Neo4j', async () => {
+        const HOUR = 60 * 60 * 1000;
+        const realNow = Date.now();
+        const first = await subject.clients.fullAuth.hcp.v1.oauth.approve({
+            ticket: await ticket(),
+        });
+        // 55 minutes later (the brain's clock; tickets and assertions stay valid).
+        vi.useFakeTimers({ now: realNow + 55 * 60 * 1000, toFake: ['Date'] });
+        try {
+            const [old] = await subject.clients.fullAuth.hcp.v1.grants.list();
+            expect(new Date(old!.expiresAt!).getTime() - Date.now()).toBeLessThanOrEqual(
+                5 * 60 * 1000 + 5000
+            );
+            const second = await subject.clients.fullAuth.hcp.v1.oauth.approve({
+                ticket: await ticket(),
+            });
+            const grants = await subject.clients.fullAuth.hcp.v1.grants.list();
+            expect(grants.map(g => g.grantId)).toEqual([second.grantId]);
+            const remaining = new Date(grants[0]!.expiresAt!).getTime() - Date.now();
+            expect(remaining).toBeGreaterThan(HOUR - 5000);
+            expect(remaining).toBeLessThanOrEqual(HOUR);
+            const firstNow = await subject.clients.fullAuth.hcp.v1.grants.get({
+                grantId: first.grantId,
+            });
+            expect(firstNow.status).toBe('revoked');
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it("Don't allow issues nothing and returns the AS URL with a signed denial", async () => {
+        const subjectDid = subject.learnCard.id.did();
+        const result = await subject.clients.fullAuth.hcp.v1.oauth.deny({
+            ticket: await ticket(),
+        });
+        const completeUrl = new URL(result.completeUrl);
+        expect(`${completeUrl.origin}${completeUrl.pathname}`).toBe(
+            `${ISSUER}/oauth/consent/complete`
+        );
+        expect(
+            await verifyConsentAssertion(CONFIG, completeUrl.searchParams.get('assertion')!)
+        ).toMatchObject({ ok: true, claims: { subjectDid, denied: true } });
+        expect(await subject.clients.fullAuth.hcp.v1.grants.list()).toEqual([]);
+
+        await expect(
+            getClient().hcp.v1.oauth.deny({ ticket: await ticket() })
+        ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        await expect(
+            subject.clients.fullAuth.hcp.v1.oauth.deny({ ticket: 'not-a-jwt' })
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST', hcp: { type: 'malformed-request' } });
+    });
+
+    it('refuses a profile-less caller, and bad, expired or wrong-typ tickets', async () => {
+        await expect(
+            agent.clients.fullAuth.hcp.v1.oauth.approve({ ticket: await ticket() })
+        ).rejects.toMatchObject({ hcp: { type: 'scope-denied' } });
+
+        const key = new TextEncoder().encode(SECRET);
+        const now = Math.floor(Date.now() / 1000);
+        const claims = {
+            typ: 'hcp-oauth-request',
+            request_id: randomUUID(),
+            client_id: 'hcp_oauth_0011223344556677',
+            client_name: 'Claude Code',
+            client_did: CLIENT_DID,
+            scope: 'hcp:general_preferences:read',
+            iss: ISSUER,
+            aud: OAUTH_REQUEST_AUDIENCE,
+        };
+        const sign = (payload: Record<string, unknown>, secret = key) =>
+            new SignJWT(payload).setProtectedHeader({ alg: 'HS256' }).sign(secret);
+        const bad = [
+            await sign({ ...claims, iat: now - 1200, exp: now - 600 }),
+            await sign({ ...claims, typ: 'hcp-consent', exp: now + 60 }),
+            await sign({ ...claims, exp: now + 60 }, new TextEncoder().encode('x'.repeat(40))),
+            await ticket({ scope: 'hcp:not_a_category:read' }),
+            'not-a-jwt',
+        ];
+        for (const candidate of bad) {
+            await expect(
+                subject.clients.fullAuth.hcp.v1.oauth.approve({ ticket: candidate })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST', hcp: { type: 'malformed-request' } });
+        }
+        expect(await subject.clients.fullAuth.hcp.v1.grants.list()).toEqual([]);
+    });
+
+    it('says so when this brain has no HCP OAuth AS configured', async () => {
+        Object.assign(environment, { HCP_OAUTH_ISSUER_URL: undefined });
+        await expect(
+            subject.clients.fullAuth.hcp.v1.oauth.approve({ ticket: await ticket() })
+        ).rejects.toMatchObject({
+            code: 'PRECONDITION_FAILED',
+            message: expect.stringContaining('HCP_OAUTH_ISSUER_URL'),
+        });
     });
 });

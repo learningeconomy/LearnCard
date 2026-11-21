@@ -4,7 +4,9 @@ import {
     DEFAULT_PURPOSE_CODE,
     contractGrantRequest,
     grantRequestFor,
+    OAUTH_PURPOSE_CODE,
     parseConsentLink,
+    requestFromOAuth,
     requestFromOffer,
 } from './consentLink';
 
@@ -189,6 +191,66 @@ describe('HCP contract links (LC-2421)', () => {
         expect(contractGrantRequest(offer, CLIENT)).toEqual({
             client: { id: CLIENT },
             source: { type: 'consentflow', contractUri: CONTRACT, contractVersion: 2 },
+        });
+    });
+});
+
+describe('HCP OAuth sign-in links', () => {
+    const NOW = new Date('2026-11-20T12:00:00Z');
+    const exp = Math.floor(NOW.getTime() / 1000) + 600;
+    const DID = 'did:web:127.0.0.1%3A18767:hcp:oauth-clients:hcp_oauth_abc';
+    const ticket = (claims: Record<string, unknown>) =>
+        ['e30', Buffer.from(JSON.stringify(claims)).toString('base64url'), 'sig'].join('.');
+    const claims = {
+        typ: 'hcp-oauth-request',
+        client_name: 'Claude Code',
+        client_did: DID,
+        scope: 'hcp:health_context:read hcp:general_preferences:read',
+        exp,
+    };
+
+    it('decodes the ticket for display and keeps it for approve', () => {
+        const t = ticket(claims);
+        const parsed = parseConsentLink(link({ oauth_request: t }), NOW);
+        expect(parsed).toEqual({
+            kind: 'oauth',
+            signIn: {
+                ticket: t,
+                clientName: 'Claude Code',
+                clientDid: DID,
+                scopes: ['hcp:health_context:read', 'hcp:general_preferences:read'],
+                categories: ['health_context', 'general_preferences'],
+                canWrite: false,
+            },
+        });
+        if (parsed.kind !== 'oauth') throw new Error('expected oauth');
+        expect(requestFromOAuth(parsed.signIn, 'Use it')).toEqual({
+            client: { id: DID, name: 'Claude Code' },
+            categories: ['health_context', 'general_preferences'],
+            purpose: { code: OAUTH_PURPOSE_CODE, description: 'Use it' },
+            duration: '1h',
+        });
+    });
+
+    it.each([
+        ['expired', ticket({ ...claims, exp: exp - 601 })],
+        ['wrong typ', ticket({ ...claims, typ: 'hcp-consent' })],
+        ['no DID', ticket({ ...claims, client_did: 'nope' })],
+        ['custom scope', ticket({ ...claims, scope: 'hcp:https://x.example/c:read' })],
+        ['no scopes', ticket({ ...claims, scope: '' })],
+        ['not a JWT', 'abc'],
+    ])('refuses %s', (_label, value) => {
+        expect(parseConsentLink(link({ oauth_request: value }), NOW)).toEqual({
+            kind: 'bad',
+            problem: 'oauth',
+        });
+    });
+
+    it('refuses a repeated ticket', () => {
+        const t = ticket(claims);
+        expect(parseConsentLink(`?oauth_request=${t}&oauth_request=${t}`, NOW)).toEqual({
+            kind: 'bad',
+            problem: 'oauth',
         });
     });
 });
