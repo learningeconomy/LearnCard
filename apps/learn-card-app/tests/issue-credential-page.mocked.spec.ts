@@ -232,30 +232,42 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
                 ...boost,
                 created: new Date(Date.UTC(2026, 10, 18, 12, 0, 0, 100 - index)).toISOString(),
             }));
+            const pageSize = 18;
             const cursors: (string | undefined)[] = [];
 
             network.on('boost.getPaginatedBoosts', input => {
-                const {
-                    cursor,
-                    limit = 18,
-                    exclude,
-                } = (input ?? {}) as {
+                const { cursor, limit, query, exclude } = (input ?? {}) as {
                     cursor?: string;
                     limit?: number;
+                    query?: unknown;
                     exclude?: { name?: { $regex: string }; category?: { $regex: string } };
                 };
                 const name = RegExpValidator.safeParse(exclude?.name?.$regex).data;
                 const category = RegExpValidator.safeParse(exclude?.category?.$regex).data;
+                // Record only the reuse picker's unsearched request with both exclusions.
+                if (
+                    limit !== pageSize ||
+                    query !== undefined ||
+                    !name ||
+                    !category ||
+                    Object.keys(exclude ?? {}).length !== 2
+                ) {
+                    return {
+                        hasMore: false,
+                        records: [],
+                    } satisfies BrainOutputs['boost']['getPaginatedBoosts'];
+                }
+
                 const eligible = boosts.filter(
                     boost =>
                         (!cursor || boost.created < cursor) &&
-                        !(boost.name && name?.test(boost.name)) &&
-                        !(boost.category && category?.test(boost.category))
+                        !(boost.name && name.test(boost.name)) &&
+                        !(boost.category && category.test(boost.category))
                 );
-                const records = eligible.slice(0, limit);
+                const records = eligible.slice(0, pageSize);
                 cursors.push(cursor);
                 return {
-                    hasMore: eligible.length > limit,
+                    hasMore: eligible.length > pageSize,
                     cursor: records.at(-1)?.created,
                     records,
                 } satisfies BrainOutputs['boost']['getPaginatedBoosts'];
@@ -277,10 +289,15 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
             );
             await expect(picker.getByText('Personalized Session', { exact: true })).toHaveCount(0);
             await expect(picker.getByRole('button', { name: 'Custom Credential' })).toHaveCount(0);
+            // A visibility refresh can reread page one before pagination.
+            const beforePaging = cursors.length;
+            expect(beforePaging).toBeGreaterThan(0);
+            expect(cursors).toEqual(Array(beforePaging).fill(undefined));
             await showMore.click();
             await expect(picker.getByRole('button', { name: 'Custom Credential' })).toBeVisible();
             await expect(showMore).toHaveCount(0);
-            expect(cursors).toEqual([undefined, boosts.at(-2)?.created]);
+            // Only one request, using the last eligible record from page one.
+            expect(cursors.slice(beforePaging)).toEqual([boosts.at(-2)?.created]);
 
             await picker.getByPlaceholder('Search your credentials…').fill('AI Passport');
             await expect(picker.getByText(/Nothing matches/)).toBeVisible();
