@@ -41,6 +41,7 @@ Mounted once in `src/app.ts` as `hcp`; every procedure is `hcp.v1.<area>.<op>`.
 | `hcp.v1.audit.list`       | `POST /hcp/v1/audit`              | §8.3 Read audit log             | subject only                                                    |
 | `hcp.v1.export`           | `POST /hcp/v1/export`             | §5.4.1 Export                   | subject only                                                    |
 | `hcp.v1.oauth.approve`    | `POST /hcp/v1/oauth/approve`      | none (LearnCard addition, §13)  | subject only                                                    |
+| `hcp.v1.oauth.deny`       | `POST /hcp/v1/oauth/deny`         | none (LearnCard addition, §13)  | subject only                                                    |
 
 Wire types live in `schemas.ts`; read it alongside this table.
 
@@ -48,7 +49,8 @@ Wire types live in `schemas.ts`; read it alongside this table.
 (`../oauth/`): it verifies the AS's signed request ticket, issues a fresh 1-hour grant
 from the caller to the OAuth client's DID (revoking an earlier one to the same client
 with the same scopes as superseded), and returns the AS URL that completes the
-sign-in. It needs `HCP_OAUTH_ISSUER_URL` (the AS base URL) and `HCP_OAUTH_TOKEN_SECRET`
+sign-in. `oauth.deny` verifies the ticket, issues nothing, and returns the AS URL that
+answers the client `access_denied`. It needs `HCP_OAUTH_ISSUER_URL` (the AS base URL) and `HCP_OAUTH_TOKEN_SECRET`
 (the AS's HS256 secret); without them it fails with `PRECONDITION_FAILED`. See
 `service/oauth-consent.ts`.
 

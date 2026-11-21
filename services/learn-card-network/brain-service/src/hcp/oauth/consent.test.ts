@@ -16,6 +16,7 @@ import {
     OAUTH_GRANT_PURPOSE_CODE,
     OAUTH_REQUEST_AUDIENCE,
     approveOAuthRequest,
+    denyOAuthRequest,
     signConsentAssertion,
     verifyConsentAssertion,
 } from '../v1/service/oauth-consent';
@@ -141,6 +142,23 @@ describe('HCP OAuth DID-authenticated consent', () => {
             { redirect: 'manual' }
         );
 
+    /** RFC 6749 §4.1.2.1: the error went back to the registered redirect_uri with state. */
+    const expectErrorRedirect = (
+        res: Response,
+        redirectUri: string,
+        error: string,
+        description?: string
+    ) => {
+        expect(res.status).toBe(302);
+        const url = new URL(res.headers.get('location')!);
+        expect(`${url.origin}${url.pathname}`).toBe(redirectUri);
+        expect(url.searchParams.get('error')).toBe(error);
+        expect(url.searchParams.get('state')).toBe('st');
+        expect(url.searchParams.has('code')).toBe(false);
+        if (description) expect(url.searchParams.get('error_description')).toBe(description);
+        return url;
+    };
+
     const exchange = async (opts: {
         location: string;
         clientId: string;
@@ -224,8 +242,18 @@ describe('HCP OAuth DID-authenticated consent', () => {
             scope: 'hcp:health_context:write',
             verifier: createCodeVerifier(),
         });
-        expect(bad.res.status).toBe(400);
-        expect(((await bad.res.json()) as { error: string }).error).toBe('invalid_scope');
+        // Client and redirect_uri are validated, so the client hears it (no stranded browser).
+        expectErrorRedirect(bad.res, 'http://127.0.0.1/cb-default', 'invalid_scope');
+
+        // An unregistered redirect_uri is never redirected to, even with a bad scope.
+        const unregistered = await authorize({
+            clientId,
+            redirectUri: 'http://evil.test/cb',
+            scope: 'hcp:health_context:write',
+            verifier: createCodeVerifier(),
+        });
+        expect(unregistered.res.status).toBe(400);
+        expect(unregistered.res.headers.get('location')).toBeNull();
     });
 
     it('happy path: approve issues a grant to the derived DID; the token binds to it', async () => {
@@ -433,8 +461,9 @@ describe('HCP OAuth DID-authenticated consent', () => {
     });
 
     it('complete refuses an assertion whose subject does not own the grant', async () => {
+        const redirectUri = 'http://127.0.0.1/cb-sub';
         const { assertion } = await approved({
-            redirectUri: 'http://127.0.0.1/cb-sub',
+            redirectUri,
             scope: 'hcp:general_preferences:read',
         });
         const claims = decodeJwt(assertion);
@@ -444,8 +473,11 @@ describe('HCP OAuth DID-authenticated consent', () => {
             subjectDid: 'did:key:z6MkSomeoneElse',
         });
         const res = await complete(forged);
-        expect(res.status).toBe(400);
-        expect(((await res.json()) as { error: string }).error).toBe('access_denied');
+        expectErrorRedirect(res, redirectUri, 'access_denied', 'grant not found for subject');
+        // The request is used up: the real assertion cannot complete it afterwards.
+        const after = await complete(assertion);
+        expect(after.status).toBe(400);
+        expect(after.headers.get('location')).toBeNull();
     });
 
     it('complete refuses a replayed assertion (the pending request is single-use)', async () => {
@@ -479,14 +511,76 @@ describe('HCP OAuth DID-authenticated consent', () => {
             subjectDid: SUBJECT_DID,
         });
         const res = await complete(crossed);
-        expect(res.status).toBe(400);
-        expect((await res.json()) as { error: string; error_description: string }).toEqual({
-            error: 'access_denied',
-            error_description: 'grant was not issued to this client',
-        });
+        // B's own registered redirect_uri (the pending request's), never A's.
+        expectErrorRedirect(
+            res,
+            'http://127.0.0.1/cb-client-b',
+            'access_denied',
+            'grant was not issued to this client'
+        );
     });
 
-    it('re-consent with the same client and scopes reuses the grant; other scopes get a new one', async () => {
+    it("Don't allow answers the client access_denied on its redirect_uri, with state", async () => {
+        const redirectUri = 'http://127.0.0.1/cb-deny';
+        const clientId = await register(redirectUri);
+        const { location } = await authorize({
+            clientId,
+            redirectUri,
+            scope: 'hcp:general_preferences:read',
+            verifier: createCodeVerifier(),
+        });
+        const before = await harness.snapshot();
+        const denial = await denyOAuthRequest(subject, { ticket: ticketFrom(location) }, config);
+        const completeUrl = new URL(denial.completeUrl);
+        expect(`${completeUrl.origin}${completeUrl.pathname}`).toBe(
+            `${baseUrl}/oauth/consent/complete`
+        );
+        // Nothing is issued or recorded.
+        expect(await harness.snapshot()).toEqual(before);
+
+        const res = await complete(completeUrl.searchParams.get('assertion'));
+        expectErrorRedirect(res, redirectUri, 'access_denied', 'the person did not allow access');
+        // Single-use like Allow.
+        expect((await complete(completeUrl.searchParams.get('assertion'))).status).toBe(400);
+    });
+
+    it("Don't allow refuses a bad ticket, and a forged denial redirects nowhere", async () => {
+        await expect(denyOAuthRequest(subject, { ticket: 'not-a-jwt' }, config)).rejects.toThrow(
+            /invalid or expired/
+        );
+        const forged = await new SignJWT({
+            typ: CONSENT_ASSERTION_TYP,
+            request_id: 'whatever',
+            error: 'access_denied',
+        })
+            .setProtectedHeader({ alg: 'HS256' })
+            .setSubject(SUBJECT_DID)
+            .setAudience(baseUrl)
+            .setJti('j')
+            .setExpirationTime('1m')
+            .sign(new TextEncoder().encode('some-other-secret-32-bytes-long!!'));
+        const res = await complete(forged);
+        expect(res.status).toBe(400);
+        expect(res.headers.get('location')).toBeNull();
+    });
+
+    it('a failure after the request is known (server error) still redirects with state', async () => {
+        const redirectUri = 'http://127.0.0.1/cb-boom';
+        const { assertion } = await approved({
+            redirectUri,
+            scope: 'hcp:general_preferences:read',
+        });
+        const spy = vi.spyOn(harness.store, 'getGrant').mockRejectedValueOnce(new Error('boom'));
+        const quiet = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        try {
+            expectErrorRedirect(await complete(assertion), redirectUri, 'server_error');
+        } finally {
+            spy.mockRestore();
+            quiet.mockRestore();
+        }
+    });
+
+    it('re-consent gets a fresh full hour and supersedes the old grant; other scopes are left alone', async () => {
         const redirectUri = 'http://127.0.0.1/cb-reconsent';
         const clientId = await register(redirectUri);
         const approve = async (scope: string) => {

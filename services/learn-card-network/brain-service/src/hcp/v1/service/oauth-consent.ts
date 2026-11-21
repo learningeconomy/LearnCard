@@ -51,7 +51,13 @@ export type OAuthRequestTicket = {
     scope: string;
 };
 
-export type ConsentAssertion = { requestId: string; grantId: string; subjectDid: string };
+/**
+ * What the signed-in subject decided on a request: Allow names the grant issued to
+ * the client; Don't allow names none, and the AS answers the client `access_denied`.
+ */
+export type ConsentAssertion =
+    | { requestId: string; subjectDid: string; grantId: string }
+    | { requestId: string; subjectDid: string; denied: true };
 
 export type VerifyResult<T> = { ok: true; claims: T } | { ok: false; error: string };
 
@@ -116,7 +122,7 @@ export const signConsentAssertion = async (
     new SignJWT({
         typ: CONSENT_ASSERTION_TYP,
         request_id: assertion.requestId,
-        grant_id: assertion.grantId,
+        ...('denied' in assertion ? { error: 'access_denied' } : { grant_id: assertion.grantId }),
     })
         .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
         .setSubject(assertion.subjectDid)
@@ -138,7 +144,16 @@ export const verifyConsentAssertion = async (
             requiredClaims: ['exp', 'sub', 'jti'],
         });
         if (payload.typ !== CONSENT_ASSERTION_TYP) return { ok: false, error: 'wrong typ' };
-        const { request_id, grant_id, sub } = payload;
+        const { request_id, grant_id, sub, error } = payload;
+        if (error === 'access_denied' && grant_id === undefined && [request_id, sub].every(str))
+            return {
+                ok: true,
+                claims: {
+                    requestId: request_id as string,
+                    subjectDid: sub as string,
+                    denied: true,
+                },
+            };
         if (![request_id, grant_id, sub].every(str)) return { ok: false, error: 'missing claims' };
         return {
             ok: true,
@@ -250,4 +265,25 @@ export const approveOAuthRequest = async (
         subjectDid,
     });
     return { completeUrl: completeUrlFor(config, assertion), grantId: grant.grantId };
+};
+
+/**
+ * The signed-in subject does not allow an OAuth client. Issues nothing; signs an
+ * assertion the AS turns into `access_denied` on the client's registered redirect_uri,
+ * so the client (e.g. `claude mcp login`) stops waiting. The URL comes from this
+ * brain's config, never from the ticket, so Don't allow cannot be an open redirect.
+ */
+export const denyOAuthRequest = async (
+    caller: HcpV1Caller,
+    input: { ticket: string },
+    config: OAuthConsentConfig
+): Promise<{ completeUrl: string }> => {
+    const subjectDid = requireSubject(caller);
+    const ticket = await verifiedTicket(config, input.ticket);
+    const assertion = await signConsentAssertion(config, {
+        requestId: ticket.requestId,
+        subjectDid,
+        denied: true,
+    });
+    return { completeUrl: completeUrlFor(config, assertion) };
 };

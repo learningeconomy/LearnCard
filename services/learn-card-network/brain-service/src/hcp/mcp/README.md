@@ -93,6 +93,9 @@ claude mcp list            # hcp-local … ✔ Connected
 # Stop sharing there: the MCP endpoint now answers 401 with WWW-Authenticate
 # error="invalid_token", error_description="revoked_grant", and `claude mcp list`
 # shows "! Needs authentication".
+# Don't Allow instead: the browser goes back to Claude's callback with
+# error=access_denied and the original state, and `claude mcp login` exits at once
+# with an error instead of waiting for its timeout.
 claude mcp logout hcp-local && claude mcp remove hcp-local -s local
 docker rm -f hcp-oauth-neo4j
 ```

@@ -40,7 +40,18 @@ export type AsDeps = {
     typedConsent?: boolean;
 };
 
-export type AsError = { ok: false; status: number; error: string; error_description?: string };
+/**
+ * `redirectUrl` is set once the client and its registered redirect_uri are known and
+ * validated (RFC 6749 §4.1.2.1): the error goes back to the client, with its state,
+ * instead of stranding the browser on a JSON page while the client waits.
+ */
+export type AsError = {
+    ok: false;
+    status: number;
+    error: string;
+    error_description?: string;
+    redirectUrl?: string;
+};
 export type AsOk<T> = { ok: true; data: T };
 export type AsResult<T> = AsOk<T> | AsError;
 
@@ -50,6 +61,19 @@ const fail = (status: number, error: string, error_description?: string): AsErro
     error,
     error_description,
 });
+
+/** An OAuth error for a validated request, sent to its registered redirect_uri. */
+const failToClient = (
+    request: { redirectUri: string; state: string | null },
+    error: string,
+    error_description?: string
+): AsError => {
+    const url = new URL(request.redirectUri);
+    url.searchParams.set('error', error);
+    if (error_description) url.searchParams.set('error_description', error_description);
+    if (request.state) url.searchParams.set('state', request.state);
+    return { ok: false, status: 302, error, error_description, redirectUrl: url.toString() };
+};
 
 const exactRedirect = (client: HcpOAuthClient, redirectUri: string): boolean =>
     client.redirect_uris.includes(redirectUri);
@@ -119,7 +143,12 @@ export const beginAuthorize = async (
 
     const requested = parseScopeString(query.scope);
     if (!requested.every(scope => deps.scopesSupported.includes(scope))) {
-        return fail(400, 'invalid_scope', 'scope names a scope this provider does not issue');
+        // Client and redirect_uri are validated: the client hears it (§4.1.2.1).
+        return failToClient(
+            { redirectUri: query.redirect_uri, state: query.state },
+            'invalid_scope',
+            'scope names a scope this provider does not issue'
+        );
     }
 
     const requestId = newRequestId();
@@ -166,6 +195,10 @@ export const beginAuthorize = async (
  * `subjectDid` must come from authenticated consent (completeConsentFromAssertion);
  * only the dev typed form passes it from a form body. With `bindClient`, the grant
  * must be issued to this OAuth client's derived DID.
+ *
+ * An unknown, expired or already-used request_id names no client to trust, so it
+ * fails here (JSON). Once the pending request is taken, every failure, including an
+ * unexpected one, goes back to its registered redirect_uri with `state`.
  */
 export const completeConsent = async (
     deps: AsDeps,
@@ -173,7 +206,20 @@ export const completeConsent = async (
 ): Promise<AsResult<{ redirectUrl: string }>> => {
     const pending = await deps.sessions.takePending(input.requestId);
     if (!pending) return fail(400, 'invalid_request', 'unknown or expired request_id');
+    try {
+        const result = await bindPending(deps, pending, input);
+        return result.ok ? result : failToClient(pending, result.error, result.error_description);
+    } catch (error) {
+        console.error('hcp-oauth consent', error);
+        return failToClient(pending, 'server_error');
+    }
+};
 
+const bindPending = async (
+    deps: AsDeps,
+    pending: PendingAuthorization,
+    input: { subjectDid: string; grantId: string; bindClient?: boolean }
+): Promise<AsResult<{ redirectUrl: string }>> => {
     const stored = await deps.store.getGrant(input.grantId);
     if (!stored || stored.subjectDid !== input.subjectDid) {
         return fail(400, 'access_denied', 'grant not found for subject');
@@ -225,7 +271,9 @@ export const completeConsent = async (
 /**
  * `/oauth/consent/complete`: the subject comes only from the brain's signed consent
  * assertion (signature, typ, aud = this issuer, exp). Replay fails: the pending
- * request it names was taken on first use.
+ * request it names was taken on first use. An assertion that does not verify names
+ * no request this AS can trust, so it fails without touching (or consuming) any. A
+ * verified Don't allow answers the client `access_denied`.
  */
 export const completeConsentFromAssertion = async (
     deps: AsDeps,
@@ -237,10 +285,16 @@ export const completeConsentFromAssertion = async (
         assertion
     );
     if (!verified.ok) return fail(400, 'access_denied', 'invalid or expired consent assertion');
+    const { claims } = verified;
+    if ('denied' in claims) {
+        const pending = await deps.sessions.takePending(claims.requestId);
+        if (!pending) return fail(400, 'invalid_request', 'unknown or expired request_id');
+        return failToClient(pending, 'access_denied', 'the person did not allow access');
+    }
     return completeConsent(deps, {
-        requestId: verified.claims.requestId,
-        subjectDid: verified.claims.subjectDid,
-        grantId: verified.claims.grantId,
+        requestId: claims.requestId,
+        subjectDid: claims.subjectDid,
+        grantId: claims.grantId,
         bindClient: true,
     });
 };

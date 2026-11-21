@@ -33,6 +33,7 @@ import {
     MetaSchema,
     OAuthApproveInputSchema,
     OAuthApproveResultSchema,
+    OAuthDenyResultSchema,
     QueryInputSchema,
     QueryResultSchema,
     ReviseEntryInputSchema,
@@ -52,7 +53,7 @@ import { HcpV1Error, type HcpV1ErrorType } from './service/errors';
 import { exportContext, listAudit, listOwnEntries } from './service/governance';
 import { createGrant, getContractOffer, getGrant, listGrants, revokeGrant } from './service/grants';
 import { hcpV1Meta } from './service/meta';
-import { approveOAuthRequest } from './service/oauth-consent';
+import { approveOAuthRequest, denyOAuthRequest } from './service/oauth-consent';
 import { createNeo4jHcpV1DepsFactory } from './neo4j-deps';
 
 const depsFor = createNeo4jHcpV1DepsFactory();
@@ -364,6 +365,17 @@ const auditRouter = t.router({
         .query(({ ctx, input }) => listAudit(depsFor(), callerOf(ctx.user), input)),
 });
 
+const requireOAuthConsentConfig = () => {
+    const config = oauthConsentConfig();
+    if (!config)
+        throw new TRPCError({
+            code: 'PRECONDITION_FAILED',
+            message:
+                'HCP OAuth sign-in is not configured on this brain: set HCP_OAUTH_ISSUER_URL and HCP_OAUTH_TOKEN_SECRET.',
+        });
+    return config;
+};
+
 const oauthRouter = t.router({
     approve: hcpRoute
         .meta({
@@ -380,16 +392,27 @@ const oauthRouter = t.router({
         })
         .input(OAuthApproveInputSchema)
         .output(OAuthApproveResultSchema)
-        .mutation(({ ctx, input }) => {
-            const config = oauthConsentConfig();
-            if (!config)
-                throw new TRPCError({
-                    code: 'PRECONDITION_FAILED',
-                    message:
-                        'HCP OAuth sign-in is not configured on this brain: set HCP_OAUTH_ISSUER_URL and HCP_OAUTH_TOKEN_SECRET.',
-                });
-            return approveOAuthRequest(depsFor(), callerOf(ctx.user), input, config);
-        }),
+        .mutation(({ ctx, input }) =>
+            approveOAuthRequest(depsFor(), callerOf(ctx.user), input, requireOAuthConsentConfig())
+        ),
+    deny: hcpRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/hcp/v1/oauth/deny',
+                tags: TAGS,
+                summary: "Don't allow an HCP OAuth client",
+                description:
+                    "LearnCard addition, Context Subject only. Verifies the HCP OAuth AS's signed request ticket, issues nothing, and returns the AS URL that answers the client access_denied on its registered redirect_uri.",
+            },
+            requiredScope: WRITE,
+        })
+        .input(OAuthApproveInputSchema)
+        .output(OAuthDenyResultSchema)
+        .mutation(({ ctx, input }) =>
+            denyOAuthRequest(callerOf(ctx.user), input, requireOAuthConsentConfig())
+        ),
 });
 
 export const hcpV1Router = t.router({

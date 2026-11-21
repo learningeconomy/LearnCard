@@ -6,8 +6,9 @@
  *
  * Consent is DID-authenticated: authorize hands off to the LearnCard app's
  * `/hcp/connect?oauth_request=<ticket>`, and `/oauth/consent/complete?assertion=`
- * finishes from the brain's signed assertion. The typed subject/grant form exists
- * only with `devTypedConsent` outside production.
+ * finishes from the brain's signed assertion (Allow or Don't allow). Once a request's
+ * client and redirect_uri are validated, errors redirect there with `state`. The
+ * typed subject/grant form exists only with `devTypedConsent` outside production.
  */
 import express, { type Express, type Request, type Response, type NextFunction } from 'express';
 
@@ -57,6 +58,15 @@ const jsonError = (res: Response, status: number, error: string, description?: s
         error,
         ...(description ? { error_description: description } : {}),
     });
+};
+
+/** Errors for a validated request go back to the client (RFC 6749 §4.1.2.1). */
+const sendAsError = (
+    res: Response,
+    result: { status: number; error: string; error_description?: string; redirectUrl?: string }
+) => {
+    if (result.redirectUrl) return res.redirect(result.redirectUrl);
+    return jsonError(res, result.status, result.error, result.error_description);
 };
 
 const escapeHtml = (value: string): string =>
@@ -161,8 +171,7 @@ export const createHcpOAuthApp = (options: CreateHcpOAuthAppOptions): Express =>
                 scope: typeof req.query.scope === 'string' ? req.query.scope : null,
                 resource: typeof req.query.resource === 'string' ? req.query.resource : null,
             });
-            if (!result.ok)
-                return jsonError(res, result.status, result.error, result.error_description);
+            if (!result.ok) return sendAsError(res, result);
             res.redirect(result.data.consentUrl);
         } catch (error) {
             next(error);
@@ -173,8 +182,7 @@ export const createHcpOAuthApp = (options: CreateHcpOAuthAppOptions): Express =>
         try {
             const assertion = typeof req.query.assertion === 'string' ? req.query.assertion : null;
             const result = await completeConsentFromAssertion(asDeps, assertion);
-            if (!result.ok)
-                return jsonError(res, result.status, result.error, result.error_description);
+            if (!result.ok) return sendAsError(res, result);
             res.redirect(result.data.redirectUrl);
         } catch (error) {
             next(error);
@@ -206,8 +214,7 @@ export const createHcpOAuthApp = (options: CreateHcpOAuthAppOptions): Express =>
                     subjectDid: String(body.subject_did ?? ''),
                     grantId: String(body.grant_id ?? ''),
                 });
-                if (!result.ok)
-                    return jsonError(res, result.status, result.error, result.error_description);
+                if (!result.ok) return sendAsError(res, result);
                 res.redirect(result.data.redirectUrl);
             } catch (error) {
                 next(error);

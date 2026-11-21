@@ -31,15 +31,26 @@ MCP tools + Unit 3 conformance live under `../mcp/`. Official `conformsTo` Part 
 3. The signed-in person taps Allow. The app calls `hcp.v1.oauth.approve({ ticket })` on
    the brain (DID auth + challenge). The brain verifies the ticket, issues a grant from
    the caller to `client_did` for exactly those scopes (temporary 1h, purpose
-   `https://learncard.com/hcp/purposes/app-access`, writes land as suggestions), or
-   reuses an active grant to the same client with the same scopes, and returns
-   `<issuer>/oauth/consent/complete?assertion=<jwt>`.
+   `https://learncard.com/hcp/purposes/app-access`, writes land as suggestions),
+   revokes an earlier active grant to the same client with the same scopes as
+   superseded (so a re-login gets a full hour), and returns
+   `<issuer>/oauth/consent/complete?assertion=<jwt>`. Don't allow calls
+   `hcp.v1.oauth.deny({ ticket })`: it issues nothing and returns the same URL with a
+   denial assertion (`error` `access_denied`, no `grant_id`). Either way the URL comes
+   from the brain's config, never from the ticket.
 4. The assertion is an HS256 JWT: `typ` `hcp-consent`, `aud` = this AS's issuer,
    `sub` = the authenticated subject DID, `request_id`, `grant_id`, `jti`, 120 seconds.
 5. `GET /oauth/consent/complete` verifies it and binds the grant only if its subject is
    the assertion's `sub`, it was issued to this OAuth client's DID, it is active, and
    it covers the requested scopes. The pending request is taken on first use, so a
    replayed assertion fails.
+6. Errors (RFC 6749 §4.1.2.1): once the client and its registered `redirect_uri` are
+   validated (authorize's `invalid_scope`; any failure after a verified assertion names
+   a pending request, including Don't allow and `server_error`), the AS redirects there
+   with `error`, `error_description` and the original `state`, so the client stops
+   waiting. An unknown client, unregistered `redirect_uri`, unknown/expired/replayed
+   `request_id` or an assertion that does not verify names nothing it can trust: those
+   answer JSON 400 and redirect nowhere.
 
 OAuth client DID (`deriveOAuthClientDid`): `did:web:<issuer host, port as %3A>:hcp:oauth-clients:<client_id>`.
 Keyless: the client never signs, the AS mints its tokens, and no DID document is

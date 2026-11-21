@@ -743,6 +743,7 @@ describe('HCP v1 router (hcp.v1.*)', () => {
             '/hcp/v1/grants/{grantId}',
             '/hcp/v1/meta',
             '/hcp/v1/oauth/approve',
+            '/hcp/v1/oauth/deny',
         ]);
     });
 });
@@ -1051,6 +1052,28 @@ describe('HCP v1 OAuth consent (hcp.v1.oauth.approve)', () => {
         } finally {
             vi.useRealTimers();
         }
+    });
+
+    it("Don't allow issues nothing and returns the AS URL with a signed denial", async () => {
+        const subjectDid = subject.learnCard.id.did();
+        const result = await subject.clients.fullAuth.hcp.v1.oauth.deny({
+            ticket: await ticket(),
+        });
+        const completeUrl = new URL(result.completeUrl);
+        expect(`${completeUrl.origin}${completeUrl.pathname}`).toBe(
+            `${ISSUER}/oauth/consent/complete`
+        );
+        expect(
+            await verifyConsentAssertion(CONFIG, completeUrl.searchParams.get('assertion')!)
+        ).toMatchObject({ ok: true, claims: { subjectDid, denied: true } });
+        expect(await subject.clients.fullAuth.hcp.v1.grants.list()).toEqual([]);
+
+        await expect(
+            getClient().hcp.v1.oauth.deny({ ticket: await ticket() })
+        ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        await expect(
+            subject.clients.fullAuth.hcp.v1.oauth.deny({ ticket: 'not-a-jwt' })
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST', hcp: { type: 'malformed-request' } });
     });
 
     it('refuses a profile-less caller, and bad, expired or wrong-typ tickets', async () => {

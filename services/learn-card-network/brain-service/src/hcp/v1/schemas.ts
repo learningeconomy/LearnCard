@@ -531,6 +531,10 @@ export const OAuthApproveResultSchema = z.object({
     completeUrl: z.string(),
     grantId: z.string(),
 });
+export const OAuthDenyResultSchema = z.object({
+    /** The AS URL that answers the client `access_denied`; open it to hand back. */
+    completeUrl: z.string(),
+});
 export const ListGrantsInputSchema = z
     .object({ status: GrantStatusSchema.default('active') })
     .default({ status: 'active' });
