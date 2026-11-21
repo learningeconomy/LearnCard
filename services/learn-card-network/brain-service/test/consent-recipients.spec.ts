@@ -508,6 +508,140 @@ describe('contract data recipients', () => {
         expect(JSON.stringify(data)).toContain('urn:synthetic:explicit-selection');
     });
 
+    it('fences stale profile field deliveries and preserves the fence through legacy edits', async () => {
+        const category = 'VerifiableData:vetpass:military-profile:branch';
+        const first = `2026-01-01T00:00:00.000Z:${'1'.repeat(64)}`;
+        const latest = `2026-01-02T00:00:00.000Z:${'2'.repeat(64)}`;
+        const contract = structuredClone(normalContract);
+        contract.read.credentials.categories[category] = { required: false };
+        const uri = await owner.clients.fullAuth.contracts.createConsentFlowContract({
+            name: 'Profile field generation',
+            contract,
+        });
+        const terms = structuredClone(normalFullTerms);
+        terms.read.credentials.categories[category] = {
+            sharing: true,
+            shareAll: true,
+            shared: ['urn:field:first'],
+            fieldGeneration: first,
+        };
+        const { termsUri } = await learner.clients.fullAuth.contracts.consentToContract({
+            contractUri: uri,
+            terms,
+        });
+        const staleSnapshot = (await getContractTermsByUri(termsUri))!;
+        await expect(
+            learner.clients.fullAuth.contracts.syncCredentialsToContract({
+                termsUri,
+                categories: { [category]: ['urn:field:latest'] },
+                automatic: true,
+                fieldGenerations: { [category]: latest },
+            })
+        ).resolves.toBe(true);
+        // The same source can be encrypted again for a changed audience.
+        await expect(
+            learner.clients.fullAuth.contracts.syncCredentialsToContract({
+                termsUri,
+                categories: { [category]: ['urn:field:latest-reencrypted'] },
+                automatic: true,
+                fieldGenerations: { [category]: latest },
+            })
+        ).resolves.toBe(true);
+        for (const generation of [first, undefined]) {
+            await expect(
+                learner.clients.fullAuth.contracts.syncCredentialsToContract({
+                    termsUri,
+                    categories: { [category]: ['urn:field:stale'] },
+                    automatic: true,
+                    ...(generation && { fieldGenerations: { [category]: generation } }),
+                })
+            ).rejects.toMatchObject({ code: 'CONFLICT' });
+        }
+        await expect(
+            syncCredentialsToContract(
+                staleSnapshot,
+                { [category]: ['urn:field:stale'] },
+                undefined,
+                undefined,
+                true,
+                { [category]: first }
+            )
+        ).rejects.toMatchObject({ code: 'CONFLICT' });
+        const current = (await getContractTermsByUri(termsUri))!;
+        expect(current.terms.terms.read.credentials.categories[category]).toMatchObject({
+            shared: ['urn:field:latest-reencrypted'],
+            fieldGeneration: latest,
+        });
+        await expect(
+            learner.clients.fullAuth.contracts.syncCredentialsToContract({
+                termsUri,
+                categories: { [category]: ['urn:field:latest-reencrypted'] },
+            })
+        ).resolves.toBe(true);
+        await expect(
+            learner.clients.fullAuth.contracts.syncCredentialsToContract({
+                termsUri,
+                categories: { [category]: ['urn:field:stale'] },
+            })
+        ).rejects.toMatchObject({ code: 'CONFLICT' });
+        const legacyOnce = structuredClone(current.terms.terms);
+        delete legacyOnce.read.credentials.categories[category]!.fieldGeneration;
+        legacyOnce.read.credentials.categories[category]!.shareAll = false;
+        await learner.clients.fullAuth.contracts.updateConsentedContractTerms({
+            uri: termsUri,
+            terms: legacyOnce,
+        });
+        expect(
+            (await getContractTermsByUri(termsUri))!.terms.terms.read.credentials.categories[
+                category
+            ]
+        ).toMatchObject({
+            shareAll: false,
+            shared: ['urn:field:latest-reencrypted'],
+            fieldGeneration: latest,
+        });
+        const staleLegacy = structuredClone(current.terms.terms);
+        delete staleLegacy.read.credentials.categories[category]!.fieldGeneration;
+        staleLegacy.read.credentials.categories[category]!.shared = ['urn:field:stale'];
+        await expect(
+            learner.clients.fullAuth.contracts.updateConsentedContractTerms({
+                uri: termsUri,
+                terms: staleLegacy,
+            })
+        ).rejects.toMatchObject({ code: 'CONFLICT' });
+        // Disabling first cannot hide a different answer behind the current marker.
+        staleLegacy.read.credentials.categories[category]!.sharing = false;
+        await expect(
+            learner.clients.fullAuth.contracts.updateConsentedContractTerms({
+                uri: termsUri,
+                terms: staleLegacy,
+            })
+        ).rejects.toMatchObject({ code: 'CONFLICT' });
+        // Older clients omit unknown category fields, or the category entirely.
+        const legacy = structuredClone(current.terms.terms);
+        delete legacy.read.credentials.categories[category];
+        await learner.clients.fullAuth.contracts.updateConsentedContractTerms({
+            uri: termsUri,
+            terms: legacy,
+        });
+        const disabled = (await getContractTermsByUri(termsUri))!.terms.terms;
+        expect(disabled.read.credentials.categories[category]?.fieldGeneration).toBe(latest);
+        disabled.read.credentials.categories[category]!.sharing = true;
+        disabled.read.credentials.categories[category]!.shareAll = true;
+        delete disabled.read.credentials.categories[category]!.fieldGeneration;
+        await learner.clients.fullAuth.contracts.updateConsentedContractTerms({
+            uri: termsUri,
+            terms: disabled,
+        });
+        await expect(
+            learner.clients.fullAuth.contracts.syncCredentialsToContract({
+                termsUri,
+                categories: { [category]: ['urn:field:unversioned'] },
+                automatic: true,
+            })
+        ).rejects.toMatchObject({ code: 'CONFLICT' });
+    });
+
     it('rejects a sync snapshot prepared before a consent edit, without restoring disabled sharing', async () => {
         const uri = await create([recipient.profileId]);
         const { termsUri } = await accept(uri, 1);

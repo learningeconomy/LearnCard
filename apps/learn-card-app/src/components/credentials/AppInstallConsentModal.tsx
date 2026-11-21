@@ -1,3 +1,4 @@
+import { useContractProfileFieldLabel } from '../../hooks/useContractProfileFieldLabel';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useImmer, Updater } from 'use-immer';
@@ -89,6 +90,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
     ageRestriction,
 }) => {
     const { newModal } = useModal();
+    const getProfileFieldLabel = useContractProfileFieldLabel();
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
     const analytics = useAnalytics();
@@ -541,9 +543,11 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                                                             {metadata?.IconWithShape && (
                                                                 <metadata.IconWithShape className="w-3.5 h-3.5" />
                                                             )}
-                                                            {localizeCategoryTitle(
-                                                                metadata?.title
-                                                            ) || category}
+                                                            {getProfileFieldLabel(category) ??
+                                                                (localizeCategoryTitle(
+                                                                    metadata?.title
+                                                                ) ||
+                                                                    category)}
                                                         </span>
                                                     );
                                                 })}
@@ -579,9 +583,11 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                                                             {metadata?.IconWithShape && (
                                                                 <metadata.IconWithShape className="w-3.5 h-3.5" />
                                                             )}
-                                                            {localizeCategoryTitle(
-                                                                metadata?.title
-                                                            ) || category}
+                                                            {getProfileFieldLabel(category) ??
+                                                                (localizeCategoryTitle(
+                                                                    metadata?.title
+                                                                ) ||
+                                                                    category)}
                                                         </span>
                                                     );
                                                 })}

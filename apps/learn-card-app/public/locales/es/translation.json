@@ -4322,6 +4322,20 @@
             },
             "expires": "Caduca"
         },
+        "profileFields": {
+            "unavailable": "Campo no disponible",
+            "permission": "Permiso",
+            "off": "Mantener privado",
+            "once": "Permitir una vez",
+            "live": "Mantener actualizado",
+            "choose": "Elige una opción",
+            "selfDescribe": "Prefiero describirme",
+            "enterAnswer": "Escribe tu respuesta",
+            "error": "Algo salió mal. Inténtalo de nuevo.",
+            "retry": "Reintentar",
+            "loading": "Cargando…",
+            "saving": "Guardando…"
+        },
         "consentAudience": {
             "fullCredential": "{{organizations}} puede recibir una copia completa de cada credencial que selecciones, incluidos tus datos y la firma del emisor, si la hay.",
             "title": "Revisa quién recibe tus datos",

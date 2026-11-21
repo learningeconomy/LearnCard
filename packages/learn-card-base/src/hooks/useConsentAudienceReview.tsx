@@ -1,22 +1,29 @@
 import React, { useEffect, useRef } from 'react';
+import { ConsentProfileFields, type FieldReview } from './ConsentProfileFields';
 import type { ConsentFlowContractDetails } from '@learncard/types';
+import type { ReviewedProfileFields } from './reviewedProfileFields';
 import { useModal } from '../components/modals/useModal';
 import { ModalTypes } from '../components/modals/types/Modals';
 import { FullCredentialDisclosure } from '../components/FullCredentialDisclosure';
 import { useT } from '../i18n';
+import { useOptionalTenantConfig } from '../config/TenantConfigProvider';
 
 const ConsentAudienceReview = ({
     contract,
+    fieldReview,
     onConfirm,
     onCancel,
     onDismiss,
 }: {
     contract: ConsentFlowContractDetails;
-    onConfirm: () => void;
+    fieldReview?: FieldReview;
+    onConfirm: (review?: ReviewedProfileFields) => void;
     onCancel: () => void;
     onDismiss: () => void;
 }) => {
     const t = useT();
+    const tenant = useOptionalTenantConfig();
+    const notice = fieldReview ? tenant?.verifiableDataConsentNotice : undefined;
     const mounted = useRef(false);
     useEffect(() => {
         mounted.current = true;
@@ -36,40 +43,56 @@ const ConsentAudienceReview = ({
         ).values(),
     ];
     return (
-        <div className="p-6 font-poppins space-y-v3-5 bg-white text-grayscale-900">
-            <h2 className="text-xl font-semibold">{t('consentAudience.title')}</h2>
-            <p className="text-sm text-grayscale-600 leading-relaxed">
-                {t('consentAudience.description')}
-            </p>
+        <div className="flex flex-col gap-5 bg-white p-5 font-poppins text-grayscale-900 max-[475px]:p-3 sm:p-6">
+            <div className="flex flex-col gap-2">
+                <h2 className="text-xl font-semibold">{t('consentAudience.title')}</h2>
+                <p className="text-sm leading-relaxed text-grayscale-600">
+                    {t('consentAudience.description')}
+                </p>
+            </div>
             <FullCredentialDisclosure recipients={contract.readableDeliveryRecipients} />
-            <ul className="space-y-v3-3 max-h-64 overflow-y-auto">
+            <ul className="m-0 flex max-h-40 list-none flex-col gap-3 overflow-y-auto rounded-xl bg-grayscale-100 p-3">
                 {profiles.map(profile => (
                     <li key={profile.profileId} className="text-sm text-grayscale-700">
                         <span className="font-medium">
                             {profile.displayName || profile.profileId}
                         </span>
-                        <span className="block text-xs text-grayscale-600">
+                        <span className="block break-words text-xs text-grayscale-600">
                             @{profile.profileId}
                         </span>
                     </li>
                 ))}
             </ul>
-            <div className="flex gap-3">
-                <button
-                    type="button"
-                    onClick={onCancel}
-                    className="flex-1 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 text-sm font-medium hover:bg-grayscale-10 transition-colors"
-                >
-                    {t('consentAudience.cancel')}
-                </button>
-                <button
-                    type="button"
-                    onClick={onConfirm}
-                    className="flex-1 py-3 px-4 rounded-[20px] bg-grayscale-900 text-white text-sm font-medium hover:opacity-90 transition-opacity"
-                >
-                    {t('consentAudience.confirm')}
-                </button>
-            </div>
+            {notice && (
+                <p className="rounded-xl border border-grayscale-200 bg-grayscale-10 p-3 text-sm leading-relaxed text-grayscale-700">
+                    {notice}
+                </p>
+            )}
+            {fieldReview ? (
+                <ConsentProfileFields
+                    contract={contract}
+                    review={fieldReview}
+                    onConfirm={onConfirm}
+                    onCancel={onCancel}
+                />
+            ) : (
+                <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] gap-3 border-t border-solid border-grayscale-200 pt-5">
+                    <button
+                        type="button"
+                        onClick={onCancel}
+                        className="rounded-[20px] border border-solid border-grayscale-300 px-3 py-3 text-sm font-medium text-grayscale-700 transition-colors hover:bg-grayscale-10"
+                    >
+                        {t('consentAudience.cancel')}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => onConfirm()}
+                        className="rounded-[20px] bg-grayscale-900 px-3 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90"
+                    >
+                        {t('consentAudience.confirm')}
+                    </button>
+                </div>
+            )}
         </div>
     );
 };
@@ -88,8 +111,12 @@ export const useConsentAudienceReview = () => {
         },
         []
     );
-    return async (contract: ConsentFlowContractDetails): Promise<void> => {
+    return async (
+        contract: ConsentFlowContractDetails,
+        fieldReview?: FieldReview
+    ): Promise<ReviewedProfileFields | undefined> => {
         if (
+            !fieldReview &&
             !(contract.audienceVersion ?? 0) &&
             !contract.recipients?.length &&
             !contract.readableDeliveryRecipients?.some(
@@ -97,6 +124,7 @@ export const useConsentAudienceReview = () => {
             )
         )
             return;
+        let result: ReviewedProfileFields | undefined;
         const accepted = await new Promise<boolean>(resolve => {
             let settled = false;
             const settle = (value: boolean) => {
@@ -108,9 +136,12 @@ export const useConsentAudienceReview = () => {
             pending.current.add(settle);
             newModal(
                 <ConsentAudienceReview
+                    fieldReview={fieldReview}
                     contract={contract}
                     onDismiss={() => settle(false)}
-                    onConfirm={() => {
+                    onConfirm={terms => {
+                        if (settled) return;
+                        result = terms;
                         settle(true);
                         closeModal();
                     }}
@@ -119,9 +150,14 @@ export const useConsentAudienceReview = () => {
                         closeModal();
                     }}
                 />,
-                { onClose: () => settle(false) }
+                {
+                    onClose: () => settle(false),
+                    sectionClassName:
+                        'w-[calc(100%_-_2rem)]! max-w-[480px]! max-h-[calc(100%_-_2rem)]!',
+                }
             );
         });
         if (!accepted) throw new Error('Sharing canceled.');
+        return result;
     };
 };

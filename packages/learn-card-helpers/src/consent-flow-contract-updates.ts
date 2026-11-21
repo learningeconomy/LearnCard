@@ -1,3 +1,4 @@
+import { VERIFIABLE_DATA_FIELD_PREFIX } from '@learncard/types';
 import type {
     ConsentFlowContract,
     ConsentFlowContractChangeKind,
@@ -393,6 +394,7 @@ export const buildContractUpdatePreview = ({
     diff,
     status,
     translate,
+    getCredentialLabel,
 }: {
     name: string;
     kind: ConsentFlowContractChangeKind;
@@ -400,10 +402,21 @@ export const buildContractUpdatePreview = ({
     status?: string;
     /** Clients localize structured changes; the API retains canonical English copy. */
     translate?: (key: string, values?: Record<string, unknown>) => string;
+    /** Apps can supply a label from their active tenant without changing the scope key. */
+    getCredentialLabel?: (category: string) => string | undefined;
 }): ConsentFlowContractUpdatePreview => {
     const text = (key: string, fallback: string, values?: Record<string, unknown>) =>
         translate?.(`consentUpdate.${key}`, values) ?? fallback;
-    const label = (scope: ConsentFlowContractScope) => scopeCopy(scope, translate).label;
+    const displayCopy = (scope: ConsentFlowContractScope) => {
+        if (scope.type === 'credential' && scope.key.startsWith(VERIFIABLE_DATA_FIELD_PREFIX)) {
+            return {
+                label: getCredentialLabel?.(scope.key) ?? 'profile information',
+                description: '',
+            };
+        }
+        return scopeCopy(scope, translate);
+    };
+    const label = (scope: ConsentFlowContractScope) => displayCopy(scope).label;
     const addedScopeCount = diff.added.length;
     const onlyAddedScopes = diff.changed.length === 0 && !diff.details?.length;
     let headline: string;
@@ -456,7 +469,7 @@ export const buildContractUpdatePreview = ({
         primaryLabel = text('action.done', 'Done');
     }
     const row = (scope: ConsentFlowContractScope, change: 'added' | 'removed' | 'changed') => {
-        const copy = scopeCopy(scope, translate);
+        const copy = displayCopy(scope);
         return { scope, change, label: copy.label, subtitle: scope.reason || copy.description };
     };
     return {

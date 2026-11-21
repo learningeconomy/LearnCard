@@ -5,7 +5,6 @@ import {
     useToast,
     useWallet,
     WalletSyncState,
-    CredentialCategory,
     contractCategoryNameToCategoryMetadata,
     syncProgressStore,
     walletStore,
@@ -24,6 +23,8 @@ import { isLearnCardAiPassportContractUri } from 'learn-card-base/constants/aiPa
 import { queueAiInsightCredentialRefresh } from './ai-passport';
 import { getLogger } from '../../logging/logger';
 import { getAcceptLifecycleRejection, LifecycleRejection } from './consentFlowLifecycle';
+import { getProfileFieldGenerationForUri } from '../../hooks/profileFieldGeneration';
+import { getVerifiableDataIndexId } from '../../hooks/createVerifiableDataCredential';
 import {
     clearConsentFlowRecordMarker,
     getConsentFlowRecordMarker,
@@ -83,7 +84,9 @@ const pruneStaleSharedUris = (terms: ConsentFlowTerms, validSharedUris: Set<stri
     const nextTerms = JSON.parse(JSON.stringify(terms)) as ConsentFlowTerms;
     let removed = 0;
 
-    Object.values(nextTerms.read.credentials.categories).forEach(categoryInfo => {
+    Object.entries(nextTerms.read.credentials.categories).forEach(([category, categoryInfo]) => {
+        // The agreed field snapshot outlives replacement of the holder's current answer.
+        if (category.startsWith('VerifiableData:')) return;
         const previous = categoryInfo.shared ?? [];
         const pruned = previous.filter(uri => validSharedUris.has(uri));
         removed += previous.length - pruned.length;
@@ -104,9 +107,12 @@ const getCategoryInfoForTerms = (
     const exactMatch = terms.read.credentials.categories[category];
     if (exactMatch) return { categoryInfo: exactMatch };
 
+    // Consent to a profile field is exact. Legacy spelling aliases cannot authorize it.
+    if (category.startsWith('VerifiableData:')) return {};
     const normalizedCategory = normalizeCategoryKey(category);
     const fallbackEntry = Object.entries(terms.read.credentials.categories).find(
-        ([key]) => normalizeCategoryKey(key) === normalizedCategory
+        ([key]) =>
+            !key.startsWith('VerifiableData:') && normalizeCategoryKey(key) === normalizedCategory
     );
 
     if (!fallbackEntry) return {};
@@ -127,7 +133,7 @@ export const useSyncConsentContractsMutation = () => {
         void,
         Error,
         {
-            recordsByCategory: Partial<Record<CredentialCategory, string[]>>;
+            recordsByCategory: Record<string, string[]>;
             allContracts: ConsentedContract[];
         }
     >({
@@ -180,47 +186,66 @@ export const useSyncConsentContractsMutation = () => {
                     throw new Error(msg);
                 }
 
-                const categoryMap: Partial<Record<CredentialCategory, string[]>> = {};
+                const categoryMap: Record<string, string[]> = {};
+                const fieldGenerations: Record<string, string> = {};
+                // The all-wallet page can be a stale cache fill. Discover the current
+                // field independently, even when that page missed the category entirely.
+                const categories = { ...recordsByCategory };
+                for (const category of Object.keys(contractTerms.read.credentials.categories)) {
+                    if (category.startsWith('VerifiableData:')) categories[category] ??= [];
+                }
 
                 await Promise.all(
-                    (Object.entries(recordsByCategory) as [CredentialCategory, string[]][]).map(
-                        async ([category, credUris]) => {
-                            const { categoryInfo } = getCategoryInfoForTerms(
-                                contractTerms,
-                                category
+                    Object.entries(categories).map(async ([category, scannedUris]) => {
+                        const { categoryInfo } = getCategoryInfoForTerms(contractTerms, category);
+
+                        if (
+                            categoryInfo &&
+                            categoryInfo.shareAll &&
+                            categoryInfo.sharing &&
+                            (!categoryInfo.shareUntil ||
+                                categoryInfo.shareUntil > new Date().toISOString())
+                        ) {
+                            let credUris = scannedUris;
+                            if (category.startsWith('VerifiableData:')) {
+                                const records =
+                                    await learnCard.invoke.learnCloudGetIndexRecordForUpdate(
+                                        getVerifiableDataIndexId(category)
+                                    );
+                                if (records.length > 1)
+                                    throw new Error('Ambiguous profile field index record.');
+                                credUris = records
+                                    .filter(record => record.category === category)
+                                    .map(record => record.uri);
+                            }
+                            const sharedUris = await Promise.all(
+                                credUris.map(uri =>
+                                    getOrCreateSharedUriForWallet(
+                                        learnCard,
+                                        audience.recipients,
+                                        queryClient,
+                                        uri,
+                                        contractCategoryNameToCategoryMetadata(category)
+                                            ?.credentialType ?? category
+                                    )
+                                )
+                            );
+                            const validUris = sharedUris.filter(
+                                (uri): uri is string =>
+                                    Boolean(uri) && !categoryInfo.shared?.includes(uri as string)
                             );
 
-                            if (
-                                categoryInfo &&
-                                categoryInfo.shareAll &&
-                                categoryInfo.sharing &&
-                                (!categoryInfo.shareUntil ||
-                                    categoryInfo.shareUntil > new Date().toISOString())
-                            ) {
-                                const sharedUris = await Promise.all(
-                                    credUris.map(uri =>
-                                        getOrCreateSharedUriForWallet(
+                            if (validUris.length) {
+                                categoryMap[category] = validUris;
+                                if (category.startsWith('VerifiableData:') && credUris.length === 1)
+                                    fieldGenerations[category] =
+                                        await getProfileFieldGenerationForUri(
                                             learnCard,
-                                            audience.recipients,
-                                            queryClient,
-                                            uri,
-                                            contractCategoryNameToCategoryMetadata(category)
-                                                ?.credentialType ?? category
-                                        )
-                                    )
-                                );
-                                const validUris = sharedUris.filter(
-                                    (uri): uri is string =>
-                                        Boolean(uri) &&
-                                        !categoryInfo.shared?.includes(uri as string)
-                                );
-
-                                if (validUris.length) {
-                                    categoryMap[category] = validUris;
-                                }
+                                            credUris[0]!
+                                        );
                             }
                         }
-                    )
+                    })
                 );
 
                 if (Object.keys(categoryMap).length) {
@@ -231,9 +256,12 @@ export const useSyncConsentContractsMutation = () => {
                     try {
                         await learnCard.invoke.syncCredentialsToContract(
                             termsUri,
-                            categoryMap as Record<string, string[]>,
+                            categoryMap,
                             audience.audienceVersion,
-                            true
+                            true,
+                            ...(Object.keys(fieldGenerations).length
+                                ? ([fieldGenerations] as const)
+                                : ([] as const))
                         );
                         if (isLearnCardAiPassportContractUri(contract.uri)) {
                             await queueAiInsightCredentialRefresh({

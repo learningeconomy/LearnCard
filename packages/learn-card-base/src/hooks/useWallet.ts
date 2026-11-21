@@ -28,11 +28,15 @@ import type { InfiniteData } from '@tanstack/react-query';
 import type { CredentialMetadata, LCR } from 'learn-card-base/types/credential-records';
 import { getOrCreateSharedUriForWallet } from './useSharedUrisInTerms';
 import { loadContractAudience } from './consentAudience';
+import { getProfileFieldGenerationForUri } from './profileFieldGeneration';
 import { getOrFetchConsentedContracts } from './useConsentedContracts';
 import { queueAiInsightCredentialRefresh } from 'learn-card-base/react-query/mutations/ai-passport';
 import { isLearnCardAiPassportContractUri } from 'learn-card-base/constants/aiPassport';
 import { getLogger } from '../logging/logger';
-import { enqueuePendingContractSyncSafely } from '../stores/pendingContractSyncStore';
+import {
+    enqueuePendingContractSyncSafely,
+    type CredentialSyncSource,
+} from '../stores/pendingContractSyncStore';
 import {
     addCredentialSummary,
     getCredentialFactsEpoch,
@@ -317,7 +321,7 @@ export const useWallet = () => {
      * not supported by the audience-copy cache or the persisted retry worker.
      */
     const syncCredentialToContracts = async (
-        { record, category }: { record: LCR; category: CredentialCategory },
+        { record, category }: CredentialSyncSource,
         wallet?: BespokeLearnCard,
         // Owned by one claim attempt (one actor, credential and network), not a global cache.
         // Supplying this also makes partial failures visible to the recovery UI.
@@ -343,8 +347,17 @@ export const useWallet = () => {
             });
             // Batch sync credentials to contracts, respecting share settings
             const outcomes = await Promise.allSettled(
-                allContracts.map(async ({ contract, terms, uri: termsUri, status }) => {
-                    if (status !== 'live' || syncedTerms.has(termsUri)) return;
+                allContracts.map(async consent => {
+                    const { contract, terms, uri: termsUri, status, oneTime, expiresAt } = consent;
+                    if (
+                        status !== 'live' ||
+                        oneTime ||
+                        (expiresAt && Date.parse(expiresAt) <= Date.now()) ||
+                        (contract.expiresAt && Date.parse(contract.expiresAt) <= Date.now()) ||
+                        terms.read.credentials.sharing === false ||
+                        syncedTerms.has(termsUri)
+                    )
+                        return;
 
                     const categoryInfo = terms.read.credentials.categories[category];
 
@@ -392,7 +405,17 @@ export const useWallet = () => {
                                     [category]: [sharedUri],
                                 },
                                 audience.audienceVersion,
-                                true
+                                true,
+                                ...(category.startsWith('VerifiableData:')
+                                    ? ([
+                                          {
+                                              [category]: await getProfileFieldGenerationForUri(
+                                                  learnCard,
+                                                  record.uri
+                                              ),
+                                          },
+                                      ] as const)
+                                    : ([] as const))
                             );
                             // Remember the acknowledged mutation before any cache/refresh work.
                             syncedTerms.add(termsUri);

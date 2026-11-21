@@ -42,6 +42,18 @@ export const EN_DEFAULTS: Record<string, string> = {
     'inAppMessages.upToDate': "You're on the latest version.",
     'consentAudience.fullCredential':
         '{organizations} can receive a complete copy of each credential you select, including your details and any issuer signature.',
+    'profileFields.unavailable': 'Field unavailable',
+    'profileFields.permission': 'Permission',
+    'profileFields.off': 'Keep private',
+    'profileFields.once': 'Allow once',
+    'profileFields.live': 'Keep updated',
+    'profileFields.choose': 'Choose an option',
+    'profileFields.selfDescribe': 'Prefer to self-describe',
+    'profileFields.enterAnswer': 'Enter your answer',
+    'profileFields.error': 'Something went wrong. Please try again.',
+    'profileFields.retry': 'Try again',
+    'profileFields.loading': 'Loading…',
+    'profileFields.saving': 'Saving…',
     'consentAudience.title': 'Review who receives your data',
     'consentAudience.description':
         'Your selected information will be available to everyone listed below.',

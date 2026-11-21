@@ -33,6 +33,39 @@ import {
     runAudienceMutation,
 } from './recipients';
 
+/** Keep profile generations when an older client edits terms without the new field. */
+export const preserveProfileFieldGenerations = (
+    current: ConsentFlowTermsType,
+    next: ConsentFlowTermsType
+): ConsentFlowTermsType => {
+    const merged = structuredClone(next);
+    for (const [category, previous] of Object.entries(
+        current.read?.credentials?.categories ?? {}
+    )) {
+        if (!category.startsWith('VerifiableData:') || !previous.fieldGeneration) continue;
+        // A missing category is disabled, but its fence must survive a later re-enable.
+        const grant = (merged.read.credentials.categories[category] ??= {});
+        if (!grant.fieldGeneration) {
+            // Do not attach the current generation to a different unversioned answer.
+            if (
+                (grant.sharing || (grant.shared?.length ?? 0) > 0) &&
+                JSON.stringify(grant.shared ?? []) !== JSON.stringify(previous.shared ?? [])
+            ) {
+                throw new TRPCError({
+                    code: 'CONFLICT',
+                    message: 'Profile field generation is required to change the shared answer.',
+                });
+            }
+            grant.fieldGeneration = previous.fieldGeneration;
+        } else if (grant.fieldGeneration < previous.fieldGeneration)
+            throw new TRPCError({
+                code: 'CONFLICT',
+                message: 'Profile field generation is stale.',
+            });
+    }
+    return merged;
+};
+
 export const claimAutoBoostTransaction = async (
     contractId: string,
     termsId: string,
@@ -133,6 +166,7 @@ export const reconsentTerms = async (
     },
     domain: string
 ): Promise<boolean> => {
+    terms = preserveProfileFieldGenerations(relationship.terms.terms, terms);
     const currentVersion = Number(relationship.contract.currentVersion ?? 1);
     const version = acceptVersion ?? currentVersion;
     if (!Number.isInteger(version) || version !== currentVersion) {
@@ -439,6 +473,7 @@ export const updateTerms = async (
             message: 'User has not yet approved the latest version of this contract',
         });
     }
+    terms = preserveProfileFieldGenerations(relationship.terms.terms, terms);
     const effectiveOneTime = oneTime ?? relationship.terms.oneTime ?? false;
 
     const transaction = {
@@ -771,7 +806,8 @@ export const syncCredentialsToContract = async (
     categories: Record<string, string[]>,
     audienceVersion?: number,
     domain?: string,
-    automatic = false
+    automatic = false,
+    fieldGenerations?: Record<string, string>
 ): Promise<boolean> => {
     if (
         relationship.terms.status === 'needs_reconsent' ||
@@ -828,18 +864,40 @@ export const syncCredentialsToContract = async (
             };
         }
 
-        // Make sure shared array exists
-        if (!updatedTerms.read.credentials.categories[category].shared) {
-            updatedTerms.read.credentials.categories[category].shared = [];
+        const grant = updatedTerms.read.credentials.categories[category];
+        if (category.startsWith('VerifiableData:')) {
+            if (credentialUris.length !== 1) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Expected one answer per profile field.',
+                });
+            }
+            const incomingGeneration = fieldGenerations?.[category];
+            if (
+                grant.fieldGeneration &&
+                !incomingGeneration &&
+                (automatic || JSON.stringify(grant.shared ?? []) !== JSON.stringify(credentialUris))
+            ) {
+                throw new TRPCError({
+                    code: 'CONFLICT',
+                    message: 'Profile field generation is required to change the shared answer.',
+                });
+            }
+            if (
+                incomingGeneration &&
+                grant.fieldGeneration &&
+                incomingGeneration < grant.fieldGeneration
+            ) {
+                throw new TRPCError({
+                    code: 'CONFLICT',
+                    message: 'Profile field generation is stale.',
+                });
+            }
+            if (incomingGeneration) grant.fieldGeneration = incomingGeneration;
+            grant.shared = credentialUris;
+        } else {
+            grant.shared = [...new Set([...(grant.shared ?? []), ...credentialUris])];
         }
-
-        // Add the credential URIs to the shared array of the category
-        updatedTerms.read.credentials.categories[category].shared = [
-            ...new Set([
-                ...(updatedTerms.read.credentials.categories[category].shared || []),
-                ...credentialUris,
-            ]),
-        ];
     }
 
     // Use flattenObject for both the query params and transaction properties to handle Neo4j limitations

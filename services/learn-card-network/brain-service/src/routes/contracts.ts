@@ -42,6 +42,7 @@ import {
     ConsentFlowContractDetailsValidator,
     ConsentFlowContractQueryValidator,
     ConsentFlowTermsValidator,
+    ProfileFieldGenerationValidator,
     ConsentFlowExternalGrantExpectationValidator,
     ConsentFlowTermsQueryValidator,
     PaginationOptionsValidator,
@@ -1935,12 +1936,13 @@ export const contractsRouter = t.router({
                 automatic: z.boolean().optional(),
                 audienceVersion: z.number().int().nonnegative().optional(),
                 categories: z.record(z.string(), z.string().array()),
+                fieldGenerations: z.record(z.string(), ProfileFieldGenerationValidator).optional(),
             })
         )
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { termsUri, categories, audienceVersion, automatic } = input;
+            const { termsUri, categories, audienceVersion, automatic, fieldGenerations } = input;
 
             // Verify the terms exist and belong to this profile
             const relationship = await getContractTermsByUri(termsUri);
@@ -2025,7 +2027,8 @@ export const contractsRouter = t.router({
                 categories,
                 audienceVersion,
                 ctx.domain,
-                automatic
+                automatic,
+                fieldGenerations
             );
 
             return result;

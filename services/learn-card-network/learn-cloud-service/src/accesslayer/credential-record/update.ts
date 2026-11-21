@@ -29,3 +29,31 @@ export const updateCredentialRecord = async (
         return false;
     }
 };
+
+/** Match the encrypted revision at write time, preserving the record's storage identity. */
+export const replaceCredentialRecordIfCurrent = async (
+    dids: string[],
+    record: EncryptedCredentialRecord,
+    expectedCiphertext: string
+): Promise<boolean> => {
+    const result = await getCredentialRecordCollection().updateOne(
+        { did: { $in: dids }, id: record.id, 'encryptedRecord.ciphertext': expectedCiphertext },
+        [
+            {
+                $replaceWith: {
+                    $mergeObjects: [
+                        { $literal: record },
+                        {
+                            _id: '$_id',
+                            did: '$did',
+                            cursor: '$cursor',
+                            created: '$created',
+                            modified: '$$NOW',
+                        },
+                    ],
+                },
+            },
+        ]
+    );
+    return result.matchedCount === 1;
+};

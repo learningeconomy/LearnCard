@@ -643,3 +643,31 @@ describe('getCredentialName', () => {
         expect(getCredentialName({} as never)).toBe('');
     });
 });
+
+describe('tenant profile field categorization', () => {
+    const key = 'VerifiableData:vetpass:military-profile:branch';
+    const holder = 'did:example:holder';
+    const subject = { id: holder, dataKey: key };
+    const credential = {
+        issuer: holder,
+        type: ['VerifiableCredential', 'VerifiableData'],
+        credentialSubject: subject,
+    };
+    it.each([holder, { id: holder }])('recognizes a self-issued field', issuer => {
+        expect(getDefaultCategoryForCredential({ ...credential, issuer } as never)).toBe(key);
+    });
+    it.each([
+        { type: 'VerifiableData' },
+        { type: null },
+        { type: {} },
+        { issuer: 'did:example:other' },
+        { issuer: undefined, credentialSubject: { dataKey: key } },
+        { credentialSubject: [subject] },
+        { credentialSubject: 'invalid' },
+        { credentialSubject: { ...subject, dataKey: 'VerifiableData:branch' } },
+    ])('uses ordinary categorization for invalid field metadata (%j)', invalid => {
+        expect(getDefaultCategoryForCredential({ ...credential, ...invalid } as never)).toBe(
+            'Achievement'
+        );
+    });
+});

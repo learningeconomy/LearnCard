@@ -1,5 +1,40 @@
 {
     "_comment": "Local dev overrides for VetPass. Merged on top of config.json via deepMerge.",
+    "_profileFieldsNote": "Local demonstration options. Confirm pilot choices with HHUSA before deployment.",
+    "verifiableDataConsentNotice": "We ask for this information to help partners understand what resources you may need. You decide whether to share your answers and with whom. Unless we tell you otherwise, your answers will only be analyzed in aggregate.",
+    "verifiableDataSchemas": {
+        "military-profile": {
+            "label": "Military profile",
+            "fields": {
+                "branch": {
+                    "label": "Branch of service",
+                    "type": "select",
+                    "values": [
+                        "Army",
+                        "Navy",
+                        "Air Force",
+                        "Marine Corps",
+                        "Coast Guard",
+                        "Space Force"
+                    ]
+                },
+                "disabilityStatus": {
+                    "label": "Disability status",
+                    "type": "select",
+                    "values": ["Yes", "No", "Prefer not to answer"]
+                },
+                "gender": {
+                    "label": "Gender",
+                    "type": "select",
+                    "values": ["Man", "Woman", "Other", { "type": "custom" }, "Prefer not to say"]
+                },
+                "birthDate": {
+                    "label": "Date of birth",
+                    "type": "date"
+                }
+            }
+        }
+    },
     "stage": "local",
     "devDomain": "localhost:3000",
     "apis": {

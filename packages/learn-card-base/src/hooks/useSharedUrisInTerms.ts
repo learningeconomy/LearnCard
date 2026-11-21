@@ -1,9 +1,12 @@
+import { updateProfileFieldIndex } from './profileFieldIndex';
+import { getProfileFieldGenerationForUri } from './profileFieldGeneration';
 import { ConsentFlowTerms } from '@learncard/types';
 import { InfiniteData, QueryClient, useQueryClient } from '@tanstack/react-query';
 import { switchedProfileStore, useWallet } from 'learn-card-base';
 import { LCR } from 'learn-card-base/types/credential-records';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { cloneDeep } from 'lodash';
+import { getVerifiableDataIndexId } from './createVerifiableDataCredential';
 import { getLogger } from '../logging/logger';
 
 const log = getLogger('use-shared-uris-in-terms');
@@ -58,6 +61,10 @@ export const getConsentAudienceRecipients = (audience: ConsentDataAudience): str
 export const getConsentAudienceCacheKey = (audience: ConsentDataAudience): string =>
     `audience:${JSON.stringify(getConsentAudienceRecipients(audience))}`;
 
+/** Bind field copies to both their original answer and their effective audience. */
+export const getProfileFieldAudienceCacheKey = (audience: ConsentDataAudience, uri: string) =>
+    `audience:${JSON.stringify([uri, getConsentAudienceRecipients(audience)])}`;
+
 const syncCachedCategoryRecords = (
     queryClient: QueryClient,
     queryKey: CredentialListQueryKey,
@@ -85,6 +92,15 @@ const loadCategoryRecordsForWallet = async (
     wallet: BespokeLearnCard,
     category: string
 ): Promise<{ records: LCR[]; pageCount: number }> => {
+    if (category.startsWith('VerifiableData:')) {
+        // A category page can be stale even after a successful CAS: an older
+        // cache-miss read may have filled it after the write invalidated it.
+        const records = (await wallet.invoke.learnCloudGetIndexRecordForUpdate(
+            getVerifiableDataIndexId(category)
+        )) as LCR[];
+        if (records.length > 1) throw new Error('Ambiguous profile field index record.');
+        return { records, pageCount: records.length ? 1 : 0 };
+    }
     const getPage = wallet.index.LearnCloud.getPage;
 
     if (!getPage) {
@@ -129,9 +145,9 @@ const getOrCreateSharedUriFromCategoryRecords = async (
     wallet: BespokeLearnCard,
     contractOwnerDid: ConsentDataAudience,
     credUri: string,
-    records: LCR[]
+    records: LCR[],
+    category: string
 ): Promise<SharedUriResolution> => {
-    const audienceKey = getConsentAudienceCacheKey(contractOwnerDid);
     const mainRecord = records.find(
         record =>
             record.uri === credUri ||
@@ -139,22 +155,46 @@ const getOrCreateSharedUriFromCategoryRecords = async (
     );
 
     if (mainRecord) {
+        const isField = category.startsWith('VerifiableData:');
+        if (isField && mainRecord.id !== getVerifiableDataIndexId(category)) {
+            return { sharedUri: false, status: 'missing' };
+        }
         // Legacy owner-keyed copies are safe only when their complete effective
         // audience (including SmartResume servers) matches the current audience.
-        const legacyOwnerKey = Object.keys(mainRecord.sharedUris ?? {}).find(
-            key => !key.startsWith('audience:') && getConsentAudienceCacheKey(key) === audienceKey
-        );
+        const audienceKey = isField
+            ? getProfileFieldAudienceCacheKey(contractOwnerDid, mainRecord.uri)
+            : getConsentAudienceCacheKey(contractOwnerDid);
+        const legacyOwnerKey =
+            !isField &&
+            Object.keys(mainRecord.sharedUris ?? {}).find(
+                key =>
+                    !key.startsWith('audience:') && getConsentAudienceCacheKey(key) === audienceKey
+            );
         const existingSharedUris =
             mainRecord.sharedUris?.[audienceKey] ??
             (legacyOwnerKey ? mainRecord.sharedUris?.[legacyOwnerKey] : undefined);
-        if (existingSharedUris?.length) {
-            return { sharedUri: existingSharedUris.at(-1) ?? false, status: 'reused' };
-        }
+        const cachedUri = existingSharedUris?.at(-1);
+        if (cachedUri && !isField) return { sharedUri: cachedUri, status: 'reused' };
 
         const vc = await wallet.read.get(mainRecord.uri);
         if (!vc) {
             return { sharedUri: false, status: 'missing' };
         }
+
+        if (isField) {
+            const subject = vc.credentialSubject;
+            const fieldName = category.split(':').at(-1)!;
+            if (
+                Array.isArray(subject) ||
+                subject?.dataKey !== category ||
+                typeof subject.dataPayload?.[fieldName] !== 'string' ||
+                Object.keys(subject.dataPayload).length !== 1
+            ) {
+                return { sharedUri: false, status: 'missing' };
+            }
+        }
+
+        if (cachedUri) return { sharedUri: cachedUri, status: 'reused' };
 
         const newUri = await wallet.store.LearnCloud.uploadEncrypted?.(vc, {
             recipients: getConsentAudienceRecipients(contractOwnerDid),
@@ -162,6 +202,19 @@ const getOrCreateSharedUriFromCategoryRecords = async (
 
         if (!newUri) {
             return { sharedUri: false, status: 'missing' };
+        }
+
+        if (isField) {
+            const current = await updateProfileFieldIndex(wallet, mainRecord.id, latest => {
+                if (latest?.uri !== mainRecord.uri || latest.sharedUris?.[audienceKey]?.length)
+                    return;
+                return { ...latest, sharedUris: { ...latest.sharedUris, [audienceKey]: [newUri] } };
+            });
+            const sharedUri =
+                current?.uri === mainRecord.uri && current.sharedUris?.[audienceKey]?.at(-1);
+            if (!sharedUri) return { sharedUri: false, status: 'missing' };
+            mainRecord.sharedUris = current.sharedUris;
+            return { sharedUri, status: sharedUri === newUri ? 'created' : 'reused' };
         }
 
         const newSharedUris = mainRecord.sharedUris
@@ -198,10 +251,13 @@ export const getOrCreateSharedUriForWallet = async (
     category: string
 ): Promise<string | false> => {
     const didWeb = wallet.id.did();
-    const credentialKey = JSON.stringify([didWeb, credUri]);
-    const inFlightKey = [didWeb, credUri, getConsentAudienceCacheKey(contractOwnerDid)]
-        .filter(Boolean)
-        .join('|');
+    const credentialKey = JSON.stringify([didWeb, category, credUri]);
+    const inFlightKey = JSON.stringify([
+        didWeb,
+        category,
+        credUri,
+        getConsentAudienceCacheKey(contractOwnerDid),
+    ]);
     const inFlight = inFlightSharedUriCreations.get(inFlightKey);
     if (inFlight) return inFlight;
 
@@ -236,12 +292,13 @@ const createSharedUriForWallet = async (
         ? cache.pages.flatMap(page => page?.records ?? [])
         : [];
 
-    if (cachedRecords.length > 0) {
+    if (!category.startsWith('VerifiableData:') && cachedRecords.length > 0) {
         const cachedResult = await getOrCreateSharedUriFromCategoryRecords(
             wallet,
             contractOwnerDid,
             credUri,
-            cachedRecords
+            cachedRecords,
+            category
         );
 
         if (cachedResult.status !== 'missing') {
@@ -255,7 +312,8 @@ const createSharedUriForWallet = async (
         wallet,
         contractOwnerDid,
         credUri,
-        records
+        records,
+        category
     );
 
     syncCachedCategoryRecords(queryClient, queryKey, records);
@@ -295,7 +353,9 @@ export const getTermsWithSharedUrisForWallet = async (
             continue;
         }
         const materializeAll =
-            explicitlyFullCategories.has(category) && categoryGrant.shareAll === true;
+            !category.startsWith('VerifiableData:') &&
+            explicitlyFullCategories.has(category) &&
+            categoryGrant.shareAll === true;
         const requestedCredUris = materializeAll
             ? undefined
             : Array.from(new Set(categoryGrant.shared ?? []));
@@ -318,7 +378,8 @@ export const getTermsWithSharedUrisForWallet = async (
                 wallet,
                 contractOwnerDid,
                 credUri,
-                records
+                records,
+                category
             );
 
             if (result.status === 'reused' && result.sharedUri) {
@@ -332,6 +393,24 @@ export const getTermsWithSharedUrisForWallet = async (
             }
         }
 
+        if (category.startsWith('VerifiableData:') && missingCount > 0) {
+            throw new Error('A reviewed profile field could not be prepared for sharing.');
+        }
+        if (category.startsWith('VerifiableData:') && urisToMaterialize.length === 1) {
+            const source = records.find(
+                record =>
+                    record.uri === urisToMaterialize[0] ||
+                    Object.values(record.sharedUris ?? {}).some(uris =>
+                        uris.includes(urisToMaterialize[0]!)
+                    )
+            );
+            if (!source)
+                throw new Error('A reviewed profile field could not be prepared for sharing.');
+            categoryGrant.fieldGeneration = await getProfileFieldGenerationForUri(
+                wallet,
+                source.uri
+            );
+        }
         syncCachedCategoryRecords(queryClient, queryKey, records);
         terms.terms.read.credentials.categories[category].shared = newCredUris;
 

@@ -32,6 +32,7 @@ export const consentFlowFeature: FeatureDefinition = {
         const { issuer, learner } = context.actors;
         const suffix = randomBytes(4).toString('hex');
         const name = `Verify Consent ${suffix}`;
+        const fieldCategory = 'VerifiableData:learncard:demo:branch';
         const sharedName = `Consent Learner ${suffix}`;
         const achievementName = `Consent Achievement ${suffix}`;
         const partner = await context.sdk(issuer);
@@ -92,7 +93,12 @@ export const consentFlowFeature: FeatureDefinition = {
                 contract: {
                     read: {
                         personal: { Name: { required: false } },
-                        credentials: { categories: { Achievement: { required: false } } },
+                        credentials: {
+                            categories: {
+                                Achievement: { required: false },
+                                [fieldCategory]: { required: true },
+                            },
+                        },
                     },
                     write: {
                         personal: {},
@@ -163,6 +169,10 @@ export const consentFlowFeature: FeatureDefinition = {
             await dialog.getByRole('button', { name: 'Privacy & Data', exact: true }).click();
             const privacy = page.getByTestId('consent-privacy-and-data');
             await expect(privacy).toBeVisible({ timeout: UI_TIMEOUT });
+            await expect(
+                privacy.getByRole('heading', { name: 'Demo branch', exact: true })
+            ).toBeVisible();
+            await expect(privacy.getByText(fieldCategory, { exact: false })).toHaveCount(0);
             // This IonToggle has no label association; scope it to its actual labelled row.
             const anonymizeToggle = privacy
                 .getByText('Anonymize', { exact: true })
@@ -202,6 +212,8 @@ export const consentFlowFeature: FeatureDefinition = {
             });
             await expect(audience).toBeVisible({ timeout: UI_TIMEOUT });
             await expect(audience.getByText(recipient.displayName, { exact: true })).toBeVisible();
+            await audience.getByLabel('Demo branch', { exact: true }).selectOption('North');
+            await expect(audience.getByLabel('Demo birth date', { exact: true })).toHaveCount(0);
             await audience.getByRole('button', { name: 'Confirm Sharing', exact: true }).click();
             await expect(dialog.getByRole('button', { name: 'Accept', exact: true })).toBeHidden({
                 timeout: UI_TIMEOUT,
@@ -226,8 +238,16 @@ export const consentFlowFeature: FeatureDefinition = {
             expect(record.terms.read.anonymize).toBe(false);
             expect(record.terms.read.credentials.categories.Achievement?.sharing).toBe(true);
             expect(record.terms.read.credentials.categories.Achievement?.shareAll).toBe(false);
-            expect(record.credentials).toHaveLength(1);
-            const shared = record.credentials[0]!;
+            expect(record.credentials).toHaveLength(2);
+            const profile = record.credentials.find(item => item.category === fieldCategory);
+            expect(profile).toBeDefined();
+            const fieldCredential = VCValidator.parse(await partner.read.get(profile!.uri));
+            expect(fieldCredential.credentialSubject).toMatchObject({ dataKey: fieldCategory });
+            const subject = Array.isArray(fieldCredential.credentialSubject)
+                ? fieldCredential.credentialSubject[0]
+                : fieldCredential.credentialSubject;
+            expect(subject?.dataPayload).toEqual({ branch: 'North' });
+            const shared = record.credentials.find(item => item.category === 'Achievement')!;
             expect(shared.category).toBe('Achievement');
             expect(record.terms.read.credentials.categories.Achievement?.shared).toEqual([
                 shared.uri,
@@ -307,7 +327,7 @@ export const consentFlowFeature: FeatureDefinition = {
                     'Content-Type': 'application/json',
                     [ACT_AS_HEADER]: actAs,
                 },
-                body: JSON.stringify({ contractUri, did: learnerDid, limit: 1 }),
+                body: JSON.stringify({ contractUri, did: learnerDid, limit: 10 }),
             });
         const token = await tokenFor('contracts-data:read contracts-data:decrypt');
         await context.step(page, 'consent-readable-delivery', async () => {
@@ -315,8 +335,14 @@ export const consentFlowFeature: FeatureDefinition = {
             expect(response.status).toBe(200);
             expect(response.headers.get('cache-control')).toContain('no-store');
             const data = ReadableDeliveryPageValidator.parse(await response.json());
-            expect(data.records).toHaveLength(1);
-            expect(data.records[0]).toMatchObject({
+            // The combined tenant-field and readable-delivery journey shares both
+            // the requested profile answer and the selected Achievement.
+            expect(data.records).toHaveLength(2);
+            expect(data.records.map(record => record.category)).toEqual(
+                expect.arrayContaining([fieldCategory, 'Achievement'])
+            );
+            const achievement = data.records.find(record => record.uri === records.sharedUri);
+            expect(achievement).toMatchObject({
                 uri: records.sharedUri,
                 status: 'readable',
                 credential: {
@@ -330,7 +356,7 @@ export const consentFlowFeature: FeatureDefinition = {
                     },
                 },
             });
-            expect(data.records[0]?.fullCredential).toEqual(signedInput);
+            expect(achievement?.fullCredential).toEqual(signedInput);
             expect(data.hasMore).toBe(false);
             for (const scope of ['contracts-data:read', 'contracts-data:decrypt', '*:read']) {
                 expect((await readDelivery(await tokenFor(scope))).status).toBe(403);
@@ -339,7 +365,7 @@ export const consentFlowFeature: FeatureDefinition = {
             return {
                 records: data.records.length,
                 scopedAccess: 'enforced',
-                proof: data.records[0]?.credential?.verification.proof,
+                proof: achievement?.credential?.verification.proof,
             };
         });
         await context.step(page, 'consent-readable-delivery-revoked', async () => {
