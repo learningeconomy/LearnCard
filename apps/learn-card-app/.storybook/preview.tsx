@@ -78,6 +78,7 @@ const preview: Preview = {
             <IonApp>
                 <TenantConfigProvider config={DEFAULT_LEARNCARD_TENANT_CONFIG}>
                     <LocaleProvider>
+                        {/* Analytics reads privacy consent through React Query. */}
                         <QueryClientProvider client={queryClient}>
                             <AnalyticsContextProvider>
                                 <MemoryRouter>

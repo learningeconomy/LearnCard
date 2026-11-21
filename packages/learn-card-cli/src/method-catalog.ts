@@ -107,6 +107,7 @@ export const STATIC_INVOKE_METHODS: readonly string[] = [
     'createManagedSkillFrameworks',
     'createProfile',
     'createProfileManager',
+    'createReadableDeliveryRecipient',
     'createServiceProfile',
     'createShareLink',
     'createSkill',
@@ -135,6 +136,7 @@ export const STATIC_INVOKE_METHODS: readonly string[] = [
     'detachFrameworkFromBoost',
     'didResolver',
     'didToVerificationMethod',
+    'disableReadableDelivery',
     'discardAppStoreListingUpdate',
     'disconnectWith',
     'enrollInCampaign',
@@ -248,6 +250,7 @@ export const STATIC_INVOKE_METHODS: readonly string[] = [
     'getProfileManagerProfile',
     'getPublicAppStoreListing',
     'getPublicAppStoreListingBySlug',
+    'getReadableDeliveryData',
     'getReceivedCredentials',
     'getReceivedPresentations',
     'getRegisteredSigningAuthorities',
@@ -450,10 +453,12 @@ export const READ_ALLOWLIST: ReadonlySet<string> = new Set([
 
 /**
  * Read-looking names that change state on the network: they are tRPC mutations
- * (claim reconciliation and public share-link views/chunks) or they consume a one-time code.
+ * (claim reconciliation, public share-link views/chunks, and audited delivery reads)
+ * or they consume a one-time code.
  */
 export const WRITE_OVERRIDES: ReadonlySet<string> = new Set([
     'getClaimBoostWithLinkStatus',
+    'getReadableDeliveryData',
     'getShareLinkAttachmentChunk',
     'getShareLinkContent',
     'resolveShareLink',

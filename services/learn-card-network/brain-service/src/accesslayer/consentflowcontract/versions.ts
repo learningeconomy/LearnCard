@@ -147,7 +147,12 @@ const mergeConsentFlowContractPatch = (
               personal: mergeScopePatch(current.write.personal, patch.write.personal),
           }
         : current.write;
-    return ConsentFlowContractValidator.parse({ ...current, read, write });
+    return ConsentFlowContractValidator.parse({
+        ...current,
+        ...(patch?.expectedIssuers !== undefined ? { expectedIssuers: patch.expectedIssuers } : {}),
+        read,
+        write,
+    });
 };
 export const getConsentFlowContractVersionRecord = async (
     contractId: string,

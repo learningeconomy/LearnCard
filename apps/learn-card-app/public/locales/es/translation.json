@@ -2365,7 +2365,8 @@
             "email": "correo electrónico",
             "profilePicture": "foto de perfil"
         },
-        "retryPublication": "Tus opciones para compartir están guardadas. Inténtalo de nuevo para terminar de enviarlas."
+        "retryPublication": "Tus opciones para compartir están guardadas. Inténtalo de nuevo para terminar de enviarlas.",
+        "readableDeliveryDisclosure": "LearnCard puede leer la información que seleccionas en nombre de {{organizations}}."
     },
     "recovery": {
         "pin": {
@@ -4322,6 +4323,7 @@
             "expires": "Caduca"
         },
         "consentAudience": {
+            "fullCredential": "{{organizations}} puede recibir una copia completa de cada credencial que selecciones, incluidos tus datos y la firma del emisor, si la hay.",
             "title": "Revisa quién recibe tus datos",
             "description": "La información que elijas estará disponible para todas las personas que aparecen a continuación.",
             "confirm": "Confirmar uso compartido",

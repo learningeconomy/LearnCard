@@ -76,7 +76,7 @@ export const DbContractValidator = z.object({
 
 export type DbContractType = z.infer<typeof DbContractValidator>;
 export type FlatDbContractType = Omit<DbContractType, 'contract' | 'latestUpdate'> &
-    Partial<Record<`contract.${string}`, string | boolean>> & {
+    Partial<Record<`contract.${string}`, string | boolean | string[]>> & {
         latestUpdate?: string;
     };
 

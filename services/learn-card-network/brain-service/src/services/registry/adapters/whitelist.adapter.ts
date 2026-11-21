@@ -35,6 +35,6 @@ export class WhitelistAdapter implements RegistryService {
                 uncheckedRegistries: [],
             };
         }
-        return null;
+        return { matchingIssuers: [], uncheckedRegistries: [] };
     }
 }

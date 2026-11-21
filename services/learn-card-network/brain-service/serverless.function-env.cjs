@@ -45,6 +45,7 @@ exports.provider = ({ options = {}, env = process.env } = {}) => ({
     // Non-secret product selector for the shared stage files (config.<tenant>.<stage>.json).
     CONFIG_TENANT: env.CONFIG_TENANT || 'learncard',
     PORT: String(options.httpPort || '3000'),
+    READABLE_DELIVERY_KMS_KEY_ARN: { 'Fn::GetAtt': ['ReadableDeliveryKey', 'Arn'] },
     REDIS_HOST: { 'Fn::GetAtt': ['ElasticCacheCluster', 'RedisEndpoint.Address'] },
     REDIS_PORT: { 'Fn::GetAtt': ['ElasticCacheCluster', 'RedisEndpoint.Port'] },
     NOTIFICATIONS_QUEUE_URL: '${construct:notifications-queue.queueUrl}',
