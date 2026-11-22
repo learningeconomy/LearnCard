@@ -6,7 +6,10 @@ import {
     getContractRequestCapWindowStart,
     recentContractRequestTimes,
 } from '@helpers/contract-request-cap.helpers';
-import { contractRequestReplacementWhere } from '@helpers/contract-request-replacement.helpers';
+import {
+    contractRequestReplacementWhere,
+    inviteHasNeverAttached,
+} from '@helpers/contract-request-replacement.helpers';
 
 /** `closed`: an attached invite whose request has been resolved. */
 export type ContractRequestInviteStatus =
@@ -102,7 +105,7 @@ export const getPendingContractRequestInvitesForProfile = async (
          WITH profile, collect(DISTINCT toLower(trim(cm.value))) AS emails
          MATCH (contract:ConsentFlowContract)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite)
          WHERE invite.email IN emails AND invite.status = 'pending' AND invite.expiresAt > $now
-             AND invite.requestedBy <> $profileId AND NOT coalesce(invite.superseded, false)
+             AND invite.requestedBy <> $profileId AND ${inviteHasNeverAttached}
              AND CASE WHEN contract.expiresAt IS NULL OR trim(contract.expiresAt) = '' THEN true
                       ELSE datetime(contract.expiresAt) > datetime($now) END
              AND EXISTS {
