@@ -171,6 +171,97 @@ describe('integration events for contract request invites', () => {
         });
     });
 
+    it.each(['email acceptance', 'direct update'] as const)(
+        'keeps the previous live referral visible until %s',
+        async action => {
+            const manager = owner.clients.fullAuth.contracts;
+            const previousSender = recipient.clients.fullAuth.contracts;
+            const consents = learner.clients.fullAuth.contracts;
+            const consentInput = {
+                contractUri,
+                terms: normalFullTerms,
+                audienceVersion: (await manager.getConsentFlowContract({ uri: contractUri }))
+                    .audienceVersion,
+            };
+            const profileInput = { contractUri, targetProfileId: learner.profileId };
+            const email = randomEmail();
+            await addEmail(learner.profileId, email);
+            const { requestId: previousId } = await send(email);
+            const terms = await consents.consentToContract({
+                ...consentInput,
+                expectedRequestId: previousId,
+            });
+            const previousInput = { contractUri, requestId: previousId };
+            const externalReferenceId = 'new-live-referral';
+            const { requestId } = await manager.sendContractRequest({
+                contractUri,
+                targetEmail: email,
+                externalReferenceId,
+            });
+            const inviteInput = { contractUri, requestId };
+            const externalView = (viewer: typeof manager) =>
+                Promise.all([
+                    viewer.getRequestStatusForProfile(profileInput),
+                    viewer.getContractRequest(previousInput),
+                    viewer.getContractSentRequests({ contractUri }),
+                ]);
+            const ownerView = await externalView(manager);
+            const senderView = await externalView(previousSender);
+            const pendingInvite = await manager.getContractRequest(inviteInput);
+            expect(pendingInvite).toMatchObject({ status: 'pending', target: { email } });
+            expect(senderView[1]).toMatchObject({
+                requestId: previousId,
+                status: 'accepted',
+                target: { profile: { profileId: learner.profileId } },
+            });
+            await expect(previousSender.getContractRequest(inviteInput)).rejects.toMatchObject({
+                code: 'NOT_FOUND',
+            });
+
+            await deliverContractRequestInvites();
+            await expect(consents.getRequestStatusForProfile(profileInput)).resolves.toMatchObject({
+                referralOnly: true,
+                status: 'pending',
+                requestId,
+            });
+            await consents.markContractRequestAsSeen(profileInput);
+            await expect(manager.getContractRequest(inviteInput)).resolves.toEqual(pendingInvite);
+            await expect(externalView(manager)).resolves.toEqual(ownerView);
+            await expect(externalView(previousSender)).resolves.toEqual(senderView);
+            await expect(previousSender.getContractRequest(inviteInput)).rejects.toMatchObject({
+                code: 'NOT_FOUND',
+            });
+
+            let visibleId = requestId;
+            if (action === 'email acceptance') {
+                await expect(
+                    consents.consentToContract({ ...consentInput, expectedRequestId: requestId })
+                ).resolves.toEqual(terms);
+            } else {
+                const direct = await manager.sendContractRequest({
+                    ...profileInput,
+                    externalReferenceId,
+                });
+                expect(direct.status).toBe('accepted');
+                visibleId = direct.requestId;
+                await expect(manager.getContractRequest(inviteInput)).resolves.toEqual(
+                    pendingInvite
+                );
+            }
+            await expect(manager.getRequestStatusForProfile(profileInput)).resolves.toMatchObject({
+                requestId: visibleId,
+                status: 'accepted',
+                externalReferenceId,
+            });
+            await expect(manager.getContractRequest(previousInput)).rejects.toMatchObject({
+                code: 'NOT_FOUND',
+            });
+            await expect(previousSender.getContractSentRequests({ contractUri })).resolves.toEqual(
+                []
+            );
+        }
+    );
+
     it('does not revive consent when a referral-only invitation outlives the connection', async () => {
         const audienceVersion = (
             await owner.clients.fullAuth.contracts.getConsentFlowContract({ uri: contractUri })

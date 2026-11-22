@@ -101,7 +101,10 @@ const applyLiveReferral = async (
             WITH contract, target, terms, sender, reference, retry, recentTimes, replacedId, replacedStatus, capped
             WITH contract, target, terms, sender, reference, retry, recentTimes, replacedId, replacedStatus
             WHERE NOT capped
+            OPTIONAL MATCH (contract)-[previous:PREVIOUS_VISIBLE_REQUEST]->(target)
             MERGE (contract)-[request:REQUESTED_FOR]->(target)
+            FOREACH (_ IN CASE WHEN NOT retry AND previous IS NOT NULL THEN [1] ELSE [] END |
+                DELETE previous)
             FOREACH (_ IN CASE WHEN $direct AND NOT retry THEN [1] ELSE [] END |
                 SET request += {requestId: $requestId, requestedBy: sender, externalReferenceId: reference,
                     message: $message, requestedAt: $now, addressedByEmail: null,
