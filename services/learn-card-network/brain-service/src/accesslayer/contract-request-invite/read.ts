@@ -41,7 +41,7 @@ export type ContractRequestInviteType = {
     deliveryAttempts?: unknown;
 };
 
-const inviteViewerWhere = `($viewerProfileId IS NULL OR EXISTS {
+export const inviteViewerWhere = `($viewerProfileId IS NULL OR EXISTS {
     MATCH (c)-[:CREATED_BY|CAN_WRITE]->(:Profile {profileId: $viewerProfileId})
 } OR (invite.requestedBy = $viewerProfileId AND EXISTS {
     MATCH (c)-[:SHARES_DATA_WITH]->(:Profile {profileId: $viewerProfileId})

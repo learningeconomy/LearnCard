@@ -105,6 +105,10 @@ export const appendConsentEvent = (
                 THEN 'accepted' ELSE accepted.status END)
         FOREACH (_ IN CASE WHEN requestAccepted THEN [1] ELSE [] END |
             SET request.status = 'accepted')
+        WITH contract, terms, transaction, consenter, requestAccepted
+        OPTIONAL MATCH (contract)-[previous:PREVIOUS_VISIBLE_REQUEST]->(consenter)
+        FOREACH (_ IN CASE WHEN requestAccepted AND previous IS NOT NULL THEN [1] ELSE [] END |
+            DELETE previous)
         WITH contract, terms, transaction, requestAccepted
         MATCH (contract)-[:CREATED_BY]->(owner:Profile)
         OPTIONAL MATCH (contract)-[:SHARES_DATA_WITH]->(recipient:Profile)
