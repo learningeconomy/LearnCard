@@ -49,7 +49,9 @@ export const Layout: React.FC<LayoutProps> = ({
         <Html lang={htmlLang(locale)} dir={htmlDir(locale)}>
             <Head />
 
-            <Preview>{preview}</Preview>
+            {/* React 19 renders this hidden block inside <body>, where the plain-text
+                renderer would pick it up; data-skip-in-text keeps it out of the text part. */}
+            <Preview data-skip-in-text>{preview}</Preview>
 
             <Body style={body}>
                 {/* Top spacer — Gmail strips <body> padding, so use an inline div */}

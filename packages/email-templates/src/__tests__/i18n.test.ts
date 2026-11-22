@@ -256,6 +256,10 @@ describe('i18n — non-EN locales localize content', () => {
         expect(en.html).toContain('Your code:');
         expect(es.html).toContain('Tu código:');
         expect(es.html).not.toContain('Your code:');
+
+        // ...but stays out of the plain-text part.
+        expect(en.text).not.toContain('Your code:');
+        expect(es.text).not.toContain('Tu código:');
     });
 });
 
