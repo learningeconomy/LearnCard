@@ -1022,7 +1022,7 @@ export const markLegacyContractRequestSeen = async (
         `MATCH (contract:ConsentFlowContract {id: $id})
         SET contract.audienceLock = coalesce(contract.audienceLock, 0) + 1
         WITH contract
-        MATCH (contract)-[r:REQUESTED_FOR]->(:Profile {profileId: $profileId})
+        MATCH (contract)-[r:REQUESTED_FOR|PREVIOUS_VISIBLE_REQUEST]->(:Profile {profileId: $profileId})
         WHERE r.requestId IS NULL
         SET r.readStatus = 'seen'`,
         { id, profileId }
