@@ -236,7 +236,7 @@ export const ContractRequest: React.FC<RequestProps> = ({
             await requirePending();
             const wallet = await initWallet();
             requireEnabled();
-            await wallet.invoke.denyContractRequest(contractUri);
+            await wallet.invoke.denyContractRequest(contractUri, requestId);
             await refresh();
             presentToast(m['contractRequests.declined'](), { type: ToastTypeEnum.Success });
         }, 'decline');
