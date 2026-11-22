@@ -642,7 +642,7 @@ describe('useTranscriptArrival', () => {
         expect(calls()).toBe(5);
 
         expect(result.current.isPollingExhausted).toBe(false);
-        await vi.advanceTimersByTimeAsync(30 * 60_000);
+        await act(() => vi.advanceTimersByTimeAsync(30 * 60_000));
         const callsAtStop = calls();
         expect(result.current.isPollingExhausted).toBe(true);
         await vi.advanceTimersByTimeAsync(10 * 60_000);
@@ -651,7 +651,7 @@ describe('useTranscriptArrival', () => {
 
     it('keeps the polling window across remounts in the same session', async () => {
         const first = renderHook(() => useTranscriptArrival(activeParams));
-        await vi.advanceTimersByTimeAsync(31 * 60_000);
+        await act(() => vi.advanceTimersByTimeAsync(31 * 60_000));
         expect(first.result.current.isPollingExhausted).toBe(true);
         first.unmount();
 
@@ -669,7 +669,7 @@ describe('useTranscriptArrival', () => {
         mocks.wallet.read.get.mockResolvedValue(otherVc);
 
         const { result } = renderHook(() => useTranscriptArrival(activeParams));
-        await vi.advanceTimersByTimeAsync(31 * 60_000);
+        await act(() => vi.advanceTimersByTimeAsync(31 * 60_000));
         expect(result.current.isPollingExhausted).toBe(true);
         expect(mocks.wallet.read.get).toHaveBeenCalledTimes(1);
 
@@ -776,7 +776,7 @@ describe('useTranscriptArrival', () => {
             mocks.wallet.read.get.mockResolvedValue(VALID_VC);
 
             const { result } = renderHook(() => useTranscriptArrival(activeParams));
-            await vi.advanceTimersByTimeAsync(31 * 60_000);
+            await act(() => vi.advanceTimersByTimeAsync(31 * 60_000));
             expect(result.current.isPollingExhausted).toBe(true);
             expect(mocks.wallet.invoke.transcriptsMarkReceived).not.toHaveBeenCalled();
 
@@ -968,7 +968,7 @@ describe('useTranscriptArrival', () => {
                 initialProps: activeParams,
             });
             await vi.waitFor(() => expect(mocks.appStateHandler).toBeDefined());
-            await vi.advanceTimersByTimeAsync(30 * 60_000);
+            await act(() => vi.advanceTimersByTimeAsync(30 * 60_000));
             expect(result.current.isPollingExhausted).toBe(true);
 
             // The foreground re-check is stuck on the received-credentials lookup...

@@ -31,9 +31,15 @@ describe('EscrowPinSignIn', () => {
         pastePin();
 
         expect(await screen.findByText('Incorrect PIN. 8 attempts left.')).toBeInTheDocument();
-        expect(
-            screen.getAllByLabelText(/PIN digit/).map(input => (input as HTMLInputElement).value)
-        ).toEqual(['', '', '', '', '', '']);
+        // RecoveryPinInput mirrors `value` into its boxes from a passive effect, which React 19
+        // may flush after the commit that shows the error.
+        await waitFor(() =>
+            expect(
+                screen
+                    .getAllByLabelText(/PIN digit/)
+                    .map(input => (input as HTMLInputElement).value)
+            ).toEqual(['', '', '', '', '', ''])
+        );
     });
 
     it('uses the singular for the last attempt', () => {
