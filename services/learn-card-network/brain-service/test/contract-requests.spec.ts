@@ -1075,7 +1075,12 @@ describe('generic contract requests and correlated events', () => {
             'MATCH (:ConsentFlowContract {id:$id})-[r:REQUESTED_FOR]->() DELETE r',
             { id: id(uri) }
         );
-        await expect(send(uri)).rejects.toMatchObject({ code: 'CONFLICT' });
+        await expect(
+            writer.clients.fullAuth.contracts.sendContractRequest({
+                contractUri: uri,
+                targetProfileId: learner.profileId,
+            })
+        ).rejects.toMatchObject({ code: 'CONFLICT' });
         await neogma.queryRunner.run('MATCH (t:ConsentFlowTerms {id:$id}) SET t.expiresAt=$past', {
             id: id(termsUri),
             past: '2000-01-01T00:00:00Z',
