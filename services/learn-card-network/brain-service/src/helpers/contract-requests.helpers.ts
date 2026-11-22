@@ -26,6 +26,7 @@ import {
     recentContractRequestTimes,
 } from './contract-request-cap.helpers';
 import {
+    activeRequestTermsWhere,
     contractRequestReplacementWhere,
     inviteHasNeverAttached,
 } from './contract-request-replacement.helpers';
@@ -149,11 +150,10 @@ export const createRequestForProfile = async (
         MATCH (target:Profile {profileId: $targetProfileId})
         WITH contract, target WHERE $targetProfileId <> $senderProfileId AND EXISTS {
             MATCH (contract)-[:CREATED_BY|CAN_WRITE|SHARES_DATA_WITH]->(:Profile {profileId: $senderProfileId})
-        } AND CASE WHEN contract.expiresAt IS NULL OR trim(contract.expiresAt) = '' THEN true ELSE datetime(contract.expiresAt) > datetime($now) END
+        } AND CASE WHEN contract.expiresAt IS NULL OR trim(contract.expiresAt) = '' THEN true ELSE datetime(contract.expiresAt) > datetime.realtime() END
         AND NOT EXISTS {
             MATCH (target)-[:CREATED_BY]->(terms:ConsentFlowTerms)-[:CONSENTS_TO]->(contract)
-            WHERE (terms.status = 'live' OR (terms.status = 'consumed' AND terms.oneTime = true)) AND
-                CASE WHEN terms.expiresAt IS NULL OR trim(terms.expiresAt) = '' THEN true ELSE datetime(terms.expiresAt) > datetime($now) END
+            WHERE ${activeRequestTermsWhere('datetime.realtime()')}
         }
         OPTIONAL MATCH (contract)-[existing:REQUESTED_FOR]->(target)
         WITH contract, target, existing,
@@ -169,7 +169,7 @@ export const createRequestForProfile = async (
             WHERE invite.id = $inviteId
         WITH contract, target, existing, invite, retry, recentTimes
         WHERE $inviteId IS NULL OR (invite IS NOT NULL AND invite.status = 'pending' AND
-            invite.expiresAt > $now AND ${inviteHasNeverAttached})
+            datetime(invite.expiresAt) > datetime.realtime() AND ${inviteHasNeverAttached})
         WITH contract, target, invite, retry, recentTimes,
             existing.requestId AS replacedId, existing.status AS replacedStatus,
             NOT retry AND size(recentTimes) >= $requestCap AS capped
