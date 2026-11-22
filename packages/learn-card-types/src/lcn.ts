@@ -1343,13 +1343,13 @@ export type ConsentFlowTermsQuery = z.infer<typeof ConsentFlowTermsQueryValidato
 export type ConsentFlowTermsQueryInput = z.input<typeof ConsentFlowTermsQueryValidator>;
 
 export const ConsentFlowTransactionActionValidator = z.enum([
-    'referral',
     'consent',
     'update',
     'sync',
     'withdraw',
     'write',
     'reconsent',
+    'referral',
 ]);
 export type ConsentFlowTransactionAction = z.infer<typeof ConsentFlowTransactionActionValidator>;
 
@@ -2264,12 +2264,12 @@ export type PaginatedLCNIntegrationsType = z.infer<typeof PaginatedLCNIntegratio
 
 // Integration change feed and signed webhooks (LC-2370)
 export const IntegrationEventTypeValidator = z.enum([
-    'referral_attached',
     'request_sent',
     'request_accepted',
     'request_denied',
     'request_cancelled',
     'request_expired',
+    'referral_attached',
     'consent_created',
     'consent_updated',
     'consent_withdrawn',
