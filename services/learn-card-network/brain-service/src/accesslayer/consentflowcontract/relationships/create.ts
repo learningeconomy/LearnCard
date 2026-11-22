@@ -258,6 +258,7 @@ export const consentToContract = async (
                 consenterProfileId: consenter.profileId,
                 transaction,
                 domain,
+                expectedRequestId,
                 messageKey:
                     contract.name === 'AI Insights'
                         ? 'consentFlowInsightsShared'
