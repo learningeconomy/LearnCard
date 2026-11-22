@@ -139,9 +139,13 @@ describe('sendContractRequest with targetEmail', () => {
         const result = await send(email);
         expect(result).toEqual({ requestId: expect.any(String), status: 'pending' });
         expect(mocks.send).not.toHaveBeenCalled();
-        expect((await learnerRequest())?.requestId).not.toBe(result.requestId);
-        expect(await getContractRequestInvite(id(contractUri), result.requestId)).toMatchObject({
+        expect(await learnerRequest()).toMatchObject({
+            requestId: result.requestId,
             status: 'pending',
+            referralOnly: true,
+        });
+        expect(await getContractRequestInvite(id(contractUri), result.requestId)).toMatchObject({
+            status: 'attached',
         });
     });
 
