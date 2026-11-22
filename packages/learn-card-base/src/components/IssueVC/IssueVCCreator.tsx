@@ -247,7 +247,7 @@ const IssueVCCreator: React.FC<{ category: CredentialCategory; closeModal?: any 
 
     if (isDisabled) btnClass = `${btnClass} opacity-50`;
 
-    const bottomBarRef = useRef<HTMLDivElement>();
+    const bottomBarRef = useRef<HTMLDivElement>(undefined);
 
     const bottomBarClass =
         'z-[1000] fixed-bottom-container left-[0px] fixed w-full bottom-[0px] p-[20px] h-[147px] bg-grayscale-50 flex flex-col';

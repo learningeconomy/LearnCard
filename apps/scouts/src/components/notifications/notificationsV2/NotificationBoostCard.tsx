@@ -5,7 +5,6 @@ import X from 'learn-card-base/svgs/X';
 import * as m from '../../../paraglide/messages.js';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import NotificationSkeleton from './NotificationSkeleton';
-// @ts-ignore
 import ArrowArcLeft from '../../../assets/images/ArrowArcLeft.svg';
 import BoostClaimCard from '../../boost/claim-boost-card/BoostClaimCard';
 import CredentialBadge from 'learn-card-base/components/CredentialBadge/CredentialBadge';
@@ -69,7 +68,8 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     });
 
     // Ref for the element that we want to detect whether on screen
-    const ref: any = useRef<HTMLDivElement>();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
+    const ref: any = useRef<HTMLDivElement>(undefined);
     // Call the hook passing in ref and root margin
     // In this case it would only be considered onScreen if more ...
     // ... than 300px of element is visible.
@@ -88,7 +88,9 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     const unwrappedCred = data && unwrapBoostCredential(boostVc);
     const credCategory =
         boostVc &&
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
         (getDefaultCategoryForCredential(unwrappedCred as any) as CredentialCategoryEnum);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
     const credImgUrl = boostVc && getImageUrlFromCredential(unwrappedCred as any);
     const notificationCategoryFromCredCategory =
         credCategory && CATEGORY_TO_NOTIFICATION_ENUM[credCategory];
@@ -133,6 +135,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     const presentClaimModal = () => {
         newClaimModal(
             <BoostClaimCard
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
                 credential={unwrappedCred as any}
                 credentialUri={credentialUri as string}
                 dismiss={() => closeClaimModal()}
@@ -155,7 +158,9 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                 if (isID) {
                     newModal(
                         <ViewTroopIdModal
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
                             credential={unwrappedCred as any}
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
                             boostUri={(unwrappedCred as any)?.boostId}
                             claimCredentialUri={credentialUri}
                             useCurrentUserInfo
@@ -193,7 +198,9 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
         if (isID) {
             newModal(
                 <ViewTroopIdModal
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
                     credential={unwrappedCred as any}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
                     boostUri={(unwrappedCred as any)?.boostId}
                     claimCredentialUri={credentialUri}
                     useCurrentUserInfo
@@ -256,6 +263,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                         achievementType={
                             unwrappedCred?.credentialSubject?.achievement?.achievementType
                         }
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
                         boostType={credCategory as any}
                         badgeThumbnail={credImgUrl as string}
                         badgeCircleCustomClass="w-[90px] h-[90px]"
@@ -265,6 +273,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                         showBackgroundImage={false}
                         backgroundImage={unwrappedCred?.display?.backgroundImage ?? ''}
                         backgroundColor={unwrappedCred?.display?.backgroundColor ?? ''}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
                         credential={unwrappedCred as any}
                     />
                 )}

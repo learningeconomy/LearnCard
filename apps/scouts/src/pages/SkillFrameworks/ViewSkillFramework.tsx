@@ -64,6 +64,7 @@ const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) =>
             xxs: gen(1),
         };
     };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
     const [layouts, setLayouts] = useState<any>(buildLayouts());
 
     // When skills or mode change, (re)measure card heights and adjust layout h to fit content exactly
@@ -78,7 +79,9 @@ const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) =>
                 return Math.max(CARD_MIN_ROWS, Math.ceil(px / GRID_ROW_HEIGHT));
             };
 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
             const update = (prev: any, cols: number) => {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
                 return prev.map((item: any, idx: number) => {
                     const h = measureH(item.i);
                     // Keep x/y/w, only update h
@@ -86,6 +89,7 @@ const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) =>
                 });
             };
 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
             setLayouts((prev: any) => ({
                 lg: update(prev.lg || [], 6),
                 md: update(prev.md || [], 5),
@@ -284,6 +288,7 @@ const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) =>
                                                     onChange={e =>
                                                         handleChange(
                                                             path,
+                                                            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
                                                             'targetFramework' as any,
                                                             e.target.value
                                                         )
@@ -298,6 +303,7 @@ const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) =>
                                                     onChange={e =>
                                                         handleChange(
                                                             path,
+                                                            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
                                                             'targetDescription' as any,
                                                             e.target.value
                                                         )
@@ -312,6 +318,7 @@ const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) =>
                                                     onChange={e =>
                                                         handleChange(
                                                             path,
+                                                            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
                                                             'targetCode' as any,
                                                             e.target.value
                                                         )
@@ -326,6 +333,7 @@ const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) =>
                                                     onChange={e =>
                                                         handleChange(
                                                             path,
+                                                            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
                                                             'targetType' as any,
                                                             e.target.value
                                                         )
@@ -359,7 +367,9 @@ const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) =>
                             return (
                                 <div
                                     key={key}
-                                    ref={el => (cardRefs.current[key] = el)}
+                                    ref={el => {
+                                        cardRefs.current[key] = el;
+                                    }}
                                     className="bg-white rounded-[12px] shadow-card p-[12px] border border-grayscale-200 overflow-y-auto"
                                 >
                                     <div className="flex items-start justify-between gap-2">

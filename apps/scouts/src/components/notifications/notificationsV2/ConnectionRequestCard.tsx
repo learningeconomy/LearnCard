@@ -46,7 +46,8 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({
     // const [isLoading, setIsLoading] = useState<boolean>(loadingState || false);
 
     // Ref for the element that we want to detect whether on screen
-    const ref: any = useRef<HTMLDivElement>();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is out of scope for the React 19 upgrade
+    const ref: any = useRef<HTMLDivElement>(undefined);
 
     const onScreen: boolean = useOnScreen<HTMLDivElement>(ref, '-130px');
 
