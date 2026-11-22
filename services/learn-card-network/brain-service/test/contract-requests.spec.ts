@@ -980,44 +980,78 @@ describe('generic contract requests and correlated events', () => {
         expect(await status(uri)).toMatchObject(replacement);
     });
 
-    it('caps new requests across senders and allows another after the oldest leaves the window', async () => {
+    it('accepts a new request after the older version of ongoing consent expires', async () => {
+        const uri = await create();
+        const { termsUri } = await accept(uri);
+        await owner.clients.fullAuth.contracts.updateConsentFlowContract({
+            uri,
+            changes: { expiresAt: '2099-01-01T00:00:00.000Z' },
+            reason: 'Update the contract expiry for new requests.',
+        });
+        // Keep the older grant's live status while testing expiry of its accepted version.
+        await neogma.queryRunner.run(
+            `MATCH (terms:ConsentFlowTerms {id: $termsId})-[:CONSENTS_TO]->(:ConsentFlowContract)
+                    -[:HAS_VERSION]->(v:ConsentFlowContractVersion {version: 1})
+             SET terms.status = 'live', v.expiresAt = '2000-01-01T00:00:00.000Z'`,
+            { termsId: id(termsUri) }
+        );
+        const replacement = await send(uri);
+        const audienceVersion = (
+            await owner.clients.fullAuth.contracts.getConsentFlowContract({ uri })
+        ).audienceVersion;
+        await learner.clients.fullAuth.contracts.consentToContract({
+            contractUri: uri,
+            terms: normalFullTerms,
+            audienceVersion,
+            expectedRequestId: replacement.requestId,
+        });
+
+        expect(await status(uri)).toMatchObject({ ...replacement, status: 'accepted' });
+        expect((await getContractTermsByUri(termsUri))!.terms).toMatchObject({
+            status: 'live',
+            consentedVersion: 2,
+            referral: { requestId: replacement.requestId },
+        });
+    });
+
+    it('caps each sender independently and frees a slot when their oldest request leaves the window', async () => {
         vi.spyOn(requestCap, 'getContractRequestCap').mockReturnValue(3);
         const uri = await create();
-        const deny = () =>
-            learner.clients.fullAuth.contracts.denyContractRequest({ contractUri: uri });
-        const original = await send(uri);
-        // Simulate an attributed request created before rolling request history was stored.
+        const cancel = (actor: typeof recipient, requestId: string) =>
+            actor.clients.fullAuth.contracts.cancelContractRequest({ contractUri: uri, requestId });
+        const first = await send(uri, recipient);
+        // Simulate an attributed request made before rolling request history was stored.
         await neogma.queryRunner.run(
-            'MATCH (:ConsentFlowContract {id: $id})-[r:REQUESTED_FOR]->() REMOVE r.requestTimes',
+            'MATCH (:ConsentFlowContract {id: $id})-[r:REQUESTED_FOR]->() REMOVE r.profileRequestTimes',
             { id: id(uri) }
         );
-        await deny();
+        await cancel(recipient, first.requestId);
         const second = await send(uri, recipient, 'second-referral');
-        expect(second.requestId).not.toBe(original.requestId);
-        await deny();
-        const [third, retry] = await Promise.all([send(uri, owner), send(uri, owner)]);
+        expect(second.requestId).not.toBe(first.requestId);
+        await cancel(recipient, second.requestId);
+        const [third, retry] = await Promise.all([send(uri, recipient), send(uri, recipient)]);
         expect(third.requestId).not.toBe(second.requestId);
         expect(retry).toEqual(third);
-        await deny();
-        await expect(send(uri)).rejects.toMatchObject({ code: 'TOO_MANY_REQUESTS' });
-        expect(await status(uri)).toMatchObject({ status: 'denied', requestId: third.requestId });
+        await cancel(recipient, third.requestId);
+        await expect(send(uri, recipient)).rejects.toMatchObject({ code: 'TOO_MANY_REQUESTS' });
+        expect(await status(uri)).toMatchObject({
+            status: 'cancelled',
+            requestId: third.requestId,
+        });
         expect(
             (await eventRows(uri)).filter(row => row.get('e').properties.kind === 'request_sent')
         ).toHaveLength(3);
 
+        await cancel(owner, (await send(uri, owner)).requestId);
+        await cancel(writer, (await send(uri, writer)).requestId);
+        await expect(send(uri, recipient)).rejects.toMatchObject({ code: 'TOO_MANY_REQUESTS' });
+
         await neogma.queryRunner.run(
             `MATCH (:ConsentFlowContract {id: $id})-[r:REQUESTED_FOR]->()
-             SET r.requestTimes = [$oldest] + r.requestTimes[1..]
-             RETURN r`,
-            { id: id(uri), oldest: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() }
+             SET r.profileRequestTimes = [$oldest] + r.profileRequestTimes[1..]`,
+            { id: id(uri), oldest: `2000-01-01T00:00:00.000Z|${recipient.profileId}` }
         );
-        await expect(send(uri)).resolves.toMatchObject({ status: 'pending' });
-        const rows = await neogma.queryRunner.run(
-            'MATCH (:ConsentFlowContract {id: $id})-[r:REQUESTED_FOR]->() RETURN r.requestTimes AS history',
-            { id: id(uri) }
-        );
-        expect(rows.records).toHaveLength(1);
-        expect(rows.records[0]!.get('history')).toHaveLength(3);
+        await expect(send(uri, recipient)).resolves.toMatchObject({ status: 'pending' });
     });
 
     it('keeps a stale denial from applying to a replacement request', async () => {

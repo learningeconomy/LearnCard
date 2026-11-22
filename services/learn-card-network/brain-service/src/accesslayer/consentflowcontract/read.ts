@@ -103,6 +103,7 @@ const requestingRecipientWhere = `r.requestedBy = $viewerProfileId AND EXISTS {
     MATCH (c)-[:SHARES_DATA_WITH]->(:Profile {profileId:$viewerProfileId})
 }`;
 
+// The unattached-invite projection follows contractRequestFromInvite, with the same pending expiry.
 export const getRequestedForList = async (id: string, viewerProfileId: string) => {
     const result = await neogma.queryRunner.run(
         `MATCH (c:ConsentFlowContract {id: $id})

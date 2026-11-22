@@ -50,7 +50,7 @@ const attachInviteToProfile = async (
             domain,
             inviteId: invite.id,
         })
-    )?.status === 'pending';
+    ).status === 'pending';
 
 /** The most invites one call converts. Bounds the work done inside a request. */
 export const CONTRACT_REQUEST_INVITE_ATTACH_LIMIT = 20;
