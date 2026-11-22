@@ -8,3 +8,10 @@ export const contractRequestReplacementWhere = (sender: string, isEmailSend: str
             (existing.status = 'expired' OR
              (existing.status = 'pending' AND (NOT (${isEmailSend}) OR existing.expiresAt <= $now)))), false)
 `;
+
+/** The profile attachment event keeps the invite ID. The email send event has an :invited suffix. */
+export const inviteHasNeverAttached = `
+    NOT EXISTS {
+        MATCH (:ConsentFlowEvent {id: invite.id, kind: 'request_sent'})
+    }
+`;

@@ -2905,6 +2905,7 @@ export const contractsRouter = t.router({
                     actorProfileId: profile.profileId,
                     status: 'cancelled',
                     domain: ctx.domain,
+                    requestId: request.requestId,
                 });
             }
 

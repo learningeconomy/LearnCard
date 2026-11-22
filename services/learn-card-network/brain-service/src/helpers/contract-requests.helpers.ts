@@ -25,7 +25,10 @@ import {
     getContractRequestCapWindowStart,
     recentContractRequestTimes,
 } from './contract-request-cap.helpers';
-import { contractRequestReplacementWhere } from './contract-request-replacement.helpers';
+import {
+    contractRequestReplacementWhere,
+    inviteHasNeverAttached,
+} from './contract-request-replacement.helpers';
 import {
     requestEventCypher,
     tryDispatchContractEvent,
@@ -166,7 +169,7 @@ export const createRequestForProfile = async (
             WHERE invite.id = $inviteId
         WITH contract, target, existing, invite, retry, recentTimes
         WHERE $inviteId IS NULL OR (invite IS NOT NULL AND invite.status = 'pending' AND
-            invite.expiresAt > $now AND NOT coalesce(invite.superseded, false))
+            invite.expiresAt > $now AND ${inviteHasNeverAttached})
         WITH contract, target, invite, retry, recentTimes,
             existing.requestId AS replacedId, existing.status AS replacedStatus,
             NOT retry AND size(recentTimes) >= $requestCap AS capped
@@ -188,7 +191,7 @@ export const createRequestForProfile = async (
                 WHERE NOT retry AND replaced.id = replacedId
             FOREACH (_ IN CASE WHEN replaced IS NOT NULL AND replacedStatus <> 'accepted' THEN [1] ELSE [] END |
                 SET replaced.attachedProfileId = null, replaced.attachedAt = null,
-                    replaced.status = replacedStatus, replaced.superseded = true)
+                    replaced.status = replacedStatus)
             FOREACH (_ IN CASE WHEN replaced IS NOT NULL AND replacedStatus = 'accepted' THEN [1] ELSE [] END |
                 SET replaced.status = 'closed')
             ${requestEventCypher}
@@ -260,7 +263,7 @@ export const decideGenericContractRequest = async ({
     actorProfileId: string;
     status: 'denied' | 'cancelled';
     domain: string;
-    /** The request ID supplied by callers that address a request by ID. */
+    /** The request ID supplied by the caller or used by the route for its access check. */
     requestId?: string;
 }): Promise<boolean> => {
     const request = await getStoredContractRequest(contract.id, targetProfileId);

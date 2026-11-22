@@ -4,6 +4,7 @@ import type { LCNNotification } from '@learncard/types';
 import { getUser } from './helpers/getClient';
 import { normalContract, normalFullTerms } from './helpers/contract';
 import { neogma } from '@instance';
+import * as contractRequests from '@accesslayer/consentflowcontract/read';
 import * as requestCap from '@helpers/contract-request-cap.helpers';
 import { createContractRequestInvite } from '@accesslayer/contract-request-invite/create';
 import { getContractRequestInvite } from '@accesslayer/contract-request-invite/read';
@@ -227,6 +228,63 @@ describe('attachContractRequestInvitesForProfile', () => {
                 targetProfileId: learner.profileId,
             })
         ).resolves.toMatchObject({ requestId: replacement.requestId, status: 'denied' });
+    });
+
+    it('keeps a profile-based cancellation from reaching an email request attached after the read', async () => {
+        await owner.clients.fullAuth.contracts.sendContractRequest({
+            contractUri,
+            targetProfileId: learner.profileId,
+        });
+        await learner.clients.fullAuth.contracts.denyContractRequest({ contractUri });
+        const email = randomEmail();
+        const replacementId = await invite(email, owner);
+        await addEmail(learner.profileId, email);
+
+        const readRequest = contractRequests.getStoredContractRequest;
+        vi.spyOn(contractRequests, 'getStoredContractRequest').mockImplementationOnce(
+            async (...args) => {
+                const snapshot = await readRequest(...args);
+                expect(await attachContractRequestInvitesForProfile(learner, DOMAIN)).toBe(1);
+                return snapshot;
+            }
+        );
+        await expect(
+            owner.clients.fullAuth.contracts.cancelContractRequest({
+                contractUri,
+                targetProfileId: learner.profileId,
+            })
+        ).rejects.toMatchObject({ code: 'CONFLICT' });
+        await expect(
+            learner.clients.fullAuth.contracts.getRequestStatusForProfile({
+                contractUri,
+                targetProfileId: learner.profileId,
+            })
+        ).resolves.toMatchObject({ requestId: replacementId, status: 'pending' });
+    });
+
+    it('does not attach an invite detached by LC-2372 before re-referral was introduced', async () => {
+        const email = randomEmail();
+        const oldId = await invite(email);
+        await addEmail(learner.profileId, email);
+        expect(await attachContractRequestInvitesForProfile(learner, DOMAIN)).toBe(1);
+
+        // Recreate the state left by LC-2372 after a profile send superseded the invite.
+        const replacementId = randomUUID();
+        await neogma.queryRunner.run(
+            `MATCH (contract:ConsentFlowContract {id: $contractId})-[r:REQUESTED_FOR]->()
+             MATCH (contract)-[:HAS_REQUEST_INVITE]->(i:ContractRequestInvite {id: $oldId})
+             SET i.status = 'pending', r.requestId = $replacementId, r.status = 'denied'
+             REMOVE i.attachedProfileId, i.attachedAt, r.addressedByEmail, r.expiresAt, r.requestTimes`,
+            { contractId: id(contractUri), oldId, replacementId }
+        );
+
+        expect(await attachContractRequestInvitesForProfile(learner, DOMAIN)).toBe(0);
+        await expect(
+            learner.clients.fullAuth.contracts.getRequestStatusForProfile({
+                contractUri,
+                targetProfileId: learner.profileId,
+            })
+        ).resolves.toMatchObject({ requestId: replacementId, status: 'denied' });
     });
 
     it('does not attach an invite to its own sender', async () => {
