@@ -4,6 +4,7 @@ import type { LCNNotification } from '@learncard/types';
 import { getUser } from './helpers/getClient';
 import { normalContract, normalFullTerms } from './helpers/contract';
 import { neogma } from '@instance';
+import * as requestCap from '@helpers/contract-request-cap.helpers';
 import { createContractRequestInvite } from '@accesslayer/contract-request-invite/create';
 import { getContractRequestInvite } from '@accesslayer/contract-request-invite/read';
 import { attachContractRequestInvitesForProfile } from '@helpers/contract-request-invites.helpers';
@@ -151,6 +152,81 @@ describe('attachContractRequestInvitesForProfile', () => {
         expect(await getContractRequestInvite(id(contractUri), requestId)).toMatchObject({
             status: 'pending',
         });
+    });
+
+    it('attaches a new invite after denial and keeps the old email decision redacted', async () => {
+        const email = randomEmail();
+        await addEmail(learner.profileId, email);
+        const oldId = await invite(email);
+        expect(await attachContractRequestInvitesForProfile(learner, DOMAIN)).toBe(1);
+        await learner.clients.fullAuth.contracts.denyContractRequest({ contractUri });
+        const requestId = await invite(email, owner);
+
+        expect(await attachContractRequestInvitesForProfile(learner, DOMAIN)).toBe(1);
+        await expect(
+            learner.clients.fullAuth.contracts.getRequestStatusForProfile({
+                contractUri,
+                targetProfileId: learner.profileId,
+            })
+        ).resolves.toMatchObject({ requestId, requestedBy: owner.profileId, status: 'pending' });
+        await expect(
+            recipient.clients.fullAuth.contracts.getContractRequest({
+                contractUri,
+                requestId: oldId,
+            })
+        ).resolves.toMatchObject({ status: 'denied', target: { email } });
+    });
+
+    it('keeps the email send pending and skips attachment at the shared profile cap', async () => {
+        vi.spyOn(requestCap, 'getContractRequestCap').mockReturnValue(1);
+        await owner.clients.fullAuth.contracts.sendContractRequest({
+            contractUri,
+            targetProfileId: learner.profileId,
+        });
+        await learner.clients.fullAuth.contracts.denyContractRequest({ contractUri });
+        const email = randomEmail();
+        await addEmail(learner.profileId, email);
+        const result = await recipient.clients.fullAuth.contracts.sendContractRequest({
+            contractUri,
+            targetEmail: email,
+        });
+        expect(result.status).toBe('pending');
+        expect(await attachContractRequestInvitesForProfile(learner, DOMAIN)).toBe(0);
+        expect(await getContractRequestInvite(id(contractUri), result.requestId)).toMatchObject({
+            status: 'pending',
+        });
+
+        await neogma.queryRunner.run(
+            'MATCH (:ConsentFlowContract {id: $id})-[r:REQUESTED_FOR]->() SET r.requestTimes = [$oldest]',
+            { id: id(contractUri), oldest: '2000-01-01T00:00:00.000Z' }
+        );
+        expect(await attachContractRequestInvitesForProfile(learner, DOMAIN)).toBe(1);
+        expect(await getContractRequestInvite(id(contractUri), result.requestId)).toMatchObject({
+            status: 'attached',
+        });
+    });
+
+    it('does not deliver an old pending invite again after a profile send supersedes it', async () => {
+        const email = randomEmail();
+        const oldId = await invite(email);
+        await addEmail(learner.profileId, email);
+        expect(await attachContractRequestInvitesForProfile(learner, DOMAIN)).toBe(1);
+        const replacement = await recipient.clients.fullAuth.contracts.sendContractRequest({
+            contractUri,
+            targetProfileId: learner.profileId,
+        });
+        await learner.clients.fullAuth.contracts.denyContractRequest({ contractUri });
+
+        expect(await attachContractRequestInvitesForProfile(learner, DOMAIN)).toBe(0);
+        expect(await getContractRequestInvite(id(contractUri), oldId)).toMatchObject({
+            status: 'pending',
+        });
+        await expect(
+            learner.clients.fullAuth.contracts.getRequestStatusForProfile({
+                contractUri,
+                targetProfileId: learner.profileId,
+            })
+        ).resolves.toMatchObject({ requestId: replacement.requestId, status: 'denied' });
     });
 
     it('does not attach an invite to its own sender', async () => {

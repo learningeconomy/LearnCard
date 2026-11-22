@@ -12,6 +12,7 @@ import { consentToContract as commitConsent } from '@accesslayer/consentflowcont
 import { normalContract, normalFullTerms } from './helpers/contract';
 import cache from '@cache';
 import { neogma } from '@instance';
+import * as requestCap from '@helpers/contract-request-cap.helpers';
 import {
     getContractDetailsByUri,
     getContractTermsByUri,
@@ -705,7 +706,7 @@ describe('generic contract requests and correlated events', () => {
         ).toHaveLength(1);
     });
 
-    it('retains denied history, emits one decision and rejects reopen/other terminal transitions', async () => {
+    it('retains denied history, emits one decision and rejects other terminal transitions', async () => {
         const uri = await create();
         await send(uri);
         delivered.length = 0;
@@ -726,7 +727,6 @@ describe('generic contract requests and correlated events', () => {
             'transaction'
         );
         expect(delivered.every(n => n.data?.metadata?.event === 'request_denied')).toBe(true);
-        await expect(send(uri)).rejects.toMatchObject({ code: 'CONFLICT' });
         await expect(
             owner.clients.fullAuth.contracts.cancelContractRequest({
                 contractUri: uri,
@@ -756,7 +756,7 @@ describe('generic contract requests and correlated events', () => {
                 status: 'cancelled',
                 requestedBy: recipient.profileId,
             });
-            await expect(send(uri, recipient)).rejects.toMatchObject({ code: 'CONFLICT' });
+            await expect(send(uri, recipient)).resolves.toMatchObject({ status: 'pending' });
         }
     );
 
@@ -879,42 +879,142 @@ describe('generic contract requests and correlated events', () => {
         ).toBe(true);
     });
 
-    it('keeps the original accepted referral through withdrawal and re-consent without reopening it', async () => {
+    it('attributes new consent after withdrawal to the replacement and preserves prior transactions', async () => {
         const uri = await create();
-        await send(uri);
-        const original = (await status(uri))!;
+        const original = await send(uri);
         const { termsUri } = await accept(uri);
         await learner.clients.fullAuth.contracts.withdrawConsent({ uri: termsUri });
-        await expect(send(uri, recipient, 'new-referral')).rejects.toMatchObject({
-            code: 'CONFLICT',
-        });
-        delivered.length = 0;
+
+        const replacement = await send(uri, recipient, 'new-referral');
+        expect(replacement.status).toBe('pending');
+        expect(replacement.requestId).not.toBe(original.requestId);
+        await expect(
+            learner.clients.fullAuth.contracts.consentToContract({
+                contractUri: uri,
+                terms: normalFullTerms,
+                audienceVersion: 2,
+                expectedRequestId: original.requestId,
+            })
+        ).rejects.toMatchObject({ code: 'CONFLICT' });
         await accept(uri);
         await flush(uri);
-        expect(await status(uri)).toMatchObject({
-            status: 'accepted',
-            requestId: original.requestId,
-            requestedBy: writer.profileId,
-            externalReferenceId: original.externalReferenceId,
-        });
+
+        const referral = {
+            requestId: replacement.requestId,
+            requestedBy: recipient.profileId,
+            externalReferenceId: 'new-referral',
+        };
+        expect(await status(uri)).toMatchObject({ status: 'accepted', ...referral });
         const history = await learner.clients.fullAuth.contracts.getTermsTransactionHistory({
             uri: termsUri,
         });
         expect(
-            history.records.filter(transaction => transaction.action === 'consent')
-        ).toHaveLength(1);
+            history.records.find(transaction => transaction.action === 'consent')?.referral
+        ).toMatchObject({ requestId: original.requestId, requestedBy: writer.profileId });
         expect(
-            history.records.filter(transaction => transaction.action === 'reconsent')
-        ).toHaveLength(1);
-        expect(history.records.every(t => t.referral?.requestId === original.requestId)).toBe(true);
+            history.records.find(transaction => transaction.action === 'reconsent')?.referral
+        ).toEqual(referral);
+        expect(delivered).toContainEqual(
+            expect.objectContaining({
+                to: expect.objectContaining({ profileId: owner.profileId }),
+                data: expect.objectContaining({
+                    metadata: expect.objectContaining({ event: 'consent_updated', ...referral }),
+                }),
+            })
+        );
+    });
+
+    it('replaces a legacy accepted relationship when consent expires', async () => {
+        const uri = await create();
+        const { termsUri } = await accept(uri);
+        await neogma.queryRunner.run(
+            'MATCH (t:ConsentFlowTerms {id: $id}) SET t.expiresAt = $past',
+            {
+                id: id(termsUri),
+                past: '2000-01-01T00:00:00.000Z',
+            }
+        );
+        const legacyRequest = await status(uri);
+        expect(legacyRequest).toMatchObject({ status: 'accepted' });
+        expect(legacyRequest?.requestId).toBeUndefined();
+
+        const replacement = await send(uri);
+        expect(await status(uri)).toMatchObject(replacement);
+    });
+
+    it('caps new requests across senders and allows another after the oldest leaves the window', async () => {
+        vi.spyOn(requestCap, 'getContractRequestCap').mockReturnValue(3);
+        const uri = await create();
+        const deny = () =>
+            learner.clients.fullAuth.contracts.denyContractRequest({ contractUri: uri });
+        const original = await send(uri);
+        // Simulate an attributed request created before rolling request history was stored.
+        await neogma.queryRunner.run(
+            'MATCH (:ConsentFlowContract {id: $id})-[r:REQUESTED_FOR]->() REMOVE r.requestTimes',
+            { id: id(uri) }
+        );
+        await deny();
+        const second = await send(uri, recipient, 'second-referral');
+        expect(second.requestId).not.toBe(original.requestId);
+        await deny();
+        const [third, retry] = await Promise.all([send(uri, owner), send(uri, owner)]);
+        expect(third.requestId).not.toBe(second.requestId);
+        expect(retry).toEqual(third);
+        await deny();
+        await expect(send(uri)).rejects.toMatchObject({ code: 'TOO_MANY_REQUESTS' });
+        expect(await status(uri)).toMatchObject({ status: 'denied', requestId: third.requestId });
         expect(
-            delivered.find(n => n.to.profileId === owner.profileId)?.data?.metadata
-        ).toMatchObject({
-            event: 'consent_updated',
-            requestId: original.requestId,
-            externalReferenceId: original.externalReferenceId,
-        });
-        expect(delivered.some(n => n.to.profileId === writer.profileId)).toBe(false);
+            (await eventRows(uri)).filter(row => row.get('e').properties.kind === 'request_sent')
+        ).toHaveLength(3);
+
+        await neogma.queryRunner.run(
+            `MATCH (:ConsentFlowContract {id: $id})-[r:REQUESTED_FOR]->()
+             SET r.requestTimes = [$oldest] + r.requestTimes[1..]
+             RETURN r`,
+            { id: id(uri), oldest: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() }
+        );
+        await expect(send(uri)).resolves.toMatchObject({ status: 'pending' });
+        const rows = await neogma.queryRunner.run(
+            'MATCH (:ConsentFlowContract {id: $id})-[r:REQUESTED_FOR]->() RETURN r.requestTimes AS history',
+            { id: id(uri) }
+        );
+        expect(rows.records).toHaveLength(1);
+        expect(rows.records[0]!.get('history')).toHaveLength(3);
+    });
+
+    it('keeps a stale denial from applying to a replacement request', async () => {
+        const uri = await create();
+        await send(uri);
+        const deny = () =>
+            learner.clients.fullAuth.contracts.denyContractRequest({ contractUri: uri });
+        await deny();
+        const readRequest = contractRead.getStoredContractRequest;
+        let replacementId: string | undefined;
+        vi.spyOn(contractRead, 'getStoredContractRequest').mockImplementationOnce(
+            async (...args) => {
+                const snapshot = await readRequest(...args);
+                replacementId = (await send(uri, recipient)).requestId;
+                return snapshot;
+            }
+        );
+
+        await expect(deny()).rejects.toMatchObject({ code: 'CONFLICT' });
+        expect(replacementId).toBeDefined();
+        expect(await status(uri)).toMatchObject({ status: 'pending', requestId: replacementId });
+    });
+
+    it('keeps a pending retry idempotent at the configured cap', async () => {
+        vi.spyOn(requestCap, 'getContractRequestCap').mockReturnValue(1);
+        const uri = await create();
+        const original = await send(uri);
+        await expect(send(uri)).resolves.toEqual(original);
+        await learner.clients.fullAuth.contracts.denyContractRequest({ contractUri: uri });
+        const attempts = [send(uri, recipient), send(uri, owner)];
+        for (const result of await Promise.allSettled(attempts))
+            expect(result).toMatchObject({
+                status: 'rejected',
+                reason: { code: 'TOO_MANY_REQUESTS' },
+            });
     });
 
     it('gives a removed original referrer only its minimal acceptance decision', async () => {

@@ -20,6 +20,24 @@ const REQUIRED_ENVIRONMENT = {
     NEO4J_PASSWORD: 'test-password',
 };
 
+describe('contract request cap configuration', () => {
+    const base = { ...REQUIRED_ENVIRONMENT, NODE_ENV: 'test' };
+
+    it('defaults to three and accepts a positive integer override', () => {
+        expect(parseBrainServiceEnvironment(base).CONTRACT_REQUEST_CAP_PER_30_DAYS).toBe(3);
+        expect(
+            parseBrainServiceEnvironment({ ...base, CONTRACT_REQUEST_CAP_PER_30_DAYS: '5' })
+                .CONTRACT_REQUEST_CAP_PER_30_DAYS
+        ).toBe(5);
+    });
+
+    it.each(['0', '-1', '3.5', 'invalid'])('rejects an invalid cap of %s', cap => {
+        expect(() =>
+            parseBrainServiceEnvironment({ ...base, CONTRACT_REQUEST_CAP_PER_30_DAYS: cap })
+        ).toThrow(/CONTRACT_REQUEST_CAP_PER_30_DAYS/);
+    });
+});
+
 describe('credential refresh configuration', () => {
     it.each(['invalid-json', '[]', 'null', '{"v1":123}'])(
         'rejects invalid previous digest keys at startup: %s',
