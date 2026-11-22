@@ -68,7 +68,7 @@ await referrer.invoke.cancelContractRequest(contractUri, { requestId });
 
 LearnCard keeps one current request per contract and profile. An exact pending retry keeps the same request and event IDs. A conflicting pending request returns `CONFLICT`. After denial, cancellation, or an accepted consent ending, an eligible send creates a new request ID. Earlier transactions keep their original referral details. A direct send can also replace the sender's own pending or expired email request. Its old ID still reads as an invitation to that email.
 
-The default limit is three new requests per resolved profile and contract in a rolling 30-day window. Direct sends and attached email invites share the limit. Exact retries use no additional slot. A capped direct send returns `TOO_MANY_REQUESTS`. A capped email invitation stays pending. Self-hosted Brain Service deployments can set `CONTRACT_REQUEST_CAP_PER_30_DAYS` to a positive integer.
+In a rolling 30-day window, each sender can make up to three new direct requests to the same profile for the same contract. Email attachments have their own allowance of three for that same sender, profile, and contract. A direct send that reaches its limit returns `TOO_MANY_REQUESTS`. A capped email invitation still reads as pending and can attach on a later profile check if a slot opens before it expires. Exact retries reuse the current request ID. Self-hosted Brain Service deployments can set `CONTRACT_REQUEST_CAP_PER_30_DAYS` to a positive integer.
 
 ### Add a referral to a live connection
 

@@ -14,6 +14,7 @@ import {
     deliverContractRequestInvites,
     expireContractRequestInvites,
 } from '@helpers/contract-request-invites.helpers';
+import * as requestCap from '@helpers/contract-request-cap.helpers';
 import { fanOutIntegrationEvents } from '@helpers/integration-events.helpers';
 import * as notifications from '@helpers/notifications.helpers';
 
@@ -169,6 +170,38 @@ describe('integration events for contract request invites', () => {
             status: 'accepted',
             target: { profile: { profileId: learner.profileId } },
         });
+    });
+
+    it('uses the direct allowance for a live update with a pending email invitation', async () => {
+        vi.spyOn(requestCap, 'getContractRequestCap').mockReturnValue(1);
+        const consents = learner.clients.fullAuth.contracts;
+        await consents.consentToContract({
+            contractUri,
+            terms: normalFullTerms,
+            audienceVersion: (
+                await owner.clients.fullAuth.contracts.getConsentFlowContract({ uri: contractUri })
+            ).audienceVersion,
+        });
+        const email = randomEmail();
+        await addEmail(learner.profileId, email);
+        const invitation = await send(email);
+        await expect(
+            consents.getRequestStatusForProfile({ contractUri, targetProfileId: learner.profileId })
+        ).resolves.toMatchObject({ ...invitation, referralOnly: true });
+
+        const direct = (externalReferenceId: string) =>
+            recipient.clients.fullAuth.contracts.sendContractRequest({
+                contractUri,
+                targetProfileId: learner.profileId,
+                externalReferenceId,
+            });
+        await expect(direct('direct-referral')).resolves.toMatchObject({ status: 'accepted' });
+        await expect(direct('another-direct-referral')).rejects.toMatchObject({
+            code: 'TOO_MANY_REQUESTS',
+        });
+        expect(await feed(ownerIntegration, invitation.requestId)).toEqual([
+            expect.objectContaining({ type: 'request_sent', subjectProfileId: undefined }),
+        ]);
     });
 
     it.each(['email acceptance', 'direct update'] as const)(

@@ -10,6 +10,7 @@ import { termsReferralSnapshotCypher } from './consent-referral.helpers';
 import { tryDispatchContractEvent } from './contract-events.helpers';
 import type { CreateRequestForProfileInput } from './contract-requests.helpers';
 import {
+    contractRequestCountForSender,
     getContractRequestCap,
     getContractRequestCapWindowStart,
     recentContractRequestTimes,
@@ -87,19 +88,20 @@ const applyLiveReferral = async (
                     AND existing.requestedBy = sender AND existing.externalReferenceId = reference
                     AND coalesce(existing.message, '') = coalesce($message, '')
                     ELSE existing.addressedByEmail = true AND existing.requestId = $requestId END, false) AS retry,
-            ${recentContractRequestTimes} AS recentTimes
+            ${recentContractRequestTimes('profile')} AS profileTimes,
+            ${recentContractRequestTimes('email')} AS emailTimes
         WHERE retry OR (${newLiveReferralReferenceWhere('reference')} AND
             CASE WHEN $direct THEN existing IS NULL OR ${contractRequestReplacementWhere('sender', 'false', 'referralConsentId')}
                 ELSE existing.liveReferral = true AND existing.addressedByEmail = true
                     AND existing.requestId = $requestId AND existing.status = 'pending'
                     AND existing.referralConsentId = referralConsentId
                     AND datetime(existing.expiresAt) > lockedAt END)
-        WITH contract, target, terms, sender, reference, retry, recentTimes,
+        WITH contract, target, terms, sender, reference, retry, profileTimes, emailTimes,
             existing.requestId AS replacedId, existing.status AS replacedStatus,
-            $direct AND NOT retry AND size(recentTimes) >= $requestCap AS capped
+            $direct AND NOT retry AND ${contractRequestCountForSender('profileTimes', 'sender')} >= $requestCap AS capped
         CALL {
-            WITH contract, target, terms, sender, reference, retry, recentTimes, replacedId, replacedStatus, capped
-            WITH contract, target, terms, sender, reference, retry, recentTimes, replacedId, replacedStatus
+            WITH contract, target, terms, sender, reference, retry, profileTimes, emailTimes, replacedId, replacedStatus, capped
+            WITH contract, target, terms, sender, reference, retry, profileTimes, emailTimes, replacedId, replacedStatus
             WHERE NOT capped
             OPTIONAL MATCH (contract)-[previous:PREVIOUS_VISIBLE_REQUEST]->(target)
             MERGE (contract)-[request:REQUESTED_FOR]->(target)
@@ -108,7 +110,8 @@ const applyLiveReferral = async (
             FOREACH (_ IN CASE WHEN $direct AND NOT retry THEN [1] ELSE [] END |
                 SET request += {requestId: $requestId, requestedBy: sender, externalReferenceId: reference,
                     message: $message, requestedAt: $now, addressedByEmail: null,
-                    expiresAt: null, expiredAt: null, requestTimes: recentTimes + [$now]})
+                    expiresAt: null, expiredAt: null,
+                    profileRequestTimes: profileTimes + [$now + '|' + sender], emailRequestTimes: emailTimes})
             FOREACH (_ IN CASE WHEN NOT retry THEN [1] ELSE [] END |
                 SET request.status = 'accepted', request.liveReferral = true, request.readStatus = 'seen',
                     request.referralConsentId = null)
