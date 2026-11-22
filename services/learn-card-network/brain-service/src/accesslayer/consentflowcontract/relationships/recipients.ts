@@ -43,6 +43,7 @@ export const consentMutationWhere = `
 AND ($expectedRequestId IS NULL OR EXISTS {
     MATCH (contract)-[request:REQUESTED_FOR]->(:Profile {profileId: $consenterProfileId})
     WHERE request.requestId = $expectedRequestId AND request.status = 'pending'
+        AND (request.expiresAt IS NULL OR datetime(request.expiresAt) > datetime.realtime())
 })
 `;
 

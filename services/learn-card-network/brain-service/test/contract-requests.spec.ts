@@ -924,7 +924,7 @@ describe('generic contract requests and correlated events', () => {
         );
     });
 
-    it('replaces a legacy accepted relationship when consent expires', async () => {
+    it('accepts a new referral after the previous terms expire', async () => {
         const uri = await create();
         const { termsUri } = await accept(uri);
         await neogma.queryRunner.run(
@@ -939,6 +939,44 @@ describe('generic contract requests and correlated events', () => {
         expect(legacyRequest?.requestId).toBeUndefined();
 
         const replacement = await send(uri);
+        expect(await status(uri)).toMatchObject(replacement);
+
+        await learner.clients.fullAuth.contracts.consentToContract({
+            contractUri: uri,
+            terms: normalFullTerms,
+            audienceVersion: 2,
+            expectedRequestId: replacement.requestId,
+        });
+        expect(await status(uri)).toMatchObject({ ...replacement, status: 'accepted' });
+        const { terms } = (await getContractTermsByUri(termsUri))!;
+        expect(terms.expiresAt).toBe('');
+        expect(terms.referral).toMatchObject({ requestId: replacement.requestId });
+    });
+
+    it('permits a new request after the accepted version of a one-time grant expires', async () => {
+        const uri = await create();
+        const original = await send(uri);
+        await learner.clients.fullAuth.contracts.consentToContract({
+            contractUri: uri,
+            terms: normalFullTerms,
+            audienceVersion: 2,
+            expectedRequestId: original.requestId,
+            oneTime: true,
+        });
+        await owner.clients.fullAuth.contracts.updateConsentFlowContract({
+            uri,
+            changes: { expiresAt: '2099-01-01T00:00:00.000Z' },
+            reason: 'Update the contract expiry for new requests.',
+        });
+        await expect(send(uri)).rejects.toMatchObject({ code: 'CONFLICT' });
+        await neogma.queryRunner.run(
+            `MATCH (:ConsentFlowContract {id: $id})-[:HAS_VERSION]->(v:ConsentFlowContractVersion {version: 1})
+             SET v.expiresAt = '2000-01-01T00:00:00.000Z'`,
+            { id: id(uri) }
+        );
+
+        const replacement = await send(uri);
+        expect(replacement.requestId).not.toBe(original.requestId);
         expect(await status(uri)).toMatchObject(replacement);
     });
 

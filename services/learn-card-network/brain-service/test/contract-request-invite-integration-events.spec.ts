@@ -316,18 +316,23 @@ describe('integration events for contract request invites', () => {
         );
     });
 
-    it('does not accept an overdue attached request when the person consents', async () => {
+    it('rejects an overdue invitation ID while allowing an independent consent', async () => {
         const email = randomEmail();
         await addEmail(learner.profileId, email);
         const { requestId } = await send(email);
         await age(requestId);
-        await learner.clients.fullAuth.contracts.consentToContract({
+        const consent = {
             contractUri,
             terms: normalFullTerms,
             audienceVersion: (
                 await owner.clients.fullAuth.contracts.getConsentFlowContract({ uri: contractUri })
             ).audienceVersion,
-        });
+        };
+        const consents = learner.clients.fullAuth.contracts;
+        await expect(
+            consents.consentToContract({ ...consent, expectedRequestId: requestId })
+        ).rejects.toMatchObject({ code: 'CONFLICT' });
+        await consents.consentToContract(consent);
 
         expect((await feed(ownerIntegration, requestId)).map(record => record.type)).not.toContain(
             'request_accepted'

@@ -7,6 +7,7 @@ import {
     recentContractRequestTimes,
 } from '@helpers/contract-request-cap.helpers';
 import {
+    activeRequestTermsWhere,
     contractRequestReplacementWhere,
     inviteHasNeverAttached,
 } from '@helpers/contract-request-replacement.helpers';
@@ -113,9 +114,7 @@ export const getPendingContractRequestInvitesForProfile = async (
              }
              AND NOT EXISTS {
                 MATCH (profile)-[:CREATED_BY]->(terms:ConsentFlowTerms)-[:CONSENTS_TO]->(contract)
-                WHERE (terms.status = 'live' OR (terms.status = 'consumed' AND terms.oneTime = true)) AND
-                    CASE WHEN terms.expiresAt IS NULL OR trim(terms.expiresAt) = '' THEN true
-                         ELSE datetime(terms.expiresAt) > datetime($now) END
+                WHERE ${activeRequestTermsWhere('datetime($now)')}
              }
          OPTIONAL MATCH (contract)-[existing:REQUESTED_FOR]->(profile)
          WITH contract, invite, existing
