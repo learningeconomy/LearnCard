@@ -20,6 +20,7 @@ import {
 import { getProfileIdFromString } from './did.helpers';
 import { userHasRequiredScopes } from './auth-grant.helpers';
 import { enforceRateLimits } from './rateLimit.helpers';
+import { preservePreviousRequestCypher } from './contract-request-visibility.helpers';
 import {
     getContractRequestCap,
     getContractRequestCapWindowStart,
@@ -188,7 +189,7 @@ export const createRequestForProfile = async (
         CALL {
             WITH contract, target, invite, retry, recentTimes, referralOnly, referralConsentId, replacedId, replacedStatus, capped
             WITH contract, target, invite, retry, recentTimes, referralOnly, referralConsentId, replacedId, replacedStatus WHERE NOT capped
-            MERGE (contract)-[request:REQUESTED_FOR]->(target)
+            ${preservePreviousRequestCypher}
             FOREACH (_ IN CASE WHEN retry THEN [] ELSE [1] END |
                 SET request += {requestId: $requestId, requestedBy: $senderProfileId,
                     externalReferenceId: $externalReferenceId, message: $message,
@@ -277,7 +278,7 @@ export const decideGenericContractRequest = async ({
     /** The request ID supplied by the caller or used by the route for its access check. */
     requestId?: string;
 }): Promise<boolean> => {
-    const request = await getStoredContractRequest(contract.id, targetProfileId);
+    const request = await getStoredContractRequest(contract.id, targetProfileId, { requestId });
     if (!request?.requestId)
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract request not found' });
     if (requestId && request.requestId !== requestId)
@@ -311,8 +312,9 @@ export const decideGenericContractRequest = async ({
             ),
             contract.id
         ).raw(`
-        MATCH (contract)-[request:REQUESTED_FOR]->(target:Profile {profileId: $targetProfileId})
+        MATCH (contract)-[request:REQUESTED_FOR|PREVIOUS_VISIBLE_REQUEST]->(target:Profile {profileId: $targetProfileId})
         WHERE request.requestId = $requestId AND request.status IN ['pending', $status]
+            AND (type(request) = 'REQUESTED_FOR' OR (request.status = 'cancelled' AND $status = 'cancelled'))
             AND (request.status = $status OR request.expiresAt IS NULL OR request.expiresAt > $now)
             AND ($actorProfileId = $targetProfileId OR ($status = 'cancelled' AND
                 (EXISTS { MATCH (contract)-[:CREATED_BY|CAN_WRITE]->(:Profile {profileId: $actorProfileId}) } OR
@@ -347,7 +349,7 @@ export const cancelContractRequestById = async ({
     const findTarget = async (): Promise<string | undefined> =>
         (
             await neogma.queryRunner.run(
-                `MATCH (:ConsentFlowContract {id: $contractId})-[request:REQUESTED_FOR]->(target:Profile)
+                `MATCH (:ConsentFlowContract {id: $contractId})-[request:REQUESTED_FOR|PREVIOUS_VISIBLE_REQUEST]->(target:Profile)
                  WHERE request.requestId = $requestId
                  RETURN target.profileId AS targetProfileId`,
                 { contractId: contract.id, requestId }
@@ -370,7 +372,7 @@ export const cancelContractRequestById = async ({
                 return true;
             }
             // Same answer as an attached request that can no longer be cancelled.
-            if (outcome === 'expired')
+            if (outcome === 'decided')
                 throw new TRPCError({
                     code: 'CONFLICT',
                     message: 'Request already decided or permission changed',

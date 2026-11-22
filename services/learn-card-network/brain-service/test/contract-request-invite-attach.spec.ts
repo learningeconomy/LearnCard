@@ -140,6 +140,118 @@ describe('attachContractRequestInvitesForProfile', () => {
         });
     });
 
+    it.each(['denied', 'cancelled', 'accepted'] as const)(
+        'preserves sender and manager request views during email attachment after a %s request',
+        async previousStatus => {
+            const sender = recipient.clients.fullAuth.contracts;
+            const manager = owner.clients.fullAuth.contracts;
+            const target = learner.clients.fullAuth.contracts;
+            const profileInput = { contractUri, targetProfileId: learner.profileId };
+            const { requestId: previousId } = await sender.sendContractRequest({
+                ...profileInput,
+                externalReferenceId: 'previous-referral',
+            });
+            const previousInput = { contractUri, requestId: previousId };
+            const consentInput = {
+                contractUri,
+                terms: normalFullTerms,
+                audienceVersion: (await manager.getConsentFlowContract({ uri: contractUri }))
+                    .audienceVersion,
+            };
+            if (previousStatus === 'cancelled') {
+                await sender.cancelContractRequest(previousInput);
+            } else if (previousStatus === 'denied') {
+                await target.denyContractRequest(previousInput);
+            } else {
+                const { termsUri } = await target.consentToContract({
+                    ...consentInput,
+                    expectedRequestId: previousId,
+                });
+                await target.withdrawConsent({ uri: termsUri });
+            }
+
+            const email = randomEmail();
+            const requestId = await invite(email);
+            const newInput = { contractUri, requestId };
+            const externalView = (viewer: typeof sender) =>
+                Promise.all([
+                    viewer.getRequestStatusForProfile(profileInput),
+                    viewer.getContractRequest(previousInput),
+                    viewer.getContractRequest(newInput),
+                    viewer.getContractSentRequests({ contractUri }),
+                ]);
+            const initial = await Promise.all([externalView(sender), externalView(manager)]);
+            expect(initial[0]?.[0]).toMatchObject({
+                requestId: previousId,
+                status: previousStatus,
+            });
+            expect(initial[0]?.[2]).toMatchObject({
+                requestId,
+                status: 'pending',
+                target: { email },
+            });
+
+            await addEmail(learner.profileId, email);
+            expect(await attachContractRequestInvitesForProfile(learner, DOMAIN)).toBe(1);
+            await expect(target.getRequestStatusForProfile(profileInput)).resolves.toMatchObject({
+                requestId,
+                status: 'pending',
+            });
+            await target.markContractRequestAsSeen(profileInput);
+            expect(await Promise.all([externalView(sender), externalView(manager)])).toEqual(
+                initial
+            );
+            await expect(manager.markContractRequestAsSeen(profileInput)).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            for (const cancelInput of [profileInput, previousInput]) {
+                const result = manager.cancelContractRequest(cancelInput);
+                if (previousStatus === 'cancelled') {
+                    await expect(result).resolves.toBe(true);
+                } else {
+                    await expect(result).rejects.toMatchObject({ code: 'CONFLICT' });
+                }
+            }
+            expect(await Promise.all([externalView(sender), externalView(manager)])).toEqual(
+                initial
+            );
+
+            if (previousStatus === 'denied') {
+                await target.denyContractRequest(newInput);
+                for (const viewer of [sender, manager]) {
+                    await expect(
+                        viewer.getRequestStatusForProfile(profileInput)
+                    ).resolves.toMatchObject({
+                        requestId: previousId,
+                        status: previousStatus,
+                    });
+                    await expect(viewer.getContractRequest(newInput)).resolves.toMatchObject({
+                        status: 'denied',
+                        target: { email },
+                    });
+                }
+                return;
+            }
+
+            await target.consentToContract({ ...consentInput, expectedRequestId: requestId });
+            for (const viewer of [sender, manager]) {
+                await expect(
+                    viewer.getRequestStatusForProfile(profileInput)
+                ).resolves.toMatchObject({
+                    requestId,
+                    status: 'accepted',
+                });
+                await expect(viewer.getContractRequest(newInput)).resolves.toMatchObject({
+                    status: 'accepted',
+                    target: { profile: { profileId: learner.profileId } },
+                });
+                await expect(viewer.getContractRequest(previousInput)).rejects.toMatchObject({
+                    code: 'NOT_FOUND',
+                });
+            }
+        }
+    );
+
     it('leaves the invite pending when the profile already has a request for the contract', async () => {
         await owner.clients.fullAuth.contracts.sendContractRequest({
             contractUri,

@@ -20,10 +20,7 @@ import {
     contractRequestFromInvite,
     attachContractRequestInvitesForProfile,
 } from '@helpers/contract-request-invites.helpers';
-import {
-    getContractRequestInvite,
-    getUnattachedContractRequestInvites,
-} from '@accesslayer/contract-request-invite/read';
+import { getContractRequestInvite } from '@accesslayer/contract-request-invite/read';
 import { acceptContractRequestOnLiveConsent } from '@helpers/live-referral.helpers';
 import { environment } from '@environment';
 import {
@@ -2386,7 +2383,7 @@ export const contractsRouter = t.router({
                     input.requestId,
                     ctx.user.profile.profileId
                 );
-                if (!invite || invite.attachedProfileId)
+                if (!invite || (invite.attachedProfileId && invite.status !== 'attached'))
                     throw new TRPCError({
                         code: 'NOT_FOUND',
                         message: 'Contract request not found',
@@ -2640,22 +2637,8 @@ export const contractsRouter = t.router({
                     : // The read state would reveal that the email belongs to an account.
                       { ...row, readStatus: null, target };
             });
-            // Invites with no profile yet. They have the same fields as the redacted rows above.
-            const invites = await getUnattachedContractRequestInvites(
-                contractByUri.id,
-                profile.profileId
-            );
-            // One list in send order. Listing invites after requests would reveal which
-            // emails already belong to an account.
-            return [
-                ...rows,
-                ...invites.map(invite => ({
-                    ...contractRequestFromInvite(invite),
-                    requestedBy: invite.requestedBy,
-                    ...(invite.message ? { message: invite.message } : {}),
-                    readStatus: null,
-                })),
-            ].sort((a, b) => {
+            // Sort by send order independently of attachment.
+            return rows.sort((a, b) => {
                 const [left, right] = [a.requestedAt ?? '', b.requestedAt ?? ''];
                 if (left !== right) return left < right ? -1 : 1;
                 const [leftId, rightId] = [a.requestId ?? '', b.requestId ?? ''];
@@ -2793,20 +2776,10 @@ export const contractsRouter = t.router({
 
             const request = await getStoredContractRequest(
                 contractByUri.id,
-                resolvedTargetProfileId
+                resolvedTargetProfileId,
+                { viewerProfileId: profile.profileId }
             );
             const isTarget = profile.profileId === resolvedTargetProfileId;
-            // To anyone but the target, an email-addressed request does not exist until it is
-            // accepted: answer exactly as the no-request branch below would, and change nothing.
-            if (!isTarget && request?.addressedByEmail === true && request.status !== 'accepted') {
-                const writers = await getWritersForContract(contractByUri);
-                if (!writers.some(w => w.profileId === profile.profileId))
-                    throw new TRPCError({
-                        code: 'UNAUTHORIZED',
-                        message: 'You do not have permissions to update this contract',
-                    });
-                return true;
-            }
             if (request?.requestId) {
                 assertGenericRequestWriteScope(ctx.user.scope);
                 if (!isTarget)
@@ -2913,28 +2886,9 @@ export const contractsRouter = t.router({
 
             const request = await getStoredContractRequest(
                 contractByUri.id,
-                resolvedTargetProfileId
+                resolvedTargetProfileId,
+                { viewerProfileId: profile.profileId }
             );
-            if (
-                request?.requestId &&
-                request.addressedByEmail &&
-                request.status !== 'accepted' &&
-                profile.profileId !== resolvedTargetProfileId
-            ) {
-                // Answer exactly as if no request existed, so the caller cannot link the
-                // email it invited to this profile. It must cancel by request ID instead.
-                const managers = await getWritersForContract(contractByUri);
-                if (!managers.some(manager => manager.profileId === profile.profileId))
-                    throw new TRPCError({
-                        code: 'UNAUTHORIZED',
-                        message:
-                            'You do not have permission to view this request status. You must be a contract writer or checking your own status.',
-                    });
-                throw new TRPCError({
-                    code: 'NOT_FOUND',
-                    message: 'No request found for this user',
-                });
-            }
             if (request?.requestId) {
                 assertGenericRequestWriteScope(ctx.user.scope);
                 return decideGenericContractRequest({
