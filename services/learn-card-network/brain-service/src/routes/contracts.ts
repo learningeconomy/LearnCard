@@ -2393,7 +2393,7 @@ export const contractsRouter = t.router({
                 summary: 'Deny a pending contract request as its target',
             },
         })
-        .input(z.object({ contractUri: z.string() }))
+        .input(z.object({ contractUri: z.string(), requestId: z.string().min(1).optional() }))
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const contract = await getContractByUri(input.contractUri);
@@ -2404,6 +2404,7 @@ export const contractsRouter = t.router({
                 targetProfileId: ctx.user.profile.profileId,
                 actorProfileId: ctx.user.profile.profileId,
                 status: 'denied',
+                requestId: input.requestId,
                 domain: ctx.domain,
             });
         }),
