@@ -8,6 +8,7 @@ import {
 describe('parseNotificationWebhookResponse', () => {
     afterEach(() => {
         vi.restoreAllMocks();
+        vi.unstubAllEnvs();
     });
 
     it('accepts a boolean success response', () => {
@@ -58,6 +59,23 @@ describe('parseNotificationWebhookResponse', () => {
         expect(parseNotificationWebhookResponse({ status: 'ok' }, false)).toBe(false);
     });
 
+    it('sends referral updates only to the configured in-app service', () => {
+        vi.stubEnv('IS_OFFLINE', 'false');
+        vi.stubEnv('NOTIFICATIONS_SERVICE_WEBHOOK_URL', 'https://api.example.test/notifications');
+        expect(
+            resolveNotificationWebhookUrl({
+                type: 'CONSENT_FLOW_TRANSACTION',
+                to: {
+                    did: 'did:key:learner',
+                    notificationsWebhook: 'https://external.example.test/profile-webhook',
+                },
+                from: 'did:key:referrer',
+                webhookUrl: 'https://external.example.test/explicit-webhook',
+                data: { metadata: { type: 'contract-referral-updated' } },
+            })
+        ).toBe('https://api.example.test/notifications');
+    });
+
     it('prefers the local notifications service in offline mode when profile webhooks are stale remote URLs', () => {
         const originalIsOffline = process.env.IS_OFFLINE;
         const originalNotificationsServiceWebhookUrl =
@@ -78,7 +96,7 @@ describe('parseNotificationWebhookResponse', () => {
                 from: 'did:web:localhost%3A4000:users:usera',
                 message: { title: 'Boost Received', body: 'You have a new boost.' },
                 data: { vcUris: ['lc:network:localhost%3A4000/trpc:credential:123'] },
-            } as any)
+            })
         ).toBe('http://localhost:5100/api/notifications/send');
 
         process.env.IS_OFFLINE = originalIsOffline;

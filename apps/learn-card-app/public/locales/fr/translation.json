@@ -10458,7 +10458,7 @@
     },
     "contractRequests": {
         "acceptReferral": "Accepter l’orientation",
-        "referralOnlyDescription": "Acceptez cette orientation pour votre connexion actuelle. Vos autorisations restent les mêmes.",
+        "referralOnlyDescription": "Ajoutez cette orientation à votre connexion existante avec {{contractName}}.",
         "label": "Connexion",
         "referred": "{{referrer}} vous a recommandé à {{owner}}.",
         "invitation": "{{owner}} souhaite vous contacter.",

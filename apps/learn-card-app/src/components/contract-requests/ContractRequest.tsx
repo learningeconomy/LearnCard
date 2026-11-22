@@ -344,9 +344,14 @@ export const ContractRequest: React.FC<RequestProps> = ({
                                   : title}
                         </h3>
                         {referralOnly && pending && (
-                            <p className="text-sm text-grayscale-600 leading-relaxed">
-                                {m['contractRequests.referralOnlyDescription']()}
-                            </p>
+                            <div className="space-y-v3-3 text-sm text-grayscale-600 leading-relaxed">
+                                <p>
+                                    {m['contractRequests.referralOnlyDescription']({
+                                        contractName: contract?.name || owner,
+                                    })}
+                                </p>
+                                {status?.message && <p>{status.message}</p>}
+                            </div>
                         )}
                         {!referralOnly && contract?.description && (
                             <p className="text-sm text-grayscale-600 leading-relaxed">

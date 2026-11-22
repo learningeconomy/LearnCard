@@ -189,6 +189,14 @@ describe('referral actions', () => {
         await screen.findByText('Referral updated');
     });
 
+    it('identifies the existing connection and shows the referrer message before acceptance', async () => {
+        state.status.referralOnly = true;
+        show(<ContractRequest contractUri={state.contract.uri} requestId="req-1" details />);
+
+        await screen.findByText(/Partner services/);
+        expect(screen.getByText('Career support')).toBeInTheDocument();
+    });
+
     it.each(['cancelled', 'accepted'])(
         'keeps initial consent pending-only when request becomes %s',
         async status => {

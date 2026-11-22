@@ -10510,7 +10510,7 @@
     },
     "contractRequests": {
         "acceptReferral": "Accept Referral",
-        "referralOnlyDescription": "Accept this referral for your existing connection. Your data permissions stay the same.",
+        "referralOnlyDescription": "Add this referral to your existing connection with {{contractName}}.",
         "label": "Connect",
         "referred": "{{referrer}} has referred you to {{owner}}.",
         "invitation": "{{owner}} would like to connect.",

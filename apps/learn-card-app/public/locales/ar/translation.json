@@ -10547,7 +10547,7 @@
     },
     "contractRequests": {
         "acceptReferral": "قبول الإحالة",
-        "referralOnlyDescription": "اقبل هذه الإحالة للاتصال الحالي. تبقى أذونات بياناتك كما هي.",
+        "referralOnlyDescription": "أضف هذه الإحالة إلى اتصالك الحالي مع {{contractName}}.",
         "label": "التواصل",
         "referred": "أحالك {{referrer}} إلى {{owner}}.",
         "invitation": "يرغب {{owner}} في التواصل معك.",

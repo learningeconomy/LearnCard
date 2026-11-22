@@ -90,6 +90,7 @@ const applyLiveReferral = async (
             CASE WHEN $direct THEN existing IS NULL OR ${contractRequestReplacementWhere('sender', 'false')}
                 ELSE existing.liveReferral = true AND existing.addressedByEmail = true
                     AND existing.requestId = $requestId AND existing.status = 'pending'
+                    AND existing.referralConsentId = coalesce(terms.lastConsentTransactionId, terms.id)
                     AND existing.expiresAt > $now END)
         WITH contract, target, terms, sender, reference, retry, recentTimes,
             existing.requestId AS replacedId, existing.status AS replacedStatus,
@@ -104,7 +105,8 @@ const applyLiveReferral = async (
                     message: $message, requestedAt: $now, addressedByEmail: null,
                     expiresAt: null, expiredAt: null, requestTimes: recentTimes + [$now]})
             FOREACH (_ IN CASE WHEN NOT retry THEN [1] ELSE [] END |
-                SET request.status = 'accepted', request.liveReferral = true, request.readStatus = 'seen')
+                SET request.status = 'accepted', request.liveReferral = true, request.readStatus = 'seen',
+                    request.referralConsentId = null)
             WITH contract, target, terms, request, retry,
                 CASE WHEN $direct THEN replacedId END AS replacedId, replacedStatus
             ${detachReplacedRequestInviteCypher}

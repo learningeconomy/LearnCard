@@ -10458,7 +10458,7 @@
     },
     "contractRequests": {
         "acceptReferral": "Aceptar derivación",
-        "referralOnlyDescription": "Acepta esta derivación para tu conexión actual. Tus permisos de datos se mantienen.",
+        "referralOnlyDescription": "Añade esta derivación a tu conexión actual con {{contractName}}.",
         "label": "Conectar",
         "referred": "{{referrer}} te ha referido a {{owner}}.",
         "invitation": "{{owner}} quiere conectar contigo.",

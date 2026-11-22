@@ -196,6 +196,33 @@ describe('integration events for contract request invites', () => {
         ]);
     });
 
+    it('does not apply a referral invitation after independent re-consent', async () => {
+        const audienceVersion = (
+            await owner.clients.fullAuth.contracts.getConsentFlowContract({ uri: contractUri })
+        ).audienceVersion;
+        const args = { contractUri, terms: normalFullTerms, audienceVersion };
+        const consents = learner.clients.fullAuth.contracts;
+        const original = await consents.consentToContract(args);
+        const email = randomEmail();
+        await addEmail(learner.profileId, email);
+        const { requestId } = await send(email);
+
+        await consents.withdrawConsent({ uri: original.termsUri });
+        await consents.consentToContract(args);
+        await expect(
+            consents.consentToContract({ ...args, expectedRequestId: requestId })
+        ).rejects.toMatchObject({ code: 'CONFLICT' });
+        expect(await feed(ownerIntegration, requestId)).toEqual([
+            expect.objectContaining({ type: 'request_sent', subjectProfileId: undefined }),
+        ]);
+        const history = await consents.getTermsTransactionHistory({ uri: original.termsUri });
+        expect(history.records.map(transaction => transaction.action).sort()).toEqual([
+            'consent',
+            'reconsent',
+            'withdraw',
+        ]);
+    });
+
     it('accepts request_expired as an integration event type', () => {
         expect(IntegrationEventTypeValidator.safeParse('request_expired').success).toBe(true);
     });

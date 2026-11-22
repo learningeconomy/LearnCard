@@ -88,7 +88,9 @@ export const appendConsentEvent = (
         WITH contract, terms, transaction, consenter, request,
             request.status = 'pending' AND coalesce(request.liveReferral, false) = false
                 AND (request.expiresAt IS NULL OR request.expiresAt > transaction.date) AS requestOpen
-        SET terms.\`referral.requestId\` = CASE WHEN request.requestId IS NOT NULL AND (request.status = 'accepted' OR (requestOpen AND $eventKind IN ['consent_created', 'consent_updated']))
+        SET terms.lastConsentTransactionId = CASE WHEN transaction.action IN ['consent', 'reconsent']
+            THEN transaction.id ELSE terms.lastConsentTransactionId END,
+            terms.\`referral.requestId\` = CASE WHEN request.requestId IS NOT NULL AND (request.status = 'accepted' OR (requestOpen AND $eventKind IN ['consent_created', 'consent_updated']))
             THEN request.requestId ELSE terms.\`referral.requestId\` END,
             terms.\`referral.requestedBy\` = CASE WHEN request.requestId IS NOT NULL AND (request.status = 'accepted' OR (requestOpen AND $eventKind IN ['consent_created', 'consent_updated']))
             THEN request.requestedBy ELSE terms.\`referral.requestedBy\` END,
