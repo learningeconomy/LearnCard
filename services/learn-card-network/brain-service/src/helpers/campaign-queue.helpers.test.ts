@@ -55,6 +55,7 @@ vi.mock('@helpers/learnCard.helpers', () => ({
 }));
 vi.mock('@helpers/notifications.helpers', () => ({
     addNotificationToQueue: mocks.enqueue,
+    isReferralUpdateNotification: () => false,
     sendNotification: mocks.send,
     PermanentNotificationDeliveryError: class extends Error {},
 }));
