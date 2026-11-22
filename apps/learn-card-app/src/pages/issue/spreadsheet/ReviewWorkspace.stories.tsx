@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import type { Meta, StoryObj } from '@storybook/react';
-import { expect, userEvent, within } from '@storybook/test';
+import type { Meta, StoryObj } from '@storybook/react-vite';
+import { expect, userEvent, within } from 'storybook/test';
 import { RosterEditor, type RosterDetailsProps } from './RosterDetails';
 import { IssuanceResults } from './IssuanceResults';
 import { makeRun } from './fixtures.test-support';

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import type { Meta, StoryObj } from '@storybook/react';
-import { within, expect } from '@storybook/test';
+import type { Meta, StoryObj } from '@storybook/react-vite';
+import { within, expect } from 'storybook/test';
 
 import { JsonStudio } from './JsonStudio';
 import type { CredentialIdentity } from './useCredentialIdentity';

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useQueryClient } from '@tanstack/react-query';
-import { within, userEvent, expect } from '@storybook/test';
+import { within, userEvent, expect } from 'storybook/test';
 
 import { RecipientPicker } from './RecipientPicker';
 import type { LinkOptions, Recipient, RecipientMode } from './recipientTypes';

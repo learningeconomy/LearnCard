@@ -1,4 +1,5 @@
 import path from 'path';
+import { fileURLToPath } from 'url';
 
 import type { StorybookConfig } from '@storybook/react-vite';
 import svgr from 'vite-plugin-svgr';
@@ -7,10 +8,12 @@ import { mergeConfig, type PluginOption } from 'vite';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import { paraglideMissingKeyOnWarn } from '../paraglideOnWarn';
 import { LOCALE_LOADER_MODULE } from '../src/i18n/paraglideLazyLocales';
-import GlobalPolyfill from '@esbuild-plugins/node-globals-polyfill';
 import stdlibbrowser from 'node-stdlib-browser';
 import fs from 'fs';
 import type { LearnCardAppEnvironment } from '../src/config/buildEnvironment';
+
+// Storybook 10 loads main.ts as ESM, so there is no CommonJS __dirname.
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const STORYBOOK_BUILD_ENVIRONMENT = {
     MODE: 'development',
@@ -62,11 +65,8 @@ const paraglideLazyLocalesNoop = (): PluginOption => ({
 
 const config: StorybookConfig = {
     stories: ['../src/**/*.stories.@(ts|tsx)'],
-    addons: [
-        '@storybook/addon-essentials',
-        '@storybook/addon-themes',
-        '@storybook/addon-interactions',
-    ],
+    // Storybook 9 folded essentials and interactions into core; docs stays an addon.
+    addons: ['@storybook/addon-docs', '@storybook/addon-themes'],
     framework: {
         name: '@storybook/react-vite',
         options: {
@@ -148,12 +148,13 @@ const config: StorybookConfig = {
                     'filter-obj',
                     'split-on-first',
                 ],
-                esbuildOptions: {
-                    target: 'esnext',
-                    define: { global: 'globalThis' },
-                    // Injects the Buffer/process globals into pre-bundled deps, matching
-                    // the main app's vite.config.ts optimizeDeps setup.
-                    plugins: [GlobalPolyfill({ process: true, buffer: true })],
+                // Vite 8 pre-bundles with Rolldown, which can't run esbuild plugins. Oxc's inject and
+                // define provide the Buffer/process globals, matching the app's vite.config.mts.
+                rolldownOptions: {
+                    transform: {
+                        define: { global: 'globalThis' },
+                        inject: { process: 'process', Buffer: ['buffer', 'Buffer'] },
+                    },
                 },
             },
         }),

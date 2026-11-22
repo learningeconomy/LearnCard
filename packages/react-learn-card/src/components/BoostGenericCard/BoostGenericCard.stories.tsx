@@ -1,6 +1,6 @@
 import React from 'react';
 import { Decorator, Meta, Story } from '@storybook/react';
-import { expect, userEvent, within } from '@storybook/test';
+import { expect, userEvent, within } from 'storybook/test';
 import BoostGenericCard from './BoostGenericCard';
 import { BoostGenericCardProps, WalletCategoryTypes } from '../../types';
 import { AllFieldsCredential } from '../../helpers/test.helpers';
