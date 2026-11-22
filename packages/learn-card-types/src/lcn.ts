@@ -1087,6 +1087,7 @@ export const ConsentFlowWebhookMetadataValidator = z.object({
 export type ConsentFlowWebhookMetadata = z.infer<typeof ConsentFlowWebhookMetadataValidator>;
 
 export const ConsentFlowContractRequestForProfileValidator = ContractRequestFieldsValidator.extend({
+    referralOnly: z.boolean().optional(),
     profile: LCNProfileValidator,
     status: ConsentFlowContractRequestStatusValidator,
     readStatus: ConsentFlowContractRequestReadStatusValidator.optional(),
@@ -1342,6 +1343,7 @@ export type ConsentFlowTermsQuery = z.infer<typeof ConsentFlowTermsQueryValidato
 export type ConsentFlowTermsQueryInput = z.input<typeof ConsentFlowTermsQueryValidator>;
 
 export const ConsentFlowTransactionActionValidator = z.enum([
+    'referral',
     'consent',
     'update',
     'sync',
@@ -1525,6 +1527,8 @@ export const LCNNotificationInboxValidator = z.object({
 });
 
 export type LCNNotificationInbox = z.infer<typeof LCNNotificationInboxValidator>;
+
+export const CONTRACT_REFERRAL_UPDATED_NOTIFICATION = 'contract-referral-updated';
 
 export const LCNNotificationMetadataValidator = z
     .object({
@@ -2260,6 +2264,7 @@ export type PaginatedLCNIntegrationsType = z.infer<typeof PaginatedLCNIntegratio
 
 // Integration change feed and signed webhooks (LC-2370)
 export const IntegrationEventTypeValidator = z.enum([
+    'referral_attached',
     'request_sent',
     'request_accepted',
     'request_denied',

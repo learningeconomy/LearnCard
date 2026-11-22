@@ -1,4 +1,5 @@
 import {
+    CONTRACT_REFERRAL_UPDATED_NOTIFICATION,
     ConsentFlowContractNotificationDataValidator,
     type ConsentFlowContractNotificationData,
     type LCNNotification,
@@ -139,6 +140,10 @@ const isAmbiguousMongoWriteError = (error: unknown): boolean => {
     );
 };
 
+export const isReferralUpdateNotification = (notification: LCNNotification): boolean =>
+    notification.type === 'CONSENT_FLOW_TRANSACTION' &&
+    notification.data?.metadata?.type === CONTRACT_REFERRAL_UPDATED_NOTIFICATION;
+
 export const createNotification = async (
     notification: LCNNotification
 ): Promise<NotificationCreationResult | false> => {
@@ -168,6 +173,27 @@ export const createNotification = async (
                         read: false,
                         archived: false,
                         sent: new Date().toISOString(),
+                    },
+                },
+                { upsert: true }
+            );
+            return { created: result.upsertedCount === 1 };
+        }
+        if (isReferralUpdateNotification(notification)) {
+            const deliveryKey = notification.data?.metadata?.deliveryKey;
+            if (typeof deliveryKey !== 'string' || !deliveryKey) return false;
+            const digest = createHash('sha256')
+                .update(JSON.stringify([notification.to.did, deliveryKey]))
+                .digest('hex');
+            const notificationId = `contract-referral:${digest}`;
+            const result = await Notifications.updateOne(
+                { _id: notificationId },
+                {
+                    $setOnInsert: {
+                        ...notification,
+                        _id: notificationId,
+                        read: false,
+                        archived: false,
                     },
                 },
                 { upsert: true }

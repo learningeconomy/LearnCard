@@ -901,7 +901,7 @@ export type LearnCardNetworkPluginMethods = {
     /** Reads one request by the ID that sendContractRequest returned. */
     getContractRequest: (contractUri: string, requestId: string) => Promise<ContractRequest>;
     /** Target-only denial preserves the request and its referral reference. */
-    denyContractRequest: (contractUri: string) => Promise<boolean>;
+    denyContractRequest: (contractUri: string, requestId?: string) => Promise<boolean>;
 
     sendAiInsightsContractRequest: (
         contractUri: string,

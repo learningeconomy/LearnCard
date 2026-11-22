@@ -5,6 +5,7 @@ import { acknowledgeConnectionPromptNotificationDelivery } from '@helpers/connec
 import { acknowledgeCampaignNotification } from '@accesslayer/campaign/delivery';
 import { authorizeCampaignNotification } from '@helpers/campaign-notifications.helpers';
 import {
+    isReferralUpdateNotification,
     PermanentNotificationDeliveryError,
     sendNotification,
 } from '@helpers/notifications.helpers';
@@ -15,9 +16,9 @@ export const deliverQueuedNotification = async (body: string): Promise<void> => 
     if (!(await authorizeCampaignNotification(notification))) return;
     if (!(await authorizeContractNotification(notification))) return;
 
-    const isContractEvent = ConsentFlowWebhookMetadataValidator.safeParse(
-        notification.data?.metadata
-    ).success;
+    const isContractEvent =
+        isReferralUpdateNotification(notification) ||
+        ConsentFlowWebhookMetadataValidator.safeParse(notification.data?.metadata).success;
     let stored: boolean | undefined;
     try {
         stored = await sendNotification(notification, {

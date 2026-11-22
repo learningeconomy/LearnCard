@@ -1103,10 +1103,73 @@ describe('generic contract requests and correlated events', () => {
         ).toEqual([]);
     });
 
-    it('refuses a new request for active consent and preserves legacy AI request payload/cancellation', async () => {
+    it('attaches a new reference to live consent once and preserves its terms and history', async () => {
+        const uri = await create();
+        const initial = await send(uri);
+        const { termsUri } = await accept(uri);
+        const originalTerms = (await getContractTermsByUri(termsUri))!.terms;
+        delivered.length = 0;
+
+        await expect(send(uri, otherRecipient, 'unrelated')).rejects.toMatchObject({
+            code: 'CONFLICT',
+        });
+        await expect(send(uri)).rejects.toMatchObject({ code: 'CONFLICT' });
+        const [attached, retry] = await Promise.all([
+            send(uri, writer, 'next-reference'),
+            send(uri, writer, 'next-reference'),
+        ]);
+        expect(attached.status).toBe('accepted');
+        expect(attached.requestId).not.toBe(initial.requestId);
+        expect(retry).toEqual(attached);
+        const terms = (await getContractTermsByUri(termsUri))!.terms;
+        expect(terms.terms).toEqual(originalTerms.terms);
+        expect(terms.expiresAt).toBe(originalTerms.expiresAt);
+        const referral = {
+            requestId: attached.requestId,
+            requestedBy: writer.profileId,
+            externalReferenceId: 'next-reference',
+        };
+        expect(terms.referral).toEqual(referral);
+        const history = (
+            await learner.clients.fullAuth.contracts.getTermsTransactionHistory({ uri: termsUri })
+        ).records;
+        expect(history.filter(transaction => transaction.action === 'referral')).toEqual([
+            expect.objectContaining({ id: `${attached.requestId}:attached`, referral }),
+        ]);
+        expect(
+            history.find(transaction => transaction.action === 'consent')?.referral?.requestId
+        ).toBe(initial.requestId);
+        expect(delivered).toHaveLength(1);
+        expect(delivered[0]).toMatchObject({
+            to: { profileId: learner.profileId },
+            data: { metadata: { type: 'contract-referral-updated' } },
+        });
+        expect(delivered[0]?.data?.metadata).not.toHaveProperty('event');
+        expect(delivered[0]?.data?.metadata).not.toHaveProperty('externalReferenceId');
+
+        const takeover = await send(uri, owner, 'owner-reference');
+        expect(takeover.status).toBe('accepted');
+        await expect(send(uri, writer, 'writer-again')).rejects.toMatchObject({ code: 'CONFLICT' });
+        await expect(send(uri, owner, 'fourth-reference')).rejects.toMatchObject({
+            code: 'TOO_MANY_REQUESTS',
+        });
+    });
+
+    it('can attach the first referral to consent created without an invitation', async () => {
         const uri = await create();
         await accept(uri);
-        await expect(send(uri)).rejects.toMatchObject({ code: 'CONFLICT' });
+        await expect(send(uri, recipient)).resolves.toMatchObject({ status: 'accepted' });
+    });
+
+    it('refuses an unreferenced request for active consent and preserves legacy AI request payload/cancellation', async () => {
+        const uri = await create();
+        await accept(uri);
+        await expect(
+            writer.clients.fullAuth.contracts.sendContractRequest({
+                contractUri: uri,
+                targetProfileId: learner.profileId,
+            })
+        ).rejects.toMatchObject({ code: 'CONFLICT' });
         const legacy = await create([]);
         delivered.length = 0;
         await writer.clients.fullAuth.contracts.sendAiInsightsContractRequest({

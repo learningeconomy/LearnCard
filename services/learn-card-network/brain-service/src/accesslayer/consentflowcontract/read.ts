@@ -240,6 +240,7 @@ export const getRequestedForForUser = async (
             profile: p.properties,
             status: effectiveRequestStatus(r.properties?.status ?? null, r.properties ?? {}),
             readStatus: r.properties?.readStatus ?? null,
+            referralOnly: r.properties?.liveReferral === true,
             addressedByEmail: r.properties?.addressedByEmail === true,
         };
     });
@@ -321,6 +322,7 @@ export const getContractRequestById = async (
 };
 
 export type StoredContractRequest = ContractRequestFields & {
+    liveReferral?: boolean;
     status?: 'pending' | 'accepted' | 'denied' | 'cancelled' | 'expired' | null;
     readStatus?: 'unseen' | 'seen' | null;
     addressedByEmail?: boolean;

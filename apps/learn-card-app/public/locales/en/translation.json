@@ -2289,6 +2289,8 @@
         "previewCredentials": "Preview {{count}} Credentials"
     },
     "consentFlow": {
+        "referralUpdated": "Referral updated",
+        "referralUpdatedDescription": "Your connection has a new referral.",
         "aiPassportReauthenticationRequired": "Go back to AI Passport and sign in again.",
         "reviewChanged": "The sharing details changed. Review them before connecting again.",
         "guardianApprovalRequired": "Ask a current account manager to approve this connection, then try again.",
@@ -10507,6 +10509,8 @@
         "accountChanged": "Sending completed, but your account changed. Return to the requesting application to continue."
     },
     "contractRequests": {
+        "acceptReferral": "Accept Referral",
+        "referralOnlyDescription": "Accept this referral for your existing connection. Your data permissions stay the same.",
         "label": "Connect",
         "referred": "{{referrer}} has referred you to {{owner}}.",
         "invitation": "{{owner}} would like to connect.",

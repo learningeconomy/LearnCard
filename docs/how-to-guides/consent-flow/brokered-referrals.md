@@ -309,6 +309,12 @@ Withdrawal, expiry, or recipient removal stops future authorized discovery/shari
 
 See [the referral lifecycle concept page](../../core-concepts/consent-and-permissions/brokered-referral-lifecycle.md) for the complete referral → consent → auto-boost → partner write → claim → sync → webhook sequence.
 
+## Refer someone again
+
+Send a new request after the earlier one was declined, cancelled, or the accepted consent ended. LearnCard issues a new request ID. By default, a person can receive three new requests for the same contract in 30 days.
+
+If you own the contract or are the current referrer, send a different `externalReferenceId` to the profile to update an existing live connection. An authorized sender can also attach its first referral. A profile send returns `accepted` when the reference attaches. For an email send, wait for the learner to accept the invitation before reconciling the update. In both cases, use `referral_attached` from the [integration change feed](../../sdks/learncard-network/integration-webhooks.md) to update your records.
+
 ## Poll when webhooks are unavailable
 
 Call `pollReferral(referrer, { contractUri, learnerDid })` from the module above on a bounded schedule suited to your integration. `getContractSentRequests` returns the caller's visible invitation statuses, including email invitations; a row for an email-addressed request has `target.email` and no `profile` until it is accepted. The brain route `getConsentedDataForDid` is named `getConsentFlowDataForDid` in the SDK; it returns paginated current data across permitted contracts, so the example reads every page and filters by `contractUri`.

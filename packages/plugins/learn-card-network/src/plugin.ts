@@ -3104,9 +3104,9 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
                 return client.contracts.getContractRequest.query({ contractUri, requestId });
             },
-            denyContractRequest: async (_learnCard, contractUri) => {
+            denyContractRequest: async (_learnCard, contractUri, requestId) => {
                 await ensureUser();
-                return client.contracts.denyContractRequest.mutate({ contractUri });
+                return client.contracts.denyContractRequest.mutate({ contractUri, requestId });
             },
             sendAiInsightsContractRequest: async (
                 _learnCard,

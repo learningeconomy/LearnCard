@@ -113,6 +113,89 @@ describe('integration events for contract request invites', () => {
         });
     };
 
+    it('publishes an email referral with a subject only after the learner accepts it', async () => {
+        const audienceVersion = (
+            await owner.clients.fullAuth.contracts.getConsentFlowContract({ uri: contractUri })
+        ).audienceVersion;
+        const args = { contractUri, terms: normalFullTerms, audienceVersion };
+        const consents = learner.clients.fullAuth.contracts;
+        const original = await consents.consentToContract(args);
+        const email = randomEmail();
+        await addEmail(learner.profileId, email);
+        const { requestId, status } = await send(email);
+        expect(status).toBe('pending');
+        await expect(
+            recipient.clients.fullAuth.contracts.getContractRequest({
+                contractUri,
+                requestId,
+            })
+        ).resolves.toMatchObject({ status: 'pending', target: { email } });
+        await expect(
+            consents.getRequestStatusForProfile({
+                contractUri,
+                targetProfileId: learner.profileId,
+            })
+        ).resolves.toMatchObject({ requestId, referralOnly: true, status: 'pending' });
+        expect(await feed(ownerIntegration, requestId)).toEqual([
+            expect.objectContaining({ type: 'request_sent', subjectProfileId: undefined }),
+        ]);
+
+        await expect(
+            consents.consentToContract({ ...args, expectedRequestId: 'stale-id' })
+        ).rejects.toMatchObject({ code: 'CONFLICT' });
+        const acceptArgs = { ...args, expectedRequestId: requestId };
+        await expect(consents.consentToContract(acceptArgs)).resolves.toEqual(original);
+        await expect(consents.consentToContract(acceptArgs)).resolves.toEqual(original);
+        expect(await feed(ownerIntegration, requestId)).toEqual([
+            expect.objectContaining({ type: 'request_sent', subjectProfileId: undefined }),
+            expect.objectContaining({
+                type: 'referral_attached',
+                eventId: `${requestId}:attached`,
+                subjectProfileId: learner.profileId,
+                externalReferenceId: 'synthetic-ref-1',
+            }),
+        ]);
+        const history = await consents.getTermsTransactionHistory({ uri: original.termsUri });
+        expect(history.records.map(transaction => transaction.action).sort()).toEqual([
+            'consent',
+            'referral',
+        ]);
+        await expect(
+            recipient.clients.fullAuth.contracts.getContractRequest({
+                contractUri,
+                requestId,
+            })
+        ).resolves.toMatchObject({
+            status: 'accepted',
+            target: { profile: { profileId: learner.profileId } },
+        });
+    });
+
+    it('does not revive consent when a referral-only invitation outlives the connection', async () => {
+        const audienceVersion = (
+            await owner.clients.fullAuth.contracts.getConsentFlowContract({ uri: contractUri })
+        ).audienceVersion;
+        const args = { contractUri, terms: normalFullTerms, audienceVersion };
+        const consents = learner.clients.fullAuth.contracts;
+        const original = await consents.consentToContract(args);
+        const email = randomEmail();
+        await addEmail(learner.profileId, email);
+        const { requestId } = await send(email);
+        await consents.withdrawConsent({ uri: original.termsUri });
+
+        await expect(
+            consents.consentToContract({ ...args, expectedRequestId: requestId })
+        ).rejects.toMatchObject({ code: 'CONFLICT' });
+        expect(await feed(ownerIntegration, requestId)).toEqual([
+            expect.objectContaining({ type: 'request_sent', subjectProfileId: undefined }),
+        ]);
+        const history = await consents.getTermsTransactionHistory({ uri: original.termsUri });
+        expect(history.records.map(transaction => transaction.action).sort()).toEqual([
+            'consent',
+            'withdraw',
+        ]);
+    });
+
     it('accepts request_expired as an integration event type', () => {
         expect(IntegrationEventTypeValidator.safeParse('request_expired').success).toBe(true);
     });

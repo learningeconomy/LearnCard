@@ -66,7 +66,17 @@ await referrer.invoke.cancelContractRequest(contractUri, { requestId });
 
 `externalReferenceId` is an opaque integration reference, limited to 256 characters; `message` is limited to 500. Avoid putting sensitive data in either field. Targets may also be addressed by a resolvable network DID. Sending a request to yourself returns `BAD_REQUEST`, including when addressed by DID. A missing profile target returns `NOT_FOUND`. To invite someone whose profile you do not know, see [Invite by email](#invite-by-email). Requests are limited to 500 per hour per contract and sender.
 
-For sends to a profile, there is one request per contract and profile in this version. An identical pending retry keeps the same request and event IDs. Conflicting sender, reference or message returns `CONFLICT`. Sends to an email follow the rules in [Invite by email](#invite-by-email) instead. Terminal requests and existing legacy requests are not replaced. One exception: when you send to a profile that holds your own email invitation for this contract (pending, expired or cancelled), the new request replaces it and gets a new `requestId`. The invitation's `requestId` keeps answering as an invitation to that email until it expires. Sending to a target with an unexpired active consent, including a one-time snapshot, also returns `CONFLICT`.
+LearnCard keeps one current request per contract and profile. An exact pending retry keeps the same request and event IDs. A conflicting pending request returns `CONFLICT`. After denial, cancellation, or an accepted consent ending, an eligible send creates a new request ID. Earlier transactions keep their original referral details. A direct send can also replace the sender's own pending or expired email request. Its old ID still reads as an invitation to that email.
+
+The default limit is three new requests per resolved profile and contract in a rolling 30-day window. Direct sends and attached email invites share the limit. Exact retries use no additional slot. A capped direct send returns `TOO_MANY_REQUESTS`. A capped email invitation stays pending. Self-hosted Brain Service deployments can set `CONTRACT_REQUEST_CAP_PER_30_DAYS` to a positive integer.
+
+### Add a referral to a live connection
+
+Send to `targetProfileId` with a new `externalReferenceId`. The contract owner, the current referrer with access to send, or an authorized sender when the connection has no referral can update the existing connection. An eligible call returns `{ requestId, status: 'accepted' }`. An exact retry while that referral is current returns the same result. A missing or unchanged reference, a conflicting pending request, or an ineligible sender returns `CONFLICT`. One-time snapshots do not accept referral updates.
+
+The learner receives an in-app update. Sharing permissions and the expiry date stay the same. The connection and subsequent transactions carry the new reference, and earlier transactions retain their original reference. The signed [Integration Webhooks and Change Feed](integration-webhooks.md) reports `referral_attached` with event ID `<requestId>:attached`.
+
+You can also send a new reference by email. The invitation stays pending until the learner accepts it. For a referral-only invitation, LearnCard updates the live connection and leaves its sharing permissions in place. The email-to-profile link becomes visible on acceptance.
 
 ## Invite by email
 
@@ -85,7 +95,7 @@ const request = await referrer.invoke.getContractRequest(contractUri, requestId)
 
 - The answer is always `{ requestId, status: 'pending' }`. It is the same whether or not the email belongs to an account, and whatever that account has already consented to. You cannot use this call to find out who has an account.
 - Delivery happens shortly after the call, usually within a minute. If no account has verified that email, LearnCard sends one invitation email with the branding of the tenant that made the call, and retries it if delivery fails. At most 3 invitation emails go to one address per contract in 24 hours. The email does not contain your `message`.
-- When a profile verifies that email (at sign-up or later), the invitation becomes an ordinary request with the same `requestId`, and the person gets the usual in-app `request_sent` notification. If the normal request rules do not pass (for example the person already has a request or active consent for this contract), the invitation stays `pending` and expires. You cannot tell this apart from no response.
+- When a profile verifies that email (at sign-up or later), the invitation becomes an ordinary request with the same `requestId`, and the person gets the usual in-app `request_sent` notification. If the normal request rules do not pass (for example the person has a conflicting pending request or has reached the rolling limit), the invitation stays `pending` and expires. You cannot tell this apart from no response.
 - An identical retry (same contract, email, sender, reference and message) while the first is pending returns the same `requestId` and sends nothing.
 - A send that differs in sender, reference or message creates a separate invitation with its own `requestId`; it does not answer `CONFLICT`. If several invitations reach the same profile, the first becomes the request and the others stay `pending` and expire.
 - Once your earlier invitation has expired or been cancelled, sending again creates a new invitation with a new `requestId`. If the person's profile still holds your earlier request, the new one replaces it.
@@ -94,7 +104,7 @@ const request = await referrer.invoke.getContractRequest(contractUri, requestId)
 
 **What you can see.** Until the status is `accepted`, an email-addressed request shows `target: { email }` and no profile, DID or read state in `getContractRequest` and `getContractSentRequests`. `getRequestStatusForProfile` returns `null` for it, and `cancelContractRequest` with a profile ID answers as if no request existed; use the `requestId`. A `request_denied` or `request_cancelled` notification caused by the invited person names the contract owner as sender, not the person. The person's DID reaches you through the consent event on acceptance, together with your `externalReferenceId`.
 
-Integration webhooks report an email-addressed request too: `request_sent` once when you make it, `request_denied`, `request_cancelled` and `request_expired` without a subject, and `request_accepted` with the subject. See [Integration Webhooks and Change Feed](integration-webhooks.md) for the event reference.
+Integration webhooks report an email-addressed request too: `request_sent` once when you make it, `request_denied`, `request_cancelled` and `request_expired` without a subject, and either `request_accepted` for new consent or `referral_attached` for a referral added to a live connection, with the subject. See [Integration Webhooks and Change Feed](integration-webhooks.md) for the event reference.
 
 Sending the same email to several contracts, or timing your calls, does not change these answers: the call returns before LearnCard looks the email up.
 
@@ -105,7 +115,7 @@ const requests = await learner.invoke.getAllContractRequestsForProfile(learnerPr
 await learner.invoke.markContractRequestAsSeen(contractUri, learnerProfileId);
 
 // Explicitly decline; merely dismissing a card is not denial.
-await learner.invoke.denyContractRequest(contractUri);
+await learner.invoke.denyContractRequest(contractUri, requestId);
 
 // Or cancel a pending request; authorized senders use this method too,
 // with the target profile ID or with { requestId }.
@@ -124,7 +134,7 @@ stateDiagram-v2
     pending --> expired: Email invitation not accepted within 30 days
 ```
 
-Denied and cancelled generic requests retain their correlation fields. Withdrawing consent retains an accepted generic request and the referral captured on consent history. It revokes current data access; it does not reset a terminal request to pending. If the learner later consents again, the original referral remains attached to the consent and subsequent transactions. This does not reopen the request or send another acceptance decision to a requester outside the audience. A legacy AI request cannot replace an attributed request; it returns `CONFLICT`.
+Withdrawing consent revokes current data access and preserves its transaction history. A new request can get a new ID, and if the learner accepts it the next consent transaction records the new referral. The current request lookup follows the replacement. Use the transaction history and integration event feed for earlier referrals. Legacy AI requests retain their separate behavior and cannot replace an attributed request.
 
 ## Polling fallback
 

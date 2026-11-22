@@ -38,6 +38,7 @@ export type NotificationMessageKey =
     | 'appListingWithdrawn'
     | 'appListingApproved'
     | 'appListingRejected'
+    | 'contractReferralAttached'
     | 'contractRequestReceived'
     | 'contractRequestAccepted'
     | 'contractRequestDenied'
@@ -154,6 +155,10 @@ const en: LocaleCatalog = {
     appListingRejected: {
         title: 'App Listing Needs Changes',
         body: '"{displayName}" was not approved. Please review and resubmit.',
+    },
+    contractReferralAttached: {
+        title: 'Referral updated',
+        body: 'Your referral for {contractName} was updated.',
     },
     contractRequestReceived: {
         title: 'Connection request',
@@ -334,6 +339,10 @@ const es: LocaleCatalog = {
         title: 'La aplicación necesita cambios',
         body: '"{displayName}" no fue aprobada. Revísala y vuelve a enviarla.',
     },
+    contractReferralAttached: {
+        title: 'Derivación actualizada',
+        body: 'Se actualizó tu derivación para {contractName}.',
+    },
     contractRequestReceived: {
         title: 'Solicitud de conexión',
         body: '{referrer} quiere conectarte con {contractOwner}.',
@@ -513,6 +522,10 @@ const fr: LocaleCatalog = {
         title: "L'application nécessite des modifications",
         body: "« {displayName} » n'a pas été approuvée. Veuillez la réviser et la soumettre à nouveau.",
     },
+    contractReferralAttached: {
+        title: 'Orientation mise à jour',
+        body: 'Votre orientation pour {contractName} a été mise à jour.',
+    },
     contractRequestReceived: {
         title: 'Demande de connexion',
         body: '{referrer} souhaite vous mettre en relation avec {contractOwner}.',
@@ -691,6 +704,10 @@ const ar: LocaleCatalog = {
     appListingRejected: {
         title: 'التطبيق يحتاج إلى تعديلات',
         body: 'لم تتم الموافقة على "{displayName}". يرجى مراجعته وإعادة إرساله.',
+    },
+    contractReferralAttached: {
+        title: 'تم تحديث الإحالة',
+        body: 'تم تحديث إحالتك إلى {contractName}.',
     },
     contractRequestReceived: {
         title: 'طلب اتصال',

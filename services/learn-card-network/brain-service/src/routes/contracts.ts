@@ -24,6 +24,7 @@ import {
     getContractRequestInvite,
     getUnattachedContractRequestInvites,
 } from '@accesslayer/contract-request-invite/read';
+import { acceptContractRequestOnLiveConsent } from '@helpers/live-referral.helpers';
 import { environment } from '@environment';
 import {
     smartResumeFingerprint,
@@ -1333,6 +1334,39 @@ export const contractsRouter = t.router({
                 previousTerms,
                 Number(contractDetails.contract.currentVersion ?? 1)
             );
+            if (expectedRequestId) {
+                const request = await getStoredContractRequest(
+                    contractDetails.contract.id,
+                    profile.profileId
+                );
+                if (request?.requestId === expectedRequestId && request.liveReferral) {
+                    if (
+                        !guardianIdentity &&
+                        previousTerms &&
+                        (await hasGuardianApprovalHistory(previousTerms))
+                    ) {
+                        throw new TRPCError({
+                            code: 'FORBIDDEN',
+                            message: 'This consent requires approval from a current guardian',
+                        });
+                    }
+                    const termsId = await acceptContractRequestOnLiveConsent({
+                        contractId: contractDetails.contract.id,
+                        targetProfileId: profile.profileId,
+                        requestId: expectedRequestId,
+                        audienceVersion,
+                        domain: ctx.domain,
+                    });
+                    if (!termsId)
+                        throw new TRPCError({
+                            code: 'CONFLICT',
+                            message:
+                                'The referral or active consent changed. Review the invitation again.',
+                        });
+                    return { termsUri: constructUri('terms', termsId, ctx.domain) };
+                }
+            }
+
             const retrySmartResume =
                 isSmartResume &&
                 Boolean(previousTerms?.smartResumeFingerprint) &&
@@ -2381,7 +2415,7 @@ export const contractsRouter = t.router({
                 summary: 'Deny a pending contract request as its target',
             },
         })
-        .input(z.object({ contractUri: z.string() }))
+        .input(z.object({ contractUri: z.string(), requestId: z.string().min(1).optional() }))
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const contract = await getContractByUri(input.contractUri);
@@ -2392,6 +2426,7 @@ export const contractsRouter = t.router({
                 targetProfileId: ctx.user.profile.profileId,
                 actorProfileId: ctx.user.profile.profileId,
                 status: 'denied',
+                requestId: input.requestId,
                 domain: ctx.domain,
             });
         }),
@@ -2648,6 +2683,7 @@ export const contractsRouter = t.router({
         )
         .output(
             ContractRequestFieldsValidator.extend({
+                referralOnly: z.boolean().optional(),
                 profile: LCNProfileValidator,
                 status: z.enum(['pending', 'accepted', 'denied', 'cancelled']).nullable(),
                 readStatus: z.enum(['unseen', 'seen']).nullable().optional(),
@@ -2711,6 +2747,7 @@ export const contractsRouter = t.router({
 
             return {
                 ...requests[0],
+                referralOnly: isCheckingOwnStatus && requests[0].referralOnly ? true : undefined,
                 profile: stripSensitiveProfileListFields(
                     sanitizeProfileForTier(updatedProfile, 'authenticated')
                 ),

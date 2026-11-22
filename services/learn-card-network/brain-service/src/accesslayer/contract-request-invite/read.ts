@@ -7,8 +7,11 @@ import {
     recentContractRequestTimes,
 } from '@helpers/contract-request-cap.helpers';
 import {
+    activeRequestTermsWhere,
     contractRequestReplacementWhere,
     inviteHasNeverAttached,
+    liveReferralSenderWhere,
+    newLiveReferralReferenceWhere,
 } from '@helpers/contract-request-replacement.helpers';
 
 /** `closed`: an attached invite whose request has been resolved. */
@@ -106,6 +109,7 @@ export const getPendingContractRequestInvitesForProfile = async (
          MATCH (contract:ConsentFlowContract)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite)
          WHERE invite.email IN emails AND invite.status = 'pending' AND invite.expiresAt > $now
              AND invite.requestedBy <> $profileId AND ${inviteHasNeverAttached}
+             AND coalesce(contract.status, 'active') <> 'retired'
              AND CASE WHEN contract.expiresAt IS NULL OR trim(contract.expiresAt) = '' THEN true
                       ELSE datetime(contract.expiresAt) > datetime($now) END
              AND EXISTS {
@@ -113,9 +117,9 @@ export const getPendingContractRequestInvitesForProfile = async (
              }
              AND NOT EXISTS {
                 MATCH (profile)-[:CREATED_BY]->(terms:ConsentFlowTerms)-[:CONSENTS_TO]->(contract)
-                WHERE (terms.status = 'live' OR (terms.status = 'consumed' AND terms.oneTime = true)) AND
-                    CASE WHEN terms.expiresAt IS NULL OR trim(terms.expiresAt) = '' THEN true
-                         ELSE datetime(terms.expiresAt) > datetime($now) END
+                WHERE ${activeRequestTermsWhere} AND NOT coalesce(
+                    ${liveReferralSenderWhere('invite.requestedBy')} AND
+                    ${newLiveReferralReferenceWhere('invite.externalReferenceId')}, false)
              }
          OPTIONAL MATCH (contract)-[existing:REQUESTED_FOR]->(profile)
          WITH contract, invite, existing

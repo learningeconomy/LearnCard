@@ -43,6 +43,7 @@ export const consentMutationWhere = `
 AND ($expectedRequestId IS NULL OR EXISTS {
     MATCH (contract)-[request:REQUESTED_FOR]->(:Profile {profileId: $consenterProfileId})
     WHERE request.requestId = $expectedRequestId AND request.status = 'pending'
+        AND coalesce(request.liveReferral, false) = false
 })
 `;
 

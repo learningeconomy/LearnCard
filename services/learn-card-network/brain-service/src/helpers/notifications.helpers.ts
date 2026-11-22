@@ -4,7 +4,11 @@ import {
     type NotificationRuntimeEnvironment,
 } from '@environment';
 import { getDidWebLearnCard } from '@helpers/learnCard.helpers';
-import { LCNNotification, LCNNotificationTypeEnumValidator } from '@learncard/types';
+import {
+    CONTRACT_REFERRAL_UPDATED_NOTIFICATION,
+    LCNNotification,
+    LCNNotificationTypeEnumValidator,
+} from '@learncard/types';
 import { getDidWeb } from '@helpers/did.helpers';
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 import { createWebhookSentRelationship } from '@accesslayer/inbox-credential/relationships/create';
@@ -129,18 +133,26 @@ export const parseNotificationWebhookResponse = (
     return false;
 };
 
+export const isReferralUpdateNotification = (notification: LCNNotification): boolean =>
+    notification.type === 'CONSENT_FLOW_TRANSACTION' &&
+    notification.data?.metadata?.type === CONTRACT_REFERRAL_UPDATED_NOTIFICATION;
+
 const resolveNotificationWebhookUrlForEnvironment = (
     notification: LCNNotification,
     runtimeEnvironment: NotificationRuntimeEnvironment
 ): string | undefined => {
+    const envWebhook = runtimeEnvironment.NOTIFICATIONS_SERVICE_WEBHOOK_URL;
+    if (isReferralUpdateNotification(notification)) {
+        return runtimeEnvironment.IS_OFFLINE && (!envWebhook || !isLocalWebhookUrl(envWebhook))
+            ? getLocalNotificationsWebhookUrl(runtimeEnvironment)
+            : envWebhook;
+    }
     if (typeof notification.webhookUrl === 'string') {
         return notification.webhookUrl;
     }
 
     const profileWebhook =
         typeof notification.to !== 'string' ? notification.to.notificationsWebhook : undefined;
-    const envWebhook = runtimeEnvironment.NOTIFICATIONS_SERVICE_WEBHOOK_URL;
-
     if (runtimeEnvironment.IS_OFFLINE) {
         if (typeof envWebhook === 'string' && isLocalWebhookUrl(envWebhook)) {
             return envWebhook;

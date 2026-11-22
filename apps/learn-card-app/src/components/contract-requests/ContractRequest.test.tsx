@@ -11,6 +11,7 @@ const state = vi.hoisted(() => ({
         requestId: 'req-1',
         requestedBy: 'referrer',
         status: 'pending',
+        referralOnly: false,
         readStatus: 'seen',
         message: 'Career support',
     },
@@ -51,6 +52,7 @@ const state = vi.hoisted(() => ({
         needsGuardianConsent: false,
     },
     getStatus: vi.fn(),
+    acceptReferral: vi.fn(),
     getContract: vi.fn(),
     seen: vi.fn(),
     deny: vi.fn(),
@@ -71,6 +73,7 @@ const initWallet = async () => ({
         getContract: state.getContract,
         markContractRequestAsSeen: state.seen,
         denyContractRequest: state.deny,
+        consentToContract: state.acceptReferral,
     },
 });
 vi.mock('learn-card-base', () => ({
@@ -113,6 +116,14 @@ vi.mock('../../pages/consentFlow/FullScreenConsentFlow', () => ({
     },
 }));
 vi.mock('@ionic/react', () => ({ IonIcon: () => null }));
+vi.mock('../network-prompts/hooks/useLCNGatedAction', () => ({
+    default: () => ({ gate: async () => ({ prompted: false }) }),
+}));
+vi.mock('../../hooks/useGuardianGate', () => ({
+    useGuardianGate: () => ({
+        guardedAction: async (action: () => Promise<void>) => await action(),
+    }),
+}));
 const show = (element = <ContractRequest contractUri={state.contract.uri} requestId="req-1" />) => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
     const view = render(<QueryClientProvider client={client}>{element}</QueryClientProvider>);
@@ -130,6 +141,7 @@ beforeEach(() => {
     vi.clearAllMocks();
     setLocale('en');
     state.status.status = 'pending';
+    state.status.referralOnly = false;
     state.status.readStatus = 'seen';
     state.contract.expiresAt = '';
     state.contract.needsGuardianConsent = false;
@@ -147,12 +159,36 @@ beforeEach(() => {
         return true;
     });
     state.confirm.mockResolvedValue(true);
+    state.acceptReferral.mockImplementation(async () => {
+        state.status.status = 'accepted';
+        return { termsUri: 'terms-uri' };
+    });
 });
 afterEach(() => {
     cleanup();
     vi.useRealTimers();
 });
 describe('referral actions', () => {
+    it('accepts a referral for the existing connection without showing the sharing flow', async () => {
+        state.status.referralOnly = true;
+        show();
+        fireEvent.click(await screen.findByRole('button', { name: 'Accept Referral' }));
+
+        await waitFor(() => expect(state.acceptReferral).toHaveBeenCalledOnce());
+        expect(state.acceptReferral).toHaveBeenCalledWith(
+            state.contract.uri,
+            expect.objectContaining({
+                expectedRequestId: 'req-1',
+                terms: {
+                    read: { personal: {}, credentials: { categories: {} } },
+                    write: { personal: {}, credentials: { categories: {} } },
+                },
+            })
+        );
+        expect(state.modal).not.toHaveBeenCalled();
+        await screen.findByText('Referral updated');
+    });
+
     it.each(['cancelled', 'accepted'])(
         'keeps initial consent pending-only when request becomes %s',
         async status => {
@@ -286,7 +322,7 @@ describe('referral actions', () => {
         show(<ContractRequest contractUri={state.contract.uri} requestId="req-1" details />);
         fireEvent.click(await screen.findByText('Decline'));
         expect(await screen.findByText('Declined')).toBeVisible();
-        expect(state.deny).toHaveBeenCalledWith(state.contract.uri);
+        expect(state.deny).toHaveBeenCalledWith(state.contract.uri, 'req-1');
         expect(state.toast).toHaveBeenCalled();
         expect(screen.queryByText('Accept & Connect')).toBeNull();
     });
