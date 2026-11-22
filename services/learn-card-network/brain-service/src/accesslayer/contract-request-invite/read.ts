@@ -115,15 +115,14 @@ export const getPendingContractRequestInvitesForProfile = async (
              AND EXISTS {
                 MATCH (contract)-[:CREATED_BY|CAN_WRITE|SHARES_DATA_WITH]->(:Profile {profileId: invite.requestedBy})
              }
-             AND NOT EXISTS {
-                MATCH (profile)-[:CREATED_BY]->(terms:ConsentFlowTerms)-[:CONSENTS_TO]->(contract)
-                WHERE ${activeRequestTermsWhere} AND NOT coalesce(
-                    ${liveReferralSenderWhere('invite.requestedBy')} AND
-                    ${newLiveReferralReferenceWhere('invite.externalReferenceId')}, false)
-             }
+         OPTIONAL MATCH (profile)-[:CREATED_BY]->(terms:ConsentFlowTerms)-[:CONSENTS_TO]->(contract)
+             WHERE ${activeRequestTermsWhere('datetime($now)')}
+         WITH contract, invite, profile, terms, coalesce(terms.lastConsentTransactionId, terms.id) AS referralConsentId
+         WHERE terms IS NULL OR (${liveReferralSenderWhere('invite.requestedBy')} AND
+             ${newLiveReferralReferenceWhere('invite.externalReferenceId')})
          OPTIONAL MATCH (contract)-[existing:REQUESTED_FOR]->(profile)
-         WITH contract, invite, existing
-         WHERE (existing IS NULL OR ${contractRequestReplacementWhere('invite.requestedBy', 'true')}) AND
+         WITH contract, invite, existing, referralConsentId
+         WHERE (existing IS NULL OR ${contractRequestReplacementWhere('invite.requestedBy', 'true', 'referralConsentId')}) AND
              size(${recentContractRequestTimes}) < $requestCap
          RETURN contract.id AS contractId, properties(invite) AS invite
          ORDER BY invite.requestedAt, invite.id LIMIT $limit`,

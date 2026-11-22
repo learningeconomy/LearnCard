@@ -87,11 +87,11 @@ describe('integration events for contract request invites', () => {
     afterEach(() => vi.restoreAllMocks());
 
     /** Sends, then runs the delivery worker pass that attaches or emails the invite. */
-    const send = async (targetEmail: string) => {
+    const send = async (targetEmail: string, externalReferenceId = 'synthetic-ref-1') => {
         const result = await recipient.clients.fullAuth.contracts.sendContractRequest({
             contractUri,
             targetEmail,
-            externalReferenceId: 'synthetic-ref-1',
+            externalReferenceId,
         });
         await deliverContractRequestInvites();
         return result;
@@ -196,7 +196,7 @@ describe('integration events for contract request invites', () => {
         ]);
     });
 
-    it('does not apply a referral invitation after independent re-consent', async () => {
+    it('lets a new invitation replace a stale referral after independent re-consent', async () => {
         const audienceVersion = (
             await owner.clients.fullAuth.contracts.getConsentFlowContract({ uri: contractUri })
         ).audienceVersion;
@@ -220,6 +220,22 @@ describe('integration events for contract request invites', () => {
             'consent',
             'reconsent',
             'withdraw',
+        ]);
+
+        // A retry remains email-only and keeps its original ID.
+        await expect(send(email)).resolves.toEqual({ requestId, status: 'pending' });
+        const replacement = await send(email, 'synthetic-ref-2');
+        expect(replacement.requestId).not.toBe(requestId);
+        await expect(
+            consents.consentToContract({ ...args, expectedRequestId: replacement.requestId })
+        ).resolves.toEqual(original);
+        expect(await feed(ownerIntegration, replacement.requestId)).toEqual([
+            expect.objectContaining({ type: 'request_sent', subjectProfileId: undefined }),
+            expect.objectContaining({
+                type: 'referral_attached',
+                subjectProfileId: learner.profileId,
+                externalReferenceId: 'synthetic-ref-2',
+            }),
         ]);
     });
 

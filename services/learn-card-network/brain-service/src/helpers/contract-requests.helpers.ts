@@ -154,10 +154,10 @@ export const createRequestForProfile = async (
         MATCH (target:Profile {profileId: $targetProfileId})
         WITH contract, target WHERE $targetProfileId <> $senderProfileId AND EXISTS {
             MATCH (contract)-[:CREATED_BY|CAN_WRITE|SHARES_DATA_WITH]->(:Profile {profileId: $senderProfileId})
-        } AND CASE WHEN contract.expiresAt IS NULL OR trim(contract.expiresAt) = '' THEN true ELSE datetime(contract.expiresAt) > datetime($now) END
+        } AND CASE WHEN contract.expiresAt IS NULL OR trim(contract.expiresAt) = '' THEN true ELSE datetime(contract.expiresAt) > datetime.realtime() END
         AND coalesce(contract.status, 'active') <> 'retired'
         OPTIONAL MATCH (target)-[:CREATED_BY]->(terms:ConsentFlowTerms)-[:CONSENTS_TO]->(contract)
-            WHERE ${activeRequestTermsWhere}
+            WHERE ${activeRequestTermsWhere('datetime.realtime()')}
         WITH contract, target, terms IS NOT NULL AS referralOnly,
             coalesce(terms.lastConsentTransactionId, terms.id) AS referralConsentId
         WHERE terms IS NULL OR ($inviteId IS NOT NULL AND
@@ -165,7 +165,7 @@ export const createRequestForProfile = async (
             ${newLiveReferralReferenceWhere('$externalReferenceId')})
         OPTIONAL MATCH (contract)-[existing:REQUESTED_FOR]->(target)
         WITH contract, target, existing, referralOnly, referralConsentId,
-            ${contractRequestReplacementWhere('$senderProfileId', '$inviteId IS NOT NULL')} AS replacing,
+            ${contractRequestReplacementWhere('$senderProfileId', '$inviteId IS NOT NULL', 'referralConsentId')} AS replacing,
             coalesce($inviteId IS NULL AND existing.status = 'pending' AND existing.requestId IS NOT NULL AND
                 coalesce(existing.addressedByEmail, false) = false AND
                 existing.requestedBy = $senderProfileId AND
@@ -177,7 +177,7 @@ export const createRequestForProfile = async (
             WHERE invite.id = $inviteId
         WITH contract, target, existing, invite, retry, recentTimes, referralOnly, referralConsentId
         WHERE $inviteId IS NULL OR (invite IS NOT NULL AND invite.status = 'pending' AND
-            invite.expiresAt > $now AND ${inviteHasNeverAttached} AND EXISTS {
+            datetime(invite.expiresAt) > datetime.realtime() AND ${inviteHasNeverAttached} AND EXISTS {
                 MATCH (target)-[:HAS_CONTACT_METHOD]->(email:ContactMethod)
                 WHERE email.type = 'email' AND email.isVerified = true
                     AND toLower(trim(email.value)) = invite.email

@@ -1,9 +1,15 @@
 /**
- * Shared by the locked send and the invite lookup. Callers separately exclude live consent.
- * Keep the LC-2372 exception for a sender replacing their own email-addressed request.
+ * Shared by the locked sends and the invite lookup after checking the sender and active terms.
+ * An invitation bound to a prior consent cannot block a fresh request.
  */
-export const contractRequestReplacementWhere = (sender: string, isEmailSend: string): string => `
+export const contractRequestReplacementWhere = (
+    sender: string,
+    isEmailSend: string,
+    consentId: string
+): string => `
     coalesce(existing.status IN ['denied', 'cancelled', 'accepted'] OR
+        (existing.status = 'pending' AND existing.liveReferral = true AND
+            (${consentId} IS NULL OR existing.referralConsentId IS NULL OR existing.referralConsentId <> ${consentId})) OR
         (existing.addressedByEmail = true AND existing.requestedBy = ${sender} AND
             (existing.status = 'expired' OR
              (existing.status = 'pending' AND (NOT (${isEmailSend}) OR existing.expiresAt <= $now)))), false)
@@ -17,10 +23,10 @@ export const inviteHasNeverAttached = `
 `;
 
 /** Active grants block new consent requests, including consumed one-time snapshots. */
-export const activeRequestTermsWhere = `
+export const activeRequestTermsWhere = (now: string): string => `
     (terms.status = 'live' OR (terms.status = 'consumed' AND terms.oneTime = true))
     AND CASE WHEN terms.expiresAt IS NULL OR trim(terms.expiresAt) = '' THEN true
-             ELSE datetime(terms.expiresAt) > datetime($now) END
+             ELSE datetime(terms.expiresAt) > ${now} END
 `;
 
 /** Call after checking active consent and the sender's current contract role. */

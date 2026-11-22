@@ -64,21 +64,23 @@ const applyLiveReferral = async (
         ),
         input.contractId
     ).raw(`
+        WITH contract, datetime.realtime() AS lockedAt
         MATCH (target:Profile {profileId: $targetProfileId})-[:CREATED_BY]->(terms:ConsentFlowTerms)-[:CONSENTS_TO]->(contract)
-        WHERE ${activeRequestTermsWhere}
+        WHERE ${activeRequestTermsWhere('lockedAt')}
             AND coalesce(contract.status, 'active') <> 'retired'
             AND CASE WHEN contract.expiresAt IS NULL OR trim(contract.expiresAt) = '' THEN true
-                     ELSE datetime(contract.expiresAt) > datetime($now) END
+                     ELSE datetime(contract.expiresAt) > lockedAt END
             AND ($direct OR ${audienceVersionWhere})
         OPTIONAL MATCH (contract)-[existing:REQUESTED_FOR]->(target)
-        WITH contract, target, terms, existing,
+        WITH contract, target, terms, existing, lockedAt,
             CASE WHEN $direct THEN $senderProfileId ELSE existing.requestedBy END AS sender,
             CASE WHEN $direct THEN $externalReferenceId ELSE existing.externalReferenceId END AS reference
         WHERE sender <> $targetProfileId AND ${liveReferralSenderWhere('sender')}
             AND EXISTS {
                 MATCH (contract)-[:CREATED_BY|CAN_WRITE|SHARES_DATA_WITH]->(:Profile {profileId: sender})
             }
-        WITH contract, target, terms, existing, sender, reference,
+        WITH contract, target, terms, existing, sender, reference, lockedAt,
+            coalesce(terms.lastConsentTransactionId, terms.id) AS referralConsentId,
             coalesce(existing.liveReferral = true AND existing.status = 'accepted'
                 AND existing.requestId = terms.\`referral.requestId\`
                 AND CASE WHEN $direct THEN NOT coalesce(existing.addressedByEmail, false)
@@ -87,11 +89,11 @@ const applyLiveReferral = async (
                     ELSE existing.addressedByEmail = true AND existing.requestId = $requestId END, false) AS retry,
             ${recentContractRequestTimes} AS recentTimes
         WHERE retry OR (${newLiveReferralReferenceWhere('reference')} AND
-            CASE WHEN $direct THEN existing IS NULL OR ${contractRequestReplacementWhere('sender', 'false')}
+            CASE WHEN $direct THEN existing IS NULL OR ${contractRequestReplacementWhere('sender', 'false', 'referralConsentId')}
                 ELSE existing.liveReferral = true AND existing.addressedByEmail = true
                     AND existing.requestId = $requestId AND existing.status = 'pending'
-                    AND existing.referralConsentId = coalesce(terms.lastConsentTransactionId, terms.id)
-                    AND existing.expiresAt > $now END)
+                    AND existing.referralConsentId = referralConsentId
+                    AND datetime(existing.expiresAt) > lockedAt END)
         WITH contract, target, terms, sender, reference, retry, recentTimes,
             existing.requestId AS replacedId, existing.status AS replacedStatus,
             $direct AND NOT retry AND size(recentTimes) >= $requestCap AS capped

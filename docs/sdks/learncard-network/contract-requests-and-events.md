@@ -76,7 +76,7 @@ Send to `targetProfileId` with a new `externalReferenceId`. The contract owner, 
 
 The learner receives an in-app update. Sharing permissions and the expiry date stay the same. The connection and subsequent transactions carry the new reference, and earlier transactions retain their original reference. The signed [Integration Webhooks and Change Feed](integration-webhooks.md) reports `referral_attached` with event ID `<requestId>:attached`.
 
-You can also send a new reference by email. The invitation stays pending until the learner accepts it. For a referral-only invitation, LearnCard updates the live connection and leaves its sharing permissions in place. The email-to-profile link becomes visible on acceptance. If the learner withdraws and later consents again, send a fresh invitation for the new consent.
+You can also send a new reference by email. The invitation stays pending until the learner accepts it. For a referral-only invitation, LearnCard updates the live connection and leaves its sharing permissions in place. The email-to-profile link becomes visible on acceptance. If the learner withdraws and later consents again, send a fresh invitation for the new consent. To resend identical details, cancel the previous pending invitation by ID first. An exact retry keeps the previous ID.
 
 ## Invite by email
 
