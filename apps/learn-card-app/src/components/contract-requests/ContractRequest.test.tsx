@@ -412,6 +412,12 @@ describe('referral actions', () => {
         await waitFor(() =>
             expect(state.seen).toHaveBeenCalledWith(state.contract.uri, 'learner', 'req-1')
         );
+        expect(state.getStatus).toHaveBeenCalledWith(
+            'learner',
+            undefined,
+            state.contract.uri,
+            'req-1'
+        );
     });
     it('suppresses expired and replaced invitations', async () => {
         state.contract.expiresAt = '2020-01-01T00:00:00Z';

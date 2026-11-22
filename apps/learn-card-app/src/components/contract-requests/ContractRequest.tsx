@@ -53,7 +53,7 @@ type RequestProps = {
     details?: boolean;
 };
 
-/** Always read the target's current request; notification payloads are historical delivery data. */
+/** Load the exact request behind the card before taking action. */
 export const ContractRequest: React.FC<RequestProps> = ({
     contractUri,
     requestId,
