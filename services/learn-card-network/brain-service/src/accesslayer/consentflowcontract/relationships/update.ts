@@ -1052,6 +1052,7 @@ export const upsertRequestedForRelationship = async (
             ${storedContractRequestTimes('email')} AS emailTimes
         WHERE CASE WHEN restoreVisible THEN previous.requestId IS NULL ELSE existing.requestId IS NULL END
         ${parkEmailRequestCypher('existing', 'profile', "restoreVisible AND existing.status = 'pending'")}
+        WITH contract, profile, existing, previous, restoreVisible, profileTimes, emailTimes
         OPTIONAL MATCH (contract)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite)
             WHERE restoreVisible AND existing.status <> 'pending' AND invite.id = existing.requestId
         FOREACH (_ IN CASE WHEN invite IS NOT NULL THEN [1] ELSE [] END |

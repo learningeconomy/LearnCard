@@ -134,6 +134,7 @@ export const appendConsentEvent = (
             SET request.status = 'accepted')
         FOREACH (_ IN CASE WHEN (requestAccepted OR restoreVisible) AND previous IS NOT NULL THEN [1] ELSE [] END |
             DELETE previous)
+        WITH contract, terms, transaction, consenter, requestAccepted
         CALL {
             WITH contract, transaction, consenter
             WITH contract, transaction, consenter WHERE transaction.action IN ['consent', 'reconsent']
