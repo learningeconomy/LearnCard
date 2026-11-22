@@ -64,6 +64,7 @@ export const brainServiceEnvironmentShape = {
     NEO4J_USERNAME: requiredEnvironmentString,
     NEO4J_PASSWORD: requiredEnvironmentString,
     DOMAIN_NAME: optionalEnvironmentString,
+    CONTRACT_REQUEST_CAP_PER_30_DAYS: optionalPositiveInteger.transform(cap => cap ?? 3),
     CLIENT_APP_DOMAIN_NAME: optionalEnvironmentString,
     CLIENT_APP_PORT: optionalEnvironmentPort,
     LOGIN_PROVIDER_DID: optionalEnvironmentString,

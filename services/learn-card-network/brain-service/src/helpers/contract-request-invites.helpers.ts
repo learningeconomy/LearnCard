@@ -39,16 +39,18 @@ const attachInviteToProfile = async (
     profileId: string,
     domain: string
 ): Promise<boolean> =>
-    (await createRequestForProfile({
-        contractId,
-        targetProfileId: profileId,
-        senderProfileId: invite.requestedBy,
-        requestId: invite.id,
-        externalReferenceId: invite.externalReferenceId,
-        message: invite.message,
-        domain,
-        inviteId: invite.id,
-    })) !== null;
+    (
+        await createRequestForProfile({
+            contractId,
+            targetProfileId: profileId,
+            senderProfileId: invite.requestedBy,
+            requestId: invite.id,
+            externalReferenceId: invite.externalReferenceId,
+            message: invite.message,
+            domain,
+            inviteId: invite.id,
+        })
+    )?.status === 'pending';
 
 /** The most invites one call converts. Bounds the work done inside a request. */
 export const CONTRACT_REQUEST_INVITE_ATTACH_LIMIT = 20;
@@ -164,7 +166,7 @@ export const contractRequestFromInvite = (
     invite: ContractRequestInviteType
 ): {
     requestId: string;
-    status: 'pending' | 'cancelled' | 'expired';
+    status: 'pending' | 'denied' | 'cancelled' | 'expired';
     externalReferenceId?: string;
     requestedAt: string;
     expiresAt: string;
@@ -172,7 +174,7 @@ export const contractRequestFromInvite = (
 } => ({
     requestId: invite.id,
     status:
-        invite.status === 'cancelled' || invite.status === 'expired'
+        invite.status === 'denied' || invite.status === 'cancelled' || invite.status === 'expired'
             ? invite.status
             : invite.expiresAt <= new Date().toISOString()
               ? 'expired'
