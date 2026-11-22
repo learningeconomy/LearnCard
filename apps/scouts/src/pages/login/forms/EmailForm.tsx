@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useHistory } from 'react-router-dom';
-import ReactCodeInput from 'react-code-input';
 import Countdown from 'react-countdown';
 import { z } from 'zod';
 
@@ -25,6 +24,7 @@ import {
 } from 'learn-card-base';
 import { generatePK } from '../../../helpers/privateKeyHelpers';
 import * as m from '../../../paraglide/messages.js';
+import AccessibleCodeInput from './AccessibleCodeInput';
 import { useLocale } from '../../../i18n';
 import { createPreAuthEmailPayload } from '../../../i18n/preAuthEmail';
 import { TransP } from '../../../i18n/TransP';
@@ -310,8 +310,10 @@ const EmailForm: React.FC = () => {
         );
         activeStep = (
             <IonCol size="12" className="w-full ion-no-padding ion-no-margin mb-[20px]">
-                <ReactCodeInput
+                <AccessibleCodeInput
                     name="phoneVerification"
+                    label={m['login.verificationCode']()}
+                    isValid={!(errors.code || codeError)}
                     inputMode="numeric"
                     fields={6}
                     type="text"
