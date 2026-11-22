@@ -6,6 +6,7 @@ export const deleteTermsById = async (id: string): Promise<number> => {
     return ConsentFlowTerms.delete({ where: { id }, detach: true });
 };
 
+/** The audience lock also serializes legacy deletion with email attachment and snapshot writes. */
 export const removeRequestedForRelationship = async (
     id: string,
     profileId: string

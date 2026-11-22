@@ -22,6 +22,7 @@ import { userHasRequiredScopes } from './auth-grant.helpers';
 import { enforceRateLimits } from './rateLimit.helpers';
 import { preservePreviousRequestCypher } from './contract-request-visibility.helpers';
 import {
+    contractRequestCountForSender,
     getContractRequestCap,
     getContractRequestCapWindowStart,
     recentContractRequestTimes,
@@ -122,12 +123,14 @@ export type CreateRequestForProfileInput = {
 
 /**
  * Creates or replaces the current request for a resolved profile under the contract lock.
- * Returns the existing ID for an exact pending retry, or a capped result when a new request
- * would exceed the rolling limit. An ineligible send returns null.
+ * Returns the existing ID for an exact pending retry. Other results distinguish an
+ * ineligible request from a sender who has reached the rolling limit.
  */
 export const createRequestForProfile = async (
     input: CreateRequestForProfileInput
-): Promise<SendContractRequestResult | { status: 'capped' } | null> => {
+): Promise<
+    { requestId: string; status: 'pending' } | { status: 'capped' } | { status: 'ineligible' }
+> => {
     const now = new Date();
     const query = lockContractAudience(
         new QueryBuilder(
@@ -164,26 +167,32 @@ export const createRequestForProfile = async (
                 existing.requestedBy = $senderProfileId AND
                 coalesce(existing.externalReferenceId, '') = coalesce($externalReferenceId, '') AND
                 coalesce(existing.message, '') = coalesce($message, ''), false) AS retry,
-            ${recentContractRequestTimes} AS recentTimes
+            ${recentContractRequestTimes('profile')} AS profileTimes,
+            ${recentContractRequestTimes('email')} AS emailTimes
         WHERE existing IS NULL OR replacing OR retry
         OPTIONAL MATCH (contract)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite)
             WHERE invite.id = $inviteId
-        WITH contract, target, existing, invite, retry, recentTimes
+        WITH contract, target, existing, invite, retry, profileTimes, emailTimes
         WHERE $inviteId IS NULL OR (invite IS NOT NULL AND invite.status = 'pending' AND
             datetime(invite.expiresAt) > datetime.realtime() AND ${inviteHasNeverAttached})
-        WITH contract, target, invite, retry, recentTimes,
+        WITH contract, target, invite, retry, profileTimes, emailTimes,
             existing.requestId AS replacedId, existing.status AS replacedStatus,
-            NOT retry AND size(recentTimes) >= $requestCap AS capped
+            NOT retry AND ${contractRequestCountForSender(
+                'CASE WHEN invite IS NULL THEN profileTimes ELSE emailTimes END',
+                '$senderProfileId'
+            )} >= $requestCap AS capped
         CALL {
-            WITH contract, target, invite, retry, recentTimes, replacedId, replacedStatus, capped
-            WITH contract, target, invite, retry, recentTimes, replacedId, replacedStatus WHERE NOT capped
+            WITH contract, target, invite, retry, profileTimes, emailTimes, replacedId, replacedStatus, capped
+            WITH contract, target, invite, retry, profileTimes, emailTimes, replacedId, replacedStatus WHERE NOT capped
             ${preservePreviousRequestCypher}
             FOREACH (_ IN CASE WHEN retry THEN [] ELSE [1] END |
                 SET request += {requestId: $requestId, requestedBy: $senderProfileId,
                     externalReferenceId: $externalReferenceId, message: $message,
                     requestedAt: coalesce(invite.requestedAt, $now), status: 'pending', readStatus: 'unseen',
                     addressedByEmail: CASE WHEN $inviteId IS NULL THEN null ELSE true END,
-                    expiresAt: invite.expiresAt, expiredAt: null, requestTimes: recentTimes + [$now]})
+                    expiresAt: invite.expiresAt, expiredAt: null,
+                    profileRequestTimes: profileTimes + CASE WHEN invite IS NULL THEN [$now + '|' + $senderProfileId] ELSE [] END,
+                    emailRequestTimes: emailTimes + CASE WHEN invite IS NOT NULL THEN [$now + '|' + $senderProfileId] ELSE [] END})
             FOREACH (_ IN CASE WHEN invite IS NULL THEN [] ELSE [1] END |
                 SET invite.status = 'attached', invite.attachedProfileId = target.profileId,
                     invite.attachedAt = $now)
@@ -205,7 +214,7 @@ export const createRequestForProfile = async (
     `);
     const result = await runAudienceMutation(query);
     const record = result.records[0];
-    if (!record) return null;
+    if (!record) return { status: 'ineligible' };
     if (!record.get('request')) return { status: 'capped' };
     await tryDispatchContractEvent(record.get('eventId'));
     const request = record.get('request').properties as { requestId: string };
@@ -236,7 +245,7 @@ export const sendGenericContractRequest = async (
         message: input.message,
         domain,
     });
-    if (!result)
+    if (result.status === 'ineligible')
         throw new TRPCError({
             code: 'CONFLICT',
             message:
@@ -245,7 +254,7 @@ export const sendGenericContractRequest = async (
     if (result.status === 'capped')
         throw new TRPCError({
             code: 'TOO_MANY_REQUESTS',
-            message: 'This profile has reached the limit for contract requests in 30 days.',
+            message: 'You have reached the 30-day limit for direct requests to this profile.',
         });
     return result;
 };

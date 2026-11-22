@@ -290,28 +290,35 @@ describe('attachContractRequestInvitesForProfile', () => {
         ).resolves.toMatchObject({ status: 'denied', target: { email } });
     });
 
-    it('keeps the email send pending and skips attachment at the shared profile cap', async () => {
+    it('keeps separate rolling allowances for profile requests and email attachments', async () => {
         vi.spyOn(requestCap, 'getContractRequestCap').mockReturnValue(1);
-        await owner.clients.fullAuth.contracts.sendContractRequest({
-            contractUri,
-            targetProfileId: learner.profileId,
-        });
-        await learner.clients.fullAuth.contracts.denyContractRequest({ contractUri });
+        const sender = recipient.clients.fullAuth.contracts;
+        const target = learner.clients.fullAuth.contracts;
+        const profileInput = { contractUri, targetProfileId: learner.profileId };
         const email = randomEmail();
         await addEmail(learner.profileId, email);
-        const result = await recipient.clients.fullAuth.contracts.sendContractRequest({
-            contractUri,
-            targetEmail: email,
+        const firstInvite = await sender.sendContractRequest({ contractUri, targetEmail: email });
+        expect(await attachContractRequestInvitesForProfile(learner, DOMAIN)).toBe(1);
+        await target.denyContractRequest({ contractUri, requestId: firstInvite.requestId });
+
+        const direct = await sender.sendContractRequest(profileInput);
+        expect(direct.status).toBe('pending');
+        await target.denyContractRequest({ contractUri, requestId: direct.requestId });
+        await expect(sender.sendContractRequest(profileInput)).rejects.toMatchObject({
+            code: 'TOO_MANY_REQUESTS',
         });
-        expect(result.status).toBe('pending');
+
+        const result = await sender.sendContractRequest({ contractUri, targetEmail: email });
+        expect(result).toMatchObject({ status: 'pending' });
+        expect(result.requestId).not.toBe(firstInvite.requestId);
         expect(await attachContractRequestInvitesForProfile(learner, DOMAIN)).toBe(0);
         expect(await getContractRequestInvite(id(contractUri), result.requestId)).toMatchObject({
             status: 'pending',
         });
 
         await neogma.queryRunner.run(
-            'MATCH (:ConsentFlowContract {id: $id})-[r:REQUESTED_FOR]->() SET r.requestTimes = [$oldest]',
-            { id: id(contractUri), oldest: '2000-01-01T00:00:00.000Z' }
+            'MATCH (:ConsentFlowContract {id: $id})-[r:REQUESTED_FOR]->() SET r.emailRequestTimes = [$oldest]',
+            { id: id(contractUri), oldest: `2000-01-01T00:00:00.000Z|${recipient.profileId}` }
         );
         expect(await attachContractRequestInvitesForProfile(learner, DOMAIN)).toBe(1);
         expect(await getContractRequestInvite(id(contractUri), result.requestId)).toMatchObject({
@@ -386,7 +393,7 @@ describe('attachContractRequestInvitesForProfile', () => {
             `MATCH (contract:ConsentFlowContract {id: $contractId})-[r:REQUESTED_FOR]->()
              MATCH (contract)-[:HAS_REQUEST_INVITE]->(i:ContractRequestInvite {id: $oldId})
              SET i.status = 'pending', r.requestId = $replacementId, r.status = 'denied'
-             REMOVE i.attachedProfileId, i.attachedAt, r.addressedByEmail, r.expiresAt, r.requestTimes`,
+             REMOVE i.attachedProfileId, i.attachedAt, r.addressedByEmail, r.expiresAt, r.profileRequestTimes, r.emailRequestTimes`,
             { contractId: id(contractUri), oldId, replacementId }
         );
 
