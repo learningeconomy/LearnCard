@@ -43,7 +43,7 @@ const STYLESHEET = /\.(?:css|scss|sass|less)(?:\?|$)/;
 /** npm package that owns a module id (the innermost node_modules), or undefined for app code. */
 export const packageOf = (id: string): string | undefined => {
     let name: string | undefined;
-    for (const match of id.matchAll(PACKAGE_IN_PATH)) name = match[1].replace('\\', '/');
+    for (const match of id.matchAll(PACKAGE_IN_PATH)) name = match[1].replace(/\\/g, '/');
     return name;
 };
 

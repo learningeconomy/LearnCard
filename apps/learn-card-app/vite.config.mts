@@ -353,7 +353,10 @@ export default defineConfig(async ({ mode, command }) => {
                 outputStructure: 'locale-modules',
             }),
             // Only the active language's strings load at startup (production builds).
-            paraglideLazyLocales(paraglideBaseLocale, path.join(__dirname, 'src/paraglide/messages')),
+            paraglideLazyLocales(
+                paraglideBaseLocale,
+                path.join(__dirname, 'src/paraglide/messages')
+            ),
             ...(environment.ANALYZE
                 ? [
                       visualizer({

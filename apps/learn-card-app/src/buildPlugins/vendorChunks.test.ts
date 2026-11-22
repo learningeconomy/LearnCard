@@ -26,6 +26,12 @@ describe('packageOf', () => {
         );
         expect(packageOf(app('index.tsx'))).toBeUndefined();
     });
+
+    it('normalizes Windows separators in scoped names', () => {
+        expect(packageOf('C:\\repo\\node_modules\\@ionic\\react\\dist\\index.js')).toBe(
+            '@ionic/react'
+        );
+    });
 });
 
 describe('vendorChunkOf', () => {
