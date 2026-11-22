@@ -1181,6 +1181,7 @@ describe('generic contract requests and correlated events', () => {
     });
 
     it('attaches a new reference to live consent once and preserves its terms and history', async () => {
+        vi.spyOn(requestCap, 'getContractRequestCap').mockReturnValue(3);
         const uri = await create();
         const initial = await send(uri);
         const { termsUri } = await accept(uri);
@@ -1227,7 +1228,13 @@ describe('generic contract requests and correlated events', () => {
         const takeover = await send(uri, owner, 'owner-reference');
         expect(takeover.status).toBe('accepted');
         await expect(send(uri, writer, 'writer-again')).rejects.toMatchObject({ code: 'CONFLICT' });
-        await expect(send(uri, owner, 'fourth-reference')).rejects.toMatchObject({
+        await expect(send(uri, owner, 'owner-reference-2')).resolves.toMatchObject({
+            status: 'accepted',
+        });
+        await expect(send(uri, owner, 'owner-reference-3')).resolves.toMatchObject({
+            status: 'accepted',
+        });
+        await expect(send(uri, owner, 'owner-reference-4')).rejects.toMatchObject({
             code: 'TOO_MANY_REQUESTS',
         });
     });
