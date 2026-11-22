@@ -73,21 +73,24 @@ const applyLiveReferral = async (
                      ELSE datetime(contract.expiresAt) > lockedAt END
             AND ($direct OR ${audienceVersionWhere})
         OPTIONAL MATCH (contract)-[existing:REQUESTED_FOR]->(target)
+        OPTIONAL MATCH (contract)-[previous:PREVIOUS_VISIBLE_REQUEST]->(target)
         WITH contract, target, terms, existing, lockedAt,
+            CASE WHEN $direct AND existing.addressedByEmail = true AND existing.status <> 'accepted'
+                THEN previous ELSE existing END AS retryRequest,
             CASE WHEN $direct THEN $senderProfileId ELSE existing.requestedBy END AS sender,
             CASE WHEN $direct THEN $externalReferenceId ELSE existing.externalReferenceId END AS reference
         WHERE sender <> $targetProfileId AND ${liveReferralSenderWhere('sender')}
             AND EXISTS {
                 MATCH (contract)-[:CREATED_BY|CAN_WRITE|SHARES_DATA_WITH]->(:Profile {profileId: sender})
             }
-        WITH contract, target, terms, existing, sender, reference, lockedAt,
+        WITH contract, target, terms, existing, sender, reference, lockedAt, retryRequest,
             coalesce(terms.lastConsentTransactionId, terms.id) AS referralConsentId,
-            coalesce(existing.liveReferral = true AND existing.status = 'accepted'
-                AND existing.requestId = terms.\`referral.requestId\`
-                AND CASE WHEN $direct THEN NOT coalesce(existing.addressedByEmail, false)
-                    AND existing.requestedBy = sender AND existing.externalReferenceId = reference
-                    AND coalesce(existing.message, '') = coalesce($message, '')
-                    ELSE existing.addressedByEmail = true AND existing.requestId = $requestId END, false) AS retry,
+            coalesce(retryRequest.liveReferral = true AND retryRequest.status = 'accepted'
+                AND retryRequest.requestId = terms.\`referral.requestId\`
+                AND CASE WHEN $direct THEN NOT coalesce(retryRequest.addressedByEmail, false)
+                    AND retryRequest.requestedBy = sender AND retryRequest.externalReferenceId = reference
+                    AND coalesce(retryRequest.message, '') = coalesce($message, '')
+                    ELSE retryRequest.addressedByEmail = true AND retryRequest.requestId = $requestId END, false) AS retry,
             ${recentContractRequestTimes('profile')} AS profileTimes,
             ${recentContractRequestTimes('email')} AS emailTimes
         WHERE retry OR (${newLiveReferralReferenceWhere('reference')} AND
@@ -97,11 +100,12 @@ const applyLiveReferral = async (
                     AND existing.referralConsentId = referralConsentId
                     AND datetime(existing.expiresAt) > lockedAt END)
         WITH contract, target, terms, sender, reference, retry, profileTimes, emailTimes,
+            retryRequest.requestId AS retryId,
             existing.requestId AS replacedId, existing.status AS replacedStatus,
             $direct AND NOT retry AND ${contractRequestCountForSender('profileTimes', 'sender')} >= $requestCap AS capped
         CALL {
-            WITH contract, target, terms, sender, reference, retry, profileTimes, emailTimes, replacedId, replacedStatus, capped
-            WITH contract, target, terms, sender, reference, retry, profileTimes, emailTimes, replacedId, replacedStatus
+            WITH contract, target, terms, sender, reference, retry, retryId, profileTimes, emailTimes, replacedId, replacedStatus, capped
+            WITH contract, target, terms, sender, reference, retry, retryId, profileTimes, emailTimes, replacedId, replacedStatus
             WHERE NOT capped
             OPTIONAL MATCH (contract)-[previous:PREVIOUS_VISIBLE_REQUEST]->(target)
             MERGE (contract)-[request:REQUESTED_FOR]->(target)
@@ -110,15 +114,17 @@ const applyLiveReferral = async (
             FOREACH (_ IN CASE WHEN $direct AND NOT retry THEN [1] ELSE [] END |
                 SET request += {requestId: $requestId, requestedBy: sender, externalReferenceId: reference,
                     message: $message, requestedAt: $now, addressedByEmail: null,
-                    expiresAt: null, expiredAt: null,
+                    expiresAt: null, expiredAt: null, requestHistoryOnly: null,
                     profileRequestTimes: profileTimes + [$now + '|' + sender], emailRequestTimes: emailTimes})
             FOREACH (_ IN CASE WHEN NOT retry THEN [1] ELSE [] END |
                 SET request.status = 'accepted', request.liveReferral = true, request.readStatus = 'seen',
                     request.referralConsentId = null)
-            WITH contract, target, terms, request, retry,
+            WITH contract, target, terms, request, retry, retryId,
                 CASE WHEN $direct THEN replacedId END AS replacedId, replacedStatus
             ${detachReplacedRequestInviteCypher}
-            WITH contract, target, terms, request, retry, request.requestId + ':attached' AS eventId
+            WITH contract, target, terms, request, retry,
+                CASE WHEN retry THEN retryId ELSE request.requestId END AS requestId
+            WITH contract, target, terms, request, retry, requestId, requestId + ':attached' AS eventId
             MATCH (contract)-[:CREATED_BY]->(owner:Profile)
             FOREACH (_ IN CASE WHEN NOT retry THEN [1] ELSE [] END |
                 SET terms.\`referral.requestId\` = request.requestId,
@@ -137,7 +143,7 @@ const applyLiveReferral = async (
                     CREATE (event)-[:HAS_DELIVERY]->(:ConsentFlowEventDelivery {
                         id: eventId + ':' + target.profileId, toId: target.profileId, state: 'pending',
                         nextAttemptAt: $now, eventCreatedAt: $now, attempts: 0, role: 'target'})))
-            RETURN request.requestId AS requestId, terms.id AS termsId, eventId
+            RETURN requestId, terms.id AS termsId, eventId
             UNION
             WITH capped
             WITH capped WHERE capped

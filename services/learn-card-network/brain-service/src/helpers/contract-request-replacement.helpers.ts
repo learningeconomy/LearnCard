@@ -9,7 +9,7 @@ export const contractRequestReplacementWhere = (
     isEmailSend: string,
     consentId: string
 ): string => `
-    coalesce(existing.status IN ['denied', 'cancelled', 'accepted'] OR
+    coalesce(existing.requestHistoryOnly = true OR existing.status IN ['denied', 'cancelled', 'accepted'] OR
         (existing.status = 'pending' AND existing.liveReferral = true AND
             (${consentId} IS NULL OR existing.referralConsentId IS NULL OR existing.referralConsentId <> ${consentId})) OR
         (existing.addressedByEmail = true AND existing.requestedBy = ${sender} AND

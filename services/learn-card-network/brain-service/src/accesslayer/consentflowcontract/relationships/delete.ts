@@ -14,8 +14,12 @@ export const removeRequestedForRelationship = async (
     const result = await runAudienceMutation(
         lockContractAudience(new QueryBuilder(new BindParam({ profileId })), id).raw(`
             MATCH (contract)-[request:REQUESTED_FOR|PREVIOUS_VISIBLE_REQUEST]->(:Profile {profileId: $profileId})
-            WHERE request.requestId IS NULL
-            DELETE request
+            WHERE request.requestId IS NULL AND NOT coalesce(request.requestHistoryOnly, false)
+            WITH request, size(coalesce(request.profileRequestTimes, [])) +
+                size(coalesce(request.emailRequestTimes, [])) > 0 AS hasHistory
+            FOREACH (_ IN CASE WHEN hasHistory THEN [1] ELSE [] END |
+                SET request = request{.profileRequestTimes, .emailRequestTimes, requestHistoryOnly: true})
+            FOREACH (_ IN CASE WHEN hasHistory THEN [] ELSE [1] END | DELETE request)
             RETURN count(*) AS deleted
         `)
     );

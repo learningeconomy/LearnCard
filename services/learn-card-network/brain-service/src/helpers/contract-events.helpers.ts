@@ -30,6 +30,7 @@ import { ensureContractEventMaintenance } from './contract-event-maintenance.hel
 import { fanOutIntegrationEvents } from './integration-events.helpers';
 import { updateDidForProfile } from './did.helpers';
 import { buildContractUpdatePreview } from '@learncard/helpers';
+import { storedContractRequestTimes } from './contract-request-cap.helpers';
 
 type EventKind = ConsentFlowWebhookMetadata['event'] | 'contract_updated' | 'referral_attached';
 const defaultDomain = (): string => environment.DOMAIN_NAME ?? 'network.learncard.com';
@@ -59,11 +60,13 @@ export const appendConsentEvent = (
         transaction,
         domain = defaultDomain(),
         messageKey,
+        expectedRequestId,
     }: {
         consenterProfileId: string;
         transaction: ConsentFlowTransaction;
         domain?: string;
         messageKey: NotificationMessageKey;
+        expectedRequestId?: string;
     }
 ): QueryBuilder => {
     const kind: EventKind =
@@ -80,14 +83,31 @@ export const appendConsentEvent = (
         eventKind: kind,
         eventMessageKey: messageKey,
         eventPayload: JSON.stringify(transaction),
+        eventRequestId: expectedRequestId ?? null,
     });
+    // Independent consent restores the public request and leaves the unreviewed invite redacted.
     return query.raw(`
         WITH contract, terms, transaction
         MATCH (consenter:Profile {profileId: $eventConsenter})
         OPTIONAL MATCH (contract)-[request:REQUESTED_FOR]->(consenter)
-        WITH contract, terms, transaction, consenter, request,
+        OPTIONAL MATCH (contract)-[previous:PREVIOUS_VISIBLE_REQUEST]->(consenter)
+        WITH contract, terms, transaction, consenter, request, previous,
+            coalesce(transaction.action IN ['consent', 'reconsent'] AND $eventRequestId IS NULL
+                AND request.addressedByEmail = true AND request.status <> 'accepted', false) AS restoreVisible
+        OPTIONAL MATCH (contract)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite)
+            WHERE restoreVisible AND invite.id = request.requestId
+        FOREACH (_ IN CASE WHEN invite IS NOT NULL THEN [1] ELSE [] END |
+            SET invite += {status: request.status, attachedProfileId: null, attachedAt: null})
+        WITH contract, terms, transaction, consenter, request, previous, restoreVisible,
+            ${storedContractRequestTimes('profile', 'request')} AS profileTimes,
+            ${storedContractRequestTimes('email', 'request')} AS emailTimes
+        FOREACH (_ IN CASE WHEN restoreVisible THEN [1] ELSE [] END |
+            SET request = coalesce(properties(previous), {requestHistoryOnly: true})
+            SET request.profileRequestTimes = profileTimes, request.emailRequestTimes = emailTimes)
+        WITH contract, terms, transaction, consenter, request, previous, restoreVisible,
             request.status = 'pending' AND coalesce(request.liveReferral, false) = false
-                AND (request.expiresAt IS NULL OR request.expiresAt > transaction.date) AS requestOpen
+                AND (request.expiresAt IS NULL OR request.expiresAt > transaction.date)
+                AND (NOT coalesce(request.addressedByEmail, false) OR request.requestId = $eventRequestId) AS requestOpen
         SET terms.lastConsentTransactionId = CASE WHEN transaction.action IN ['consent', 'reconsent']
             THEN transaction.id ELSE terms.lastConsentTransactionId END,
             terms.\`referral.requestId\` = CASE WHEN request.requestId IS NOT NULL AND (request.status = 'accepted' OR (requestOpen AND $eventKind IN ['consent_created', 'consent_updated']))
@@ -99,19 +119,17 @@ export const appendConsentEvent = (
             transaction.\`referral.requestId\` = terms.\`referral.requestId\`,
             transaction.\`referral.requestedBy\` = terms.\`referral.requestedBy\`,
             transaction.\`referral.externalReferenceId\` = terms.\`referral.externalReferenceId\`
-        WITH contract, terms, transaction, consenter, request,
+        WITH contract, terms, transaction, consenter, request, previous, restoreVisible,
             request.requestId IS NOT NULL AND coalesce(requestOpen, false) AND $eventKind IN ['consent_created', 'consent_updated'] AS requestAccepted
         FOREACH (_ IN CASE WHEN $eventKind = 'consent_created' THEN [1] ELSE [] END |
             MERGE (contract)-[accepted:REQUESTED_FOR]->(consenter)
             ON CREATE SET accepted.status = 'accepted', accepted.readStatus = 'unseen'
-            SET accepted.status = CASE WHEN accepted.requestId IS NULL OR (accepted.status = 'pending' AND coalesce(accepted.liveReferral, false) = false AND
-                (accepted.expiresAt IS NULL OR accepted.expiresAt > transaction.date))
-                THEN 'accepted' ELSE accepted.status END)
+            SET accepted.status = CASE WHEN accepted.requestId IS NULL THEN 'accepted' ELSE accepted.status END,
+                accepted.readStatus = CASE WHEN accepted.requestHistoryOnly = true THEN 'unseen' ELSE accepted.readStatus END,
+                accepted.requestHistoryOnly = null)
         FOREACH (_ IN CASE WHEN requestAccepted THEN [1] ELSE [] END |
             SET request.status = 'accepted')
-        WITH contract, terms, transaction, consenter, requestAccepted
-        OPTIONAL MATCH (contract)-[previous:PREVIOUS_VISIBLE_REQUEST]->(consenter)
-        FOREACH (_ IN CASE WHEN requestAccepted AND previous IS NOT NULL THEN [1] ELSE [] END |
+        FOREACH (_ IN CASE WHEN (requestAccepted OR restoreVisible) AND previous IS NOT NULL THEN [1] ELSE [] END |
             DELETE previous)
         WITH contract, terms, transaction, requestAccepted
         MATCH (contract)-[:CREATED_BY]->(owner:Profile)

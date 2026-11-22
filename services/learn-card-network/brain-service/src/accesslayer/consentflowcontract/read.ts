@@ -110,7 +110,8 @@ export const getRequestedForList = async (id: string, viewerProfileId: string) =
          CALL {
              WITH c
              MATCH (c)-[r:REQUESTED_FOR|PREVIOUS_VISIBLE_REQUEST]->(p:Profile)
-             WHERE ${requestManagerWhere} OR (${requestingRecipientWhere})
+             WHERE NOT coalesce(r.requestHistoryOnly, false)
+                 AND (${requestManagerWhere} OR (${requestingRecipientWhere}))
              OPTIONAL MATCH (c)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite)
                  WHERE invite.id = r.requestId
              RETURN properties(r) AS request, properties(p) AS profile,
@@ -249,7 +250,7 @@ export const getRequestedForForUser = async (
                   AND current.status <> 'accepted' THEN previous ELSE current END AS r`
         )
         .where(
-            `r IS NOT NULL AND
+            `r IS NOT NULL AND NOT coalesce(r.requestHistoryOnly, false) AND
              (p.profileId = $viewerProfileId OR ${requestManagerWhere} OR (${requestingRecipientWhere}))`
         );
     const result = await query.return(['p', 'r']).run();
@@ -278,7 +279,8 @@ export const getAllRequestsForTargetProfile = async (targetProfileId: string) =>
         })
         .match('(c)-[r:REQUESTED_FOR]->(p:Profile)')
         .where(
-            `p.profileId = $targetProfileId AND coalesce(r.status, '') <> 'expired' AND
+            `p.profileId = $targetProfileId AND NOT coalesce(r.requestHistoryOnly, false)
+             AND coalesce(r.status, '') <> 'expired' AND
              NOT (r.status = 'pending' AND r.expiresAt IS NOT NULL AND r.expiresAt <= $now)`
         )
         .return(['c', 'p', 'r'])
@@ -361,11 +363,13 @@ export const getStoredContractRequest = async (
     const result = await neogma.queryRunner.run(
         `MATCH (contract:ConsentFlowContract {id: $contractId})-[current:REQUESTED_FOR]->(target:Profile {profileId: $targetProfileId})
          OPTIONAL MATCH (contract)-[previous:PREVIOUS_VISIBLE_REQUEST]->(target)
-         RETURN CASE
+         WITH CASE
              WHEN $requestId IS NOT NULL AND previous.requestId = $requestId THEN previous
              WHEN $viewerProfileId IS NOT NULL AND $viewerProfileId <> $targetProfileId
                   AND current.addressedByEmail = true AND current.status <> 'accepted' THEN previous
-             ELSE current END AS request`,
+             ELSE current END AS request
+         WHERE request IS NOT NULL AND NOT coalesce(request.requestHistoryOnly, false)
+         RETURN request`,
         {
             contractId,
             targetProfileId,
