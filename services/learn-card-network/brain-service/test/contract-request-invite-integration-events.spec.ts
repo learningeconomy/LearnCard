@@ -300,7 +300,7 @@ describe('integration events for contract request invites', () => {
             `MATCH (c:ConsentFlowContract)-[:HAS_REQUEST_INVITE]->(i:ContractRequestInvite {id: $requestId})
              SET i.expiresAt = $past
              WITH c, i
-             OPTIONAL MATCH (c)-[r:REQUESTED_FOR]->(:Profile) WHERE r.requestId = i.id
+             OPTIONAL MATCH (c)-[r:REQUESTED_FOR|PENDING_EMAIL_REQUEST]->(:Profile) WHERE r.requestId = i.id
              FOREACH (_ IN CASE WHEN r IS NULL THEN [] ELSE [1] END | SET r.expiresAt = $past)`,
             { requestId, past: '2000-01-01T00:00:00.000Z' }
         );
@@ -474,15 +474,104 @@ describe('integration events for contract request invites', () => {
             ]);
     });
 
-    it('still answers CONFLICT when another sender collides with an email request', async () => {
+    it.each(['accept', 'deny', 'cancel', 'expire'] as const)(
+        'keeps another sender’s email invitation private and available to %s after a direct send',
+        async decision => {
+            const manager = owner.clients.fullAuth.contracts;
+            const sender = recipient.clients.fullAuth.contracts;
+            const consents = learner.clients.fullAuth.contracts;
+            const email = randomEmail();
+            await addEmail(learner.profileId, email);
+            const invitation = await send(email);
+            const inviteInput = { contractUri, requestId: invitation.requestId };
+            const original = await sender.getContractRequest(inviteInput);
+            const profileInput = { contractUri, targetProfileId: learner.profileId };
+            vi.spyOn(requestCap, 'getContractRequestCap').mockReturnValue(1);
+            const direct = await manager.sendContractRequest(profileInput);
+            expect(direct.status).toBe('pending');
+            await expect(manager.sendContractRequest(profileInput)).resolves.toEqual(direct);
+            await expect(sender.getContractRequest(inviteInput)).resolves.toEqual(original);
+            await expect(
+                manager.getRequestStatusForProfile({ ...profileInput, ...inviteInput })
+            ).resolves.toBeNull();
+            const inbox = await consents.getAllContractRequestsForProfile({
+                targetProfileId: learner.profileId,
+            });
+            expect(inbox.map(request => request.requestId)).toEqual(
+                expect.arrayContaining([invitation.requestId, direct.requestId])
+            );
+            await expect(
+                consents.markContractRequestAsSeen({ ...profileInput, ...inviteInput })
+            ).resolves.toBe(true);
+            await expect(
+                consents.getRequestStatusForProfile({ ...profileInput, ...inviteInput })
+            ).resolves.toMatchObject({ ...invitation, readStatus: 'seen' });
+            await expect(consents.getRequestStatusForProfile(profileInput)).resolves.toMatchObject({
+                ...direct,
+                readStatus: 'unseen',
+            });
+            await expect(send(email)).resolves.toEqual(invitation);
+
+            if (decision === 'accept') {
+                await consents.consentToContract({
+                    contractUri,
+                    terms: normalFullTerms,
+                    expectedRequestId: invitation.requestId,
+                    audienceVersion: (await manager.getConsentFlowContract({ uri: contractUri }))
+                        .audienceVersion,
+                });
+                const records = await feed(recipientIntegration, invitation.requestId);
+                expect(records.find(record => record.type === 'request_accepted')).toMatchObject({
+                    subjectProfileId: learner.profileId,
+                });
+                await expect(sender.getContractRequest(inviteInput)).resolves.toMatchObject({
+                    status: 'accepted',
+                    target: { profile: { profileId: learner.profileId } },
+                });
+                return;
+            }
+            let status: string;
+            if (decision === 'deny') {
+                await consents.denyContractRequest(inviteInput);
+                status = 'denied';
+            } else if (decision === 'cancel') {
+                await sender.cancelContractRequest(inviteInput);
+                status = 'cancelled';
+            } else {
+                await age(invitation.requestId);
+                await expireContractRequestInvites();
+                status = 'expired';
+            }
+            await expect(sender.getContractRequest(inviteInput)).resolves.toMatchObject({
+                status,
+                target: { email },
+            });
+            expect((await feed(recipientIntegration, invitation.requestId)).at(-1)).toMatchObject({
+                type: `request_${status}`,
+                subjectProfileId: undefined,
+            });
+            await expect(manager.getRequestStatusForProfile(profileInput)).resolves.toMatchObject(
+                direct
+            );
+        }
+    );
+
+    it('lets legacy AI requests proceed while keeping an existing email invite actionable', async () => {
         const email = randomEmail();
         await addEmail(learner.profileId, email);
-        await send(email);
+        const invitation = await send(email);
+        const profileInput = { contractUri, targetProfileId: learner.profileId };
         await expect(
-            owner.clients.fullAuth.contracts.sendContractRequest({
-                contractUri,
-                targetProfileId: learner.profileId,
+            owner.clients.fullAuth.contracts.sendAiInsightsContractRequest({
+                ...profileInput,
+                shareLink: 'synthetic-share-link',
             })
-        ).rejects.toMatchObject({ message: expect.stringContaining('already exists') });
+        ).resolves.toBe(true);
+        await expect(
+            learner.clients.fullAuth.contracts.getRequestStatusForProfile({
+                ...profileInput,
+                requestId: invitation.requestId,
+            })
+        ).resolves.toMatchObject(invitation);
     });
 });

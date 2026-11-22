@@ -6,6 +6,7 @@ import { ACCEPTED_VERSION_PREDICATE } from './consent-expiry.helpers';
  */
 export const contractRequestReplacementWhere = (sender: string, isEmailSend: string): string => `
     coalesce(existing.requestHistoryOnly = true OR existing.status IN ['denied', 'cancelled', 'accepted'] OR
+        (NOT (${isEmailSend}) AND existing.addressedByEmail = true AND existing.status IN ['pending', 'expired']) OR
         (existing.addressedByEmail = true AND existing.requestedBy = ${sender} AND
             (existing.status = 'expired' OR
              (existing.status = 'pending' AND (NOT (${isEmailSend}) OR existing.expiresAt <= $now)))), false)

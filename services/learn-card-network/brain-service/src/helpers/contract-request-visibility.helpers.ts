@@ -14,3 +14,17 @@ export const preservePreviousRequestCypher = `
     FOREACH (_ IN CASE WHEN NOT retry AND invite IS NULL AND previous IS NOT NULL
         THEN [1] ELSE [] END | DELETE previous)
 `;
+
+/** Park a pending email on a separate edge under the audience lock. Its invite stays attached. */
+export const parkEmailRequestCypher = (request: string, target: string, park: string): string => `
+    FOREACH (_ IN CASE WHEN ${park} THEN [1] ELSE [] END |
+        CREATE (contract)-[parked:PENDING_EMAIL_REQUEST]->(${target})
+        SET parked = ${request}{.requestId, .status, .requestedBy, .externalReferenceId, .message,
+            .requestedAt, .readStatus, .addressedByEmail, .expiresAt, .liveReferral, .referralConsentId})
+`;
+
+/** Keep one actionable attached email per contract and learner across both storage locations. */
+export const noParkedEmailRequest = `NOT EXISTS {
+    MATCH (contract)-[parked:PENDING_EMAIL_REQUEST]->(target)
+    WHERE parked.status = 'pending' AND parked.expiresAt > $now
+}`;

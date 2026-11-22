@@ -1,4 +1,5 @@
 import { int } from 'neo4j-driver';
+import { noParkedEmailRequest } from '@helpers/contract-request-visibility.helpers';
 
 import { neogma } from '@instance';
 import {
@@ -104,8 +105,9 @@ export const getPendingContractRequestInvitesForProfile = async (
                 WHERE ${activeRequestTermsWhere('datetime($now)')}
              }
          OPTIONAL MATCH (contract)-[existing:REQUESTED_FOR]->(profile)
-         WITH contract, invite, existing
-         WHERE (existing IS NULL OR ${contractRequestReplacementWhere('invite.requestedBy', 'true')}) AND
+         WITH contract, invite, profile AS target, existing
+         WHERE ${noParkedEmailRequest} AND
+             (existing IS NULL OR ${contractRequestReplacementWhere('invite.requestedBy', 'true')}) AND
              ${contractRequestCountForSender(recentContractRequestTimes('email'), 'invite.requestedBy')} < $requestCap
          RETURN contract.id AS contractId, properties(invite) AS invite
          ORDER BY invite.requestedAt, invite.id LIMIT $limit`,

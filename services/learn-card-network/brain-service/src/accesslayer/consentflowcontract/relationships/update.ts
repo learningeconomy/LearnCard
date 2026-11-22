@@ -25,6 +25,8 @@ import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.h
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { injectObv3AlignmentsIntoCredentialForBoost } from '@services/skills-provider/inject';
 import { removeRequestedForRelationship } from './delete';
+import { parkEmailRequestCypher } from '@helpers/contract-request-visibility.helpers';
+import { storedContractRequestTimes } from '@helpers/contract-request-cap.helpers';
 import {
     lockContractAudience,
     audienceVersionWhere,
@@ -1034,7 +1036,8 @@ export const upsertRequestedForRelationship = async (
     id: string,
     profileId: string,
     status?: 'pending' | 'accepted' | 'denied',
-    readStatus?: 'seen' | 'unseen' | null
+    readStatus?: 'seen' | 'unseen' | null,
+    preservePendingEmail = false
 ) => {
     const cypher = `
         MATCH (contract:ConsentFlowContract {id: $id})
@@ -1042,17 +1045,36 @@ export const upsertRequestedForRelationship = async (
         WITH contract
         MATCH (profile:Profile {profileId: $profileId})
         OPTIONAL MATCH (contract)-[existing:REQUESTED_FOR]->(profile)
-        WITH contract, profile, existing WHERE existing.requestId IS NULL
+        OPTIONAL MATCH (contract)-[previous:PREVIOUS_VISIBLE_REQUEST]->(profile)
+        WITH contract, profile, existing, previous,
+            coalesce($preservePendingEmail AND existing.addressedByEmail = true AND existing.status <> 'accepted', false) AS restoreVisible,
+            ${storedContractRequestTimes('profile')} AS profileTimes,
+            ${storedContractRequestTimes('email')} AS emailTimes
+        WHERE CASE WHEN restoreVisible THEN previous.requestId IS NULL ELSE existing.requestId IS NULL END
+        ${parkEmailRequestCypher('existing', 'profile', "restoreVisible AND existing.status = 'pending'")}
+        OPTIONAL MATCH (contract)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite)
+            WHERE restoreVisible AND existing.status <> 'pending' AND invite.id = existing.requestId
+        FOREACH (_ IN CASE WHEN invite IS NOT NULL THEN [1] ELSE [] END |
+            SET invite += {status: existing.status, attachedProfileId: null, attachedAt: null})
         MERGE (contract)-[r:REQUESTED_FOR]->(profile)
+        FOREACH (_ IN CASE WHEN restoreVisible THEN [1] ELSE [] END |
+            SET r = coalesce(properties(previous), {})
+            SET r.profileRequestTimes = profileTimes, r.emailRequestTimes = emailTimes)
+        FOREACH (_ IN CASE WHEN restoreVisible AND previous IS NOT NULL THEN [1] ELSE [] END |
+            DELETE previous)
         SET r.requestHistoryOnly = null
         ${status !== undefined ? 'SET r.status = $status' : ''}
         ${readStatus !== undefined ? 'SET r.readStatus = $readStatus' : ''}
         RETURN r
     `;
 
-    const params: any = { id, profileId };
-    if (status !== undefined) params.status = status;
-    if (readStatus !== undefined) params.readStatus = readStatus;
+    const params = {
+        id,
+        profileId,
+        preservePendingEmail,
+        ...(status !== undefined ? { status } : {}),
+        ...(readStatus !== undefined ? { readStatus } : {}),
+    };
 
     const result = await neogma.queryRunner.run(cypher, params);
     if (!result.records.length)

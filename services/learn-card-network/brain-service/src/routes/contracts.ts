@@ -2446,7 +2446,8 @@ export const contractsRouter = t.router({
                     contractByUri.id,
                     resolvedTargetProfileId,
                     'pending',
-                    null
+                    null,
+                    true
                 );
             } catch (error) {
                 if (error instanceof TRPCError && error.code === 'CONFLICT') throw error;
@@ -2642,6 +2643,7 @@ export const contractsRouter = t.router({
                 contractId: z.string().nullable().optional(),
                 contractUri: z.string().nullable().optional(),
                 targetProfileId: z.string(),
+                requestId: z.string().min(1).optional(),
             })
         )
         .output(
@@ -2654,7 +2656,7 @@ export const contractsRouter = t.router({
         .query(async ({ ctx, input }) => {
             const { profile } = ctx.user;
 
-            const { contractId, contractUri, targetProfileId } = input;
+            const { contractId, contractUri, targetProfileId, requestId } = input;
 
             const resolvedTargetProfileId = await getProfileIdFromString(
                 targetProfileId,
@@ -2690,7 +2692,8 @@ export const contractsRouter = t.router({
             const requests = await getRequestedForForUser(
                 contract.id,
                 resolvedTargetProfileId,
-                profile.profileId
+                profile.profileId,
+                requestId
             );
 
             if (!requests?.[0]) return null;
@@ -2731,12 +2734,13 @@ export const contractsRouter = t.router({
             z.object({
                 contractUri: z.string(),
                 targetProfileId: z.string(),
+                requestId: z.string().min(1).optional(),
             })
         )
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { contractUri, targetProfileId } = input;
+            const { contractUri, targetProfileId, requestId } = input;
 
             const resolvedTargetProfileId = await getProfileIdFromString(
                 targetProfileId,
@@ -2751,12 +2755,19 @@ export const contractsRouter = t.router({
             if (!contractByUri)
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
 
+            const isTarget = profile.profileId === resolvedTargetProfileId;
+            if (requestId && !isTarget)
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Only the target can mark this request seen by ID',
+                });
             const request = await getStoredContractRequest(
                 contractByUri.id,
                 resolvedTargetProfileId,
-                { viewerProfileId: profile.profileId }
+                { viewerProfileId: profile.profileId, requestId }
             );
-            const isTarget = profile.profileId === resolvedTargetProfileId;
+            if (requestId && request?.requestId !== requestId)
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Request not found' });
             if (request?.requestId) {
                 assertGenericRequestWriteScope(ctx.user.scope);
                 if (!isTarget)
@@ -2764,7 +2775,11 @@ export const contractsRouter = t.router({
                         code: 'UNAUTHORIZED',
                         message: 'Only the target can mark this request seen',
                     });
-                return markGenericContractRequestSeen(contractByUri.id, resolvedTargetProfileId);
+                return markGenericContractRequestSeen(
+                    contractByUri.id,
+                    resolvedTargetProfileId,
+                    request.requestId
+                );
             }
             if (profile.profileId === resolvedTargetProfileId) {
                 if (!request)

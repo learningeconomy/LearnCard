@@ -130,7 +130,7 @@ export const expireContractRequestInvite = async (
     ).raw(`
         MATCH (contract)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite {id: $inviteId})
         WHERE invite.status IN ['pending', 'attached'] AND invite.expiresAt <= $now
-        OPTIONAL MATCH (contract)-[request:REQUESTED_FOR]->(:Profile)
+        OPTIONAL MATCH (contract)-[request:REQUESTED_FOR|PENDING_EMAIL_REQUEST]->(:Profile)
             WHERE invite.status = 'attached' AND request.requestId = invite.id
         WITH contract, invite, request,
             invite.status = 'pending' OR coalesce(request.status = 'pending', false) AS expires
@@ -140,6 +140,9 @@ export const expireContractRequestInvite = async (
             SET request.status = 'expired', request.expiredAt = $now)
         FOREACH (_ IN CASE WHEN expires THEN [1] ELSE [] END |
             ${inviteIntegrationEventCypher('request_expired', 'expired')})
+        FOREACH (_ IN CASE WHEN type(request) = 'PENDING_EMAIL_REQUEST' THEN [1] ELSE [] END |
+            SET invite += {status: request.status, attachedProfileId: null, attachedAt: null}
+            DELETE request)
         RETURN properties(invite) AS invite, expires
     `);
     const record = (await runAudienceMutation(query)).records[0];
