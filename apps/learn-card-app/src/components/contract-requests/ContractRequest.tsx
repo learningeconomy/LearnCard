@@ -96,7 +96,8 @@ export const ContractRequest: React.FC<RequestProps> = ({
             const status = await wallet.invoke.getRequestStatusForProfile(
                 profileId,
                 undefined,
-                contractUri
+                contractUri,
+                requestId
             );
             requireEnabled();
             if (!status || status.requestId !== requestId) return null;
@@ -131,7 +132,7 @@ export const ContractRequest: React.FC<RequestProps> = ({
                 requireEnabled();
                 const wallet = await initWallet();
                 requireEnabled();
-                await wallet.invoke.markContractRequestAsSeen(contractUri, profileId);
+                await wallet.invoke.markContractRequestAsSeen(contractUri, profileId, requestId);
                 if (active) await refresh();
             } catch {
                 // Reading is retried on the next refresh; it never changes the decision.
@@ -141,7 +142,16 @@ export const ContractRequest: React.FC<RequestProps> = ({
         return () => {
             active = false;
         };
-    }, [pending, status?.readStatus, contractUri, profileId, initWallet, refresh, requireEnabled]);
+    }, [
+        pending,
+        status?.readStatus,
+        contractUri,
+        profileId,
+        requestId,
+        initWallet,
+        refresh,
+        requireEnabled,
+    ]);
 
     const run = async (
         action: () => Promise<void>,
@@ -168,7 +178,8 @@ export const ContractRequest: React.FC<RequestProps> = ({
         const current = await wallet.invoke.getRequestStatusForProfile(
             profileId,
             undefined,
-            contractUri
+            contractUri,
+            requestId
         );
         if (current?.requestId !== requestId || current.status !== expectedStatus) {
             await refresh();

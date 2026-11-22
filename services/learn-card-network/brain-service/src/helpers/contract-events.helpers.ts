@@ -90,19 +90,26 @@ export const appendConsentEvent = (
         MATCH (consenter:Profile {profileId: $eventConsenter})
         OPTIONAL MATCH (contract)-[request:REQUESTED_FOR]->(consenter)
         OPTIONAL MATCH (contract)-[previous:PREVIOUS_VISIBLE_REQUEST]->(consenter)
+        OPTIONAL MATCH (contract)-[reviewed:PENDING_EMAIL_REQUEST]->(consenter)
+            WHERE reviewed.requestId = $eventRequestId AND transaction.action IN ['consent', 'reconsent']
         WITH contract, terms, transaction, consenter, request, previous,
             coalesce(transaction.action IN ['consent', 'reconsent'] AND $eventRequestId IS NULL
-                AND request.addressedByEmail = true AND request.status <> 'accepted', false) AS restoreVisible
+                AND request.addressedByEmail = true AND request.status <> 'accepted', false) AS restoreVisible,
+            reviewed
         OPTIONAL MATCH (contract)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite)
             WHERE restoreVisible AND invite.id = request.requestId
         FOREACH (_ IN CASE WHEN invite IS NOT NULL THEN [1] ELSE [] END |
             SET invite += {status: request.status, attachedProfileId: null, attachedAt: null})
-        WITH contract, terms, transaction, consenter, request, previous, restoreVisible,
+        WITH contract, terms, transaction, consenter, request, previous, restoreVisible, reviewed,
             ${storedContractRequestTimes('profile', 'request')} AS profileTimes,
             ${storedContractRequestTimes('email', 'request')} AS emailTimes
         FOREACH (_ IN CASE WHEN restoreVisible THEN [1] ELSE [] END |
             SET request = coalesce(properties(previous), {requestHistoryOnly: true})
             SET request.profileRequestTimes = profileTimes, request.emailRequestTimes = emailTimes)
+        FOREACH (_ IN CASE WHEN reviewed IS NOT NULL THEN [1] ELSE [] END |
+            SET request = properties(reviewed)
+            SET request.profileRequestTimes = profileTimes, request.emailRequestTimes = emailTimes
+            DELETE reviewed)
         WITH contract, terms, transaction, consenter, request, previous, restoreVisible,
             request.status = 'pending' AND (request.expiresAt IS NULL OR request.expiresAt > transaction.date)
                 AND (NOT coalesce(request.addressedByEmail, false) OR request.requestId = $eventRequestId) AS requestOpen
@@ -127,6 +134,14 @@ export const appendConsentEvent = (
             SET request.status = 'accepted')
         FOREACH (_ IN CASE WHEN (requestAccepted OR restoreVisible) AND previous IS NOT NULL THEN [1] ELSE [] END |
             DELETE previous)
+        CALL {
+            WITH contract, transaction, consenter
+            WITH contract, transaction, consenter WHERE transaction.action IN ['consent', 'reconsent']
+            MATCH (contract)-[parked:PENDING_EMAIL_REQUEST]->(consenter)
+            MATCH (contract)-[:HAS_REQUEST_INVITE]->(remaining:ContractRequestInvite {id: parked.requestId})
+            SET remaining += {status: parked.status, attachedProfileId: null, attachedAt: null}
+            DELETE parked
+        }
         WITH contract, terms, transaction, requestAccepted
         MATCH (contract)-[:CREATED_BY]->(owner:Profile)
         OPTIONAL MATCH (contract)-[:SHARES_DATA_WITH]->(recipient:Profile)
@@ -225,7 +240,8 @@ export const authorizeContractNotification = async (
     if (metadata.event === 'request_sent') {
         const request = await getStoredContractRequest(
             getIdFromUri(metadata.contractUri),
-            notification.to.profileId ?? ''
+            notification.to.profileId ?? '',
+            { requestId: metadata.requestId }
         );
         return request?.requestId === metadata.requestId && request?.status === 'pending';
     }

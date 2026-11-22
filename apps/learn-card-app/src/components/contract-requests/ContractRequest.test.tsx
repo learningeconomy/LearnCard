@@ -409,7 +409,9 @@ describe('referral actions', () => {
             state.status.readStatus = 'seen';
         });
         show();
-        await waitFor(() => expect(state.seen).toHaveBeenCalledWith(state.contract.uri, 'learner'));
+        await waitFor(() =>
+            expect(state.seen).toHaveBeenCalledWith(state.contract.uri, 'learner', 'req-1')
+        );
     });
     it('suppresses expired and replaced invitations', async () => {
         state.contract.expiresAt = '2020-01-01T00:00:00Z';
