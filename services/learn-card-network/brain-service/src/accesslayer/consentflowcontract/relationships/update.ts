@@ -241,6 +241,7 @@ export const reconsentTerms = async (
                 transaction,
                 domain: domain,
                 messageKey: 'consentFlowTransactionReconsented',
+                expectedRequestId,
             }
         ).return('terms.id AS id')
     );
@@ -1023,7 +1024,7 @@ export const markLegacyContractRequestSeen = async (
         SET contract.audienceLock = coalesce(contract.audienceLock, 0) + 1
         WITH contract
         MATCH (contract)-[r:REQUESTED_FOR|PREVIOUS_VISIBLE_REQUEST]->(:Profile {profileId: $profileId})
-        WHERE r.requestId IS NULL
+        WHERE r.requestId IS NULL AND NOT coalesce(r.requestHistoryOnly, false)
         SET r.readStatus = 'seen'`,
         { id, profileId }
     );
@@ -1043,6 +1044,7 @@ export const upsertRequestedForRelationship = async (
         OPTIONAL MATCH (contract)-[existing:REQUESTED_FOR]->(profile)
         WITH contract, profile, existing WHERE existing.requestId IS NULL
         MERGE (contract)-[r:REQUESTED_FOR]->(profile)
+        SET r.requestHistoryOnly = null
         ${status !== undefined ? 'SET r.status = $status' : ''}
         ${readStatus !== undefined ? 'SET r.readStatus = $readStatus' : ''}
         RETURN r

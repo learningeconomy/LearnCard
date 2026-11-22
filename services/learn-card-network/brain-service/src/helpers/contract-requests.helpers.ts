@@ -190,7 +190,7 @@ export const createRequestForProfile = async (
                     externalReferenceId: $externalReferenceId, message: $message,
                     requestedAt: coalesce(invite.requestedAt, $now), status: 'pending', readStatus: 'unseen',
                     addressedByEmail: CASE WHEN $inviteId IS NULL THEN null ELSE true END,
-                    expiresAt: invite.expiresAt, expiredAt: null,
+                    expiresAt: invite.expiresAt, expiredAt: null, requestHistoryOnly: null,
                     profileRequestTimes: profileTimes + CASE WHEN invite IS NULL THEN [$now + '|' + $senderProfileId] ELSE [] END,
                     emailRequestTimes: emailTimes + CASE WHEN invite IS NOT NULL THEN [$now + '|' + $senderProfileId] ELSE [] END})
             FOREACH (_ IN CASE WHEN invite IS NULL THEN [] ELSE [1] END |
