@@ -204,60 +204,87 @@ describe('integration events for contract request invites', () => {
         ]);
     });
 
-    it('lets the learner accept a different sender’s email referral after a direct live update', async () => {
-        const manager = owner.clients.fullAuth.contracts;
-        const sender = recipient.clients.fullAuth.contracts;
-        const consents = learner.clients.fullAuth.contracts;
-        const consent = {
-            contractUri,
-            terms: normalFullTerms,
-            audienceVersion: (await manager.getConsentFlowContract({ uri: contractUri }))
-                .audienceVersion,
-        };
-        const { termsUri } = await consents.consentToContract(consent);
-        const email = randomEmail();
-        await addEmail(learner.profileId, email);
-        const invite = await send(email, 'emailed-referral');
-        const profileInput = { contractUri, targetProfileId: learner.profileId };
-        const directInput = { ...profileInput, externalReferenceId: 'direct-referral' };
-        const direct = await manager.sendContractRequest(directInput);
-        expect(direct.status).toBe('accepted');
-        await expect(manager.sendContractRequest(directInput)).resolves.toEqual(direct);
-        await expect(
-            manager.getRequestStatusForProfile({ ...profileInput, requestId: invite.requestId })
-        ).resolves.toBeNull();
-        const inviteInput = { contractUri, requestId: invite.requestId };
-        await expect(sender.getContractRequest(inviteInput)).resolves.toMatchObject({
-            ...invite,
-            target: { email },
-        });
-        expect(await feed(recipientIntegration, invite.requestId)).toEqual([
-            expect.objectContaining({ type: 'request_sent', subjectProfileId: undefined }),
-        ]);
-        await expect(
-            consents.getRequestStatusForProfile({ ...profileInput, requestId: invite.requestId })
-        ).resolves.toMatchObject({ ...invite, referralOnly: true });
-        await expect(
-            consents.consentToContract({ ...consent, expectedRequestId: invite.requestId })
-        ).resolves.toEqual({ termsUri });
-        await expect(
-            consents.consentToContract({ ...consent, expectedRequestId: invite.requestId })
-        ).resolves.toEqual({ termsUri });
-        expect(await feed(recipientIntegration, invite.requestId)).toEqual([
-            expect.objectContaining({ type: 'request_sent', subjectProfileId: undefined }),
-            expect.objectContaining({
-                type: 'referral_attached',
-                subjectProfileId: learner.profileId,
-                externalReferenceId: 'emailed-referral',
-            }),
-        ]);
-        const history = await consents.getTermsTransactionHistory({ uri: termsUri });
-        expect(history.records.map(record => record.action).sort()).toEqual([
-            'consent',
-            'referral',
-            'referral',
-        ]);
-    });
+    it.each([
+        { directReference: 'direct-referral', removeSender: false },
+        { directReference: 'emailed-referral', removeSender: false },
+        { directReference: 'direct-referral', removeSender: true },
+    ])(
+        'checks the preserved email referral after live update $directReference and sender removal $removeSender',
+        async ({ directReference, removeSender }) => {
+            const manager = owner.clients.fullAuth.contracts;
+            const sender = recipient.clients.fullAuth.contracts;
+            const consents = learner.clients.fullAuth.contracts;
+            const consent = {
+                contractUri,
+                terms: normalFullTerms,
+                audienceVersion: (await manager.getConsentFlowContract({ uri: contractUri }))
+                    .audienceVersion,
+            };
+            const { termsUri } = await consents.consentToContract(consent);
+            const email = randomEmail();
+            await addEmail(learner.profileId, email);
+            const invite = await send(email, 'emailed-referral');
+            const profileInput = { contractUri, targetProfileId: learner.profileId };
+            const directInput = { ...profileInput, externalReferenceId: directReference };
+            const direct = await manager.sendContractRequest(directInput);
+            expect(direct.status).toBe('accepted');
+            await expect(manager.sendContractRequest(directInput)).resolves.toEqual(direct);
+            await expect(
+                manager.getRequestStatusForProfile({ ...profileInput, requestId: invite.requestId })
+            ).resolves.toBeNull();
+            const inviteInput = { contractUri, requestId: invite.requestId };
+            await expect(sender.getContractRequest(inviteInput)).resolves.toMatchObject({
+                ...invite,
+                target: { email },
+            });
+            expect(await feed(recipientIntegration, invite.requestId)).toEqual([
+                expect.objectContaining({ type: 'request_sent', subjectProfileId: undefined }),
+            ]);
+            await expect(
+                consents.getRequestStatusForProfile({
+                    ...profileInput,
+                    requestId: invite.requestId,
+                })
+            ).resolves.toMatchObject({ ...invite, referralOnly: true });
+            if (removeSender) {
+                await manager.removeContractRecipient({
+                    contractUri,
+                    recipient: recipient.profileId,
+                });
+                const { audienceVersion } = await manager.getConsentFlowContract({
+                    uri: contractUri,
+                });
+                await expect(
+                    consents.consentToContract({
+                        ...consent,
+                        audienceVersion,
+                        expectedRequestId: invite.requestId,
+                    })
+                ).rejects.toMatchObject({ code: 'CONFLICT' });
+                return;
+            }
+            await expect(
+                consents.consentToContract({ ...consent, expectedRequestId: invite.requestId })
+            ).resolves.toEqual({ termsUri });
+            await expect(
+                consents.consentToContract({ ...consent, expectedRequestId: invite.requestId })
+            ).resolves.toEqual({ termsUri });
+            expect(await feed(recipientIntegration, invite.requestId)).toEqual([
+                expect.objectContaining({ type: 'request_sent', subjectProfileId: undefined }),
+                expect.objectContaining({
+                    type: 'referral_attached',
+                    subjectProfileId: learner.profileId,
+                    externalReferenceId: 'emailed-referral',
+                }),
+            ]);
+            const history = await consents.getTermsTransactionHistory({ uri: termsUri });
+            expect(history.records.map(record => record.action).sort()).toEqual([
+                'consent',
+                'referral',
+                'referral',
+            ]);
+        }
+    );
 
     it('returns the same live referral on a direct retry while another email invite is pending', async () => {
         vi.spyOn(requestCap, 'getContractRequestCap').mockReturnValue(1);

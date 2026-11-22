@@ -98,7 +98,8 @@ const applyLiveReferral = async (
                     ELSE retryRequest.addressedByEmail = true AND retryRequest.requestId = $requestId END, false) AS retry,
             ${recentContractRequestTimes('profile')} AS profileTimes,
             ${recentContractRequestTimes('email')} AS emailTimes
-        WHERE retry OR (${newLiveReferralReferenceWhere('reference')} AND
+        WHERE retry OR ((${newLiveReferralReferenceWhere('reference')} OR
+            (parked IS NOT NULL AND reference IS NOT NULL AND terms.\`referral.requestedBy\` <> sender)) AND
             CASE WHEN $direct THEN existing IS NULL OR ${contractRequestReplacementWhere('sender', 'false', 'referralConsentId')}
                 ELSE candidate.liveReferral = true AND candidate.addressedByEmail = true
                     AND candidate.requestId = $requestId AND candidate.status = 'pending'
