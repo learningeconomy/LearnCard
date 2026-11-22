@@ -11,10 +11,22 @@ import { pathToFileURL } from 'node:url';
 const requireFromApp = createRequire(new URL('./package.json', import.meta.url));
 const REACT = /^react(-dom)?(\/.*)?$/;
 
+const resolved = new Map();
+// Newer Node versions run require.resolve() through these hooks too; don't redirect our own call.
+let redirecting = false;
+
 registerHooks({
     resolve(specifier, context, nextResolve) {
-        if (!REACT.test(specifier)) return nextResolve(specifier, context);
-        // Both packages ship CommonJS only, so the require() resolution is the right file.
-        return { url: pathToFileURL(requireFromApp.resolve(specifier)).href, shortCircuit: true };
+        if (redirecting || !REACT.test(specifier)) return nextResolve(specifier, context);
+        if (!resolved.has(specifier)) {
+            redirecting = true;
+            try {
+                // Both packages ship CommonJS only, so the require() resolution is the right file.
+                resolved.set(specifier, pathToFileURL(requireFromApp.resolve(specifier)).href);
+            } finally {
+                redirecting = false;
+            }
+        }
+        return { url: resolved.get(specifier), shortCircuit: true };
     },
 });
