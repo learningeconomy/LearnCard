@@ -424,10 +424,10 @@ describe('View Previous Versions menu action', () => {
         );
     };
 
-    const presentedMenuElement = (): React.ReactElement => {
+    const presentedMenuElement = (): React.ReactElement<Record<string, unknown>> => {
         expect(modalHost.newModal).toHaveBeenCalled();
 
-        return modalHost.newModal.mock.calls[0][0] as React.ReactElement;
+        return modalHost.newModal.mock.calls[0][0] as React.ReactElement<Record<string, unknown>>;
     };
 
     it('passes a history handler when the earned record has encrypted local history', () => {
@@ -475,7 +475,9 @@ describe('View Previous Versions menu action', () => {
 
         expect(modalHost.newModal).toHaveBeenCalledTimes(2);
 
-        const historyModal = modalHost.newModal.mock.calls[1][0] as React.ReactElement;
+        const historyModal = modalHost.newModal.mock.calls[1][0] as React.ReactElement<
+            Record<string, unknown>
+        >;
 
         expect(historyModal.type).toBe(CredentialHistoryModal);
         expect(historyModal.props.record).toEqual(record);
@@ -577,7 +579,9 @@ describe('CredentialHistoryModal', () => {
 
         expect(walletHost.readGet).toHaveBeenCalledWith('lc:cloud:v2');
 
-        const detail = modalHost.newModal.mock.calls[0][0] as React.ReactElement;
+        const detail = modalHost.newModal.mock.calls[0][0] as React.ReactElement<
+            Record<string, unknown>
+        >;
 
         expect(detail.props.credential).toEqual(historicalVc);
         expect(detail.props.credentialUri).toBe('lc:cloud:v2');

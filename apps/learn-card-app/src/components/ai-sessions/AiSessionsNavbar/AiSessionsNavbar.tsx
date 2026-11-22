@@ -32,7 +32,7 @@ const AiSessionsNavbar: React.FC = () => {
     const { newModal } = useModal();
     const { isMobile } = useDeviceTypeByWidth();
     const { data } = useGetUnreadUserNotifications();
-    const bottomBarRef = useRef<HTMLDivElement>();
+    const bottomBarRef = useRef<HTMLIonFooterElement>(null);
 
     keyboardStore.store.subscribe(({ isOpen }) => {
         if (isOpen && Capacitor.isNativePlatform() && bottomBarRef.current) {

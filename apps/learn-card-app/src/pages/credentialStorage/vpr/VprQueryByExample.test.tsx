@@ -112,7 +112,7 @@ describe('shared verifier credential picker', () => {
         fireEvent.click(screen.getByRole('button', { name: 'View selected' }));
         expect(screen.getAllByRole('checkbox')).toHaveLength(2);
         fireEvent.click(screen.getByRole('button', { name: 'Review' }));
-        const review = mocks.modal.mock.calls[0][0] as React.ReactElement;
+        const review = mocks.modal.mock.calls[0][0] as React.ReactElement<Record<string, unknown>>;
         expect(review.props.vcsToShare).toEqual(mocks.credentials.map(result => result.data));
         expect(review.props.onSubmit).toBe(onSubmit);
         expect(review.props.categoriesById).toEqual({

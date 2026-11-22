@@ -44,7 +44,7 @@ export const BoostLinkedCredentialsModal: React.FC<{
     defaultImg,
     displayType,
 }) => {
-    const bottomBarRef = useRef<HTMLDivElement>();
+    const bottomBarRef = useRef<HTMLIonFooterElement>(null);
     const { closeModal } = useModal();
     const { initWallet } = useWallet();
 

@@ -31,7 +31,7 @@ const BoostCMSFooter: React.FC<{
     isSaveLoading,
     handleSubmit,
 }) => {
-    const bottomBarRef = useRef<HTMLDivElement>();
+    const bottomBarRef = useRef<HTMLIonFooterElement>(null);
     const { color, IconComponent } = boostCategoryMetadata[selectedVCType];
 
     keyboardStore.store.subscribe(({ isOpen }) => {

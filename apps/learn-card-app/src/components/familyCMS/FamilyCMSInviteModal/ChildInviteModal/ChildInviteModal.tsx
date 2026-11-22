@@ -77,7 +77,7 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
 }) => {
     const { newModal, closeModal } = useModal();
     const { isMobile } = useDeviceTypeByWidth();
-    const bottomBarRef = useRef<HTMLDivElement>();
+    const bottomBarRef = useRef<HTMLIonFooterElement>(null);
     const brandingConfig = useBrandingConfig();
     const isInEditMode = ChildInviteModalViewModeEnum.edit === viewMode;
 
