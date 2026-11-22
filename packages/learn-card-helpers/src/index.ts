@@ -153,3 +153,4 @@ export * from './consent-flow-contract-updates';
 
 export * from './credential-materialization';
 export * from './age-policy';
+export { calculateLocalAge, isFutureDate, isValidISOString } from './date-time';

@@ -15,8 +15,13 @@ describe('calculateAge', () => {
 
     it('uses the instant for an offset-bearing date of birth', () => {
         const dob = '2008-10-29T23:30:00-12:00';
-        expect(calculateAge(dob, new Date('2026-10-30T00:15:00Z'))).toBe(17);
-        expect(calculateAge(new Date(dob), new Date('2026-10-30T17:00:00Z'))).toBe(18);
+        const birthInstant = new Date(dob);
+        const anniversary = new Date(birthInstant);
+        anniversary.setFullYear(anniversary.getFullYear() + 18);
+
+        expect(calculateAge(dob, new Date(anniversary.getTime() - 1))).toBe(17);
+        expect(calculateAge(dob, anniversary)).toBe(18);
+        expect(calculateAge(birthInstant, anniversary)).toBe(18);
     });
 
     it('counts a leap-day birthday on February 28 in a non-leap year', () => {

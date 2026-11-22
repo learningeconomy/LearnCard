@@ -1,4 +1,4 @@
-import moment from 'moment';
+export { calculateAgeFromISODate } from './date-time';
 
 // Canonical GDPR age-of-consent thresholds for EU countries.
 export const GDPR_AGE_LIMIT: Record<string, number> = {
@@ -60,29 +60,4 @@ export const getMinorAgeThreshold = (countryCode?: string): number => {
         return GDPR_AGE_LIMIT_BY_CODE[countryCode] ?? DEFAULT_EU_AGE_LIMIT;
     }
     return 18;
-};
-
-/** Returns completed years for a valid ISO date/timestamp, or NaN if invalid/future. */
-export const calculateAgeFromISODate = (dob: string, now: Date = new Date()): number => {
-    // Keep the ISO forms accepted by the existing profile/forms parser, including
-    // compact, week and ordinal dates. parseZone preserves the DOB's calendar day
-    // instead of shifting it with the browser/server timezone.
-    const parsed = moment.parseZone(dob, moment.ISO_8601, true);
-    if (!parsed.isValid()) return Number.NaN;
-    const year = parsed.year();
-    const month = parsed.month() + 1;
-    const day = parsed.date();
-    const birth = new Date(0);
-    birth.setUTCFullYear(year, month - 1, day);
-    birth.setUTCHours(0, 0, 0, 0);
-    const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-    if (birth > today) return Number.NaN;
-    let age = today.getUTCFullYear() - year;
-    if (
-        today.getUTCMonth() < month - 1 ||
-        (today.getUTCMonth() === month - 1 && today.getUTCDate() < day)
-    ) {
-        age--;
-    }
-    return age;
 };

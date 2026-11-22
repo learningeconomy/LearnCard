@@ -31,6 +31,12 @@ describe('shared age policy', () => {
         );
     });
 
+    it('preserves a calendar date skipped by the host time zone', () => {
+        // Pacific/Apia skipped this day. The DOB still means December 30.
+        const now = new Date('2029-12-30T00:00:00Z');
+        expect(calculateAgeFromISODate('2011-12-30', now)).toBe(18);
+    });
+
     it('counts a leap-day birthday on March 1 in a non-leap year', () => {
         expect(calculateAgeFromISODate('2000-02-29', new Date('2018-02-28T23:59:59Z'))).toBe(17);
         expect(calculateAgeFromISODate('2000-02-29', new Date('2018-03-01T00:00:00Z'))).toBe(18);
