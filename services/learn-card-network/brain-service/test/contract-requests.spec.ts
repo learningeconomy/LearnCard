@@ -1081,7 +1081,7 @@ describe('generic contract requests and correlated events', () => {
         const original = await send(uri);
         await expect(send(uri)).resolves.toEqual(original);
         await learner.clients.fullAuth.contracts.denyContractRequest({ contractUri: uri });
-        const attempts = [send(uri, recipient), send(uri, owner)];
+        const attempts = [send(uri, writer), send(uri, writer, 'another-referral')];
         for (const result of await Promise.allSettled(attempts))
             expect(result).toMatchObject({
                 status: 'rejected',
