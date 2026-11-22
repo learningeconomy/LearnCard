@@ -20,7 +20,11 @@ import {
 import { getProfileIdFromString } from './did.helpers';
 import { userHasRequiredScopes } from './auth-grant.helpers';
 import { enforceRateLimits } from './rateLimit.helpers';
-import { preservePreviousRequestCypher } from './contract-request-visibility.helpers';
+import {
+    noParkedEmailRequest,
+    parkEmailRequestCypher,
+    preservePreviousRequestCypher,
+} from './contract-request-visibility.helpers';
 import {
     contractRequestCountForSender,
     getContractRequestCap,
@@ -182,21 +186,24 @@ export const createRequestForProfile = async (
             WHERE invite.id = $inviteId
         WITH contract, target, existing, invite, retry, profileTimes, emailTimes, referralOnly, referralConsentId
         WHERE $inviteId IS NULL OR (invite IS NOT NULL AND invite.status = 'pending' AND
-            datetime(invite.expiresAt) > datetime.realtime() AND ${inviteHasNeverAttached} AND EXISTS {
+            datetime(invite.expiresAt) > datetime.realtime() AND ${inviteHasNeverAttached} AND ${noParkedEmailRequest} AND EXISTS {
                 MATCH (target)-[:HAS_CONTACT_METHOD]->(email:ContactMethod)
                 WHERE email.type = 'email' AND email.isVerified = true
                     AND toLower(trim(email.value)) = invite.email
             })
         WITH contract, target, invite, retry, profileTimes, emailTimes, referralOnly, referralConsentId,
             existing.requestId AS replacedId, existing.status AS replacedStatus,
+            coalesce(invite IS NULL AND existing.addressedByEmail = true AND existing.status = 'pending'
+                AND existing.requestedBy <> $senderProfileId, false) AS park,
             NOT retry AND ${contractRequestCountForSender(
                 'CASE WHEN invite IS NULL THEN profileTimes ELSE emailTimes END',
                 '$senderProfileId'
             )} >= $requestCap AS capped
         CALL {
-            WITH contract, target, invite, retry, profileTimes, emailTimes, referralOnly, referralConsentId, replacedId, replacedStatus, capped
-            WITH contract, target, invite, retry, profileTimes, emailTimes, referralOnly, referralConsentId, replacedId, replacedStatus WHERE NOT capped
+            WITH contract, target, invite, retry, profileTimes, emailTimes, referralOnly, referralConsentId, replacedId, replacedStatus, park, capped
+            WITH contract, target, invite, retry, profileTimes, emailTimes, referralOnly, referralConsentId, replacedId, replacedStatus, park WHERE NOT capped
             ${preservePreviousRequestCypher}
+            ${parkEmailRequestCypher('request', 'target', 'park')}
             FOREACH (_ IN CASE WHEN retry THEN [] ELSE [1] END |
                 SET request += {requestId: $requestId, requestedBy: $senderProfileId,
                     externalReferenceId: $externalReferenceId, message: $message,
@@ -210,7 +217,8 @@ export const createRequestForProfile = async (
             FOREACH (_ IN CASE WHEN invite IS NULL THEN [] ELSE [1] END |
                 SET invite.status = 'attached', invite.attachedProfileId = target.profileId,
                     invite.attachedAt = $now)
-            WITH contract, request, target, retry, replacedId, replacedStatus
+            WITH contract, request, target, retry, replacedStatus,
+                CASE WHEN NOT park THEN replacedId END AS replacedId
             ${detachReplacedRequestInviteCypher}
             ${requestEventCypher}
             UNION
@@ -323,9 +331,9 @@ export const decideGenericContractRequest = async ({
             ),
             contract.id
         ).raw(`
-        MATCH (contract)-[request:REQUESTED_FOR|PREVIOUS_VISIBLE_REQUEST]->(target:Profile {profileId: $targetProfileId})
+        MATCH (contract)-[request:REQUESTED_FOR|PREVIOUS_VISIBLE_REQUEST|PENDING_EMAIL_REQUEST]->(target:Profile {profileId: $targetProfileId})
         WHERE request.requestId = $requestId AND request.status IN ['pending', $status]
-            AND (type(request) = 'REQUESTED_FOR' OR (request.status = 'cancelled' AND $status = 'cancelled'))
+            AND (type(request) <> 'PREVIOUS_VISIBLE_REQUEST' OR (request.status = 'cancelled' AND $status = 'cancelled'))
             AND (request.status = $status OR request.expiresAt IS NULL OR request.expiresAt > $now)
             AND ($actorProfileId = $targetProfileId OR ($status = 'cancelled' AND
                 (EXISTS { MATCH (contract)-[:CREATED_BY|CAN_WRITE]->(:Profile {profileId: $actorProfileId}) } OR
@@ -360,7 +368,7 @@ export const cancelContractRequestById = async ({
     const findTarget = async (): Promise<string | undefined> =>
         (
             await neogma.queryRunner.run(
-                `MATCH (:ConsentFlowContract {id: $contractId})-[request:REQUESTED_FOR|PREVIOUS_VISIBLE_REQUEST]->(target:Profile)
+                `MATCH (:ConsentFlowContract {id: $contractId})-[request:REQUESTED_FOR|PREVIOUS_VISIBLE_REQUEST|PENDING_EMAIL_REQUEST]->(target:Profile)
                  WHERE request.requestId = $requestId
                  RETURN target.profileId AS targetProfileId`,
                 { contractId: contract.id, requestId }
@@ -415,12 +423,16 @@ export const cancelContractRequestById = async ({
 
 export const markGenericContractRequestSeen = async (
     contractId: string,
-    targetProfileId: string
+    targetProfileId: string,
+    requestId: string
 ): Promise<boolean> => {
     const result = await runAudienceMutation(
-        lockContractAudience(new QueryBuilder(new BindParam({ targetProfileId })), contractId)
-            .raw(`MATCH (contract)-[request:REQUESTED_FOR]->(:Profile {profileId: $targetProfileId})
-            WHERE request.requestId IS NOT NULL
+        lockContractAudience(
+            new QueryBuilder(new BindParam({ targetProfileId, requestId })),
+            contractId
+        )
+            .raw(`MATCH (contract)-[request:REQUESTED_FOR|PENDING_EMAIL_REQUEST]->(:Profile {profileId: $targetProfileId})
+            WHERE request.requestId = $requestId
             SET request.readStatus = 'seen' RETURN request`)
     );
     if (!result.records.length)

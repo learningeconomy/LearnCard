@@ -9,6 +9,7 @@ import {
 import { termsReferralSnapshotCypher } from './consent-referral.helpers';
 import { tryDispatchContractEvent } from './contract-events.helpers';
 import type { CreateRequestForProfileInput } from './contract-requests.helpers';
+import { parkEmailRequestCypher } from './contract-request-visibility.helpers';
 import {
     contractRequestCountForSender,
     getContractRequestCap,
@@ -74,16 +75,20 @@ const applyLiveReferral = async (
             AND ($direct OR ${audienceVersionWhere})
         OPTIONAL MATCH (contract)-[existing:REQUESTED_FOR]->(target)
         OPTIONAL MATCH (contract)-[previous:PREVIOUS_VISIBLE_REQUEST]->(target)
-        WITH contract, target, terms, existing, lockedAt,
+        OPTIONAL MATCH (contract)-[parked:PENDING_EMAIL_REQUEST]->(target)
+            WHERE NOT $direct AND parked.requestId = $requestId
+        WITH contract, target, terms, existing, lockedAt, parked,
+            coalesce(parked, existing) AS candidate,
             CASE WHEN $direct AND existing.addressedByEmail = true AND existing.status <> 'accepted'
-                THEN previous ELSE existing END AS retryRequest,
-            CASE WHEN $direct THEN $senderProfileId ELSE existing.requestedBy END AS sender,
-            CASE WHEN $direct THEN $externalReferenceId ELSE existing.externalReferenceId END AS reference
-        WHERE sender <> $targetProfileId AND ${liveReferralSenderWhere('sender')}
+                THEN previous ELSE coalesce(parked, existing) END AS retryRequest
+        WITH contract, target, terms, existing, lockedAt, parked, candidate, retryRequest,
+            CASE WHEN $direct THEN $senderProfileId ELSE candidate.requestedBy END AS sender,
+            CASE WHEN $direct THEN $externalReferenceId ELSE candidate.externalReferenceId END AS reference
+        WHERE sender <> $targetProfileId AND ${liveReferralSenderWhere('sender', 'parked IS NOT NULL')}
             AND EXISTS {
                 MATCH (contract)-[:CREATED_BY|CAN_WRITE|SHARES_DATA_WITH]->(:Profile {profileId: sender})
             }
-        WITH contract, target, terms, existing, sender, reference, lockedAt, retryRequest,
+        WITH contract, target, terms, existing, sender, reference, lockedAt, retryRequest, parked, candidate,
             coalesce(terms.lastConsentTransactionId, terms.id) AS referralConsentId,
             coalesce(retryRequest.liveReferral = true AND retryRequest.status = 'accepted'
                 AND retryRequest.requestId = terms.\`referral.requestId\`
@@ -95,20 +100,28 @@ const applyLiveReferral = async (
             ${recentContractRequestTimes('email')} AS emailTimes
         WHERE retry OR (${newLiveReferralReferenceWhere('reference')} AND
             CASE WHEN $direct THEN existing IS NULL OR ${contractRequestReplacementWhere('sender', 'false', 'referralConsentId')}
-                ELSE existing.liveReferral = true AND existing.addressedByEmail = true
-                    AND existing.requestId = $requestId AND existing.status = 'pending'
-                    AND existing.referralConsentId = referralConsentId
-                    AND datetime(existing.expiresAt) > lockedAt END)
-        WITH contract, target, terms, sender, reference, retry, profileTimes, emailTimes,
+                ELSE candidate.liveReferral = true AND candidate.addressedByEmail = true
+                    AND candidate.requestId = $requestId AND candidate.status = 'pending'
+                    AND candidate.referralConsentId = referralConsentId
+                    AND datetime(candidate.expiresAt) > lockedAt END)
+        WITH contract, target, terms, sender, reference, retry, profileTimes, emailTimes, parked,
             retryRequest.requestId AS retryId,
             existing.requestId AS replacedId, existing.status AS replacedStatus,
+            coalesce($direct AND existing.addressedByEmail = true AND existing.status = 'pending'
+                AND existing.requestedBy <> sender, false) AS park,
             $direct AND NOT retry AND ${contractRequestCountForSender('profileTimes', 'sender')} >= $requestCap AS capped
         CALL {
-            WITH contract, target, terms, sender, reference, retry, retryId, profileTimes, emailTimes, replacedId, replacedStatus, capped
-            WITH contract, target, terms, sender, reference, retry, retryId, profileTimes, emailTimes, replacedId, replacedStatus
+            WITH contract, target, terms, sender, reference, retry, retryId, profileTimes, emailTimes, replacedId, replacedStatus, park, parked, capped
+            WITH contract, target, terms, sender, reference, retry, retryId, profileTimes, emailTimes, replacedId, replacedStatus, park, parked,
+                parked IS NOT NULL AND NOT retry AS promote
             WHERE NOT capped
             OPTIONAL MATCH (contract)-[previous:PREVIOUS_VISIBLE_REQUEST]->(target)
             MERGE (contract)-[request:REQUESTED_FOR]->(target)
+            ${parkEmailRequestCypher('request', 'target', 'park AND NOT retry')}
+            FOREACH (_ IN CASE WHEN promote THEN [1] ELSE [] END |
+                SET request = properties(parked)
+                SET request.profileRequestTimes = profileTimes, request.emailRequestTimes = emailTimes
+                DELETE parked)
             FOREACH (_ IN CASE WHEN NOT retry AND previous IS NOT NULL THEN [1] ELSE [] END |
                 DELETE previous)
             FOREACH (_ IN CASE WHEN $direct AND NOT retry THEN [1] ELSE [] END |
@@ -120,7 +133,7 @@ const applyLiveReferral = async (
                 SET request.status = 'accepted', request.liveReferral = true, request.readStatus = 'seen',
                     request.referralConsentId = null)
             WITH contract, target, terms, request, retry, retryId,
-                CASE WHEN $direct THEN replacedId END AS replacedId, replacedStatus
+                CASE WHEN ($direct AND NOT park) OR promote THEN replacedId END AS replacedId, replacedStatus
             ${detachReplacedRequestInviteCypher}
             WITH contract, target, terms, request, retry,
                 CASE WHEN retry THEN retryId ELSE request.requestId END AS requestId

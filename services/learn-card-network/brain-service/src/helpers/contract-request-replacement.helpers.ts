@@ -12,6 +12,7 @@ export const contractRequestReplacementWhere = (
     coalesce(existing.requestHistoryOnly = true OR existing.status IN ['denied', 'cancelled', 'accepted'] OR
         (existing.status = 'pending' AND existing.liveReferral = true AND
             (${consentId} IS NULL OR existing.referralConsentId IS NULL OR existing.referralConsentId <> ${consentId})) OR
+        (NOT (${isEmailSend}) AND existing.addressedByEmail = true AND existing.status IN ['pending', 'expired']) OR
         (existing.addressedByEmail = true AND existing.requestedBy = ${sender} AND
             (existing.status = 'expired' OR
              (existing.status = 'pending' AND (NOT (${isEmailSend}) OR existing.expiresAt <= $now)))), false)
@@ -38,11 +39,11 @@ export const activeRequestTermsWhere = (now: string): string => `
 `;
 
 /** Call after checking active consent and the sender's current contract role. */
-export const liveReferralSenderWhere = (sender: string): string => `
+export const liveReferralSenderWhere = (sender: string, alreadyDelivered = 'false'): string => `
     terms.status = 'live' AND coalesce(terms.oneTime, false) = false
     AND terms.smartResumeFingerprint IS NULL
     AND coalesce(terms.consentedVersion, 1) = coalesce(contract.currentVersion, 1)
-    AND (terms.\`referral.requestId\` IS NULL OR terms.\`referral.requestedBy\` = ${sender}
+    AND (${alreadyDelivered} OR terms.\`referral.requestId\` IS NULL OR terms.\`referral.requestedBy\` = ${sender}
         OR EXISTS { MATCH (contract)-[:CREATED_BY]->(:Profile {profileId: ${sender}}) })
 `;
 

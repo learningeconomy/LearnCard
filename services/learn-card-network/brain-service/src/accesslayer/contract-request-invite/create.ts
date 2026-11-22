@@ -67,7 +67,7 @@ export const createContractRequestInvite = async (
                 existing.expiresAt > $now AND
                 (existing.status = 'pending' OR
                  (existing.status = 'attached' AND EXISTS {
-                    MATCH (contract)-[request:REQUESTED_FOR]->(:Profile)
+                    MATCH (contract)-[request:REQUESTED_FOR|PENDING_EMAIL_REQUEST]->(:Profile)
                     WHERE request.requestId = existing.id AND request.status = 'pending'
                  }))
         WITH contract, existing ORDER BY existing.requestedAt DESC

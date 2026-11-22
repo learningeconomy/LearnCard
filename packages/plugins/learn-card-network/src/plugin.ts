@@ -3150,7 +3150,8 @@ export async function getLearnCardNetworkPlugin(
                 _learnCard,
                 targetProfileId,
                 contractId,
-                contractUri
+                contractUri,
+                requestId
             ) => {
                 await ensureUser();
 
@@ -3158,6 +3159,7 @@ export async function getLearnCardNetworkPlugin(
                     targetProfileId,
                     contractId: contractId ?? null,
                     contractUri: contractUri ?? null,
+                    requestId,
                 });
             },
 
@@ -3192,12 +3194,18 @@ export async function getLearnCardNetworkPlugin(
                 });
             },
 
-            markContractRequestAsSeen: async (_learnCard, contractUri, targetProfileId) => {
+            markContractRequestAsSeen: async (
+                _learnCard,
+                contractUri,
+                targetProfileId,
+                requestId
+            ) => {
                 await ensureUser();
 
                 return client.contracts.markContractRequestAsSeen.mutate({
                     contractUri,
                     targetProfileId,
+                    requestId,
                 });
             },
 

@@ -44,7 +44,7 @@ export const consentMutationWhere = `
 (CASE WHEN contract.expiresAt IS NULL OR trim(contract.expiresAt) = '' THEN true
  ELSE datetime(contract.expiresAt) > datetime.realtime() END)
 AND ($expectedRequestId IS NULL OR EXISTS {
-    MATCH (contract)-[request:REQUESTED_FOR]->(:Profile {profileId: $consenterProfileId})
+    MATCH (contract)-[request:REQUESTED_FOR|PENDING_EMAIL_REQUEST]->(:Profile {profileId: $consenterProfileId})
     WHERE request.requestId = $expectedRequestId AND request.status = 'pending'
         AND (request.expiresAt IS NULL OR datetime(request.expiresAt) > datetime.realtime())
         AND coalesce(request.liveReferral, false) = false

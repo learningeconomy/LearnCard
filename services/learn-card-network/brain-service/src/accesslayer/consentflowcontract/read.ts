@@ -109,7 +109,7 @@ export const getRequestedForList = async (id: string, viewerProfileId: string) =
         `MATCH (c:ConsentFlowContract {id: $id})
          CALL {
              WITH c
-             MATCH (c)-[r:REQUESTED_FOR|PREVIOUS_VISIBLE_REQUEST]->(p:Profile)
+             MATCH (c)-[r:REQUESTED_FOR|PREVIOUS_VISIBLE_REQUEST|PENDING_EMAIL_REQUEST]->(p:Profile)
              WHERE NOT coalesce(r.requestHistoryOnly, false)
                  AND (${requestManagerWhere} OR (${requestingRecipientWhere}))
              OPTIONAL MATCH (c)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite)
@@ -235,9 +235,12 @@ export const getRequestedForByStatus = async (
 export const getRequestedForForUser = async (
     contractId: string,
     requesterProfileId: string,
-    viewerProfileId: string
+    viewerProfileId: string,
+    requestId?: string
 ) => {
-    const query = new QueryBuilder(new BindParam({ requesterProfileId, viewerProfileId }))
+    const query = new QueryBuilder(
+        new BindParam({ requesterProfileId, viewerProfileId, requestId: requestId ?? null })
+    )
         .match({
             model: ConsentFlowContract,
             identifier: 'c',
@@ -246,11 +249,17 @@ export const getRequestedForForUser = async (
         .match('(c)-[current:REQUESTED_FOR]->(p:Profile {profileId: $requesterProfileId})')
         .raw(
             `OPTIONAL MATCH (c)-[previous:PREVIOUS_VISIBLE_REQUEST]->(p)
-              WITH c, p, CASE WHEN p.profileId <> $viewerProfileId AND current.addressedByEmail = true
-                  AND current.status <> 'accepted' THEN previous ELSE current END AS r`
+              OPTIONAL MATCH (c)-[parked:PENDING_EMAIL_REQUEST]->(p)
+                  WHERE p.profileId = $viewerProfileId AND parked.requestId = $requestId
+              WITH c, p, CASE
+                  WHEN p.profileId <> $viewerProfileId AND current.addressedByEmail = true
+                      AND current.status <> 'accepted' THEN previous
+                  WHEN p.profileId = $viewerProfileId AND previous.requestId = $requestId THEN previous
+                  ELSE coalesce(parked, current) END AS r`
         )
         .where(
             `r IS NOT NULL AND NOT coalesce(r.requestHistoryOnly, false) AND
+             ($requestId IS NULL OR r.requestId = $requestId) AND
              (p.profileId = $viewerProfileId OR ${requestManagerWhere} OR (${requestingRecipientWhere}))`
         );
     const result = await query.return(['p', 'r']).run();
@@ -277,7 +286,7 @@ export const getAllRequestsForTargetProfile = async (targetProfileId: string) =>
             model: ConsentFlowContract,
             identifier: 'c',
         })
-        .match('(c)-[r:REQUESTED_FOR]->(p:Profile)')
+        .match('(c)-[r:REQUESTED_FOR|PENDING_EMAIL_REQUEST]->(p:Profile)')
         .where(
             `p.profileId = $targetProfileId AND NOT coalesce(r.requestHistoryOnly, false)
              AND coalesce(r.status, '') <> 'expired' AND
@@ -317,7 +326,7 @@ export const getContractRequestById = async (
     viewerProfileId: string
 ): Promise<StoredContractRequestById | null> => {
     const result = await neogma.queryRunner.run(
-        `MATCH (c:ConsentFlowContract {id: $contractId})-[r:REQUESTED_FOR|PREVIOUS_VISIBLE_REQUEST]->(p:Profile)
+        `MATCH (c:ConsentFlowContract {id: $contractId})-[r:REQUESTED_FOR|PREVIOUS_VISIBLE_REQUEST|PENDING_EMAIL_REQUEST]->(p:Profile)
          WHERE r.requestId = $requestId AND (${requestManagerWhere} OR (${requestingRecipientWhere}))
          OPTIONAL MATCH (c)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite)
              WHERE invite.id = r.requestId
@@ -363,7 +372,10 @@ export const getStoredContractRequest = async (
     const result = await neogma.queryRunner.run(
         `MATCH (contract:ConsentFlowContract {id: $contractId})-[current:REQUESTED_FOR]->(target:Profile {profileId: $targetProfileId})
          OPTIONAL MATCH (contract)-[previous:PREVIOUS_VISIBLE_REQUEST]->(target)
+         OPTIONAL MATCH (contract)-[parked:PENDING_EMAIL_REQUEST]->(target)
+             WHERE parked.requestId = $requestId
          WITH CASE
+             WHEN parked IS NOT NULL AND ($viewerProfileId IS NULL OR $viewerProfileId = $targetProfileId) THEN parked
              WHEN $requestId IS NOT NULL AND previous.requestId = $requestId THEN previous
              WHEN $viewerProfileId IS NOT NULL AND $viewerProfileId <> $targetProfileId
                   AND current.addressedByEmail = true AND current.status <> 'accepted' THEN previous
