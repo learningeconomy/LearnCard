@@ -45,9 +45,9 @@ const Counter: React.FC<{ value: string; max: number }> = ({ value, max }) => (
 interface ListingIdentityFieldsProps {
     data: Pick<ListingData, 'name' | 'tagline' | 'iconUrl'>;
     onChange: (updates: Partial<ListingData>) => void;
-    iconRef?: React.RefObject<HTMLDivElement>;
-    nameRef?: React.RefObject<HTMLInputElement>;
-    taglineRef?: React.RefObject<HTMLInputElement>;
+    iconRef?: React.RefObject<HTMLDivElement | null>;
+    nameRef?: React.RefObject<HTMLInputElement | null>;
+    taglineRef?: React.RefObject<HTMLInputElement | null>;
 }
 
 export const ListingIdentityFields: React.FC<ListingIdentityFieldsProps> = ({
@@ -112,7 +112,7 @@ export const ListingIdentityFields: React.FC<ListingIdentityFieldsProps> = ({
 interface ListingDetailsFieldsProps {
     details: ListingDetails;
     onChange: (updates: Partial<ListingDetails>) => void;
-    descriptionRef?: React.RefObject<HTMLTextAreaElement>;
+    descriptionRef?: React.RefObject<HTMLTextAreaElement | null>;
 }
 
 export const ListingDetailsFields: React.FC<ListingDetailsFieldsProps> = ({
@@ -186,7 +186,7 @@ export const ListingDetailsFields: React.FC<ListingDetailsFieldsProps> = ({
 interface StandOutSectionProps {
     details: ListingDetails;
     onChange: (updates: Partial<ListingDetails>) => void;
-    fieldRefs?: Partial<Record<OptionalFormatField, React.RefObject<HTMLInputElement>>>;
+    fieldRefs?: Partial<Record<OptionalFormatField, React.RefObject<HTMLInputElement | null>>>;
     defaultOpen?: boolean;
 }
 

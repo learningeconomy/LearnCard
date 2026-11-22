@@ -74,7 +74,7 @@ export const JsonStudio: React.FC<JsonStudioProps> = ({
     // unfocused. The debounce defers parse + emit until typing pauses, so the
     // identity badge waits for a complete edit instead of flickering per keystroke.
     const focused = useRef(false);
-    const syncTimer = useRef<ReturnType<typeof setTimeout>>();
+    const syncTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
     const sync = useCallback(
         (value: string) => {

@@ -71,7 +71,9 @@ type CreateLerRecordInvoker = (params: Record<string, unknown>) => Promise<VC>;
 export const useIssueTcpResume = () => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
-    const reserved = useRef<{ ownerDid: string; recordId?: string; id: string; key: string }>();
+    const reserved = useRef<{ ownerDid: string; recordId?: string; id: string; key: string }>(
+        undefined
+    );
     const prepareResumePublicationLink = async (): Promise<string> => {
         enterSharePrivacy();
         const selectedAccount = captureResumeAccount();

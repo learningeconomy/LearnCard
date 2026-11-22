@@ -121,7 +121,7 @@ const BirthdayPicker: React.FC<BirthdayPickerProps> = ({ value, onChange, classN
     const scrollTimeouts = useRef({ month: 0, day: 0, year: 0 });
 
     useLayoutEffect(() => {
-        const setInitialScroll = (ref: React.RefObject<HTMLDivElement>, index: number) => {
+        const setInitialScroll = (ref: React.RefObject<HTMLDivElement | null>, index: number) => {
             if (ref.current && index >= 0) {
                 ref.current.scrollTop = index * ITEM_HEIGHT;
             }
@@ -135,7 +135,7 @@ const BirthdayPicker: React.FC<BirthdayPickerProps> = ({ value, onChange, classN
     const handleScroll = useCallback(
         (
             type: 'month' | 'day' | 'year',
-            ref: React.RefObject<HTMLDivElement>,
+            ref: React.RefObject<HTMLDivElement | null>,
             options: number[],
             currentVal: number,
             setter: (val: number) => void
@@ -176,7 +176,7 @@ const BirthdayPicker: React.FC<BirthdayPickerProps> = ({ value, onChange, classN
     useEffect(() => {
         const syncScroll = (
             type: 'month' | 'day' | 'year',
-            ref: React.RefObject<HTMLDivElement>,
+            ref: React.RefObject<HTMLDivElement | null>,
             index: number
         ) => {
             if (ref.current && index >= 0) {
@@ -198,7 +198,7 @@ const BirthdayPicker: React.FC<BirthdayPickerProps> = ({ value, onChange, classN
 
     const handleItemClick = (
         type: 'month' | 'day' | 'year',
-        ref: React.RefObject<HTMLDivElement>,
+        ref: React.RefObject<HTMLDivElement | null>,
         index: number,
         val: number,
         setter: (val: number) => void
@@ -219,7 +219,7 @@ const BirthdayPicker: React.FC<BirthdayPickerProps> = ({ value, onChange, classN
 
     const handleKeyDown = (
         type: 'month' | 'day' | 'year',
-        ref: React.RefObject<HTMLDivElement>,
+        ref: React.RefObject<HTMLDivElement | null>,
         options: number[],
         currentVal: number,
         setter: (val: number) => void,
@@ -250,7 +250,7 @@ const BirthdayPicker: React.FC<BirthdayPickerProps> = ({ value, onChange, classN
 
     const renderColumn = (
         type: 'month' | 'day' | 'year',
-        ref: React.RefObject<HTMLDivElement>,
+        ref: React.RefObject<HTMLDivElement | null>,
         options: number[],
         selectedVal: number,
         setter: (val: number) => void,

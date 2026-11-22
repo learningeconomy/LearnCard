@@ -18,7 +18,9 @@ const eligibility = vi.hoisted(() => ({
     value: { bug: true, idea: true, isLoading: false, profileId: 'adult-a' as string | undefined },
 }));
 
-const toastState = vi.hoisted(() => ({ message: undefined as ReactElement | string | undefined }));
+const toastState = vi.hoisted(() => ({
+    message: undefined as ReactElement | string | undefined,
+}));
 
 const modalHost = vi.hoisted(() => ({
     nextModalId: 0,

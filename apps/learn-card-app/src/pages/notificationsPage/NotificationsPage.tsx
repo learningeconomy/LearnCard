@@ -23,7 +23,7 @@ const NotificationsPage: React.FC = () => {
     const location = useLocation();
     const { initWallet } = useWallet();
     const { forceRefresh } = useForceRefreshLearnCloudCredential();
-    const consumedRefreshRequest = useRef<string>();
+    const consumedRefreshRequest = useRef<string>(undefined);
 
     useEffect(() => {
         const params = new URLSearchParams(location.search);

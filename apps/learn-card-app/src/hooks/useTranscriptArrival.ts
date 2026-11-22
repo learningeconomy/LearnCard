@@ -289,7 +289,7 @@ export const useTranscriptArrival = ({
     const depsRef = useRef({ initWallet, addVCtoWallet, track });
     depsRef.current = { initWallet, addVCtoWallet, track };
     const hasAcceptedRef = useRef(false);
-    const pendingMarkRef = useRef<string>();
+    const pendingMarkRef = useRef<string>(undefined);
     const busyRef = useRef(false);
     /** A check was requested while one was running; run it again with the latest inputs. */
     const rerunRef = useRef(false);

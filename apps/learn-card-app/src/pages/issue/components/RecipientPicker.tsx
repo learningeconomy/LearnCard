@@ -77,7 +77,7 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
     const [query, setQuery] = useState('');
     const [debouncedQuery, setDebouncedQuery] = useState('');
     const [isFocused, setIsFocused] = useState(false);
-    const blurTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+    const blurTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
     useEffect(() => () => clearTimeout(blurTimeoutRef.current), []);
 
     const updateDebounced = useDebounce(() => setDebouncedQuery(query), 300);

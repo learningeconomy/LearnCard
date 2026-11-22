@@ -16,7 +16,7 @@ const BoostCMSSkillCategoryTypeSwiper: React.FC<{
     setActiveCategoryType: React.Dispatch<React.SetStateAction<BoostCMSSKillsCategoryEnum>>;
 }> = ({ activeCategoryType, setActiveCategoryType }) => {
     const width = useScreenWidth(true);
-    const swiperRef = useRef();
+    const swiperRef = useRef(undefined);
 
     const initialSlideIndex = boostCMSSKillCategories.findIndex(
         category => category.type === BoostCMSSKillsCategoryEnum.Durable

@@ -1,7 +1,7 @@
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import ShareLinkCreate from '../../share-links/ShareLinkCreate';
 /* eslint-disable @typescript-eslint/no-explicit-any -- legacy credential shapes and callback APIs are intentionally untyped. */
-import React from 'react';
+import React, { type JSX } from 'react';
 import moment from 'moment';
 import { ErrorBoundary } from 'react-error-boundary';
 import { getLocale } from '../../../paraglide/runtime.js';

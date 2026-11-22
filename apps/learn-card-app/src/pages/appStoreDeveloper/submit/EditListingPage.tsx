@@ -203,7 +203,7 @@ export const EditListingPage: React.FC = () => {
     );
 
     const focusField = (field: ListingField) => {
-        const refs: Partial<Record<ListingField, React.RefObject<HTMLElement>>> = {
+        const refs: Partial<Record<ListingField, React.RefObject<HTMLElement | null>>> = {
             icon: iconRef,
             name: nameRef,
             tagline: taglineRef,

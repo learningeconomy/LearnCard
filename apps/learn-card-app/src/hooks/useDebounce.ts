@@ -3,7 +3,7 @@ import debounce from 'lodash/debounce';
 
 const useDebounce = (callback: () => void, time: number = 350) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
-    const ref = useRef<any>();
+    const ref = useRef<any>(undefined);
 
     useEffect(() => {
         ref.current = callback;

@@ -39,8 +39,13 @@ export default createVitestConfig(happyDomPreset, {
         environment: 'jsdom',
         setupFiles: ['./vitest.setup.ts'],
         include: ['src/**/*.test.{ts,tsx}'],
+        // Node-loaded dependencies must also see the app's React 19; see the file for why.
+        execArgv: ['--import', path.resolve(__dirname, 'vitest.react-resolve.mjs')],
     },
     resolve: {
+        // React 19 is installed only for this app (apps/learn-card-app/node_modules); the
+        // hoisted root copy is still 18 for the rest of the monorepo. Same pin as vite.config.
+        dedupe: ['react', 'react-dom'],
         alias: {
             'learn-card-base': path.resolve(__dirname, '../../packages/learn-card-base/src'),
             'apps/learn-card-app': path.resolve(__dirname),

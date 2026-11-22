@@ -28,7 +28,7 @@ const CopyIconButton: React.FC<CopyIconButtonProps> = ({
     copiedText,
 }) => {
     const [copied, setCopied] = useState(false);
-    const timer = useRef<ReturnType<typeof setTimeout>>();
+    const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
     const mounted = useRef(true);
 
     useEffect(() => {

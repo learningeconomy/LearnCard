@@ -31,8 +31,9 @@ export const useAppNotificationToast = (
     appName: string,
     options?: { onTapAction?: (actionPath: string) => void }
 ): UseAppNotificationToastReturn => {
-    const [toastNotification, setToastNotification] =
-        useState<AppNotificationToastData | null>(null);
+    const [toastNotification, setToastNotification] = useState<AppNotificationToastData | null>(
+        null
+    );
 
     const handleAppNotification = useCallback(
         (notification: {

@@ -109,7 +109,7 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
 
     // Ref for the element that we want to detect whether on screen
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
-    const ref: any = useRef<HTMLDivElement>();
+    const ref: any = useRef<HTMLDivElement>(undefined);
     // Call the hook passing in ref and root margin
     // In this case it would only be considered onScreen if more ...
     // ... than 300px of element is visible.

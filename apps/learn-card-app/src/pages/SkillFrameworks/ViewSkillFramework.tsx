@@ -360,7 +360,9 @@ const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) =>
                             return (
                                 <div
                                     key={key}
-                                    ref={el => (cardRefs.current[key] = el)}
+                                    ref={el => {
+                                        cardRefs.current[key] = el;
+                                    }}
                                     className="bg-white rounded-[12px] shadow-card p-[12px] border border-grayscale-200 overflow-y-auto"
                                 >
                                     <div className="flex items-start justify-between gap-2">

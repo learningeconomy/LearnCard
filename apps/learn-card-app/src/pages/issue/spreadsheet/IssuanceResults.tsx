@@ -69,7 +69,7 @@ export const IssuanceResults: React.FC<{
         ),
         'compact'
     );
-    const activeRun = useRef<string>();
+    const activeRun = useRef<string>(undefined);
     useEffect(() => {
         if (busy) {
             activeRun.current = run.id;

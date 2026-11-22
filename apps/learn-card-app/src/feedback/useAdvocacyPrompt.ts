@@ -62,7 +62,7 @@ export const useAdvocacyPrompt = (surface: FeedbackSurface, allowAdvocacy = true
     const [advocacyActive, setAdvocacyActive] = useState(false);
     const firedRef = useRef(false);
     const cardCommittedRef = useRef(false);
-    const timerRef = useRef<ReturnType<typeof setTimeout>>();
+    const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
     const ownsLatchRef = useRef(false);
 
     const isNative = Capacitor.isNativePlatform();

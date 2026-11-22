@@ -79,7 +79,7 @@ const previewPdfOnNativeDevice = async (pdf: JsPDFType, fileName?: string): Prom
 };
 
 export const useResumePdf = (
-    previewCardRef: RefObject<HTMLDivElement>
+    previewCardRef: RefObject<HTMLDivElement | null>
 ): {
     createPDFPreviewUrl: () => Promise<ResumePdfPreviewData | null>;
     generatePDF: () => Promise<void>;

@@ -38,7 +38,7 @@ const NotificationAppNotificationCard: React.FC<NotificationAppNotificationCardP
     const [iconFailed, setIconFailed] = useState(false);
 
     const ref = useRef<HTMLDivElement>(null);
-    useOnScreen<HTMLDivElement>(ref as React.RefObject<HTMLDivElement>, '-130px');
+    useOnScreen<HTMLDivElement>(ref as React.RefObject<HTMLDivElement | null>, '-130px');
 
     const metadata = notification.data?.metadata as Record<string, unknown> | undefined;
     const listingId = metadata?.listingId as string | undefined;

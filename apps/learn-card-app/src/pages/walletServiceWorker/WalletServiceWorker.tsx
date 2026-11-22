@@ -6,7 +6,7 @@ import { isExchangeRequest } from '../../helpers/chapi.helpers';
 import { CredentialReceiveScreen } from '../credentialStorage/CredentialReceiveScreen';
 
 const WalletServiceWorker = () => {
-    const activation = useRef<Promise<void>>();
+    const activation = useRef<Promise<void>>(undefined);
     const [failed, setFailed] = useState(false);
     useEffect(() => {
         let cancelled = false;

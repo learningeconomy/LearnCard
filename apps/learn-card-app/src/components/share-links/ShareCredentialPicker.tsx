@@ -22,7 +22,7 @@ type ShareCredentialPickerProps = {
     search: string;
     setSearch: React.Dispatch<React.SetStateAction<string>>;
     onClearSearch: () => void;
-    searchInput: React.RefObject<HTMLInputElement>;
+    searchInput: React.RefObject<HTMLInputElement | null>;
     settledSearch: string;
     searchPending: boolean;
     categoryFilter: string;
