@@ -1,3 +1,5 @@
+import { ACCEPTED_VERSION_PREDICATE } from './consent-expiry.helpers';
+
 /**
  * Shared by the locked sends and the invite lookup after checking the sender and active terms.
  * An invitation bound to a prior consent cannot block a fresh request.
@@ -22,11 +24,17 @@ export const inviteHasNeverAttached = `
     }
 `;
 
-/** Active grants block new consent requests, including consumed one-time snapshots. */
+/** Active grants block new requests, including one-time grants until their accepted version expires. */
 export const activeRequestTermsWhere = (now: string): string => `
     (terms.status = 'live' OR (terms.status = 'consumed' AND terms.oneTime = true))
     AND CASE WHEN terms.expiresAt IS NULL OR trim(terms.expiresAt) = '' THEN true
              ELSE datetime(terms.expiresAt) > ${now} END
+    AND NOT EXISTS {
+        MATCH (contract)-[:HAS_VERSION]->(accepted:ConsentFlowContractVersion)
+        WHERE ${ACCEPTED_VERSION_PREDICATE} AND CASE
+            WHEN accepted.expiresAt IS NULL OR trim(accepted.expiresAt) = '' THEN false
+            ELSE datetime(accepted.expiresAt) <= ${now} END
+    }
 `;
 
 /** Call after checking active consent and the sender's current contract role. */

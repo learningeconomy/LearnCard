@@ -31,6 +31,7 @@ import {
     publishSmartResume,
 } from '@accesslayer/consentflowcontract/relationships/smartResume';
 import { uploadSmartResume } from '@helpers/smartResume.helpers';
+import { isConsentExpiryActive } from '@helpers/consent-expiry.helpers';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
@@ -1373,10 +1374,10 @@ export const contractsRouter = t.router({
                 (previousTerms?.status === 'live' ||
                     (previousTerms?.status === 'consumed' && previousTerms.oneTime));
 
-            if (
-                !retrySmartResume &&
-                (await hasProfileConsentedToContract(profile, contractDetails.contract))
-            ) {
+            const expiredLiveConsent =
+                previousTerms?.status === 'live' &&
+                !isConsentExpiryActive(previousTerms.expiresAt, Date.now());
+            if (!retrySmartResume && previousTerms?.status === 'live' && !expiredLiveConsent) {
                 try {
                     await upsertRequestedForRelationship(
                         contractDetails.contract.id,
@@ -1435,7 +1436,7 @@ export const contractsRouter = t.router({
                     contractDetails,
                     {
                         terms,
-                        expiresAt,
+                        expiresAt: expiresAt ?? (expiredLiveConsent ? '' : undefined),
                         oneTime,
                         audienceVersion,
                         expectedRequestId,
