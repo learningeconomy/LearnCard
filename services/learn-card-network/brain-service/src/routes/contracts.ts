@@ -1327,19 +1327,33 @@ export const contractsRouter = t.router({
                 profile,
                 contractDetails.contract
             );
-            assertLatestContractApproval(
-                previousTerms,
-                Number(contractDetails.contract.currentVersion ?? 1)
-            );
+            const now = Date.now();
+            const expiredTerms =
+                previousTerms?.status === 'live' &&
+                !isConsentExpiryActive(previousTerms.expiresAt, now);
+            // An older accepted version can have its own expiry. A missing legacy version
+            // record follows the request write's fallback to the Terms' own expiry.
+            const acceptedVersion =
+                !isSmartResume && previousTerms?.status === 'live' && !expiredTerms
+                    ? await getConsentFlowContractVersion(
+                          contractDetails.contract.id,
+                          Number(previousTerms.consentedVersion ?? 1)
+                      )
+                    : undefined;
+            const expiredLiveConsent =
+                expiredTerms || !isConsentExpiryActive(acceptedVersion?.expiresAt, now);
+
+            if (isSmartResume || !expiredLiveConsent || !expectedRequestId)
+                assertLatestContractApproval(
+                    previousTerms,
+                    Number(contractDetails.contract.currentVersion ?? 1)
+                );
             const retrySmartResume =
                 isSmartResume &&
                 Boolean(previousTerms?.smartResumeFingerprint) &&
                 (previousTerms?.status === 'live' ||
                     (previousTerms?.status === 'consumed' && previousTerms.oneTime));
 
-            const expiredLiveConsent =
-                previousTerms?.status === 'live' &&
-                !isConsentExpiryActive(previousTerms.expiresAt, Date.now());
             if (!retrySmartResume && previousTerms?.status === 'live' && !expiredLiveConsent) {
                 try {
                     await upsertRequestedForRelationship(
@@ -1399,7 +1413,7 @@ export const contractsRouter = t.router({
                     contractDetails,
                     {
                         terms,
-                        expiresAt: expiresAt ?? (expiredLiveConsent ? '' : undefined),
+                        expiresAt: expiresAt ?? (expiredTerms ? '' : undefined),
                         oneTime,
                         audienceVersion,
                         expectedRequestId,

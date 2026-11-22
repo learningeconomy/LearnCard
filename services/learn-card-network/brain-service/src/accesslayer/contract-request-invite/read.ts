@@ -2,6 +2,7 @@ import { int } from 'neo4j-driver';
 
 import { neogma } from '@instance';
 import {
+    contractRequestCountForSender,
     getContractRequestCap,
     getContractRequestCapWindowStart,
     recentContractRequestTimes,
@@ -65,20 +66,6 @@ export const getContractRequestInvite = async (
     return result.records[0]?.get('invite') ?? null;
 };
 
-/** Invites of a contract that have not become a request: pending, cancelled or expired. */
-export const getUnattachedContractRequestInvites = async (
-    contractId: string,
-    viewerProfileId: string
-): Promise<ContractRequestInviteType[]> => {
-    const result = await neogma.queryRunner.run(
-        `MATCH (c:ConsentFlowContract {id: $contractId})-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite)
-         WHERE invite.attachedProfileId IS NULL AND ${inviteViewerWhere}
-         RETURN properties(invite) AS invite ORDER BY invite.requestedAt, invite.id`,
-        { contractId, viewerProfileId }
-    );
-    return result.records.map(record => record.get('invite'));
-};
-
 /** Profile IDs (at most 5) that have this already normalised email as a verified contact method. */
 export const getProfileIdsWithVerifiedEmail = async (email: string): Promise<string[]> => {
     const result = await neogma.queryRunner.run(
@@ -119,7 +106,7 @@ export const getPendingContractRequestInvitesForProfile = async (
          OPTIONAL MATCH (contract)-[existing:REQUESTED_FOR]->(profile)
          WITH contract, invite, existing
          WHERE (existing IS NULL OR ${contractRequestReplacementWhere('invite.requestedBy', 'true')}) AND
-             size(${recentContractRequestTimes}) < $requestCap
+             ${contractRequestCountForSender(recentContractRequestTimes('email'), 'invite.requestedBy')} < $requestCap
          RETURN contract.id AS contractId, properties(invite) AS invite
          ORDER BY invite.requestedAt, invite.id LIMIT $limit`,
         {

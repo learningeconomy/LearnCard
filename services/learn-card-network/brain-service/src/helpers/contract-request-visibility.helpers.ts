@@ -1,4 +1,7 @@
-/** Preserve the last externally visible request while an email attachment remains private. */
+/**
+ * Preserve the last externally visible request while an email attachment remains private.
+ * Keep the snapshot fields in step with requestFields and the public request status and ID reads.
+ */
 export const preservePreviousRequestCypher = `
     OPTIONAL MATCH (contract)-[previous:PREVIOUS_VISIBLE_REQUEST]->(target)
     MERGE (contract)-[request:REQUESTED_FOR]->(target)

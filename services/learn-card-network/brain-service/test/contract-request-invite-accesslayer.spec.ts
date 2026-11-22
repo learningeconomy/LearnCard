@@ -8,7 +8,6 @@ import {
     getContractRequestInvite,
     getPendingContractRequestInvitesForProfile,
     getProfileIdsWithVerifiedEmail,
-    getUnattachedContractRequestInvites,
 } from '@accesslayer/contract-request-invite/read';
 
 const actor = async (role: string) => {
@@ -37,6 +36,7 @@ describe('ContractRequestInvite access layer', () => {
     let learner: Actor;
     let outsider: Actor;
     let contractId: string;
+    let contractUri: string;
 
     beforeEach(async () => {
         [owner, recipient, otherRecipient, learner, outsider] = await Promise.all([
@@ -46,13 +46,12 @@ describe('ContractRequestInvite access layer', () => {
             actor('learner'),
             actor('outsider'),
         ]);
-        contractId = id(
-            await owner.clients.fullAuth.contracts.createConsentFlowContract({
-                name: 'Synthetic referral',
-                contract: normalContract,
-                recipients: [recipient.profileId, otherRecipient.profileId],
-            })
-        );
+        contractUri = await owner.clients.fullAuth.contracts.createConsentFlowContract({
+            name: 'Synthetic referral',
+            contract: normalContract,
+            recipients: [recipient.profileId, otherRecipient.profileId],
+        });
+        contractId = id(contractUri);
     });
 
     const invite = (email: string, externalReferenceId = 'synthetic-ref-1') =>
@@ -164,27 +163,32 @@ describe('ContractRequestInvite access layer', () => {
         const inviteId = created!.invite.id;
         for (const viewer of [owner, recipient]) {
             expect(
-                (await getUnattachedContractRequestInvites(contractId, viewer.profileId)).map(
-                    row => row.id
-                )
+                (
+                    await viewer.clients.fullAuth.contracts.getContractSentRequests({ contractUri })
+                ).map(row => row.requestId)
             ).toEqual([inviteId]);
             expect(
                 await getContractRequestInvite(contractId, inviteId, viewer.profileId)
             ).toMatchObject({ id: inviteId });
         }
         for (const viewer of [otherRecipient, outsider]) {
-            expect(await getUnattachedContractRequestInvites(contractId, viewer.profileId)).toEqual(
-                []
-            );
             expect(
                 await getContractRequestInvite(contractId, inviteId, viewer.profileId)
             ).toBeNull();
         }
+        await expect(
+            otherRecipient.clients.fullAuth.contracts.getContractSentRequests({ contractUri })
+        ).resolves.toEqual([]);
+        await expect(
+            outsider.clients.fullAuth.contracts.getContractSentRequests({ contractUri })
+        ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
         await neogma.queryRunner.run(
             `MATCH (i:ContractRequestInvite {id: $inviteId})
              SET i.status = 'attached', i.attachedProfileId = 'synthetic-attached-profile'`,
             { inviteId }
         );
-        expect(await getUnattachedContractRequestInvites(contractId, owner.profileId)).toEqual([]);
+        await expect(
+            owner.clients.fullAuth.contracts.getContractSentRequests({ contractUri })
+        ).resolves.toEqual([]);
     });
 });
