@@ -24,12 +24,26 @@ describe('shared age policy', () => {
         expect(Number.isNaN(calculateAgeFromISODate('not-a-date', now))).toBe(true);
     });
 
+    it('uses the UTC day of the supplied clock', () => {
+        expect(calculateAgeFromISODate('2008-10-29', new Date('2026-10-29T00:00:00Z'))).toBe(18);
+        expect(calculateAgeFromISODate('2008-10-29', new Date('2026-10-28T23:59:59.999Z'))).toBe(
+            17
+        );
+    });
+
+    it('counts a leap-day birthday on March 1 in a non-leap year', () => {
+        expect(calculateAgeFromISODate('2000-02-29', new Date('2018-02-28T23:59:59Z'))).toBe(17);
+        expect(calculateAgeFromISODate('2000-02-29', new Date('2018-03-01T00:00:00Z'))).toBe(18);
+    });
+
     it.each([
         '2008-10-29T12:30',
         '20081029',
         '2008-W44-3',
         '2008-303',
         '2008-10-29T23:30:00-12:00',
+        '2008-10-29 23:30-12:00',
+        '2008-10-29T00:15+14',
     ])('preserves legacy ISO DOB %s without timezone-dependent age changes', dob => {
         expect(calculateAgeFromISODate(dob, new Date('2026-10-29T12:00:00Z'))).toBe(18);
         expect(calculateAgeFromISODate(dob, new Date('2026-10-28T12:00:00Z'))).toBe(17);
