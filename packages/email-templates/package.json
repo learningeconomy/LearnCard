@@ -20,10 +20,10 @@
     "dependencies": {
         "@react-email/components": "^0.0.36",
         "@react-email/render": "^2.2.0",
-        "react": "^18.3.1"
+        "react": "^18.3.1 || ^19.0.0"
     },
     "devDependencies": {
-        "@types/react": "^18.3.0",
+        "@types/react": "^19.3.0",
         "react-email": "^3.0.0",
         "typescript": "^5.0.0",
         "vitest": "4.1.11"

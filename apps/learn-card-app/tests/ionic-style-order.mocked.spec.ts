@@ -20,7 +20,6 @@ test.beforeAll(async () => {
         envFile: false,
         root: app,
         publicDir: false,
-        resolve: { dedupe: ['react', 'react-dom', '@ionic/react'] },
         logLevel: 'warn',
         plugins: [
             tailwindcss(),

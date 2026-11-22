@@ -8,20 +8,7 @@
             "learn-card-base/src/*": ["../../packages/learn-card-base/src/*"],
             "apps/learn-card-app/src/*": ["./src/*"],
             "@analytics": ["./src/analytics"],
-            "@analytics/*": ["./src/analytics/*"],
-            // This app runs React 19 while the rest of the monorepo is on 18. Point every
-            // `react` / `react-dom` type import (including from learn-card-base source and
-            // hoisted libraries) at this app's @types copy so one program never sees both.
-            // The targets are extensionless .d.ts paths on purpose: vite-tsconfig-paths can't
-            // resolve them at runtime, so Vite/Vitest fall back to normal resolution + dedupe.
-            // No wildcards: a wildcard can land on a directory (test-utils/) that Vite does load.
-            "react": ["./node_modules/@types/react/index"],
-            "react/jsx-runtime": ["./node_modules/@types/react/jsx-runtime"],
-            "react/jsx-dev-runtime": ["./node_modules/@types/react/jsx-dev-runtime"],
-            "react-dom": ["./node_modules/@types/react-dom/index"],
-            "react-dom/client": ["./node_modules/@types/react-dom/client"],
-            "react-dom/server": ["./node_modules/@types/react-dom/server"],
-            "react-dom/test-utils": ["./node_modules/@types/react-dom/test-utils/index"]
+            "@analytics/*": ["./src/analytics/*"]
         },
         "noFallthroughCasesInSwitch": true
     },
