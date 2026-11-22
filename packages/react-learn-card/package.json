@@ -59,7 +59,7 @@
         "storybook": "8.6.19",
         "style-loader": "^3.3.1",
         "tailwindcss": "^4.3.3",
-        "vite": "^6.4.3",
+        "vite": "^8.3.8",
         "@tailwindcss/postcss": "^4.3.3",
         "@tailwindcss/node": "^4.3.3"
     },

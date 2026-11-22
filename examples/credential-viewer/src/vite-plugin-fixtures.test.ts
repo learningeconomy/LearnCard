@@ -24,13 +24,17 @@ const postFixture = async (
         throw new Error('Expected fixture writer to configure the Vite server');
     }
 
-    configureServer({
-        middlewares: {
-            use: (route: string, middleware: Middleware) => {
-                if (route === '/api/save-fixture') saveFixture = middleware;
+    // Vite 8 types `configureServer` with a plugin-context `this`; the plugin doesn't use it.
+    configureServer.call(
+        {} as never,
+        {
+            middlewares: {
+                use: (route: string, middleware: Middleware) => {
+                    if (route === '/api/save-fixture') saveFixture = middleware;
+                },
             },
-        },
-    } as never);
+        } as never
+    );
 
     if (!saveFixture) throw new Error('Expected save-fixture middleware');
 
@@ -60,13 +64,17 @@ const getFixtureFolders = (): { folders: string[] } => {
         throw new Error('Expected fixture writer to configure the Vite server');
     }
 
-    configureServer({
-        middlewares: {
-            use: (route: string, middleware: Middleware) => {
-                if (route === '/api/fixture-folders') fixtureFolders = middleware;
+    // Vite 8 types `configureServer` with a plugin-context `this`; the plugin doesn't use it.
+    configureServer.call(
+        {} as never,
+        {
+            middlewares: {
+                use: (route: string, middleware: Middleware) => {
+                    if (route === '/api/fixture-folders') fixtureFolders = middleware;
+                },
             },
-        },
-    } as never);
+        } as never
+    );
 
     if (!fixtureFolders) throw new Error('Expected fixture-folders middleware');
 
