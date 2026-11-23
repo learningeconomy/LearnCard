@@ -32,7 +32,7 @@ class ConsentFailure extends Error {}
 const controller = new AbortController();
 
 mock.module('../constants/env', () => ({
-    CHAT_MODEL: 'gpt-6.1-sol',
+    CHAT_MODEL: 'gpt-6.2-sol',
     OPENAI_API_KEY: 'synthetic',
     EMBEDDING_MODEL: 'synthetic',
 }));

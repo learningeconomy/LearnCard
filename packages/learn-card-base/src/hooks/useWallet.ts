@@ -42,6 +42,7 @@ import {
     getCredentialFactsEpoch,
 } from '../in-app-messages/credentialFactsStore';
 import { emitInAppMessageEvent } from '../in-app-messages/inAppMessageEvents';
+import { invalidateCredentialIndexQueries } from '../react-query/queries/credentialIndexCache';
 const log = getLogger('use-wallet');
 
 let generating = false; // Mutex flag to allow first init call to acquire a lock
@@ -227,13 +228,17 @@ export const useWallet = () => {
                 };
             });
 
-            await queryClient.cancelQueries({
-                queryKey: ['useGetCredentialCount', profileDid, category, readerDid],
-            });
-            queryClient.setQueryData<number>(
-                ['useGetCredentialCount', profileDid, category, readerDid],
-                currentCount => (currentCount ?? 0) + recordsByCategory.get(category)!.length
-            );
+            const countKey = ['useGetCredentialCount', profileDid, category, readerDid];
+            await queryClient.cancelQueries({ queryKey: countKey, exact: true });
+            // Only bump a count the server already returned. With nothing cached, `0 + added`
+            // would be a made-up total that CREDENTIAL_INDEX_STALE_TIME then treats as fresh.
+            const currentCount = queryClient.getQueryData(countKey);
+            if (typeof currentCount === 'number') {
+                queryClient.setQueryData<number>(
+                    countKey,
+                    currentCount + recordsByCategory.get(category)!.length
+                );
+            }
         }
 
         // Optimistic writes must settle before claim completion, but a background
@@ -243,7 +248,9 @@ export const useWallet = () => {
                 queryKey: [...listPrefix, category, readerDid],
                 exact: true,
             });
-            void queryClient.refetchQueries({
+            // Invalidate rather than refetch: mounted counts refetch now, and an unmounted
+            // (possibly bumped) count stays stale so its next observer reads the real total.
+            void queryClient.invalidateQueries({
                 queryKey: ['useGetCredentialCount', profileDid, category, readerDid],
                 exact: true,
             });
@@ -252,7 +259,14 @@ export const useWallet = () => {
             queryKey: [...listPrefix, '', readerDid],
             exact: true,
         });
+        // The unfiltered total (useProfileSnapshot) is not one of the category keys above.
+        void queryClient.invalidateQueries({
+            queryKey: ['useGetCredentialCount', profileDid, undefined, readerDid],
+            exact: true,
+        });
         void invalidateVisibleCredentialCounts(queryClient, profileDid);
+        // Do not await: index-query refetches should not hold up claim completion.
+        void invalidateCredentialIndexQueries(queryClient, didWeb, { includeCount: false });
     };
 
     const getWallet = async (
@@ -645,6 +659,26 @@ export const useWallet = () => {
         let returnUri: string | undefined;
         let stage = 'initialize';
 
+        // Both save paths (including Partner Connect's skipLCNUser) must refresh the
+        // profile-scoped list, count, skills, and ID caches, or 5-min staleTime hides the save.
+        const cacheSavedRecord = async (
+            record: CredentialRecord<CredentialMetadata>,
+            category: CredentialCategory
+        ) => {
+            const batchRecords = context.batchRecords;
+            if (batchRecords) {
+                const records = batchRecords.get(category) ?? [];
+                records.push(record);
+                batchRecords.set(category, records);
+                return;
+            }
+            await refreshCredentialCaches(
+                new Map([[category, [record]]]),
+                context.profileDid,
+                context.readerDid
+            );
+        };
+
         try {
             const wallet = context.wallet;
 
@@ -687,6 +721,7 @@ export const useWallet = () => {
                 result = await wallet.index[location].add(record);
                 returnUri = uri2;
                 if (result) void recordCredentialClaim(wallet, uri2, vc, category);
+
                 if (result && !deferContractSync) {
                     // Persist before returning; the singleton worker owns network delivery.
                     await enqueuePendingContractSyncSafely({
@@ -696,6 +731,9 @@ export const useWallet = () => {
                         category,
                     });
                 }
+
+                stage = 'cache';
+                if (result) await cacheSavedRecord(record, category);
             }
 
             if (!skipLCNUser) {
@@ -720,20 +758,7 @@ export const useWallet = () => {
                 if (result) void recordCredentialClaim(wallet, uri, vc, category);
 
                 stage = 'cache';
-                if (result) {
-                    const batchRecords = context.batchRecords;
-                    if (batchRecords) {
-                        const records = batchRecords.get(category) ?? [];
-                        records.push(record);
-                        batchRecords.set(category, records);
-                    } else {
-                        await refreshCredentialCaches(
-                            new Map([[category, [record]]]),
-                            context.profileDid,
-                            context.readerDid
-                        );
-                    }
-                }
+                if (result) await cacheSavedRecord(record, category);
 
                 if (result && !deferContractSync) {
                     stage = 'sync';
