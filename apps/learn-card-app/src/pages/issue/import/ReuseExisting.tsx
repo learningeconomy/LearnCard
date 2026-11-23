@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useHistory } from 'react-router-dom';
+import type { BoostExclusion } from '@learncard/types';
 import {
     X,
     Loader2,
@@ -19,7 +20,7 @@ import {
     ToastTypeEnum,
     useGetCurrentLCNUser,
     useSigningAuthority,
-    useGetPaginatedManagedBoosts,
+    useGetPaginatedManagedBoostsQuery,
     getLogger,
     boostCategoryMetadata,
     BoostCategoryOptionsEnum,
@@ -51,6 +52,30 @@ interface ReuseExistingProps {
 type Step = 'list' | 'preview' | 'recipient' | 'success';
 
 const ENUM_VALUES = Object.values(BoostCategoryOptionsEnum);
+// Include the Unicode whitespace that JavaScript's \s also matches so Neo4j
+// accepts the same stored spellings and padding as the original picker.
+const WHITESPACE = String.raw`\s\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff`;
+const CATEGORY_SEPARATOR = `[${WHITESPACE}-]*`;
+const AI_PASSPORT_CATEGORY_PATTERN = [
+    BoostCategoryOptionsEnum.aiSummary,
+    BoostCategoryOptionsEnum.aiTopic,
+    BoostCategoryOptionsEnum.aiPathway,
+    BoostCategoryOptionsEnum.aiInsight,
+    BoostCategoryOptionsEnum.aiAssessment,
+]
+    .map(category => category.replace(/[\s-]/g, '').split('').join(CATEGORY_SEPARATOR))
+    .join('|');
+
+const REUSE_EXCLUSIONS = {
+    category: {
+        $regex: new RegExp(
+            `^${CATEGORY_SEPARATOR}(?:${AI_PASSPORT_CATEGORY_PATTERN})${CATEGORY_SEPARATOR}$`,
+            'i'
+        ),
+    },
+    // The stored name also identifies AI Passport boosts with a generic category.
+    name: { $regex: new RegExp(`^[${WHITESPACE}]*AI Passport credential[${WHITESPACE}]*$`, 'i') },
+} satisfies BoostExclusion;
 
 const resolveCategory = (category?: string): BoostCategoryOptionsEnum => {
     if (!category) return BoostCategoryOptionsEnum.achievement;
@@ -111,7 +136,7 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
     const { getRegisteredSigningAuthority, getRegisteredSigningAuthorities } =
         useSigningAuthority();
     const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
-        useGetPaginatedManagedBoosts(undefined, { limit: 18 });
+        useGetPaginatedManagedBoostsQuery(undefined, { limit: 18, exclude: REUSE_EXCLUSIONS });
 
     const [step, setStep] = useState<Step>('list');
     const [query, setQuery] = useState('');
@@ -132,8 +157,13 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
     const records = useMemo<BoostRecord[]>(() => {
         const all = (data?.pages ?? []).flatMap(page => (page?.records ?? []) as BoostRecord[]);
         const trimmed = query.trim().toLowerCase();
-        if (!trimmed) return all;
-        return all.filter(r => (r.name ?? '').toLowerCase().includes(trimmed));
+        // Older Brain deployments can silently ignore the exclusion option.
+        return all.filter(
+            record =>
+                !REUSE_EXCLUSIONS.name.$regex.test(record.name ?? '') &&
+                !REUSE_EXCLUSIONS.category.$regex.test(record.category ?? '') &&
+                (!trimmed || record.name?.toLowerCase().includes(trimmed))
+        );
     }, [data, query]);
 
     const groups = useMemo(() => {
@@ -294,7 +324,7 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
         step === 'preview' ? resetToList : step === 'recipient' ? () => setStep('preview') : null;
 
     return (
-        <div className="font-poppins w-full max-w-[560px] mx-auto bg-white rounded-[20px] flex flex-col max-h-[85vh] overflow-hidden animate-fade-in-up">
+        <div className="font-poppins flex min-h-0 flex-auto flex-col">
             <div className="shrink-0 px-6 pt-6 pb-4 border-b border-grayscale-100">
                 <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2 min-w-0">
@@ -359,17 +389,20 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
                             <div className="flex items-center justify-center py-12 text-grayscale-400">
                                 <Loader2 className="w-6 h-6 animate-spin" />
                             </div>
-                        ) : records.length === 0 ? (
-                            <div className="text-center py-12">
-                                <RotateCcw className="w-8 h-8 text-grayscale-300 mx-auto mb-3" />
-                                <p className="text-sm text-grayscale-500">
-                                    {query
-                                        ? m['issueFlow.nothingMatches']({ query })
-                                        : m['issueFlow.noneIssued']()}
-                                </p>
-                            </div>
                         ) : (
                             <>
+                                {records.length === 0 && (
+                                    <div className="text-center py-12">
+                                        <RotateCcw className="w-8 h-8 text-grayscale-300 mx-auto mb-3" />
+                                        <p className="text-sm text-grayscale-500">
+                                            {query
+                                                ? m['issueFlow.nothingMatches']({ query })
+                                                : hasNextPage
+                                                  ? m['issueFlow.lookForOlderCredentials']()
+                                                  : m['issueFlow.noneIssued']()}
+                                        </p>
+                                    </div>
+                                )}
                                 <div className="space-y-v3-5">
                                     {groups.map(({ label, items }) => (
                                         <div key={label}>

@@ -82,10 +82,15 @@ const buildFieldCondition = (
     // This matches how Neo4j stores nested objects (e.g., meta.appListingId as a property name)
     if (isNestedObject(value)) {
         const nestedConditions = Object.entries(value).map(([nestedField, nestedValue]) =>
-            buildFieldCondition(identifier, `${field}.${nestedField}`, nestedValue as QueryValue, params)
+            buildFieldCondition(
+                identifier,
+                `${field}.${nestedField}`,
+                nestedValue as QueryValue,
+                params
+            )
         );
-        return nestedConditions.length > 1 
-            ? `(${nestedConditions.join(' AND ')})` 
+        return nestedConditions.length > 1
+            ? `(${nestedConditions.join(' AND ')})`
             : nestedConditions[0] || 'true';
     }
 
@@ -101,32 +106,35 @@ const buildFieldCondition = (
  */
 export const buildWhereClause = (
     identifier: string,
-    query: QueryCondition | { $or: QueryCondition[] }
+    query: QueryCondition | { $or: QueryCondition[] },
+    exclude: QueryCondition = {}
 ): { whereClause: string; params: Record<string, any> } => {
     paramCounter = 0; // Reset counter for each query
     const params: Record<string, any> = {};
-
-    // Handle document-level $or
+    let conditions: string[];
     if ('$or' in query && Array.isArray(query.$or)) {
-        const orConditions = (query.$or as QueryCondition[]).map(orQuery => {
-            const conditions = Object.entries(orQuery).map(([field, value]) =>
+        const alternatives = (query.$or as QueryCondition[]).map(fields => {
+            const terms = Object.entries(fields).map(([field, value]) =>
                 buildFieldCondition(identifier, field, value, params)
             );
-            return conditions.length > 1 ? `(${conditions.join(' AND ')})` : conditions[0];
+            return terms.length > 1 ? `(${terms.join(' AND ')})` : terms[0];
         });
-        return {
-            whereClause: `(${orConditions.join(' OR ')})`,
-            params,
-        };
+        conditions = [`(${alternatives.join(' OR ')})`];
+    } else {
+        conditions = Object.entries(query).map(([field, value]) =>
+            buildFieldCondition(identifier, field, value, params)
+        );
     }
 
-    // Handle regular AND query
-    const conditions = Object.entries(query).map(([field, value]) =>
-        buildFieldCondition(identifier, field, value, params)
-    );
+    for (const [field, value] of Object.entries(exclude)) {
+        if (value === undefined) continue;
+        const matches = buildFieldCondition(identifier, field, value, params);
+        // Cypher returns null when the field is missing. Treat that as a non-match.
+        conditions.push(`NOT coalesce(${matches}, false)`);
+    }
 
     return {
-        whereClause: conditions.length > 0 ? conditions.join(' AND ') : 'true',
+        whereClause: conditions.join(' AND ') || 'true',
         params,
     };
 };
@@ -138,9 +146,10 @@ export const buildWhereClause = (
  */
 export const buildWhereForQueryBuilder = (
     identifier: string,
-    query: QueryCondition | { $or: QueryCondition[] }
+    query: QueryCondition | { $or: QueryCondition[] },
+    exclude?: QueryCondition
 ): { whereClause: string; params: Record<string, any> } => {
-    return buildWhereClause(identifier, query);
+    return buildWhereClause(identifier, query, exclude);
 };
 
 export const convertQueryResultToPropertiesObjectArray = <Properties extends Record<string, any>>(
@@ -201,6 +210,45 @@ export const convertRegExpToNeo4j = ({ source, flags }: RegExp | RegExpValue): s
     return `${prefix}${pattern}`;
 };
 
+/** Apply substring matching to exclusion patterns without changing existing query semantics. */
+export const convertExclusionRegExpToNeo4j = ({ source, flags }: RegExp | RegExpValue): string => {
+    // Cypher's =~ matches the entire string. Wrap the entire expression so that
+    // alternatives and anchors retain their meaning when searching within a field.
+    // The surrounding wildcards must cross line breaks even when the expression
+    // itself does not use the dotAll flag.
+    const javaFlags = ['i', 'm', 's'].filter(flag => flags.includes(flag)).join('');
+    const prefix = javaFlags ? `(?${javaFlags})` : '';
+    const leading = flags.includes('y') ? '' : '(?s:.*)';
+
+    // Without multiline, Java's `$` also matches before a final line break,
+    // unlike JavaScript's. Translate unescaped anchors outside JavaScript character
+    // classes. Neo4j still interprets the resulting expression using Java syntax.
+    let pattern = '';
+    let inCharacterClass = false;
+    let escaped = false;
+    for (const char of source) {
+        if (escaped) {
+            pattern += char;
+            escaped = false;
+        } else if (char === '\\') {
+            pattern += char;
+            escaped = true;
+        } else if (char === '[') {
+            inCharacterClass = true;
+            pattern += char;
+        } else if (char === ']' && inCharacterClass) {
+            inCharacterClass = false;
+            pattern += char;
+        } else if (char === '$' && !inCharacterClass && !flags.includes('m')) {
+            pattern += '\\z';
+        } else {
+            pattern += char;
+        }
+    }
+
+    return `${prefix}${leading}(?:${pattern})(?s:.*)`;
+};
+
 const isSlashDelimitedRegexString = (value: unknown): value is string =>
     typeof value === 'string' && /^\/.+\/[a-zA-Z]*$/.test(value);
 
@@ -221,8 +269,8 @@ export const convertObjectRegExpToNeo4j = (obj: Record<string, any>): Record<str
             isRegExp(item) || isRegExpValue(item)
                 ? convertRegExpToNeo4j(item)
                 : typeof item === 'object' && item !== null
-                ? convertObjectRegExpToNeo4j(item)
-                : item
+                  ? convertObjectRegExpToNeo4j(item)
+                  : item
         );
     }
 

@@ -43,7 +43,18 @@ const LOCAL_TEMPLATE_MAP: Record<string, TemplateId> = {
     'guardian-rejected-credential': 'guardian-rejected-credential',
     'credential-updated': 'credential-updated',
     'campaign-announcement': 'announcement',
+    'contract-request-invite': 'contract-request-invite',
 };
+
+/** Local templates with no legacy Postmark alias. A failure is thrown, never retried through an alias. */
+const LOCAL_ONLY_TEMPLATES = [
+    'credential-updated',
+    'campaign-announcement',
+    'contract-request-invite',
+];
+
+/** Templates whose errors are not logged, because the error text can contain the recipient address. */
+const QUIET_TEMPLATES = ['campaign-announcement', 'contract-request-invite'];
 
 export class PostmarkAdapter implements DeliveryService {
     private readonly client: ServerClient;
@@ -141,18 +152,13 @@ export class PostmarkAdapter implements DeliveryService {
                     notification.locale
                 );
             } catch (renderError) {
-                if (notification.templateId !== 'campaign-announcement')
+                if (!QUIET_TEMPLATES.includes(notification.templateId))
                     console.error(
                         `[PostmarkAdapter] Local render failed for "${notification.templateId}":`,
                         renderError
                     );
                 // This template is owned locally; there is no legacy provider alias.
-                if (
-                    ['credential-updated', 'campaign-announcement'].includes(
-                        notification.templateId
-                    )
-                )
-                    throw renderError;
+                if (LOCAL_ONLY_TEMPLATES.includes(notification.templateId)) throw renderError;
             }
 
             if (rendered) {
@@ -169,19 +175,14 @@ export class PostmarkAdapter implements DeliveryService {
 
                     return;
                 } catch (sendError) {
-                    if (notification.templateId !== 'campaign-announcement')
+                    if (!QUIET_TEMPLATES.includes(notification.templateId))
                         console.error(
                             `[PostmarkAdapter] sendEmail API failed for "${notification.templateId}":`,
                             sendError
                         );
                     // A lost provider acknowledgement may already have sent the email.
                     // Do not bypass the refresh delivery claim with a second attempt.
-                    if (
-                        ['credential-updated', 'campaign-announcement'].includes(
-                            notification.templateId
-                        )
-                    )
-                        throw sendError;
+                    if (LOCAL_ONLY_TEMPLATES.includes(notification.templateId)) throw sendError;
                 }
             }
         }
@@ -303,6 +304,13 @@ export class PostmarkAdapter implements DeliveryService {
                 return {
                     issuer: model.issuer,
                     credential: model.credential,
+                };
+
+            case 'contract-request-invite':
+                return {
+                    inviteUrl: model.inviteUrl,
+                    referrer: model.referrer,
+                    contractOwner: model.contractOwner,
                 };
 
             default:

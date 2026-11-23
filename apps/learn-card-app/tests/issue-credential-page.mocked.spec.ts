@@ -1,5 +1,6 @@
 import { test, expect } from './fixtures/mocked-test';
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
+import { RegExpValidator } from '@learncard/types';
 import type { IssueInboxCredentialBatch, InboxBatchStatus } from '@learncard/types';
 import type { TrpcMock, BrainOutputs } from './mocks/trpc';
 import { installNetwork } from './mocks/network';
@@ -21,6 +22,23 @@ const selectBadgeType = async (page: Page) => {
 };
 
 const fillName = (page: Page, name: string) => page.getByPlaceholder(NAME_PLACEHOLDER).fill(name);
+
+const expectPickerLayout = async (page: Page, picker: Locator, mobile: boolean) => {
+    const { width, height } = page.viewportSize()!;
+    await picker.evaluate(async section => {
+        await Promise.all(section.getAnimations().map(animation => animation.finished));
+    });
+    await expect
+        .poll(async () => {
+            const box = await picker.boundingBox();
+            if (!box) return false;
+            if (mobile) {
+                return box.x === 0 && box.y === 0 && box.width === width && box.height === height;
+            }
+            return box.y > 0 && Math.abs(2 * box.y + box.height - height) < 2;
+        })
+        .toBe(true);
+};
 
 const waitForIssueReady = async (page: Page): Promise<void> => {
     // A route change can finish while the account's key is still being restored.
@@ -156,6 +174,159 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         await selectBadgeType(page);
         await page.getByRole('button', { name: 'JSON', exact: true }).click({ timeout: 30_000 });
         await expect(page.locator('textarea.font-mono')).toBeVisible({ timeout: 30_000 });
+    });
+
+    test('left-aligns the import label on a narrow mobile viewport', async ({ page }) => {
+        await page.setViewportSize({ width: 320, height: 700 });
+        const importOption = page.getByRole('button', {
+            name: 'Import a credential or spreadsheet',
+        });
+        await expect(importOption).toBeVisible();
+        await expect(importOption).toHaveCSS('text-align', 'start');
+    });
+
+    for (const viewport of [
+        { name: 'desktop', width: 1280, height: 800, mobile: false },
+        { name: 'mobile', width: 390, height: 844, mobile: true },
+    ]) {
+        test(`keeps the credential type picker stable while searching on ${viewport.name}`, async ({
+            page,
+        }) => {
+            await page.setViewportSize(viewport);
+            await page.getByRole('button', { name: 'Browse all types' }).click();
+            const picker = page
+                .getByRole('heading', { name: 'Choose a credential type' })
+                .locator('xpath=ancestor::section[parent::aside]');
+            await expectPickerLayout(page, picker, viewport.mobile);
+            const initialBox = await picker.boundingBox();
+
+            const search = picker.getByPlaceholder('Search types…');
+            await search.fill('zzzz');
+            await expect(picker.getByText(/zzzz/)).toBeVisible();
+            expect(await picker.boundingBox()).toEqual(initialBox);
+            await search.fill('badge');
+            await picker.getByRole('button', { name: /^Badge A digital badge/ }).click();
+            await expect(page.getByPlaceholder(NAME_PLACEHOLDER)).toBeVisible();
+        });
+
+        test(`excludes AI Passport before pagination and keeps the reuse picker stable on ${viewport.name}`, async ({
+            page,
+        }) => {
+            await page.setViewportSize(viewport);
+            const boosts = [
+                ...Array.from({ length: 18 }, (_, index) => ({
+                    uri: `boost:ai-${index}`,
+                    name: ' AI Passport credential ',
+                    category: 'Achievement',
+                })),
+                { uri: 'boost:topic', name: 'Personalized Session', category: 'aI-\u00a0To-pic' },
+                { uri: 'boost:first-aid', name: 'First Aid Badge' },
+                { uri: 'boost:untitled', category: 'Achievement' },
+                ...Array.from({ length: 16 }, (_, index) => ({
+                    uri: `boost:badge-${index}`,
+                    name: `Training Badge ${index + 1}`,
+                    category: 'Social Badge',
+                })),
+                { uri: 'boost:custom', name: 'Custom Credential', category: 'Community Award' },
+            ].map((boost, index) => ({
+                ...boost,
+                created: new Date(Date.UTC(2026, 10, 18, 12, 0, 0, 100 - index)).toISOString(),
+            }));
+            const cursors: (string | undefined)[] = [];
+
+            network.on('boost.getPaginatedBoosts', input => {
+                const {
+                    cursor,
+                    limit = 18,
+                    exclude,
+                } = (input ?? {}) as {
+                    cursor?: string;
+                    limit?: number;
+                    exclude?: { name?: { $regex: string }; category?: { $regex: string } };
+                };
+                const name = RegExpValidator.safeParse(exclude?.name?.$regex).data;
+                const category = RegExpValidator.safeParse(exclude?.category?.$regex).data;
+                const eligible = boosts.filter(
+                    boost =>
+                        (!cursor || boost.created < cursor) &&
+                        !(boost.name && name?.test(boost.name)) &&
+                        !(boost.category && category?.test(boost.category))
+                );
+                const records = eligible.slice(0, limit);
+                cursors.push(cursor);
+                return {
+                    hasMore: eligible.length > limit,
+                    cursor: records.at(-1)?.created,
+                    records,
+                } satisfies BrainOutputs['boost']['getPaginatedBoosts'];
+            });
+
+            await page.getByRole('button', { name: "Send one you've made" }).click();
+            const picker = page
+                .getByRole('heading', { name: "Reuse one you've made" })
+                .locator('xpath=ancestor::section[parent::aside]');
+            await expectPickerLayout(page, picker, viewport.mobile);
+            const initialBox = await picker.boundingBox();
+            const showMore = picker.getByRole('button', { name: 'Show more' });
+
+            await expect(picker.getByRole('button', { name: 'First Aid Badge' })).toBeVisible();
+            await expect(picker.getByRole('button', { name: 'Untitled credential' })).toBeVisible();
+            await expect(showMore).toBeVisible();
+            await expect(picker.getByText('AI Passport credential', { exact: true })).toHaveCount(
+                0
+            );
+            await expect(picker.getByText('Personalized Session', { exact: true })).toHaveCount(0);
+            await expect(picker.getByRole('button', { name: 'Custom Credential' })).toHaveCount(0);
+            await showMore.click();
+            await expect(picker.getByRole('button', { name: 'Custom Credential' })).toBeVisible();
+            await expect(showMore).toHaveCount(0);
+            expect(cursors).toEqual([undefined, boosts.at(-2)?.created]);
+
+            await picker.getByPlaceholder('Search your credentials…').fill('AI Passport');
+            await expect(picker.getByText(/Nothing matches/)).toBeVisible();
+            expect(await picker.boundingBox()).toEqual(initialBox);
+        });
+    }
+
+    test('keeps AI Passport out of the reuse picker when Brain ignores exclusions', async ({
+        page,
+    }) => {
+        network.on('boost.getPaginatedBoosts', input => {
+            const cursor = (input as { cursor?: string } | undefined)?.cursor;
+            return {
+                hasMore: !cursor,
+                cursor: '2026-11-18T12:00:00.000Z',
+                records: cursor
+                    ? [{ uri: 'boost:badge', name: 'First Aid Badge' }]
+                    : [
+                          {
+                              uri: 'boost:ai',
+                              name: ' AI Passport credential ',
+                              category: 'Achievement',
+                          },
+                          {
+                              uri: 'boost:topic',
+                              name: 'Personalized Session',
+                              category: 'aI-\u00a0To-pic',
+                          },
+                      ],
+            } satisfies BrainOutputs['boost']['getPaginatedBoosts'];
+        });
+
+        await page.getByRole('button', { name: "Send one you've made" }).click();
+        const picker = page
+            .getByRole('heading', { name: "Reuse one you've made" })
+            .locator('xpath=ancestor::section[parent::aside]');
+        const moreHint = picker.getByText(
+            'Select “Show more” to look for older credentials to send.'
+        );
+
+        await expect(moreHint).toBeVisible();
+        await expect(picker.getByText('AI Passport credential', { exact: true })).toHaveCount(0);
+        await expect(picker.getByText('Personalized Session', { exact: true })).toHaveCount(0);
+        await picker.getByRole('button', { name: 'Show more' }).click();
+        await expect(picker.getByRole('button', { name: 'First Aid Badge' })).toBeVisible();
+        await expect(moreHint).toHaveCount(0);
     });
 
     test('rejects an excessive XLSX archive and then imports a real Google Sheets export through the browser worker', async ({

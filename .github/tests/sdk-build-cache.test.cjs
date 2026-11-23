@@ -221,13 +221,22 @@ test('full key calculation survives app-only second commits, invalidates SDK/con
     write(path.join(f.workspace, 'packages/browser/source.ts'), 'browser-sdk');
     write(path.join(f.workspace, 'packages/service/source.ts'), 'service-sdk');
     write(path.join(f.workspace, 'apps/learn-card-app/src/app.ts'), 'frontend-v1');
+    const uiFile = 'packages/learn-card-base/src/hooks/example.ts';
+    const registryFile = 'packages/learn-card-registries/trusted/registry.json';
+    const uiManifest = 'packages/learn-card-base/package.json';
+    const otherRegistry = 'packages/learn-card-registries/untrusted/registry.json';
+    for (const file of [uiFile, registryFile, uiManifest, otherRegistry]) {
+        write(path.join(f.workspace, file), 'v1');
+    }
     write(
         path.join(f.workspace, 'node_modules/nx/package.json'),
         JSON.stringify({ version: 'fixture', bin: { nx: 'nx ; touch INJECTED ; #.cjs' } })
     );
+    const graphFile = path.join(f.workspace, 'node_modules/nx/fixture-graphs.json');
+    write(graphFile, JSON.stringify(g));
     write(
         path.join(f.workspace, 'node_modules/nx/nx ; touch INJECTED ; #.cjs'),
-        `const fs=require('fs');const role=process.argv.includes('learn-card-app:docker-build')?'browser':'service';fs.writeFileSync(process.argv.find(a=>a.startsWith('--graph=')).slice(8),JSON.stringify(${JSON.stringify(g)}[role]));`
+        `const fs=require('fs');const role=process.argv.includes('learn-card-app:docker-build')?'browser':'service';fs.writeFileSync(process.argv.find(a=>a.startsWith('--graph=')).slice(8),JSON.stringify(require('./fixture-graphs.json')[role]));`
     );
     git('init', '--quiet');
     git('add', '.');
@@ -245,6 +254,7 @@ test('full key calculation survives app-only second commits, invalidates SDK/con
     );
     const key = specification(f.workspace).key;
     fs.writeFileSync(path.join(f.workspace, 'apps/learn-card-app/src/app.ts'), 'frontend-v2');
+    write(path.join(f.workspace, uiFile), 'v2');
     git('add', '.');
     git(
         '-c',
@@ -264,12 +274,29 @@ test('full key calculation survives app-only second commits, invalidates SDK/con
         'tsconfig.json',
         'packages/common/source.ts',
         'docs/snippets/quickstart/send.mjs',
+        uiManifest,
+        registryFile,
+        otherRegistry,
     ]) {
         const previous = fs.readFileSync(path.join(f.workspace, file));
         fs.appendFileSync(path.join(f.workspace, file), 'changed');
         assert.notEqual(specification(f.workspace).key, key);
         fs.writeFileSync(path.join(f.workspace, file), previous);
     }
+    // A dependency in either consumer graph makes that source an SDK input again.
+    for (const role of ['browser', 'service']) {
+        const withDependency = graphs();
+        const graph = withDependency[role].graph;
+        graph.nodes.base = { data: { root: 'packages/learn-card-base' } };
+        graph.dependencies.common.push({ target: 'base' });
+        write(graphFile, JSON.stringify(withDependency));
+        const dependentKey = specification(f.workspace).key;
+        assert.notEqual(dependentKey, key);
+        write(path.join(f.workspace, uiFile), 'v3');
+        assert.notEqual(specification(f.workspace).key, dependentKey);
+        write(path.join(f.workspace, uiFile), 'v2');
+    }
+    write(graphFile, JSON.stringify(g));
     // Unsupported tracked inputs must disable reuse rather than hash a link target or
     // ignore a submodule's contents. Ordinary Nx execution remains the fallback.
     const unsupported = 'packages/unsupported-input';

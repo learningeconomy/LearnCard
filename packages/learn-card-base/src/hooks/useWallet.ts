@@ -32,11 +32,13 @@ import { getOrFetchConsentedContracts } from './useConsentedContracts';
 import { queueAiInsightCredentialRefresh } from 'learn-card-base/react-query/mutations/ai-passport';
 import { isLearnCardAiPassportContractUri } from 'learn-card-base/constants/aiPassport';
 import { getLogger } from '../logging/logger';
+import { enqueuePendingContractSyncSafely } from '../stores/pendingContractSyncStore';
 import {
     addCredentialSummary,
     getCredentialFactsEpoch,
 } from '../in-app-messages/credentialFactsStore';
 import { emitInAppMessageEvent } from '../in-app-messages/inAppMessageEvents';
+import { invalidateCredentialIndexQueries } from '../react-query/queries/credentialIndexCache';
 const log = getLogger('use-wallet');
 
 let generating = false; // Mutex flag to allow first init call to acquire a lock
@@ -222,13 +224,17 @@ export const useWallet = () => {
                 };
             });
 
-            await queryClient.cancelQueries({
-                queryKey: ['useGetCredentialCount', profileDid, category, readerDid],
-            });
-            queryClient.setQueryData<number>(
-                ['useGetCredentialCount', profileDid, category, readerDid],
-                currentCount => (currentCount ?? 0) + recordsByCategory.get(category)!.length
-            );
+            const countKey = ['useGetCredentialCount', profileDid, category, readerDid];
+            await queryClient.cancelQueries({ queryKey: countKey, exact: true });
+            // Only bump a count the server already returned. With nothing cached, `0 + added`
+            // would be a made-up total that CREDENTIAL_INDEX_STALE_TIME then treats as fresh.
+            const currentCount = queryClient.getQueryData(countKey);
+            if (typeof currentCount === 'number') {
+                queryClient.setQueryData<number>(
+                    countKey,
+                    currentCount + recordsByCategory.get(category)!.length
+                );
+            }
         }
 
         // Optimistic writes must settle before claim completion, but a background
@@ -238,7 +244,9 @@ export const useWallet = () => {
                 queryKey: [...listPrefix, category, readerDid],
                 exact: true,
             });
-            void queryClient.refetchQueries({
+            // Invalidate rather than refetch: mounted counts refetch now, and an unmounted
+            // (possibly bumped) count stays stale so its next observer reads the real total.
+            void queryClient.invalidateQueries({
                 queryKey: ['useGetCredentialCount', profileDid, category, readerDid],
                 exact: true,
             });
@@ -247,7 +255,14 @@ export const useWallet = () => {
             queryKey: [...listPrefix, '', readerDid],
             exact: true,
         });
+        // The unfiltered total (useProfileSnapshot) is not one of the category keys above.
+        void queryClient.invalidateQueries({
+            queryKey: ['useGetCredentialCount', profileDid, undefined, readerDid],
+            exact: true,
+        });
         void invalidateVisibleCredentialCounts(queryClient, profileDid);
+        // Do not await: index-query refetches should not hold up claim completion.
+        void invalidateCredentialIndexQueries(queryClient, didWeb, { includeCount: false });
     };
 
     const getWallet = async (
@@ -311,105 +326,130 @@ export const useWallet = () => {
         }
     };
 
+    /**
+     * Materializes sharing from LearnCloud-indexed sources; SQLite-only records are
+     * not supported by the audience-copy cache or the persisted retry worker.
+     */
     const syncCredentialToContracts = async (
         { record, category }: { record: LCR; category: CredentialCategory },
         wallet?: BespokeLearnCard,
         // Owned by one claim attempt (one actor, credential and network), not a global cache.
         // Supplying this also makes partial failures visible to the recovery UI.
-        completedTerms?: Set<string>
+        completedTerms?: Set<string>,
+        callbacks?: {
+            onTermsSynced?: (termsUri: string) => void | Promise<void>;
+            /** Replaces the failed destinations after a completed discovery pass. */
+            onContractsFailed?: (contractUris: string[]) => void | Promise<void>;
+            /** Synchronous lease/identity guard around audience preparation and mutation. */
+            beforeSync?: () => void;
+        }
     ) => {
         const learnCard = wallet ?? (await getWallet());
-        // Fetch and cache all consented contracts for the user
-        const allContracts = await getOrFetchConsentedContracts(queryClient, learnCard);
-        logWalletSync('Starting credential sync to contracts', {
-            recordUri: record.uri,
-            category,
-            contractCount: allContracts.length,
-        });
-        // Batch sync credentials to contracts, respecting share settings
-        const outcomes = await Promise.allSettled(
-            allContracts.map(async ({ contract, terms, uri: termsUri, status }) => {
-                if (status !== 'live' || completedTerms?.has(termsUri)) return;
+        const syncedTerms = completedTerms ?? new Set<string>();
+        let failedContractUris: string[] | undefined;
+        try {
+            // Fetch and cache all consented contracts for the user
+            const allContracts = await getOrFetchConsentedContracts(queryClient, learnCard);
+            logWalletSync('Starting credential sync to contracts', {
+                recordUri: record.uri,
+                category,
+                contractCount: allContracts.length,
+            });
+            // Batch sync credentials to contracts, respecting share settings
+            const outcomes = await Promise.allSettled(
+                allContracts.map(async ({ contract, terms, uri: termsUri, status }) => {
+                    if (status !== 'live' || syncedTerms.has(termsUri)) return;
 
-                const categoryInfo = terms.read.credentials.categories[category];
+                    const categoryInfo = terms.read.credentials.categories[category];
 
-                logWalletSync('Evaluating contract', {
-                    ownerDid: contract.owner.did,
-                    contractUri: contract.uri,
-                    termsUri,
-                    category,
-                    shareAll: categoryInfo?.shareAll,
-                    sharing: categoryInfo?.sharing,
-                    shareUntil: categoryInfo?.shareUntil,
-                    status,
-                });
+                    logWalletSync('Evaluating contract', {
+                        ownerDid: contract.owner.did,
+                        contractUri: contract.uri,
+                        termsUri,
+                        category,
+                        shareAll: categoryInfo?.shareAll,
+                        sharing: categoryInfo?.sharing,
+                        shareUntil: categoryInfo?.shareUntil,
+                        status,
+                    });
 
-                if (
-                    categoryInfo?.shareAll &&
-                    categoryInfo.sharing &&
-                    (!categoryInfo.shareUntil || categoryInfo.shareUntil > new Date().toISOString())
-                ) {
-                    if (!record.uri) return;
+                    if (
+                        categoryInfo?.shareAll &&
+                        categoryInfo.sharing &&
+                        (!categoryInfo.shareUntil?.trim() ||
+                            categoryInfo.shareUntil > new Date().toISOString())
+                    ) {
+                        if (!record.uri) return;
 
-                    const audience = await loadContractAudience(learnCard, contract.uri);
-                    const sharedUri = await getOrCreateSharedUriForWallet(
-                        learnCard,
-                        audience.recipients,
-                        queryClient,
-                        record.uri,
-                        category
-                    );
-
-                    if (sharedUri) {
-                        logWalletSync('Syncing credential to contract', {
-                            ownerDid: contract.owner.did,
-                            contractUri: contract.uri,
-                            termsUri,
-                            category,
-                            sharedUri,
-                        });
-                        await learnCard.invoke.syncCredentialsToContract(
-                            termsUri,
-                            {
-                                [category]: [sharedUri],
-                            },
-                            audience.audienceVersion
+                        callbacks?.beforeSync?.();
+                        const audience = await loadContractAudience(learnCard, contract.uri);
+                        const sharedUri = await getOrCreateSharedUriForWallet(
+                            learnCard,
+                            audience.recipients,
+                            queryClient,
+                            record.uri,
+                            category
                         );
-                        // Remember the acknowledged mutation before any cache/refresh work.
-                        completedTerms?.add(termsUri);
-                        logWalletSync('syncCredentialsToContract completed', {
-                            ownerDid: contract.owner.did,
-                            contractUri: contract.uri,
-                            termsUri,
-                            category,
-                        });
 
-                        if (isLearnCardAiPassportContractUri(contract.uri)) {
-                            logWalletSync('Queueing AI Passport refresh', {
+                        if (sharedUri) {
+                            logWalletSync('Syncing credential to contract', {
+                                ownerDid: contract.owner.did,
+                                contractUri: contract.uri,
+                                termsUri,
+                                category,
+                                sharedUri,
+                            });
+                            callbacks?.beforeSync?.();
+                            await learnCard.invoke.syncCredentialsToContract(
+                                termsUri,
+                                {
+                                    [category]: [sharedUri],
+                                },
+                                audience.audienceVersion,
+                                true
+                            );
+                            // Remember the acknowledged mutation before any cache/refresh work.
+                            syncedTerms.add(termsUri);
+                            await callbacks?.onTermsSynced?.(termsUri);
+                            logWalletSync('syncCredentialsToContract completed', {
                                 ownerDid: contract.owner.did,
                                 contractUri: contract.uri,
                                 termsUri,
                                 category,
                             });
-                            void queueAiInsightCredentialRefresh({
-                                wallet: learnCard,
-                                queryClient,
-                            }).catch(error =>
-                                logWalletSyncError('Failed to queue AI Passport refresh', error, {
+
+                            if (isLearnCardAiPassportContractUri(contract.uri)) {
+                                logWalletSync('Queueing AI Passport refresh', {
                                     ownerDid: contract.owner.did,
                                     contractUri: contract.uri,
                                     termsUri,
                                     category,
-                                })
-                            );
-                        }
+                                });
+                                void queueAiInsightCredentialRefresh({
+                                    wallet: learnCard,
+                                    queryClient,
+                                }).catch(error =>
+                                    logWalletSyncError(
+                                        'Failed to queue AI Passport refresh',
+                                        error,
+                                        {
+                                            ownerDid: contract.owner.did,
+                                            contractUri: contract.uri,
+                                            termsUri,
+                                            category,
+                                        }
+                                    )
+                                );
+                            }
 
-                        queryClient.invalidateQueries({
-                            queryKey: ['useTermsTransactions', termsUri],
-                        });
+                            queryClient.invalidateQueries({
+                                queryKey: ['useTermsTransactions', termsUri],
+                            });
+                        } else {
+                            throw new Error('Unable to prepare credential sharing');
+                        }
                     } else {
-                        if (completedTerms) throw new Error('Unable to prepare credential sharing');
-                        logWalletSync('No shared URI available for contract', {
+                        logWalletSync('Contract not eligible for sync', {
                             ownerDid: contract.owner.did,
                             contractUri: contract.uri,
                             termsUri,
@@ -417,30 +457,42 @@ export const useWallet = () => {
                             recordUri: record.uri,
                         });
                     }
-                } else {
-                    logWalletSync('Contract not eligible for sync', {
-                        ownerDid: contract.owner.did,
-                        contractUri: contract.uri,
-                        termsUri,
-                        category,
-                        recordUri: record.uri,
-                    });
-                }
-            })
-        );
-        if (completedTerms && outcomes.some(outcome => outcome.status === 'rejected')) {
-            throw new AggregateError(
-                outcomes.flatMap(outcome =>
-                    outcome.status === 'rejected' ? [outcome.reason] : []
-                ),
-                'Some consented contracts could not be synced'
+                })
             );
+            const failures: unknown[] = [];
+            const failedContracts: string[] = [];
+            outcomes.forEach((outcome, index) => {
+                if (outcome.status !== 'rejected') return;
+                failures.push(outcome.reason);
+                failedContracts.push(allContracts[index].contract.uri);
+            });
+            failedContractUris = failedContracts;
+            await callbacks?.onContractsFailed?.(failedContracts);
+            if (failures.length > 0) {
+                throw new AggregateError(failures, 'Some consented contracts could not be synced');
+            }
+            logWalletSync('Finished credential sync to contracts', {
+                recordUri: record.uri,
+                category,
+            });
+            return true;
+        } catch (error) {
+            // Staged claim flows own their retries; ordinary saves must remain successful.
+            if (completedTerms) throw error;
+            await enqueuePendingContractSyncSafely({
+                kind: 'credential',
+                profileDid: learnCard.id.did(),
+                record: { id: record.id, uri: record.uri, category },
+                category,
+                syncedTermsUris: [...syncedTerms],
+                failedContractUris,
+            });
+            logWalletSyncError('Credential sharing queued for retry', error, {
+                recordUri: record.uri,
+                category,
+            });
+            return false;
         }
-        logWalletSync('Finished credential sync to contracts', {
-            recordUri: record.uri,
-            category,
-        });
-        return true;
     };
 
     // Run in the background so local facts persistence cannot delay a successful claim.
@@ -584,6 +636,26 @@ export const useWallet = () => {
         let returnUri: string | undefined;
         let stage = 'initialize';
 
+        // Both save paths (including Partner Connect's skipLCNUser) must refresh the
+        // profile-scoped list, count, skills, and ID caches, or 5-min staleTime hides the save.
+        const cacheSavedRecord = async (
+            record: CredentialRecord<CredentialMetadata>,
+            category: CredentialCategory
+        ) => {
+            const batchRecords = context.batchRecords;
+            if (batchRecords) {
+                const records = batchRecords.get(category) ?? [];
+                records.push(record);
+                batchRecords.set(category, records);
+                return;
+            }
+            await refreshCredentialCaches(
+                new Map([[category, [record]]]),
+                context.profileDid,
+                context.readerDid
+            );
+        };
+
         try {
             const wallet = context.wallet;
 
@@ -626,6 +698,19 @@ export const useWallet = () => {
                 result = await wallet.index[location].add(record);
                 returnUri = uri2;
                 if (result) void recordCredentialClaim(wallet, uri2, vc, category);
+
+                if (result && !deferContractSync) {
+                    // Persist before returning; the singleton worker owns network delivery.
+                    await enqueuePendingContractSyncSafely({
+                        kind: 'credential',
+                        profileDid: wallet.id.did(),
+                        record: { id: record.id, uri: record.uri, category },
+                        category,
+                    });
+                }
+
+                stage = 'cache';
+                if (result) await cacheSavedRecord(record, category);
             }
 
             if (!skipLCNUser) {
@@ -650,22 +735,9 @@ export const useWallet = () => {
                 if (result) void recordCredentialClaim(wallet, uri, vc, category);
 
                 stage = 'cache';
-                if (result) {
-                    const batchRecords = context.batchRecords;
-                    if (batchRecords) {
-                        const records = batchRecords.get(category) ?? [];
-                        records.push(record);
-                        batchRecords.set(category, records);
-                    } else {
-                        await refreshCredentialCaches(
-                            new Map([[category, [record]]]),
-                            context.profileDid,
-                            context.readerDid
-                        );
-                    }
-                }
+                if (result) await cacheSavedRecord(record, category);
 
-                if (!deferContractSync) {
+                if (result && !deferContractSync) {
                     stage = 'sync';
                     await syncCredentialToContracts({ record, category }, wallet);
                 }

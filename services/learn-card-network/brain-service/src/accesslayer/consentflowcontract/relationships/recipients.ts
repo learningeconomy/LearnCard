@@ -81,6 +81,24 @@ export const canReadContractData = async (
     return Number(result.records[0]?.get('count') ?? 0) > 0;
 };
 
+/**
+ * Who may read the connections snapshot: the owner, a writer or a data recipient. These are the
+ * profiles whose integrations receive the consent events the snapshot recovers from. Kept
+ * separate from `canReadContractData`, which must not admit writers.
+ */
+export const canReadContractConnections = async (
+    contractId: string,
+    profileId: string
+): Promise<boolean> => {
+    const result = await new QueryBuilder(new BindParam({ contractId, profileId }))
+        .match(
+            '(contract:ConsentFlowContract {id: $contractId})-[:CREATED_BY|CAN_WRITE|SHARES_DATA_WITH]->(profile:Profile {profileId: $profileId})'
+        )
+        .return('count(profile) AS count')
+        .run();
+    return Number(result.records[0]?.get('count') ?? 0) > 0;
+};
+
 /** Additions freeze after first consent; removals never restore that permission. */
 export const addRecipientToContract = async (
     contractId: string,

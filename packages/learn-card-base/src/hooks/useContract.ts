@@ -47,7 +47,11 @@ export const useContractSentRequests = (uri: string | undefined, enabled = true)
 
                 const res = await wallet.invoke.getContractSentRequests(uri);
 
-                return res;
+                // A request addressed to an email has no profile until it is accepted.
+                // The screens that use this hook list profiles, so those rows are left out.
+                return res.filter((request): request is ConsentFlowContractRequestForProfile =>
+                    Boolean(request.profile)
+                );
             } catch (error) {
                 return Promise.reject(error);
             }

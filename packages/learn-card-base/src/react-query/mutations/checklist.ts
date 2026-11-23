@@ -3,6 +3,7 @@ import { switchedProfileStore, useWallet } from 'learn-card-base';
 import { isInternalCredentialCategory } from '../../helpers/credentialCollection';
 import { invalidateVisibleCredentialCounts } from '../visibleCredentialCountKeys';
 import { newCredsStore } from 'learn-card-base/stores/newCredsStore';
+import { invalidateCredentialIndexQueries } from '../queries/credentialIndexCache';
 
 import { getLogger } from '../../logging/logger';
 const log = getLogger('checklist');
@@ -37,6 +38,10 @@ export const useDeleteChecklistCredentialMutation = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['getChecklistCredentialCounts'] });
             invalidateCredentialList(queryClient);
+            void invalidateCredentialIndexQueries(
+                queryClient,
+                switchedProfileStore.get.switchedDid()
+            );
         },
         onError: error => {
             log.error('Failed to delete checklist credential', error);
@@ -73,7 +78,13 @@ export const useUpdateChecklistItemCategoryMutation = () => {
                 log.error('Failed to update credential in newCredsStore', error);
             }
         },
-        onSuccess: () => invalidateCredentialList(queryClient),
+        onSuccess: () => {
+            void invalidateCredentialIndexQueries(
+                queryClient,
+                switchedProfileStore.get.switchedDid()
+            );
+            return invalidateCredentialList(queryClient);
+        },
         onError: error => {
             log.error('Failed to update checklist credential', error);
         },

@@ -8,7 +8,7 @@ import {
 } from './ai-provider-config';
 import { BedrockResponsesProvider } from './bedrock-responses';
 
-const models = { CHAT_MODEL: 'gpt-6.1-sol', TITLE_MODEL: 'gpt-6-luna-none' };
+const models = { CHAT_MODEL: 'gpt-6.2-sol', TITLE_MODEL: 'gpt-6-luna-none' };
 const noFiles = () => false;
 const validate = (environment: NodeJS.ProcessEnv, roleModels = models) =>
     validateAiProviderEnvironment(environment, roleModels, noFiles);
@@ -180,7 +180,7 @@ describe('startup validation errors', () => {
                     TITLE_MODEL: 'gpt-6-luna',
                 })
             ).toEqual([
-                'CHAT_MODEL="gpt-4o" is not an approved generation model; use gpt-6-luna or gpt-6.1-sol, optionally with a reasoning suffix such as -none or -low',
+                'CHAT_MODEL="gpt-4o" is not an approved generation model; use gpt-6-luna or gpt-6.2-sol, optionally with a reasoning suffix such as -none or -low',
             ]);
     });
 
@@ -219,7 +219,7 @@ describe('LLM routes', () => {
         const route = getLlmRoute({ LLM_PROVIDER: 'openai' });
         expect(route.provider).toBe('openai');
         expect(route.requestModel('us.openai.gpt-6-luna')).toBe('gpt-6-luna');
-        expect(route.auditModel('gpt-6.1-sol-high')).toBe('gpt-6.1-sol');
+        expect(route.auditModel('gpt-6.2-sol-high')).toBe('gpt-6.2-sol');
     });
 
     test('an invalid LLM_PROVIDER fails before any client exists', () => {
