@@ -26,6 +26,7 @@ import {
     createBatchJob,
     finishBatchItem,
     markBatchIssuanceStarted,
+    InboxBatchRequestIdConflict,
     readBatchAdmission,
     readBatchJob,
     readBatchReplay,
@@ -265,6 +266,12 @@ export const processInboxQueueMessage = async (body: string, inline = false): Pr
 };
 
 /**
+ * Admission request ids of keyed inbox.issue calls live in this namespace. It is reserved:
+ * the batch route refuses a caller-supplied requestId that starts with it.
+ */
+export const INBOX_ISSUE_REQUEST_ID_PREFIX = 'inbox.issue:';
+
+/**
  * Single-request adapter over the existing durable batch lifecycle. A concurrent
  * queue worker and this request compete for the same item lease, never two sends.
  */
@@ -282,7 +289,10 @@ export const issueKeyedInboxCredential = async (
     const idempotencyKey = input.idempotencyKey;
     const replayKey = inboxItemReplayKey(profile.profileId, idempotencyKey);
     // Namespace admission replay without changing the shared issuer/item-key identity.
-    const request = { requestId: `inbox.issue:${fingerprint(idempotencyKey)}`, items: [input] };
+    const request = {
+        requestId: `${INBOX_ISSUE_REQUEST_ID_PREFIX}${fingerprint(idempotencyKey)}`,
+        items: [input],
+    };
     // An earlier call under this key may have left its item waiting. Once the key's outcome
     // is known, record it there as a worker would, so that no later worker issues the item.
     // A job holding another payload under this request id is not this caller's to settle.
@@ -318,7 +328,16 @@ export const issueKeyedInboxCredential = async (
     // or is rejected would outlive the answer and could be issued by a later worker.
     const known = await readBatchReplay(replayKey);
     if (known !== null) return replay(known);
-    const receipt = await submitInboxBatch(profile, request, ctx);
+    // The request id is derived from the key, so a job holding another payload under it
+    // means the key was reused. This caller never sent a requestId: answer about its key.
+    const receipt = await submitInboxBatch(profile, request, ctx).catch((error: unknown) => {
+        if (error instanceof InboxBatchRequestIdConflict)
+            throw new InboxBatchConflict(
+                'IDEMPOTENCY_MISMATCH',
+                'This idempotency key was used for a different issuance.'
+            );
+        throw error;
+    });
     // A separate job's IN_PROGRESS snapshot is not authoritative once its owner
     // commits the shared receipt. Validate the live record before trusting that job.
     const stored = await readBatchReplay(replayKey);

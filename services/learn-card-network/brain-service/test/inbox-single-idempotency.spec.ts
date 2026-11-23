@@ -631,4 +631,55 @@ describe('single inbox durable idempotency', () => {
         await runLateWorker();
         await expectCounts(1);
     }, 30000);
+    it('a different payload under a key whose first call is still queued is refused as an idempotency mismatch, not as a requestId conflict', async () => {
+        const key = randomUUID();
+        const input = await inputFor(issuer, key);
+        const substituted = await inputFor(issuer, key, 'Substituted');
+        const waiting = await admit(input); // QUEUED, never processed: no replay record yet.
+        expect(await readBatchReplay(inboxItemReplayKey(issuerId, key))).toBeNull();
+        const refused = issuer.clients.fullAuth.inbox.issue(substituted);
+        await expect(refused).rejects.toMatchObject({
+            code: 'CONFLICT',
+            reason: 'IDEMPOTENCY_MISMATCH',
+            message: 'This idempotency key was used for a different issuance.',
+        });
+        // The caller sent an idempotencyKey and never a requestId.
+        await expect(refused).rejects.toMatchObject({
+            message: expect.not.stringContaining('requestId'),
+        });
+        // That call issued neither payload and left the first call's item to its own worker.
+        await expectCounts(0);
+        expect(await admittedStates(key, '')).toEqual(['QUEUED']);
+        await runLateWorker();
+        expect((await getInboxBatch(issuerId, waiting)).items[0]?.result).toMatchObject({
+            success: true,
+        });
+        expect(await issuedCount(input)).toBe(1);
+        expect(await issuedCount(substituted)).toBe(0);
+        await expectCounts(1);
+    });
+    const batchCount = async (): Promise<number> => {
+        const result = await neogma.queryRunner.run(
+            'MATCH (b:InboxBatch) RETURN count(b) AS total'
+        );
+        return Number(result.records[0]!.get('total'));
+    };
+    it('the batch endpoint still answers a reused requestId with its own message', async () => {
+        const requestId = randomUUID();
+        await issuer.clients.fullAuth.inbox.issueBatch({
+            requestId,
+            items: [await inputFor(issuer, randomUUID())],
+        });
+        // A batch caller did send this requestId, so the answer names it.
+        await expect(
+            issuer.clients.fullAuth.inbox.issueBatch({
+                requestId,
+                items: [await inputFor(issuer, randomUUID(), 'Substituted')],
+            })
+        ).rejects.toMatchObject({
+            code: 'CONFLICT',
+            message: 'requestId was used for a different batch.',
+        });
+        expect(await batchCount()).toBe(1);
+    });
 });

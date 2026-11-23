@@ -14,6 +14,16 @@ const CLEANUP_MARGIN_MS = 5_000;
 
 export { ensureInboxBatchConstraints } from './schema';
 
+/**
+ * A request id that already holds another payload. Typed so that a caller which derives the
+ * request id itself can recognise this refusal without reading its message.
+ */
+export class InboxBatchRequestIdConflict extends TRPCError {
+    constructor() {
+        super({ code: 'CONFLICT', message: 'requestId was used for a different batch.' });
+    }
+}
+
 const transaction = async <T>(fn: (tx: ManagedTransaction) => Promise<T>): Promise<T> => {
     await ensureInboxBatchConstraints();
     const session = neogma.driver.session();
@@ -56,10 +66,7 @@ export const createBatchJob = async (input: {
             const batch = prior.records[0]?.get('b').properties;
             if (batch) {
                 if (batch.requestHash !== input.requestHash)
-                    throw new TRPCError({
-                        code: 'CONFLICT',
-                        message: 'requestId was used for a different batch.',
-                    });
+                    throw new InboxBatchRequestIdConflict();
                 return {
                     batchId: batch.id,
                     status: getInboxBatchState(prior.records[0]!.get('states')),
