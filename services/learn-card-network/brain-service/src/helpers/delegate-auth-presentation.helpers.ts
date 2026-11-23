@@ -23,15 +23,25 @@ type DelegateJwtPayload = {
     iss?: unknown;
     nonce?: unknown;
     aud?: unknown;
-    vp?: { holder?: unknown } | null;
+    vp?: { holder?: unknown; validUntil?: unknown } | null;
 };
 
 type DelegateJwtHeader = { kid?: unknown };
 
+/** The furthest ahead of the server's clock a delegate token's `vp.validUntil` may be. */
+export const DELEGATE_TOKEN_MAX_LIFETIME_MS = 5 * 60 * 1000;
+
+/** Allowed on that upper bound only, for a signer whose clock runs ahead of the server's. */
+export const DELEGATE_TOKEN_CLOCK_SKEW_MS = 30 * 1000;
+
+// Exactly what `Date.prototype.toISOString()` writes: one form, UTC, no offset to interpret.
+const DELEGATE_TOKEN_VALID_UNTIL_FORMAT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+
 const verifyDelegatePresentation = async (
     jwt: string,
     payload: DelegateJwtPayload,
-    challenge: string
+    challenge: string,
+    now: number
 ): Promise<DelegatePresentation | undefined> => {
     const { iss, aud, vp } = payload;
 
@@ -56,6 +66,25 @@ const verifyDelegatePresentation = async (
     // A delegate's signer writes one audience as a plain string. A list, even of one, is
     // refused: the policy compares a single audience and must not have to choose one.
     if (typeof aud !== 'string' || !aud) return undefined;
+
+    // The SDK's presentation JWT carries no `exp`, `iat` or `nbf`, so the time bound is a date
+    // inside the signed presentation, which the signature check below covers. The upper bound
+    // makes every accepted token expire within about five minutes, whatever its signer wrote.
+    const validUntil = vp?.validUntil;
+
+    if (typeof validUntil !== 'string' || !DELEGATE_TOKEN_VALID_UNTIL_FORMAT.test(validUntil)) {
+        return undefined;
+    }
+
+    const until = Date.parse(validUntil);
+
+    if (
+        !Number.isFinite(until) ||
+        until <= now ||
+        until > now + DELEGATE_TOKEN_MAX_LIFETIME_MS + DELEGATE_TOKEN_CLOCK_SKEW_MS
+    ) {
+        return undefined;
+    }
 
     const learnCard = await getEmptyLearnCard();
 
@@ -82,14 +111,18 @@ const verifyDelegatePresentation = async (
  *
  * A returned `presentation` guarantees that the token was signed by the `did:key` in
  * `signerDid`, that issuer and holder are that same DID, and that the signature covers
- * exactly this `challenge` and this single `audience`.
+ * exactly this `challenge` and this single `audience`. It also guarantees that the signed
+ * `vp.validUntil` is later than `now` and at most `DELEGATE_TOKEN_MAX_LIFETIME_MS` (plus
+ * `DELEGATE_TOKEN_CLOCK_SKEW_MS`) ahead of it. That does NOT make a token one-use: until
+ * its bound passes, the same token is accepted again.
  *
  * It says nothing about any stored grant: whether the challenge names a grant, whether
  * that grant belongs to this signer and audience, is unexpired, unrevoked or in scope is
  * for `evaluateDelegateAuthGrant` to decide. Nothing is read, cached or written here.
  */
 export const readDelegatePresentation = async (
-    jwt: string
+    jwt: string,
+    now: number = Date.now()
 ): Promise<DelegatePresentationResult> => {
     let payload: DelegateJwtPayload;
     let challenge: unknown;
@@ -111,7 +144,7 @@ export const readDelegatePresentation = async (
     try {
         return {
             isDelegateToken: true,
-            presentation: await verifyDelegatePresentation(jwt, payload, challenge),
+            presentation: await verifyDelegatePresentation(jwt, payload, challenge, now),
         };
     } catch {
         return { isDelegateToken: true, presentation: undefined };

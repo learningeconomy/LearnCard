@@ -73,11 +73,46 @@ describe('Delegate-bound issuance over HTTP', () => {
     let delegate: SeedLearnCard;
     let server: FastifyInstance;
 
+    /** A DID-auth presentation made with `getDidAuthVp`, which cannot write a time bound. */
     const jwt = async (
         wallet: SeedLearnCard,
         options: { challenge?: string; domain?: string }
     ): Promise<string> => {
         const token = await wallet.invoke.getDidAuthVp({ ...options, proofFormat: 'jwt' });
+
+        if (typeof token !== 'string') throw new Error('Expected the presentation as a JWT');
+
+        return token;
+    };
+
+    /**
+     * What a delegate sends: a DID-auth presentation over challenge and audience, as a JWT whose
+     * signed payload says until when it is valid. Passing `validUntil: undefined` leaves the
+     * bound out.
+     */
+    const delegateJwt = async (
+        wallet: SeedLearnCard,
+        options: { challenge: string; audience?: string; validUntil?: string }
+    ): Promise<string> => {
+        const validUntil =
+            'validUntil' in options
+                ? options.validUntil
+                : new Date(Date.now() + 60_000).toISOString();
+
+        const token: unknown = await wallet.invoke.issuePresentation(
+            {
+                '@context': ['https://www.w3.org/ns/credentials/v2'],
+                type: ['VerifiablePresentation'],
+                holder: wallet.id.did(),
+                ...(validUntil === undefined ? {} : { validUntil }),
+            },
+            {
+                proofPurpose: 'authentication',
+                challenge: options.challenge,
+                domain: options.audience,
+                proofFormat: 'jwt',
+            }
+        );
 
         if (typeof token !== 'string') throw new Error('Expected the presentation as a JWT');
 
@@ -141,9 +176,12 @@ describe('Delegate-bound issuance over HTTP', () => {
         expect(reply, JSON.stringify(reply.body)).toEqual({ status: 200, body: true });
     };
 
-    /** Signs the way a delegate does: the grant's challenge for the grant's audience. */
+    /**
+     * Signs the way a delegate does: the grant's challenge for the grant's audience, valid for
+     * one minute.
+     */
     const delegateToken = (grant: Grant, signer: SeedLearnCard = delegate): Promise<string> =>
-        jwt(signer, { challenge: grant.challenge, domain: grant.audience });
+        delegateJwt(signer, { challenge: grant.challenge, audience: grant.audience });
 
     /** Unsigned content naming the organisation, as a delegate submits it. */
     const unsigned = () => owner.learnCard.invoke.getTestVc();
@@ -397,9 +435,9 @@ describe('Delegate-bound issuance over HTTP', () => {
 
     it('refused: a token signed for another audience', async () => {
         const { grant } = await workingGrant();
-        const token = await jwt(delegate, {
+        const token = await delegateJwt(delegate, {
             challenge: grant.challenge,
-            domain: 'did:web:elsewhere.example.com',
+            audience: 'did:web:elsewhere.example.com',
         });
 
         expect(await issueAs(token)).toMatchObject(REFUSED);
@@ -408,9 +446,34 @@ describe('Delegate-bound issuance over HTTP', () => {
 
     it('refused: a token signed without an audience', async () => {
         const { grant } = await workingGrant();
-        const token = await jwt(delegate, { challenge: grant.challenge });
+        const token = await delegateJwt(delegate, { challenge: grant.challenge });
 
         expect(await issueAs(token)).toMatchObject(REFUSED);
+    });
+
+    it('refused: a delegate token without a time bound', async () => {
+        const { grant, issued } = await workingGrant();
+        // Signed by the right key over the grant's challenge and audience, the way a delegate
+        // signed before the bound was required.
+        const token = await jwt(delegate, { challenge: grant.challenge, domain: grant.audience });
+
+        expect(await issueAs(token)).toMatchObject(REFUSED);
+        expect(await storedIssuanceIds()).toEqual([issued.issuanceId]);
+        // Refused before any grant is read: a token without a presentation leaves no record.
+        expect(await denialStages()).toEqual([]);
+    });
+
+    it('refused: a delegate token that has expired', async () => {
+        const { grant, issued } = await workingGrant();
+        const token = await delegateJwt(delegate, {
+            challenge: grant.challenge,
+            audience: grant.audience,
+            validUntil: new Date(Date.now() - 1_000).toISOString(),
+        });
+
+        expect(await issueAs(token)).toMatchObject(REFUSED);
+        expect(await storedIssuanceIds()).toEqual([issued.issuanceId]);
+        expect(await denialStages()).toEqual([]);
     });
 
     it('refused: the act-as header naming another profile changes nothing', async () => {
@@ -510,9 +573,9 @@ describe('Delegate-bound issuance over HTTP', () => {
         );
 
         const unknownChallenge = `${DELEGATE_GRANT_CHALLENGE_PREFIX}${randomUUID()}`;
-        const unknownToken = await jwt(delegate, {
+        const unknownToken = await delegateJwt(delegate, {
             challenge: unknownChallenge,
-            domain: grant.audience,
+            audience: grant.audience,
         });
         expect(await issueAs(unknownToken)).toMatchObject(REFUSED);
 

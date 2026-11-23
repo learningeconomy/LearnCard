@@ -97,12 +97,43 @@ let tokens: {
 };
 
 /**
- * A DID-auth presentation as a JWT. A delegate signs over challenge and audience. Every other
- * caller signs over the challenge alone, and only such a token passes the legacy verification:
- * the tokens `WithoutAudience` are the delegate-prefixed ones the legacy path would accept.
+ * What a delegate sends: a DID-auth presentation over challenge and audience, as a JWT whose
+ * signed payload says until when it is valid. Passing `validUntil: undefined` leaves the bound out.
  */
-const sign = async (challenge: string, domain?: string): Promise<string> => {
-    const jwt = await signer.invoke.getDidAuthVp({ challenge, domain, proofFormat: 'jwt' });
+const delegateToken = async (
+    learnCard: SeedLearnCard,
+    options: { challenge: string; audience: string; validUntil?: string }
+): Promise<string> => {
+    const validUntil =
+        'validUntil' in options ? options.validUntil : new Date(Date.now() + 60_000).toISOString();
+
+    const jwt: unknown = await learnCard.invoke.issuePresentation(
+        {
+            '@context': ['https://www.w3.org/ns/credentials/v2'],
+            type: ['VerifiablePresentation'],
+            holder: learnCard.id.did(),
+            ...(validUntil === undefined ? {} : { validUntil }),
+        },
+        {
+            proofPurpose: 'authentication',
+            challenge: options.challenge,
+            domain: options.audience,
+            proofFormat: 'jwt',
+        }
+    );
+
+    if (typeof jwt !== 'string') throw new Error('Expected the presentation as a JWT');
+
+    return jwt;
+};
+
+/**
+ * What every other caller sends: a DID-auth presentation over the challenge alone, with no
+ * time bound. Only such a token passes the legacy verification: the tokens `WithoutAudience`
+ * are the delegate-prefixed ones the legacy path would accept.
+ */
+const sign = async (challenge: string): Promise<string> => {
+    const jwt = await signer.invoke.getDidAuthVp({ challenge, proofFormat: 'jwt' });
 
     if (typeof jwt !== 'string') throw new Error('Expected the presentation as a JWT');
 
@@ -128,14 +159,17 @@ const request = (jwt?: string, otherHeaders: [string, string][] = []) => {
 beforeAll(async () => {
     signer = await getLearnCard(DELEGATE_SEED);
 
-    const validDelegate = await sign(CHALLENGE, AUDIENCE);
+    const validDelegate = await delegateToken(signer, { challenge: CHALLENGE, audience: AUDIENCE });
     const bothPrefixes = `${DELEGATE_GRANT_CHALLENGE_PREFIX}${AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX}7f3c9a52`;
 
     tokens = {
         validDelegate,
         invalidDelegate: changeOneSignatureCharacter(validDelegate),
         delegateWithoutAudience: await sign(CHALLENGE),
-        delegateContainingLegacyPrefix: await sign(bothPrefixes, AUDIENCE),
+        delegateContainingLegacyPrefix: await delegateToken(signer, {
+            challenge: bothPrefixes,
+            audience: AUDIENCE,
+        }),
         delegateContainingLegacyPrefixWithoutAudience: await sign(bothPrefixes),
         legacyGrant: await sign(`${AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX}7f3c9a52`),
         cachedChallenge: await sign('7f3c9a52-0b1e-4c7d-9a41-5d2e8f6b1c90'),
