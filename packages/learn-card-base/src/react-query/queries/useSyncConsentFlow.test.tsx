@@ -82,7 +82,10 @@ vi.mock('learn-card-base', () => ({
     CredentialCategoryEnum: {},
     contractCategoryNameToCategoryMetadata: vi.fn(),
     newCredsStore: { set: { addNewCreds: vi.fn() } },
-    switchedProfileStore: { use: { switchedDid: () => 'did:web:test:scout' } },
+    switchedProfileStore: {
+        use: { switchedDid: () => 'did:web:test:scout' },
+        get: { switchedDid: () => 'did:web:test:scout' },
+    },
     syncProgressStore: { set: {}, get: {} },
     useToast: () => ({ presentToast: vi.fn() }),
     useWallet: () => ({
@@ -431,6 +434,33 @@ describe('useSyncConsentFlow', () => {
         await waitFor(() => expect(host.stored.has(uri)).toBe(false));
         expect(listedUris()).not.toContain(uri);
         expect(host.addVCtoWallet).toHaveBeenCalledTimes(1);
+    });
+
+    it('refreshes the switched profile skills and IDs after a rollback', async () => {
+        // goblincore r4530368502: rollback invalidation must use the active profile DID.
+        const uri = 'urn:test:k2:rollback-switched-profile';
+        host.pending = [uri];
+        host.lifecycle.set(uri, 'suspended');
+        const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        const skillsKey = ['useGetSkills', 'did:web:test:scout'];
+        const idsKey = ['useGetIDs', 'did:web:test:scout'];
+        client.setQueryData(skillsKey, ['stale-skill']);
+        client.setQueryData(idsKey, ['stale-id']);
+        const normalStore = host.addVCtoWallet.getMockImplementation()!;
+        host.addVCtoWallet.mockImplementationOnce(async (args: Record<string, string>) => {
+            await normalStore(args);
+            throw new TypeError('Failed to fetch');
+        });
+        const hook = renderSync(client);
+        await waitFor(() => expect(hook.result.current.isSuccess).toBe(true));
+        expect(client.getQueryState(skillsKey)?.isInvalidated).toBe(false);
+
+        await act(async () => {
+            await hook.result.current.refetch();
+        });
+        await waitFor(() => expect(host.stored.has(uri)).toBe(false));
+        await waitFor(() => expect(client.getQueryState(skillsKey)?.isInvalidated).toBe(true));
+        expect(client.getQueryState(idsKey)?.isInvalidated).toBe(true);
     });
 
     it('rolls back after an app reload when the store worked, the accept failed, and the issuer then suspended it', async () => {

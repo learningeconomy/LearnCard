@@ -11,6 +11,7 @@ import { ToastTypeEnum, useToast } from '../../hooks/useToast';
 import { getLogger } from '../../logging/logger';
 import { connectionPromptKeys } from '../connectionPrompts';
 import { invalidateBoostRecipientQueries } from '../queries/queries';
+import { invalidateCredentialIndexQueries } from '../queries/credentialIndexCache';
 const log = getLogger('mutations');
 
 export const getDeletedUrisForCredentialRecord = (record: LCR): string[] => {
@@ -572,15 +573,10 @@ export const useDeleteCredentialRecord = () => {
             if (category) {
                 // Invalidate related queries to refresh data
                 queryClient.invalidateQueries({
-                    queryKey: ['useGetCredentials', didWeb ?? '', category],
-                });
-                queryClient.invalidateQueries({
                     queryKey: ['useGetCredentialList', didWeb ?? ''],
                 });
-                queryClient.invalidateQueries({
-                    queryKey: ['useGetCredentialCount', didWeb ?? '', category],
-                });
                 void invalidateVisibleCredentialCounts(queryClient, didWeb ?? '');
+                void invalidateCredentialIndexQueries(queryClient, didWeb);
             }
 
             if (result.deferPostDeleteCleanup) {
@@ -616,15 +612,13 @@ export const useDeleteCredentialRecord = () => {
 
                 // Invalidate affected queries to refresh the data
                 queryClient.invalidateQueries({
-                    queryKey: ['useGetCredentials', didWeb ?? '', context.category],
-                });
-                queryClient.invalidateQueries({
                     queryKey: ['useGetCredentialList', didWeb ?? ''],
                 });
                 void invalidateVisibleCredentialCounts(queryClient, didWeb ?? '');
                 queryClient.invalidateQueries({
                     queryKey: ['boosts'],
                 });
+                void invalidateCredentialIndexQueries(queryClient, didWeb);
             }
         },
     });

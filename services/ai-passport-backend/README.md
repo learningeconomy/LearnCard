@@ -454,7 +454,7 @@ the AWS account and runs fixed synthetic
 Guardrail fixtures before browser E2E; those fixtures do not exercise production
 consent, and `DRAFT` cannot replace the reviewed immutable numeric version.
 
-Generation now uses the OpenAI SDK Responses API at the approved US Runtime endpoint, exact `us.openai.gpt-6.1-sol`/`us.openai.gpt-6-luna` profiles, and short-term bearer tokens. Runtime Responses requires scoped model inference/streaming grants **and** `bedrock:InvokeModel` on the account's default project. No IAM policy is changed by this PR.
+Generation now uses the OpenAI SDK Responses API at the approved US Runtime endpoint, exact `us.openai.gpt-6.2-sol`/`us.openai.gpt-6-luna` profiles, and short-term bearer tokens. Runtime Responses requires scoped model inference/streaming grants **and** `bedrock:InvokeModel` on the account's default project. No IAM policy is changed by this PR.
 
 Sol chat/planning keep medium defaults and accept low/medium/high/xhigh/max; Luna formatting/title retain none. Responses sends `reasoning: { effort }` without downshifting. Unknown models and unsupported efforts reject before requests. Generation resolves tokens per request, prefers configured Fly web identity, redacts credential-provider failures, sets `store: false`, disables SDK retries and suppresses ambient OpenAI org/project headers. Embeddings default to Nova 1024 (`EMBEDDINGS_PROVIDER=bedrock`, or unset with Bedrock generation); legacy OpenAI 1536 is the `EMBEDDINGS_PROVIDER=openai` local-dev opt-in and the rollback target of the `EMBEDDINGS_*_GENERATION` controls. `OPENAI_API_KEY` is required only when OpenAI is actually used.
 
