@@ -1,7 +1,12 @@
 /*mutations related to boosts */
 import { useMutation, useQueryClient, type Query } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
-import { useWallet, insertItem, switchedProfileStore } from 'learn-card-base';
+import {
+    useWallet,
+    insertItem,
+    switchedProfileStore,
+    invalidateCredentialIndexQueries,
+} from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { VC, Boost, CredentialRecord, VP, VCValidator } from '@learncard/types';
 
@@ -79,14 +84,9 @@ export const useAddCredentialToWallet = () => {
             });
 
             // Intentionally don't await these to keep this mutation fast!
-            queryClient.refetchQueries({
-                queryKey: ['useGetCredentials', didWeb || undefined, category],
-            });
+            // Shared invalidator: useGetCredentials (any primary key shape), skills, IDs, counts.
+            void invalidateCredentialIndexQueries(queryClient, didWeb);
             void queryClient.invalidateQueries(listFilters);
-
-            await queryClient.cancelQueries({ queryKey: ['useGetIDs'] });
-            await queryClient.invalidateQueries({ queryKey: ['useGetIDs'] });
-            queryClient.refetchQueries({ queryKey: ['useGetIDs'] });
         },
     });
 };
