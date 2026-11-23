@@ -5,6 +5,7 @@ import {
     IssueInboxCredentialResponseValidator,
     type IssueInboxCredentialType,
 } from '@learncard/types';
+import { TRPCError } from '@trpc/server';
 import { SQSClient } from '@aws-sdk/client-sqs';
 import { Profile, Credential, InboxCredential, ContactMethod } from '@models';
 import { neogma } from '@instance';
@@ -16,10 +17,12 @@ import {
     batchReplayStore,
     claimBatchItem,
     markBatchIssuanceStarted,
+    readBatchReplay,
     recoverInboxJobs,
+    takeInboxDispatches,
     DAY,
 } from '@accesslayer/inbox-batch/store';
-import { fingerprint } from '@helpers/inbox-batch.helpers';
+import { fingerprint, inboxItemReplayKey } from '@helpers/inbox-batch.helpers';
 import {
     getInboxBatch,
     processInboxQueueMessage,
@@ -121,6 +124,47 @@ describe('single inbox durable idempotency', () => {
                 86400
             )
         ).toBe('OK');
+    };
+    // States of every item admitted under this issuer/key outside the owner's batch job.
+    const admittedStates = async (key: string, ownerBatchId: string): Promise<string[]> => {
+        const result = await neogma.queryRunner.run(
+            `MATCH (i:InboxBatchItem {replayKey: $replayKey}) WHERE i.batchId <> $ownerBatchId
+             RETURN i.state AS state`,
+            { replayKey: inboxItemReplayKey(issuerId, key), ownerBatchId }
+        );
+        return result.records.map(record => String(record.get('state')));
+    };
+    const expireReceipt = async (key: string): Promise<void> => {
+        const result = await neogma.queryRunner.run(
+            `MATCH (r:InboxBatchReplay {id: $id}) WHERE r.expiresAt IS NOT NULL
+             SET r.expiresAt = 0 RETURN count(r) AS expired`,
+            { id: inboxItemReplayKey(issuerId, key) }
+        );
+        expect(Number(result.records[0]!.get('expired'))).toBe(1);
+    };
+    // The dispatcher's own selection, handed to the worker entry point without SQS:
+    // no caller request is involved, only what is durably QUEUED and due.
+    const runLateWorker = async (): Promise<void> => {
+        for (const { id } of await takeInboxDispatches()) {
+            await processInboxQueueMessage(JSON.stringify({ itemId: id }));
+        }
+    };
+    // Deliveries are stored encrypted to the holder, so a payload is identified by decrypting.
+    const issuedCount = async (input: IssueInboxCredentialType): Promise<number> => {
+        const id = (input.credential as { id?: string } | undefined)?.id;
+        if (!id) throw new Error('Expected a credential id');
+        const result = await neogma.queryRunner.run(
+            'MATCH (c:Credential) RETURN c.credential AS jwe'
+        );
+        const delivered = await Promise.all(
+            result.records.map(
+                async record =>
+                    (await holder.learnCard.invoke.decryptDagJwe(
+                        JSON.parse(record.get('jwe'))
+                    )) as { id?: string }
+            )
+        );
+        return delivered.filter(credential => credential?.id === id).length;
     };
     // Other files in the same CI run (e.g. credential-storage.neo4j.spec.ts) create
     // profiles for these default-seed DIDs, so nothing may outlive this file.
@@ -372,4 +416,81 @@ describe('single inbox durable idempotency', () => {
         expect(next.issuanceId).not.toBe(first.issuanceId);
         await expectCounts(2);
     });
+    it('a successful replay leaves no item that a late worker can issue', async () => {
+        const key = randomUUID();
+        const input = await inputFor(issuer, key);
+        const owner = await issuer.clients.fullAuth.inbox.issueBatch({ items: [input] });
+        await processInboxQueueMessage(JSON.stringify({ itemId: `${owner.batchId}:0` }));
+        const original = IssueInboxCredentialResponseValidator.parse(
+            (await getInboxBatch(issuerId, owner.batchId)).items[0]!.result
+        );
+        await expect(issuer.clients.fullAuth.inbox.issue(input)).resolves.toEqual(original);
+        // Whatever the replayed call admitted must be settled by the time it returns.
+        expect.soft(await admittedStates(key, owner.batchId)).not.toContain('QUEUED');
+        await expireReceipt(key);
+        await runLateWorker();
+        await expectCounts(1);
+    });
+    it('a rejected substitution is never issued later', async () => {
+        const key = randomUUID();
+        const input = await inputFor(issuer, key);
+        const substituted = await inputFor(issuer, key, 'Substituted');
+        const owner = await issuer.clients.fullAuth.inbox.issueBatch({ items: [input] });
+        await processInboxQueueMessage(JSON.stringify({ itemId: `${owner.batchId}:0` }));
+        expect(await issuedCount(input)).toBe(1);
+        await expect(issuer.clients.fullAuth.inbox.issue(substituted)).rejects.toMatchObject({
+            code: 'CONFLICT',
+        });
+        // Whatever the rejected call admitted must be settled by the time it returns.
+        expect.soft(await admittedStates(key, owner.batchId)).not.toContain('QUEUED');
+        await expireReceipt(key);
+        await runLateWorker();
+        expect(await issuedCount(substituted)).toBe(0);
+        await expectCounts(1);
+    });
+    it('a substitution rejected against a processing marker is not issued after its owner releases the marker', async () => {
+        const key = randomUUID();
+        const replayKey = inboxItemReplayKey(issuerId, key);
+        const input = await inputFor(issuer, key);
+        const substituted = await inputFor(issuer, key, 'Substituted');
+        let entered!: () => void;
+        let release!: () => void;
+        const ready = new Promise<void>(resolve => {
+            entered = resolve;
+        });
+        const resumed = new Promise<void>(resolve => {
+            release = resolve;
+        });
+        vi.spyOn(inboxHelpers, 'issueToInbox').mockImplementationOnce(async () => {
+            entered();
+            await resumed; // The owner holds its processing marker; nothing is delivered.
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Owner failed preflight.' });
+        });
+        const owner = await issuer.clients.fullAuth.inbox.issueBatch({ items: [input] });
+        const processing = processInboxQueueMessage(
+            JSON.stringify({ itemId: `${owner.batchId}:0` })
+        );
+        try {
+            await ready;
+            expect(JSON.parse((await readBatchReplay(replayKey)) ?? 'null')).toMatchObject({
+                state: 'processing',
+            });
+            await expect(issuer.clients.fullAuth.inbox.issue(substituted)).rejects.toMatchObject({
+                code: 'CONFLICT',
+            });
+            // Whatever the rejected call admitted must be settled by the time it returns.
+            expect.soft(await admittedStates(key, owner.batchId)).not.toContain('QUEUED');
+        } finally {
+            release();
+            await processing;
+        }
+        // The owner released its marker without success: no receipt, no delivery.
+        expect((await getInboxBatch(issuerId, owner.batchId)).items[0]?.result).toMatchObject({
+            success: false,
+        });
+        expect(await readBatchReplay(replayKey)).toBeNull();
+        await runLateWorker();
+        expect(await issuedCount(substituted)).toBe(0);
+        await expectCounts(0);
+    }, 30000);
 });
