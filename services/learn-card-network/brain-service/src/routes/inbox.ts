@@ -3,6 +3,7 @@ import {
     submitInboxBatch,
     getInboxBatch,
     issueKeyedInboxCredential,
+    INBOX_ISSUE_REQUEST_ID_PREFIX,
 } from '@helpers/inbox-queue.helpers';
 import {
     assertInboxRefreshEnabled,
@@ -724,11 +725,21 @@ export const inboxRouter = t.router({
         })
         .input(IssueInboxCredentialBatchValidator)
         .output(InboxBatchReceiptValidator)
-        .mutation(({ ctx, input }) =>
-            trace('route', 'issueBatch', () => submitInboxBatch(ctx.user.profile, input, ctx), {
-                itemCount: input.items.length,
-            })
-        ),
+        .mutation(({ ctx, input }) => {
+            // This namespace holds the admission ids of keyed inbox.issue calls. A batch
+            // caller must not be able to occupy the id that a key's own call will derive.
+            if (input.requestId?.startsWith(INBOX_ISSUE_REQUEST_ID_PREFIX))
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: `requestId must not start with the reserved prefix "${INBOX_ISSUE_REQUEST_ID_PREFIX}".`,
+                });
+            return trace(
+                'route',
+                'issueBatch',
+                () => submitInboxBatch(ctx.user.profile, input, ctx),
+                { itemCount: input.items.length }
+            );
+        }),
 
     getBatch: profileRoute
         .meta({

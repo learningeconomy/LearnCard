@@ -682,4 +682,30 @@ describe('single inbox durable idempotency', () => {
         });
         expect(await batchCount()).toBe(1);
     });
+    it('a batch requestId in the reserved inbox.issue: namespace is refused', async () => {
+        const key = randomUUID();
+        // The admission id a keyed inbox.issue call derives for this key.
+        await expect(
+            issuer.clients.fullAuth.inbox.issueBatch({
+                requestId: `inbox.issue:${fingerprint(key)}`,
+                items: [await inputFor(issuer, key)],
+            })
+        ).rejects.toMatchObject({
+            code: 'BAD_REQUEST',
+            message: 'requestId must not start with the reserved prefix "inbox.issue:".',
+        });
+        expect(await batchCount()).toBe(0);
+        await expectCounts(0);
+    });
+    it('an ordinary batch requestId is still accepted', async () => {
+        // Only the leading namespace is reserved; the text may appear later in an id.
+        for (const requestId of [randomUUID(), `orders:inbox.issue:${randomUUID()}`]) {
+            const receipt = await issuer.clients.fullAuth.inbox.issueBatch({
+                requestId,
+                items: [await inputFor(issuer, randomUUID())],
+            });
+            expect(receipt.status).toBe('QUEUED');
+        }
+        expect(await batchCount()).toBe(2);
+    });
 });
