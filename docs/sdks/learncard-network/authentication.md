@@ -211,6 +211,31 @@ In this example, we first define a `getClient` function that takes a `url` and a
 
 The `getChallenges` function fetches a list of challenges from the API. The `getAuthHeaders` function generates an Authorization header using the `didAuthFunction` and a challenge. This header can then be used in your API calls.
 
+#### 4. Using Delegate Grants
+
+An organisation profile can create a delegate grant to let a separate service issue credentials on its behalf. Unlike an auth grant, which authenticates as its owner, a delegate grant binds a separate key, an audience, two specific issuance routes, and an expiry of at most 90 days.
+
+**Steps to use a delegate grant:**
+
+1. **Create the grant:** The owner calls `POST /delegate-grant/create` with `{ name, delegateDid, scope, expiresAt }` and receives `{ grantId, challenge, audience }`.
+2. **Handoff:** The owner hands the `challenge` and `audience` to the delegate service out of band.
+3. **Sign the token:** The delegate service signs a DID-auth JWT with its own key and sends the result as `Authorization: Bearer <jwt>`:
+    ```typescript
+    const token = await getDidAuthVp({ challenge, domain: audience, proofFormat: 'jwt' });
+    ```
+4. **Issue credentials:** The delegate may call `POST /inbox/issue` (scope `inbox:write`) with UNSIGNED credential content, which the owner's registered signing authority signs, and `POST /consent-flow-contract/write/via-signing-authority` (scope `contracts-data:write`).
+5. **Revoke:** The owner revokes the grant with `POST /delegate-grant/{id}/revoke`, and the next request is refused.
+
+**What a delegate cannot do:**
+
+- Access any other route
+- Submit a credential it signed itself
+- Perform a managed refresh
+- Read or manage grants
+- Act as another profile
+
+Every refusal is the same `401 Unauthorized` so that a delegate cannot tell why it was refused.
+
 ## Authorization & Scopes
 
 #### Route Middleware <a href="#route-middleware" id="route-middleware"></a>

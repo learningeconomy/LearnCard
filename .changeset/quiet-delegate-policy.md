@@ -2,4 +2,4 @@
 '@learncard/network-brain-service': patch
 ---
 
-Add an opt-in delegate-bound issuance grant schema and a fail-closed policy primitive. Existing grant routes and authentication remain unchanged; runtime delegation is not yet enabled.
+An organisation profile can create a delegate grant that lets a service holding its own did:key issue through `inbox.issue` and the signing-authority contract write as that profile, revocable by the owner. Existing grant routes and authentication are unchanged.
