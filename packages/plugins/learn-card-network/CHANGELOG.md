@@ -1,5 +1,48 @@
 # learn-card-core
 
+## 4.2.0
+
+### Minor Changes
+
+- [#2094](https://github.com/learningeconomy/LearnCard/pull/2094) [`ff6f013bdedc9aee84e9849fa5736a8ad4a90c81`](https://github.com/learningeconomy/LearnCard/commit/ff6f013bdedc9aee84e9849fa5736a8ad4a90c81) Thanks [@goblincore](https://github.com/goblincore)! - **Breaking:** `sendContractRequest` now returns `{ requestId, status }` instead of `true`.
+
+    Add `getContractRequest(contractUri, requestId)` to read one contract request by its request ID, and let `cancelContractRequest` take `{ requestId }` instead of a target profile ID. `getContractSentRequests` rows gain `target` and may omit `profile`.
+
+    Prepare for requests addressed to an email: a request marked `addressedByEmail` shows only the email to other parties until it is accepted, in `getContractRequest`, `getContractSentRequests`, `getRequestStatusForProfile` and the decision notifications. Request status gains `expired`.
+
+- [#2071](https://github.com/learningeconomy/LearnCard/pull/2071) [`54bc8e4085ac93118838fbb8070565ebb62171cc`](https://github.com/learningeconomy/LearnCard/commit/54bc8e4085ac93118838fbb8070565ebb62171cc) Thanks [@goblincore](https://github.com/goblincore)! - Expose Integration webhooks and the change feed to clients. The network plugin gains `setIntegrationWebhook` (returns the signing secret once, when it creates the first one), `getIntegrationWebhook` (URL, state, delivery health, secret version), `rotateIntegrationWebhookSecret`, `sendIntegrationTestEvent` (`{ delivered, httpStatus, latencyMs, error }`), `getIntegrationEvents` and `getContractConnections`. The CLI lists them for `learncard call` (the secret-returning `setIntegrationWebhook` and `rotateIntegrationWebhookSecret` calls need `--show-secret`) and adds an `integration-webhooks` capability. The developer portal gets a Webhooks tab for integrations that use contracts: webhook URL (the first save shows the signing secret once), feed-only toggle, secret rotation, delivery health (state, last success and failure with its reason, waiting and retrying events, secret version), and a test event with HTTP status and latency. The server webhooks guide no longer shows an HMAC signature check for profile notification webhooks, which are verified with their `Authorization` bearer token.
+
+### Patch Changes
+
+- [#2095](https://github.com/learningeconomy/LearnCard/pull/2095) [`e096512e4291bcaa5e424b7abbfc0932ca2a2317`](https://github.com/learningeconomy/LearnCard/commit/e096512e4291bcaa5e424b7abbfc0932ca2a2317) Thanks [@goblincore](https://github.com/goblincore)! - `sendContractRequest` accepts `targetEmail` as an alternative to `targetProfileId`. An email-addressed request is stored as an invite, always answers `{ requestId, status: 'pending' }`, and becomes an ordinary request when a profile verifies that email. The sender sees only the email, never the profile or DID, until the request is accepted.
+
+    Add the `contract-request-invite` email template, sent when the address has no account (at most 3 per contract and address per day). Invites expire after 30 days through the daily maintenance job; `getContractRequest`, `getContractSentRequests` and `cancelContractRequest` cover invites that are not attached to a profile yet.
+
+- [#2038](https://github.com/learningeconomy/LearnCard/pull/2038) [`13dff3c7d32e9499944aa7c7e31c8db8a2bd40f7`](https://github.com/learningeconomy/LearnCard/commit/13dff3c7d32e9499944aa7c7e31c8db8a2bd40f7) Thanks [@smurflo2](https://github.com/smurflo2)! - fix: [LC-2371] Sync uploaded, pasted, and Partner Connect credentials to live consent contracts. Shared store/add/bulk-save callers retain successful saves when consent discovery or sharing fails, with durable, account-scoped retries. Partner Connect returns after queuing delivery; AI Topic/Session saves keep their previous sharing opt-out. Persist acknowledged terms to avoid duplicate mutations on retry and cancel retries after recategorization. Automatic sharing remains limited to LearnCloud-indexed credentials; SQLite-only sharing is not supported.
+
+    Keep background discovery out of contract-sync banners, and keep contract-scoped Partner Connect status syncing until that account's queued credential deliveries finish. Persist only credential identifiers and category in delivery jobs.
+
+    Persist failed contract destinations so an exhausted credential delivery reports an error only to affected partners. Unattributed failures remain visible in account-wide status without blocking unrelated contracts indefinitely.
+
+    Guard automatic deliveries against current category consent at the server write while preserving explicit selective sharing. Uploads persist account-scoped delivery jobs immediately after successful indexing, before network sharing starts.
+
+    Treat blank legacy category expiries as no expiry while preserving the server's automatic-sharing consent and expiry guards.
+
+    Persist pending delivery updates transactionally across tabs, retain legacy retry checkpoints, and recover abandoned attempts without losing other saved credentials. Successful background delivery reports completed progress.
+
+    Initialize cross-tab notifications only when browser event APIs are available, preserving credential-helper imports in storage-only environments.
+
+    Keep committed credential saves and consent successful if retry persistence fails, while still awaiting a healthy durable handoff. Import late jobs from older tabs without resurrecting removed deliveries, and update progress without repeatedly scanning the whole queue.
+
+    Retain personal uploads across key-to-network identity resolution without crossing switched profiles. Skip contended job locks so other deliveries can proceed, and stop future sharing mutations when an attempt loses its lease.
+
+    Preserve newer unfinished deliveries from older tabs even while a completed job with the same identity is retained.
+
+- Updated dependencies [[`e096512e4291bcaa5e424b7abbfc0932ca2a2317`](https://github.com/learningeconomy/LearnCard/commit/e096512e4291bcaa5e424b7abbfc0932ca2a2317), [`ff6f013bdedc9aee84e9849fa5736a8ad4a90c81`](https://github.com/learningeconomy/LearnCard/commit/ff6f013bdedc9aee84e9849fa5736a8ad4a90c81), [`154941805bd8e2aa626afe3582e7794921debd27`](https://github.com/learningeconomy/LearnCard/commit/154941805bd8e2aa626afe3582e7794921debd27), [`cad95b60227e1b99ffaaad07406ccc0366b08555`](https://github.com/learningeconomy/LearnCard/commit/cad95b60227e1b99ffaaad07406ccc0366b08555), [`154941805bd8e2aa626afe3582e7794921debd27`](https://github.com/learningeconomy/LearnCard/commit/154941805bd8e2aa626afe3582e7794921debd27), [`1e4a9e97b825c18300ae0f00c2b9324120be196f`](https://github.com/learningeconomy/LearnCard/commit/1e4a9e97b825c18300ae0f00c2b9324120be196f), [`154941805bd8e2aa626afe3582e7794921debd27`](https://github.com/learningeconomy/LearnCard/commit/154941805bd8e2aa626afe3582e7794921debd27), [`bd450e7b0467a94bbd30573fa0aebfcd6333db22`](https://github.com/learningeconomy/LearnCard/commit/bd450e7b0467a94bbd30573fa0aebfcd6333db22), [`acda1d1bd362add238a7c6ff8096c295e844e586`](https://github.com/learningeconomy/LearnCard/commit/acda1d1bd362add238a7c6ff8096c295e844e586)]:
+    - @learncard/network-brain-client@2.8.0
+    - @learncard/core@10.0.0
+    - @learncard/helpers@1.8.3
+
 ## 4.1.1
 
 ### Patch Changes

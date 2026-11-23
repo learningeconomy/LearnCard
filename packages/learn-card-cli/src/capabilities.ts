@@ -230,10 +230,12 @@ export const CAPABILITIES: readonly Capability[] = [
         id: 'contract-requests',
         title: 'Contract requests',
         summary:
-            'Ask a specific profile to consent to a contract, poll the request status, and sync credentials into it.',
+            'Ask a specific profile to consent to a contract, track the request by its request ID, and sync credentials into it.',
         cli: [],
         call: [
             'sendContractRequest',
+            'getContractRequest',
+            'cancelContractRequest',
             'getContractSentRequests',
             'getRequestStatusForProfile',
             'syncCredentialsToContract',
@@ -244,6 +246,35 @@ export const CAPABILITIES: readonly Capability[] = [
         },
         docs: `${DOCS}/reference/learncard-network/contract-requests-and-events`,
         snippet: 'docs/snippets/contract-requests/request-and-poll.mjs',
+    },
+    {
+        id: 'integration-webhooks',
+        title: 'Integration webhooks and change feed',
+        summary:
+            'Register a webhook for signed contract events, test it and read its delivery health, or poll the ordered change feed of an integration, and take a connections snapshot to converge after an outage.',
+        cli: [],
+        call: [
+            'setIntegrationWebhook',
+            'getIntegrationWebhook',
+            'sendIntegrationTestEvent',
+            'rotateIntegrationWebhookSecret',
+            'updateIntegration',
+            'getIntegrationEvents',
+            'getContractConnections',
+        ],
+        api: {
+            tag: 'Integrations',
+            paths: [
+                '/integration/{id}/webhook',
+                '/integration/{id}/webhook/test',
+                '/integration/{id}/webhook-secret/rotate',
+                '/integration/update/{id}',
+                '/integration/{id}/events',
+                '/consent-flow-contracts/connections',
+            ],
+        },
+        docs: `${DOCS}/reference/learncard-network/integration-webhooks`,
+        notes: 'These events are separate from profile notification webhooks. setIntegrationWebhook (the first time a URL is set) and rotateIntegrationWebhookSecret return a secret, so call needs --show-secret. getIntegrationWebhook reads the URL, state and delivery health.',
     },
     {
         id: 'revocation',

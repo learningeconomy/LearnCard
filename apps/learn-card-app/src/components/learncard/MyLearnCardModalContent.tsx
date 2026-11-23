@@ -9,6 +9,7 @@ import * as m from '../../paraglide/messages.js';
 
 import CaretListItem from './CaretListItem';
 import LearnCardIdView from './LearnCardIdView';
+import ProfileDeveloperProgram from './ProfileDeveloperProgram';
 import LearnCardFooter from './LearnCardFooter';
 import EmailIcon from 'learn-card-base/svgs/EmailIcon';
 import BlocksIcon from 'learn-card-base/svgs/Blocks';
@@ -805,6 +806,10 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                     <div className="bg-white/70  backdrop-blur-[10px]">
                         <div className="p-[15px] flex flex-col gap-[10px]">
                             <LearnCardIdView user={user} />
+
+                            {viewMode === MyLearnCardModalViewModeEnum.guardian && (
+                                <ProfileDeveloperProgram />
+                            )}
 
                             <SwitchAccountButton
                                 handleAccountSwitcher={handleSwitchAccountsClick}

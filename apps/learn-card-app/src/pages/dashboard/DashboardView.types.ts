@@ -62,6 +62,8 @@ export type DashboardHeaderViewModel = {
     shortBio?: string;
     professionalTitle?: string;
     onAvatarClick: () => void;
+    /** Hover, focus, or press start on the avatar, before the click: a chance to prefetch. */
+    onAvatarIntent?: () => void;
     onScanQrTopRight: () => void;
     onNotificationsClick: () => void;
     unreadCount: number;

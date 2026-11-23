@@ -89,7 +89,10 @@ jobs:
                   token: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
 
             - name: Test retry reporting contract
-              run: node --test scripts/ci-test-retries/retry.test.cjs
+              env:
+                  RETRY_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+                  RETRY_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha }}
+              run: node --test scripts/ci-test-retries/*.test.cjs
 
             - name: Test artifact pilot contracts
               run: node --test scripts/nx-artifact-cache/pilot.test.mjs
