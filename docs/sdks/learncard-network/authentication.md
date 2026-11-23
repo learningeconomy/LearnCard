@@ -220,6 +220,7 @@ An organisation profile can create a delegate grant to let a separate service is
 1. **Create the grant:** The owner calls `POST /delegate-grant/create` with `{ name, delegateDid, scope, expiresAt }` and receives `{ grantId, challenge, audience }`.
 2. **Handoff:** The owner hands the `challenge` and `audience` to the delegate service out of band.
 3. **Sign the token:** The delegate service signs a DID-auth JWT with its own key and sends the result as `Authorization: Bearer <jwt>`:
+
     ```typescript
     const token = await learnCard.invoke.getDidAuthVp({
         challenge,
@@ -228,7 +229,10 @@ An organisation profile can create a delegate grant to let a separate service is
     });
     ```
 
-`learnCard` here is the delegate service's own wallet; its DID must be the `delegateDid` the owner named. 4. **Issue credentials:** The delegate may call `POST /inbox/issue` (scope `inbox:write`) with UNSIGNED credential content, which the owner's registered signing authority signs, and `POST /consent-flow-contract/write/via-signing-authority` (scope `contracts-data:write`). 5. **Revoke:** The owner revokes the grant with `POST /delegate-grant/{id}/revoke`, and the next request is refused.
+    `learnCard` here is the delegate service's own wallet; its DID must be the `delegateDid` the owner named.
+
+4. **Issue credentials:** The delegate may call `POST /inbox/issue` (scope `inbox:write`) with UNSIGNED credential content, which the owner's registered signing authority signs, and `POST /consent-flow-contract/write/via-signing-authority` (scope `contracts-data:write`).
+5. **Revoke:** The owner revokes the grant with `POST /delegate-grant/{id}/revoke`, and the next request is refused.
 
 **What a delegate cannot do:**
 
