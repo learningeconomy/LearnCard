@@ -116,6 +116,27 @@ export const readBatchJob = async (
     };
 };
 
+/** Read-only view of the job createBatchJob would return for this request id, in its window. */
+export const readBatchAdmission = async (
+    issuer: string,
+    requestId: string
+): Promise<{ requestHash: string; itemId: string; state: BatchItem['state'] } | undefined> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (b:InboxBatch {issuer: $issuer, requestId: $requestId})
+        WHERE b.createdAt > $cutoff
+        MATCH (b)-[:HAS_ITEM]->(i:InboxBatchItem) RETURN b, i ORDER BY i.index LIMIT 1`,
+        { issuer, requestId, cutoff: Date.now() - DAY }
+    );
+    const record = result.records[0];
+    if (!record) return;
+    const item = record.get('i').properties as BatchItem;
+    return {
+        requestHash: String(record.get('b').properties.requestHash),
+        itemId: item.id,
+        state: item.state,
+    };
+};
+
 /** Lock before testing ownership: concurrent SQS deliveries must not both enter issuance. */
 export const claimBatchItem = async (
     id: string,
@@ -287,6 +308,33 @@ export const finishBatchItem = async (
             }
         );
         await finalizeSettledBatch(tx, item.batchId);
+    });
+};
+
+/** Records an already known outcome on an item nobody has claimed. No owner lease is needed
+ * because nothing is issued here; the lock bump serialises this with claimBatchItem, which
+ * starts with the same statement. Only an unowned QUEUED item is written: a PROCESSING item
+ * is left to its owner, whose reserve step meets the same replay record.
+ */
+export const settleQueuedBatchItem = async (
+    id: string,
+    result: IssueInboxCredentialBatchItemResult
+): Promise<boolean> => {
+    const encrypted = await encryptInboxCredential(JSON.stringify(result));
+    return transaction(async tx => {
+        const locked = await tx.run(
+            `MATCH (i:InboxBatchItem {id: $id}) SET i.lock = coalesce(i.lock, 0) + 1 RETURN i`,
+            { id }
+        );
+        const item = locked.records[0]?.get('i').properties as BatchItem | undefined;
+        if (item?.state !== 'QUEUED') return false;
+        await tx.run(
+            `MATCH (i:InboxBatchItem {id: $id}) SET i.state = 'COMPLETED', i.result = $encrypted,
+            i.owner = null, i.leaseUntil = null, i.dispatchAt = 0`,
+            { id, encrypted }
+        );
+        await finalizeSettledBatch(tx, item.batchId);
+        return true;
     });
 };
 

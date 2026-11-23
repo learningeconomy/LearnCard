@@ -524,4 +524,89 @@ describe('single inbox durable idempotency', () => {
         });
         expect(await admitted()).toEqual(before);
     });
+    it("an earlier keyed call's waiting item is settled when a later call replays the owner's receipt", async () => {
+        const key = randomUUID();
+        const input = await inputFor(issuer, key);
+        const waiting = await admit(input); // The single route's admission job: QUEUED, never processed.
+        const owner = await issuer.clients.fullAuth.inbox.issueBatch({ items: [input] });
+        await processInboxQueueMessage(JSON.stringify({ itemId: `${owner.batchId}:0` }));
+        const original = IssueInboxCredentialResponseValidator.parse(
+            (await getInboxBatch(issuerId, owner.batchId)).items[0]!.result
+        );
+        expect(await admittedStates(key, owner.batchId)).toEqual(['QUEUED']);
+        await expect(issuer.clients.fullAuth.inbox.issue(input)).resolves.toEqual(original);
+        expect.soft(await admittedStates(key, owner.batchId)).not.toContain('QUEUED');
+        expect
+            .soft((await getInboxBatch(issuerId, waiting)).items[0]?.result)
+            .toMatchObject({ success: true, deduplicated: true, idempotencyKey: key });
+        await expireReceipt(key);
+        await runLateWorker();
+        await expectCounts(1);
+    });
+    it('a waiting item is settled as rejected when its key now belongs to another payload', async () => {
+        const key = randomUUID();
+        const input = await inputFor(issuer, key);
+        const substituted = await inputFor(issuer, key, 'Substituted');
+        const waiting = await admit(input); // QUEUED, never processed.
+        const owner = await issuer.clients.fullAuth.inbox.issueBatch({ items: [substituted] });
+        await processInboxQueueMessage(JSON.stringify({ itemId: `${owner.batchId}:0` }));
+        expect(await issuedCount(substituted)).toBe(1);
+        await expect(issuer.clients.fullAuth.inbox.issue(input)).rejects.toMatchObject({
+            code: 'CONFLICT',
+        });
+        // Recorded as a worker would have recorded the same rejection.
+        expect.soft((await getInboxBatch(issuerId, waiting)).items[0]?.result).toMatchObject({
+            success: false,
+            error: { code: 'CONFLICT', reason: 'IDEMPOTENCY_MISMATCH' },
+            idempotencyKey: key,
+        });
+        await expireReceipt(key);
+        await runLateWorker();
+        expect(await issuedCount(input)).toBe(0);
+        await expectCounts(1);
+    });
+    it('a waiting item stays queued while a same-payload owner is in progress and is settled once its receipt replays', async () => {
+        const key = randomUUID();
+        const input = await inputFor(issuer, key);
+        let entered!: () => void;
+        let release!: () => void;
+        const ready = new Promise<void>(resolve => {
+            entered = resolve;
+        });
+        const resumed = new Promise<void>(resolve => {
+            release = resolve;
+        });
+        const original = inboxHelpers.issueToInbox;
+        vi.spyOn(inboxHelpers, 'issueToInbox').mockImplementationOnce(async (...args) => {
+            const result = await original(...args);
+            entered();
+            await resumed; // Delivery committed; the replay receipt is not committed yet.
+            return result;
+        });
+        const owner = await issuer.clients.fullAuth.inbox.issueBatch({ items: [input] });
+        const processing = processInboxQueueMessage(
+            JSON.stringify({ itemId: `${owner.batchId}:0` })
+        );
+        try {
+            await ready;
+            await admit(input);
+            await expect(issuer.clients.fullAuth.inbox.issue(input)).rejects.toMatchObject({
+                code: 'CONFLICT',
+                message: expect.stringContaining('Issuance is in progress'),
+            });
+            // The owner's outcome is not known yet, so the waiting item must not be settled.
+            expect(await admittedStates(key, owner.batchId)).toEqual(['QUEUED']);
+        } finally {
+            release();
+            await processing;
+        }
+        const receipt = IssueInboxCredentialResponseValidator.parse(
+            (await getInboxBatch(issuerId, owner.batchId)).items[0]!.result
+        );
+        await expect(issuer.clients.fullAuth.inbox.issue(input)).resolves.toEqual(receipt);
+        expect.soft(await admittedStates(key, owner.batchId)).not.toContain('QUEUED');
+        await expireReceipt(key);
+        await runLateWorker();
+        await expectCounts(1);
+    }, 30000);
 });

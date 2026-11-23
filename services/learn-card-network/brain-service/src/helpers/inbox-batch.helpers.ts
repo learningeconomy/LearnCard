@@ -51,7 +51,7 @@ export const fingerprint = (input: unknown): string =>
         )
         .digest('hex');
 
-class InboxBatchConflict extends TRPCError {
+export class InboxBatchConflict extends TRPCError {
     constructor(
         readonly reason: InboxBatchErrorReason,
         message: string

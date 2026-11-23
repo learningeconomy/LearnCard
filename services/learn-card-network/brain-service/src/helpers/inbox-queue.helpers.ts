@@ -26,14 +26,17 @@ import {
     createBatchJob,
     finishBatchItem,
     markBatchIssuanceStarted,
+    readBatchAdmission,
     readBatchJob,
     readBatchReplay,
     recoverInboxJobs,
+    settleQueuedBatchItem,
     takeInboxDispatches,
 } from '@accesslayer/inbox-batch/store';
 import { acknowledgeInboxDispatches, deadLetterBatchItem } from '@accesslayer/inbox-batch/store';
 import { encryptInboxCredential, decryptInboxCredential } from './inbox-encryption.helpers';
 import {
+    InboxBatchConflict,
     fingerprint,
     issueInboxBatch,
     inboxItemReplayKey,
@@ -63,6 +66,10 @@ const queue = (): { client: SQSClient; url: string } => {
         }),
     };
 };
+
+/** One admission fingerprint, for submission and for recognising a caller's own waiting job. */
+const batchRequestHash = (batch: IssueInboxCredentialBatch, ctx: Context): string =>
+    fingerprint({ batch, domain: ctx.domain, tenant: ctx.tenant?.id });
 
 /** Only durable admission happens here. The dispatcher owns publication, including retries. */
 export const submitInboxBatch = async (
@@ -104,7 +111,7 @@ export const submitInboxBatch = async (
     return createBatchJob({
         issuer: profile.profileId,
         requestId: batch.requestId,
-        requestHash: fingerprint({ batch, domain: ctx.domain, tenant: ctx.tenant?.id }),
+        requestHash: batchRequestHash(batch, ctx),
         payload: await encryptInboxCredential(
             JSON.stringify({
                 batch,
@@ -272,26 +279,46 @@ export const issueKeyedInboxCredential = async (
             message: 'An ordinary issuance key is required.',
         });
     }
-    const replayKey = inboxItemReplayKey(profile.profileId, input.idempotencyKey);
-    const replay = (
+    const idempotencyKey = input.idempotencyKey;
+    const replayKey = inboxItemReplayKey(profile.profileId, idempotencyKey);
+    // Namespace admission replay without changing the shared issuer/item-key identity.
+    const request = { requestId: `inbox.issue:${fingerprint(idempotencyKey)}`, items: [input] };
+    // An earlier call under this key may have left its item waiting. Once the key's outcome
+    // is known, record it there as a worker would, so that no later worker issues the item.
+    // A job holding another payload under this request id is not this caller's to settle.
+    const settleWaiting = async (result: IssueInboxCredentialBatchItemResult): Promise<void> => {
+        const admission = await readBatchAdmission(profile.profileId, request.requestId);
+        if (admission?.state !== 'QUEUED') return;
+        if (admission.requestHash !== batchRequestHash(request, ctx)) return;
+        await settleQueuedBatchItem(admission.itemId, result);
+    };
+    const replay = async (
         stored: string
-    ): ReturnType<typeof IssueInboxCredentialResponseValidator.parse> =>
-        IssueInboxCredentialResponseValidator.parse(
-            replayResult(stored, inboxItemRequestHash(input), 0)
-        );
+    ): Promise<ReturnType<typeof IssueInboxCredentialResponseValidator.parse>> => {
+        let result: IssueInboxCredentialBatchItemResult;
+        try {
+            result = replayResult(stored, inboxItemRequestHash(input), 0);
+        } catch (error) {
+            // IN_PROGRESS is rethrown as is: the owner's outcome is not known yet, so a
+            // waiting item must stay queued.
+            if (error instanceof InboxBatchConflict && error.reason === 'IDEMPOTENCY_MISMATCH')
+                await settleWaiting({
+                    success: false,
+                    index: 0,
+                    error: { code: 'CONFLICT', message: error.message, reason: error.reason },
+                    idempotencyKey,
+                    recipient: input.recipient,
+                });
+            throw error;
+        }
+        await settleWaiting({ ...result, index: 0, idempotencyKey });
+        return IssueInboxCredentialResponseValidator.parse(result);
+    };
     // Answer a known key before admission: an item admitted for a call that only replays
     // or is rejected would outlive the answer and could be issued by a later worker.
     const known = await readBatchReplay(replayKey);
     if (known !== null) return replay(known);
-    const receipt = await submitInboxBatch(
-        profile,
-        {
-            // Namespace admission replay without changing the shared issuer/item-key identity.
-            requestId: `inbox.issue:${fingerprint(input.idempotencyKey)}`,
-            items: [input],
-        },
-        ctx
-    );
+    const receipt = await submitInboxBatch(profile, request, ctx);
     // A separate job's IN_PROGRESS snapshot is not authoritative once its owner
     // commits the shared receipt. Validate the live record before trusting that job.
     const stored = await readBatchReplay(replayKey);
