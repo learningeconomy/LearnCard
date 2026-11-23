@@ -185,6 +185,10 @@ const indexQueries = [
     'CREATE INDEX inbox_credential_created_idx IF NOT EXISTS FOR (i:InboxCredential) ON (i.createdAt)',
     'CREATE INDEX auth_grant_created_idx IF NOT EXISTS FOR (a:AuthGrant) ON (a.createdAt)',
     'CREATE INDEX auth_grant_challenge_idx IF NOT EXISTS FOR (a:AuthGrant) ON (a.challenge)',
+    // A delegate grant is looked up by its challenge and by its id: neither may be ambiguous.
+    'CREATE CONSTRAINT delegate_auth_grant_id_unique IF NOT EXISTS FOR (g:DelegateAuthGrant) REQUIRE g.id IS UNIQUE',
+    'CREATE CONSTRAINT delegate_auth_grant_challenge_unique IF NOT EXISTS FOR (g:DelegateAuthGrant) REQUIRE g.challenge IS UNIQUE',
+    'CREATE INDEX delegate_auth_grant_created_idx IF NOT EXISTS FOR (g:DelegateAuthGrant) ON (g.createdAt)',
     'CREATE INDEX contract_updated_idx IF NOT EXISTS FOR (c:ConsentFlowContract) ON (c.updatedAt)',
     'CREATE INDEX terms_updated_idx IF NOT EXISTS FOR (t:ConsentFlowTerms) ON (t.updatedAt)',
     'CREATE INDEX terms_status_idx IF NOT EXISTS FOR (t:ConsentFlowTerms) ON (t.status)',
@@ -301,6 +305,7 @@ if (shouldCreateIndices) {
 }
 
 export * from './AuthGrant';
+export * from './DelegateAuthGrant';
 export * from './Role';
 export * from './Boost';
 export * from './Profile';
