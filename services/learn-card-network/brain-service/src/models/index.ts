@@ -189,6 +189,10 @@ const indexQueries = [
     'CREATE CONSTRAINT delegate_auth_grant_id_unique IF NOT EXISTS FOR (g:DelegateAuthGrant) REQUIRE g.id IS UNIQUE',
     'CREATE CONSTRAINT delegate_auth_grant_challenge_unique IF NOT EXISTS FOR (g:DelegateAuthGrant) REQUIRE g.challenge IS UNIQUE',
     'CREATE INDEX delegate_auth_grant_created_idx IF NOT EXISTS FOR (g:DelegateAuthGrant) ON (g.createdAt)',
+    // The record of a delegated request is completed by its id and reviewed by grant and by time.
+    'CREATE CONSTRAINT delegate_grant_audit_id_unique IF NOT EXISTS FOR (a:DelegateGrantAudit) REQUIRE a.id IS UNIQUE',
+    'CREATE INDEX delegate_grant_audit_grant_idx IF NOT EXISTS FOR (a:DelegateGrantAudit) ON (a.grantId)',
+    'CREATE INDEX delegate_grant_audit_timestamp_idx IF NOT EXISTS FOR (a:DelegateGrantAudit) ON (a.timestamp)',
     'CREATE INDEX contract_updated_idx IF NOT EXISTS FOR (c:ConsentFlowContract) ON (c.updatedAt)',
     'CREATE INDEX terms_updated_idx IF NOT EXISTS FOR (t:ConsentFlowTerms) ON (t.updatedAt)',
     'CREATE INDEX terms_status_idx IF NOT EXISTS FOR (t:ConsentFlowTerms) ON (t.status)',
@@ -306,6 +310,7 @@ if (shouldCreateIndices) {
 
 export * from './AuthGrant';
 export * from './DelegateAuthGrant';
+export * from './DelegateGrantAudit';
 export * from './Role';
 export * from './Boost';
 export * from './Profile';

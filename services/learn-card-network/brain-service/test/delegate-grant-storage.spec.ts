@@ -3,7 +3,7 @@ import { v4 as uuid } from 'uuid';
 import { AuthGrantStatusValidator } from '@learncard/types';
 
 import { neogma } from '@instance';
-import { Profile, AuthGrant, DelegateAuthGrant } from '@models';
+import { Profile, AuthGrant, DelegateAuthGrant, DelegateGrantAudit } from '@models';
 import {
     getAuthGrantById,
     getAuthGrantsForProfile,
@@ -17,6 +17,10 @@ import {
     getDelegateAuthGrantsForOwner,
 } from '@accesslayer/delegate-auth-grant/read';
 import { revokeDelegateAuthGrant } from '@accesslayer/delegate-auth-grant/update';
+import {
+    completeDelegateGrantAudit,
+    createDelegateGrantAudit,
+} from '@accesslayer/delegate-grant-audit/create';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import {
     DELEGATE_GRANT_CHALLENGE_PREFIX,
@@ -77,7 +81,26 @@ const linkedToUserA = (grant: DelegateAuthGrantRecord): StoredGrant => ({
     links: ['AUTHORIZES_DELEGATE_GRANT'],
 });
 
+const auditBase = {
+    route: 'inbox.issue',
+    requiredScope: 'inbox:write',
+    actorDid: DELEGATE_DID,
+    grantId: uuid(),
+    ownerProfileId: 'usera',
+};
+
+const storedAudits = async (): Promise<Record<string, unknown>[]> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (audit:DelegateGrantAudit)
+         RETURN properties(audit) AS audit
+         ORDER BY audit.timestamp, audit.id`
+    );
+
+    return result.records.map(record => record.get('audit'));
+};
+
 const deleteEverything = async () => {
+    await DelegateGrantAudit.delete({ detach: true, where: {} });
     await DelegateAuthGrant.delete({ detach: true, where: {} });
     await AuthGrant.delete({ detach: true, where: {} });
     await Profile.delete({ detach: true, where: {} });
@@ -275,6 +298,106 @@ describe('Delegate grant storage', () => {
 
             expect(await revokeDelegateAuthGrant(grant.id, 'usera')).toBe(true);
             expect(await storedGrants()).toEqual(afterRevoke);
+        });
+    });
+
+    describe('delegate grant audit', () => {
+        it('writes a denied record with its stage and no outcome', async () => {
+            const id = await createDelegateGrantAudit({
+                ...auditBase,
+                decision: 'denied',
+                stage: 'route',
+            });
+
+            const stored = await storedAudits();
+
+            expect(stored).toEqual([
+                {
+                    ...auditBase,
+                    decision: 'denied',
+                    stage: 'route',
+                    id,
+                    timestamp: expect.any(String),
+                },
+            ]);
+            expect(new Date(stored[0]!.timestamp as string).toISOString()).toBe(
+                stored[0]!.timestamp
+            );
+            expect(stored[0]).not.toHaveProperty('outcome');
+            expect(stored[0]).not.toHaveProperty('resultRef');
+            expect(stored[0]).not.toHaveProperty('completedAt');
+        });
+
+        it('writes an allowed record, then completes it once with outcome and resultRef', async () => {
+            const id = await createDelegateGrantAudit({ ...auditBase, decision: 'allowed' });
+            const created = {
+                ...auditBase,
+                decision: 'allowed',
+                id,
+                timestamp: expect.any(String),
+            };
+
+            const beforeCompletion = await storedAudits();
+            expect(beforeCompletion).toEqual([created]);
+            expect(beforeCompletion[0]).not.toHaveProperty('stage');
+            expect(beforeCompletion[0]).not.toHaveProperty('outcome');
+
+            expect(await completeDelegateGrantAudit(id, 'succeeded', 'issuance-1')).toBe(true);
+
+            const completed = await storedAudits();
+            expect(completed).toEqual([
+                {
+                    ...created,
+                    outcome: 'succeeded',
+                    resultRef: 'issuance-1',
+                    completedAt: expect.any(String),
+                },
+            ]);
+            expect(new Date(completed[0]!.completedAt as string).toISOString()).toBe(
+                completed[0]!.completedAt
+            );
+
+            // A record is completed once: the second attempt changes nothing.
+            expect(await completeDelegateGrantAudit(id, 'failed', 'issuance-2')).toBe(false);
+            expect(await storedAudits()).toEqual(completed);
+        });
+
+        it('does not complete a denied record', async () => {
+            const id = await createDelegateGrantAudit({
+                ...auditBase,
+                decision: 'denied',
+                stage: 'policy',
+            });
+            const before = await storedAudits();
+            expect(before).toHaveLength(1);
+            expect(before[0]).toMatchObject({ id, decision: 'denied', stage: 'policy' });
+
+            expect(await completeDelegateGrantAudit(id, 'succeeded', 'issuance-1')).toBe(false);
+
+            const after = await storedAudits();
+            expect(after).toEqual(before);
+            expect(after[0]).not.toHaveProperty('outcome');
+            expect(after[0]).not.toHaveProperty('resultRef');
+        });
+
+        it('refuses a record that mixes a denial with an outcome, or an allowed decision with a stage', async () => {
+            await expect(
+                createDelegateGrantAudit({
+                    ...auditBase,
+                    decision: 'denied',
+                    stage: 'owner',
+                    outcome: 'succeeded',
+                })
+            ).rejects.toThrow();
+            await expect(
+                createDelegateGrantAudit({ ...auditBase, decision: 'allowed', stage: 'route' })
+            ).rejects.toThrow();
+            // A denial without its stage is refused as well.
+            await expect(
+                createDelegateGrantAudit({ ...auditBase, decision: 'denied' })
+            ).rejects.toThrow();
+
+            expect(await storedAudits()).toEqual([]);
         });
     });
 });
