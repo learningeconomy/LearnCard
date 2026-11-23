@@ -272,6 +272,17 @@ export const issueKeyedInboxCredential = async (
             message: 'An ordinary issuance key is required.',
         });
     }
+    const replayKey = inboxItemReplayKey(profile.profileId, input.idempotencyKey);
+    const replay = (
+        stored: string
+    ): ReturnType<typeof IssueInboxCredentialResponseValidator.parse> =>
+        IssueInboxCredentialResponseValidator.parse(
+            replayResult(stored, inboxItemRequestHash(input), 0)
+        );
+    // Answer a known key before admission: an item admitted for a call that only replays
+    // or is rejected would outlive the answer and could be issued by a later worker.
+    const known = await readBatchReplay(replayKey);
+    if (known !== null) return replay(known);
     const receipt = await submitInboxBatch(
         profile,
         {
@@ -283,14 +294,8 @@ export const issueKeyedInboxCredential = async (
     );
     // A separate job's IN_PROGRESS snapshot is not authoritative once its owner
     // commits the shared receipt. Validate the live record before trusting that job.
-    const stored = await readBatchReplay(
-        inboxItemReplayKey(profile.profileId, input.idempotencyKey)
-    );
-    if (stored !== null) {
-        return IssueInboxCredentialResponseValidator.parse(
-            replayResult(stored, inboxItemRequestHash(input), 0)
-        );
-    }
+    const stored = await readBatchReplay(replayKey);
+    if (stored !== null) return replay(stored);
     await processInboxQueueMessage(JSON.stringify({ itemId: `${receipt.batchId}:0` }), true);
     const batch = await getInboxBatch(profile.profileId, receipt.batchId);
     const result = batch.items[0]?.result;

@@ -493,4 +493,35 @@ describe('single inbox durable idempotency', () => {
         expect(await issuedCount(substituted)).toBe(0);
         await expectCounts(0);
     }, 30000);
+    it('a replayed or rejected keyed call admits nothing', async () => {
+        const key = randomUUID();
+        const input = await inputFor(issuer, key);
+        const substituted = await inputFor(issuer, key, 'Substituted');
+        const owner = await issuer.clients.fullAuth.inbox.issueBatch({ items: [input] });
+        await processInboxQueueMessage(JSON.stringify({ itemId: `${owner.batchId}:0` }));
+        const original = IssueInboxCredentialResponseValidator.parse(
+            (await getInboxBatch(issuerId, owner.batchId)).items[0]!.result
+        );
+        // Admission is observable as a job node and as quota spent on the issuer.
+        const admitted = async (): Promise<{ used: number; jobs: number }> => {
+            const result = await neogma.queryRunner.run(
+                `MATCH (q:InboxBatchIssuer {id: $issuer})
+                 OPTIONAL MATCH (b:InboxBatch {issuer: $issuer})
+                 RETURN q.used AS used, count(b) AS jobs`,
+                { issuer: issuerId }
+            );
+            return {
+                used: Number(result.records[0]!.get('used')),
+                jobs: Number(result.records[0]!.get('jobs')),
+            };
+        };
+        const before = await admitted();
+        expect(before.used).toBeGreaterThan(0);
+        expect(before.jobs).toBe(1);
+        await expect(issuer.clients.fullAuth.inbox.issue(input)).resolves.toEqual(original);
+        await expect(issuer.clients.fullAuth.inbox.issue(substituted)).rejects.toMatchObject({
+            code: 'CONFLICT',
+        });
+        expect(await admitted()).toEqual(before);
+    });
 });
