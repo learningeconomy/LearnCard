@@ -565,6 +565,28 @@ describe('single inbox durable idempotency', () => {
         expect(await issuedCount(input)).toBe(0);
         await expectCounts(1);
     });
+    it('a waiting item that holds another payload is not settled by a replayed success', async () => {
+        const key = randomUUID();
+        const input = await inputFor(issuer, key);
+        const other = await inputFor(issuer, key, 'Substituted');
+        const waiting = await admit(other); // QUEUED under this key, with another payload.
+        const owner = await issuer.clients.fullAuth.inbox.issueBatch({ items: [input] });
+        await processInboxQueueMessage(JSON.stringify({ itemId: `${owner.batchId}:0` }));
+        const original = IssueInboxCredentialResponseValidator.parse(
+            (await getInboxBatch(issuerId, owner.batchId)).items[0]!.result
+        );
+        await expect(issuer.clients.fullAuth.inbox.issue(input)).resolves.toEqual(original);
+        // The replayed receipt answers this caller's payload; the waiting item holds another.
+        expect(await admittedStates(key, owner.batchId)).toEqual(['QUEUED']);
+        // Its own worker meets the record and records the rejection; nothing is issued.
+        await runLateWorker();
+        expect((await getInboxBatch(issuerId, waiting)).items[0]?.result).toMatchObject({
+            success: false,
+            error: { code: 'CONFLICT', reason: 'IDEMPOTENCY_MISMATCH' },
+        });
+        expect(await issuedCount(other)).toBe(0);
+        await expectCounts(1);
+    });
     it('a waiting item stays queued while a same-payload owner is in progress and is settled once its receipt replays', async () => {
         const key = randomUUID();
         const input = await inputFor(issuer, key);
