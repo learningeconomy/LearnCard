@@ -1,4 +1,5 @@
 import { DelegateAuthGrantValidator } from './delegate-auth-grant.schema';
+import { getServerDidWebDID } from './learnCard.helpers';
 
 export type DelegateGrantRequest = {
     /** Populated only after cryptographic verification, never from an act-as header. */
@@ -63,3 +64,10 @@ export const evaluateDelegateAuthGrant = (
         scope: grant.scope,
     };
 };
+
+/**
+ * The audience a delegate must sign for. It comes from the server configuration only
+ * (`did:web:<DOMAIN_NAME>`), never from the request: `ctx.domain` can fall back to a
+ * request-derived value, and a delegate token must not be bound to a name the caller chose.
+ */
+export const getDelegateGrantAudience = (): string => getServerDidWebDID();
