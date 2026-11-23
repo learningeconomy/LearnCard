@@ -37,6 +37,10 @@ import { userHasRequiredScopes } from '@helpers/auth-grant.helpers';
 import { getContactMethodById } from '@accesslayer/contact-method/read';
 import { VC } from '@learncard/types';
 import { CONTACT_METHOD_SESSION_PREFIX } from '@helpers/contact-method.helpers';
+import {
+    readDelegatePresentation,
+    type DelegatePresentation,
+} from '@helpers/delegate-auth-presentation.helpers';
 
 export type DidAuthVP = {
     iss: string;
@@ -60,6 +64,11 @@ export type Context = {
     };
     actAs?: string;
     contactMethod?: ContactMethodType;
+    /**
+     * Set only for a bearer token that carries the delegate challenge prefix, with the
+     * presentation only when the token verifies. Such a request never has `user`.
+     */
+    delegateRequest?: { presentation?: DelegatePresentation };
     domain: string;
     tenant: ResolvedTenant;
     _guardianApprovalToken?: string;
@@ -154,6 +163,20 @@ export const createContext = async (
         const [scheme, jwt] = authHeader.split(' ');
 
         if (scheme === 'Bearer' && jwt) {
+            // First on purpose: the delegate prefix decides, valid or not. A delegate token is
+            // never resolved through the legacy grant check or the cached-challenge check below,
+            // a refused one has nothing to fall back to, and no per-user input is carried along.
+            const delegate = await readDelegatePresentation(jwt);
+
+            if (delegate.isDelegateToken) {
+                return {
+                    delegateRequest: { presentation: delegate.presentation },
+                    domain,
+                    tenant,
+                    sourceIp,
+                };
+            }
+
             const learnCard = await getEmptyLearnCard();
 
             const result = await learnCard.invoke.verifyPresentation(jwt, { proofFormat: 'jwt' });
@@ -291,7 +314,26 @@ const enforceShareLinkRequestByteBound = t.middleware(async ({ ctx, next, getRaw
     return next({ ctx });
 });
 
-export const openRoute = t.procedure
+/** The one answer to every refused delegate request: a caller must not learn why. */
+export const DELEGATE_REQUEST_REFUSED_MESSAGE = 'Delegate token not accepted';
+
+/**
+ * A request that carries a delegate token is refused on every procedure. Composed into the
+ * one base every procedure starts from, so it runs before input parsing and before any
+ * handler, and a route added later is closed to delegates by default.
+ */
+const enforceDelegateBoundary = t.middleware(({ ctx, next }) => {
+    if (ctx.delegateRequest) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: DELEGATE_REQUEST_REFUSED_MESSAGE });
+    }
+
+    return next();
+});
+
+/** Every procedure chain starts here, never from `t.procedure`. */
+const baseProcedure = t.procedure.use(enforceDelegateBoundary);
+
+export const openRoute = baseProcedure
     .use(t.middleware(sentryInputCaptureMiddleware))
     .use(sentryTransactionNameMiddleware);
 
@@ -320,7 +362,7 @@ export const publicShareLinkCacheControlHeaders = (
  * unauthenticated or failing — can capture the payload, and it enforces the
  * complete-request byte bound before input parsing.
  */
-export const openRouteWithoutInputCapture = t.procedure
+export const openRouteWithoutInputCapture = baseProcedure
     .use(t.middleware(sentryNoInputCaptureMiddleware))
     .use(sentryTransactionNameMiddleware)
     .use(enforceShareLinkRequestByteBound);
@@ -515,7 +557,7 @@ export const profileRouteWithoutInputCapture = withProfile(didAndChallengeRouteW
 export const credentialProfileRoute = withProfile(
     withChallenge(
         withDid(
-            t.procedure
+            baseProcedure
                 .use(t.middleware(sentryNoInputCaptureMiddleware))
                 .use(sentryTransactionNameMiddleware)
         )
