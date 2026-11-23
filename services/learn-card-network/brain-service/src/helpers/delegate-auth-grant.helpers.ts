@@ -1,4 +1,4 @@
-import { DelegateAuthGrantValidator } from '@learncard/types';
+import { DelegateAuthGrantValidator } from './delegate-auth-grant.schema';
 
 export type DelegateGrantRequest = {
     /** Populated only after cryptographic verification, never from an act-as header. */

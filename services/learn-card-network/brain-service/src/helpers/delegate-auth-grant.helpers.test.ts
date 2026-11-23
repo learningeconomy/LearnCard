@@ -8,7 +8,7 @@ import {
 const grant = {
     id: 'grant-1',
     name: 'Issuance delegate',
-    challenge: 'auth-grant:opaque-challenge',
+    challenge: 'delegate-grant:opaque-challenge',
     status: 'active',
     scope: 'inbox:write',
     createdAt: '2026-01-01T00:00:00.000Z',
@@ -59,7 +59,7 @@ describe('delegate grant policy (not HTTP authentication)', () => {
         },
         { audience: 'https://other.example' },
         { expectedAudience: 'https://other.example' },
-        { challenge: 'auth-grant:another-challenge' },
+        { challenge: 'delegate-grant:another-challenge' },
         { requestedProfileId: 'other' },
         { requestedProfileId: '*' },
         { requestedProfileId: '' },
@@ -83,6 +83,15 @@ describe('delegate grant policy (not HTTP authentication)', () => {
             evaluateDelegateAuthGrant(grant, { ...request, now: Date.parse(grant.expiresAt) - 1 })
                 .allowed
         ).toBe(true);
+    });
+
+    it('denies a stored grant whose lifetime exceeds the cap', () => {
+        const expiresAt = new Date(
+            Date.parse(grant.createdAt) + 90 * 24 * 60 * 60 * 1000 + 1
+        ).toISOString();
+        expect(evaluateDelegateAuthGrant({ ...grant, expiresAt }, request)).toEqual({
+            allowed: false,
+        });
     });
 
     it('rejects revoked state on the next policy evaluation without cached success', () => {

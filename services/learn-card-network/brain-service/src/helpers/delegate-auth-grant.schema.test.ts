@@ -1,11 +1,12 @@
+import { AuthGrantValidator } from '@learncard/types';
 import { describe, expect, it } from 'vitest';
 
-import { AuthGrantValidator, DelegateAuthGrantValidator } from './lcn';
+import { DelegateAuthGrantValidator } from './delegate-auth-grant.schema';
 
 const grant = {
     id: 'grant-1',
     name: 'Issuance delegate',
-    challenge: 'auth-grant:opaque-challenge',
+    challenge: 'delegate-grant:opaque-challenge',
     status: 'active',
     scope: 'inbox:write contracts-data:write',
     createdAt: '2026-01-01T00:00:00.000Z',
@@ -16,6 +17,7 @@ const grant = {
     audience: 'https://network.example',
     createdBy: 'did:key:z6MkOwner',
 };
+const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
 
 describe('delegate auth grant schema', () => {
     it('accepts a finite, fixed-owner issuance grant', () => {
@@ -55,11 +57,45 @@ describe('delegate auth grant schema', () => {
         expect(DelegateAuthGrantValidator.safeParse({ ...grant, ...override }).success).toBe(false);
     });
 
+    it('rejects a challenge with the legacy auth-grant: prefix', () => {
+        expect(
+            DelegateAuthGrantValidator.safeParse({
+                ...grant,
+                challenge: 'auth-grant:opaque-challenge',
+            }).success
+        ).toBe(false);
+    });
+
+    it('rejects a challenge that contains auth-grant: anywhere', () => {
+        expect(
+            DelegateAuthGrantValidator.safeParse({
+                ...grant,
+                challenge: 'delegate-grant:auth-grant:x',
+            }).success
+        ).toBe(false);
+    });
+
+    it('rejects a challenge that is only the prefix', () => {
+        expect(
+            DelegateAuthGrantValidator.safeParse({ ...grant, challenge: 'delegate-grant:' }).success
+        ).toBe(false);
+    });
+
+    it('accepts a lifetime of exactly 90 days', () => {
+        const expiresAt = new Date(Date.parse(grant.createdAt) + NINETY_DAYS_MS).toISOString();
+        expect(DelegateAuthGrantValidator.safeParse({ ...grant, expiresAt }).success).toBe(true);
+    });
+
+    it('rejects a lifetime of 90 days plus one millisecond', () => {
+        const expiresAt = new Date(Date.parse(grant.createdAt) + NINETY_DAYS_MS + 1).toISOString();
+        expect(DelegateAuthGrantValidator.safeParse({ ...grant, expiresAt }).success).toBe(false);
+    });
+
     it('leaves legacy unbounded self-grants unchanged', () => {
         const legacy = {
             id: grant.id,
             name: grant.name,
-            challenge: grant.challenge,
+            challenge: 'auth-grant:opaque-challenge',
             status: grant.status,
             createdAt: grant.createdAt,
             expiresAt: null,

@@ -52,6 +52,7 @@ export default createVitestConfig(brainServicePreset, {
             'src/cache/atomic-counter.test.ts',
             'src/helpers/credential-refresh-auth.helpers.test.ts',
             'src/helpers/delegate-auth-grant.helpers.test.ts',
+            'src/helpers/delegate-auth-grant.schema.test.ts',
             'src/helpers/credential-refresh-proof.helpers.test.ts',
             'src/helpers/credential-refresh-email-content.helpers.test.ts',
             'src/helpers/credential-refresh-initial-binding.helpers.test.ts',
