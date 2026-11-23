@@ -25,6 +25,8 @@ import { userHasRequiredScopes } from './auth-grant.helpers';
 import {
     assertDelegatedInboxIssuance,
     DELEGATE_ROUTE_ALLOWLIST,
+    delegateAuditRecord,
+    delegateResultRef,
     resolveDelegateRequest,
 } from './delegate-auth-request.helpers';
 import { isSignedInboxCredential } from './inbox.helpers';
@@ -80,6 +82,12 @@ const store = (grant: DelegateAuthGrant, ownerProfile: ProfileType = owner) =>
 const issueRequest = (presentation: DelegatePresentation | undefined) =>
     resolveDelegateRequest({ presentation, path: INBOX_ISSUE, requiredScope: 'inbox:write' });
 
+/** A refusal that found a stored grant: the stage, who signed, and under which grant. */
+const refusedAt = (stage: 'route' | 'policy' | 'owner', grantId = 'grant-1') => ({
+    allowed: false,
+    attribution: { stage, actorDid: DELEGATE_DID, grantId, ownerProfileId: owner.profileId },
+});
+
 beforeEach(() => {
     vi.resetAllMocks();
     mocks.getDelegateGrantAudience.mockReturnValue(AUDIENCE);
@@ -102,12 +110,15 @@ describe('resolveDelegateRequest', () => {
 
         // toStrictEqual: no further key, so no `onBehalfOf` and no `actAsPolicy` either.
         expect(await issueRequest(presentationFor(grant))).toStrictEqual({
-            did: owner.did,
-            profile: owner,
-            isChallengeValid: true,
-            scope: 'inbox:write',
-            isAuthGrant: true,
-            delegate,
+            allowed: true,
+            user: {
+                did: owner.did,
+                profile: owner,
+                isChallengeValid: true,
+                scope: 'inbox:write',
+                isAuthGrant: true,
+                delegate,
+            },
         });
         expect(
             await resolveDelegateRequest({
@@ -116,16 +127,19 @@ describe('resolveDelegateRequest', () => {
                 requiredScope: 'contracts-data:write',
             })
         ).toStrictEqual({
-            did: owner.did,
-            profile: owner,
-            isChallengeValid: true,
-            scope: 'contracts-data:write',
-            isAuthGrant: true,
-            delegate,
+            allowed: true,
+            user: {
+                did: owner.did,
+                profile: owner,
+                isChallengeValid: true,
+                scope: 'contracts-data:write',
+                isAuthGrant: true,
+                delegate,
+            },
         });
     });
 
-    it("refuses inbox.finalize, inbox.issueBatch, contracts.syncCredentialsToContract and contracts.writeCredentialToContract although the grant's scope covers them", async () => {
+    it("refuses inbox.finalize, inbox.issueBatch, contracts.syncCredentialsToContract and contracts.writeCredentialToContract although the grant's scope covers them: the grant is read and the refusal carries stage 'route' with the verified signer, the grant id and the owner", async () => {
         const grant = storedGrant();
         store(grant);
 
@@ -148,13 +162,16 @@ describe('resolveDelegateRequest', () => {
                     requiredScope,
                 }),
                 path
-            ).toBeNull();
+            ).toStrictEqual(refusedAt('route'));
         }
 
-        expect(mocks.getDelegateAuthGrantByChallenge).not.toHaveBeenCalled();
+        // Read before the route decides: an attempt on a closed route is attributed to its grant.
+        expect(mocks.getDelegateAuthGrantByChallenge.mock.calls).toEqual(
+            closed.map(() => [grant.challenge])
+        );
     });
 
-    it('refuses an allowlisted path whose requiredScope is missing, is another scope, or is an array', async () => {
+    it("refuses an allowlisted path whose requiredScope is missing, is another scope, or is an array: the grant is read and the refusal carries stage 'route' with the verified signer, the grant id and the owner", async () => {
         const grant = storedGrant();
         store(grant);
 
@@ -175,16 +192,18 @@ describe('resolveDelegateRequest', () => {
                     requiredScope,
                 }),
                 JSON.stringify(requiredScope)
-            ).toBeNull();
+            ).toStrictEqual(refusedAt('route'));
         }
 
-        expect(mocks.getDelegateAuthGrantByChallenge).not.toHaveBeenCalled();
+        expect(mocks.getDelegateAuthGrantByChallenge.mock.calls).toEqual(
+            notThePinnedScope.map(() => [grant.challenge])
+        );
     });
 
-    it('refuses when there is no presentation', async () => {
+    it('refuses when there is no presentation, without attribution and without a read', async () => {
         store(storedGrant());
 
-        expect(await issueRequest(undefined)).toBeNull();
+        expect(await issueRequest(undefined)).toStrictEqual({ allowed: false });
         expect(mocks.getDelegateAuthGrantByChallenge).not.toHaveBeenCalled();
     });
 
@@ -192,8 +211,8 @@ describe('resolveDelegateRequest', () => {
         const grant = storedGrant();
         store(grant);
 
-        expect(await issueRequest(presentationFor(grant))).not.toBeNull();
-        expect(await issueRequest(presentationFor(grant))).not.toBeNull();
+        expect(await issueRequest(presentationFor(grant))).toMatchObject({ allowed: true });
+        expect(await issueRequest(presentationFor(grant))).toMatchObject({ allowed: true });
 
         expect(mocks.getDelegateAuthGrantByChallenge.mock.calls).toEqual([
             [grant.challenge],
@@ -206,10 +225,10 @@ describe('resolveDelegateRequest', () => {
         const presentation = presentationFor(grant);
 
         store(grant);
-        expect(await issueRequest(presentation)).not.toBeNull();
+        expect(await issueRequest(presentation)).toMatchObject({ allowed: true });
 
         store({ ...grant, status: 'revoked' });
-        expect(await issueRequest(presentation)).toBeNull();
+        expect(await issueRequest(presentation)).toStrictEqual(refusedAt('policy'));
     });
 
     it("refuses an expired grant, a grant for another delegate key, another challenge, and a grant that lacks the route's scope", async () => {
@@ -240,7 +259,7 @@ describe('resolveDelegateRequest', () => {
                     requiredScope: DELEGATE_ROUTE_ALLOWLIST[path],
                 }),
                 name
-            ).toBeNull();
+            ).toStrictEqual(refusedAt('policy'));
             // The refusal is the policy's answer about the stored grant, not an earlier one.
             expect(mocks.getDelegateAuthGrantByChallenge, name).toHaveBeenCalledTimes(1);
         }
@@ -248,22 +267,24 @@ describe('resolveDelegateRequest', () => {
         // The same grants are allowed once the one deviation is gone: each refusal above had
         // that deviation as its only cause.
         store(forAnotherKey);
-        expect(await issueRequest(presentationFor(forAnotherKey))).not.toBeNull();
+        expect(await issueRequest(presentationFor(forAnotherKey))).toMatchObject({ allowed: true });
         store(withAnotherChallenge);
-        expect(await issueRequest(presentationFor(withAnotherChallenge))).not.toBeNull();
+        expect(await issueRequest(presentationFor(withAnotherChallenge))).toMatchObject({
+            allowed: true,
+        });
         store(inboxOnly);
-        expect(await issueRequest(presentationFor(inboxOnly))).not.toBeNull();
+        expect(await issueRequest(presentationFor(inboxOnly))).toMatchObject({ allowed: true });
     });
 
     it('refuses when the configured audience no longer equals the stored audience', async () => {
         const grant = storedGrant();
         store(grant);
 
-        expect(await issueRequest(presentationFor(grant))).not.toBeNull();
+        expect(await issueRequest(presentationFor(grant))).toMatchObject({ allowed: true });
 
         mocks.getDelegateGrantAudience.mockReturnValue('did:web:renamed.example.com');
 
-        expect(await issueRequest(presentationFor(grant))).toBeNull();
+        expect(await issueRequest(presentationFor(grant))).toStrictEqual(refusedAt('policy'));
         expect(mocks.getDelegateAuthGrantByChallenge).toHaveBeenCalledTimes(2);
     });
 
@@ -271,15 +292,24 @@ describe('resolveDelegateRequest', () => {
         const grant = storedGrant();
         store(grant, { ...owner, profileId: 'someone-else' });
 
-        expect(await issueRequest(presentationFor(grant))).toBeNull();
+        expect(await issueRequest(presentationFor(grant))).toStrictEqual(refusedAt('owner'));
         expect(mocks.getDelegateAuthGrantByChallenge).toHaveBeenCalledTimes(1);
     });
 
-    it('refuses when no grant is stored for the challenge', async () => {
+    it('refuses when no grant is stored for the challenge, without attribution, on an open and on a closed route', async () => {
         mocks.getDelegateAuthGrantByChallenge.mockResolvedValue(null);
 
-        expect(await issueRequest(presentationFor(storedGrant()))).toBeNull();
-        expect(mocks.getDelegateAuthGrantByChallenge).toHaveBeenCalledTimes(1);
+        const presentation = presentationFor(storedGrant());
+
+        expect(await issueRequest(presentation)).toStrictEqual({ allowed: false });
+        expect(
+            await resolveDelegateRequest({
+                presentation,
+                path: 'inbox.finalize',
+                requiredScope: 'inbox:write',
+            })
+        ).toStrictEqual({ allowed: false });
+        expect(mocks.getDelegateAuthGrantByChallenge).toHaveBeenCalledTimes(2);
     });
 
     it('an error from the grant read propagates and is not a refusal', async () => {
@@ -288,6 +318,133 @@ describe('resolveDelegateRequest', () => {
         await expect(issueRequest(presentationFor(storedGrant()))).rejects.toThrow(
             'neo4j unavailable'
         );
+    });
+
+    it("a refusal by the policy carries stage 'policy' and names the signer, not the grant's delegate", async () => {
+        const revoked = storedGrant({ status: 'revoked' });
+        const expired = storedGrant({
+            createdAt: new Date(Date.now() - 2 * HOUR).toISOString(),
+            expiresAt: new Date(Date.now() - 1000).toISOString(),
+        });
+        const forAnotherKey = storedGrant({ id: 'grant-2', delegateDid: OTHER_KEY_DID });
+
+        store(revoked);
+        expect(await issueRequest(presentationFor(revoked))).toStrictEqual(refusedAt('policy'));
+        store(expired);
+        expect(await issueRequest(presentationFor(expired))).toStrictEqual(refusedAt('policy'));
+
+        // Signed by a key the grant does not name: the record says who asked.
+        store(forAnotherKey);
+        const refusal = await issueRequest(presentationFor(storedGrant()));
+        expect(refusal).toStrictEqual(refusedAt('policy', 'grant-2'));
+        expect(JSON.stringify(refusal)).not.toContain(OTHER_KEY_DID);
+    });
+
+    it("a refusal for a linked-profile mismatch carries stage 'owner' and names the stored owner", async () => {
+        const grant = storedGrant();
+        store(grant, { ...owner, profileId: 'someone-else' });
+
+        const refusal = await issueRequest(presentationFor(grant));
+
+        expect(refusal).toStrictEqual(refusedAt('owner'));
+        expect(JSON.stringify(refusal)).not.toContain('someone-else');
+    });
+
+    it("the route decides before the policy: a revoked grant on a closed route is refused with stage 'route'", async () => {
+        const revoked = storedGrant({ status: 'revoked' });
+        store(revoked);
+
+        expect(
+            await resolveDelegateRequest({
+                presentation: presentationFor(revoked),
+                path: 'inbox.finalize',
+                requiredScope: 'inbox:write',
+            })
+        ).toStrictEqual(refusedAt('route'));
+    });
+});
+
+describe('delegateResultRef', () => {
+    it('takes the issuance id of inbox.issue and the returned string of the contract route', () => {
+        expect(
+            delegateResultRef(INBOX_ISSUE, {
+                issuanceId: 'inbox-credential-1',
+                status: 'PENDING',
+                recipient: { type: 'email', value: 'learner@example.com' },
+                claimUrl: 'https://network.example.com/claim/abc',
+            })
+        ).toBe('inbox-credential-1');
+        expect(delegateResultRef(CONTRACT_WRITE, 'lc:network:example/credential/abc')).toBe(
+            'lc:network:example/credential/abc'
+        );
+    });
+
+    it('gives undefined for an unknown shape or another route, and never throws', () => {
+        const throwing = Object.defineProperty({}, 'issuanceId', {
+            get: () => {
+                throw new Error('not readable');
+            },
+        });
+        const unknownShapes: [string, unknown][] = [
+            [INBOX_ISSUE, undefined],
+            [INBOX_ISSUE, null],
+            [INBOX_ISSUE, 'inbox-credential-1'],
+            [INBOX_ISSUE, {}],
+            [INBOX_ISSUE, { issuanceId: 7 }],
+            [INBOX_ISSUE, { issuanceId: '' }],
+            [INBOX_ISSUE, throwing],
+            [CONTRACT_WRITE, undefined],
+            [CONTRACT_WRITE, ''],
+            [CONTRACT_WRITE, { issuanceId: 'inbox-credential-1' }],
+            ['inbox.finalize', { issuanceId: 'inbox-credential-1' }],
+            ['constructor', 'lc:network:example/credential/abc'],
+        ];
+
+        for (const [path, data] of unknownShapes) {
+            expect(
+                delegateResultRef(path, data),
+                `${path} ${JSON.stringify(data)}`
+            ).toBeUndefined();
+        }
+    });
+});
+
+describe('delegateAuditRecord', () => {
+    const who = { actorDid: DELEGATE_DID, grantId: 'grant-1', ownerProfileId: 'issuer' };
+
+    it('an allowed request: the route, its declared scope and who asked under which grant, and nothing else', () => {
+        expect(
+            delegateAuditRecord({ ...who, path: INBOX_ISSUE, requiredScope: 'inbox:write' })
+        ).toStrictEqual({
+            decision: 'allowed',
+            route: INBOX_ISSUE,
+            requiredScope: 'inbox:write',
+            ...who,
+        });
+    });
+
+    it('a denial carries its stage, and a declared scope that is not a string is left out', () => {
+        expect(
+            delegateAuditRecord({
+                ...who,
+                stage: 'route',
+                path: 'profile.getProfile',
+                requiredScope: undefined,
+            })
+        ).toStrictEqual({
+            decision: 'denied',
+            stage: 'route',
+            route: 'profile.getProfile',
+            ...who,
+        });
+        expect(
+            delegateAuditRecord({
+                ...who,
+                stage: 'policy',
+                path: INBOX_ISSUE,
+                requiredScope: ['inbox:write'],
+            })
+        ).toStrictEqual({ decision: 'denied', stage: 'policy', route: INBOX_ISSUE, ...who });
     });
 });
 

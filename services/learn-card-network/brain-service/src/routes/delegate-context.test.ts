@@ -13,6 +13,8 @@ const mocks = vi.hoisted(() => ({
     getDelegateAuthGrantByChallenge: vi.fn(),
     getDelegateGrantAudience: vi.fn(),
     issueToInbox: vi.fn(),
+    createDelegateGrantAudit: vi.fn(),
+    completeDelegateGrantAudit: vi.fn(),
 }));
 
 // Only the collaborators whose calls are counted are replaced. Every other export stays real,
@@ -44,6 +46,12 @@ vi.mock('@accesslayer/delegate-auth-grant/read', async importOriginal => ({
 vi.mock('@helpers/delegate-auth-grant.helpers', async importOriginal => ({
     ...(await importOriginal<typeof import('@helpers/delegate-auth-grant.helpers')>()),
     getDelegateGrantAudience: mocks.getDelegateGrantAudience,
+}));
+
+// The record of a delegated request: whether it is written, with what, and when, is asserted.
+vi.mock('@accesslayer/delegate-grant-audit/create', () => ({
+    createDelegateGrantAudit: mocks.createDelegateGrantAudit,
+    completeDelegateGrantAudit: mocks.completeDelegateGrantAudit,
 }));
 
 // `inbox.issue` runs up to this call: whether it is made, and with what, is what is counted.
@@ -146,6 +154,8 @@ beforeEach(() => {
     // Nothing is stored unless a test stores a grant: the boundary then refuses everything.
     mocks.getDelegateAuthGrantByChallenge.mockResolvedValue(null);
     mocks.getDelegateGrantAudience.mockReturnValue(AUDIENCE);
+    mocks.createDelegateGrantAudit.mockResolvedValue('audit-1');
+    mocks.completeDelegateGrantAudit.mockResolvedValue(true);
 });
 
 describe('createContext for a bearer token that carries the delegate prefix', () => {
@@ -311,7 +321,7 @@ describe('the delegate boundary', () => {
         ['a verified presentation', true],
         ['no presentation', false],
     ] as const)(
-        'every procedure of the service refuses a delegate token for which no grant is stored, with the one fixed message (%s)',
+        'every procedure of the service refuses a delegate token for which no grant is stored, with the one fixed message, and writes no record (%s)',
         async (_name, verified) => {
             const { delegateRequest, domain, tenant } = await createContext(
                 request(verified ? tokens.validDelegate : tokens.invalidDelegate)
@@ -333,14 +343,43 @@ describe('the delegate boundary', () => {
             }
 
             expect(notRefused).toEqual([]);
-            // Only the two issuance routes get as far as the grant read, and only with a
-            // verified presentation. Nothing is stored, so they refuse like every other route.
+            // A verified presentation is looked up on every procedure, an unverified one never.
+            // Nothing is stored, so no refusal can be attributed to a grant: nothing is recorded.
             expect(mocks.getDelegateAuthGrantByChallenge.mock.calls).toEqual(
-                verified ? [[CHALLENGE], [CHALLENGE]] : []
+                verified ? paths.map(() => [CHALLENGE]) : []
             );
+            expect(mocks.createDelegateGrantAudit).not.toHaveBeenCalled();
+            expect(mocks.completeDelegateGrantAudit).not.toHaveBeenCalled();
         },
         60_000
     );
+
+    it('a token that does not verify, and a verified token whose challenge names no grant, write nothing', async () => {
+        for (const token of [tokens.invalidDelegate, tokens.validDelegate]) {
+            const { delegateRequest, domain, tenant } = await createContext(request(token));
+            const ctx: Context = {
+                delegateRequest: { presentation: delegateRequest?.presentation },
+                domain,
+                tenant,
+            };
+
+            await expect(
+                appRouter.createCaller(ctx).inbox.issue({
+                    recipient: { type: 'email', value: 'learner@example.com' },
+                    credential: signer.invoke.getTestVc(),
+                })
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+                message: DELEGATE_REQUEST_REFUSED_MESSAGE,
+            });
+        }
+
+        // Only the verified token names a challenge to look up, and nothing is stored for it.
+        expect(mocks.getDelegateAuthGrantByChallenge.mock.calls).toEqual([[CHALLENGE]]);
+        expect(mocks.createDelegateGrantAudit).not.toHaveBeenCalled();
+        expect(mocks.completeDelegateGrantAudit).not.toHaveBeenCalled();
+        expect(mocks.issueToInbox).not.toHaveBeenCalled();
+    });
 
     describe('with a stored grant that matches the token', () => {
         const openToADelegate = [
@@ -388,6 +427,17 @@ describe('the delegate boundary', () => {
             return ctx;
         };
 
+        /** The scope a procedure declares in its own metadata, whatever its type. */
+        const declaredScope = (path: string): unknown => {
+            const procedure: unknown = Reflect.get(appRouter._def.procedures, path);
+            const meta: unknown = Reflect.get(
+                Object(Reflect.get(Object(procedure), '_def')),
+                'meta'
+            );
+
+            return Reflect.get(Object(meta), 'requiredScope');
+        };
+
         const expectNoProfileLookup = () => {
             expect(mocks.getProfileByDid).not.toHaveBeenCalled();
             expect(mocks.getProfileByProfileId).not.toHaveBeenCalled();
@@ -409,9 +459,19 @@ describe('the delegate boundary', () => {
             expectNoProfileLookup();
             expect(mocks.isAuthGrantChallengeValidForDID).not.toHaveBeenCalled();
             expect(mocks.isChallengeValidForDid).not.toHaveBeenCalled();
+            // Allowed by the boundary, so recorded; the empty input then fails before the handler.
+            expect(
+                mocks.createDelegateGrantAudit.mock.calls.map(([record]) => [
+                    record.decision,
+                    record.route,
+                ])
+            ).toEqual(openToADelegate.map(path => ['allowed', path]));
+            expect(mocks.completeDelegateGrantAudit.mock.calls).toEqual(
+                openToADelegate.map(() => ['audit-1', 'failed', undefined])
+            );
         });
 
-        it('every other procedure of the service still refuses, with the one fixed message', async () => {
+        it("every other procedure of the service still refuses, with the one fixed message, and writes exactly one denied record with stage 'route' and its own path", async () => {
             const ctx = await delegateContext();
             const others = paths.filter(path => !openToADelegate.includes(path));
             const notRefused: string[] = [];
@@ -425,8 +485,27 @@ describe('the delegate boundary', () => {
             expect(others.length).toBe(paths.length - openToADelegate.length);
             expect(others.length).toBeGreaterThan(200);
             expect(notRefused).toEqual([]);
-            // The route decides first: none of them got as far as the grant read.
-            expect(mocks.getDelegateAuthGrantByChallenge).not.toHaveBeenCalled();
+            // The grant is read before the route decides, so every refusal is attributed to it.
+            expect(mocks.getDelegateAuthGrantByChallenge).toHaveBeenCalledTimes(others.length);
+
+            const records = mocks.createDelegateGrantAudit.mock.calls.map(([record]) => record);
+
+            expect(records.map(record => record.route)).toEqual(others);
+            for (const { route, requiredScope, ...rest } of records) {
+                const declared = declaredScope(route);
+
+                expect(rest, route).toStrictEqual({
+                    decision: 'denied',
+                    stage: 'route',
+                    actorDid: signer.id.did(),
+                    grantId: 'grant-1',
+                    ownerProfileId: 'issuer',
+                });
+                expect(requiredScope, route).toBe(
+                    typeof declared === 'string' ? declared : undefined
+                );
+            }
+            expect(mocks.completeDelegateGrantAudit).not.toHaveBeenCalled();
         }, 60_000);
 
         describe('inbox.issue for a delegate', () => {
@@ -469,6 +548,145 @@ describe('the delegate boundary', () => {
                     recipient,
                     credential,
                 ]);
+            });
+        });
+
+        describe('the record of a delegated request', () => {
+            const recipient = { type: 'email' as const, value: 'learner@example.com' };
+            const issued = { status: 'PENDING', inboxCredential: { id: 'inbox-credential-1' } };
+            const allowedRecord = () => ({
+                decision: 'allowed',
+                route: 'inbox.issue',
+                requiredScope: 'inbox:write',
+                actorDid: signer.id.did(),
+                grantId: 'grant-1',
+                ownerProfileId: 'issuer',
+            });
+            const issue = (ctx: Context) =>
+                appRouter
+                    .createCaller(ctx)
+                    .inbox.issue({ recipient, credential: signer.invoke.getTestVc() });
+
+            it('an allowed request writes its record before the handler runs', async () => {
+                const ctx = await delegateContext();
+                const order: string[] = [];
+
+                mocks.createDelegateGrantAudit.mockImplementation(async () => {
+                    // Stored only after a turn of the event loop: the handler must wait for it.
+                    await Promise.resolve();
+                    order.push('record stored');
+
+                    return 'audit-1';
+                });
+                mocks.issueToInbox.mockImplementation(async () => {
+                    order.push('handler');
+
+                    return issued;
+                });
+
+                await issue(ctx);
+
+                expect(order).toEqual(['record stored', 'handler']);
+                // toStrictEqual: no token, no challenge, no credential content, no recipient.
+                expect(mocks.createDelegateGrantAudit.mock.calls).toStrictEqual([
+                    [allowedRecord()],
+                ]);
+            });
+
+            it('an allowed request does not reach the handler when the audit write fails', async () => {
+                const ctx = await delegateContext();
+                const failure = new Error('neo4j unavailable');
+
+                mocks.createDelegateGrantAudit.mockRejectedValue(failure);
+                mocks.issueToInbox.mockResolvedValue(issued);
+
+                // tRPC wraps an error that is not its own; the cause is the write's error itself.
+                await expect(issue(ctx)).rejects.toMatchObject({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'neo4j unavailable',
+                    cause: failure,
+                });
+                expect(mocks.createDelegateGrantAudit).toHaveBeenCalledTimes(1);
+                expect(mocks.issueToInbox).not.toHaveBeenCalled();
+                expect(mocks.completeDelegateGrantAudit).not.toHaveBeenCalled();
+            });
+
+            it('the record is completed with succeeded and the issued reference', async () => {
+                const ctx = await delegateContext();
+
+                mocks.issueToInbox.mockResolvedValue(issued);
+
+                await expect(issue(ctx)).resolves.toEqual({
+                    issuanceId: 'inbox-credential-1',
+                    status: 'PENDING',
+                    recipient,
+                });
+                expect(mocks.completeDelegateGrantAudit.mock.calls).toEqual([
+                    ['audit-1', 'succeeded', 'inbox-credential-1'],
+                ]);
+            });
+
+            it("the record is completed with failed when the handler throws, and the handler's own error reaches the caller unchanged", async () => {
+                const ctx = await delegateContext();
+                const failure = new TRPCError({ code: 'CONFLICT', message: 'Already issued' });
+                // The path and scope of an open route, with a handler that throws its own error.
+                const throwing = t.router({
+                    inbox: t.router({
+                        issue: profileRoute.meta({ requiredScope: 'inbox:write' }).query(() => {
+                            throw failure;
+                        }),
+                    }),
+                });
+
+                await expect(throwing.createCaller(ctx).inbox.issue()).rejects.toBe(failure);
+
+                expect(mocks.createDelegateGrantAudit.mock.calls).toStrictEqual([
+                    [allowedRecord()],
+                ]);
+                expect(mocks.completeDelegateGrantAudit.mock.calls).toEqual([
+                    ['audit-1', 'failed', undefined],
+                ]);
+            });
+
+            it("a failing completion does not change the caller's answer", async () => {
+                const ctx = await delegateContext();
+                const errorLog = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+                mocks.issueToInbox.mockResolvedValue(issued);
+                mocks.completeDelegateGrantAudit.mockRejectedValue(new Error('neo4j unavailable'));
+
+                await expect(issue(ctx)).resolves.toEqual({
+                    issuanceId: 'inbox-credential-1',
+                    status: 'PENDING',
+                    recipient,
+                });
+                expect(mocks.completeDelegateGrantAudit).toHaveBeenCalledTimes(1);
+                expect(errorLog).toHaveBeenCalledTimes(1);
+
+                errorLog.mockRestore();
+            });
+
+            it('a denial is still the fixed refusal when the audit write fails', async () => {
+                const ctx = await delegateContext();
+                const errorLog = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+                mocks.createDelegateGrantAudit.mockRejectedValue(new Error('neo4j unavailable'));
+
+                expect(await outcomeOf(ctx, 'inbox.finalize')).toBe(refused);
+                expect(mocks.createDelegateGrantAudit.mock.calls).toStrictEqual([
+                    [
+                        {
+                            ...allowedRecord(),
+                            decision: 'denied',
+                            stage: 'route',
+                            route: 'inbox.finalize',
+                        },
+                    ],
+                ]);
+                expect(errorLog).toHaveBeenCalledTimes(1);
+                expect(mocks.completeDelegateGrantAudit).not.toHaveBeenCalled();
+
+                errorLog.mockRestore();
             });
         });
 

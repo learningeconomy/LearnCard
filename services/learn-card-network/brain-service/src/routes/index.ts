@@ -32,6 +32,10 @@ import { invalidateChallengeForDid, isChallengeValidForDid } from '@cache/challe
 import { ProfileType } from 'types/profile';
 import { getProfileManagerById } from '@accesslayer/profile-manager/read';
 import { isAuthGrantChallengeValidForDID } from '@accesslayer/auth-grant/read';
+import {
+    completeDelegateGrantAudit,
+    createDelegateGrantAudit,
+} from '@accesslayer/delegate-grant-audit/create';
 import { AUTH_GRANT_FULL_ACCESS_SCOPE, AUTH_GRANT_NO_ACCESS_SCOPE } from 'src/constants/auth-grant';
 import { userHasRequiredScopes } from '@helpers/auth-grant.helpers';
 import { getContactMethodById } from '@accesslayer/contact-method/read';
@@ -41,7 +45,12 @@ import {
     readDelegatePresentation,
     type DelegatePresentation,
 } from '@helpers/delegate-auth-presentation.helpers';
-import { isDelegateUser, resolveDelegateRequest } from '@helpers/delegate-auth-request.helpers';
+import {
+    delegateAuditRecord,
+    delegateResultRef,
+    isDelegateUser,
+    resolveDelegateRequest,
+} from '@helpers/delegate-auth-request.helpers';
 
 export type DidAuthVP = {
     iss: string;
@@ -332,20 +341,54 @@ export const DELEGATE_REQUEST_REFUSED_MESSAGE = 'Delegate token not accepted';
 const enforceDelegateBoundary = t.middleware(async ({ ctx, next, path, meta }) => {
     if (!ctx.delegateRequest) return next();
 
-    const user = await resolveDelegateRequest({
+    const requiredScope: unknown = meta?.requiredScope;
+    const resolution = await resolveDelegateRequest({
         presentation: ctx.delegateRequest.presentation,
         path,
-        requiredScope: meta?.requiredScope,
+        requiredScope,
     });
 
-    if (!user) {
+    if (!resolution.allowed) {
+        // Recorded only when a stored grant was found. Best effort: the refusal is the same
+        // fixed answer whether or not its record could be written.
+        if (resolution.attribution) {
+            try {
+                await createDelegateGrantAudit(
+                    delegateAuditRecord({ ...resolution.attribution, path, requiredScope })
+                );
+            } catch (error) {
+                console.error('A refused delegate request was not recorded', error);
+            }
+        }
+
         throw new TRPCError({ code: 'UNAUTHORIZED', message: DELEGATE_REQUEST_REFUSED_MESSAGE });
     }
+
+    const { user } = resolution;
+
+    // No delegated issuance without its record: written before the handler runs, and an error
+    // here propagates, so the handler does not run.
+    const auditId = await createDelegateGrantAudit(
+        delegateAuditRecord({ ...user.delegate, path, requiredScope })
+    );
 
     // Typed as the plain context: `user` stays optional for every procedure built on this base.
     const delegated: Context = { ...ctx, user, delegateRequest: undefined };
 
-    return next({ ctx: delegated });
+    const result = await next({ ctx: delegated });
+
+    // Best effort: the handler has answered, and a record without an outcome reads "not known".
+    try {
+        await completeDelegateGrantAudit(
+            auditId,
+            result.ok ? 'succeeded' : 'failed',
+            result.ok ? delegateResultRef(path, result.data) : undefined
+        );
+    } catch (error) {
+        console.error('The outcome of a delegated request was not recorded', error);
+    }
+
+    return result;
 });
 
 /** Every procedure chain starts here, never from `t.procedure`. */
