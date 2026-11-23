@@ -37,7 +37,7 @@ const call = (output: z.ZodType = InsightCohortSummaryValidator) =>
     provider().call({
         systemPrompt: 'Synthetic summary task',
         message: 'Synthetic evidence',
-        model: 'gpt-6.1-sol',
+        model: 'gpt-6.2-sol',
         output,
         timeoutMs: 60_000,
     });
