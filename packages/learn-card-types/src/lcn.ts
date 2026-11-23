@@ -2,7 +2,7 @@ import type {} from 'zod-openapi';
 import { z } from 'zod/v4';
 
 import { PaginationResponseValidator } from './mongo';
-import { StringQuery } from './queries';
+import { BaseStringQuery, StringQuery } from './queries';
 import { UnsignedVCValidator, VCValidator, VPValidator } from './vc';
 import {
     BitstringStatusListEntryValidator,
@@ -399,6 +399,13 @@ export const BoostQueryValidator = z.union([
     BaseBoostQueryValidator,
 ]);
 export type BoostQuery = z.infer<typeof BoostQueryValidator>;
+
+/** A paginated boost is omitted if its name or category matches an exclusion. */
+export const BoostExclusionValidator = z.object({
+    name: BaseStringQuery.optional(),
+    category: BaseStringQuery.optional(),
+});
+export type BoostExclusion = z.infer<typeof BoostExclusionValidator>;
 
 export const PaginatedBoostsValidator = PaginationResponseValidator.extend({
     records: BoostValidator.array(),
@@ -1155,7 +1162,25 @@ export const ConsentFlowTermValidator = z.object({
 });
 export type ConsentFlowTerm = z.infer<typeof ConsentFlowTermValidator>;
 
+/** Opaque external consent reference; it never grants additional network permissions. */
+export const ConsentFlowExternalGrantValidator = z.strictObject({
+    issuer: z.string().min(1).max(2048).regex(/^\S+$/),
+    ref: z.string().min(1).max(2048).regex(/^\S+$/),
+    revision: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+    hash: z.string().min(1).max(512).regex(/^\S+$/),
+});
+export type ConsentFlowExternalGrant = z.infer<typeof ConsentFlowExternalGrantValidator>;
+
+export const ConsentFlowExternalGrantExpectationValidator = ConsentFlowExternalGrantValidator.pick({
+    revision: true,
+    hash: true,
+});
+export type ConsentFlowExternalGrantExpectation = z.infer<
+    typeof ConsentFlowExternalGrantExpectationValidator
+>;
+
 export const ConsentFlowTermsValidator = z.object({
+    externalGrant: ConsentFlowExternalGrantValidator.optional(),
     read: z
         .object({
             anonymize: z.boolean().optional(),

@@ -1,0 +1,47 @@
+version: 0.1
+# LC-2362 track B. Device Farm has no native Maestro test type. This custom
+# environment uses the Appium Node host because that upload type accepts a
+# generic zip. Maestro on Device Farm is Android-only: the CLI drives the
+# device over adb, and Maestro does not drive Device Farm's physical iPhones.
+android_test_host: amazon_linux_2023
+
+phases:
+    install:
+        commands:
+            - export LANG=en_US.UTF-8
+            - export LC_ALL=en_US.UTF-8
+            - export LANGUAGE=en_US.UTF-8
+            - locale
+            - curl -fsSL -o /tmp/java21.tar.gz https://corretto.aws/downloads/latest/amazon-corretto-21-x64-linux-jdk.tar.gz
+            - mkdir -p /tmp/java21
+            - tar -xzf /tmp/java21.tar.gz -C /tmp/java21 --strip-components=1
+            - export JAVA_HOME=/tmp/java21
+            - export PATH="$JAVA_HOME/bin:$PATH"
+            - java -version
+            - curl -fsSL "https://get.maestro.mobile.dev" | bash
+            - export PATH="$PATH:$HOME/.maestro/bin"
+            - maestro --version
+
+    pre_test:
+        commands:
+            - export JAVA_HOME=/tmp/java21 && export PATH="$JAVA_HOME/bin:$HOME/.maestro/bin:$PATH" && maestro --version
+            - adb shell settings put global window_animation_scale 0
+            - adb shell settings put global transition_animation_scale 0
+            - adb shell settings put global animator_duration_scale 0
+            # The driver package may not exist until Maestro installs it. A missing
+            # appops target must not fail the run before the flow starts.
+            - adb shell appops set dev.mobile.maestro RUN_IN_BACKGROUND allow || true
+            - adb shell appops set dev.mobile.maestro START_ACTIVITIES_FROM_BACKGROUND allow || true
+
+    test:
+        commands:
+            # One shell, so PATH is set even if Device Farm does not keep exports.
+            # A non-zero Maestro exit fails this phase. Do not append "|| true".
+            - export JAVA_HOME=/tmp/java21 && export PATH="$JAVA_HOME/bin:$HOME/.maestro/bin:$PATH" && maestro test "$DEVICEFARM_TEST_PACKAGE_PATH/.maestro/smoke-signin-wallet.yaml" --test-output-dir "$DEVICEFARM_LOG_DIR/maestro-results"
+
+    post_test:
+        commands:
+            - echo "maestro smoke finished"
+
+artifacts:
+    - $DEVICEFARM_LOG_DIR

@@ -318,7 +318,14 @@ export const specification = workspace => {
     ) {
         throw new Error('Untracked SDK cache input');
     }
-    const files = tracked.filter(selected);
+    // Hash LearnCard Base UI sources if either SDK consumer depends on their project.
+    const files = tracked.filter(file => {
+        if (!selected(file)) return false;
+        if (file.startsWith('packages/learn-card-base/src/')) {
+            return builtPlan.sourceRoots.some(root => file.startsWith(`${root}/`));
+        }
+        return true;
+    });
     const trackedSet = new Set(tracked);
     for (const directory of ['', ...builtPlan.sourceRoots]) {
         for (const name of fs.readdirSync(path.join(workspace, directory))) {

@@ -39,6 +39,12 @@ def increment_version_by_type(current_version_string)
   parts.join('.')
 end
 
+# Resolve once. Fastlane actions and later steps do not share a cwd, and a
+# relative XCODE_PROJECT then points at tools/apps instead of the repo.
+def smoke_xcode_project_path
+  File.expand_path(ENV.fetch("XCODE_PROJECT"))
+end
+
 platform :ios do
   desc "Description of what the lane does"
 
@@ -135,6 +141,7 @@ platform :ios do
     update_code_signing_settings(
       use_automatic_signing: false,
       path: ENV["XCODE_PROJECT"],
+      targets: ["App"],
       profile_name: profile_mapping[ENV["APP_ID"]] # app_identifier could be an environment variable: ENV['APP_ID']
     )
 
@@ -221,6 +228,7 @@ platform :ios do
     update_code_signing_settings(
       use_automatic_signing: false,
       path: ENV["XCODE_PROJECT"],
+      targets: ["App"],
       profile_name: profile_mapping[ENV["APP_ID"]] # app_identifier could be an environment variable: ENV['APP_ID']
     )
 
@@ -230,7 +238,8 @@ platform :ios do
     
     update_code_signing_settings(
       use_automatic_signing: true,
-      path: ENV["XCODE_PROJECT"]
+      path: ENV["XCODE_PROJECT"],
+      targets: ["App"]
     )
 
     upload_to_app_store(
@@ -303,6 +312,7 @@ platform :ios do
     update_code_signing_settings(
       use_automatic_signing: false,
       path: ENV["XCODE_PROJECT"],
+      targets: ["App"],
       profile_name: profile_mapping[ENV["APP_ID"]] # app_identifier could be an environment variable: ENV['APP_ID']
     )
 
@@ -351,6 +361,96 @@ platform :ios do
     url = lane_context[SharedValues::APPETIZE_APP_URL]
     File.open(ENV['GITHUB_OUTPUT'], 'a') do |file|
       file.puts("ios_app_url=#{url}")
+    end
+  end
+
+  desc "Build AppUITests for Device Farm and package the Payload IPA plus the test runner"
+  lane :smoke_xctest do
+    setup_ci if ENV['CI']
+
+    app_store_connect_api_key(
+      key_id: ENV['APP_STORE_CONNECT_KEY_ID'],
+      issuer_id: ENV['APP_STORE_CONNECT_ISSUER_ID'],
+      is_key_content_base64: true,
+      key_content: ENV['APP_STORE_CONNECT_KEY_CONTENT'],
+      duration: 500,
+      in_house: false
+    )
+
+    sync_code_signing(type: "development", generate_apple_certs: false, readonly: true)
+
+    profile_mapping = Actions.lane_context[SharedValues::MATCH_PROVISIONING_PROFILE_MAPPING]
+    profile_name = profile_mapping[ENV["APP_ID"]]
+    UI.user_error!("No development provisioning profile for #{ENV['APP_ID']}. The smoke build assumes the existing match development profile.") unless profile_name
+
+    xcode_project = smoke_xcode_project_path
+    xcode_workspace = File.expand_path(ENV.fetch("XCODE_WORKSPACE"))
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: xcode_project,
+      targets: ["App"],
+      profile_name: profile_name
+    )
+
+    # Apply the development identity to App only. AppUITests keeps
+    # CODE_SIGNING_ALLOWED = NO; this does not give it a provisioning profile.
+    project = Xcodeproj::Project.open(xcode_project)
+    app_target = project.targets.find { |target| target.name == "App" }
+    UI.user_error!("App target not found in #{xcode_project}") unless app_target
+    app_target.build_configurations.each do |config|
+      config.build_settings["CODE_SIGN_STYLE"] = "Manual"
+      config.build_settings["DEVELOPMENT_TEAM"] = ENV["TEAM_ID"]
+      config.build_settings["CODE_SIGN_IDENTITY"] = "Apple Development"
+      config.build_settings["CODE_SIGN_IDENTITY[sdk=iphoneos*]"] = "Apple Development"
+      config.build_settings["PROVISIONING_PROFILE_SPECIFIER"] = profile_name
+      config.build_settings["PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]"] = profile_name
+    end
+    project.save
+
+    derived = ENV["SMOKE_DERIVED_DATA"] || File.expand_path("smoke-xctest-derived", Dir.pwd)
+    output_dir = ENV["SMOKE_OUTPUT_DIR"] || File.expand_path("smoke-xctest", Dir.pwd)
+    FileUtils.rm_rf(derived)
+    FileUtils.mkdir_p(output_dir)
+
+    sh(
+      "xcodebuild", "build-for-testing",
+      "-workspace", xcode_workspace,
+      "-scheme", "AppUITests",
+      "-destination", "generic/platform=iOS",
+      "-configuration", "Debug",
+      "-derivedDataPath", derived,
+      "CODE_SIGN_STYLE=Manual",
+      "DEVELOPMENT_TEAM=#{ENV['TEAM_ID']}",
+      "CODE_SIGN_IDENTITY=Apple Development"
+    )
+
+    products = File.join(derived, "Build", "Products", "Debug-iphoneos")
+    app = Dir[File.join(products, "App.app")].first
+    runner = Dir[File.join(products, "*-Runner.app")].first
+    UI.user_error!("build-for-testing did not produce App.app in #{products}") unless app && File.directory?(app)
+    UI.user_error!("build-for-testing did not produce a UI test runner in #{products}") unless runner && File.directory?(runner)
+    xctest = Dir[File.join(runner, "**", "*.xctest")].first
+    UI.user_error!("#{runner} does not contain a .xctest bundle") unless xctest
+
+    payload = File.join(output_dir, "Payload")
+    FileUtils.rm_rf(payload)
+    FileUtils.mkdir_p(payload)
+    FileUtils.cp_r(app, payload)
+    ipa_path = File.join(output_dir, "LearnCard-smoke.ipa")
+    FileUtils.rm_f(ipa_path)
+    Dir.chdir(output_dir) { sh("zip", "-r", "LearnCard-smoke.ipa", "Payload") }
+
+    test_package_path = File.join(output_dir, "AppUITests.zip")
+    FileUtils.rm_f(test_package_path)
+    Dir.chdir(products) { sh("zip", "-r", test_package_path, File.basename(runner)) }
+
+    UI.message("Smoke XCUITest IPA: #{ipa_path}")
+    UI.message("Smoke XCUITest package: #{test_package_path}")
+    if ENV['GITHUB_OUTPUT']
+      File.open(ENV['GITHUB_OUTPUT'], 'a') do |file|
+        file.puts("ipa_path=#{ipa_path}")
+        file.puts("test_package_path=#{test_package_path}")
+      end
     end
   end
 end
@@ -500,6 +600,23 @@ platform :android do
     url = lane_context[SharedValues::APPETIZE_APP_URL]
     File.open(ENV['GITHUB_OUTPUT'], 'a') do |file|
       file.puts("android_app_url=#{url}")
+    end
+  end
+
+  desc "Build a debug APK for native smoke tests"
+  lane :smoke_apk do
+    gradle(
+      task: 'assemble',
+      build_type: 'Debug',
+      project_dir: ENV['GRADLE_PROJECT_DIRECTORY'],
+    )
+
+    apk_path = lane_context[SharedValues::GRADLE_APK_OUTPUT_PATH]
+    UI.message("Smoke APK: #{apk_path}")
+    if ENV['GITHUB_OUTPUT']
+      File.open(ENV['GITHUB_OUTPUT'], 'a') do |file|
+        file.puts("apk_path=#{apk_path}")
+      end
     end
   end
 end
