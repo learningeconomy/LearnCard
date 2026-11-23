@@ -200,9 +200,7 @@ export const processInboxQueueMessage = async (body: string, inline = false): Pr
     )
         throw new Error('Invalid inbox queue message');
     const owner = randomUUID();
-    const claimed = inline
-        ? await claimBatchItem(message.itemId, owner, true)
-        : await claimBatchItem(message.itemId, owner);
+    const claimed = await claimBatchItem(message.itemId, owner, inline);
     if (!claimed) return;
     const { job, item } = claimed;
     const fail = (code: string, text: string): IssueInboxCredentialBatchItemResult => ({
