@@ -25,7 +25,7 @@ Preconditions:
 - **Run the journey.** `$LCV run account --dir /tmp/lcv`. `runs/<id>/report.json` shows `account: passed` with all four entries and `observations.networkProfile.profileId` equal to the new handle.
 - **Public email field.** `getByRole('textbox', { name: 'Email' })` fills `verification@example.com`. `getByRole('button', { name: 'Sign in with Email' })` goes from disabled to enabled, then back to disabled when cleared. The URL stays on `/login`.
 - **Seed sign-in without a profile.** `v.signIn(page, actor, { createProfile: false })`, then reload. **Open profile** is visible on `/wallet`.
-- **Onboarding.** `page.goto('/login')`, and the heading `Welcome — let's set you up` appears. `tests/setup-auth.ts::finishSetupSignIn(page, handle)` picks a birth year and the United States, fills **Full name** and **Public handle**, chooses **Create my LearnCard** and then **Explore LearnCard**. After reload, the profile menu shows the handle, and `sdk(observer).invoke.getProfile(handle)` returns it.
+- **Onboarding.** `page.goto('/login')`, and the heading `Welcome — let's set you up` appears. `apps/learn-card-app/tests/setup-auth.ts::finishSetupSignIn(page, handle)` picks a birth year and the United States, fills **Full name** and **Public handle**, chooses **Create my LearnCard** and then **Explore LearnCard**. After reload, the profile menu shows the handle, and `sdk(observer).invoke.getProfile(handle)` returns it.
 - **Sign out.** Choose **Logout**: the URL becomes `/login`, and visiting `/wallet` lands back on `/login` with the English sign-in form.
 
 ## Gotchas
