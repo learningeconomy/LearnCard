@@ -26,6 +26,8 @@ vi.mock('@tanstack/react-query', () => ({
 vi.mock('learn-card-base', () => ({
     switchedProfileStore: { get: { switchedDid: () => 'did:example:upload-account' } },
     invalidateVisibleCredentialCounts: mocks.invalidateCounts,
+    // Index-aggregate refresh (LC-2383) has its own coverage in useUploadVcFromText.indexCache.test.
+    invalidateCredentialIndexQueries: vi.fn(async () => []),
     useWallet: () => ({ initWallet: mocks.initWallet, syncCredentialToContracts: mocks.sync }),
     enqueuePendingContractSyncSafely,
 }));

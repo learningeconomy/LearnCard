@@ -72,7 +72,7 @@ test('denies structured, streaming, structured streaming, and embedding calls be
             systemPrompt: 'private input',
             message: 'private input',
             output: z.object({ answer: z.string() }),
-            model: 'gpt-6.1-sol',
+            model: 'gpt-6.2-sol',
             toolName: 'answer',
             timeoutMs: 1_000,
             onPartial: () => {

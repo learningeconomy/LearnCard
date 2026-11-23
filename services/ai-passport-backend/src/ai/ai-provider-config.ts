@@ -217,13 +217,13 @@ export const validateAiProviderEnvironment = (
     }
 
     // Both providers share the Responses request builder, which only accepts
-    // the reviewed GPT-6 Luna and GPT-6.1 Sol aliases.
+    // the reviewed GPT-6 Luna and GPT-6.2 Sol aliases.
     for (const [name, model] of Object.entries(models)) {
         try {
             getBedrockGenerationModelForAudit(model);
         } catch {
             problems.push(
-                `${name}="${model}" is not an approved generation model; use gpt-6-luna or gpt-6.1-sol, optionally with a reasoning suffix such as -none or -low`
+                `${name}="${model}" is not an approved generation model; use gpt-6-luna or gpt-6.2-sol, optionally with a reasoning suffix such as -none or -low`
             );
         }
     }

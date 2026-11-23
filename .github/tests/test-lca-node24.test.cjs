@@ -93,7 +93,7 @@ for (const account of ['206533012615', '111122223333']) {
     assert.deepEqual(profiles.Action, ['bedrock:GetInferenceProfile', 'bedrock:InvokeModel']);
     assert.deepEqual(
         profiles.Resource,
-        ['us.openai.gpt-6.1-sol', 'us.openai.gpt-6-luna'].map(
+        ['us.openai.gpt-6.2-sol', 'us.openai.gpt-6-luna'].map(
             id => `arn:aws:bedrock:us-east-1:${account}:inference-profile/${id}`
         )
     );
@@ -101,7 +101,7 @@ for (const account of ['206533012615', '111122223333']) {
     assert.equal(project.Resource, `arn:aws:bedrock:us-east-1:${account}:project/default`);
     assert.deepEqual(project.Condition.StringEquals['bedrock:ModelArn'], profiles.Resource);
     for (const [statement, model, profile] of [
-        [sol, 'openai.gpt-6.1-sol', profiles.Resource[0]],
+        [sol, 'openai.gpt-6.2-sol', profiles.Resource[0]],
         [luna, 'openai.gpt-6-luna', profiles.Resource[1]],
     ]) {
         assert.equal(statement.Action, 'bedrock:InvokeModel');
