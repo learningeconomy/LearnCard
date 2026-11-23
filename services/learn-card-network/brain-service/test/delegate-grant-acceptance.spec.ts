@@ -9,6 +9,8 @@ import { appRouter, createContext } from '../src/app';
 import { DELEGATE_REQUEST_REFUSED_MESSAGE } from '../src/routes/index';
 import { getUser } from './helpers/getClient';
 import { sendSpy, addNotificationToQueueSpy } from './helpers/spies';
+import { normalContract, normalFullTerms } from './helpers/contract';
+import { testUnsignedBoost } from './helpers/send';
 import {
     Profile,
     InboxCredential,
@@ -26,7 +28,9 @@ import { createProfileContactMethodRelationship } from '@accesslayer/contact-met
 import * as notifications from '@helpers/notifications.helpers';
 import * as signing from '@helpers/signingAuthority.helpers';
 import { DELEGATE_GRANT_CHALLENGE_PREFIX } from '@helpers/delegate-auth-grant.schema';
+import * as learnCards from '@helpers/learnCard.helpers';
 import { getLearnCard, type SeedLearnCard } from '@helpers/learnCard.helpers';
+import { getIdFromUri } from '@helpers/uri.helpers';
 
 vi.mock('@services/delivery/delivery.factory', () => ({
     getDeliveryService: () => ({ send: sendSpy }),
@@ -208,7 +212,7 @@ describe('Delegate-bound issuance over HTTP', () => {
             await model.delete({ detach: true, where: {} });
         }
         await neogma.queryRunner.run(
-            'MATCH (n) WHERE n:AuthGrant OR n:DelegateAuthGrant OR n:DelegateGrantAudit OR n:BitstringStatusList OR n:CredentialStatusBinding DETACH DELETE n'
+            'MATCH (n) WHERE n:AuthGrant OR n:DelegateAuthGrant OR n:DelegateGrantAudit OR n:BitstringStatusList OR n:CredentialStatusBinding OR n:ConsentFlowContract OR n:ConsentFlowContractVersion OR n:ConsentFlowTerms OR n:ConsentFlowTransaction OR n:Role DETACH DELETE n'
         );
     };
 
@@ -542,5 +546,278 @@ describe('Delegate-bound issuance over HTTP', () => {
         expect(listed.status, JSON.stringify(listed.body)).toBe(200);
         expect(listed.body.map(grant => grant.id)).toEqual([accepted.grantId]);
         expect(listed.body[0]?.audience).toBe(accepted.audience);
+    });
+
+    describe('contract write through the signing authority', () => {
+        type Consented = {
+            holder: User;
+            holderDid: string;
+            contractUri: string;
+            boostUri: string;
+            termsUri: string;
+        };
+        type Sent = { from: string; to: string; id: string; credential: string };
+
+        const CONTRACT_ROUTE = 'contracts.writeCredentialToContractViaSigningAuthority';
+        const CONTRACT_SCOPE = 'contracts-data:write';
+        const WRITE_PATH = '/consent-flow-contract/write/via-signing-authority';
+
+        /** The owner publishes a boost and a contract; a holder consents to the contract in full. */
+        const consentedContract = async (): Promise<Consented> => {
+            const holder = await getUser('c3'.repeat(32));
+            await holder.clients.fullAuth.profile.createProfile({ profileId: HOLDER_ID });
+            const boostUri = await owner.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Achievement',
+                name: 'Acceptance boost',
+            });
+            const contractUri = await owner.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: normalContract,
+                name: 'Acceptance contract',
+            });
+            const { termsUri } = await holder.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: normalFullTerms,
+            });
+            const profile = await holder.clients.fullAuth.profile.getProfile();
+            if (!profile) throw new Error('Expected the holder to have a profile');
+
+            return { holder, holderDid: profile.did, contractUri, boostUri, termsUri };
+        };
+
+        /** The caller names a holder, a contract, a boost and an authority: never the content. */
+        const writeAs = async (
+            token: string,
+            target: Consented,
+            signingAuthorityName: string = SIGNING_AUTHORITY.name
+        ): Promise<Reply<string>> =>
+            request<string>('POST', WRITE_PATH, token, {
+                did: target.holderDid,
+                contractUri: target.contractUri,
+                boostUri: target.boostUri,
+                signingAuthority: {
+                    name: signingAuthorityName,
+                    endpoint: SIGNING_AUTHORITY.endpoint,
+                },
+            });
+
+        /** A contract grant whose token has just written, so that a later refusal is not a broken fixture. */
+        const workingContractGrant = async (): Promise<{
+            target: Consented;
+            grant: Grant;
+            token: string;
+            credentialUri: string;
+        }> => {
+            const target = await consentedContract();
+            const grant = await createGrant(CONTRACT_SCOPE);
+            const token = await delegateToken(grant);
+            const reply = await writeAs(token, target);
+            expect(reply.status, JSON.stringify(reply.body)).toBe(200);
+
+            return { target, grant, token, credentialUri: reply.body };
+        };
+
+        const sent = async (): Promise<Sent[]> => {
+            const result = await neogma.queryRunner.run(
+                'MATCH (from:Profile)-[sent:CREDENTIAL_SENT]->(c:Credential) RETURN from.profileId AS from, sent.to AS to, c.id AS id, c.credential AS credential'
+            );
+
+            return result.records.map(record => ({
+                from: record.get('from'),
+                to: record.get('to'),
+                id: record.get('id'),
+                credential: record.get('credential'),
+            }));
+        };
+
+        /** What the holder is shown as written into the terms it consented to. */
+        const deliveriesTo = async (target: Consented) => {
+            const { records } =
+                await target.holder.clients.fullAuth.contracts.getCredentialsForContract({
+                    termsUri: target.termsUri,
+                });
+
+            return records.map(record => ({
+                credential: getIdFromUri(record.credentialUri),
+                contract: getIdFromUri(record.contractUri),
+                terms: getIdFromUri(record.termsUri),
+                boost: getIdFromUri(record.boostUri),
+            }));
+        };
+
+        const outcomes = async (): Promise<unknown[]> =>
+            (await audits()).map(audit => `${audit.decision}:${audit.outcome}`).sort();
+
+        it('a delegate writes a credential into a consented contract as the owner', async () => {
+            const target = await consentedContract();
+            const seal = vi.spyOn(learnCards, 'createDagJweForRecipients');
+            const token = await delegateToken(await createGrant(CONTRACT_SCOPE));
+
+            const reply = await writeAs(token, target);
+
+            expect(reply.status, JSON.stringify(reply.body)).toBe(200);
+            expect(typeof reply.body).toBe('string');
+            expect(await deliveriesTo(target)).toEqual([
+                {
+                    credential: getIdFromUri(reply.body),
+                    contract: getIdFromUri(target.contractUri),
+                    terms: getIdFromUri(target.termsUri),
+                    boost: getIdFromUri(target.boostUri),
+                },
+            ]);
+
+            const stored = await sent();
+            expect(stored.map(({ from, to, id }) => ({ from, to, id }))).toEqual([
+                { from: OWNER_ID, to: HOLDER_ID, id: getIdFromUri(reply.body) },
+            ]);
+
+            // What is stored is an envelope encrypted for did:web readers, which the holder's key
+            // does not open here, so the content is read where the stand-in authority of the test
+            // environment seals it. That stand-in signs with the service's own key: the issuer is
+            // that key and not the owner's did:web, as in the inbox test above.
+            expect(seal).toHaveBeenCalledTimes(1);
+            const [content, readers] = seal.mock.calls[0] ?? [];
+            const delivered = VCValidator.parse(content);
+            const standIn = await getLearnCard();
+            expect(stored.map(({ credential }) => JSON.parse(credential))).toEqual([
+                await seal.mock.results[0]?.value,
+            ]);
+            expect(readers).toEqual([
+                expect.stringMatching(new RegExp(`^did:web:.+:${HOLDER_ID}$`)),
+                expect.stringMatching(new RegExp(`^did:web:.+:${OWNER_ID}$`)),
+            ]);
+            expect(delivered.issuer).toBe(standIn.id.did());
+            expect(JSON.stringify(delivered.proof)).toContain(standIn.id.did());
+            expect(JSON.stringify(delivered.credentialSubject)).toContain(HOLDER_ID);
+            expect(JSON.stringify([delivered, readers, stored])).not.toContain(delegate.id.did());
+        });
+
+        it('the signing authority is asked for the owner profile, with the authority the owner registered', async () => {
+            const target = await consentedContract();
+            const sign = vi.spyOn(signing, 'issueCredentialWithSigningAuthority');
+            const token = await delegateToken(await createGrant(CONTRACT_SCOPE));
+
+            const reply = await writeAs(token, target);
+
+            expect(reply.status, JSON.stringify(reply.body)).toBe(200);
+            expect(sign).toHaveBeenCalledTimes(1);
+            expect(sign.mock.calls[0]?.[0]).toMatchObject({
+                type: 'profile',
+                profile: { profileId: OWNER_ID },
+            });
+            expect(sign.mock.calls[0]?.[2]).toMatchObject({
+                relationship: { name: SIGNING_AUTHORITY.name, did: SIGNING_AUTHORITY.did },
+                signingAuthority: { endpoint: SIGNING_AUTHORITY.endpoint },
+            });
+
+            // The content the authority is asked to sign is built by the server from the stored
+            // boost: it names the owner as issuer and the holder as subject, never the delegate.
+            const asked = sign.mock.calls[0]?.[1];
+            expect(asked?.issuer).toEqual({
+                id: expect.stringMatching(new RegExp(`^did:web:.+:${OWNER_ID}$`)),
+            });
+            expect(JSON.stringify(asked?.credentialSubject)).toContain(HOLDER_ID);
+            expect(JSON.stringify(asked)).not.toContain(delegate.id.did());
+        });
+
+        it('audit: the write leaves one allowed record, completed as succeeded, whose resultRef is the returned reference and whose route is the contract route with scope contracts-data:write', async () => {
+            const { grant, credentialUri } = await workingContractGrant();
+
+            expect(await audits()).toEqual([
+                expect.objectContaining({
+                    actorDid: delegate.id.did(),
+                    grantId: grant.grantId,
+                    ownerProfileId: OWNER_ID,
+                    decision: 'allowed',
+                    outcome: 'succeeded',
+                    resultRef: credentialUri,
+                    route: CONTRACT_ROUTE,
+                    requiredScope: CONTRACT_SCOPE,
+                }),
+            ]);
+        });
+
+        it('refused: the same token on the caller-signed contract write, on contract sync, and on inbox.issue', async () => {
+            const { target, grant, token, credentialUri } = await workingContractGrant();
+
+            const closed = [
+                await request<unknown>('POST', '/consent-flow-contract/write', token, {
+                    did: target.holderDid,
+                    contractUri: target.contractUri,
+                    boostUri: target.boostUri,
+                    credential: await delegate.invoke.issueCredential(
+                        await delegate.invoke.getTestVc()
+                    ),
+                }),
+                await request<unknown>('POST', '/consent-flow-contract/sync', token, {
+                    termsUri: target.termsUri,
+                    categories: { Achievement: [credentialUri] },
+                }),
+                await issueAs(token),
+            ];
+
+            for (const reply of closed) expect(reply).toMatchObject(REFUSED);
+            const denied = (await audits())
+                .filter(audit => audit.decision === 'denied')
+                .map(({ route, stage }) => ({ route, stage }));
+            expect(denied).toHaveLength(3);
+            expect(denied).toEqual(
+                expect.arrayContaining([
+                    { route: 'contracts.writeCredentialToContract', stage: 'route' },
+                    { route: 'contracts.syncCredentialsToContract', stage: 'route' },
+                    { route: 'inbox.issue', stage: 'policy' },
+                ])
+            );
+            expect((await sent()).map(({ id }) => id)).toEqual([getIdFromUri(credentialUri)]);
+            expect(await storedIssuanceIds()).toEqual([]);
+            expect((await ownerReads(grant)).body.status).toBe('active');
+        });
+
+        it("the route's own rules still apply to a delegate", async () => {
+            const { target, token, credentialUri } = await workingContractGrant();
+
+            const unregistered = await writeAs(token, target, 'not-registered');
+
+            expect(unregistered).toMatchObject({
+                status: 404,
+                body: { code: 'NOT_FOUND', message: 'Could not find signing authority for boost' },
+            });
+            expect((await sent()).map(({ id }) => id)).toEqual([getIdFromUri(credentialUri)]);
+            expect(await deliveriesTo(target)).toHaveLength(1);
+            expect(await outcomes()).toEqual(['allowed:failed', 'allowed:succeeded']);
+
+            await target.holder.clients.fullAuth.contracts.withdrawConsent({
+                uri: target.termsUri,
+            });
+            const beforeRefusal = await sent();
+
+            const withdrawn = await writeAs(token, target);
+
+            expect(withdrawn).toMatchObject({
+                status: 403,
+                body: {
+                    code: 'FORBIDDEN',
+                    message: 'Target profile has not consented to this contract',
+                },
+            });
+            expect(withdrawn).toEqual(await writeAs(await sessionToken(owner), target));
+            expect(await sent()).toEqual(beforeRefusal);
+            expect(await outcomes()).toEqual([
+                'allowed:failed',
+                'allowed:failed',
+                'allowed:succeeded',
+            ]);
+        });
+
+        it('after the owner revokes over HTTP, the same token is refused on the contract route', async () => {
+            const { target, grant, token, credentialUri } = await workingContractGrant();
+
+            await revokeGrant(grant);
+
+            expect(await writeAs(token, target)).toMatchObject(REFUSED);
+            expect(await denialStages()).toEqual(['policy']);
+            expect((await ownerReads(grant)).body.status).toBe('revoked');
+            expect((await sent()).map(({ id }) => id)).toEqual([getIdFromUri(credentialUri)]);
+        });
     });
 });
