@@ -10,6 +10,8 @@ const mocks = vi.hoisted(() => ({
     getProfileByDid: vi.fn(),
     getProfileByProfileId: vi.fn(),
     getProfilesThatManageAProfile: vi.fn(),
+    getDelegateAuthGrantByChallenge: vi.fn(),
+    getDelegateGrantAudience: vi.fn(),
 }));
 
 // Only the collaborators whose calls are counted are replaced. Every other export stays real,
@@ -33,16 +35,30 @@ vi.mock('@accesslayer/profile/relationships/read', async importOriginal => ({
     ...(await importOriginal<typeof import('@accesslayer/profile/relationships/read')>()),
     getProfilesThatManageAProfile: mocks.getProfilesThatManageAProfile,
 }));
+vi.mock('@accesslayer/delegate-auth-grant/read', async importOriginal => ({
+    ...(await importOriginal<typeof import('@accesslayer/delegate-auth-grant/read')>()),
+    getDelegateAuthGrantByChallenge: mocks.getDelegateAuthGrantByChallenge,
+}));
+// The configured audience is replaced so that it is the one the test tokens are signed for.
+vi.mock('@helpers/delegate-auth-grant.helpers', async importOriginal => ({
+    ...(await importOriginal<typeof import('@helpers/delegate-auth-grant.helpers')>()),
+    getDelegateGrantAudience: mocks.getDelegateGrantAudience,
+}));
 
-import { DELEGATE_GRANT_CHALLENGE_PREFIX } from '@helpers/delegate-auth-grant.schema';
+import {
+    DELEGATE_GRANT_CHALLENGE_PREFIX,
+    type DelegateAuthGrant,
+} from '@helpers/delegate-auth-grant.schema';
 import { getLearnCard } from '@helpers/learnCard.helpers';
 import type { SeedLearnCard } from '@helpers/learnCard.helpers';
+import type { ProfileType } from 'types/profile';
 
 import { appRouter } from '../app';
 import {
     createContext,
     DELEGATE_REQUEST_REFUSED_MESSAGE,
     didRoute,
+    profileRoute,
     t,
     type Context,
 } from './index';
@@ -120,6 +136,9 @@ beforeEach(() => {
         scope: 'inbox:write',
     });
     mocks.isChallengeValidForDid.mockResolvedValue(true);
+    // Nothing is stored unless a test stores a grant: the boundary then refuses everything.
+    mocks.getDelegateAuthGrantByChallenge.mockResolvedValue(null);
+    mocks.getDelegateGrantAudience.mockReturnValue(AUDIENCE);
 });
 
 describe('createContext for a bearer token that carries the delegate prefix', () => {
@@ -285,7 +304,7 @@ describe('the delegate boundary', () => {
         ['a verified presentation', true],
         ['no presentation', false],
     ] as const)(
-        'every procedure of the service refuses a request that carries a delegate token, with the one fixed message (%s)',
+        'every procedure of the service refuses a delegate token for which no grant is stored, with the one fixed message (%s)',
         async (_name, verified) => {
             const { delegateRequest, domain, tenant } = await createContext(
                 request(verified ? tokens.validDelegate : tokens.invalidDelegate)
@@ -307,7 +326,140 @@ describe('the delegate boundary', () => {
             }
 
             expect(notRefused).toEqual([]);
+            // Only the two issuance routes get as far as the grant read, and only with a
+            // verified presentation. Nothing is stored, so they refuse like every other route.
+            expect(mocks.getDelegateAuthGrantByChallenge.mock.calls).toEqual(
+                verified ? [[CHALLENGE], [CHALLENGE]] : []
+            );
         },
         60_000
     );
+
+    describe('with a stored grant that matches the token', () => {
+        const openToADelegate = [
+            'inbox.issue',
+            'contracts.writeCredentialToContractViaSigningAuthority',
+        ];
+        const owner: ProfileType = {
+            profileId: 'issuer',
+            did: 'did:key:z6MkOwner',
+            displayName: 'Issuing organisation',
+            shortBio: '',
+            bio: '',
+        };
+
+        /** Stores a grant for the valid delegate token and gives the context of its request. */
+        const delegateContext = async (otherHeaders: [string, string][] = []): Promise<Context> => {
+            const grant: DelegateAuthGrant = {
+                id: 'grant-1',
+                name: 'Issuance delegate',
+                challenge: CHALLENGE,
+                status: 'active',
+                scope: 'inbox:write contracts-data:write',
+                createdAt: new Date(Date.now() - 60_000).toISOString(),
+                expiresAt: new Date(Date.now() + 3_600_000).toISOString(),
+                delegateDid: signer.id.did(),
+                ownerProfileId: owner.profileId,
+                effectiveProfileId: owner.profileId,
+                audience: AUDIENCE,
+                createdBy: owner.did,
+            };
+
+            mocks.getDelegateAuthGrantByChallenge.mockResolvedValue({ grant, ownerProfile: owner });
+
+            const { delegateRequest, domain, tenant } = await createContext(
+                request(tokens.validDelegate, otherHeaders)
+            );
+            const ctx: Context = {
+                delegateRequest: { presentation: delegateRequest?.presentation },
+                domain,
+                tenant,
+            };
+
+            expect(ctx.delegateRequest?.presentation).toBeDefined();
+
+            return ctx;
+        };
+
+        const expectNoProfileLookup = () => {
+            expect(mocks.getProfileByDid).not.toHaveBeenCalled();
+            expect(mocks.getProfileByProfileId).not.toHaveBeenCalled();
+            expect(mocks.getProfilesThatManageAProfile).not.toHaveBeenCalled();
+        };
+
+        it('the two issuance routes pass the boundary, withDid, the challenge check and the scope check, and fail only on their empty input', async () => {
+            const ctx = await delegateContext();
+
+            for (const path of openToADelegate) {
+                expect(paths).toContain(path);
+                expect(await outcomeOf(ctx, path), path).toMatch(/^BAD_REQUEST: /);
+            }
+
+            expect(mocks.getDelegateAuthGrantByChallenge.mock.calls).toEqual([
+                [CHALLENGE],
+                [CHALLENGE],
+            ]);
+            expectNoProfileLookup();
+            expect(mocks.isAuthGrantChallengeValidForDID).not.toHaveBeenCalled();
+            expect(mocks.isChallengeValidForDid).not.toHaveBeenCalled();
+        });
+
+        it('every other procedure of the service still refuses, with the one fixed message', async () => {
+            const ctx = await delegateContext();
+            const others = paths.filter(path => !openToADelegate.includes(path));
+            const notRefused: string[] = [];
+
+            for (const path of others) {
+                const outcome = await outcomeOf(ctx, path);
+
+                if (outcome !== refused) notRefused.push(`${path} -> ${outcome}`);
+            }
+
+            expect(others.length).toBe(paths.length - openToADelegate.length);
+            expect(others.length).toBeGreaterThan(200);
+            expect(notRefused).toEqual([]);
+            // The route decides first: none of them got as far as the grant read.
+            expect(mocks.getDelegateAuthGrantByChallenge).not.toHaveBeenCalled();
+        }, 60_000);
+
+        it('the act-as header changes nothing: the handler runs as the owner of the grant', async () => {
+            // The path and scope of an open route, with a handler that shows what it is given.
+            const asSeenByTheHandler = t.router({
+                inbox: t.router({
+                    issue: profileRoute
+                        .meta({ requiredScope: 'inbox:write' })
+                        .query(({ ctx }) => ctx.user),
+                }),
+            });
+            const ownerOfTheGrant = {
+                did: owner.did,
+                profile: owner,
+                isChallengeValid: true,
+                scope: 'inbox:write',
+                isAuthGrant: true,
+                delegate: {
+                    actorDid: signer.id.did(),
+                    grantId: 'grant-1',
+                    ownerProfileId: 'issuer',
+                },
+            };
+
+            const plain = await delegateContext();
+            const withHeader = await delegateContext([[ACT_AS_HEADER, 'managed-profile']]);
+            // createContext drops the header for a delegate token; withDid must not rely on that.
+            const withActAs: Context = { ...withHeader, actAs: 'managed-profile' };
+
+            for (const ctx of [plain, withHeader, withActAs]) {
+                expect(await asSeenByTheHandler.createCaller(ctx).inbox.issue()).toStrictEqual(
+                    ownerOfTheGrant
+                );
+            }
+
+            for (const path of openToADelegate) {
+                expect(await outcomeOf(withActAs, path), path).toMatch(/^BAD_REQUEST: /);
+            }
+
+            expectNoProfileLookup();
+        });
+    });
 });

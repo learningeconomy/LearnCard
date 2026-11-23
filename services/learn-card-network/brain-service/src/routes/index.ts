@@ -41,6 +41,7 @@ import {
     readDelegatePresentation,
     type DelegatePresentation,
 } from '@helpers/delegate-auth-presentation.helpers';
+import { isDelegateUser, resolveDelegateRequest } from '@helpers/delegate-auth-request.helpers';
 
 export type DidAuthVP = {
     iss: string;
@@ -61,6 +62,11 @@ export type Context = {
         isAuthGrant?: boolean;
         actAsPolicy?: string;
         onBehalfOf?: string;
+        /**
+         * Set only by the delegate boundary: the request is made by `actorDid` under the grant
+         * `grantId` and runs as that grant's owner profile.
+         */
+        delegate?: { actorDid: string; grantId: string; ownerProfileId: string };
     };
     actAs?: string;
     contactMethod?: ContactMethodType;
@@ -318,16 +324,28 @@ const enforceShareLinkRequestByteBound = t.middleware(async ({ ctx, next, getRaw
 export const DELEGATE_REQUEST_REFUSED_MESSAGE = 'Delegate token not accepted';
 
 /**
- * A request that carries a delegate token is refused on every procedure. Composed into the
- * one base every procedure starts from, so it runs before input parsing and before any
- * handler, and a route added later is closed to delegates by default.
+ * A request that carries a delegate token is refused on every procedure, except that a valid
+ * delegate reaches the routes of `DELEGATE_ROUTE_ALLOWLIST` as the owner profile of its grant.
+ * Composed into the one base every procedure starts from, so it runs before input parsing and
+ * before any handler, and a route added later is closed to delegates by default.
  */
-const enforceDelegateBoundary = t.middleware(({ ctx, next }) => {
-    if (ctx.delegateRequest) {
+const enforceDelegateBoundary = t.middleware(async ({ ctx, next, path, meta }) => {
+    if (!ctx.delegateRequest) return next();
+
+    const user = await resolveDelegateRequest({
+        presentation: ctx.delegateRequest.presentation,
+        path,
+        requiredScope: meta?.requiredScope,
+    });
+
+    if (!user) {
         throw new TRPCError({ code: 'UNAUTHORIZED', message: DELEGATE_REQUEST_REFUSED_MESSAGE });
     }
 
-    return next();
+    // Typed as the plain context: `user` stays optional for every procedure built on this base.
+    const delegated: Context = { ...ctx, user, delegateRequest: undefined };
+
+    return next({ ctx: delegated });
 });
 
 /** Every procedure chain starts here, never from `t.procedure`. */
@@ -462,6 +480,10 @@ const withDid = (base: typeof openRoute) =>
         if (!ctx.user?.did) {
             throw new TRPCError({ code: 'UNAUTHORIZED' });
         }
+
+        // The owner comes from the stored grant, never from a lookup by DID or from the act-as
+        // header, and no manager relationship is consulted.
+        if (isDelegateUser(ctx.user)) return next({ ctx: { ...ctx, user: ctx.user } });
 
         const profile = await resolveProfileFromContextDid(ctx.user.did, ctx.domain);
 
