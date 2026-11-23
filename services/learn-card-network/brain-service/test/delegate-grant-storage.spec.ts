@@ -11,6 +11,12 @@ import {
     isAuthGrantChallengeValidForDID,
 } from '@accesslayer/auth-grant/read';
 import { createDelegateAuthGrant } from '@accesslayer/delegate-auth-grant/create';
+import {
+    getDelegateAuthGrantByChallenge,
+    getDelegateAuthGrantForOwner,
+    getDelegateAuthGrantsForOwner,
+} from '@accesslayer/delegate-auth-grant/read';
+import { revokeDelegateAuthGrant } from '@accesslayer/delegate-auth-grant/update';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import {
     DELEGATE_GRANT_CHALLENGE_PREFIX,
@@ -163,6 +169,112 @@ describe('Delegate grant storage', () => {
                 scope: AUTH_GRANT_NO_ACCESS_SCOPE,
                 actAs: undefined,
             });
+        });
+    });
+
+    describe('getDelegateAuthGrantByChallenge', () => {
+        it('by-challenge read returns the grant and the profile it is linked to', async () => {
+            const grant = makeGrant();
+            const other = makeGrant({ ownerProfileId: 'userb', effectiveProfileId: 'userb' });
+            await createDelegateAuthGrant(grant);
+            await createDelegateAuthGrant(other);
+
+            const found = await getDelegateAuthGrantByChallenge(grant.challenge);
+
+            expect(found?.grant).toEqual(grant);
+            expect(found?.ownerProfile.profileId).toBe('usera');
+            expect(found?.ownerProfile).toEqual(await getProfileByProfileId('usera'));
+            expect(
+                (await getDelegateAuthGrantByChallenge(other.challenge))?.ownerProfile.profileId
+            ).toBe('userb');
+            expect(
+                await getDelegateAuthGrantByChallenge(`${DELEGATE_GRANT_CHALLENGE_PREFIX}${uuid()}`)
+            ).toBeNull();
+        });
+
+        it('by-challenge read returns a revoked grant and an expired grant (no filtering)', async () => {
+            const revoked = makeGrant({ status: AuthGrantStatusValidator.enum.revoked });
+            const expired = makeGrant({
+                createdAt: new Date(Date.now() - 2 * DAY_MS).toISOString(),
+                expiresAt: new Date(Date.now() - DAY_MS).toISOString(),
+            });
+            await createDelegateAuthGrant(revoked);
+            await createDelegateAuthGrant(expired);
+
+            expect((await getDelegateAuthGrantByChallenge(revoked.challenge))?.grant).toEqual(
+                revoked
+            );
+            expect((await getDelegateAuthGrantByChallenge(expired.challenge))?.grant).toEqual(
+                expired
+            );
+        });
+
+        it('by-challenge read does not return a node without an owner link', async () => {
+            const orphan = makeGrant();
+            await neogma.queryRunner.run('CREATE (grant:DelegateAuthGrant) SET grant = $orphan', {
+                orphan,
+            });
+
+            expect(await storedGrants()).toEqual([{ grant: orphan, owners: [], links: [] }]);
+            expect(await getDelegateAuthGrantByChallenge(orphan.challenge)).toBeNull();
+        });
+    });
+
+    describe('owner reads', () => {
+        it('owner read and owner list return nothing for another profile', async () => {
+            const grant = makeGrant();
+            await createDelegateAuthGrant(grant);
+
+            expect(await getDelegateAuthGrantForOwner(grant.id, 'usera')).toEqual(grant);
+            expect(await getDelegateAuthGrantsForOwner('usera', 10)).toEqual([grant]);
+
+            expect(await getDelegateAuthGrantForOwner(grant.id, 'userb')).toBeNull();
+            expect(await getDelegateAuthGrantsForOwner('userb', 10)).toEqual([]);
+        });
+
+        it('owner list is newest first and honours the limit', async () => {
+            const hoursAgo = (hours: number) =>
+                makeGrant({ createdAt: new Date(Date.now() - hours * 3_600_000).toISOString() });
+            const [oldest, newest, middle] = [hoursAgo(3), hoursAgo(1), hoursAgo(2)];
+            for (const grant of [oldest, newest, middle]) await createDelegateAuthGrant(grant);
+
+            expect(await getDelegateAuthGrantsForOwner('usera', 10)).toEqual([
+                newest,
+                middle,
+                oldest,
+            ]);
+            expect(await getDelegateAuthGrantsForOwner('usera', 2)).toEqual([newest, middle]);
+        });
+    });
+
+    describe('revokeDelegateAuthGrant', () => {
+        it('revoke by another profile returns false and changes nothing', async () => {
+            const grant = makeGrant();
+            await createDelegateAuthGrant(grant);
+
+            expect(await revokeDelegateAuthGrant(grant.id, 'userb')).toBe(false);
+            expect(await revokeDelegateAuthGrant(uuid(), 'usera')).toBe(false);
+            expect(await storedGrants()).toEqual([linkedToUserA(grant)]);
+        });
+
+        it('revoke changes status and no other field, and a second revoke still returns true', async () => {
+            const grant = makeGrant();
+            const untouched = makeGrant({
+                createdAt: new Date(Date.now() + 60_000).toISOString(),
+            });
+            await createDelegateAuthGrant(grant);
+            await createDelegateAuthGrant(untouched);
+
+            const afterRevoke = [
+                linkedToUserA({ ...grant, status: AuthGrantStatusValidator.enum.revoked }),
+                linkedToUserA(untouched),
+            ];
+
+            expect(await revokeDelegateAuthGrant(grant.id, 'usera')).toBe(true);
+            expect(await storedGrants()).toEqual(afterRevoke);
+
+            expect(await revokeDelegateAuthGrant(grant.id, 'usera')).toBe(true);
+            expect(await storedGrants()).toEqual(afterRevoke);
         });
     });
 });
