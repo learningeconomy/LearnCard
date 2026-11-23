@@ -33,6 +33,7 @@ const EXPECTED_INFINITE_QUERY_KEY_ROOTS = [
     'useGetPaginatedFamilialBoosts',
     'useGetPaginatedManagedBoosts',
     'useGetPaginatedManagedBoostsQuery',
+    'useGetPaginatedManagedBoostsWithExclusions',
     'useGetUserNotifications',
     'useNetworkMembers',
     'useTermsTransactions',

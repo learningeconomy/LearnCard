@@ -36,6 +36,7 @@ import type {
     ConsentFlowContractUpdateResult,
     ConsentFlowContractVersion,
     ConsentFlowConsentStatus,
+    ConsentFlowExternalGrantExpectation,
 } from '@learncard/types';
 import {
     LCNProfile,
@@ -66,6 +67,7 @@ import {
     ShareLinkAttachmentChunkOutput,
     AcknowledgeViewOutput,
     Boost,
+    BoostExclusion,
     BoostQuery,
     LCNSigningAuthorityForUserType,
     LCNBoostClaimLinkSigningAuthorityType,
@@ -509,7 +511,7 @@ export type LearnCardNetworkPluginMethods = {
     /** @deprecated Use getPaginatedBoosts */
     getBoosts: (query?: BoostQuery) => Promise<{ name?: string; uri: string }[]>;
     getPaginatedBoosts: (
-        options?: PaginationOptionsType & { query?: BoostQuery }
+        options?: PaginationOptionsType & { query?: BoostQuery; exclude?: BoostExclusion }
     ) => Promise<PaginatedBoostsType>;
     countBoosts: (query?: BoostQuery) => Promise<number>;
     getBoostChildren: (
@@ -823,7 +825,11 @@ export type LearnCardNetworkPluginMethods = {
         did: string,
         contractUri: string,
         credential: VC | JWE,
-        boostUri: string
+        boostUri: string,
+        options?: {
+            /** Require this external consent revision/hash at the locked delivery gate. */
+            expectedExternalGrant?: ConsentFlowExternalGrantExpectation;
+        }
     ) => Promise<string>;
 
     consentToContract: (
