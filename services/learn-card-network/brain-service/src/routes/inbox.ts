@@ -32,6 +32,7 @@ import {
     GuardianApprovalRequestStatusValidator,
 } from '@learncard/types';
 import { getInboxCredentialMeta } from '@helpers/credential-meta.helpers';
+import { assertDelegatedInboxIssuance } from '@helpers/delegate-auth-request.helpers';
 import { claimIntoInbox, issueToInbox, resolveInboxCredentialInput } from '@helpers/inbox.helpers';
 import {
     hasMustacheVariables,
@@ -651,6 +652,8 @@ export const inboxRouter = t.router({
             }
 
             const { credential, resolvedBoostUri } = await resolveInboxCredentialInput(input, ctx);
+
+            assertDelegatedInboxIssuance(ctx.user, input, credential);
 
             // Normalize signing authority name if provided
             const normalizedConfiguration = configuration?.signingAuthority

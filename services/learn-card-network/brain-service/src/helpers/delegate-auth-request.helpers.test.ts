@@ -1,5 +1,7 @@
+import { TRPCError } from '@trpc/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { UnsignedVC, VC, VP } from '@learncard/types';
 import type { ProfileType } from 'types/profile';
 
 const mocks = vi.hoisted(() => ({
@@ -19,7 +21,13 @@ vi.mock('@helpers/delegate-auth-grant.helpers', async importOriginal => ({
 
 import type { DelegateAuthGrant } from './delegate-auth-grant.schema';
 import type { DelegatePresentation } from './delegate-auth-presentation.helpers';
-import { DELEGATE_ROUTE_ALLOWLIST, resolveDelegateRequest } from './delegate-auth-request.helpers';
+import { userHasRequiredScopes } from './auth-grant.helpers';
+import {
+    assertDelegatedInboxIssuance,
+    DELEGATE_ROUTE_ALLOWLIST,
+    resolveDelegateRequest,
+} from './delegate-auth-request.helpers';
+import { isSignedInboxCredential } from './inbox.helpers';
 
 const HOUR = 60 * 60 * 1000;
 const AUDIENCE = 'did:web:network.example.com';
@@ -280,5 +288,119 @@ describe('resolveDelegateRequest', () => {
         await expect(issueRequest(presentationFor(storedGrant()))).rejects.toThrow(
             'neo4j unavailable'
         );
+    });
+});
+
+describe('assertDelegatedInboxIssuance', () => {
+    const delegated = {
+        delegate: { actorDid: DELEGATE_DID, grantId: 'grant-1', ownerProfileId: owner.profileId },
+    };
+    const notDelegated = {};
+
+    const unsigned: UnsignedVC = {
+        '@context': ['https://www.w3.org/2018/credentials/v1'],
+        type: ['VerifiableCredential'],
+        issuer: owner.did,
+        issuanceDate: '2026-01-01T00:00:00Z',
+        credentialSubject: { id: 'did:example:learner' },
+    };
+    // What a delegate could produce itself: a proof made with its own key.
+    const proof = {
+        type: 'Ed25519Signature2020',
+        created: '2026-01-01T00:00:00Z',
+        proofPurpose: 'assertionMethod',
+        verificationMethod: `${DELEGATE_DID}#key`,
+        proofValue: 'z58DAdFfa9SkqZMVPxAQp',
+    };
+    const signed: VC = { ...unsigned, proof };
+    const presentation: VP = {
+        '@context': ['https://www.w3.org/2018/credentials/v1'],
+        type: ['VerifiablePresentation'],
+        holder: DELEGATE_DID,
+        proof: { ...proof, proofPurpose: 'authentication' },
+    };
+
+    /** The refusal as `CODE: message`, or `undefined` when the request passes. */
+    const refusalOf = (
+        ...args: Parameters<typeof assertDelegatedInboxIssuance>
+    ): string | undefined => {
+        try {
+            assertDelegatedInboxIssuance(...args);
+
+            return undefined;
+        } catch (error) {
+            if (error instanceof TRPCError) return `${error.code}: ${error.message}`;
+
+            throw error;
+        }
+    };
+
+    const unsignedContentRule =
+        "BAD_REQUEST: A delegate submits unsigned credential content; the organisation's signing authority signs it.";
+
+    it('does nothing for a request that is not delegated', () => {
+        expect(refusalOf(notDelegated, {}, signed)).toBeUndefined();
+        expect(refusalOf(notDelegated, { refresh: true }, unsigned)).toBeUndefined();
+        expect(refusalOf(notDelegated, { refresh: true }, signed)).toBeUndefined();
+    });
+
+    it('passes unsigned credential content for a delegated request', () => {
+        expect(refusalOf(delegated, {}, unsigned)).toBeUndefined();
+        expect(refusalOf(delegated, { refresh: false }, unsigned)).toBeUndefined();
+    });
+
+    it('refuses a credential that already carries a proof', () => {
+        expect(refusalOf(delegated, {}, signed)).toBe(unsignedContentRule);
+    });
+
+    // A proof is the only signed form `issueToInbox` knows, and the input validator admits
+    // objects only. These are the other shapes in which a proof can arrive.
+    it('refuses a credential with a list of proofs and a presentation, which always has a proof', () => {
+        expect(refusalOf(delegated, {}, { ...unsigned, proof: [proof] })).toBe(unsignedContentRule);
+        expect(refusalOf(delegated, {}, presentation)).toBe(unsignedContentRule);
+    });
+
+    it('refuses a managed refresh for a delegated request', () => {
+        const refusal = refusalOf(delegated, { refresh: true }, unsigned);
+
+        expect(refusal).toMatch(/^BAD_REQUEST: /);
+        expect(refusal).toContain('managed refresh');
+    });
+
+    it('says nothing about the grant in a refusal', () => {
+        for (const refusal of [
+            refusalOf(delegated, {}, signed),
+            refusalOf(delegated, { refresh: true }, unsigned),
+        ]) {
+            expect(refusal).not.toMatch(/grant/i);
+            expect(refusal).not.toContain(delegated.delegate.grantId);
+            expect(refusal).not.toContain(DELEGATE_DID);
+        }
+    });
+
+    it('uses the same predicate as issueToInbox', () => {
+        const shapes: [string, VC | UnsignedVC | VP, boolean][] = [
+            ['unsigned content', unsigned, false],
+            ['a proof that is undefined', { ...unsigned, proof: undefined }, false],
+            ['one proof', signed, true],
+            ['a list of proofs', { ...unsigned, proof: [proof] }, true],
+            // `issueToInbox` takes an empty list as signed too, so a delegate may not send it.
+            ['an empty list of proofs', { ...unsigned, proof: [] }, true],
+            ['a presentation', presentation, true],
+        ];
+
+        for (const [name, credential, isSigned] of shapes) {
+            expect(isSignedInboxCredential(credential), name).toBe(isSigned);
+            expect(refusalOf(delegated, {}, credential) !== undefined, name).toBe(isSigned);
+        }
+    });
+
+    // In `inbox.issue` the refresh block runs before the credential is resolved, and so before
+    // this check. It asks for `credentials:write`, which the scope pinned for a delegate lacks.
+    it('the scope pinned for inbox.issue does not open the refresh block of the route', () => {
+        const pinnedScope = DELEGATE_ROUTE_ALLOWLIST[INBOX_ISSUE];
+
+        expect(pinnedScope).toBe('inbox:write');
+        expect(userHasRequiredScopes(pinnedScope ?? '', 'credentials:write')).toBe(false);
     });
 });

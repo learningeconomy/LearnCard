@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
     getProfilesThatManageAProfile: vi.fn(),
     getDelegateAuthGrantByChallenge: vi.fn(),
     getDelegateGrantAudience: vi.fn(),
+    issueToInbox: vi.fn(),
 }));
 
 // Only the collaborators whose calls are counted are replaced. Every other export stays real,
@@ -43,6 +44,12 @@ vi.mock('@accesslayer/delegate-auth-grant/read', async importOriginal => ({
 vi.mock('@helpers/delegate-auth-grant.helpers', async importOriginal => ({
     ...(await importOriginal<typeof import('@helpers/delegate-auth-grant.helpers')>()),
     getDelegateGrantAudience: mocks.getDelegateGrantAudience,
+}));
+
+// `inbox.issue` runs up to this call: whether it is made, and with what, is what is counted.
+vi.mock('@helpers/inbox.helpers', async importOriginal => ({
+    ...(await importOriginal<typeof import('@helpers/inbox.helpers')>()),
+    issueToInbox: mocks.issueToInbox,
 }));
 
 import {
@@ -421,6 +428,49 @@ describe('the delegate boundary', () => {
             // The route decides first: none of them got as far as the grant read.
             expect(mocks.getDelegateAuthGrantByChallenge).not.toHaveBeenCalled();
         }, 60_000);
+
+        describe('inbox.issue for a delegate', () => {
+            const recipient = { type: 'email' as const, value: 'learner@example.com' };
+
+            it('a delegated inbox.issue with a signed credential is refused with BAD_REQUEST before issueToInbox is called', async () => {
+                const ctx = await delegateContext();
+                // Signed with the only key a delegate holds: its own.
+                const credential = await signer.invoke.issueCredential(signer.invoke.getTestVc());
+
+                await expect(
+                    appRouter.createCaller(ctx).inbox.issue({ recipient, credential })
+                ).rejects.toMatchObject({
+                    code: 'BAD_REQUEST',
+                    message: expect.stringContaining('unsigned credential content'),
+                });
+                expect(mocks.issueToInbox).not.toHaveBeenCalled();
+            });
+
+            // The same input without the proof: the refusal above is not the input validator's.
+            it('the same request with unsigned content reaches issueToInbox as the owner of the grant', async () => {
+                const ctx = await delegateContext();
+                const credential = signer.invoke.getTestVc();
+
+                mocks.issueToInbox.mockResolvedValue({
+                    status: 'PENDING',
+                    inboxCredential: { id: 'inbox-credential-1' },
+                });
+
+                await expect(
+                    appRouter.createCaller(ctx).inbox.issue({ recipient, credential })
+                ).resolves.toEqual({
+                    issuanceId: 'inbox-credential-1',
+                    status: 'PENDING',
+                    recipient,
+                });
+                expect(mocks.issueToInbox).toHaveBeenCalledTimes(1);
+                expect(mocks.issueToInbox.mock.calls[0]?.slice(0, 3)).toEqual([
+                    owner,
+                    recipient,
+                    credential,
+                ]);
+            });
+        });
 
         it('the act-as header changes nothing: the handler runs as the owner of the grant', async () => {
             // The path and scope of an open route, with a handler that shows what it is given.

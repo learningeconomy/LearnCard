@@ -1,9 +1,13 @@
+import { TRPCError } from '@trpc/server';
+import type { IssueInboxCredentialType, UnsignedVC, VC, VP } from '@learncard/types';
+
 import { getDelegateAuthGrantByChallenge } from '@accesslayer/delegate-auth-grant/read';
 import type { Context } from '@routes';
 import type { ProfileType } from 'types/profile';
 
 import { evaluateDelegateAuthGrant, getDelegateGrantAudience } from './delegate-auth-grant.helpers';
 import type { DelegatePresentation } from './delegate-auth-presentation.helpers';
+import { isSignedInboxCredential } from './inbox.helpers';
 
 type ContextUser = NonNullable<Context['user']>;
 
@@ -90,4 +94,33 @@ export const resolveDelegateRequest = async ({
             ownerProfileId: decision.ownerProfileId,
         },
     };
+};
+
+/**
+ * A delegate never signs: it holds no key of the organisation, so a credential it signed is not
+ * the organisation's. A managed refresh re-issues under stored authority its grant does not carry.
+ */
+export const assertDelegatedInboxIssuance = (
+    user: Pick<ContextUser, 'delegate'>,
+    input: Pick<IssueInboxCredentialType, 'refresh'>,
+    credential: VC | UnsignedVC | VP
+): void => {
+    if (user.delegate === undefined) return;
+
+    if (input.refresh) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message:
+                "A delegate cannot ask for a managed refresh; the organisation's own request does that.",
+        });
+    }
+
+    // The predicate by which `issueToInbox` skips the signing authority.
+    if (isSignedInboxCredential(credential)) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message:
+                "A delegate submits unsigned credential content; the organisation's signing authority signs it.",
+        });
+    }
 };

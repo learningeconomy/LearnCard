@@ -195,6 +195,13 @@ export const claimIntoInbox = async (
     }
 };
 
+/**
+ * Whether a credential is taken as already signed, and so delivered as it is without the signing
+ * authority. Exported so that a check made before `issueToInbox` cannot disagree with it.
+ */
+export const isSignedInboxCredential = (credential: VC | UnsignedVC | VP): boolean =>
+    !!credential?.proof;
+
 export const issueToInbox = async (
     issuerProfile: ProfileType,
     recipient: ContactMethodQueryType,
@@ -244,7 +251,7 @@ export const issueToInbox = async (
             });
         }
     }
-    const isSigned = !!credential?.proof;
+    const isSigned = isSignedInboxCredential(credential);
     let signingAuthority: IssueInboxSigningAuthority | undefined = _signingAuthority;
     let deliveryCheckpointReached = beforeDelivery === undefined;
     const checkpointDelivery = async (): Promise<void> => {
