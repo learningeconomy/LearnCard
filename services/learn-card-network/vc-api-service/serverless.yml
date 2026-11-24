@@ -16,6 +16,10 @@ plugins:
     - serverless-certificate-creator
 
 custom:
+    sprintoTag:
+        production: prod
+        dev: notprod
+        staging: notprod
     esbuild:
         # packager MUST be pnpm. serverless-esbuild always runs the packager's
         # prod-dependency query during `pack` (to resolve the didkit-plugin WASM
@@ -62,6 +66,10 @@ package:
         - '!node_modules/**'
 
 provider:
+    tags:
+        sprinto: ${self:custom.sprintoTag.${sls:stage}, 'notprod'}
+    stackTags:
+        sprinto: ${self:custom.sprintoTag.${sls:stage}, 'notprod'}
     name: aws
     runtime: nodejs20.x
     memorySize: 2048
