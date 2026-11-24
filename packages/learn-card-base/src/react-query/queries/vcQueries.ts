@@ -8,7 +8,8 @@ import {
     QueryClient,
     InfiniteData,
 } from '@tanstack/react-query';
-import { BoostQuery, CredentialRecord } from '@learncard/types';
+import { BoostExclusion, BoostQuery, CredentialRecord } from '@learncard/types';
+import { RegExpTransformer } from '@learncard/helpers';
 import { categoryMetadata, newCredsStore, switchedProfileStore, useWallet } from 'learn-card-base';
 
 import { getIssuanceDate } from 'learn-card-base/helpers/credentialHelpers';
@@ -42,6 +43,13 @@ import {
     resolvedCredentialQueryOptions,
     UnresolvableCredentialError,
 } from './credentialResolution';
+import {
+    CREDENTIAL_INDEX_STALE_TIME,
+    invalidateCredentialIndexQueries,
+} from './credentialIndexCache';
+
+export { CREDENTIAL_INDEX_STALE_TIME, invalidateCredentialIndexQueries };
+
 const log = getLogger('vc-queries');
 
 // Global set to track processed credentials across all hook instances
@@ -317,23 +325,34 @@ export const useGetPaginatedManagedBoosts = (
 /* Use this instead of use useGetPaginatedManagedBoosts */
 export const useGetPaginatedManagedBoostsQuery = (
     query?: BoostQuery,
-    options?: PaginationOptionsType,
+    options?: PaginationOptionsType & { exclude?: BoostExclusion },
     enabled: boolean = true
 ) => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
-    const queryKey = ['useGetPaginatedManagedBoostsQuery', query ?? ''] as const;
-    dropMalformedInfiniteCacheEntry(queryClient, queryKey, 'useGetPaginatedManagedBoostsQuery');
+    const reader = useCredentialReader();
+    const { exclude, limit = 10 } = options ?? {};
+    // JSON encoding a RegExp directly would give every pattern the same cache key.
+    const queryKey = exclude
+        ? [
+              'useGetPaginatedManagedBoostsWithExclusions',
+              reader?.id.did() ?? '',
+              RegExpTransformer.serialize({ query, exclude }),
+              limit,
+          ]
+        : ['useGetPaginatedManagedBoostsQuery', query ?? ''];
+    dropMalformedInfiniteCacheEntry(queryClient, queryKey);
 
     return useInfiniteQuery({
         queryKey,
         queryFn: async ({ pageParam }) => {
-            const wallet = await initWallet();
+            const wallet = exclude ? reader : await initWallet();
+            if (!wallet) throw new Error('Managed boost reader is unavailable');
 
             const data = await wallet.invoke.getPaginatedBoosts({
-                query,
-                limit: 10,
                 ...options,
+                query,
+                limit,
                 cursor: pageParam,
             });
 
@@ -341,7 +360,7 @@ export const useGetPaginatedManagedBoostsQuery = (
         },
         initialPageParam: undefined as undefined | string,
         getNextPageParam: lastPage => (lastPage?.hasMore ? lastPage?.cursor : undefined),
-        enabled,
+        enabled: enabled && (!exclude || Boolean(reader)),
     });
 };
 
@@ -398,6 +417,7 @@ export const useGetCredentialCount = (category?: CredentialCategory, enabled: bo
             }
         },
         enabled: enabled && Boolean(reader),
+        staleTime: CREDENTIAL_INDEX_STALE_TIME,
     });
 };
 
@@ -415,6 +435,8 @@ export const useCountBoosts = (category?: CredentialCategory, enabled: boolean =
 
             return managedCount;
         },
+        // Not CREDENTIAL_INDEX_STALE_TIME: countBoosts is network, not index.get, and
+        // nothing invalidates these keys on boost create/delete.
     });
 };
 
@@ -482,6 +504,7 @@ export const useTotalBoostCounts = () => {
                 totalBoostsCount,
             };
         },
+        // Not CREDENTIAL_INDEX_STALE_TIME: same as useCountBoosts — network counts, no invalidation.
     });
 };
 export type VC_WITH_URI = {
@@ -501,7 +524,7 @@ export const useGetCredentials = (
     const switchedDid = switchedProfileStore.use.switchedDid();
 
     return useQuery<VC[] | VC_WITH_URI[]>({
-        queryKey: ['useGetCredentials', switchedDid, category, returnUri],
+        queryKey: ['useGetCredentials', switchedDid ?? '', category, returnUri],
         queryFn: async () => {
             try {
                 if (initialCredentials) return initialCredentials;
@@ -562,6 +585,8 @@ export const useGetCredentials = (
                 return Promise.reject(new Error(error));
             }
         },
+        // LC-2383: full index.get walk — reuse across navigation until invalidated.
+        staleTime: CREDENTIAL_INDEX_STALE_TIME,
     });
 };
 
@@ -732,6 +757,8 @@ export const useGetCredentialsForSkills = (enabled: boolean = true) => {
             }
         },
         enabled,
+        // LC-2383: nine category full-walks — the main cross-route mega-batch source.
+        staleTime: CREDENTIAL_INDEX_STALE_TIME,
     });
 };
 
@@ -801,7 +828,7 @@ export const useGetCredentialsPaginated = (
     const switchedDid = switchedProfileStore.use.switchedDid();
 
     return useQuery<VC[] | VC_WITH_URI[]>({
-        queryKey: ['useGetCredentials', switchedDid ?? '', category, returnUri],
+        queryKey: ['useGetCredentialsPaginated', switchedDid ?? '', category, returnUri],
         queryFn: async () => {
             try {
                 if (initialCredentials) return initialCredentials;
@@ -1334,9 +1361,11 @@ export const useSyncRevokedCredentials = (enabled = true) => {
                     }
                 }
 
-                // Invalidate relevant queries to refresh the UI
-                queryClient.invalidateQueries({ queryKey: ['useGetIDs'] });
-                queryClient.invalidateQueries({ queryKey: ['useGetCredentials'] });
+                // Invalidate relevant queries to refresh the UI. Do not await: the index
+                // refetches (skills walk) must not hold up the rest of the cleanup.
+                void invalidateCredentialIndexQueries(queryClient, switchedDid).catch(e =>
+                    log.error('[useSyncRevokedCredentials] Error refreshing index queries:', e)
+                );
                 queryClient.invalidateQueries({ queryKey: ['currentUserTroopIds'] });
                 queryClient.invalidateQueries({ queryKey: ['useGetCurrentUserTroopIdsResolved'] });
             } finally {

@@ -1,6 +1,6 @@
 {
     "name": "@learncard/crypto-plugin",
-    "version": "1.1.46",
+    "version": "2.0.0",
     "description": "Exposes a standardized, isomorphic crypto object to LearnCard plugins.",
     "type": "module",
     "main": "./dist/index.cjs",

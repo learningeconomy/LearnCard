@@ -78,6 +78,7 @@ export default createVitestConfig(brainServicePreset, {
             'src/helpers/boost-storage.helpers.test.ts',
             'src/cache/claim-links.test.ts',
             'src/accesslayer/credential/create.test.ts',
+            'src/accesslayer/profile/read.test.ts',
             'src/routes/claim-links.test.ts',
             'src/helpers/app-credential-delivery.helpers.test.ts',
             'src/accesslayer/campaign/*.test.ts',

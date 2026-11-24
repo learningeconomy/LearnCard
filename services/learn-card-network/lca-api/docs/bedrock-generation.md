@@ -7,8 +7,8 @@ inspected at main `300c0af3125a4f1b1785820a2d33866723a88f30`.
 
 | Route                 | Exact Runtime model profile | Effort   | Reason                                                                                 |
 | --------------------- | --------------------------- | -------- | -------------------------------------------------------------------------------------- |
-| `generateBoostInfo`   | `us.openai.gpt-6.1-sol`     | `medium` | Interpret arbitrary descriptions and generate coherent credential copy across locales. |
-| `generateBoostSkills` | `us.openai.gpt-6.1-sol`     | `medium` | Infer appropriate skills and subskills within the existing hierarchy.                  |
+| `generateBoostInfo`   | `us.openai.gpt-6.2-sol`     | `medium` | Interpret arbitrary descriptions and generate coherent credential copy across locales. |
+| `generateBoostSkills` | `us.openai.gpt-6.2-sol`     | `medium` | Infer appropriate skills and subskills within the existing hierarchy.                  |
 | `generateSkillIcons`  | `us.openai.gpt-6-luna`      | `none`   | Straightforward semantic mapping of supplied names to emoji.                           |
 
 AWS's current [Sol model card](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-openai-gpt-6-1-sol.html),

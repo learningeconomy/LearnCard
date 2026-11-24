@@ -15,6 +15,9 @@ export const isEncrypted = (item: unknown): item is JWE => {
 
 /**
  * tRPC data transformer that handles RegExp serialization/deserialization
+ *
+ * The managed-boost exclusion fields deliberately preserve exact strings and
+ * list entries. Existing routes keep decoding the legacy slash-delimited wire format.
  */
 export const RegExpTransformer: DataTransformer = {
     serialize(object) {
@@ -30,8 +33,14 @@ export const RegExpTransformer: DataTransformer = {
         // backwards compat
         if (typeof object !== 'string') return object;
 
-        return JSON.parse(object, (_key, value) => {
+        const deserializeValue = (value: unknown, path: string[]): unknown => {
             if (typeof value === 'string') {
+                const isLiteralExclusion =
+                    path[0] === 'exclude' &&
+                    (path[1] === 'name' || path[1] === 'category') &&
+                    (path.length === 2 || (path.length === 4 && path[2] === '$in'));
+                if (isLiteralExclusion) return value;
+
                 const match = value.match(/^\/(.*)\/([gimsuy]*)$/);
 
                 if (match) {
@@ -43,8 +52,24 @@ export const RegExpTransformer: DataTransformer = {
                     }
                 }
             }
+
+            if (Array.isArray(value)) {
+                return value.map((item, index) => deserializeValue(item, [...path, String(index)]));
+            }
+
+            if (value !== null && typeof value === 'object') {
+                for (const [key, item] of Object.entries(value)) {
+                    (value as Record<string, unknown>)[key] = deserializeValue(item, [
+                        ...path,
+                        key,
+                    ]);
+                }
+            }
+
             return value;
-        });
+        };
+
+        return deserializeValue(JSON.parse(object), []);
     },
 };
 

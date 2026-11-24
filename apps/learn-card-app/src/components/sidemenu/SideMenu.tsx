@@ -22,6 +22,7 @@ import ThemeSelector, { themeSelectorViewMode } from '../../theme/components/The
 import LanguagePicker from './LanguagePicker';
 import CheckListButton from '../learncard/checklist/CheckListButton';
 import useOpenMyLearnCard from '../learncard/useOpenMyLearnCard';
+import { myLearnCardIntentHandlers } from '../learncard/MyLearnCardModal';
 import GenericErrorBoundary from '../generic/GenericErrorBoundary';
 
 import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
@@ -36,6 +37,11 @@ import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
 import useBoostRecoveryCheck from '../../hooks/useBoostRecoveryCheck';
 
 import * as m from '../../paraglide/messages.js';
+
+// The Issue Credentials button is a no-op on the Boost CMS (`/boost`, `/boost/update`) so it
+// doesn't abandon an in-progress boost. `/boost-a-friend` shares the prefix but isn't the CMS.
+const isBoostCmsRoute = (pathname: string) =>
+    pathname === '/boost' || pathname.startsWith('/boost/');
 
 const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
     branding = BrandingEnum.learncard,
@@ -97,7 +103,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
     if (!isLoggedIn) return <IonMenu contentId="main" />;
 
     const handleBoost = async () => {
-        if (location.pathname.includes('/boost')) return;
+        if (isBoostCmsRoute(location.pathname)) return;
 
         const { prompted } = await gate();
         if (prompted) return;
@@ -197,6 +203,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                                 <button
                                     type="button"
                                     onClick={openMyLearnCard}
+                                    {...myLearnCardIntentHandlers}
                                     className="w-full flex items-center gap-[10px] px-[10px] py-[5px] rounded-[10px] text-grayscale-900 font-poppins text-[17px]"
                                 >
                                     <Settings className="h-[35px] w-[35px] text-grayscale-400" />

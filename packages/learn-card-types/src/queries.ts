@@ -43,7 +43,7 @@ export const RegExpValidator = z.preprocess(
     RegExpStringValidator
 );
 
-const BaseStringQuery = z
+export const BaseStringQuery = z
     .string()
     .or(z.object({ $in: z.string().array() }))
     .or(z.object({ $regex: RegExpValidator }));

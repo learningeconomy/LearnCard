@@ -22,21 +22,26 @@ export const EndorsementRequestForm: React.FC<{
     );
 
     return (
-        <section className="relative h-full w-full flex items-start justify-center overflow-y-scroll pt-4">
-            <section className="bg-white max-w-[800px] w-full rounded-[20px]">
-                <EndorsementRequestFormHeader credential={credential} categoryType={categoryType} />
-                <div className="w-full flex flex-col items-center justify-center px-4 pt-4 pb-[150px] bg-grayscale-100 h-full">
-                    <EndorsementRequestOptions
+        <div className="relative h-full w-full overflow-hidden">
+            <div className="h-full w-full overflow-y-auto pt-4">
+                <section className="bg-white max-w-[800px] w-full mx-auto rounded-[20px]">
+                    <EndorsementRequestFormHeader
                         credential={credential}
-                        shareCredentialUri={shareCredentialUri}
                         categoryType={categoryType}
-                        endorsementRequest={endorsementRequest}
-                        setEndorsementRequest={setEndorsementRequest}
                     />
-                </div>
-            </section>
+                    <div className="w-full flex flex-col items-center justify-center px-4 pt-4 pb-[150px] bg-grayscale-100 h-full">
+                        <EndorsementRequestOptions
+                            credential={credential}
+                            shareCredentialUri={shareCredentialUri}
+                            categoryType={categoryType}
+                            endorsementRequest={endorsementRequest}
+                            setEndorsementRequest={setEndorsementRequest}
+                        />
+                    </div>
+                </section>
+            </div>
             <EndorsementRequestFormFooter />
-        </section>
+        </div>
     );
 };
 
