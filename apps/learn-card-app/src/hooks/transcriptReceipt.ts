@@ -1,11 +1,12 @@
-import SHA256 from 'crypto-js/sha256';
 import { getLogger } from 'learn-card-base';
+
+import { sha256Hex } from '../helpers/sha256Hex';
 
 const log = getLogger('transcript-receipt');
 
 /** Scope receipts to an account and request without putting identifiers in storage keys. */
 export const getTranscriptReceiptKey = (accountDid: string, requestId: string): string =>
-    `transcript_receipt:${SHA256(JSON.stringify([accountDid, requestId])).toString()}`;
+    `transcript_receipt:${sha256Hex(JSON.stringify([accountDid, requestId]))}`;
 
 export const readTranscriptReceipt = (accountDid: string, requestId: string): string | null => {
     try {

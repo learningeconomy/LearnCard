@@ -9,6 +9,7 @@ import {
     contractCategoryNameToCategoryMetadata,
     syncProgressStore,
     walletStore,
+    switchedProfileStore,
 } from 'learn-card-base';
 import { getOrCreateSharedUriForWallet } from 'learn-card-base/hooks/useSharedUrisInTerms';
 import { loadContractAudience } from '../../hooks/consentAudience';
@@ -29,6 +30,7 @@ import {
     getConsentFlowRecordMarker,
     setConsentFlowRecordMarker,
 } from './consentFlowRecordMarkers';
+import { invalidateCredentialIndexQueries } from '../queries/credentialIndexCache';
 
 const log = getLogger('sync-consent-flow');
 
@@ -232,7 +234,8 @@ export const useSyncConsentContractsMutation = () => {
                         await learnCard.invoke.syncCredentialsToContract(
                             termsUri,
                             categoryMap as Record<string, string[]>,
-                            audience.audienceVersion
+                            audience.audienceVersion,
+                            true
                         );
                         if (isLearnCardAiPassportContractUri(contract.uri)) {
                             await queueAiInsightCredentialRefresh({
@@ -319,6 +322,7 @@ const rollBackIndexedRecord = async (
     await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['useGetCredentialList'] }),
         queryClient.invalidateQueries({ queryKey: ['useGetCredentialCount'] }),
+        invalidateCredentialIndexQueries(queryClient, switchedProfileStore.get.switchedDid()),
     ]);
 };
 

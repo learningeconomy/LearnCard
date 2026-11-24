@@ -13,4 +13,3 @@ const SvgProperty1NotificationsDefault = (props: SVGProps<SVGSVGElement>) => (
     </svg>
 );
 export default SvgProperty1NotificationsDefault;
-

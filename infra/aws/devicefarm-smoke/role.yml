@@ -1,0 +1,85 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Short-lived GitHub credentials for the staging Device Farm pilot.
+Metadata:
+    AWSToolsMetrics:
+        AWSAgentToolkit: aws-cloudformation@3
+Parameters:
+    PilotProjectId:
+        Type: String
+        Description: UUID of the existing Device Farm pilot project in us-west-2
+        AllowedPattern: '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+        Default: 3ba5ae8a-11df-4f36-8059-3cc624d239f0
+Resources:
+    PilotRole:
+        Type: AWS::IAM::Role
+        Metadata:
+            com.aws.cloudformation.Context:
+                why: Run the LearnCard native smoke with temporary credentials.
+                must: Trust the protected staging workflow on main and scope mutations to the pilot project.
+        Properties:
+            MaxSessionDuration: 21600
+            AssumeRolePolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                    - Effect: Allow
+                      Principal:
+                          Federated: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com
+                      Action: sts:AssumeRoleWithWebIdentity
+                      Condition:
+                          StringEquals:
+                              token.actions.githubusercontent.com:aud: sts.amazonaws.com
+                              token.actions.githubusercontent.com:sub: repo:learningeconomy/LearnCard:environment:devicefarm-smoke-staging
+                              token.actions.githubusercontent.com:repository_id: '486055750'
+                              token.actions.githubusercontent.com:repository_owner_id: '95718578'
+                              token.actions.githubusercontent.com:ref: refs/heads/main
+                              token.actions.githubusercontent.com:workflow: Native smoke (AWS Device Farm)
+            Policies:
+                - PolicyName: DeviceFarmPilot
+                  PolicyDocument:
+                      Version: '2012-10-17'
+                      Statement:
+                          - Sid: ReadRegionalDeviceCatalog
+                            Effect: Allow
+                            Action: devicefarm:ListDevices
+                            Resource: '*'
+                            Condition:
+                                StringEquals:
+                                    aws:RequestedRegion: us-west-2
+                          - Sid: CreatePilotUploadsAndPools
+                            Effect: Allow
+                            Action:
+                                - devicefarm:CreateDevicePool
+                                - devicefarm:CreateUpload
+                            Resource: !Sub arn:${AWS::Partition}:devicefarm:us-west-2:${AWS::AccountId}:project:${PilotProjectId}
+                          - Sid: SchedulePilotRuns
+                            Effect: Allow
+                            Action: devicefarm:ScheduleRun
+                            Resource:
+                                - !Sub arn:${AWS::Partition}:devicefarm:us-west-2:${AWS::AccountId}:project:${PilotProjectId}
+                                - !Sub arn:${AWS::Partition}:devicefarm:us-west-2:${AWS::AccountId}:devicepool:${PilotProjectId}/*
+                                - !Sub arn:${AWS::Partition}:devicefarm:us-west-2:${AWS::AccountId}:upload:${PilotProjectId}/*
+                          - Sid: ReadPilotUploads
+                            Effect: Allow
+                            Action: devicefarm:GetUpload
+                            Resource: !Sub arn:${AWS::Partition}:devicefarm:us-west-2:${AWS::AccountId}:upload:${PilotProjectId}/*
+                          - Sid: CleanUpPilotPools
+                            Effect: Allow
+                            Action:
+                                - devicefarm:DeleteDevicePool
+                                - devicefarm:GetDevicePool
+                            Resource: !Sub arn:${AWS::Partition}:devicefarm:us-west-2:${AWS::AccountId}:devicepool:${PilotProjectId}/*
+                          - Sid: MonitorPilotRuns
+                            Effect: Allow
+                            Action:
+                                - devicefarm:GetRun
+                                - devicefarm:ListJobs
+                                - devicefarm:StopRun
+                            Resource: !Sub arn:${AWS::Partition}:devicefarm:us-west-2:${AWS::AccountId}:run:${PilotProjectId}/*
+                          - Sid: ReadPilotArtifacts
+                            Effect: Allow
+                            Action: devicefarm:ListArtifacts
+                            Resource: !Sub arn:${AWS::Partition}:devicefarm:us-west-2:${AWS::AccountId}:job:${PilotProjectId}/*
+Outputs:
+    RoleArn:
+        Description: Set DEVICEFARM_SMOKE_ROLE_ARN to this ARN
+        Value: !GetAtt PilotRole.Arn

@@ -46,6 +46,7 @@ import { FlatBoostType } from 'types/boost';
 import { constructUri, getIdFromUri } from '@helpers/uri.helpers';
 import { flattenObject, inflateObject } from '@helpers/objects.helpers';
 import { areTermsValid, shouldIncludeCategory } from '@helpers/contract.helpers';
+import { isConsentExpiryActive, isConsentUnexpired } from '@helpers/consent-expiry.helpers';
 import { isServiceProfileExemptFromGuardianship } from '@helpers/profile.helpers';
 import { ProfileType } from 'types/profile';
 import { CredentialType } from 'types/credential';
@@ -55,6 +56,7 @@ import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationship
 import { getDidWeb, updateDidForProfile } from '@helpers/did.helpers';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { sanitizeProfileForTier } from '@helpers/profile-privacy.helpers';
+import { lockContractAudience, runAudienceMutation } from './recipients';
 
 export const isProfileConsentFlowContractAdmin = async (
     profile: ProfileType,
@@ -154,10 +156,12 @@ export const getContractTermsForProfile = async (
     profile: ProfileType | string,
     contract: DbContractType
 ): Promise<DbTermsType | null> => {
-    const result = convertQueryResultToPropertiesObjectArray<{
-        terms: FlatDbTermsType;
-    }>(
-        await new QueryBuilder()
+    const matchTerms = (
+        query: QueryBuilder,
+        contractNode:
+            { identifier: string } | { model: typeof ConsentFlowContract; where: { id: string } }
+    ): QueryBuilder =>
+        query
             .match({
                 related: [
                     {
@@ -169,14 +173,40 @@ export const getContractTermsForProfile = async (
                     ConsentFlowTerms.getRelationshipByAlias('createdBy'),
                     { model: ConsentFlowTerms, identifier: 'terms' },
                     ConsentFlowTerms.getRelationshipByAlias('consentsTo'),
-                    { model: ConsentFlowContract, where: { id: contract.id } },
+                    contractNode,
                 ],
             })
-            .return('terms')
-            .run()
+            .return('terms');
+
+    const result = convertQueryResultToPropertiesObjectArray<{
+        terms: FlatDbTermsType;
+    }>(
+        await matchTerms(new QueryBuilder(), {
+            model: ConsentFlowContract,
+            where: { id: contract.id },
+        }).run()
+    );
+    if (!result.length) return null;
+
+    const unlocked = DbTermsValidator.safeParse(inflateObject(result[0]!.terms));
+    if (unlocked.success) return unlocked.data;
+
+    // Neo4j reads take no locks: while a consent mutation commits, a property that
+    // moves inside the node's property chain (status live -> withdrawn) can be absent
+    // from this read. Consent mutations hold the contract audience lock until their
+    // commit is applied, so a read behind that lock sees whole terms. Terms that are
+    // still invalid there are malformed in storage and fail as before.
+    const locked = convertQueryResultToPropertiesObjectArray<{
+        terms: FlatDbTermsType;
+    }>(
+        await runAudienceMutation(
+            matchTerms(lockContractAudience(new QueryBuilder(), contract.id), {
+                identifier: 'contract',
+            })
+        )
     );
 
-    return result.length > 0 ? DbTermsValidator.parse(inflateObject(result[0]!.terms)) : null;
+    return locked.length > 0 ? DbTermsValidator.parse(inflateObject(locked[0]!.terms)) : null;
 };
 
 export const getContractTermsById = async (
@@ -783,13 +813,6 @@ export const getConsentedDataForContract = async (
     options: { query?: ConsentFlowDataQuery; limit: number; cursor?: string }
 ): Promise<ConsentedDataPage> => getPermittedContractData(viewerProfileId, options, id);
 
-// Empty expiry values historically mean no expiry. Invalid nonempty values never authorize access.
-const isConsentExpiryActive = (expiresAt: string | undefined, now: number): boolean => {
-    if (!expiresAt?.trim()) return true;
-    const expiry = Date.parse(expiresAt);
-    return Number.isFinite(expiry) && expiry > now;
-};
-
 export type ConsentedDataForDidPage = {
     records: ConsentFlowContractDataForDid[];
     hasMore: boolean;
@@ -908,9 +931,17 @@ AND ${contractWhereClause}
             const acceptedVersion = acceptedVersions.get(
                 `${contract.id}:${Number(term.consentedVersion ?? 1)}`
             );
+            // The expiry rule shared with the connections snapshot and the consent_expired scan.
             if (
                 !acceptedVersion ||
-                !isConsentExpiryActive(acceptedVersion.expiresAt, now) ||
+                !isConsentUnexpired(
+                    {
+                        termsExpiresAt: term.expiresAt,
+                        hasAcceptedVersion: true,
+                        acceptedVersionExpiresAt: acceptedVersion.expiresAt,
+                    },
+                    now
+                ) ||
                 !areTermsValid(term.terms, acceptedVersion.contract)
             )
                 continue;

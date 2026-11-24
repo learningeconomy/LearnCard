@@ -1,6 +1,11 @@
 import { VCValidator } from '@learncard/types';
 import { useQueryClient } from '@tanstack/react-query';
-import { useWallet, CredentialCategory, switchedProfileStore } from 'learn-card-base';
+import {
+    useWallet,
+    CredentialCategory,
+    invalidateCredentialIndexQueries,
+    switchedProfileStore,
+} from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 
 export interface FileInfo {
@@ -60,7 +65,7 @@ export const useUploadVcFromText = () => {
 
                 return allErrors;
             }
-        } catch (error) {
+        } catch (error: unknown) {
             return [errorMessage(error)];
         }
 
@@ -112,6 +117,12 @@ export const useUploadVcFromText = () => {
                             uploadType,
                         });
                         void invalidateCredentialList();
+                        // Raw imports bypass the add mutations, so refresh index-backed aggregates.
+                        // Do not await: the import is done once the index write lands.
+                        void invalidateCredentialIndexQueries(
+                            queryClient,
+                            switchedProfileStore.get.switchedDid()
+                        );
 
                         return {
                             success: true,
@@ -129,7 +140,7 @@ export const useUploadVcFromText = () => {
                         };
                     }
                 }
-            } catch (error) {
+            } catch (error: unknown) {
                 return {
                     success: false,
                     error: `Failed to upload credential: ${errorMessage(error)}`,
@@ -137,7 +148,7 @@ export const useUploadVcFromText = () => {
                     fileInfo: fileInfo || {},
                 };
             }
-        } catch (error) {
+        } catch (error: unknown) {
             return {
                 success: false,
                 error: `Invalid credential format: ${errorMessage(error)}`,

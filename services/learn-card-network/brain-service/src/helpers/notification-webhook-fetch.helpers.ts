@@ -52,6 +52,20 @@ export class UnsafeNotificationWebhookError extends Error {
     }
 }
 
+/**
+ * The destination answered with a redirect, which is never followed. Unlike the refusals of
+ * its parent class a request was sent and an answer arrived; `status` is the 3xx code.
+ */
+export class NotificationWebhookRedirectError extends UnsafeNotificationWebhookError {
+    readonly status: number;
+
+    constructor(status: number) {
+        super();
+        this.name = 'NotificationWebhookRedirectError';
+        this.status = status;
+    }
+}
+
 /** Resolve once; the HTTP transport receives only a validated literal IP. */
 const resolvePublicAddress = (hostname: string, signal: AbortSignal): Promise<string> => {
     signal.throwIfAborted();
@@ -104,7 +118,18 @@ export const fetchNotificationWebhook = async (
     }
     // Only the trusted runtime's explicit local-development mode permits private hosts.
     // Neither NODE_ENV=test nor notification/profile fields can disable the guard.
-    if (isOffline) return fetch(destination, { ...request, redirect: 'error' });
+    if (isOffline) {
+        // 'manual' hands back the redirect response itself instead of following it, so it can be
+        // told apart from a refused address. It is still never followed.
+        const response = await fetch(destination, { ...request, redirect: 'manual' });
+
+        if (response.status >= 300 && response.status < 400) {
+            await response.body?.cancel().catch(() => undefined);
+            throw new NotificationWebhookRedirectError(response.status);
+        }
+
+        return response;
+    }
     const address = await resolvePublicAddress(hostname, request.signal);
     request.signal.throwIfAborted();
     // Pin the connection target instead of relying on a fetch dispatcher/lookup hook:
@@ -135,7 +160,7 @@ export const fetchNotificationWebhook = async (
                 // node:http never follows redirects. Reject them explicitly as failed delivery.
                 if (status >= 300 && status < 400) {
                     response.destroy();
-                    reject(new UnsafeNotificationWebhookError());
+                    reject(new NotificationWebhookRedirectError(status));
                     return;
                 }
                 const chunks: Buffer[] = [];

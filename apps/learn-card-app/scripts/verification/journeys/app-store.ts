@@ -3,6 +3,7 @@ import { VCValidator } from '@learncard/types';
 import { expect } from '../expect';
 import type { FeatureDefinition, FeatureResult, VerificationContext } from '../types';
 import { startVerificationListing } from './app-store-seed';
+import { createPartnerSaveConsent, verifyPartnerCredentialSave } from '../partner-save-regression';
 
 const IdentityRequestValidator = z.object({
     requestId: z.string(),
@@ -35,6 +36,7 @@ const runAppStore = async (context: VerificationContext): Promise<FeatureResult>
         const learner = await context.sdk(context.actors.learner);
         const expectedDid = learner.id.did();
         expect(await learner.invoke.isAppInstalled(listing.listingId)).toBe(false);
+        const saveContractUri = await createPartnerSaveConsent(context);
         let identityChecks: string[] = [];
         const publicContext = await context.newContext('app-store-public');
         const publicPage = await publicContext.newPage();
@@ -301,6 +303,13 @@ const runAppStore = async (context: VerificationContext): Promise<FeatureResult>
                         recipientDid: expectedDid,
                         proofChecks: proof.checks,
                     });
+                    await verifyPartnerCredentialSave(
+                        context,
+                        page,
+                        app,
+                        credential,
+                        saveContractUri
+                    );
                 });
             });
         });
@@ -333,7 +342,12 @@ export const appStoreFeature: FeatureDefinition = {
     id: 'app-store',
     title: 'Public listing, browse, consent, install, persist, and launch a real Partner Connect app',
     surface: 'web',
-    entries: ['apps-public-sign-in-intent', 'apps-browse-detail', 'apps-install-persist-launch'],
+    entries: [
+        'apps-public-sign-in-intent',
+        'apps-browse-detail',
+        'apps-install-persist-launch',
+        'apps-partner-credential-save',
+    ],
     requires: ['owned stack partner port free (real basic-launchpad example server)'],
     run: runAppStore,
 };

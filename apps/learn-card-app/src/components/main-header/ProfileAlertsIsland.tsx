@@ -4,6 +4,7 @@ import { useIsLoggedIn, ProfilePicture } from 'learn-card-base';
 import NotificationButton from 'learn-card-base/components/notification-button/NotificationButton';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import useOpenMyLearnCard from '../learncard/useOpenMyLearnCard';
+import { myLearnCardIntentHandlers } from '../learncard/MyLearnCardModal';
 import useOpenNotifications from '../notifications/useOpenNotifications';
 import * as m from '../../paraglide/messages.js';
 
@@ -54,6 +55,7 @@ const ProfileAlertsIsland: React.FC<ProfileAlertsIslandProps> = ({
                 type="button"
                 aria-label="Open profile"
                 onClick={openMyLearnCard}
+                {...myLearnCardIntentHandlers}
                 className="flex items-center justify-center"
             >
                 <ProfilePicture

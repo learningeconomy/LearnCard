@@ -310,3 +310,63 @@ describe('createQueryPersister infinite-query sanitize (LC-2352)', () => {
         client.clear();
     });
 });
+
+describe('createQueryPersister revealed webhook secrets (LC-2370)', () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    const secretKey = ['developer', 'revealed-webhook-secret', 'integration-1'];
+    const revealed = { secret: 'whsec_test_only_value' };
+
+    const memoryStorage = (initial?: string) => {
+        let stored = initial;
+        return {
+            read: () => stored,
+            getItem: async () => stored,
+            setItem: async (_key: string, value: string) => {
+                stored = value;
+            },
+            removeItem: async () => {
+                stored = undefined;
+            },
+        };
+    };
+
+    it('never writes a revealed signing secret on a batched or an explicit save', async () => {
+        const storage = memoryStorage();
+        const { persister, persistNow } = createQueryPersister(storage, vi.fn());
+        const client = new QueryClient();
+        client.setQueryData(secretKey, revealed);
+        client.setQueryData(['developer', 'integration', 'integration-1'], { id: 'integration-1' });
+
+        persister.persistClient(snapshot(client));
+        await vi.advanceTimersByTimeAsync(1000);
+        expect(storage.read()).toBeDefined();
+        expect(storage.read()).not.toContain('whsec_');
+
+        await persistNow(client);
+        expect(storage.read()).not.toContain('whsec_');
+        expect(storage.read()).not.toContain('revealed-webhook-secret');
+
+        const restored = await persister.restoreClient();
+        expect(restored?.clientState.queries.map(q => q.queryKey)).toEqual([
+            ['developer', 'integration', 'integration-1'],
+        ]);
+        // The live cache still has it, so the tab can keep showing it until dismissed.
+        expect(client.getQueryData(secretKey)).toEqual(revealed);
+        client.clear();
+    });
+
+    it('drops a secret from a snapshot written before the filter existed', async () => {
+        const legacyClient = new QueryClient();
+        legacyClient.setQueryData(secretKey, revealed);
+        legacyClient.setQueryData(['getProfile', 'did'], { name: 'Ada' });
+        const storage = memoryStorage(JSON.stringify(snapshot(legacyClient)));
+        const { persister } = createQueryPersister(storage, vi.fn());
+
+        const restored = await persister.restoreClient();
+        expect(restored?.clientState.queries.map(q => q.queryKey[0])).toEqual(['getProfile']);
+        expect(JSON.stringify(restored)).not.toContain('whsec_');
+        legacyClient.clear();
+    });
+});

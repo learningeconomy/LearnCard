@@ -79,6 +79,7 @@
     - [Usage Examples](sdks/learncard-network/usage-examples.md)
     - [Universal Inbox API](sdks/learncard-network/universal-inbox-api.md)
     - [Contract Requests and Events](sdks/learncard-network/contract-requests-and-events.md)
+    - [Integration Webhooks and Change Feed](sdks/learncard-network/integration-webhooks.md)
     - [Notifications & Webhooks](sdks/learncard-network/notifications.md)
     - [Credential Activity](sdks/learncard-network/credential-activity.md)
     - [Status Lists](sdks/learncard-network/bitstring-status-lists.md)

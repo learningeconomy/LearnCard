@@ -44,6 +44,47 @@ const ClrMetricChip: React.FC<{
     </div>
 );
 
+const getClrTitleFromModel = (
+    model: ReturnType<typeof normalizeClrTranscriptDisplayModel>,
+    layout: ReturnType<typeof inferClrLayout>['kind'],
+    fallbackTitle: string
+): string => {
+    if (layout !== 'academic') {
+        return model.canonical.collection.name?.value || fallbackTitle || getClrLayoutLabel(layout);
+    }
+
+    const kind = inferClrKindWithTitleFallback(
+        model,
+        fallbackTitle || model.header.title?.value,
+        layout
+    );
+    if (kind === 'transcript') return 'Transcript';
+    if (kind === 'course') {
+        return model.courses[0]?.name?.value || model.header.title?.value || fallbackTitle;
+    }
+    if (kind === 'degree') {
+        return model.programs[0]?.name?.value || model.header.title?.value || fallbackTitle;
+    }
+    return model.header.title?.value || fallbackTitle;
+};
+
+/** Selects the same primary CLR title for tile and list surfaces. */
+export const getClrCredentialDisplayTitle = (
+    credential: VC | undefined,
+    fallbackTitle = ''
+): string => {
+    if (!credential?.type?.includes('ClrCredential')) return fallbackTitle;
+
+    try {
+        const model = normalizeClrTranscriptDisplayModel(
+            credential as unknown as Record<string, unknown>
+        );
+        return getClrTitleFromModel(model, inferClrLayout(model.canonical).kind, fallbackTitle);
+    } catch {
+        return fallbackTitle;
+    }
+};
+
 const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: string }> = ({
     credential,
     fallbackTitle,
@@ -74,6 +115,7 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
     }
 
     const { model, layout, sections } = presentation;
+    const displayTitle = getClrTitleFromModel(model, layout, fallbackTitle);
     if (layout !== 'academic') {
         return (
             <div
@@ -82,9 +124,7 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
             >
                 <p className="text-xs text-grayscale-600">{getClrLayoutLabel(layout)}</p>
                 <p className="wrap-break-word text-sm font-semibold text-grayscale-900">
-                    {model.canonical.collection.name?.value ||
-                        fallbackTitle ||
-                        getClrLayoutLabel(layout)}
+                    {displayTitle}
                 </p>
                 <div className="flex flex-wrap justify-center gap-2 text-xs text-grayscale-600">
                     {sections.map(section => (
@@ -107,7 +147,7 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
         return (
             <div className="flex w-full min-w-0 flex-col items-center justify-start mt-[0px]">
                 <span className="w-full px-[8px] text-center text-grayscale-900 text-[16px] font-notoSans font-semibold leading-[125%] line-clamp-2 wrap-break-word">
-                    {model.header.title?.value || fallbackTitle}
+                    {displayTitle}
                 </span>
             </div>
         );
@@ -117,7 +157,7 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
         return (
             <div className="flex w-full min-w-0 flex-col items-center justify-start mt-[0px] px-2">
                 <p className="mt-1 w-full max-w-full wrap-break-word text-center text-grayscale-900 text-[14px] font-notoSans font-semibold leading-[125%] line-clamp-2">
-                    Transcript
+                    {displayTitle}
                 </p>
                 <div className="mt-2 flex items-center justify-center gap-3 flex-wrap">
                     {model.summary.courseCount > 0 && (
@@ -153,13 +193,12 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
 
     if (inferredKind === 'course') {
         const course = model?.courses?.[0];
-        const courseName = course?.name?.value || model.header.title?.value || fallbackTitle;
         const grade = getClrGrade(course);
 
         return (
             <div className="flex w-full min-w-0 flex-col items-center justify-start mt-[0px] px-2">
                 <p className="mt-2 w-full max-w-full wrap-break-word text-center text-grayscale-900 text-[16px] font-notoSans font-semibold leading-[125%] line-clamp-2">
-                    {courseName}
+                    {displayTitle}
                 </p>
                 {grade && (
                     <p className="mt-1 text-grayscale-900 text-[14px] font-semibold text-center">
@@ -170,13 +209,10 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
         );
     }
 
-    const degree = model?.programs?.[0];
-    const degreeName = degree?.name?.value || model.header.title?.value || fallbackTitle;
-
     return (
         <div className="flex w-full min-w-0 flex-col items-center justify-start mt-[0px] px-2">
             <p className="mt-2 w-full max-w-full wrap-break-word text-center text-grayscale-900 text-[16px] font-notoSans font-semibold leading-[125%] line-clamp-2">
-                {degreeName}
+                {displayTitle}
             </p>
             {model.summary.explicitCompetencyCount > 0 && (
                 <div className="mt-2 inline-flex items-center justify-center gap-1.5 text-grayscale-600">

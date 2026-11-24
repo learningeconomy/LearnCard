@@ -33,6 +33,30 @@ const withoutMissingOwnProfiles = (snapshot: PersistedClient): PersistedClient =
     },
 });
 
+/**
+ * A webhook signing secret that was just revealed in the developer portal lives in the
+ * query cache so it outlives the Webhooks tab, but it must stay in memory only. Without
+ * this filter the default dehydration would write it to IndexedDB/SQLite in plaintext and
+ * bring it back after a reload. Must match revealedWebhookSecretKey in useDeveloperPortal.
+ */
+const withoutRevealedWebhookSecrets = (snapshot: PersistedClient): PersistedClient => ({
+    ...snapshot,
+    clientState: {
+        ...snapshot.clientState,
+        queries: snapshot.clientState.queries.filter(
+            query =>
+                !(
+                    query.queryKey[0] === 'developer' &&
+                    query.queryKey[1] === 'revealed-webhook-secret'
+                )
+        ),
+    },
+});
+
+/** Everything that must never reach, or come back from, durable storage. */
+const withoutUnpersistableQueries = (snapshot: PersistedClient): PersistedClient =>
+    withoutRevealedWebhookSecrets(withoutMissingOwnProfiles(snapshot));
+
 /** Batch ordinary cache events, but let mutations await a durable, ordered snapshot. */
 export const createQueryPersister = (
     storage: QueryStorage,
@@ -64,7 +88,7 @@ export const createQueryPersister = (
         clearPending();
         if (!snapshot) return writes;
         const serialized = JSON.stringify(
-            sanitizePersistedQueries(withoutMissingOwnProfiles(snapshot))
+            sanitizePersistedQueries(withoutUnpersistableQueries(snapshot))
         );
         return enqueue(() => storage.setItem(CACHE_KEY, serialized));
     };
@@ -84,7 +108,7 @@ export const createQueryPersister = (
             // Also repair snapshots written by earlier app versions.
             // Drop malformed InfiniteData entries before hydrate (LC-2352).
             return serialized
-                ? sanitizePersistedQueries(withoutMissingOwnProfiles(JSON.parse(serialized)))
+                ? sanitizePersistedQueries(withoutUnpersistableQueries(JSON.parse(serialized)))
                 : undefined;
         },
         removeClient: () => {

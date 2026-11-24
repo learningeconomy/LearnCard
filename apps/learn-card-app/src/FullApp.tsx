@@ -4,7 +4,7 @@ import { SharedI18nProvider } from './i18n/SharedI18nProvider';
 import { createBrowserHistory } from 'history';
 import { IonReactRouter } from '@ionic/react-router';
 import { QueryClient, onlineManager } from '@tanstack/react-query';
-import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import { BatchedPersistQueryClientProvider } from './providers/BatchedPersistQueryClientProvider';
 import { connectivityStore, networkStore } from 'learn-card-base';
 import {
     isLikelyTransportError,
@@ -15,6 +15,7 @@ import { IonApp } from '@ionic/react';
 import { LoadingPageDumb } from './pages/loadingPage/LoadingPage';
 
 import AppRouter from './AppRouter';
+import { FallbackMarker } from './helpers/dashboardPathMarks';
 import NativeDigitalCredentialsListener from './native-digital-credentials/NativeDigitalCredentialsListener';
 import {
     sqliteInit,
@@ -204,7 +205,7 @@ const FullApp: React.FC = () => {
     }, []);
 
     return (
-        <PersistQueryClientProvider
+        <BatchedPersistQueryClientProvider
             client={client}
             persistOptions={{ persister, maxAge: CACHE_TTL, buster: QUERY_CACHE_BUSTER }}
         >
@@ -212,7 +213,13 @@ const FullApp: React.FC = () => {
                 <div className="app-bar-top relative top-0 left-0 w-full z-[9999] bg-black" />
                 {/* <ReactQueryDevtools /> */}
                 <IonReactRouter history={history}>
-                    <Suspense fallback={<LoadingPageDumb />}>
+                    <Suspense
+                        fallback={
+                            <FallbackMarker boundary="root">
+                                <LoadingPageDumb />
+                            </FallbackMarker>
+                        }
+                    >
                         <AuthCoordinatorProvider>
                             <ThemeInitializer />
                             <ExternalAuthServiceProvider>
@@ -286,7 +293,7 @@ const FullApp: React.FC = () => {
                     </Suspense>
                 </IonReactRouter>
             </AnalyticsContextProvider>
-        </PersistQueryClientProvider>
+        </BatchedPersistQueryClientProvider>
     );
 };
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     AlertCircle,
     RefreshCw,
@@ -19,6 +19,7 @@ import {
 import { IssuerHeader, IssuerHeaderProps } from './IssuerHeader';
 import { VerifierHeader, VerifierHeaderProps } from './VerifierHeader';
 
+import { guardedChunkReload, isStaleChunkError } from '../../helpers/lazyWithRetry';
 import { getLogger } from '../../logging/logger';
 const log = getLogger('exchange-error-display');
 
@@ -151,6 +152,14 @@ export const ExchangeErrorDisplay: React.FC<ExchangeErrorDisplayProps> = ({
     issuerInfo,
     onReport,
 }) => {
+    // The OpenID4VC plugin loads its VCI / VP implementation on the first exchange call, so a deploy
+    // or OTA update that swapped the chunks surfaces here as a failed dynamic import. Recover the
+    // way the error boundaries do: reload within the shared budget. Once it is spent, the error
+    // stays on screen and Try Again re-runs the exchange, which imports again.
+    useEffect(() => {
+        if (isStaleChunkError(error)) guardedChunkReload();
+    }, [error]);
+
     const friendlyError = friendly ?? getFriendlyOpenID4VCError(error);
     const theme = KIND_THEME[friendlyError.kind] ?? KIND_THEME.unknown;
     const HeaderIcon = theme.Icon;

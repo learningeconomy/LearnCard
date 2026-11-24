@@ -1,4 +1,5 @@
 /// <reference lib="es2024.promise" />
+import 'fake-indexeddb/auto';
 
 import { webcrypto } from 'node:crypto';
 import { getCredentialPayloadRecordId } from '../helpers/credentialStorageIdentity';
@@ -82,6 +83,12 @@ vi.mock('learn-card-base/constants/aiPassport', () => ({
 }));
 import { InfiniteQueryObserver, QueryClient, QueryObserver } from '@tanstack/react-query';
 import { useWallet } from './useWallet';
+import { CREDENTIAL_INDEX_STALE_TIME } from '../react-query/queries/credentialIndexCache';
+import {
+    clearPendingContractSyncJob,
+    hydratePendingContractSyncJobs,
+    pendingContractSyncStore,
+} from '../stores/pendingContractSyncStore';
 import {
     addCredentialSummary,
     clearCredentialFacts,
@@ -108,6 +115,10 @@ let records: { id: string; uri: string; inboxDeliveryId?: string }[];
 
 beforeEach(async () => {
     vi.clearAllMocks();
+    await hydratePendingContractSyncJobs();
+    await Promise.all(
+        Object.keys(pendingContractSyncStore.get.jobs()).map(clearPendingContractSyncJob)
+    );
     clearInAppMessageEvents();
     await clearCredentialFacts();
     vi.stubGlobal('crypto', webcrypto);
@@ -176,7 +187,14 @@ it('keeps a staged collection save successful when later sharing refresh fails',
             record: { id: records[0]!.id, uri: 'existing-uri', category: 'Achievement' },
             category: 'Achievement',
         })
-    ).rejects.toBe(refreshError);
+    ).resolves.toBe(false);
+    expect(Object.values(pendingContractSyncStore.get.jobs())).toEqual([
+        expect.objectContaining({
+            profileDid: 'did:example:claiming-account',
+            record: expect.objectContaining({ uri: 'existing-uri', category: 'Achievement' }),
+            status: 'queued',
+        }),
+    ]);
     expect(records).toEqual([expect.objectContaining({ uri: 'existing-uri' })]);
 });
 
@@ -321,7 +339,13 @@ it.each([
     async (_name, claim) => {
         mocks.getConsentedContracts.mockRejectedValueOnce(new Error('sync failed'));
 
-        await expect(claim()).rejects.toThrow('sync failed');
+        await expect(claim()).resolves.toBeTruthy();
+        expect(Object.values(pendingContractSyncStore.get.jobs())).toEqual([
+            expect.objectContaining({
+                profileDid: 'did:example:claiming-account',
+                status: 'queued',
+            }),
+        ]);
 
         expect(await loadCredentialFacts('did:example:claiming-account')).toEqual([
             expect.objectContaining({ issuer: 'did:key:issuer', category: 'Achievement' }),
@@ -614,7 +638,10 @@ it.each([
         expect(observer.getCurrentResult().isFetching).toBe(true);
         expect(pages).toEqual([undefined]);
         expect(mocks.getConsentedContracts).toHaveBeenCalled();
-        expect(client.getQueryData(['useGetCredentialCount', '', 'Achievement', reader])).toBe(1);
+        // No count was fetched, so the claim must not invent one (goblincore r4617931433).
+        expect(
+            client.getQueryData(['useGetCredentialCount', '', 'Achievement', reader])
+        ).toBeUndefined();
         expect(
             client.getQueryData(['useGetCredentialList', '', 'Achievement', reader])
         ).toMatchObject({
@@ -749,13 +776,234 @@ it('refreshes persisted bulk writes when contract sync fails and the reader init
             { ...credential, id: 'urn:sync-failure:one' },
             { ...credential, id: 'urn:sync-failure:two' },
         ])
-    ).rejects.toThrow('contract sync failed');
+    ).resolves.toEqual([true, true]);
 
     expect(records).toHaveLength(2);
     expect(calls.get('category')).toBe(1);
     expect(calls.get('global')).toBe(1);
     expect(calls.get('count')).toBe(1);
     subscriptions.forEach(unsubscribe => unsubscribe());
+});
+
+it('invalidates credential-index observers so skills refetch after addVCtoWallet', async () => {
+    const queryFn = vi.fn().mockResolvedValue([]);
+    const observer = new QueryObserver(mocks.queryClient!, {
+        queryKey: ['useGetSkills', ''],
+        queryFn,
+        staleTime: 5 * 60 * 1000,
+    });
+    const unsubscribe = observer.subscribe(() => undefined);
+    try {
+        await vi.waitFor(() => expect(queryFn).toHaveBeenCalledTimes(1));
+        await useWallet().addVCtoWallet({ uri: 'existing-uri', skipSync: true });
+        await vi.waitFor(() => expect(queryFn).toHaveBeenCalledTimes(2));
+    } finally {
+        unsubscribe();
+        observer.destroy();
+    }
+});
+
+it('invalidates primary-profile useGetCredentials after addVCtoWallet', async () => {
+    const queryFn = vi.fn().mockResolvedValue([]);
+    const observer = new QueryObserver(mocks.queryClient!, {
+        queryKey: ['useGetCredentials', '', 'Achievement', undefined],
+        queryFn,
+        staleTime: 5 * 60 * 1000,
+    });
+    const unsubscribe = observer.subscribe(() => undefined);
+    try {
+        await vi.waitFor(() => expect(queryFn).toHaveBeenCalledTimes(1));
+        await useWallet().addVCtoWallet({ uri: 'existing-uri', skipSync: true });
+        await vi.waitFor(() => expect(queryFn).toHaveBeenCalledTimes(2));
+    } finally {
+        unsubscribe();
+        observer.destroy();
+    }
+});
+
+it('refreshes the unfiltered credential count for the claiming reader after addVCtoWallet', async () => {
+    // goblincore r4574770685: useProfileSnapshot reads useGetCredentialCount(undefined).
+    const total = vi.fn().mockResolvedValue(0);
+    const otherReaderTotal = vi.fn().mockResolvedValue(0);
+    const observers = [
+        new QueryObserver(mocks.queryClient!, {
+            queryKey: ['useGetCredentialCount', '', undefined, 'did:example:claiming-account'],
+            queryFn: total,
+            staleTime: 5 * 60 * 1000,
+        }),
+        new QueryObserver(mocks.queryClient!, {
+            queryKey: ['useGetCredentialCount', '', undefined, 'did:example:other-account'],
+            queryFn: otherReaderTotal,
+            staleTime: 5 * 60 * 1000,
+        }),
+    ];
+    const unsubscribes = observers.map(observer => observer.subscribe(() => undefined));
+    try {
+        await vi.waitFor(() => expect(total).toHaveBeenCalledTimes(1));
+        await vi.waitFor(() => expect(otherReaderTotal).toHaveBeenCalledTimes(1));
+        await useWallet().addVCtoWallet({ uri: 'existing-uri', skipSync: true });
+        await vi.waitFor(() => expect(total).toHaveBeenCalledTimes(2));
+        expect(otherReaderTotal).toHaveBeenCalledTimes(1);
+    } finally {
+        unsubscribes.forEach(unsubscribe => unsubscribe());
+        observers.forEach(observer => observer.destroy());
+    }
+});
+
+const claimingCategoryCountKey = [
+    'useGetCredentialCount',
+    '',
+    'Achievement',
+    'did:example:claiming-account',
+] as const;
+const observeCategoryCount = (queryFn: () => Promise<number>) => {
+    const observer = new QueryObserver(mocks.queryClient!, {
+        queryKey: claimingCategoryCountKey,
+        queryFn,
+        staleTime: CREDENTIAL_INDEX_STALE_TIME,
+    });
+    const unsubscribe = observer.subscribe(() => undefined);
+    return { observer, stop: () => (unsubscribe(), observer.destroy()) };
+};
+
+it('does not invent a category count when the count was never fetched before a claim', async () => {
+    // goblincore r4617931433: 20 existing records, category count unmounted during the claim.
+    await useWallet().storeAndAddVCToWallet(credential);
+    expect(mocks.queryClient!.getQueryData(claimingCategoryCountKey)).toBeUndefined();
+
+    const serverCount = vi.fn().mockResolvedValue(21);
+    const { observer, stop } = observeCategoryCount(serverCount);
+    try {
+        await vi.waitFor(() => expect(observer.getCurrentResult().data).toBe(21));
+        expect(serverCount).toHaveBeenCalledTimes(1);
+    } finally {
+        stop();
+    }
+});
+
+it('bumps an unmounted cached category count but lets the next observer refetch the real total', async () => {
+    const serverCount = vi.fn().mockResolvedValueOnce(20).mockResolvedValue(21);
+    const first = observeCategoryCount(serverCount);
+    await vi.waitFor(() => expect(first.observer.getCurrentResult().data).toBe(20));
+    first.stop();
+
+    await useWallet().storeAndAddVCToWallet(credential);
+    expect(mocks.queryClient!.getQueryData(claimingCategoryCountKey)).toBe(21);
+    expect(serverCount).toHaveBeenCalledTimes(1);
+
+    const next = observeCategoryCount(serverCount);
+    try {
+        await vi.waitFor(() => expect(serverCount).toHaveBeenCalledTimes(2));
+        await vi.waitFor(() => expect(next.observer.getCurrentResult().isFetching).toBe(false));
+        expect(next.observer.getCurrentResult().data).toBe(21);
+    } finally {
+        next.stop();
+    }
+});
+
+it('refreshes profile-scoped caches after a Partner Connect (skipLCNUser) save', async () => {
+    // goblincore r4646873435: savePartnerCredential saves with skipLCNUser: true.
+    const reader = 'did:example:claiming-account';
+    const countFn = vi.fn().mockResolvedValueOnce(20).mockResolvedValue(21);
+    const skillsFn = vi.fn().mockResolvedValue([]);
+    const idsFn = vi.fn().mockResolvedValue([]);
+    const listFn = vi.fn().mockResolvedValue({ hasMore: false, records: [] });
+    const observers = [
+        new QueryObserver(mocks.queryClient!, {
+            queryKey: claimingCategoryCountKey,
+            queryFn: countFn,
+            staleTime: CREDENTIAL_INDEX_STALE_TIME,
+        }),
+        new QueryObserver(mocks.queryClient!, {
+            queryKey: ['useGetSkills', ''],
+            queryFn: skillsFn,
+            staleTime: CREDENTIAL_INDEX_STALE_TIME,
+        }),
+        new QueryObserver(mocks.queryClient!, {
+            queryKey: ['useGetIDs', ''],
+            queryFn: idsFn,
+            staleTime: CREDENTIAL_INDEX_STALE_TIME,
+        }),
+    ];
+    const list = new InfiniteQueryObserver(mocks.queryClient!, {
+        queryKey: ['useGetCredentialList', '', 'Achievement', reader],
+        queryFn: listFn,
+        initialPageParam: undefined,
+        getNextPageParam: () => undefined,
+        staleTime: CREDENTIAL_INDEX_STALE_TIME,
+    });
+    const unsubscribes = [...observers, list].map(observer => observer.subscribe(() => undefined));
+    try {
+        await vi.waitFor(() => {
+            expect(countFn).toHaveBeenCalledTimes(1);
+            expect(skillsFn).toHaveBeenCalledTimes(1);
+            expect(idsFn).toHaveBeenCalledTimes(1);
+            expect(listFn).toHaveBeenCalledTimes(1);
+        });
+
+        const saved = await useWallet().storeAndAddVCToWallet(
+            credential,
+            { title: 'Partner badge' },
+            'LearnCloud',
+            true
+        );
+        expect(saved).toMatchObject({ result: true, credentialUri: 'encrypted-uri' });
+
+        await vi.waitFor(() => {
+            expect(countFn).toHaveBeenCalledTimes(2);
+            expect(skillsFn).toHaveBeenCalledTimes(2);
+            expect(idsFn).toHaveBeenCalledTimes(2);
+            expect(listFn).toHaveBeenCalledTimes(2);
+        });
+        await vi.waitFor(() => expect(observers[0].getCurrentResult().data).toBe(21));
+    } finally {
+        unsubscribes.forEach(unsubscribe => unsubscribe());
+        [...observers, list].forEach(observer => observer.destroy());
+        await Promise.all(
+            Object.keys(pendingContractSyncStore.get.jobs()).map(clearPendingContractSyncJob)
+        );
+    }
+});
+
+it('persists Partner Connect sharing before refreshing a malformed cached page', async () => {
+    mocks.queryClient!.setQueryData(
+        ['useGetCredentialList', '', 'Achievement', 'did:example:claiming-account'],
+        { pages: [{ hasMore: false }], pageParams: [undefined] }
+    );
+
+    await expect(
+        useWallet().storeAndAddVCToWallet(credential, {}, 'LearnCloud', true)
+    ).rejects.toThrow();
+
+    expect(records).toEqual([expect.objectContaining({ uri: 'encrypted-uri' })]);
+    expect(Object.values(pendingContractSyncStore.get.jobs())).toEqual([
+        expect.objectContaining({
+            profileDid: 'did:example:claiming-account',
+            record: expect.objectContaining({ uri: 'encrypted-uri', category: 'Achievement' }),
+        }),
+    ]);
+});
+
+it('does not refresh caches when a Partner Connect (skipLCNUser) index write fails', async () => {
+    const skillsFn = vi.fn().mockResolvedValue([]);
+    const observer = new QueryObserver(mocks.queryClient!, {
+        queryKey: ['useGetSkills', ''],
+        queryFn: skillsFn,
+        staleTime: CREDENTIAL_INDEX_STALE_TIME,
+    });
+    const unsubscribe = observer.subscribe(() => undefined);
+    try {
+        await vi.waitFor(() => expect(skillsFn).toHaveBeenCalledTimes(1));
+        mocks.add.mockResolvedValueOnce(false);
+        await expect(
+            useWallet().storeAndAddVCToWallet(credential, {}, 'LearnCloud', true)
+        ).resolves.toMatchObject({ result: false });
+        await new Promise(resolve => setTimeout(resolve, 20));
+        expect(skillsFn).toHaveBeenCalledTimes(1);
+    } finally {
+        unsubscribe();
+        observer.destroy();
+    }
 });
 
 it('retries failed contracts without repeating acknowledged contract mutations', async () => {
@@ -775,18 +1023,27 @@ it('retries failed contracts without repeating acknowledged contract mutations',
         return true;
     });
     const hooks = useWallet();
-    const completed = new Set<string>();
     const input: Parameters<typeof hooks.syncCredentialToContracts>[0] = {
         record: { id: 'record', uri: 'credential', category: 'Achievement' },
         category: 'Achievement',
     };
-    await expect(hooks.syncCredentialToContracts(input, undefined, completed)).rejects.toThrow(
-        'Some consented contracts could not be synced'
-    );
-    expect(completed).toEqual(new Set(['terms-a']));
+    await expect(hooks.syncCredentialToContracts(input)).resolves.toBe(false);
+    const [job] = Object.values(pendingContractSyncStore.get.jobs());
+    expect(job.kind).toBe('credential');
+    if (job.kind !== 'credential') throw new Error('Expected a credential retry');
+    expect(job.syncedTermsUris).toEqual(['terms-a']);
+    expect(job.failedContractUris).toEqual(['contract-terms-b']);
+    const completed = new Set(job.syncedTermsUris);
     expect(mocks.syncContract).toHaveBeenCalledTimes(2);
+    expect(mocks.syncContract.mock.calls.every(call => call[3] === true)).toBe(true);
     mocks.syncContract.mockResolvedValue(true);
-    await expect(hooks.syncCredentialToContracts(input, undefined, completed)).resolves.toBe(true);
+    const failedDestinations = vi.fn();
+    await expect(
+        hooks.syncCredentialToContracts(input, undefined, completed, {
+            onContractsFailed: failedDestinations,
+        })
+    ).resolves.toBe(true);
+    expect(failedDestinations).toHaveBeenCalledWith([]);
     expect(completed).toEqual(new Set(['terms-a', 'terms-b']));
     expect(mocks.syncContract.mock.calls.map(([uri]) => uri)).toEqual([
         'terms-a',
@@ -821,5 +1078,181 @@ it('does not mark unavailable shared credentials as successfully synced', async 
     expect(completed.size).toBe(0);
     expect(mocks.syncContract).not.toHaveBeenCalled();
     await expect(hooks.syncCredentialToContracts(input, undefined, completed)).resolves.toBe(true);
+
     expect(completed).toEqual(new Set(['terms-a']));
 });
+
+it('rechecks the staged lease after audience materialization before network mutation', async () => {
+    mocks.getConsentedContracts.mockResolvedValue([
+        {
+            uri: 'terms-a',
+            status: 'live',
+            contract: { uri: 'contract-a', owner: { did: 'did:key:owner' } },
+            terms: {
+                read: {
+                    credentials: { categories: { Achievement: { shareAll: true, sharing: true } } },
+                },
+            },
+        },
+    ]);
+    const hooks = useWallet();
+    const beforeSync = vi
+        .fn()
+        .mockImplementationOnce(() => undefined)
+        .mockImplementationOnce(() => {
+            throw new Error('lease lost');
+        });
+    await expect(
+        hooks.syncCredentialToContracts(
+            {
+                record: { id: 'record', uri: 'credential', category: 'Achievement' },
+                category: 'Achievement',
+            },
+            undefined,
+            new Set(),
+            { beforeSync }
+        )
+    ).rejects.toMatchObject({
+        errors: [expect.objectContaining({ message: 'lease lost' })],
+    });
+    expect(mocks.sharedUri).toHaveBeenCalledOnce();
+    expect(mocks.syncContract).not.toHaveBeenCalled();
+});
+
+it('queues Partner Connect sharing after the index write without waiting for network delivery', async () => {
+    mocks.getConsentedContracts.mockImplementationOnce(() => new Promise(() => {}));
+    const saved = await useWallet().storeAndAddVCToWallet(
+        credential,
+        {
+            title: 'Partner badge',
+            imgUrl: 'https://example.com/badge.png',
+            networkUri: 'network-vc',
+        },
+        'LearnCloud',
+        true
+    );
+    expect(saved).toMatchObject({ result: true, credentialUri: 'encrypted-uri' });
+    expect(mocks.getConsentedContracts).not.toHaveBeenCalled();
+    expect(Object.values(pendingContractSyncStore.get.jobs())).toEqual([
+        expect.objectContaining({
+            profileDid: 'did:example:claiming-account',
+            record: {
+                id: expect.any(String),
+                uri: saved.credentialUri,
+                category: 'Achievement',
+            },
+        }),
+    ]);
+    await Promise.all(
+        Object.keys(pendingContractSyncStore.get.jobs()).map(clearPendingContractSyncJob)
+    );
+    mocks.getConsentedContracts.mockClear();
+    mocks.add.mockResolvedValueOnce(false);
+    expect(
+        await useWallet().storeAndAddVCToWallet(credential, {}, 'LearnCloud', true)
+    ).toMatchObject({
+        result: false,
+    });
+    expect(mocks.getConsentedContracts).not.toHaveBeenCalled();
+    expect(pendingContractSyncStore.get.jobs()).toEqual({});
+});
+
+it('keeps a Partner Connect save successful when durable queue persistence rejects', async () => {
+    vi.spyOn(pendingContractSyncStore.set, 'enqueueContractSyncJob').mockRejectedValueOnce(
+        new Error('queue unavailable')
+    );
+    const saved = await useWallet().storeAndAddVCToWallet(
+        credential,
+        { title: 'Partner badge' },
+        'LearnCloud',
+        true
+    );
+    expect(saved).toMatchObject({ result: true, credentialUri: 'encrypted-uri' });
+    expect(mocks.add).toHaveBeenCalledOnce();
+});
+
+it('keeps direct-sync fallback successful when retry persistence rejects', async () => {
+    mocks.getConsentedContracts.mockRejectedValueOnce(new Error('contract lookup unavailable'));
+    vi.spyOn(pendingContractSyncStore.set, 'enqueueContractSyncJob').mockRejectedValueOnce(
+        new Error('queue unavailable')
+    );
+    await expect(
+        useWallet().syncCredentialToContracts({
+            record: { id: 'record', uri: 'credential', category: 'Achievement' },
+            category: 'Achievement',
+        })
+    ).resolves.toBe(false);
+});
+it('does not queue automatic sharing when a caller explicitly defers it', async () => {
+    const saved = await useWallet().storeAndAddVCToWallet(
+        credential,
+        { deferContractSync: true },
+        'LearnCloud',
+        true
+    );
+    expect(saved).toMatchObject({ result: true });
+    expect(pendingContractSyncStore.get.jobs()).toEqual({});
+    expect(mocks.getConsentedContracts).not.toHaveBeenCalled();
+});
+
+it('queues an unavailable shared copy without expanding beyond live category-wide consent', async () => {
+    const contracts = [
+        ['eligible', 'live', { shareAll: true, sharing: true }],
+        ['once', 'live', { shareAll: false, sharing: true }],
+        ['denied', 'live', { shareAll: true, sharing: false }],
+        ['withdrawn', 'withdrawn', { shareAll: true, sharing: true }],
+        ['expired', 'live', { shareAll: true, sharing: true, shareUntil: '2000-01-01' }],
+    ].map(([uri, status, config]) => ({
+        uri,
+        status,
+        contract: { uri: `contract-${uri}`, owner: { did: 'did:key:owner' } },
+        terms: { read: { credentials: { categories: { Achievement: config } } } },
+    }));
+    mocks.getConsentedContracts.mockResolvedValue(contracts);
+    mocks.sharedUri.mockResolvedValueOnce(false);
+    expect(
+        await useWallet().syncCredentialToContracts({
+            record: { id: 'saved', uri: 'credential', category: 'Achievement' },
+            category: 'Achievement',
+        })
+    ).toBe(false);
+    expect(mocks.sharedUri).toHaveBeenCalledTimes(1);
+    expect(mocks.syncContract).not.toHaveBeenCalled();
+    expect(Object.values(pendingContractSyncStore.get.jobs())).toEqual([
+        expect.objectContaining({ record: expect.objectContaining({ uri: 'credential' }) }),
+    ]);
+});
+
+it.each(['', '   '])(
+    'shares with category-wide consent when legacy expiry is %j',
+    async shareUntil => {
+        mocks.getConsentedContracts.mockResolvedValue([
+            {
+                uri: 'terms-legacy-expiry',
+                status: 'live',
+                contract: { uri: 'contract-legacy-expiry', owner: { did: 'did:key:owner' } },
+                terms: {
+                    read: {
+                        credentials: {
+                            categories: {
+                                Achievement: { shareAll: true, sharing: true, shareUntil },
+                            },
+                        },
+                    },
+                },
+            },
+        ]);
+        await expect(
+            useWallet().syncCredentialToContracts({
+                record: { id: 'saved', uri: 'credential', category: 'Achievement' },
+                category: 'Achievement',
+            })
+        ).resolves.toBe(true);
+        expect(mocks.syncContract).toHaveBeenCalledWith(
+            'terms-legacy-expiry',
+            { Achievement: ['shared-uri'] },
+            expect.any(Number),
+            true
+        );
+    }
+);

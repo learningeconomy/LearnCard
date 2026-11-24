@@ -1,11 +1,7 @@
 import { useMemo } from 'react';
 
 import { Capacitor } from '@capacitor/core';
-import {
-    CapacitorSQLite,
-    SQLiteConnection,
-    SQLiteDBConnection,
-} from '@capacitor-community/sqlite';
+import { CapacitorSQLite, SQLiteConnection, SQLiteDBConnection } from '@capacitor-community/sqlite';
 
 export type AvailableResult = {
     isAvailable: boolean;
@@ -34,10 +30,7 @@ export interface SQLiteHook extends AvailableResult {
 
     getCapacitorSQLite(): Promise<{ plugin: any }>;
 
-    addUpgradeStatement(
-        dbName: string,
-        upgrade: VersionUpgrade | VersionUpgrade[]
-    ): Promise<void>;
+    addUpgradeStatement(dbName: string, upgrade: VersionUpgrade | VersionUpgrade[]): Promise<void>;
 
     createConnection(
         database: string,
@@ -72,10 +65,14 @@ export interface SQLiteHook extends AvailableResult {
     checkConnectionsConsistency(): Promise<Result>;
 }
 
-export const useSQLite = (): SQLiteHook => {
+/**
+ * The SQLite driver without React, so native initialization can start at app entry
+ * (before the lazy app shell mounts). `useSQLite` returns one memoized instance of this.
+ */
+export const createSQLiteDriver = (
+    mSQLite: SQLiteConnection = new SQLiteConnection(CapacitorSQLite)
+): SQLiteHook => {
     const platform = Capacitor.getPlatform();
-
-    const mSQLite = useMemo(() => new SQLiteConnection(CapacitorSQLite), []);
 
     // Helper wrappers to keep types strong and avoid any
     const ensureDbName = (dbName: string) => {
@@ -92,12 +89,11 @@ export const useSQLite = (): SQLiteHook => {
 
         // Try modern array-of-upgrades first; fallback to legacy 3-arg per upgrade
         try {
-            await (mSQLite as unknown as {
-                addUpgradeStatement: (
-                    db: string,
-                    ups: VersionUpgrade[]
-                ) => Promise<void>;
-            }).addUpgradeStatement(dbName, upgrades);
+            await (
+                mSQLite as unknown as {
+                    addUpgradeStatement: (db: string, ups: VersionUpgrade[]) => Promise<void>;
+                }
+            ).addUpgradeStatement(dbName, upgrades);
 
             return;
         } catch {
@@ -107,13 +103,15 @@ export const useSQLite = (): SQLiteHook => {
                     throw new Error('Invalid upgrade statement');
                 }
 
-                await (mSQLite as unknown as {
-                    addUpgradeStatement: (
-                        db: string,
-                        toVersion: number,
-                        statements: string[]
-                    ) => Promise<void>;
-                }).addUpgradeStatement(dbName, u.toVersion, u.statements);
+                await (
+                    mSQLite as unknown as {
+                        addUpgradeStatement: (
+                            db: string,
+                            toVersion: number,
+                            statements: string[]
+                        ) => Promise<void>;
+                    }
+                ).addUpgradeStatement(dbName, u.toVersion, u.statements);
             }
         }
     };
@@ -122,13 +120,15 @@ export const useSQLite = (): SQLiteHook => {
         isAvailable: true,
 
         initWebStore: async (): Promise<void> => {
-            if (platform !== 'web') return Promise.reject(`Not implemented on platform ${platform}`);
+            if (platform !== 'web')
+                return Promise.reject(`Not implemented on platform ${platform}`);
 
             await mSQLite.initWebStore();
         },
 
         saveToStore: async (database: string): Promise<void> => {
-            if (platform !== 'web') return Promise.reject(`Not implemented on platform ${platform}`);
+            if (platform !== 'web')
+                return Promise.reject(`Not implemented on platform ${platform}`);
 
             if (!database) throw new Error('Must provide a database name');
 
@@ -265,5 +265,7 @@ export const useSQLite = (): SQLiteHook => {
         },
     };
 };
+
+export const useSQLite = (): SQLiteHook => useMemo(() => createSQLiteDriver(), []);
 
 export { SQLiteDBConnection, SQLiteConnection };

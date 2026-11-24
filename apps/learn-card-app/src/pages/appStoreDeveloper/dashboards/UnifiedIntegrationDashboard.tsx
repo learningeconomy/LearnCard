@@ -20,6 +20,7 @@ import {
     Settings,
     FileSpreadsheet,
     ChevronDown,
+    Webhook,
 } from 'lucide-react';
 import type { LCNIntegration, AppStoreListing } from '@learncard/types';
 import type { EmbedAppGuideConfig, GuideState } from '../guides/types';
@@ -54,6 +55,9 @@ const EmbedConfigTab = lazy(() =>
 );
 const ContractsTab = lazy(() =>
     import('./tabs/ContractsTab').then(m => ({ default: m.ContractsTab }))
+);
+const WebhooksTab = lazy(() =>
+    import('./tabs/WebhooksTab').then(m => ({ default: m.WebhooksTab }))
 );
 const ConnectionsTab = lazy(() =>
     import('./tabs/ConnectionsTab').then(m => ({ default: m.ConnectionsTab }))
@@ -144,6 +148,14 @@ function getTabsForConfig(config: DashboardConfig): DashboardTabConfig[] {
             id: 'contracts',
             label: m['developerPortal.dashboards.nav.contracts'](),
             icon: FileText,
+        });
+    }
+
+    if (config.showWebhooks) {
+        tabs.push({
+            id: 'webhooks',
+            label: m['developerPortal.dashboards.nav.webhooks'](),
+            icon: Webhook,
         });
     }
 
@@ -667,6 +679,8 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                 )}
 
                 {activeTab === 'contracts' && <ContractsTab integration={integration} />}
+
+                {activeTab === 'webhooks' && <WebhooksTab integration={integration} />}
 
                 {activeTab === 'connections' && <ConnectionsTab integration={integration} />}
 
