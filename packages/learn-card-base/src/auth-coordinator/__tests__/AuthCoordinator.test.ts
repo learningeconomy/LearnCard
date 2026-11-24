@@ -143,10 +143,10 @@ describe('AuthCoordinator', () => {
                 config: { legacyAccountThresholdMs: 5 * 60 * 1000 },
             });
 
-        it('sets up an older account when the legacy provider never assigned a key', async () => {
+        it('sets up an older account when the archive and the legacy provider both have no key', async () => {
             const { coordinator, keyDerivation } = setupLegacy();
             expect((await coordinator.initialize()).status).toBe('needs_migration');
-            coordinator.handleMigrationKeyError(new LegacyKeyUnassignedError());
+            coordinator.handleMigrationKeyError(new LegacyKeyUnassignedError(), 'absent');
             expect(coordinator.getState().status).toBe('needs_setup');
             expect((await coordinator.setupNewKey('fresh-key', 'did:key:z123')).status).toBe(
                 'ready'
@@ -154,12 +154,22 @@ describe('AuthCoordinator', () => {
             expect(keyDerivation.splitKey).toHaveBeenCalledWith('fresh-key');
         });
 
+        it('keeps an unassigned legacy key retryable when the archive lookup failed', async () => {
+            const { coordinator, keyDerivation } = setupLegacy();
+            expect((await coordinator.initialize()).status).toBe('needs_migration');
+            coordinator.handleMigrationKeyError(new LegacyKeyUnassignedError(), 'failed');
+            expect(coordinator.getState()).toMatchObject({ status: 'error', canRetry: true });
+            expect(keyDerivation.splitKey).not.toHaveBeenCalled();
+            expect(keyDerivation.storeAuthShare).not.toHaveBeenCalled();
+            expect((await coordinator.retry()).status).toBe('needs_migration');
+        });
+
         it.each(['network', '503', 'timeout', 'MFA required', 'no key'])(
             'keeps %s retryable without creating an identity',
             async message => {
                 const { coordinator, keyDerivation } = setupLegacy();
                 await coordinator.initialize();
-                coordinator.handleMigrationKeyError(new Error(message));
+                coordinator.handleMigrationKeyError(new Error(message), 'absent');
                 expect(coordinator.getState()).toMatchObject({ status: 'error', canRetry: true });
                 expect(keyDerivation.splitKey).not.toHaveBeenCalled();
                 expect(keyDerivation.storeAuthShare).not.toHaveBeenCalled();
@@ -170,7 +180,7 @@ describe('AuthCoordinator', () => {
         it('does not replace a locally stored key', async () => {
             const { coordinator } = setupLegacy(withoutRecord, true);
             await coordinator.initialize();
-            coordinator.handleMigrationKeyError(new LegacyKeyUnassignedError());
+            coordinator.handleMigrationKeyError(new LegacyKeyUnassignedError(), 'absent');
             expect(coordinator.getState()).toMatchObject({ status: 'error', canRetry: true });
         });
 
@@ -179,7 +189,7 @@ describe('AuthCoordinator', () => {
                 const { coordinator, keyDerivation } = setupLegacy();
                 await coordinator.initialize();
                 coordinator.setMigrationData(data);
-                coordinator.handleMigrationKeyError(new LegacyKeyUnassignedError());
+                coordinator.handleMigrationKeyError(new LegacyKeyUnassignedError(), 'absent');
                 expect(coordinator.getState().status).toBe('error');
                 expect(keyDerivation.splitKey).not.toHaveBeenCalled();
             }
@@ -196,7 +206,7 @@ describe('AuthCoordinator', () => {
                 },
             });
             await coordinator.initialize();
-            coordinator.handleMigrationKeyError(new LegacyKeyUnassignedError());
+            coordinator.handleMigrationKeyError(new LegacyKeyUnassignedError(), 'absent');
             expect(coordinator.getState().status).toBe('error');
             expect(keyDerivation.splitKey).not.toHaveBeenCalled();
         });
@@ -215,7 +225,7 @@ describe('AuthCoordinator', () => {
                     },
                 });
                 expect((await coordinator.initialize()).status).toBe('needs_migration');
-                coordinator.handleMigrationKeyError(error);
+                coordinator.handleMigrationKeyError(error, 'absent');
                 expect(coordinator.getState().status).toBe('needs_recovery');
                 expect(keyDerivation.splitKey).not.toHaveBeenCalled();
                 expect(keyDerivation.storeAuthShare).not.toHaveBeenCalled();

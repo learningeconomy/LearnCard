@@ -55,7 +55,7 @@ import type {
     SssActivationState,
     UnifiedAuthState,
 } from './types';
-import type { RevokeOtherDevicesResult } from '@learncard/types';
+import type { ArchivedKeyLookup, RevokeOtherDevicesResult } from '@learncard/types';
 
 /** True for recovery inputs that consume a single-use escrow hold (delay or PIN release). */
 const isEscrowRecoveryMethod = (input: unknown): boolean =>
@@ -1694,13 +1694,19 @@ export class AuthCoordinator {
         });
     }
 
-    /** Resolve a failed legacy lookup without replacing an established identity. */
-    handleMigrationKeyError(error: unknown): void {
+    /**
+     * Resolve a failed legacy lookup without replacing an established identity.
+     * `archivedKey` is the archive lookup that preceded legacy derivation: fresh
+     * setup needs the archive service's confirmed `absent`, because a `failed`
+     * lookup cannot rule out an archived identity.
+     */
+    handleMigrationKeyError(error: unknown, archivedKey: ArchivedKeyLookup['status']): void {
         if (this.state.status !== 'needs_migration') return;
 
         const { authUser, migrationData } = this.state;
         if (
             error instanceof LegacyKeyUnassignedError &&
+            archivedKey === 'absent' &&
             migrationData?.noExistingKeyRecord === true &&
             !migrationData.expectedDid &&
             !migrationData.web3AuthKey &&
