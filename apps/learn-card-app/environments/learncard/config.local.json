@@ -16,6 +16,7 @@
         "classlinkSso": true,
         "classlinkTranscriptOptIn": true,
         "classlinkPersonalEmail": true,
+        "classlinkKeepAccount": true,
         "schoolConnect": true,
         "useSeededSkillFrameworks": true,
         "samplePersonas": [

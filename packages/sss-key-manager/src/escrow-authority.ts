@@ -577,7 +577,13 @@ export const verifyEscrowHoldConfirmation = async (
     return verified;
 };
 
-export type EscrowEnrollmentActionInput = 'automatic' | 'set' | 'clear' | 'disable';
+/**
+ * `confirm` (LC-2409): re-seal the current contact by proving the current PIN, always
+ * `replace` + `pinAction: 'keep'` with the contact bound. The target blob carries the
+ * verifier derived from the typed PIN and the existing salt; the enclave refuses it
+ * unless it matches (`same_pin`). Only valid for an active enrollment with a PIN.
+ */
+export type EscrowEnrollmentActionInput = 'automatic' | 'set' | 'clear' | 'disable' | 'confirm';
 
 /** Pure action resolution, shared between intent-building (here) and blob
  * plaintext construction (sss-strategy.ts's `enrollEscrow`), so both always
@@ -597,6 +603,8 @@ export const resolveEscrowEnrollmentAction = (
     pinAction: EscrowEnrollmentIntent['pinAction'];
     bindsRecoveryContact: boolean;
 } => {
+    if (input === 'confirm')
+        return { action: 'replace', pinAction: 'keep', bindsRecoveryContact: true };
     const disabling = input === 'disable';
     const pinAction = disabling
         ? 'keep'
@@ -659,6 +667,10 @@ export const createEscrowEnrollmentIntent = async (input: {
     );
     if (disabling && current.status !== 'active') return fail();
     if (current.status === 'disabled' && current.hasPin && input.pinAction === 'automatic')
+        return fail();
+    // A confirm proves the current PIN of an active enrollment; there is nothing to
+    // confirm otherwise, and the enclave would refuse it.
+    if (input.pinAction === 'confirm' && (current.status !== 'active' || !current.hasPin))
         return fail();
     const { action, pinAction, bindsRecoveryContact } = resolveEscrowEnrollmentAction(
         current,

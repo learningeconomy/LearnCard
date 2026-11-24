@@ -32,3 +32,28 @@ export class SameEscrowPinError extends Error {
  */
 export const isSameEscrowPinError = (cause: unknown): cause is SameEscrowPinError =>
     cause instanceof Error && cause.name === 'SameEscrowPinError';
+
+/**
+ * LC-2409: an escrow contact re-seal (`confirmEscrowPin` / `resealEscrowContact`) was
+ * refused before anything changed.
+ * - `other-uid`: this session is not the login that holds the sign-in email
+ *   (`primaryUid`); only that login's sessions may re-seal.
+ * - `unconfirmed`: the session's email is not an address the user typed or proved on this
+ *   device. Ask the user to type their sign-in email and pass it as `retypedEmail`.
+ */
+export class EscrowContactNotConfirmedError extends Error {
+    constructor(public readonly reason: 'other-uid' | 'unconfirmed') {
+        super(
+            reason === 'other-uid'
+                ? 'Sign in with your sign-in email on this device to finish.'
+                : 'Type your sign-in email to confirm.'
+        );
+        this.name = 'EscrowContactNotConfirmedError';
+    }
+}
+
+/** True for an EscrowContactNotConfirmedError, checked by name across bundles. */
+export const isEscrowContactNotConfirmedError = (
+    cause: unknown
+): cause is EscrowContactNotConfirmedError =>
+    cause instanceof Error && cause.name === 'EscrowContactNotConfirmedError';

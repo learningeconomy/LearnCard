@@ -46,6 +46,18 @@ interface RecoveryFlowModalProps {
     onFinishIdentityRecovery?: () => void;
     /** The lost-login recovery was a PIN sign-in, which kept devices and recovery methods. */
     identityKeptAccount?: boolean;
+    /**
+     * The tenant signs people in with a school login (ClassLink): the lost-login screens
+     * ask for the personal email saved to the account and say to ask the school when no
+     * code comes.
+     */
+    schoolLoginRecovery?: boolean;
+    /**
+     * With `schoolLoginRecovery`: leave the lost-login recovery for the email sign-in, for
+     * a user who added a personal email (it is their sign-in email; this recovery only
+     * finds a separate recovery email).
+     */
+    onSignInWithEmail?: () => void;
     onCancel: () => void;
 }
 
@@ -113,6 +125,8 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
     onContinueWithNewLogin,
     onFinishIdentityRecovery,
     identityKeptAccount = false,
+    schoolLoginRecovery = false,
+    onSignInWithEmail,
     onCancel,
 }) => {
     const hasMethod = (type: string) => availableMethods.some(m => m.type === type);
@@ -347,7 +361,9 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                         {m['recovery.identity.title']()}
                     </h2>
                     <p className="text-sm text-grayscale-600 leading-relaxed">
-                        {m['recovery.identity.emailDescription']()}
+                        {schoolLoginRecovery
+                            ? m['recovery.identity.emailDescriptionSchool']()
+                            : m['recovery.identity.emailDescription']()}
                     </p>
                 </div>
 
@@ -362,6 +378,8 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                     onChange={event => setRecoveryEmail(event.target.value)}
                     placeholder={m['recovery.identity.recoveryEmailPlaceholder']()}
                     autoComplete="email"
+                    // Addresses read left to right in every language.
+                    dir="ltr"
                     className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                 />
 
@@ -396,6 +414,22 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                 >
                     {m['common.cancel']()}
                 </button>
+                {schoolLoginRecovery && onSignInWithEmail && (
+                    <div className="mt-5 pt-4 border-t border-grayscale-200 text-center">
+                        <p className="text-sm text-grayscale-600 leading-relaxed">
+                            {m['recovery.identity.signInInsteadSchool']()}
+                        </p>
+                        <button
+                            type="button"
+                            data-testid="recovery-identity-sign-in-with-email"
+                            onClick={onSignInWithEmail}
+                            disabled={loading}
+                            className="mt-2 inline-flex items-center min-h-[44px] px-1 text-sm font-medium text-grayscale-800 underline underline-offset-2 hover:text-grayscale-900 disabled:opacity-40"
+                        >
+                            {m['login.email.button']()}
+                        </button>
+                    </div>
+                )}
             </div>
         );
         return <Overlay onDismiss={loading ? undefined : onCancel}>{content}</Overlay>;
@@ -407,8 +441,17 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                 <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
                     {m['recovery.identity.checkEmail']()}
                 </h2>
-                <p className="text-sm text-grayscale-600 leading-relaxed mb-5">
+                <p className="text-sm text-grayscale-600 leading-relaxed mb-2">
                     {m['recovery.identity.codeDescription']()}
+                </p>
+                {/* lca-api deliberately answers the same whether or not it sent a code. */}
+                <p
+                    data-testid="recovery-identity-no-code-hint"
+                    className="text-xs text-grayscale-500 leading-relaxed mb-5"
+                >
+                    {schoolLoginRecovery
+                        ? m['recovery.identity.noCodeHintSchool']()
+                        : m['recovery.identity.noCodeHint']()}
                 </p>
                 {identityError}
                 <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
@@ -423,6 +466,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                     }
                     placeholder="000000"
                     autoComplete="one-time-code"
+                    dir="ltr"
                     className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-center tracking-[0.3em] text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                 />
                 <button

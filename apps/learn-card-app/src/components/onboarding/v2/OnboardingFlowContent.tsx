@@ -93,11 +93,18 @@ import {
     TranscriptOnboardingStep,
     getOnboardingTranscriptEligibility,
 } from './TranscriptOnboardingStep';
+import { KeepAccountStep } from '../../classlink/KeepAccountStep';
+import { markKeepAccountAskedThisSession } from '../../classlink/keepAccountSession';
+import { useKeepAccountOffer } from '../../classlink/useKeepAccountOffer';
+import { markTranscriptPromptOffered } from '../../../hooks/useTranscriptPrompt';
 const COUNTRIES: Record<string, string> = countries as Record<string, string>;
 
 const log = getLogger('onboarding-flow-v2');
 
-type Step = 'age-country' | 'profile' | 'pin' | 'transcript' | 'celebrate';
+/** Longest the step after the transcript waits for the "keep your account" answer. */
+export const KEEP_ACCOUNT_DECISION_WAIT_MS = 2000;
+
+type Step = 'age-country' | 'profile' | 'pin' | 'transcript' | 'keepAccount' | 'celebrate';
 
 type OnboardingFlowProps = {
     onSuccess?: () => void;
@@ -195,6 +202,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                 return { step_id: 'pin', step_index: 3 } as const;
             case 'transcript':
                 return { step_id: 'transcript', step_index: 3 } as const;
+            case 'keepAccount':
+                return { step_id: 'keepAccount', step_index: 3 } as const;
             case 'celebrate':
                 return { step_id: 'celebrate', step_index: 4 } as const;
         }
@@ -262,6 +271,51 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     }, []);
 
     const [step, setStep] = useState<Step>('age-country');
+    // Order: transcript -> keep your account (the sign-in email) -> PIN -> celebrate. The
+    // email comes first so the PIN's backup is sealed to it (and a placeholder account can
+    // have one at all). The server decides whether to offer the keep-account step; ask
+    // from the profile step on, so the answer is in by the time the transcript is done.
+    const keepAccount = useKeepAccountOffer(
+        step === 'profile' || step === 'transcript' || step === 'keepAccount' || step === 'pin'
+    );
+    const keepAccountRef = useRef(keepAccount);
+    keepAccountRef.current = keepAccount;
+    // Whether the transcript step was shown, and whether the transcript arrived in it.
+    const transcriptOutcomeRef = useRef({ shown: false, arrived: false });
+    // The keep-account step set the sign-in email (celebrate says so).
+    const [keptAccountEmail, setKeptAccountEmail] = useState(false);
+
+    /** The PIN step when escrow allows it (see `decidePinStep`), then celebrate. */
+    const goToPinStep = useCallback(async (): Promise<void> => {
+        setStep((await decidePinStep()) ? 'pin' : 'celebrate');
+    }, [decidePinStep]);
+
+    /**
+     * After the transcript (or the profile): offer to keep the account when the server
+     * asks for the personal email, then the PIN. A student whose transcript did not arrive
+     * here (skipped, or still on its way) is asked later from the dashboard instead. Moves
+     * on to the PIN if the answer is still loading after a short wait.
+     */
+    const goToKeepAccountOrPin = useCallback(async (): Promise<void> => {
+        const transcript = transcriptOutcomeRef.current;
+        if (!transcript.shown || transcript.arrived) {
+            const deadline = Date.now() + KEEP_ACCOUNT_DECISION_WAIT_MS;
+            while (keepAccountRef.current.pending && Date.now() < deadline) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            const { offer, step: keepAccountStep } = keepAccountRef.current;
+            if (offer && keepAccountStep === 'email') {
+                setStep('keepAccount');
+                return;
+            }
+        }
+        await goToPinStep();
+    }, [goToPinStep]);
+
+    // The user was just asked; the dashboard waits for a later session to ask again.
+    useEffect(() => {
+        if (step === 'celebrate') markKeepAccountAskedThisSession();
+    }, [step]);
     const [isPreparingKey, setIsPreparingKey] = useState(false);
     const didPrepareNewKeyRef = useRef(false);
     const prepareNewKeyPromiseRef = useRef<Promise<boolean> | null>(null);
@@ -749,10 +803,10 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                 if (transcriptEligibility.eligible) {
                     setTranscriptStateDisplayName(transcriptEligibility.stateDisplayName);
                     track(AnalyticsEvents.TRANSCRIPT_ONBOARDING_SHOWN, {});
+                    transcriptOutcomeRef.current = { shown: true, arrived: false };
                     setStep('transcript');
                 } else {
-                    const showPinStep = await decidePinStep();
-                    setStep(showPinStep ? 'pin' : 'celebrate');
+                    await goToKeepAccountOrPin();
                 }
             }
         } catch (err: unknown) {
@@ -1457,12 +1511,56 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
             {step === 'transcript' && (
                 <TranscriptOnboardingStep
                     stateDisplayName={transcriptStateDisplayName}
-                    onComplete={async ({ requested }) => {
+                    onComplete={async ({ requested, arrived }) => {
                         setTranscriptRequested(requested);
-                        const showPinStep = await decidePinStep();
-                        setStep(showPinStep ? 'pin' : 'celebrate');
+                        transcriptOutcomeRef.current = { shown: true, arrived };
+                        // Skipped here: the dashboard prompt waits its usual 14 days.
+                        const current = coordinatorStateRef.current;
+                        if (!requested && current.status === 'ready' && current.did) {
+                            markTranscriptPromptOffered(current.did);
+                        }
+                        await goToKeepAccountOrPin();
                     }}
                 />
+            )}
+
+            {step === 'keepAccount' && (
+                <div
+                    className="relative z-10 w-full h-full flex flex-col"
+                    data-testid="onboarding-keep-account-step"
+                >
+                    {/* The step lays out its own card and sticky bottom button. */}
+                    <KeepAccountStep
+                        variant="onboarding"
+                        source={
+                            transcriptOutcomeRef.current.shown
+                                ? 'transcript_onboarding'
+                                : 'onboarding'
+                        }
+                        // The transcript just arrived: say what the email protects.
+                        title={
+                            transcriptOutcomeRef.current.shown
+                                ? m['classlinkKeepAccount.titleTranscript']()
+                                : m['classlinkKeepAccount.titleLogin']()
+                        }
+                        // Only the email is asked here; the step signs this device back in
+                        // with the new sign-in email (and refreshes escrow) before handing
+                        // back, so the PIN that follows is sealed to it. A placeholder
+                        // account gains escrow here and goes straight to Create PIN.
+                        // Anything else the account needs (a passkey or phrase without
+                        // escrow) is asked by the dashboard banner from the next session.
+                        emailOnly
+                        onComplete={() => {
+                            setKeptAccountEmail(true);
+                            void goToPinStep();
+                        }}
+                        // "Not now" (or nothing to show: a failed check, the switch turned
+                        // off): the PIN step decides from the escrow state. A school-email
+                        // account is enrolled and creates its PIN; a placeholder account
+                        // without the email is never enrolled, so it goes to celebrate.
+                        onDismiss={() => void goToPinStep()}
+                    />
+                </div>
             )}
 
             {step === 'celebrate' && (
@@ -1477,9 +1575,11 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                         </h1>
                         {!euParentalConsentRequested ? (
                             <p className="text-base text-grayscale-600">
-                                {transcriptRequested
-                                    ? m['onboarding.transcript.onItsWay']()
-                                    : m['onboarding.v2.ready']({ brand: brandName })}
+                                {keptAccountEmail
+                                    ? m['classlinkKeepAccount.celebrateBody']()
+                                    : transcriptRequested
+                                      ? m['onboarding.transcript.onItsWay']()
+                                      : m['onboarding.v2.ready']({ brand: brandName })}
                             </p>
                         ) : (
                             <p role="status" className="text-base text-grayscale-600">

@@ -30,7 +30,12 @@ vi.mock('../../components/pending-approval-banner/PendingApprovalBanner', () => 
 }));
 
 const buildVm = (
-    overrides: { pendingGuardianApproval?: boolean; recoveryApplicable?: boolean } = {}
+    overrides: {
+        pendingGuardianApproval?: boolean;
+        recoveryApplicable?: boolean;
+        keepAccount?: DashboardViewModel['keepAccount'];
+        keepAccountPending?: boolean;
+    } = {}
 ): DashboardViewModel =>
     ({
         brandName: 'LearnCard',
@@ -51,6 +56,8 @@ const buildVm = (
             onSetup: vi.fn(),
         },
         pendingGuardianApproval: overrides.pendingGuardianApproval,
+        keepAccount: overrides.keepAccount,
+        keepAccountPending: overrides.keepAccountPending,
         dataTrust: {},
         activity: {},
         learningProfile: {},
@@ -97,6 +104,103 @@ describe('DashboardView guardian approval and recovery banner slot', () => {
 
         expect(screen.queryByTestId('pending-guardian-approval-banner')).not.toBeInTheDocument();
         expect(screen.queryByTestId('recovery-banner')).not.toBeInTheDocument();
+    });
+});
+
+describe('DashboardView ClassLink keep-account banner', () => {
+    const keepAccount = (
+        step: 'email' | 'pin' | 'confirmPin' | 'method' = 'email',
+        extra: { pinLocked?: boolean; phrase?: boolean } = {}
+    ) => ({
+        step,
+        ...extra,
+        title: m['classlinkKeepAccount.title'](),
+        onStart: vi.fn(),
+        onSnooze: vi.fn(),
+    });
+
+    it('shows even when the account already has recovery methods', () => {
+        render(<DashboardView vm={buildVm({ keepAccount: keepAccount() })} />);
+
+        expect(screen.getByTestId('dashboard-keep-account-banner')).toBeInTheDocument();
+        expect(screen.getByText(m['classlinkKeepAccount.banner.emailBody']())).toBeInTheDocument();
+    });
+
+    it('replaces the recovery banner while it shows', () => {
+        const { rerender } = render(
+            <DashboardView
+                vm={buildVm({ recoveryApplicable: true, keepAccount: keepAccount('pin') })}
+            />
+        );
+
+        expect(screen.getByTestId('dashboard-keep-account-banner')).toBeInTheDocument();
+        expect(screen.getByText(m['classlinkKeepAccount.banner.pinBody']())).toBeInTheDocument();
+        // The same words as the recovery banner's own PIN ask.
+        expect(screen.getByText(m['recovery.prompt.pinFirst.action']())).toBeInTheDocument();
+        expect(screen.queryByTestId('recovery-banner')).not.toBeInTheDocument();
+
+        rerender(<DashboardView vm={buildVm({ recoveryApplicable: true })} />);
+        expect(screen.queryByTestId('dashboard-keep-account-banner')).not.toBeInTheDocument();
+        expect(screen.getByTestId('recovery-banner')).toBeInTheDocument();
+    });
+
+    it('asks for a new PIN when it is locked, and for a passkey or phrase without escrow', () => {
+        const { rerender } = render(
+            <DashboardView vm={buildVm({ keepAccount: keepAccount('pin', { pinLocked: true }) })} />
+        );
+        expect(
+            screen.getByText(m['classlinkKeepAccount.banner.pinLockedBody']())
+        ).toBeInTheDocument();
+        expect(screen.getByText(m['recovery.pin.pinLocked.action']())).toBeInTheDocument();
+
+        rerender(<DashboardView vm={buildVm({ keepAccount: keepAccount('method') })} />);
+        expect(screen.getByText(m['classlinkKeepAccount.methodBody']())).toBeInTheDocument();
+        expect(screen.getByText(m['classlinkKeepAccount.addPasskey']())).toBeInTheDocument();
+
+        rerender(
+            <DashboardView vm={buildVm({ keepAccount: keepAccount('method', { phrase: true }) })} />
+        );
+        expect(screen.getByText(m['classlinkKeepAccount.addPhrase']())).toBeInTheDocument();
+
+        rerender(<DashboardView vm={buildVm({ keepAccount: keepAccount('confirmPin') })} />);
+        expect(
+            screen.getByText(m['classlinkKeepAccount.banner.confirmPinBody']())
+        ).toBeInTheDocument();
+        expect(
+            screen.getByText(m['classlinkKeepAccount.banner.confirmPinAction']())
+        ).toBeInTheDocument();
+    });
+
+    it('shows neither banner while the keep-account check is pending', () => {
+        render(
+            <DashboardView vm={buildVm({ recoveryApplicable: true, keepAccountPending: true })} />
+        );
+
+        expect(screen.queryByTestId('dashboard-keep-account-banner')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('recovery-banner')).not.toBeInTheDocument();
+    });
+
+    it('stays behind a pending guardian approval', () => {
+        render(
+            <DashboardView
+                vm={buildVm({ pendingGuardianApproval: true, keepAccount: keepAccount() })}
+            />
+        );
+
+        expect(screen.getByTestId('pending-guardian-approval-banner')).toBeInTheDocument();
+        expect(screen.queryByTestId('dashboard-keep-account-banner')).not.toBeInTheDocument();
+    });
+
+    it('starts and snoozes through its own callbacks', () => {
+        const vm = keepAccount();
+        render(<DashboardView vm={buildVm({ keepAccount: vm })} />);
+
+        fireEvent.click(screen.getByText(m['classlinkKeepAccount.banner.action']()));
+        expect(vm.onStart).toHaveBeenCalledTimes(1);
+        fireEvent.click(
+            screen.getByRole('button', { name: m['classlinkKeepAccount.banner.snoozeAria']() })
+        );
+        expect(vm.onSnooze).toHaveBeenCalledTimes(1);
     });
 });
 

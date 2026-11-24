@@ -127,6 +127,34 @@ describe('RecoveryPinStep', () => {
         expect(screen.queryByRole('button', { name: 'Learn more' })).not.toBeInTheDocument();
     });
 
+    it('leaves focus alone on mount unless asked, and reports each step', () => {
+        const onStepChange = vi.fn();
+        const { unmount } = render(
+            <RecoveryPinStep
+                onComplete={mockOnComplete}
+                onSkip={mockOnSkip}
+                setPin={mockSetPin}
+                onStepChange={onStepChange}
+            />
+        );
+        expect(document.activeElement).toBe(document.body);
+        expect(onStepChange).toHaveBeenLastCalledWith('enter');
+        enterPin('147258');
+        expect(onStepChange).toHaveBeenLastCalledWith('confirm');
+        unmount();
+
+        render(
+            <RecoveryPinStep
+                embedded
+                autoFocus
+                onComplete={mockOnComplete}
+                onSkip={mockOnSkip}
+                setPin={mockSetPin}
+            />
+        );
+        expect(document.activeElement).toBe(screen.getByLabelText('PIN digit 1'));
+    });
+
     it('does not offer a skip for typing mistakes', () => {
         renderComponent();
         enterPin('123456');
@@ -160,6 +188,32 @@ describe('RecoveryPinStep', () => {
         fireEvent.click(screen.getByText('Start over'));
         fireEvent.click(screen.getByText('Skip for now'));
         expect(mockOnSkip).toHaveBeenCalledOnce();
+        expect(mockOnComplete).not.toHaveBeenCalled();
+    });
+
+    it('starts over with the host message for an error another PIN fixes, without counting it', async () => {
+        const same = Object.assign(new Error('same'), { name: 'SameEscrowPinError' });
+        mockSetPin.mockRejectedValue(same);
+        render(
+            <RecoveryPinStep
+                onComplete={mockOnComplete}
+                onSkip={mockOnSkip}
+                setPin={mockSetPin}
+                saveErrorMessage={err =>
+                    err instanceof Error && err.name === 'SameEscrowPinError'
+                        ? 'Choose a new PIN to finish.'
+                        : undefined
+                }
+            />
+        );
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+            enterPin('147258');
+            enterPin('147258');
+            expect(await screen.findByText('Choose a new PIN to finish.')).toBeInTheDocument();
+            // Back at the first entry, never offering the skip.
+            expect(screen.queryByText('Confirm your PIN')).not.toBeInTheDocument();
+        }
+        expect(screen.queryByText('Skip for now')).not.toBeInTheDocument();
         expect(mockOnComplete).not.toHaveBeenCalled();
     });
 

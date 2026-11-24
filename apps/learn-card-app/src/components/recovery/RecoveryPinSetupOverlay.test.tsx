@@ -40,6 +40,21 @@ describe('RecoveryPinSetupOverlay', () => {
         expect(screen.queryByText('Set a recovery PIN')).not.toBeInTheDocument();
     });
 
+    it('says a locked PIN is locked, not that the account was recovered', () => {
+        render(
+            <RecoveryPinSetupOverlay
+                setPin={mockSetEscrowPin}
+                onComplete={mockOnComplete}
+                onSkip={mockOnSkip}
+                reason="pin-locked"
+            />
+        );
+
+        expect(screen.getByText('Your PIN is locked')).toBeInTheDocument();
+        expect(screen.getByText(/entered wrong too many times/)).toBeInTheDocument();
+        expect(screen.queryByText(/since your account was recovered/)).not.toBeInTheDocument();
+    });
+
     it('offers to skip the wait next time after a hold recovery', () => {
         render(
             <RecoveryPinSetupOverlay
@@ -127,6 +142,7 @@ describe('RecoveryPinSetupOverlay', () => {
         'after-recovery',
         'after-hold-recovery',
         'pin-reset-required',
+        'pin-locked',
         'new-pin-required',
     ] as const)('explains escrow while setting a PIN (%s)', reason => {
         render(

@@ -28,6 +28,26 @@ export class AuthSessionError extends Error {
     }
 }
 
+/**
+ * LC-2409: only a new PIN can finish this escrow operation (the current PIN cannot be
+ * confirmed any more: lca-api's confirm limits, a locked or stale PIN, a pending
+ * "choose a new PIN", or a PIN that fails today's PIN rules). Offer "choose a new PIN"
+ * (`setEscrowPin`); never retry the confirm.
+ */
+export class PinChangeRequiredError extends Error {
+    constructor() {
+        super('Choose a new PIN to continue.');
+        this.name = 'PinChangeRequiredError';
+    }
+}
+
+/**
+ * True for a PinChangeRequiredError. Checked by name, not `instanceof`, so it also holds
+ * when the error crossed a bundle or package-copy boundary.
+ */
+export const isPinChangeRequiredError = (cause: unknown): cause is PinChangeRequiredError =>
+    cause instanceof Error && cause.name === 'PinChangeRequiredError';
+
 // ---------------------------------------------------------------------------
 // Auth Provider
 // ---------------------------------------------------------------------------
@@ -337,6 +357,12 @@ export const ESCROW_PIN_LOCKED_MESSAGE =
     'Too many incorrect PIN attempts. You can still recover by waiting.';
 export const ESCROW_PIN_UNAVAILABLE_MESSAGE = 'PIN recovery is not available for this account.';
 export const ESCROW_PIN_MISMATCH_PATTERN = /^Incorrect PIN\. (\d+) attempts left\.$/;
+/** LC-2409: lca-api's refusal of a PIN confirm (`reason: 'pin_change_required'`). */
+export const ESCROW_PIN_CHANGE_REQUIRED_MESSAGE = 'Choose a new PIN to continue.';
+/** LC-2409: lca-api's answer to a PIN confirm whose PIN did not match (no count). */
+export const ESCROW_CONFIRM_WRONG_PIN_MESSAGE = 'Incorrect PIN.';
+/** LC-2409: lca-api's hourly limit on PIN confirms (`TOO_MANY_REQUESTS`); try again later. */
+export const ESCROW_CONFIRM_THROTTLED_MESSAGE = 'Please wait before trying again.';
 export const escrowPinMismatchMessage = (attemptsRemaining: number): string =>
     `Incorrect PIN. ${attemptsRemaining} attempts left.`;
 
@@ -648,6 +674,13 @@ export interface KeyDerivationStrategy<
          * was rotated or signed; the caller must ask the user to set a new PIN.
          */
         | { enrolled: false; reason: 'pin-reset-required' }
+        /**
+         * Nitro only: this write must bind the account's recovery contact into the signed
+         * intent, but the account has no contact email (e.g. a ClassLink placeholder
+         * email). The enclave would refuse it, so nothing was rotated or signed. Retrying
+         * cannot help until the account gains a contact email.
+         */
+        | { enrolled: false; reason: 'no-contact' }
         | { enrolled: true; changed: false }
         | {
               enrolled: true;
@@ -683,6 +716,41 @@ export interface KeyDerivationStrategy<
         providerType: AuthProviderType;
         privateKey: string;
         signDidAuthVp: DidAuthVpSigner;
+        options?: EscrowEnrollmentOptions;
+    }): Promise<void>;
+
+    /**
+     * LC-2409: re-seal the escrow backup to the account's current contact by proving the
+     * current PIN (`replace` + `pinAction: 'keep'`; the enclave checks the PIN matches).
+     * The PIN is unchanged and no new salt is sent. Nitro/authority mode only.
+     *
+     * Throws `EscrowPinMismatchError` when the PIN does not match (the attempt budget is
+     * lca-api's, not the enclave's, so its `attemptsRemaining` is 0: not reported), and
+     * `PinChangeRequiredError` when only a new PIN can finish (lca-api's confirm limits,
+     * a locked or stale PIN, or a PIN that fails today's PIN rules).
+     */
+    confirmEscrowPin?(params: {
+        token: string;
+        providerType: AuthProviderType;
+        privateKey: string;
+        signDidAuthVp: DidAuthVpSigner;
+        pin: string;
+        /** `recoveryEmail` is the contact to seal; `options.pin` is ignored. */
+        options?: EscrowEnrollmentOptions;
+    }): Promise<void>;
+
+    /**
+     * LC-2409: re-seal the escrow backup to the account's current contact. With `pin`,
+     * the same as `confirmEscrowPin`. Without it, only for an account with no PIN: the
+     * existing forced rotation (`replace` + `keep`), which refuses (nothing rotated) when
+     * the account has a PIN. Never enrolls an account that is not already enrolled.
+     */
+    resealEscrowContact?(params: {
+        token: string;
+        providerType: AuthProviderType;
+        privateKey: string;
+        signDidAuthVp: DidAuthVpSigner;
+        pin?: string;
         options?: EscrowEnrollmentOptions;
     }): Promise<void>;
 

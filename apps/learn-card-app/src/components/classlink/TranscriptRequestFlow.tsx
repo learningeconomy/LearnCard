@@ -45,8 +45,12 @@ export type TranscriptRequestFlowProps = {
     /** `onboarding` fills the onboarding step; `modal` sits inside a sheet. */
     variant: 'onboarding' | 'modal';
     stateDisplayName: string;
-    /** Called when the student leaves the flow (Not now, Continue). */
-    onDone: (result: { requested: boolean }) => void | Promise<void>;
+    /**
+     * Called when the student leaves the flow (Not now, Continue). `arrived` is the server's
+     * word (`latest.receivedAt`) that this request's transcript has arrived, so hosts can
+     * chain the next step (keep your account) from server state rather than an event.
+     */
+    onDone: (result: { requested: boolean; arrived: boolean }) => void | Promise<void>;
 };
 
 const primaryButton =
@@ -224,7 +228,7 @@ export const TranscriptRequestFlow: React.FC<TranscriptRequestFlowProps> = ({
     const finish = async (requested: boolean): Promise<void> => {
         setIsFinishing(true);
         try {
-            await onDone({ requested });
+            await onDone({ requested, arrived: Boolean(receivedAt) });
         } finally {
             setIsFinishing(false);
         }

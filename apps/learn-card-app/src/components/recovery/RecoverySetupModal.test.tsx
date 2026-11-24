@@ -424,6 +424,26 @@ describe('RecoverySetupModal prompt integration', () => {
         expect(onCompleted).toHaveBeenCalledWith('passkey');
     });
 
+    it('starts the passkey prompt on open when the caller already asked for it', async () => {
+        const { onCompleted, props } = renderModal('passkey', vi.fn(), { autoStart: true });
+
+        await waitFor(() => expect(props.onSetupPasskey).toHaveBeenCalledOnce());
+        expect(onCompleted).toHaveBeenCalledWith('passkey');
+    });
+
+    it('generates the phrase on open when the caller already asked for it, once', async () => {
+        const { onCompleted, props } = renderModal('phrase', vi.fn(), { autoStart: true });
+
+        await waitFor(() => expect(props.onGeneratePhrase).toHaveBeenCalledOnce());
+        expect(await screen.findByRole('button', { name: 'Next: check it' })).toBeInTheDocument();
+        expect(onCompleted).not.toHaveBeenCalled();
+    });
+
+    it('waits for the user without autoStart', () => {
+        const { props } = renderModal('passkey');
+        expect(props.onSetupPasskey).not.toHaveBeenCalled();
+    });
+
     it('waits for phrase confirmation before reporting completion', async () => {
         const { onCompleted, props } = renderModal('phrase');
 

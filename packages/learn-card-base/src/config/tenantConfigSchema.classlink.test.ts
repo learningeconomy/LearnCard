@@ -11,7 +11,9 @@ describe('ClassLink tenant feature flags', () => {
         expect(features.classlinkTranscriptOptIn).toBe(false);
         expect(features.classlinkPersonalEmail).toBe(false);
         expect(features.schoolConnect).toBe(false);
+        expect(features.classlinkKeepAccount).toBe(false);
         expect(DEFAULT_LEARNCARD_TENANT_CONFIG.features.classlinkPersonalEmail).toBe(false);
+        expect(DEFAULT_LEARNCARD_TENANT_CONFIG.features.classlinkKeepAccount).toBe(false);
     });
 
     it('rejects non-boolean values', () => {
