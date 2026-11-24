@@ -1,12 +1,15 @@
 // @vitest-environment jsdom
 
 import React from 'react';
+import moment from 'moment';
+import 'moment/dist/locale/fr';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { VC } from '@learncard/types';
 
 const mocks = vi.hoisted(() => ({
+    locale: 'en',
     registry: undefined as unknown,
     issuerName: undefined as string | undefined,
 }));
@@ -72,7 +75,6 @@ vi.mock('learn-card-base/helpers/credentialHelpers', async importOriginal => ({
 }));
 vi.mock('../CredentialBadge/CredentialVerificationDisplay', () => ({
     default: () => null,
-    getInfoFromCredential: () => ({ createdAt: 'August 06 2026' }),
 }));
 vi.mock('../CredentialBadge/BadgeThumbnailImg', () => ({ default: () => null }));
 vi.mock('../CredentialBadge/CredentialMediaBadge', () => ({ default: () => null }));
@@ -87,7 +89,7 @@ vi.mock('learn-card-base/stores/newCredsStore', () => ({
 }));
 vi.mock('../../svgs/DotIcon', () => ({ default: () => null }));
 vi.mock('learn-card-base/i18n', () => ({
-    useI18nLocale: () => 'en',
+    useI18nLocale: () => mocks.locale,
     useT: () => (key: string) => key,
 }));
 
@@ -204,6 +206,7 @@ const registry = (source: string, name?: string) => ({
 });
 
 beforeEach(() => {
+    mocks.locale = 'en';
     mocks.registry = undefined;
     mocks.issuerName = 'Example University';
 });
@@ -379,5 +382,75 @@ describe('list display names across categories', () => {
         expect(screen.getByRole('heading').textContent).toBe('Animated Short');
         expect(screen.queryByText('Trusted University')).toBeNull();
         expect(screen.queryByText('Resolved School')).toBeNull();
+    });
+});
+
+describe('absolute issuance-date localization', () => {
+    let previousLocale: string;
+    const datedCredential = { ...credential, issuanceDate: '2025-07-18T12:00:00Z' };
+
+    beforeEach(() => {
+        previousLocale = moment.locale();
+        moment.locale('fr');
+    });
+
+    afterEach(() => {
+        moment.locale(previousLocale);
+        vi.restoreAllMocks();
+    });
+
+    it('uses English when the global Moment locale is French without changing it', () => {
+        render(<BoostListItem credential={datedCredential} title="Animated Short" />);
+        expect(screen.getByText('July 18 2025')).toBeTruthy();
+        expect(moment.locale()).toBe('fr');
+    });
+
+    it('uses French when selected even if the global Moment locale is English', () => {
+        moment.locale('en');
+        mocks.locale = 'fr';
+        render(<BoostListItem credential={datedCredential} title="Animated Short" />);
+        expect(screen.getByText('juillet 18 2025')).toBeTruthy();
+        expect(moment.locale()).toBe('en');
+    });
+
+    it('updates the absolute date when the active locale changes', () => {
+        const { rerender } = render(<BoostListItem credential={datedCredential} />);
+        expect(screen.getByText('July 18 2025')).toBeTruthy();
+        mocks.locale = 'fr';
+        rerender(<BoostListItem credential={datedCredential} />);
+        expect(screen.getByText('juillet 18 2025')).toBeTruthy();
+        expect(moment.locale()).toBe('fr');
+    });
+
+    it.each([undefined, ''])('falls back to validFrom when issuanceDate is %s', issuanceDate => {
+        render(
+            <BoostListItem
+                credential={{ ...datedCredential, issuanceDate, validFrom: '2025-07-19T12:00:00Z' }}
+            />
+        );
+        expect(screen.getByText('July 19 2025')).toBeTruthy();
+    });
+
+    it('continues preferring issuanceDate over validFrom', () => {
+        render(
+            <BoostListItem credential={{ ...datedCredential, validFrom: '2025-07-19T12:00:00Z' }} />
+        );
+        expect(screen.getByText('July 18 2025')).toBeTruthy();
+    });
+
+    it('preserves Moment local-time interpretation of offset timestamps', () => {
+        const dateValue = '2025-07-18T02:30:00+02:00';
+        render(<BoostListItem credential={{ ...datedCredential, issuanceDate: dateValue }} />);
+        const localDay = String(new Date(dateValue).getDate()).padStart(2, '0');
+        const expected = `July ${localDay} 2025`;
+        expect(screen.getByText(expected)).toBeTruthy();
+        expect(moment.locale()).toBe('fr');
+    });
+
+    it('leaves relative-date formatting independent of the global Moment locale', () => {
+        vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-08-07T00:00:00Z'));
+        render(<BoostListItem credential={datedCredential} relativeDate />);
+        expect(screen.getByText('yesterday')).toBeTruthy();
+        expect(moment.locale()).toBe('fr');
     });
 });

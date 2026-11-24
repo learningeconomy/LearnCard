@@ -1,11 +1,10 @@
 import React, { useMemo } from 'react';
+import moment from 'moment';
 import { IonRow } from '@ionic/react';
 import useGetIssuerName from 'learn-card-base/hooks/useGetIssuerName';
 import { useKnownDIDRegistry } from 'learn-card-base/hooks/useRegistry';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
-import CredentialVerificationDisplay, {
-    getInfoFromCredential,
-} from '../CredentialBadge/CredentialVerificationDisplay';
+import CredentialVerificationDisplay from '../CredentialBadge/CredentialVerificationDisplay';
 import BadgeThumbnailImg from '../CredentialBadge/BadgeThumbnailImg';
 import { isDid, formatDidDisplayName, getLifecycleTreatment } from '@learncard/react';
 import {
@@ -153,10 +152,8 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
             return formatRelativeDate(getIssuanceDate(credential), activeLocale);
         }
 
-        const { createdAt } = getInfoFromCredential(credential, 'MMMM DD YYYY', {
-            uppercaseDate: false,
-        });
-        return createdAt;
+        const dateValue = credential?.issuanceDate || credential?.validFrom;
+        return moment(dateValue).locale(activeLocale).format('MMMM DD YYYY');
     }, [activeLocale, credential, relativeDate]);
     const expirationDate = getCredentialExpirationDate(credential);
     const isExpired = hasCredentialExpired(credential);
