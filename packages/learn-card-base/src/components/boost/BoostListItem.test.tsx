@@ -292,20 +292,73 @@ describe('list display names across categories', () => {
         expect(screen.getByRole('link').getAttribute('href')).toBe('https://example.com/short');
     });
 
-    it.each(categories)('keeps trusted metadata separate from the title in %s', category => {
+    it.each(categories)(
+        'preserves the resolved issuer name over conflicting trusted metadata in %s',
+        category => {
+            mocks.registry = registry('trusted', 'Trusted University');
+            render(
+                <BoostListItem
+                    credential={credential}
+                    categoryType={category}
+                    title="Animated Short"
+                    issuerName="Resolved School"
+                />
+            );
+            expect(screen.getByRole('heading').textContent).toBe('Animated Short');
+            expect(screen.getByText('Resolved School')).toBeTruthy();
+            expect(screen.queryByText('Trusted University')).toBeNull();
+        }
+    );
+
+    it.each([
+        'did:example:issuer',
+        'did:web:other.example',
+        'https://issuer.example/profile',
+        'urn:uuid:issuer-id',
+        'opaque-issuer-id',
+    ])('prefers a trusted registry name over identifier-only resolution: %s', identifier => {
         mocks.registry = registry('trusted', 'Trusted University');
         render(
             <BoostListItem
-                credential={credential}
-                categoryType={category}
+                credential={{ ...credential, issuer: identifier }}
                 title="Animated Short"
-                issuerName="Claimed School"
+                issuerName={identifier}
             />
         );
-        expect(screen.getByRole('heading').textContent).toBe('Animated Short');
         expect(screen.getByText('Trusted University')).toBeTruthy();
-        expect(screen.queryByText('Claimed School')).toBeNull();
+        expect(screen.queryByText(identifier)).toBeNull();
     });
+
+    it.each([
+        'did:web:other.example',
+        'https://issuer.example/profile',
+        'urn:uuid:other-issuer-id',
+    ])(
+        'recognizes a resolved identifier that differs from the credential issuer: %s',
+        identifier => {
+            mocks.registry = registry('trusted', 'Trusted University');
+            render(<BoostListItem credential={credential} issuerName={identifier} />);
+            expect(screen.getByText('Trusted University')).toBeTruthy();
+            expect(screen.queryByText(identifier)).toBeNull();
+        }
+    );
+
+    it('uses the trusted registry name when no resolved name is supplied', () => {
+        mocks.registry = registry('trusted', 'Trusted University');
+        render(<BoostListItem credential={credential} />);
+        expect(screen.getByText('Trusted University')).toBeTruthy();
+    });
+
+    it.each(['trusted', 'unknown', 'untrusted'])(
+        'preserves identifier fallback when no usable trusted name exists (%s)',
+        source => {
+            mocks.registry = registry(source, source === 'trusted' ? undefined : 'Registry Name');
+            render(<BoostListItem credential={credential} issuerName="did:example:issuer" />);
+            expect(screen.getByText('Digital ID:')).toBeTruthy();
+            expect(screen.getByText('did:example:issuer')).toBeTruthy();
+            expect(screen.queryByText('Registry Name')).toBeNull();
+        }
+    );
 
     it.each([
         ['trusted', undefined],

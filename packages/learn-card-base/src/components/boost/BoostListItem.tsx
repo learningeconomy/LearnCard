@@ -197,7 +197,17 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
             ? issuerRegistry.results.matchingIssuers?.[0]?.issuer?.federation_entity
                   ?.organization_name
             : undefined;
-    const issuerName = trustedIssuerName || resolvedIssuerName || fallbackIssuerName;
+    const resolvedName = resolvedIssuerName?.trim();
+    const hasResolvedDisplayName =
+        resolvedName &&
+        resolvedName !== issuerId &&
+        !isDid(resolvedName) &&
+        !/^(?:https?:\/\/|urn:)/i.test(resolvedName);
+    const issuerName =
+        (hasResolvedDisplayName ? resolvedIssuerName : undefined) ||
+        trustedIssuerName ||
+        resolvedIssuerName ||
+        fallbackIssuerName;
     const issuerNode: React.ReactNode =
         issuerName && !isDid(issuerName) ? (
             issuerName
