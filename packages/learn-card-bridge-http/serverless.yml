@@ -64,4 +64,4 @@ functions:
             default:
                 enabled:
                     - dev
-                    - prod
+                    - production
