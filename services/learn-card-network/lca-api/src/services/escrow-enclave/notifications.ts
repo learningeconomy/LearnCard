@@ -38,6 +38,11 @@ export interface EscrowHoldEvent {
      * "still available".
      */
     activeHold?: EscrowHold;
+    /**
+     * LC-2409: extra addresses for this notice (the ClassLink school address while its alias is
+     * live; see `getSchoolNoticeRecipients`). Deduped with the account's own recipients.
+     */
+    extraRecipients?: string[];
 }
 
 // Referenced only as a type (`typeof import(...)`) so this module never
@@ -313,7 +318,11 @@ const deliverEscrowHoldEvent = async (
     let delivered = false;
     let emailDelivered = false;
 
-    const recipients = getRecipientEmails(userKey);
+    const recipients = [...getRecipientEmails(userKey)];
+    for (const extra of event.extraRecipients ?? []) {
+        const normalized = extra.trim().toLowerCase();
+        if (normalized && !recipients.includes(normalized)) recipients.push(normalized);
+    }
     if (recipients.length > 0) {
         const templateModel = await buildEmailTemplateModel(event, deps);
         if (templateModel) {

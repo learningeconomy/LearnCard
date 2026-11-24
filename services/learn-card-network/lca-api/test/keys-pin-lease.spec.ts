@@ -22,6 +22,8 @@ import {
     getEscrowHoldsCollection,
     claimEscrowEnrollmentLease,
     addRecoveryMethodToUserKeyByAuthProvider,
+    removeRecoveryMethodFromUserKeyByAuthProvider,
+    clearEscrowByAuthProvider,
     ESCROW_ENROLLMENT_LEASE_TTL_MS,
     ESCROW_PIN_COMPARE_TTL_MS,
     type AuthProviderMapping,
@@ -43,6 +45,14 @@ import type {
 } from '../src/services/escrow-enclave/authorityContract';
 import type { ApplyEnrollmentInput } from '../src/services/escrow-enclave/types';
 import { runEscrowBlobRewrap } from '../src/jobs/escrowBlobRewrap';
+import { contactDigest } from '../src/helpers/escrowContactDigest';
+import { isEscrowConfirmBlocked } from '../src/helpers/escrowConfirmLimits';
+import {
+    ESCROW_CONFIRM_HOURLY_LIMIT,
+    ESCROW_CONFIRM_LIFETIME_LIMIT,
+    ESCROW_CONFIRM_WRONG_PIN_MESSAGE,
+    ESCROW_PIN_CHANGE_REQUIRED_MESSAGE,
+} from '../src/routes/escrow';
 import { getClient, getUser } from './helpers/getClient';
 
 /**
@@ -176,6 +186,11 @@ const installAuthority = async (): Promise<void> => {
             };
         }
         const plaintext = await decryptEscrowBlob(input.targetEnvelope!, enclaveKeys.privateKey);
+        // Rust `same_pin` (authority.rs): Replace + Keep must carry the current PIN verifier.
+        if (intent.action === 'replace' && intent.pinAction === 'keep' && authority.hasPin) {
+            const source = await decryptEscrowBlob(authority.envelope!, enclaveKeys.privateKey);
+            if (source.pinVerifier !== plaintext.pinVerifier) throw new EscrowPolicyError();
+        }
         // The authority re-seals: the committed identity is never the submitted target's.
         const envelope = await encryptEscrowBlob(plaintext, enclaveKeys.publicKey, keyId);
         if (intent.pinAction !== 'keep') {
@@ -246,7 +261,12 @@ const sealPin = (shareVersion = 1): Promise<EscrowEnvelope> =>
 
 const signedIntent = async (
     target: EscrowEnvelope,
-    options: { action: 'enroll' | 'replace'; pinAction: 'set' | 'change'; shareVersion?: number }
+    options: {
+        action: 'enroll' | 'replace' | 'carry';
+        pinAction: 'set' | 'change' | 'keep';
+        shareVersion?: number;
+        recoveryEmail?: string | null;
+    }
 ) =>
     signEscrowEnrollmentIntent(
         {
@@ -263,8 +283,9 @@ const signedIntent = async (
             enrollmentEpoch: authority.enrollmentEpoch + 1,
             requestId: randomUUID(),
             allowRewrap: true,
-            recoveryEmail: 'owner@example.com',
-            recoveryLanguage: 'en',
+            recoveryEmail:
+                options.recoveryEmail === undefined ? 'owner@example.com' : options.recoveryEmail,
+            recoveryLanguage: options.recoveryEmail === null ? null : 'en',
         },
         pk
     );
@@ -413,6 +434,8 @@ beforeEach(async () => {
     const redis = cache.redis ?? cache.node;
     await redis.del('escrow:pin-complete:unknown');
     await redis.del('escrow:pin-start:unknown');
+    const confirmKeys = await redis.keys('escrow-confirm*');
+    if (confirmKeys.length) await redis.del(...confirmKeys);
     authority = {
         enrollmentVersion: 0,
         operationRevision: 0,
@@ -1128,5 +1151,411 @@ describe('"Secure my account" while a PIN-operation lease is held', () => {
         expect(stored?.escrowPin).toBeUndefined();
         await expect(reEnrollAfterRevoke()).resolves.toMatchObject({ success: true });
         await expectConsistent();
+    });
+});
+
+describe('LC-2409: sealed-contact digest', () => {
+    const personal = 'Personal@Example.com';
+
+    /** Re-seal the current PIN to `email` (`replace` + `keep`, no `pinSalt`). */
+    const confirmTo = async (email: string, proof = pinProof, shareVersion = 1) => {
+        const envelope = await encryptEscrowBlob(
+            {
+                recoveryShare: shares.recoveryShare,
+                did,
+                shareVersion,
+                pinVerifier: proof,
+                recoveryEmail: email.toLowerCase(),
+                recoveryLanguage: 'en',
+            },
+            enclaveKeys.publicKey,
+            keyId
+        );
+        return owner().escrow.enroll({
+            ...auth,
+            envelope,
+            shareVersion,
+            enclaveKeyId: keyId,
+            signedIntent: await signedIntent(envelope, {
+                action: 'replace',
+                pinAction: 'keep',
+                shareVersion,
+                recoveryEmail: email.toLowerCase(),
+            }),
+            sourceEnvelope: authority.envelope,
+        });
+    };
+
+    it('enroll and replace store the digest of the sealed contact', async () => {
+        await enrollPin();
+        expect((await record())?.escrowContactDigest).toBe(contactDigest('owner@example.com'));
+
+        await confirmTo(personal);
+        expect((await record())?.escrowContactDigest).toBe(contactDigest(personal));
+        await expectConsistent();
+    });
+
+    it('a carry keeps the digest', async () => {
+        await enrollPin();
+        await getUserKeysCollection().updateOne({ primaryDid: did }, { $set: { shareVersion: 2 } });
+        const envelope = await sealPin(2);
+        await owner().escrow.enroll({
+            ...auth,
+            envelope,
+            shareVersion: 2,
+            enclaveKeyId: keyId,
+            signedIntent: await signedIntent(envelope, {
+                action: 'carry',
+                pinAction: 'keep',
+                shareVersion: 2,
+                recoveryEmail: null,
+            }),
+            sourceEnvelope: authority.envelope,
+        });
+        const stored = await record();
+        expect(stored?.escrowBlob?.shareVersion).toBe(2);
+        expect(stored?.escrowContactDigest).toBe(contactDigest('owner@example.com'));
+    });
+
+    it('a background rewrap keeps the digest', async () => {
+        await enrollPin();
+        const nextKeys = await generateEscrowKeyPair();
+        const enclave = getEscrowEnclave();
+        const base = await enclave.getAttestation();
+        Object.assign(enclave, {
+            getAttestation: async (): Promise<EnclaveAttestation> => ({
+                ...base,
+                keyId: 'digest-next',
+                previousKeyIds: [keyId],
+            }),
+            rewrapEscrowBlob: async (input: Parameters<EscrowEnclave['rewrapEscrowBlob']>[0]) => {
+                const plaintext = await decryptEscrowBlob(input.envelope, enclaveKeys.privateKey);
+                const envelope = await encryptEscrowBlob(
+                    plaintext,
+                    nextKeys.publicKey,
+                    'digest-next'
+                );
+                authority.enrollmentVersion += 1;
+                authority.envelope = envelope;
+                return {
+                    envelope,
+                    authority: {
+                        envelope,
+                        receipt,
+                        authorityGeneration: 'g1',
+                        enrollmentVersion: authority.enrollmentVersion,
+                        enrollmentEpoch: authority.enrollmentEpoch,
+                    },
+                };
+            },
+        });
+        __resetEscrowAttestationCacheForTests();
+
+        await runEscrowBlobRewrap();
+
+        const stored = await record();
+        expect(stored?.escrowBlob?.enclaveKeyId).toBe('digest-next');
+        expect(stored?.escrowContactDigest).toBe(contactDigest('owner@example.com'));
+    });
+
+    it('a disable removes the digest with the copy', async () => {
+        await enrollPin();
+        await disableEscrow(false);
+        const stored = await record();
+        expect(stored?.escrowBlob).toBeUndefined();
+        expect(stored?.escrowContactDigest).toBeUndefined();
+    });
+
+    it('a revoke removes the digest with the copy', async () => {
+        await signedInWithPin();
+        await revoke();
+        const stored = await record();
+        expect(stored?.escrowBlob).toBeUndefined();
+        expect(stored?.escrowContactDigest).toBeUndefined();
+    });
+
+    it('removing the escrow method or clearing escrow removes the digest', async () => {
+        await enrollPin();
+        await removeRecoveryMethodFromUserKeyByAuthProvider(authProvider, 'escrow');
+        expect((await record())?.escrowContactDigest).toBeUndefined();
+
+        await getUserKeysCollection().updateOne(
+            { primaryDid: did },
+            { $set: { escrowContactDigest: 'stale' } }
+        );
+        await clearEscrowByAuthProvider(authProvider, { optOut: false });
+        expect((await record())?.escrowContactDigest).toBeUndefined();
+    });
+});
+
+describe('LC-2409: confirm-current-PIN limits', () => {
+    const redis = () => cache.redis ?? cache.node;
+
+    const confirm = async (proof: string, shareVersion = 1) => {
+        const envelope = await encryptEscrowBlob(
+            {
+                recoveryShare: shares.recoveryShare,
+                did,
+                shareVersion,
+                pinVerifier: proof,
+                recoveryEmail: 'personal@example.com',
+                recoveryLanguage: 'en',
+            },
+            enclaveKeys.publicKey,
+            keyId
+        );
+        return owner().escrow.enroll({
+            ...auth,
+            envelope,
+            shareVersion,
+            enclaveKeyId: keyId,
+            signedIntent: await signedIntent(envelope, {
+                action: 'replace',
+                pinAction: 'keep',
+                shareVersion,
+                recoveryEmail: 'personal@example.com',
+            }),
+            sourceEnvelope: authority.envelope,
+        });
+    };
+
+    /** A fresh client session burns a share version before it confirms. */
+    const bumpShareVersion = (shareVersion: number) =>
+        getUserKeysCollection().updateOne({ primaryDid: did }, { $set: { shareVersion } });
+
+    it('a wrong PIN is refused as "Incorrect PIN." and nothing changes', async () => {
+        await enrollPin();
+        const before = await record();
+
+        await expect(confirm(wrongProof)).rejects.toMatchObject({
+            code: 'FORBIDDEN',
+            message: ESCROW_CONFIRM_WRONG_PIN_MESSAGE,
+        });
+
+        const after = await record();
+        expect(after?.escrowBlob?.blobHash).toBe(before?.escrowBlob?.blobHash);
+        expect(after?.escrowContactDigest).toBe(contactDigest('owner@example.com'));
+        expect(after?.escrowEnrollmentLease).toBeUndefined();
+    });
+
+    it('the version and generation checks still run before the PIN mapping', async () => {
+        await enrollPin();
+        const envelope = await sealPin();
+        const stale = await signedIntent(envelope, {
+            action: 'replace',
+            pinAction: 'keep',
+            recoveryEmail: 'personal@example.com',
+        });
+        authority.enrollmentVersion += 1;
+        await expect(
+            owner().escrow.enroll({
+                ...auth,
+                envelope,
+                shareVersion: 1,
+                enclaveKeyId: keyId,
+                signedIntent: stale,
+                sourceEnvelope: authority.envelope,
+            })
+        ).rejects.toMatchObject({ code: 'CONFLICT' });
+    });
+
+    it('allows 5 confirms per hour', async () => {
+        await enrollPin();
+        for (let i = 0; i < ESCROW_CONFIRM_HOURLY_LIMIT; i += 1)
+            await expect(confirm(wrongProof)).rejects.toMatchObject({ code: 'FORBIDDEN' });
+        applyCalls = 0;
+
+        await expect(confirm(pinProof)).rejects.toMatchObject({ code: 'TOO_MANY_REQUESTS' });
+        expect(applyCalls).toBe(0);
+    });
+
+    it('after 10 failed confirms on one PIN, requires a new PIN', async () => {
+        await enrollPin();
+        for (let i = 0; i < ESCROW_CONFIRM_LIFETIME_LIMIT; i += 1) {
+            if (i % ESCROW_CONFIRM_HOURLY_LIMIT === 0) await redis().del(`escrow-confirm:${did}`);
+            await expect(confirm(wrongProof)).rejects.toMatchObject({ code: 'FORBIDDEN' });
+        }
+        await redis().del(`escrow-confirm:${did}`);
+        applyCalls = 0;
+
+        await expect(confirm(pinProof)).rejects.toMatchObject({
+            code: 'PRECONDITION_FAILED',
+            message: ESCROW_PIN_CHANGE_REQUIRED_MESSAGE,
+        });
+        expect(applyCalls).toBe(0);
+
+        // A new PIN starts a new generation: confirms work again.
+        const envelope = await sealPin();
+        await owner().escrow.enroll({
+            ...auth,
+            envelope,
+            shareVersion: 1,
+            enclaveKeyId: keyId,
+            pinSalt: refreshSalt,
+            signedIntent: await signedIntent(envelope, { action: 'replace', pinAction: 'change' }),
+            sourceEnvelope: authority.envelope,
+        });
+        await expect(confirm(wrongProof)).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    });
+
+    it('refuses a third share version spent on uncommitted confirms', async () => {
+        await enrollPin();
+        await expect(confirm(wrongProof, 1)).rejects.toMatchObject({ code: 'FORBIDDEN' });
+        await bumpShareVersion(2);
+        await expect(confirm(wrongProof, 2)).rejects.toMatchObject({ code: 'FORBIDDEN' });
+        // Retries at an already-spent version are fine.
+        await expect(confirm(wrongProof, 2)).rejects.toMatchObject({ code: 'FORBIDDEN' });
+        await bumpShareVersion(3);
+        applyCalls = 0;
+
+        await expect(confirm(pinProof, 3)).rejects.toMatchObject({
+            code: 'PRECONDITION_FAILED',
+            message: ESCROW_PIN_CHANGE_REQUIRED_MESSAGE,
+            cause: { reason: 'pin_change_required' },
+        });
+        expect(applyCalls).toBe(0);
+        // Reported ahead of the next rotation, until a new PIN generation clears it.
+        expect(await isEscrowConfirmBlocked(did)).toBe(true);
+        const envelope = await sealPin(3);
+        await owner().escrow.enroll({
+            ...auth,
+            envelope,
+            shareVersion: 3,
+            enclaveKeyId: keyId,
+            pinSalt: refreshSalt,
+            signedIntent: await signedIntent(envelope, {
+                action: 'replace',
+                pinAction: 'change',
+                shareVersion: 3,
+            }),
+            sourceEnvelope: authority.envelope,
+        });
+        expect(await isEscrowConfirmBlocked(did)).toBe(false);
+    });
+
+    it('an automatic carry rotation does not reset the hourly or per-version counters', async () => {
+        await enrollPin();
+        for (let i = 0; i < ESCROW_CONFIRM_HOURLY_LIMIT; i += 1)
+            await expect(confirm(wrongProof)).rejects.toMatchObject({ code: 'FORBIDDEN' });
+        await bumpShareVersion(2);
+        const envelope = await sealPin(2);
+        await owner().escrow.enroll({
+            ...auth,
+            envelope,
+            shareVersion: 2,
+            enclaveKeyId: keyId,
+            signedIntent: await signedIntent(envelope, {
+                action: 'carry',
+                pinAction: 'keep',
+                shareVersion: 2,
+                recoveryEmail: null,
+            }),
+            sourceEnvelope: authority.envelope,
+        });
+        expect(Number(await redis().get(`escrow-confirm:${did}`))).toBe(
+            ESCROW_CONFIRM_HOURLY_LIMIT
+        );
+        expect(await redis().scard(`escrow-confirm-versions:${did}`)).toBe(1);
+        applyCalls = 0;
+        await expect(confirm(pinProof, 2)).rejects.toMatchObject({ code: 'TOO_MANY_REQUESTS' });
+        expect(applyCalls).toBe(0);
+    });
+
+    /** A confirm the authority would refuse for a reason other than the PIN. */
+    const mismatchedConfirm = async (
+        mismatch: 'staleSource' | 'target' | 'epoch',
+        proof = pinProof
+    ) => {
+        const envelope = await encryptEscrowBlob(
+            {
+                recoveryShare: shares.recoveryShare,
+                did,
+                shareVersion: 1,
+                pinVerifier: proof,
+                recoveryEmail: 'personal@example.com',
+                recoveryLanguage: 'en',
+            },
+            enclaveKeys.publicKey,
+            keyId
+        );
+        const signed = await signedIntent(mismatch === 'target' ? await sealPin() : envelope, {
+            action: 'replace',
+            pinAction: 'keep',
+            recoveryEmail: 'personal@example.com',
+        });
+        if (mismatch === 'epoch') signed.intent.enrollmentEpoch += 1;
+        return owner().escrow.enroll({
+            ...auth,
+            envelope,
+            shareVersion: 1,
+            enclaveKeyId: keyId,
+            signedIntent: signed,
+            sourceEnvelope: mismatch === 'staleSource' ? await sealPin() : authority.envelope,
+        });
+    };
+
+    const expectUncharged = async () => {
+        expect(applyCalls).toBe(0);
+        expect(await redis().get(`escrow-confirm:${did}`)).toBeNull();
+        expect(
+            await redis().get(`escrow-confirm-fail:${did}:${authority.pinGeneration}`)
+        ).toBeNull();
+        expect(await redis().scard(`escrow-confirm-versions:${did}`)).toBe(0);
+        expect(await isEscrowConfirmBlocked(did)).toBe(false);
+    };
+
+    it('a stale source copy is a CONFLICT, never charged as a wrong PIN', async () => {
+        await enrollPin();
+        applyCalls = 0;
+        await expect(mismatchedConfirm('staleSource')).rejects.toMatchObject({
+            code: 'CONFLICT',
+        });
+        await expectUncharged();
+    });
+
+    it('a target that does not match its intent is refused uncharged', async () => {
+        await enrollPin();
+        applyCalls = 0;
+        await expect(mismatchedConfirm('target')).rejects.toMatchObject({
+            code: 'BAD_REQUEST',
+        });
+        await expectUncharged();
+    });
+
+    it('a wrong enrollment epoch is a CONFLICT, never charged as a wrong PIN', async () => {
+        await enrollPin();
+        applyCalls = 0;
+        await expect(mismatchedConfirm('epoch')).rejects.toMatchObject({ code: 'CONFLICT' });
+        await expectUncharged();
+    });
+
+    it('more non-PIN refusals than the PIN budget still leave the right PIN usable', async () => {
+        await enrollPin();
+        applyCalls = 0;
+        for (let i = 0; i < ESCROW_CONFIRM_LIFETIME_LIMIT + 2; i += 1)
+            await expect(mismatchedConfirm('staleSource', wrongProof)).rejects.toMatchObject({
+                code: 'CONFLICT',
+            });
+        await expectUncharged();
+        await expect(confirm(pinProof)).resolves.toMatchObject({ success: true });
+    });
+
+    it('a successful confirm resets the hourly and per-version counters', async () => {
+        await enrollPin();
+        await expect(confirm(wrongProof, 1)).rejects.toMatchObject({ code: 'FORBIDDEN' });
+        await bumpShareVersion(2);
+        await expect(confirm(wrongProof, 2)).rejects.toMatchObject({ code: 'FORBIDDEN' });
+
+        await expect(confirm(pinProof, 2)).resolves.toMatchObject({ success: true });
+        expect((await record())?.escrowContactDigest).toBe(contactDigest('personal@example.com'));
+        expect(await redis().get(`escrow-confirm:${did}`)).toBeNull();
+        expect(await redis().scard(`escrow-confirm-versions:${did}`)).toBe(0);
+        // The two wrong entries stay on the PIN generation's lifetime count.
+        expect(
+            Number(await redis().get(`escrow-confirm-fail:${did}:${authority.pinGeneration}`))
+        ).toBe(2);
+
+        await bumpShareVersion(3);
+        await expect(confirm(wrongProof, 3)).rejects.toMatchObject({ code: 'FORBIDDEN' });
     });
 });

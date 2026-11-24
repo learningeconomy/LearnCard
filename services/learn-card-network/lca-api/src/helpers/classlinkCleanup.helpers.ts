@@ -7,6 +7,9 @@ import {
 import { getAuthSubjectsCollection } from '../models/AuthSubject';
 import { getTranscriptRequestsCollection } from '../models/TranscriptRequest';
 import { findUserKeyByAuthProvider, findUserKeyByDid } from '../models/UserKey';
+import { canDeletePersonalEmailSubject } from './classlinkDeletion.helpers';
+import { demoteOrphanedPrimaryEmail } from './classlinkPrimaryEmail.helpers';
+import { getAdminAuth } from './firebaseAdminAuth.helpers';
 
 /** Minimum time between automatic expired-state-ID sweeps, per deployment. */
 export const STATE_ID_SWEEP_INTERVAL_SECONDS = 15 * 60;
@@ -88,6 +91,10 @@ const hasOwner = async ({
  * Remove ClassLink identities (and their `classlink:` AuthSubject) and transcript requests
  * that no account owns any more and that have had no activity for `minAgeDays`. Dry run unless
  * `apply`. Logs only counts and opaque identity keys, never emails or state IDs.
+ *
+ * LC-2409: a promoted personal email is demoted first (T gets its previous email back); an
+ * identity whose demote fails is kept for the next run. The personal `email:` subject is
+ * removed too unless another account uses the address.
  */
 export const cleanupOrphanClassLinkData = async (
     options: OrphanCleanupOptions | boolean
@@ -102,7 +109,17 @@ export const cleanupOrphanClassLinkData = async (
 
     const identities = getClassLinkIdentitiesCollection().find(
         { createdAt: { $lt: cutoff }, updatedAt: { $lt: cutoff } },
-        { projection: { identityKey: 1, firebaseUid: 1, primaryDid: 1, subject: 1 } }
+        {
+            projection: {
+                identityKey: 1,
+                firebaseUid: 1,
+                primaryDid: 1,
+                subject: 1,
+                personalEmail: 1,
+                primaryEmail: 1,
+                lastAuthTime: 1,
+            },
+        }
     );
     for await (const identity of identities) {
         if (
@@ -116,12 +133,43 @@ export const cleanupOrphanClassLinkData = async (
             continue;
         let count = 0;
         if (apply) {
-            // Delete only if still inactive: a sign-in during the scan updates the identity.
+            // LC-2409: T must not keep a minor's promoted personal email once the identity is
+            // gone (the orphan guard stops covering it). Demote first; keep the identity (with
+            // `demotePending`) for the next run when that fails.
+            const demoted = Boolean(identity.primaryEmail);
+            if (
+                demoted &&
+                !(await demoteOrphanedPrimaryEmail(getAdminAuth(), identity, 'orphan_cleanup'))
+            ) {
+                console.log('orphan identity kept: demote pending');
+                continue;
+            }
+            const address = identity.personalEmail?.trim().toLowerCase();
+            if (
+                address &&
+                (await canDeletePersonalEmailSubject(
+                    address,
+                    identity.subject,
+                    {
+                        authProviders: [],
+                        primaryDid: identity.primaryDid ?? '',
+                        linkedDids: [],
+                    },
+                    { accountDeleted: true }
+                ))
+            )
+                await getAuthSubjectsCollection().deleteOne({
+                    identityKey: `email:${address}`,
+                    subject: identity.subject,
+                });
+            // Delete only if still inactive: a sign-in during the scan updates the identity
+            // (and its sign-in time; the demote above touched `updatedAt` itself).
             count += (
-                await getClassLinkIdentitiesCollection().deleteOne({
-                    identityKey: identity.identityKey,
-                    updatedAt: { $lt: cutoff },
-                })
+                await getClassLinkIdentitiesCollection().deleteOne(
+                    demoted
+                        ? { identityKey: identity.identityKey, lastAuthTime: identity.lastAuthTime }
+                        : { identityKey: identity.identityKey, updatedAt: { $lt: cutoff } }
+                )
             ).deletedCount;
             if (count)
                 count += (

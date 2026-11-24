@@ -13,6 +13,7 @@ import { resolveTenantFromRequest, type ResolvedTenant } from '@learncard/email-
 
 import { getEmptyLearnCard } from '@helpers/learnCard.helpers';
 import { resolveAccountDid } from '@helpers/accountDid.helpers';
+import { formatTrpcError } from '@helpers/trpcErrorFormatter';
 import { consumeChallengeForDid } from '@cache/challenges';
 import { isEscrowEnabled } from '../services/escrow-enclave';
 
@@ -40,7 +41,10 @@ export type Context = {
     authorizationHeader?: string;
 };
 
-export const t = initTRPC.context<Context>().meta<OpenApiMeta>().create();
+export const t = initTRPC
+    .context<Context>()
+    .meta<OpenApiMeta>()
+    .create({ errorFormatter: formatTrpcError });
 
 export const createContext = async (
     options:

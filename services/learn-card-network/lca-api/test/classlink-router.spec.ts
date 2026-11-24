@@ -5,6 +5,7 @@ import {
     classlinkRouter,
 } from '../src/routes/classlink';
 import { getClassLinkConfig } from '../src/helpers/classlink.config';
+import { getContinuityStudentStatus } from '../src/helpers/classlinkContext.helpers';
 import { exchangeClassLinkCode, verifyClassLinkIdToken } from '../src/helpers/classlink.helpers';
 import {
     ClassLinkProviderUnavailable,
@@ -693,6 +694,42 @@ describe('ClassLink sign-in broker', () => {
             tenantId: 'tenant-test',
         });
     });
+    it('a recycled school email never gives a new identity the promoted student subject (LC-2409)', async () => {
+        // Student A promoted a personal email: no Firebase user holds the school address any
+        // more, but `email:<school>` still points at A's subject.
+        const subjectA = await getOrCreateAuthSubject('email:student@example.edu', {
+            email: claims.email,
+            emailVerified: true,
+        });
+        await upsertClassLinkIdentity({
+            identityKey: 'classlink:tenant-test:v1:student-a',
+            tenantId: 'tenant-test',
+            sub: 'student-a',
+            role: 'student',
+            email: 'student@example.edu',
+            state: 'XX',
+            firebaseUid: 'uid-a',
+            subject: subjectA.subject,
+            lastAuthTime: new Date(),
+            sealedStateStudentId: null,
+        });
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        // Student B now has the address.
+        await caller().exchangeCode(exchange);
+        const identityB = await findClassLinkIdentityByIdentityKey(identityKey);
+        expect(identityB?.subject).toBeDefined();
+        expect(identityB?.subject).not.toBe(subjectA.subject);
+        expect(await findAuthSubjectByIdentityKey(identityKey)).toMatchObject({
+            subject: identityB?.subject,
+        });
+        expect(await findAuthSubjectByIdentityKey('email:student@example.edu')).toMatchObject({
+            subject: subjectA.subject,
+        });
+        expect(warn).toHaveBeenCalledWith('classlink.email_subject.mismatch', {
+            tenantId: 'tenant-test',
+            reason: 'other_identity',
+        });
+    });
     it('gives actionable guidance when the school email already has an account', async () => {
         config.tenants['tenant-test']!.allowedEmailDomains = [];
         firebase.getUserByEmail.mockResolvedValue({ uid: 'existing-user', emailVerified: true });
@@ -743,6 +780,43 @@ describe('ClassLink sign-in broker', () => {
         expect(await findClassLinkIdentityByIdentityKey(identityKey)).toMatchObject({
             lastAuthTime: new Date(claims.iat * 1000),
             isMinorHint: false,
+        });
+    });
+    it.each([
+        ['without a role claim', undefined, false, 'unknown'],
+        ['with a blank role claim', '  ', false, 'unknown'],
+        ['with a non-student role', 'teacher', true, 'not_student'],
+        ['with a padded non-student role', ' Teacher ', true, 'not_student'],
+        ['with an unlisted role', 'Guest', false, 'unknown'],
+        ['with the student role', 'student', true, 'student'],
+        ['with a padded student role', ' Student ', true, 'student'],
+    ] as const)(
+        'records whether the role was recognized: a sign-in %s (LC-2409 review)',
+        async (_label, role, known, continuity) => {
+            if (role === undefined) delete claims.classLink_role;
+            else claims.classLink_role = role;
+            await caller().exchangeCode(exchange);
+            const stored = await findClassLinkIdentityByIdentityKey(identityKey);
+            expect(stored).toMatchObject({
+                isMinorHint: continuity === 'student',
+                studentStatusKnown: known,
+            });
+            expect(
+                getContinuityStudentStatus({
+                    identities: [stored!],
+                    heldElsewhere: [],
+                    orphaned: [],
+                })
+            ).toBe(continuity);
+        }
+    );
+    it('a later sign-in without a role keeps a recorded student a student', async () => {
+        await caller().exchangeCode(exchange);
+        delete claims.classLink_role;
+        await caller().exchangeCode(exchange);
+        expect(await findClassLinkIdentityByIdentityKey(identityKey)).toMatchObject({
+            isMinorHint: true,
+            studentStatusKnown: true,
         });
     });
     it('clears a stored state ID and legacy plaintext when a sign-in supplies no ID', async () => {

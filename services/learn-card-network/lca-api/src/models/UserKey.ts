@@ -151,6 +151,8 @@ export const EscrowEnrollmentLeaseValidator = z.object({
     /** The Mongo blob identity the operation replaces (null: none). */
     sourceBlobHash: z.string().nullable(),
     measurements: EscrowBlobValidator.shape.measurements,
+    /** `contactDigest` of the contact an `enroll`/`replace` seals (LC-2409); committed as `escrowContactDigest`. */
+    contactDigest: z.string().optional(),
 });
 export type EscrowEnrollmentLease = z.infer<typeof EscrowEnrollmentLeaseValidator>;
 
@@ -206,6 +208,12 @@ const MongoUserKeyBaseValidator = z.object({
     // excludes (see claimEscrowEnrollmentLease).
     escrowEnrollmentLease: EscrowEnrollmentLeaseValidator.optional(),
     escrowPinCompares: z.array(EscrowPinCompareValidator).optional(),
+    /**
+     * `contactDigest` (helpers/escrowContactDigest.ts) of the recovery contact the current
+     * escrow copy seals (remote mode only). A UX hint for `getAccountContinuity`, never a
+     * security control. Removed with the copy.
+     */
+    escrowContactDigest: z.string().optional(),
     _id: z.string().optional(),
 
     contactMethod: ContactMethodValidator,
@@ -309,6 +317,22 @@ export const hasActivatableRecoveryMethod = (userKey: MongoUserKeyType): boolean
             method.shareVersion === (userKey.shareVersion ?? 1) &&
             isRecoveryMethodConfirmed(userKey, method)
     );
+
+/**
+ * Whether the account holds escrow that `escrow.startRecovery` would accept: a stored
+ * copy, no opt-out, and a confirmed escrow method at the copy's share version. Ignores
+ * transient refusals (kill switch, an in-flight PIN operation, a pending cancellation).
+ */
+export const hasUsableEscrow = (userKey: MongoUserKeyType): boolean => {
+    const blob = userKey.escrowBlob;
+    if (!blob || userKey.escrowOptedOutAt) return false;
+    return (userKey.recoveryMethods ?? []).some(
+        method =>
+            method.type === 'escrow' &&
+            method.shareVersion === blob.shareVersion &&
+            isRecoveryMethodConfirmed(userKey, method)
+    );
+};
 
 export { pruneOrphanedRecoveryMethods };
 
@@ -521,16 +545,21 @@ export const findUserKeyByDid = async (did: string): Promise<MongoUserKeyType | 
     });
 };
 
+/** Case-insensitive exact match on a verified recovery email. */
+const verifiedRecoveryEmailFilter = (email: string) => {
+    const escapedEmail = email.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return {
+        recoveryEmail: { $regex: `^${escapedEmail}$`, $options: 'i' },
+        recoveryEmailVerifiedAt: { $exists: true },
+    };
+};
+
 /** Recovery email is a proof channel, never account identity. Ambiguous matches are rejected. */
 export const findUniqueUserKeyByVerifiedRecoveryEmail = async (
     email: string
 ): Promise<MongoUserKeyType | null> => {
-    const escapedEmail = email.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const matches = await getUserKeysCollection()
-        .find({
-            recoveryEmail: { $regex: `^${escapedEmail}$`, $options: 'i' },
-            recoveryEmailVerifiedAt: { $exists: true },
-        })
+        .find(verifiedRecoveryEmailFilter(email))
         .limit(2)
         .toArray();
 
@@ -615,6 +644,7 @@ export const upsertUserKey = async (
                     ...((updateOps.$unset as Record<string, unknown> | undefined) ?? {}),
                     escrowBlob: '',
                     escrowPin: '',
+                    escrowContactDigest: '',
                 };
             }
         } else if (data.authShare) {
@@ -725,6 +755,7 @@ export const upsertUserKeyByAuthProvider = async (
                     ...((updateOps.$unset as Record<string, unknown> | undefined) ?? {}),
                     escrowBlob: '',
                     escrowPin: '',
+                    escrowContactDigest: '',
                 };
             }
         } else if (data.authShare) {
@@ -1105,7 +1136,12 @@ export const commitEscrowEnrollmentLease = async (
         return getUserKeysCollection().findOneAndUpdate(
             filter,
             {
-                $unset: { escrowBlob: '', escrowPin: '', escrowEnrollmentLease: '' },
+                $unset: {
+                    escrowBlob: '',
+                    escrowPin: '',
+                    escrowEnrollmentLease: '',
+                    escrowContactDigest: '',
+                },
                 $pull: { recoveryMethods: { type: 'escrow' } },
                 $set: { updatedAt: now, ...(lease.optOut ? { escrowOptedOutAt: now } : {}) },
             },
@@ -1160,6 +1196,15 @@ export const commitEscrowEnrollmentLease = async (
                                 }
                               : '$$REMOVE',
                     escrowEnrollmentLease: '$$REMOVE',
+                    // LC-2409: an enroll/replace seals the intent's contact (no digest: no
+                    // contact, or unknown); a carry or rewrap keeps the sealed contact.
+                    ...(lease.action === 'enroll' || lease.action === 'replace'
+                        ? {
+                              escrowContactDigest: lease.contactDigest
+                                  ? { $literal: lease.contactDigest }
+                                  : '$$REMOVE',
+                          }
+                        : {}),
                     updatedAt: now,
                     // A rewrap only re-seals the confirmed copy: its descriptor stands.
                     ...(lease.action === 'rewrap'
@@ -1275,7 +1320,7 @@ export const clearEscrowByAuthProvider = async (
                 : {}),
         },
         {
-            $unset: { escrowBlob: '', escrowPin: '' },
+            $unset: { escrowBlob: '', escrowPin: '', escrowContactDigest: '' },
             $pull: { recoveryMethods: { type: 'escrow' } },
             $set: { updatedAt: now, ...(optOut ? { escrowOptedOutAt: now } : {}) },
         },
@@ -1514,7 +1559,13 @@ export const removeRecoveryMethodFromUserKeyByAuthProvider = async (
     await getUserKeysCollection().updateOne(getAuthProviderFilter(authProvider), {
         $pull: { recoveryMethods: pullFilter },
         ...(type === 'escrow'
-            ? { $unset: { escrowBlob: '' as const, escrowPin: '' as const } }
+            ? {
+                  $unset: {
+                      escrowBlob: '' as const,
+                      escrowPin: '' as const,
+                      escrowContactDigest: '' as const,
+                  },
+              }
             : {}),
         $set: { updatedAt: new Date() },
     });
@@ -1731,6 +1782,7 @@ export const purgeExpiredProvisionalMigrationByAuthProvider = async (
                 authShare: '',
                 escrowBlob: '',
                 escrowPin: '',
+                escrowContactDigest: '',
                 shareUpdatedAt: '',
                 sssActivationState: '',
                 provisionalCreatedAt: '',
@@ -1773,6 +1825,20 @@ export const setRecoveryEmailByAuthProvider = async (
             updatedAt: new Date(),
         },
     });
+};
+
+/** Remove the account's recovery email only while it is still `email`. Idempotent. */
+export const clearRecoveryEmailIfUnchanged = async (
+    userKeyId: NonNullable<MongoUserKeyType['_id']>,
+    email: string
+): Promise<void> => {
+    await getUserKeysCollection().updateOne(
+        { _id: userKeyId, recoveryEmail: email },
+        {
+            $unset: { recoveryEmail: '', recoveryEmailVerifiedAt: '' },
+            $set: { updatedAt: new Date() },
+        }
+    );
 };
 
 export const upgradeContactMethod = async (
@@ -1827,6 +1893,33 @@ export const upgradeContactMethodByAuthProvider = async (
     );
 
     return result.modifiedCount > 0;
+};
+
+/**
+ * Compare-and-set the contact method of one account by id: only while it still equals
+ * `expected` (undefined: no contact method). Returns true when the contact now equals `next` (already equal included).
+ */
+export const setContactMethodIfUnchanged = async (
+    userKeyId: NonNullable<MongoUserKeyType['_id']>,
+    expected: ContactMethod | undefined,
+    next: ContactMethod
+): Promise<boolean> => {
+    const result = await getUserKeysCollection().updateOne(
+        expected
+            ? {
+                  _id: userKeyId,
+                  'contactMethod.type': expected.type,
+                  'contactMethod.value': expected.value,
+              }
+            : { _id: userKeyId, contactMethod: { $exists: false } },
+        { $set: { contactMethod: next, updatedAt: new Date() } }
+    );
+    if (result.matchedCount > 0) return true;
+    const current = await getUserKeysCollection().findOne(
+        { _id: userKeyId },
+        { projection: { contactMethod: 1 } }
+    );
+    return current?.contactMethod?.type === next.type && current.contactMethod.value === next.value;
 };
 
 export const deleteUserKey = async (contactMethod: ContactMethod): Promise<void> => {
@@ -1916,6 +2009,7 @@ const buildSecurityRotationUpdate = (
             provisionalCreatedAt: '',
             escrowBlob: '',
             escrowPin: '',
+            escrowContactDigest: '',
             escrowEnrollmentLease: '',
             escrowPinCompares: '',
         },

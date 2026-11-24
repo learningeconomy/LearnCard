@@ -1,11 +1,22 @@
 import { environment } from '@environment';
 import {
+    ACCOUNT_CONTINUITY_CODE_DEFAULT,
+    ACCOUNT_CONTINUITY_OFF,
+    AccountContinuityOverrideValidator,
+    type AccountContinuityPolicy,
+    type AccountContinuitySettings,
+} from 'types/accountContinuity';
+import {
     DEFAULT_CLASSLINK_TENANT,
     type ClassLinkConfig,
     type ClassLinkTenantConfig,
     type ResolvedTranscriptIssuer,
 } from 'types/classlink';
-import { parseClassLinkTenants, parseTranscriptIssuers } from './classlinkConfigValidation';
+import {
+    parseAccountContinuityDefault,
+    parseClassLinkTenants,
+    parseTranscriptIssuers,
+} from './classlinkConfigValidation';
 
 const splitCommaList = (value: string | undefined): string[] =>
     (value ?? '')
@@ -17,6 +28,46 @@ const splitCommaList = (value: string | undefined): string[] =>
 let invalidRegistryWarned = false;
 let invalidTenantsWarned = false;
 const unknownIssuerWarnings = new Set<string>();
+let invalidContinuityDefaultWarned = false;
+const invalidContinuityTenantWarnings = new Set<string>();
+
+/**
+ * Parse the account-continuity layers. Never throws, so ClassLink sign-in is never affected.
+ * An invalid env default is replaced by `{personalEmail:"off"}` over the code default; a
+ * district whose own `accountContinuity` sets `personalEmail` still uses its own value. An
+ * invalid district value turns personal email off for that district only.
+ */
+const getAccountContinuitySettings = (
+    tenants: ClassLinkConfig['tenants']
+): AccountContinuitySettings => {
+    let defaultPolicy: AccountContinuityPolicy;
+    try {
+        defaultPolicy = parseAccountContinuityDefault(
+            environment.CLASSLINK_ACCOUNT_CONTINUITY_DEFAULT
+        );
+    } catch {
+        if (!invalidContinuityDefaultWarned) {
+            invalidContinuityDefaultWarned = true;
+            console.warn('CLASSLINK_ACCOUNT_CONTINUITY_DEFAULT is invalid; personal email is off');
+        }
+        defaultPolicy = { ...ACCOUNT_CONTINUITY_CODE_DEFAULT, ...ACCOUNT_CONTINUITY_OFF };
+    }
+    const overrides: AccountContinuitySettings['tenants'] = {};
+    for (const [tenantId, tenant] of Object.entries(tenants)) {
+        if (tenant.accountContinuity === undefined) continue;
+        const parsed = AccountContinuityOverrideValidator.safeParse(tenant.accountContinuity);
+        if (!parsed.success && !invalidContinuityTenantWarnings.has(tenantId)) {
+            invalidContinuityTenantWarnings.add(tenantId);
+            console.warn('classlink.continuity.invalid_district', { tenantId });
+        }
+        overrides[tenantId] = parsed.success ? parsed.data : ACCOUNT_CONTINUITY_OFF;
+    }
+    return {
+        enabled: environment.CLASSLINK_ACCOUNT_CONTINUITY_ENABLED,
+        defaultPolicy,
+        tenants: overrides,
+    };
+};
 
 /**
  * Every configured transcript issuer, keyed by TRANSCRIPT_ISSUERS key.
@@ -84,6 +135,7 @@ export const getClassLinkConfig = (): ClassLinkConfig | null => {
         redirectUris: splitCommaList(environment.CLASSLINK_REDIRECT_URIS),
         tenants,
         maxAuthAgeSeconds: environment.CLASSLINK_MAX_AUTH_AGE_SECONDS,
+        accountContinuity: getAccountContinuitySettings(tenants),
     };
 };
 

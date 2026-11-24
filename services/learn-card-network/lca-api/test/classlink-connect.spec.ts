@@ -25,7 +25,7 @@ import { ThemeEnum } from '../src/types/preferences';
 import type { ClassLinkClaims, ClassLinkConfig } from '../src/types/classlink';
 import { getNotStudentCacheKey } from '../src/accesslayer/preferences/privacyLock';
 
-const { env, firebase, counts, deletedKeys } = vi.hoisted(() => ({
+const { env, firebase, counts, deletedKeys, store } = vi.hoisted(() => ({
     env: {
         IS_E2E_TEST: false,
         IS_OFFLINE: false,
@@ -41,6 +41,7 @@ const { env, firebase, counts, deletedKeys } = vi.hoisted(() => ({
     },
     counts: new Map<string, number>(),
     deletedKeys: [] as string[],
+    store: new Map<string, string>(),
 }));
 vi.mock('@environment', () => ({ environment: env }));
 vi.mock('../src/firebase', () => ({ default: { auth: firebase.auth } }));
@@ -70,11 +71,20 @@ vi.mock('@cache', () => ({
             return keys.length;
         },
         node: {
-            eval: async (script: string, _count: number, key: string) => {
+            eval: async (script: string, _count: number, key: string, token?: string) => {
                 if (script.includes("redis.call('INCR'"))
                     counts.set(key, (counts.get(key) ?? 0) + 1);
+                // The email-change lock's compare-and-delete release.
+                if (script.includes("redis.call('DEL'") && store.get(key) === token)
+                    return Number(store.delete(key));
                 return counts.get(key) ?? null;
             },
+            set: async (key: string, value: string, ..._options: unknown[]) => {
+                if (store.has(key)) return null;
+                store.set(key, value);
+                return 'OK';
+            },
+            get: async (key: string) => store.get(key) ?? null,
         },
     },
 }));
@@ -103,6 +113,7 @@ beforeEach(async () => {
     vi.clearAllMocks();
     counts.clear();
     deletedKeys.length = 0;
+    store.clear();
     const now = Math.floor(Date.now() / 1000);
     config = {
         clientId: 'client-test',
@@ -288,6 +299,25 @@ describe('School Connect', () => {
         await expect(caller().connect(exchange)).resolves.toMatchObject({ isStudent: false });
         expect(await Preferences.findOne({ did })).toBeNull();
     });
+
+    it.each([
+        ['without a role claim', undefined, false, false],
+        ['with a non-student role', 'teacher', true, false],
+        ['with an unlisted role', 'Guest', false, false],
+        ['with the student role', 'student', true, true],
+        ['with a padded student role', ' Student ', true, true],
+    ] as const)(
+        'records whether the role was recognized: a connect %s (LC-2409 review)',
+        async (_label, role, known, student) => {
+            if (role === undefined) delete claims.classLink_role;
+            else claims.classLink_role = role;
+            await caller().connect(exchange);
+            expect(await findClassLinkIdentityByIdentityKey(identityKey)).toMatchObject({
+                isMinorHint: student,
+                studentStatusKnown: known,
+            });
+        }
+    );
 
     it('refuses a school account that belongs to another LearnCard account', async () => {
         await upsertClassLinkIdentity({
@@ -523,6 +553,121 @@ describe('School Connect', () => {
         await expect(signIn.exchangeCode(exchange)).resolves.toEqual({ token: `custom-${uid}` });
         // The account's own (phone) Firebase user is never given an email.
         expect(firebase.updateUser).not.toHaveBeenCalledWith(uid, expect.anything());
+    });
+
+    describe('a promoted personal email (LC-2409)', () => {
+        const personal = 'person@personal.example';
+        const classLinkUid = () => classLinkFirebaseUid(identityKey);
+        const emails = new Map<string, string | undefined>();
+        const seed = async (firebaseUid: string) => {
+            await mongodb
+                .collection('userkeys')
+                .updateOne(
+                    { primaryDid: did },
+                    { $set: { contactMethod: { type: 'email', value: personal } } }
+                );
+            await upsertClassLinkIdentity({
+                identityKey,
+                tenantId: 'tenant-test',
+                sub: 'private-sub',
+                role: 'student',
+                email: 'student@example.edu',
+                state: 'XX',
+                firebaseUid,
+                subject: 'classlink-subject',
+                primaryDid: did,
+                lastAuthTime: new Date(),
+                sealedStateStudentId: null,
+                isMinorHint: true,
+            });
+            await getClassLinkIdentitiesCollection().updateOne(
+                { identityKey },
+                {
+                    $set: {
+                        personalEmail: personal,
+                        personalEmailVerifiedAt: new Date(),
+                        primaryEmail: {
+                            email: personal,
+                            uid: classLinkUid(),
+                            prevFirebaseEmail: 'student@example.edu',
+                            prevContactMethod: { type: 'email', value: 'student@example.edu' },
+                            state: 'active',
+                            at: new Date(),
+                        },
+                    },
+                }
+            );
+            emails.clear();
+            emails.set(classLinkUid(), personal);
+            firebase.getUser.mockImplementation(async (id: string) => ({
+                uid: id,
+                email: emails.get(id),
+            }));
+            firebase.updateUser.mockImplementation(
+                async (id: string, request: { email?: string }) => {
+                    if (request.email) emails.set(id, request.email);
+                    return { uid: id, email: emails.get(id) };
+                }
+            );
+        };
+
+        it('moving the identity demotes under the lock before release', async () => {
+            await seed(classLinkUid());
+            const lockKeys: string[] = [];
+            const original = store.set.bind(store);
+            vi.spyOn(store, 'set').mockImplementation((key: string, value: string) => {
+                if (key.startsWith('classlink:lock:personal-email:')) lockKeys.push(key);
+                return original(key, value);
+            });
+            await expect(caller().connect(exchange)).resolves.toMatchObject({ isStudent: true });
+            // Demote first (school email back), then the release (synthetic).
+            expect(firebase.updateUser.mock.calls).toEqual([
+                [classLinkUid(), { email: 'student@example.edu', emailVerified: true }],
+                [
+                    classLinkUid(),
+                    { email: `${classLinkUid()}@users.classlink.invalid`, emailVerified: false },
+                ],
+            ]);
+            expect(lockKeys).toHaveLength(1);
+            const identity = await findClassLinkIdentityByIdentityKey(identityKey);
+            expect(identity).toMatchObject({ firebaseUid: uid });
+            expect(identity?.primaryEmail).toBeUndefined();
+            expect(
+                (await mongodb.collection('userkeys').findOne({ primaryDid: did }))?.contactMethod
+            ).toEqual({ type: 'email', value: 'student@example.edu' });
+        });
+
+        it('a busy lock leaves demotePending and still connects', async () => {
+            await seed(classLinkUid());
+            vi.spyOn(store, 'has').mockReturnValue(true);
+            await expect(caller().connect(exchange)).resolves.toMatchObject({ isStudent: true });
+            expect(
+                (await findClassLinkIdentityByIdentityKey(identityKey))?.demotePending
+            ).toMatchObject({ reason: 'identity_moved' });
+        });
+
+        it('ClassLink exchange: release fires when the deterministic user holds a personal email', async () => {
+            // The identity already moved to `uid`; the deterministic user still holds a personal
+            // email, so the school-email lookup does not find it.
+            await seed(uid);
+            await getClassLinkIdentitiesCollection().updateOne(
+                { identityKey },
+                { $unset: { primaryEmail: '' } }
+            );
+            const signIn = classlinkRouter.createCaller({
+                clientIp: 'test-ip',
+                domain: 'localhost',
+                tenant: { id: 'learncard', emailBranding: {}, resolvedVia: 'default' },
+            });
+            await expect(signIn.exchangeCode(exchange)).resolves.toEqual({
+                token: `custom-${uid}`,
+            });
+            expect(firebase.updateUser).toHaveBeenCalledWith(classLinkUid(), {
+                email: `${classLinkUid()}@users.classlink.invalid`,
+                emailVerified: false,
+            });
+            expect(firebase.updateUser).not.toHaveBeenCalledWith(uid, expect.anything());
+        });
     });
 
     it('lets an account without Firebase refresh a connection linked by its DID', async () => {

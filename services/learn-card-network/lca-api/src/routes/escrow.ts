@@ -6,8 +6,12 @@ import {
     AuthorityStateResponseValidator,
     SignedEnrollmentIntentValidator,
     type AuthorityMutationResult,
+    type AuthorityStateResponse,
 } from '../services/escrow-enclave/authorityContract';
-import { escrowBlobIdentity } from '../services/escrow-enclave/blobIdentity';
+import {
+    escrowBlobIdentity,
+    type EscrowEnvelopeFields,
+} from '../services/escrow-enclave/blobIdentity';
 import {
     isDefiniteAuthorityRefusal,
     settleEscrowEnrollmentLease,
@@ -25,6 +29,16 @@ import { environment, isEscrowReleaseKillSwitchEnabled } from '@environment';
 import { t, openRoute, didAndChallengeRoute, type Context } from '@routes';
 import { createRecoverySession } from '@cache/recoverySessions';
 import { decryptAuthShare } from '@helpers/shareEncryption.helpers';
+import { contactDigest } from '@helpers/escrowContactDigest';
+import {
+    ESCROW_CONFIRM_HOURLY_LIMIT,
+    ESCROW_CONFIRM_LIFETIME_LIMIT,
+    ESCROW_CONFIRM_MAX_UNCOMMITTED_VERSIONS,
+    ESCROW_CONFIRM_TTL_SECONDS,
+    escrowConfirmKeys,
+} from '@helpers/escrowConfirmLimits';
+import { getSchoolNoticeRecipients } from '@helpers/classlinkPrimaryEmail.helpers';
+import { getDeliveryService, getFrom } from '../services/delivery';
 import {
     generateEscrowCancelToken,
     hashEscrowCancelToken,
@@ -83,6 +97,7 @@ import {
     requireUserKey,
     assertDidOwner,
     requireRecoverySessionRecord,
+    assertRecoverProof,
     getRecoverySessionEpoch,
 } from './keys';
 import {
@@ -140,6 +155,205 @@ const limitCancelLinkAttempts = async (clientIp: string | undefined): Promise<vo
             code: 'TOO_MANY_REQUESTS',
             message: pinThrottledMessage,
         });
+};
+
+/**
+ * LC-2409 confirm-current-PIN re-seal (`replace` + `pinAction:'keep'`, no `pinSalt`, on an
+ * account with a PIN; limits in `@helpers/escrowConfirmLimits`). The enclave enforces the PIN match (`same_pin`) but does not charge
+ * its attempt budget for it, so lca-api bounds the guesses: 5 per hour, 10 failed or
+ * unresolved per PIN generation (then a new PIN is required), and at most 2 share versions
+ * spent on uncommitted confirms since the last commit (keeps passkey and phrase methods
+ * inside MAX_PREVIOUS_AUTH_SHARES). A successful confirm, or a new PIN generation, resets the
+ * hourly and per-version counters (a successful confirm also refunds its own lifetime charge);
+ * an automatic carry rotation does not. The caps are checked here, after the client already
+ * rotated its auth share; `getAccountContinuity` (`pinChangeRequired`) reports them earlier so
+ * the client does not rotate for a confirm that would be refused. Bounded by lca-api only (no
+ * enclave change).
+ */
+export {
+    ESCROW_CONFIRM_HOURLY_LIMIT,
+    ESCROW_CONFIRM_LIFETIME_LIMIT,
+    ESCROW_CONFIRM_MAX_UNCOMMITTED_VERSIONS,
+};
+/** Clients match this message (cause `reason: 'pin_change_required'`): offer "choose a new PIN". */
+export const ESCROW_PIN_CHANGE_REQUIRED_MESSAGE = 'Choose a new PIN to continue.';
+/**
+ * Mapped from the authority's policy refusal of a confirm that passed
+ * `assertConfirmMatchesAuthority` (a wrong PIN, or a target the client sealed wrongly).
+ */
+export const ESCROW_CONFIRM_WRONG_PIN_MESSAGE = 'Incorrect PIN.';
+
+const pinChangeRequired = (): TRPCError =>
+    new TRPCError({
+        code: 'PRECONDITION_FAILED',
+        message: ESCROW_PIN_CHANGE_REQUIRED_MESSAGE,
+        cause: { reason: 'pin_change_required' },
+    });
+
+/** `escrowBlobIdentity`, or null for a missing or malformed envelope. */
+const identityOrNull = (envelope: EscrowEnvelopeFields | null | undefined): string | null => {
+    if (!envelope) return null;
+    try {
+        return escrowBlobIdentity(envelope);
+    } catch {
+        return null;
+    }
+};
+
+/**
+ * A confirm's checks that lca-api can make itself, run before the confirm is charged.
+ *
+ * The authority answers every refusal of `apply_enrollment_intent` with the same `policy`
+ * code (services/escrow-enclave-app/src/policy/authority.rs): a wrong PIN (`same_pin`) looks
+ * exactly like a stale source copy, a target that does not match the intent, or a wrong epoch
+ * or share version. So every refusal lca-api can predict from the authority state it just read
+ * is answered here, uncharged (no PIN comparison was made), and only the refusals it cannot
+ * see (the PIN, and the sealed fields of the client's own target: DID, share version, contact,
+ * attempts floor; and the intent signature) reach the authority. Those still count as a wrong
+ * PIN: lca-api cannot tell them apart, and not counting them would leave PIN guesses
+ * unbounded. A precise count needs the enclave to report `pinMismatch` for `same_pin`.
+ */
+const assertConfirmMatchesAuthority = (
+    intent: z.infer<typeof SignedEnrollmentIntentValidator>['intent'],
+    state: AuthorityStateResponse['state'],
+    sourceEnvelope: EscrowEnvelopeFields | null,
+    targetEnvelope: EscrowEnvelopeFields
+): void => {
+    if (identityOrNull(targetEnvelope) !== intent.targetBlobIdentity)
+        throw new TRPCError({ code: 'BAD_REQUEST', message: invalidMessage });
+    const current = identityOrNull(state.envelope);
+    if (
+        state.status !== 'active' ||
+        current === null ||
+        current !== intent.sourceBlobIdentity ||
+        identityOrNull(sourceEnvelope) !== current ||
+        intent.enrollmentEpoch !== state.enrollmentEpoch + 1 ||
+        state.shareVersion === null ||
+        intent.shareVersion < state.shareVersion
+    )
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Automatic recovery changed; please refresh.',
+        });
+};
+
+/** Charge one confirm attempt before the authority is called; throws when over a limit. */
+const reserveEscrowConfirm = async (
+    did: string,
+    pinGeneration: number,
+    shareVersion: number
+): Promise<void> => {
+    const redis = cache.redis ?? cache.node;
+    const keys = escrowConfirmKeys(did, pinGeneration);
+    // Remembered per account so `getAccountContinuity` reports it before the next rotation.
+    const refuse = async (): Promise<never> => {
+        await redis.set(keys.blocked, '1', 'EX', ESCROW_CONFIRM_TTL_SECONDS).catch(() => null);
+        throw pinChangeRequired();
+    };
+    if (Number((await redis.get(keys.lifetime)) ?? 0) >= ESCROW_CONFIRM_LIFETIME_LIMIT)
+        return refuse();
+    const versionSpent = (await redis.sismember(keys.versions, String(shareVersion))) === 1;
+    if (
+        !versionSpent &&
+        (await redis.scard(keys.versions)) >= ESCROW_CONFIRM_MAX_UNCOMMITTED_VERSIONS
+    )
+        return refuse();
+    const hourly = await redis.incr(keys.hourly);
+    if (hourly === 1) await redis.expire(keys.hourly, 60 * 60);
+    if (hourly > ESCROW_CONFIRM_HOURLY_LIMIT)
+        throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: pinThrottledMessage });
+    const lifetime = await redis.incr(keys.lifetime);
+    await redis.expire(keys.lifetime, ESCROW_CONFIRM_TTL_SECONDS);
+    if (lifetime > ESCROW_CONFIRM_LIFETIME_LIMIT) {
+        await redis.decr(keys.lifetime);
+        return refuse();
+    }
+    await redis.sadd(keys.versions, String(shareVersion));
+    await redis.expire(keys.versions, ESCROW_CONFIRM_TTL_SECONDS);
+};
+
+/**
+ * Settle a confirm's charge. Success refunds its lifetime charge and resets the hourly and
+ * per-version counters. A wrong PIN (the authority's policy refusal) keeps it. Any other
+ * failure is refunded too: it never reached a PIN comparison the caller could learn from.
+ */
+const settleEscrowConfirm = async (
+    did: string,
+    pinGeneration: number,
+    outcome: 'committed' | 'wrong-pin' | 'other'
+): Promise<void> => {
+    const redis = cache.redis ?? cache.node;
+    const keys = escrowConfirmKeys(did, pinGeneration);
+    if (outcome === 'wrong-pin') {
+        // The last allowed guess on this PIN: report it before the client rotates again.
+        if (Number((await redis.get(keys.lifetime)) ?? 0) >= ESCROW_CONFIRM_LIFETIME_LIMIT)
+            await redis.set(keys.blocked, '1', 'EX', ESCROW_CONFIRM_TTL_SECONDS);
+        return;
+    }
+    await redis.decr(keys.lifetime);
+    if (outcome === 'committed') await redis.del(keys.hourly, keys.versions);
+};
+
+/**
+ * A committed PIN set, change or clear (a new PIN generation) resets the confirm budget's
+ * hourly and per-version counters. An automatic `carry` (or any other `keep`) commit does not:
+ * it needs no PIN knowledge, so resetting there would let a stolen session lift the hourly
+ * limit and the version cap at will. The lifetime count is per PIN generation.
+ */
+const resetEscrowConfirmCounters = async (did: string): Promise<void> => {
+    const redis = cache.redis ?? cache.node;
+    const keys = escrowConfirmKeys(did, 0);
+    await redis.del(keys.hourly, keys.versions, keys.blocked);
+};
+
+/** Delivery budget for the school-address reset notice. */
+const SCHOOL_NOTICE_TIMEOUT_MS = 3_000;
+
+/**
+ * LC-2409: when a PIN reset (waiting-period hold) starts, tell the account's ClassLink school
+ * address while its alias is live. The reset codes go to the sealed contact (the personal
+ * email once re-sealed); the school address can still sign in, so it hears about it too. No
+ * cancel link (a recycled school inbox must not cancel the owner's reset). Best effort and
+ * bounded: never throws, never logs addresses, and does not help against a compromised lca-api.
+ */
+const notifySchoolResetStarted = async (
+    hold: EscrowHold,
+    userKey: MongoUserKeyType,
+    tenant: Context['tenant']
+): Promise<void> => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const send = (async () => {
+        const recipients = await getSchoolNoticeRecipients(userKey);
+        if (!recipients.length) return;
+        const branding = tenant?.emailBranding;
+        const results = await Promise.allSettled(
+            recipients.map(to =>
+                getDeliveryService().send({
+                    to,
+                    templateAlias: 'escrow-reset-started',
+                    templateModel: {
+                        requestedAt: hold.requestedAt.toISOString(),
+                        releaseAfter: hold.releaseAfter.toISOString(),
+                    },
+                    branding,
+                    from: getFrom({ mailbox: 'recovery', branding }),
+                })
+            )
+        );
+        const failed = results.filter(result => result.status === 'rejected').length;
+        if (failed)
+            console.error('[escrow] school reset notice failed', { holdId: hold._id, failed });
+    })().catch(() => console.error('[escrow] school reset notice failed', { holdId: hold._id }));
+    try {
+        await Promise.race([
+            send,
+            new Promise<void>(resolve => {
+                timer = setTimeout(resolve, SCHOOL_NOTICE_TIMEOUT_MS);
+            }),
+        ]);
+    } finally {
+        clearTimeout(timer);
+    }
 };
 
 const lockPin = async (
@@ -405,6 +619,8 @@ const applyEnrollmentIntentUnderLease = async (input: {
     lease: Omit<EscrowEnrollmentLease, 'id' | 'expiresAt' | 'sourceBlobHash'>;
     requireOptedIn: boolean;
     apply: () => Promise<AuthorityMutationResult>;
+    /** Message for a definite authority policy refusal (default: `invalidMessage`). */
+    policyMessage?: string;
 }): Promise<AuthorityMutationResult> => {
     const { authProvider, userKey } = input;
     const lease: EscrowEnrollmentLease = {
@@ -422,25 +638,29 @@ const applyEnrollmentIntentUnderLease = async (input: {
     // A guess reserved or resolved since the read, a compare still in flight, or
     // another lease: nothing has been sent to the authority.
     if (!claimed) throw new TRPCError({ code: 'CONFLICT', message: escrowChangedMessage });
-    const result = await enclaveOperation(async () => {
-        try {
-            return await input.apply();
-        } catch (error) {
-            // A definite refusal never committed. Anything else (timeout, lost or
-            // malformed response) may have: adopt a visible commit, else keep the
-            // lease until it expires so a late commit is still settled. Even when the
-            // commit is adopted the request still fails: without the authority's
-            // receipt (it refuses a replayed request id) the client cannot verify it,
-            // and re-reads the authority's state instead.
-            if (isDefiniteAuthorityRefusal(error))
-                await releaseEscrowEnrollmentLease(authProvider, lease.id);
-            else
-                await settleEscrowEnrollmentLease(authProvider, userKey.primaryDid, lease, {
-                    releaseIfUncommitted: false,
-                }).catch(() => undefined);
-            throw error;
-        }
-    });
+    const result = await enclaveOperation(
+        async () => {
+            try {
+                return await input.apply();
+            } catch (error) {
+                // A definite refusal never committed. Anything else (timeout, lost or
+                // malformed response) may have: adopt a visible commit, else keep the
+                // lease until it expires so a late commit is still settled. Even when the
+                // commit is adopted the request still fails: without the authority's
+                // receipt (it refuses a replayed request id) the client cannot verify it,
+                // and re-reads the authority's state instead.
+                if (isDefiniteAuthorityRefusal(error))
+                    await releaseEscrowEnrollmentLease(authProvider, lease.id);
+                else
+                    await settleEscrowEnrollmentLease(authProvider, userKey.primaryDid, lease, {
+                        releaseIfUncommitted: false,
+                    }).catch(() => undefined);
+                throw error;
+            }
+        },
+        false,
+        input.policyMessage
+    );
     const committed = await commitEscrowEnrollmentLease(authProvider, lease, {
         envelope: result.envelope,
         authorityGeneration: result.authorityGeneration,
@@ -772,36 +992,88 @@ export const escrowRouter = t.router({
                     input.enclaveKeyId !== attestation.keyId
                 )
                     throw new TRPCError({ code: 'BAD_REQUEST', message: invalidMessage });
+                // LC-2409 confirm-current-PIN re-seal: bounded here, after the version and
+                // generation checks above, because the enclave does not charge it.
+                const confirm = intent.action === 'replace' && preservePin && !input.pinSalt;
+                const confirmDid = userKey.primaryDid;
+                const sourceEnvelope =
+                    input.sourceEnvelope === undefined
+                        ? current.state.envelope
+                        : input.sourceEnvelope;
+                // Refusals lca-api can predict are answered uncharged (see the helper).
+                if (confirm)
+                    assertConfirmMatchesAuthority(
+                        intent,
+                        current.state,
+                        sourceEnvelope,
+                        input.envelope
+                    );
+                if (confirm)
+                    await reserveEscrowConfirm(
+                        confirmDid,
+                        current.state.pinGeneration,
+                        input.shareVersion
+                    );
                 // The lease is claimed on the blob and PIN read above, which
                 // `resolveExpectedPinCharges` validated: a same-PIN refresh whose charges
                 // moved since, or that races a compare still in flight, is refused here
                 // with nothing sent to the authority.
-                const result = await applyEnrollmentIntentUnderLease({
-                    authProvider,
-                    userKey,
-                    lease: {
-                        action: intent.action,
-                        pinAction: intent.pinAction,
-                        pin: input.pinSalt ? 'fresh' : preservePin ? 'keep' : 'clear',
-                        ...(input.pinSalt ? { pinSalt: input.pinSalt } : {}),
-                        shareVersion: input.shareVersion,
-                        authorityGeneration: current.state.authorityGeneration,
-                        expectedEnrollmentVersion: current.state.enrollmentVersion,
-                        expectedPinGeneration: current.state.pinGeneration,
-                        enrollmentEpoch: intent.enrollmentEpoch,
-                        measurements: attestation.measurements,
-                    },
-                    requireOptedIn: true,
-                    apply: () =>
-                        enclave.applyEnrollmentIntent!({
-                            signedIntent: signed,
-                            sourceEnvelope:
-                                input.sourceEnvelope === undefined
-                                    ? current.state.envelope
-                                    : input.sourceEnvelope,
-                            targetEnvelope: input.envelope,
-                        }),
-                });
+                let result: AuthorityMutationResult;
+                try {
+                    result = await applyEnrollmentIntentUnderLease({
+                        authProvider,
+                        userKey,
+                        lease: {
+                            action: intent.action,
+                            pinAction: intent.pinAction,
+                            pin: input.pinSalt ? 'fresh' : preservePin ? 'keep' : 'clear',
+                            ...(input.pinSalt ? { pinSalt: input.pinSalt } : {}),
+                            shareVersion: input.shareVersion,
+                            authorityGeneration: current.state.authorityGeneration,
+                            expectedEnrollmentVersion: current.state.enrollmentVersion,
+                            expectedPinGeneration: current.state.pinGeneration,
+                            enrollmentEpoch: intent.enrollmentEpoch,
+                            measurements: attestation.measurements,
+                            // LC-2409: what `getAccountContinuity` compares the sign-in email
+                            // with. Only an enroll or replace seals the intent's contact.
+                            ...((intent.action === 'enroll' || intent.action === 'replace') &&
+                            intent.recoveryEmail
+                                ? { contactDigest: contactDigest(intent.recoveryEmail) }
+                                : {}),
+                        },
+                        requireOptedIn: true,
+                        ...(confirm ? { policyMessage: ESCROW_CONFIRM_WRONG_PIN_MESSAGE } : {}),
+                        apply: () =>
+                            enclave.applyEnrollmentIntent!({
+                                signedIntent: signed,
+                                sourceEnvelope,
+                                targetEnvelope: input.envelope,
+                            }),
+                    });
+                } catch (error) {
+                    if (confirm)
+                        await settleEscrowConfirm(
+                            confirmDid,
+                            current.state.pinGeneration,
+                            error instanceof TRPCError &&
+                                error.message === ESCROW_CONFIRM_WRONG_PIN_MESSAGE
+                                ? 'wrong-pin'
+                                : 'other'
+                        ).catch(() => undefined);
+                    throw error;
+                }
+                if (confirm)
+                    await settleEscrowConfirm(
+                        confirmDid,
+                        current.state.pinGeneration,
+                        'committed'
+                    ).catch(() => undefined);
+                else if (
+                    intent.pinAction === 'set' ||
+                    intent.pinAction === 'change' ||
+                    intent.pinAction === 'clear'
+                )
+                    await resetEscrowConfirmCounters(confirmDid).catch(() => undefined);
                 if (!result.envelope)
                     throw new TRPCError({
                         code: 'SERVICE_UNAVAILABLE',
@@ -987,6 +1259,7 @@ export const escrowRouter = t.router({
                         input.recoverySessionToken,
                         'recover'
                     );
+                    assertRecoverProof(session);
                     authProvider = session.authProvider;
                     recoverSessionEpoch = getRecoverySessionEpoch(session);
                 } catch (error) {
@@ -1178,6 +1451,8 @@ export const escrowRouter = t.router({
                     tenant: ctx.tenant,
                 });
             }
+            if (input.releasePolicy === 'hold')
+                await notifySchoolResetStarted(hold, userKey, ctx.tenant);
             return {
                 ...serializeHold(hold),
                 status: 'pending' as const,
@@ -1671,6 +1946,10 @@ export const escrowRouter = t.router({
                 hold: completed,
                 userKey,
                 tenant: ctx.tenant,
+                // LC-2409: the school address hears about a PIN sign-in while its alias is live.
+                ...(hold.releasePolicy === 'pin'
+                    ? { extraRecipients: await getSchoolNoticeRecipients(userKey) }
+                    : {}),
             });
             return {
                 sealedShare: sealed,

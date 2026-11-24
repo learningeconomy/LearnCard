@@ -29,6 +29,13 @@ export interface RecoverySessionRecord {
      * Read as 0 when absent (tokens minted before the field existed).
      */
     securityEpoch?: number;
+    /**
+     * How a `recover` token was earned. Only `email-otp` exists today (set by
+     * `/keys/recovery-session/verify`); absent on tokens minted before the field. Material
+     * routes accept nothing else (`assertRecoverProof`), so a future proof type cannot reach
+     * them by accident.
+     */
+    proof?: 'email-otp';
 }
 
 export interface RecoveryOtpRecord {

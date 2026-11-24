@@ -42,6 +42,9 @@ const getUserOrUndefined = (
  *   no other Firebase user holds it.
  *
  * `isNew` skips the initial lookup; pass it only when the user is not known to exist.
+ * `personalEmailPrimary` (the identity has a promoted personal email) skips every email
+ * write, as defence in depth: a real email is never overwritten anyway. The upgrade re-reads
+ * the user right before writing, so a personal email promoted concurrently is not replaced.
  */
 export const ensureClassLinkFirebaseUser = async (
     auth: FirebaseAuth,
@@ -50,7 +53,13 @@ export const ensureClassLinkFirebaseUser = async (
         identityKey,
         trustedEmail,
         isNew,
-    }: { identityKey: string; trustedEmail?: string; isNew: boolean }
+        personalEmailPrimary,
+    }: {
+        identityKey: string;
+        trustedEmail?: string;
+        isNew: boolean;
+        personalEmailPrimary?: boolean;
+    }
 ): Promise<void> => {
     const contact = trustedEmail
         ? { email: trustedEmail, emailVerified: true }
@@ -72,8 +81,13 @@ export const ensureClassLinkFirebaseUser = async (
             if (!user) throw error;
         }
     }
-    if (uid !== classLinkFirebaseUid(identityKey)) return;
+    if (uid !== classLinkFirebaseUid(identityKey) || personalEmailPrimary) return;
     const upgrade = Boolean(trustedEmail) && isSyntheticEmail(user.email);
+    if (upgrade) {
+        // Close the race with a concurrent personal-email promotion (drift repair is the backstop).
+        const fresh = await getUserOrUndefined(auth, uid);
+        if (!fresh || !isSyntheticEmail(fresh.email)) return;
+    }
     if (!user.email || upgrade) {
         await auth.updateUser(uid, contact);
         console.info(

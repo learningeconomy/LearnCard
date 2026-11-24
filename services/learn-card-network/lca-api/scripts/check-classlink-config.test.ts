@@ -24,6 +24,35 @@ describe('config:check CLI', () => {
         expect(result.stdout).toBe('');
     });
 
+    it('prints account-continuity warnings without failing or printing values', () => {
+        const result = run({
+            CLASSLINK_TENANTS: JSON.stringify({
+                'secret-district': {
+                    displayName: 'Example School',
+                    state: 'XX',
+                    allowedEmailDomains: [],
+                    transcriptEnabled: false,
+                    accountContinuity: { personalEmail: 'all' },
+                },
+            }),
+            CLASSLINK_CLIENT_ID: 'test-client',
+            CLASSLINK_CLIENT_SECRET: 'test-secret',
+            CLASSLINK_REDIRECT_URIS: 'https://app.example.org/callback',
+            CLASSLINK_PII_KEY: Buffer.alloc(32, 7).toString('base64'),
+        });
+        expect(result.status).toBe(0);
+        expect(result.stdout.trim()).toBe('ClassLink configuration is valid');
+        expect(result.stderr).toContain('Warning: CLASSLINK_TENANTS entry 1 lets students');
+        expect(result.stderr).not.toContain('secret-district');
+    });
+
+    it('fails on an invalid account-continuity value', () => {
+        const result = run({ CLASSLINK_ACCOUNT_CONTINUITY_DEFAULT: '{"personalEmail":"maybe"}' });
+        expect(result.status).toBe(1);
+        expect(result.stderr).toContain('CLASSLINK_ACCOUNT_CONTINUITY_DEFAULT must be JSON');
+        expect(result.stderr).not.toContain('maybe');
+    });
+
     it('checks an enabled transcript fixture without contacting services', () => {
         const result = run({
             CLASSLINK_TENANTS: JSON.stringify({

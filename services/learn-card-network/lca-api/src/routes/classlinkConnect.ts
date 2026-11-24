@@ -9,12 +9,19 @@ import { getClassLinkConfig, getClassLinkTenant } from '@helpers/classlink.confi
 import { ClassLinkProviderUnavailable, ClassLinkTokenInvalid } from '@helpers/classlink.errors';
 import {
     classLinkExchangeInput,
+    hasRecognizedClassLinkRole,
     isClassLinkStudent,
     verifyClassLinkExchange,
 } from '@helpers/classlinkExchange.helpers';
 import { resolveStateStudentId } from '@helpers/classlink.stateId';
 import { classLinkFirebaseUid, sealStateStudentId } from '@helpers/classlinkPii.helpers';
 import { releaseClassLinkFirebaseEmail } from '@helpers/classlinkFirebaseUser.helpers';
+import {
+    demotePersonalEmail,
+    markDemotePending,
+    withEmailChangeLock,
+} from '@helpers/classlinkPrimaryEmail.helpers';
+import { getAdminAuth } from '@helpers/firebaseAdminAuth.helpers';
 import {
     findClassLinkIdentitiesForAccount,
     getAccountDids,
@@ -31,6 +38,7 @@ import {
 import {
     findClassLinkIdentityByIdentityKey,
     upsertClassLinkIdentity,
+    type MongoClassLinkIdentityType,
 } from '../models/ClassLinkIdentity';
 import { enforceMinorPreferences } from '../models/Preferences';
 import { findUserKeyByDid, type MongoUserKeyType } from '../models/UserKey';
@@ -54,6 +62,33 @@ const findAccountSubject = async (userKey: MongoUserKeyType): Promise<string | u
         `email:${contactMethod.value.trim().toLowerCase()}`
     );
     return record?.subject;
+};
+
+/**
+ * Demote an identity's promoted personal email before School Connect moves it to another uid.
+ * Never fails the connect: a busy lock or an error records `demotePending`, which the
+ * continuity reconcile and the login orphan guard cover.
+ */
+const demoteMovedPrimaryEmail = async (
+    identity: MongoClassLinkIdentityType,
+    userKey: MongoUserKeyType
+): Promise<void> => {
+    try {
+        await withEmailChangeLock(userKey.primaryDid, async lock => {
+            const fresh = await findClassLinkIdentityByIdentityKey(identity.identityKey);
+            if (fresh?.primaryEmail)
+                await demotePersonalEmail({
+                    auth: getAdminAuth(),
+                    identity: fresh,
+                    userKey,
+                    reason: 'identity_moved',
+                    lock,
+                });
+        });
+    } catch {
+        console.warn('classlink.primary_email.demote_deferred', { reason: 'identity_moved' });
+        await markDemotePending(identity.identityKey, 'identity_moved').catch(() => undefined);
+    }
 };
 
 const connectionOutput = z.object({
@@ -200,6 +235,12 @@ export const connectProcedures = {
                     subject = linked.subject;
                 }
 
+                // Moving the identity to another uid: the old uid (T) stops being its sign-in, so
+                // its promoted personal email is demoted first (under the email-change lock);
+                // continuity then asks for the email again on this account.
+                if (existing && existing.firebaseUid !== uid && existing.primaryEmail)
+                    await demoteMovedPrimaryEmail(existing, userKey);
+
                 const isStudent = existing?.isMinorHint === true || isClassLinkStudent(claims);
                 const lastAuthTime = new Date(claims.iat * 1000);
                 await upsertClassLinkIdentity({
@@ -220,6 +261,8 @@ export const connectProcedures = {
                     ...(userKey.primaryDid ? { primaryDid: userKey.primaryDid } : {}),
                     lastAuthTime,
                     isMinorHint: isStudent,
+                    // Whether that hint rests on a recognized role (continuity fails closed otherwise).
+                    studentStatusKnown: isStudent || hasRecognizedClassLinkRole(claims),
                 });
                 // Moving off the identity's deterministic Firebase user: that user may still hold
                 // the trusted school email, which would otherwise keep resolving to it.
