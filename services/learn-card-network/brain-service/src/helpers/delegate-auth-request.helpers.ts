@@ -46,7 +46,8 @@ export type DelegateDenialStage = 'route' | 'policy' | 'owner';
 
 /**
  * The answer about a delegate request. A refusal carries an `attribution` exactly when a stored
- * grant was found for the token's challenge: only then is there a grant to record it under.
+ * grant was found for the token's challenge and the token was signed by that grant's own
+ * delegate key: only such a refusal is recorded.
  */
 export type DelegateRequestResolution =
     | { allowed: true; user: DelegateUser }
@@ -70,26 +71,33 @@ export const resolveDelegateRequest = async ({
 
     // Read on every request and never cached, so a revocation holds from the next request on.
     // An error is not caught: an outage must not look like a refused token.
-    // Read before the route is checked, because a refusal is recorded only when it can be
-    // attributed to a stored grant: a real grant holder's attempt on a closed route becomes
-    // visible to the owner, while a token whose challenge names no grant leaves no record, so
-    // that anyone able to mint a key cannot fill the store.
+    // Read before the route is checked, so that the grant holder's own attempt on a closed
+    // route is visible to the owner.
     const stored = await getDelegateAuthGrantByChallenge(presentation.challenge);
     if (!stored) return { allowed: false };
 
     const { grant, ownerProfile } = stored;
     const { signerDid } = presentation;
 
-    // Who asked is the verified signer of the presentation, whichever key the grant names.
-    const refusedAt = (stage: DelegateDenialStage): DelegateRequestResolution => ({
-        allowed: false,
-        attribution: {
-            stage,
-            actorDid: signerDid,
-            grantId: grant.id,
-            ownerProfileId: grant.ownerProfileId,
-        },
-    });
+    // A refusal is recorded only when the token names a stored grant and was signed by that
+    // grant's own delegate key. The challenge is not a secret: it travels in every token and
+    // the owner's read routes return it. A record for any signer would let anyone who has seen
+    // a challenge fill the store with a throwaway key.
+    const signedByGrantDelegate = signerDid === grant.delegateDid;
+
+    // Who asked is the verified signer, which here is always the key the grant names.
+    const refusedAt = (stage: DelegateDenialStage): DelegateRequestResolution =>
+        signedByGrantDelegate
+            ? {
+                  allowed: false,
+                  attribution: {
+                      stage,
+                      actorDid: signerDid,
+                      grantId: grant.id,
+                      ownerProfileId: grant.ownerProfileId,
+                  },
+              }
+            : { allowed: false };
 
     // The route must declare exactly the scope pinned for it: a route whose metadata changes
     // closes until this list is changed with it.

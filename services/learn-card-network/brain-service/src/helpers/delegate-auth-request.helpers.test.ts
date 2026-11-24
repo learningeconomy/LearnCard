@@ -241,14 +241,31 @@ describe('resolveDelegateRequest', () => {
         const withAnotherChallenge = storedGrant({ challenge: 'delegate-grant:another-challenge' });
         const inboxOnly = storedGrant({ scope: 'inbox:write' });
 
+        // Signed by the key the grant names, so the refusal is recorded; a token another key
+        // signed is refused all the same and leaves no attribution.
+        const recorded = refusedAt('policy');
+        const notRecorded = { allowed: false };
+
         const refusedByThePolicy = [
-            ['expired', expired, presentationFor(expired), INBOX_ISSUE],
-            ['another delegate key', forAnotherKey, presentationFor(valid), INBOX_ISSUE],
-            ['another challenge', withAnotherChallenge, presentationFor(valid), INBOX_ISSUE],
-            ['lacks the scope', inboxOnly, presentationFor(inboxOnly), CONTRACT_WRITE],
+            ['expired', expired, presentationFor(expired), INBOX_ISSUE, recorded],
+            [
+                'another delegate key',
+                forAnotherKey,
+                presentationFor(valid),
+                INBOX_ISSUE,
+                notRecorded,
+            ],
+            [
+                'another challenge',
+                withAnotherChallenge,
+                presentationFor(valid),
+                INBOX_ISSUE,
+                recorded,
+            ],
+            ['lacks the scope', inboxOnly, presentationFor(inboxOnly), CONTRACT_WRITE, recorded],
         ] as const;
 
-        for (const [name, grant, presentation, path] of refusedByThePolicy) {
+        for (const [name, grant, presentation, path, refusal] of refusedByThePolicy) {
             mocks.getDelegateAuthGrantByChallenge.mockClear();
             store(grant);
 
@@ -259,7 +276,7 @@ describe('resolveDelegateRequest', () => {
                     requiredScope: DELEGATE_ROUTE_ALLOWLIST[path],
                 }),
                 name
-            ).toStrictEqual(refusedAt('policy'));
+            ).toStrictEqual(refusal);
             // The refusal is the policy's answer about the stored grant, not an earlier one.
             expect(mocks.getDelegateAuthGrantByChallenge, name).toHaveBeenCalledTimes(1);
         }
@@ -320,24 +337,85 @@ describe('resolveDelegateRequest', () => {
         );
     });
 
-    it("a refusal by the policy carries stage 'policy' and names the signer, not the grant's delegate", async () => {
+    it("another key signing a known grant's challenge is refused without attribution on an allowlisted route", async () => {
+        const grant = storedGrant();
+        store(grant);
+
+        // The stored challenge and audience, signed by a key the grant does not name.
+        const byAnotherKey = presentationFor(grant, {
+            signerDid: OTHER_KEY_DID,
+            issuerDid: OTHER_KEY_DID,
+            holderDid: OTHER_KEY_DID,
+        });
+
+        expect(await issueRequest(byAnotherKey)).toStrictEqual({ allowed: false });
+        // The grant was found: the missing attribution is about the key, not about the read.
+        expect(mocks.getDelegateAuthGrantByChallenge.mock.calls).toEqual([[grant.challenge]]);
+        // The same request signed by the grant's own key is allowed: the key was the only cause.
+        expect(await issueRequest(presentationFor(grant))).toMatchObject({ allowed: true });
+    });
+
+    it("another key signing a known grant's challenge is refused without attribution on a closed route", async () => {
+        const grant = storedGrant();
+        store(grant);
+
+        const byAnotherKey = presentationFor(grant, {
+            signerDid: OTHER_KEY_DID,
+            issuerDid: OTHER_KEY_DID,
+            holderDid: OTHER_KEY_DID,
+        });
+
+        expect(
+            await resolveDelegateRequest({
+                presentation: byAnotherKey,
+                path: 'inbox.finalize',
+                requiredScope: 'inbox:write',
+            })
+        ).toStrictEqual({ allowed: false });
+        expect(mocks.getDelegateAuthGrantByChallenge.mock.calls).toEqual([[grant.challenge]]);
+    });
+
+    it("the grant's own delegate key refused by the policy carries stage 'policy' and that key as actorDid", async () => {
         const revoked = storedGrant({ status: 'revoked' });
         const expired = storedGrant({
             createdAt: new Date(Date.now() - 2 * HOUR).toISOString(),
             expiresAt: new Date(Date.now() - 1000).toISOString(),
         });
-        const forAnotherKey = storedGrant({ id: 'grant-2', delegateDid: OTHER_KEY_DID });
+        // A grant that names another key, asked by that key: the record names it.
+        const forAnotherKey = storedGrant({
+            id: 'grant-2',
+            status: 'revoked',
+            delegateDid: OTHER_KEY_DID,
+        });
 
         store(revoked);
         expect(await issueRequest(presentationFor(revoked))).toStrictEqual(refusedAt('policy'));
         store(expired);
         expect(await issueRequest(presentationFor(expired))).toStrictEqual(refusedAt('policy'));
 
-        // Signed by a key the grant does not name: the record says who asked.
         store(forAnotherKey);
-        const refusal = await issueRequest(presentationFor(storedGrant()));
-        expect(refusal).toStrictEqual(refusedAt('policy', 'grant-2'));
-        expect(JSON.stringify(refusal)).not.toContain(OTHER_KEY_DID);
+        expect(await issueRequest(presentationFor(forAnotherKey))).toStrictEqual({
+            allowed: false,
+            attribution: {
+                stage: 'policy',
+                actorDid: OTHER_KEY_DID,
+                grantId: 'grant-2',
+                ownerProfileId: owner.profileId,
+            },
+        });
+    });
+
+    it("the grant's own delegate key on a closed route carries stage 'route'", async () => {
+        const grant = storedGrant();
+        store(grant);
+
+        expect(
+            await resolveDelegateRequest({
+                presentation: presentationFor(grant),
+                path: 'inbox.finalize',
+                requiredScope: 'inbox:write',
+            })
+        ).toStrictEqual(refusedAt('route'));
     });
 
     it("a refusal for a linked-profile mismatch carries stage 'owner' and names the stored owner", async () => {

@@ -349,8 +349,9 @@ const enforceDelegateBoundary = t.middleware(async ({ ctx, next, path, meta }) =
     });
 
     if (!resolution.allowed) {
-        // Recorded only when a stored grant was found. Best effort: the refusal is the same
-        // fixed answer whether or not its record could be written.
+        // Recorded only when a stored grant was found and its own delegate key signed the token.
+        // Best effort: the refusal is the same fixed answer whether or not its record could be
+        // written.
         if (resolution.attribution) {
             try {
                 await createDelegateGrantAudit(

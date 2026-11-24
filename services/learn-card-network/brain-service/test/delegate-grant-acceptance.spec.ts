@@ -373,7 +373,22 @@ describe('Delegate-bound issuance over HTTP', () => {
         const otherKey = await getLearnCard('d2'.repeat(32));
 
         expect(await issueAs(await delegateToken(grant, otherKey))).toMatchObject(REFUSED);
-        expect(await denialStages()).toEqual(['policy']);
+        // The challenge is not a secret, so a key the grant does not name leaves no record.
+        expect(await denialStages()).toEqual([]);
+    });
+
+    it('refused: another key on a closed route leaves no record', async () => {
+        const { grant, token } = await workingGrant();
+        const otherKey = await getLearnCard('d2'.repeat(32));
+        const finalizeAs = (bearer: string) =>
+            request<unknown>('POST', '/inbox/finalize', bearer, {});
+
+        expect(await finalizeAs(await delegateToken(grant, otherKey))).toMatchObject(REFUSED);
+        expect(await denialStages()).toEqual([]);
+
+        // The same request signed by the grant's own key is recorded: the key is the difference.
+        expect(await finalizeAs(token)).toMatchObject(REFUSED);
+        expect(await denialStages()).toEqual(['route']);
     });
 
     it('refused: a route outside the allowlist with the same token', async () => {
