@@ -244,7 +244,11 @@ export const verifySdJwtVc = async (
     });
 
     try {
-        await instance.verify(compact);
+        // 0.19 had no way to skip this; it fetched and checked the status list on every verify.
+        await instance.verify(
+            compact,
+            options.skipStatusCheck ? { disableStatusVerification: true } : undefined
+        );
         checks.push('issuer_signature');
     } catch (e) {
         const joseError = getLastError();

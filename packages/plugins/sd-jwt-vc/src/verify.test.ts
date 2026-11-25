@@ -150,6 +150,22 @@ describe('verifySdJwtVc', () => {
         expect(result.checks).toContain('issuer_signature');
     });
 
+    it('does not fetch the status list when skipStatusCheck is set', async () => {
+        const { compact, publicJwk, signer } = await issueTestCredential({
+            status: { status_list: { idx: 0, uri: STATUS_LIST_URI } },
+        });
+        const fetchMock = stubStatusListFetch(await signStatusListJwt(signer, [0]));
+
+        const result = await verifySdJwtVc(buildLearnCardMock(publicJwk), compact, {
+            skipStatusCheck: true,
+        });
+
+        expect(fetchMock).not.toHaveBeenCalled();
+        expect(result.errors).toEqual([]);
+        expect(result.checks).toContain('issuer_signature');
+        expect(result.warnings).toEqual([]);
+    });
+
     it('retains verification of an Ed448-signed credential from a resolvable DID issuer', async () => {
         const { compact, publicJwk } = await issueTestCredential({}, 'Ed448');
         expect(publicJwk.crv).toBe('Ed448');
