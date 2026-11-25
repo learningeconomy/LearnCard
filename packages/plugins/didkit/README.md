@@ -63,6 +63,25 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 
 Please make sure to update tests as appropriate.
 
+### Browser encryption regression
+
+From this package directory, run:
+
+```bash
+bunx playwright install chromium firefox
+bun run test:browser
+```
+
+These tests load the checked-in JavaScript/WASM pair in Chromium and Firefox.
+They stub only the recipient's DID document, using the inline X25519 2019 keys
+emitted for managed profiles. They verify both JWE and DAG-JWE encryption to every
+key, reject an unrelated key, and check manager additions and removals after a DID
+cache refresh. All requests are intercepted; no network services or credentials
+are required. Private test keys are generated in browser memory, without traces.
+
+This is cryptographic coverage, not proof of provisioning, DID cache invalidation,
+consent authorization, or deployed/CDN artifacts.
+
 ### Vendored Rust dependency locks
 
 WASM builds use DIDKit's committed workspace lock at `lib/didkit/Cargo.lock` with

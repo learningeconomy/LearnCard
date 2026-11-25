@@ -45,6 +45,21 @@ env:
     BINARYEN_X86_64_LINUX_SHA256: 0a18362361ad05465118cd8eeb72edaeec89de6894bc283576ef4e07aa3babcc
 
 jobs:
+    browser-encryption:
+        name: Verify browser DIDKit encryption
+        if: github.event_name == 'pull_request'
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        steps:
+            - uses: actions/checkout@v5
+            - uses: ./.github/actions/setup
+            - name: Install browser test engines
+              working-directory: packages/plugins/didkit
+              run: bunx playwright install --with-deps chromium firefox
+            - name: Test the committed browser WASM artifact
+              working-directory: packages/plugins/didkit
+              run: bun run test:browser
+
     validate:
         name: Validate DIDKit WASM build
         if: github.event_name == 'pull_request'
