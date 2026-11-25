@@ -123,25 +123,29 @@ export const readBatchJob = async (
     };
 };
 
-/** Read-only view of the job createBatchJob would return for this request id, in its window. */
-export const readBatchAdmission = async (
+/** Read-only: every item admitted under this request id that could still be issued, whatever
+ * the age of its job. createBatchJob looks one day back when it decides whether to admit, but a
+ * QUEUED item has no age limit and stays eligible for dispatch, so a caller that settles its own
+ * waiting items must not stop at that window.
+ */
+export const readOutstandingBatchItems = async (
     issuer: string,
     requestId: string
-): Promise<{ requestHash: string; itemId: string; state: BatchItem['state'] } | undefined> => {
+): Promise<
+    { requestHash: string; batchId: string; itemId: string; state: BatchItem['state'] }[]
+> => {
     const result = await neogma.queryRunner.run(
-        `MATCH (b:InboxBatch {issuer: $issuer, requestId: $requestId})
-        WHERE b.createdAt > $cutoff
-        MATCH (b)-[:HAS_ITEM]->(i:InboxBatchItem) RETURN b, i ORDER BY i.index LIMIT 1`,
-        { issuer, requestId, cutoff: Date.now() - DAY }
+        `MATCH (b:InboxBatch {issuer: $issuer, requestId: $requestId})-[:HAS_ITEM]->(i:InboxBatchItem)
+        WHERE i.state IN ['QUEUED', 'PROCESSING']
+        RETURN b.requestHash AS requestHash, b.id AS batchId, i.id AS itemId, i.state AS state`,
+        { issuer, requestId }
     );
-    const record = result.records[0];
-    if (!record) return;
-    const item = record.get('i').properties as BatchItem;
-    return {
-        requestHash: String(record.get('b').properties.requestHash),
-        itemId: item.id,
-        state: item.state,
-    };
+    return result.records.map(record => ({
+        requestHash: String(record.get('requestHash')),
+        batchId: String(record.get('batchId')),
+        itemId: String(record.get('itemId')),
+        state: record.get('state') as BatchItem['state'],
+    }));
 };
 
 /** Lock before testing ownership: concurrent SQS deliveries must not both enter issuance. */

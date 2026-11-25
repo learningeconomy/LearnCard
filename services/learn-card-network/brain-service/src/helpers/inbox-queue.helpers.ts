@@ -27,7 +27,7 @@ import {
     finishBatchItem,
     markBatchIssuanceStarted,
     InboxBatchRequestIdConflict,
-    readBatchAdmission,
+    readOutstandingBatchItems,
     readBatchJob,
     readBatchReplay,
     recoverInboxJobs,
@@ -295,22 +295,29 @@ export const issueKeyedInboxCredential = async (
     // An earlier call under this key may have left its item waiting. Once the key's outcome
     // is known, record it there as a worker would, so that no later worker issues the item.
     // A job holding another payload under this request id is not this caller's to settle.
-    const ownAdmission = async (): ReturnType<typeof readBatchAdmission> => {
-        const admission = await readBatchAdmission(profile.profileId, request.requestId);
-        return admission?.requestHash === batchRequestHash(request, ctx) ? admission : undefined;
+    // There is no age limit: an item stays dispatchable for as long as it is QUEUED.
+    const ownOutstanding = async (): ReturnType<typeof readOutstandingBatchItems> => {
+        const requestHash = batchRequestHash(request, ctx);
+        const items = await readOutstandingBatchItems(profile.profileId, request.requestId);
+        return items.filter(item => item.requestHash === requestHash);
     };
-    const settleWaiting = async (result: IssueInboxCredentialBatchItemResult): Promise<void> => {
-        const admission = await ownAdmission();
-        if (admission?.state === 'QUEUED') await settleQueuedBatchItem(admission.itemId, result);
+    const settleWaiting = async (
+        result: IssueInboxCredentialBatchItemResult,
+        exceptBatchId?: string
+    ): Promise<void> => {
+        for (const item of await ownOutstanding())
+            if (item.state === 'QUEUED' && item.batchId !== exceptBatchId)
+                await settleQueuedBatchItem(item.itemId, result);
     };
     // A refusal must also hold against a worker that has claimed the item and has not reserved
     // the key yet: if the record this call was refused against is released, that worker would
     // find the key free and issue the refused payload. The store decides in one guarded step.
-    // False: the item's worker has already reserved the key.
+    // False: the worker of one of the items has already reserved the key.
     const rejectWaiting = async (result: IssueInboxCredentialBatchItemResult): Promise<boolean> => {
-        const admission = await ownAdmission();
-        if (admission?.state !== 'QUEUED' && admission?.state !== 'PROCESSING') return true;
-        return rejectWaitingBatchItem(admission.itemId, result);
+        let rejected = true;
+        for (const item of await ownOutstanding())
+            rejected = (await rejectWaitingBatchItem(item.itemId, result)) && rejected;
+        return rejected;
     };
     const replay = async (
         stored: string
@@ -358,6 +365,22 @@ export const issueKeyedInboxCredential = async (
             );
         throw error;
     });
+    // The admission lookup forgets a job after a day, so this can be a second job for a request
+    // whose first item is still QUEUED. From here the request is this job's: retire the older
+    // item now, so that nothing of it is left to run after this job's receipt has expired.
+    await settleWaiting(
+        {
+            success: false,
+            index: 0,
+            error: {
+                code: 'CONFLICT',
+                message: 'Superseded by a later admission of this idempotency key.',
+            },
+            idempotencyKey,
+            recipient: input.recipient,
+        },
+        receipt.batchId
+    );
     // A separate job's IN_PROGRESS snapshot is not authoritative once its owner
     // commits the shared receipt. Validate the live record before trusting that job.
     const stored = await readBatchReplay(replayKey);
