@@ -474,7 +474,13 @@ describe('integration events for contract request invites', () => {
             ]);
     });
 
-    it.each(['accept', 'deny', 'cancel', 'expire'] as const)(
+    it.each([
+        'accept',
+        'deny',
+        'cancel',
+        'expire',
+        'accept the direct request instead of',
+    ] as const)(
         'keeps another sender’s email invitation private and available to %s after a direct send',
         async decision => {
             const manager = owner.clients.fullAuth.contracts;
@@ -512,14 +518,30 @@ describe('integration events for contract request invites', () => {
             });
             await expect(send(email)).resolves.toEqual(invitation);
 
-            if (decision === 'accept') {
+            if (decision === 'accept' || decision === 'accept the direct request instead of') {
                 await consents.consentToContract({
                     contractUri,
                     terms: normalFullTerms,
-                    expectedRequestId: invitation.requestId,
+                    expectedRequestId:
+                        decision === 'accept' ? invitation.requestId : direct.requestId,
                     audienceVersion: (await manager.getConsentFlowContract({ uri: contractUri }))
                         .audienceVersion,
                 });
+                const directInput = { contractUri, requestId: direct.requestId };
+                if (decision !== 'accept') {
+                    await expect(sender.getContractRequest(inviteInput)).resolves.toEqual(original);
+                    await expect(
+                        consents.getRequestStatusForProfile({ ...profileInput, ...inviteInput })
+                    ).resolves.toBeNull();
+                    await expect(send(email)).resolves.toEqual(invitation);
+                    expect(await feed(recipientIntegration, invitation.requestId)).toEqual([
+                        expect.objectContaining({
+                            type: 'request_sent',
+                            subjectProfileId: undefined,
+                        }),
+                    ]);
+                    return;
+                }
                 const records = await feed(recipientIntegration, invitation.requestId);
                 expect(records.find(record => record.type === 'request_accepted')).toMatchObject({
                     subjectProfileId: learner.profileId,
@@ -528,6 +550,24 @@ describe('integration events for contract request invites', () => {
                     status: 'accepted',
                     target: { profile: { profileId: learner.profileId } },
                 });
+                await expect(manager.getContractRequest(directInput)).resolves.toMatchObject({
+                    requestId: direct.requestId,
+                    status: 'cancelled',
+                    target: { profile: { profileId: learner.profileId } },
+                });
+                expect(await manager.getContractSentRequests({ contractUri })).toContainEqual(
+                    expect.objectContaining({ requestId: direct.requestId, status: 'cancelled' })
+                );
+                await expect(sender.getContractRequest(directInput)).rejects.toMatchObject({
+                    code: 'NOT_FOUND',
+                });
+                const closingEvents = await feed(ownerIntegration, direct.requestId);
+                expect(closingEvents.map(record => [record.eventId, record.type])).toEqual([
+                    [direct.requestId, 'request_sent'],
+                    [direct.requestId + ':cancelled', 'request_cancelled'],
+                ]);
+                await expect(manager.cancelContractRequest(directInput)).resolves.toBe(true);
+                expect(await feed(ownerIntegration, direct.requestId)).toEqual(closingEvents);
                 return;
             }
             let status: string;
