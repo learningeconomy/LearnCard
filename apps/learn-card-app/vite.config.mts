@@ -21,6 +21,7 @@ import { minifySvgPathDataInSource } from './src/buildPlugins/minifySvgPathData'
 import {
     chunkPrefetchFiles,
     CHUNK_PREFETCH_ELEMENT_ID,
+    PREFETCH_CHUNKS,
     type BundleChunk,
 } from './src/buildPlugins/chunkPrefetchList';
 import { parseLearnCardAppEnvironment } from './src/config/buildEnvironment';
@@ -243,12 +244,9 @@ const minifySvgPathData = (): Plugin => ({
 });
 
 // Lazy chunks the app warms ahead of time with plain fetch() (src/helpers/prefetchChunk.ts).
+// PREFETCH_CHUNKS lives in src/buildPlugins/chunkPrefetchList.ts (shared with the runtime keys).
 // Writes each one's file URLs into index.html as JSON. Dev has no chunks, so it lists the
 // source module, which is what the dev server's import() requests.
-const PREFETCH_CHUNKS = {
-    'my-learncard': 'src/components/learncard/MyLearnCardModalContent.tsx',
-} as const;
-
 const chunkPrefetchList = (): Plugin => {
     let base = '/';
     let root = __dirname;

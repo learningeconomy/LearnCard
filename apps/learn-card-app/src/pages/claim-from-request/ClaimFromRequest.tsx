@@ -47,7 +47,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { publishWalletEvent } from '../pathways/events/walletEventBus';
 import { CATEGORY_TO_ROUTE } from '../../helpers/categoryRoutes';
-import { ROUTE_PRELOAD } from '../../Routes';
+import { ROUTE_PRELOAD, warmRoute } from '../../Routes';
 
 import ExchangePresentationRequest from './ExchangePresentationRequest';
 import ExchangeRedirect from './ExchangeRedirect';
@@ -611,7 +611,7 @@ const ClaimFromRequest: React.FC = () => {
     // still on the accept screen makes the post-claim hop feel instant (no
     // Suspense fallback flash). Fire-and-forget.
     const warmPostClaimRoute = (claimedCredential?: VC): void => {
-        void ROUTE_PRELOAD[resolvePostClaimRoute(claimedCredential)]?.();
+        warmRoute(resolvePostClaimRoute(claimedCredential));
     };
 
     const handleRedirectTo = () => {

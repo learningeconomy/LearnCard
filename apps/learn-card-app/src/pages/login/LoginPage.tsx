@@ -44,6 +44,11 @@ import { changeSignInPersistence, useSignInPersistence } from '../../auth/signIn
 import { SignInPersistenceError } from './SignInPersistenceError';
 import { useSignInAdapter } from 'learn-card-base';
 import { readKeycloakReauth } from '../../auth/keycloakReauth';
+import { primeDashboardIfDestination } from '../dashboard/hooks/primeDashboardPage';
+import {
+    commitLoginRedirectIfCurrent,
+    useLoginRedirectGeneration,
+} from './useLoginRedirectGeneration';
 import { getConfigCapabilities } from 'learn-card-base/config/authConfig';
 
 import { IonContent, IonGrid, IonPage, IonRow } from '@ionic/react';
@@ -180,6 +185,9 @@ export const LoginContent: React.FC = () => {
     }, [coordinatorState.status, currentUser, isLoggedIn, initWallet, openOnboardingModal]);
 
     const didRedirectRef = useRef(false);
+    // Sign-out or a different user invalidates a redirect still awaiting its prime.
+    const authIdentityKey = authStatus.tag === 'unauthenticated' ? '' : (currentUser?.uid ?? '');
+    const redirectGeneration = useLoginRedirectGeneration(history, authIdentityKey);
     const didOpenOnboardingRef = useRef(false);
     const didTrackSignupStartedRef = useRef(false);
 
@@ -261,52 +269,76 @@ export const LoginContent: React.FC = () => {
             redirectStore.get.authRedirect() || query.get('redirectTo') || query.get('returnUrl');
         const lcnRedirectTo = redirectStore.get.lcnRedirect();
         // const isChapiInteraction = chapiStore.get.isChapiInteraction();
-        try {
-            const underageFamily = query.get('underageFamily');
-            if (underageFamily) {
-                if (currentUser && isLoggedIn) {
-                    // Child still logged in: set redirect to families and logout to allow parent login
-                    redirectStore.set.lcnRedirect('/families?createFamily=true');
-                    handleLogout({
-                        appendQuery: { redirectTo: '/families?createFamily=true' },
-                    });
-                    return;
-                } else {
-                    // Not logged in yet: set post-login redirect to family creation
-                    redirectStore.set.lcnRedirect('/families?createFamily=true');
-                    return;
+        const generation = redirectGeneration.begin();
+        void (async () => {
+            try {
+                const underageFamily = query.get('underageFamily');
+                if (underageFamily) {
+                    if (currentUser && isLoggedIn) {
+                        // Child still logged in: set redirect to families and logout to allow parent login
+                        redirectStore.set.lcnRedirect('/families?createFamily=true');
+                        handleLogout({
+                            appendQuery: { redirectTo: '/families?createFamily=true' },
+                        });
+                        return;
+                    } else {
+                        // Not logged in yet: set post-login redirect to family creation
+                        redirectStore.set.lcnRedirect('/families?createFamily=true');
+                        return;
+                    }
                 }
-            }
 
-            // Only re-prompt onboarding for an existing profile (EU parental
-            // consent). A still-resolving profile must never open a second
-            // onboarding modal over the destination page — that page's own gate
-            // handles a confirmed absence.
-            const canRepromptOnboarding =
-                authStatus.tag === 'ready' && authStatus.profile.tag === 'present';
+                // Only re-prompt onboarding for an existing profile (EU parental
+                // consent). A still-resolving profile must never open a second
+                // onboarding modal over the destination page — that page's own gate
+                // handles a confirmed absence.
+                const canRepromptOnboarding =
+                    authStatus.tag === 'ready' && authStatus.profile.tag === 'present';
 
-            if (redirectTo) {
-                redirectStore.set.lcnRedirect(null);
-                redirectStore.set.authRedirect(null);
-                chapiStore.set.isChapiInteraction(null);
-                resumeAuthRedirect(history, redirectTo);
-                void handleGeneratePinUpdateToken();
-                if (canRepromptOnboarding) void handlePromptOnboarding();
-            } else if (lcnRedirectTo) {
-                redirectStore.set.lcnRedirect(null);
-                history.push(lcnRedirectTo);
-                void handleGeneratePinUpdateToken();
-                if (canRepromptOnboarding) void handlePromptOnboarding();
-            } else {
-                // Preserve the demo shortcut's existing landing page after the
-                // profile/onboarding gates above have completed.
-                history.push(currentUser?.uid === 'demo' ? '/wallet' : '/dashboard');
-                void handleGeneratePinUpdateToken();
-                if (canRepromptOnboarding) void handlePromptOnboarding();
+                // `/login` entry makes AppRouter's initialPathRef miss dashboard boot
+                // priming. While redirectPending still shows the login overlay, prime
+                // the dashboard chunk when that is the destination (LC-2415).
+                // The prime can take up to 4s: only the still-current attempt
+                // consumes the pending redirect, navigates, and runs PIN/onboarding.
+                const finishRedirect = async (path: string, go: () => void) => {
+                    const committed = await commitLoginRedirectIfCurrent(
+                        redirectGeneration,
+                        generation,
+                        () => primeDashboardIfDestination(path),
+                        () => {
+                            go();
+                            void handleGeneratePinUpdateToken();
+                            if (canRepromptOnboarding) void handlePromptOnboarding();
+                        }
+                    );
+                    // Superseded: let the newer flow run the redirect again.
+                    if (!committed) didRedirectRef.current = false;
+                };
+
+                if (redirectTo) {
+                    await finishRedirect(redirectTo, () => {
+                        redirectStore.set.lcnRedirect(null);
+                        redirectStore.set.authRedirect(null);
+                        chapiStore.set.isChapiInteraction(null);
+                        resumeAuthRedirect(history, redirectTo);
+                    });
+                } else if (lcnRedirectTo) {
+                    await finishRedirect(lcnRedirectTo, () => {
+                        redirectStore.set.lcnRedirect(null);
+                        history.push(lcnRedirectTo);
+                    });
+                } else {
+                    // Preserve the demo shortcut's existing landing page after the
+                    // profile/onboarding gates above have completed.
+                    const path = currentUser?.uid === 'demo' ? '/wallet' : '/dashboard';
+                    await finishRedirect(path, () => {
+                        history.push(path);
+                    });
+                }
+            } catch (e) {
+                log.error(e);
             }
-        } catch (e) {
-            log.error(e);
-        }
+        })();
     }, [
         adapter.providerType,
         authStatus,
@@ -319,6 +351,7 @@ export const LoginContent: React.FC = () => {
         handlePromptOnboarding,
         handleLogout,
         openOnboardingModal,
+        redirectGeneration,
         trackSignupStarted,
     ]);
 

@@ -1,7 +1,15 @@
-import { CHUNK_PREFETCH_ELEMENT_ID } from '../buildPlugins/chunkPrefetchList';
+import {
+    CHUNK_PREFETCH_ELEMENT_ID,
+    type PrefetchChunkKey,
+} from '../buildPlugins/chunkPrefetchList';
 
-/** Keys of the chunk list Vite writes into index.html (see vite.config.mts). */
-export type PrefetchChunkKey = 'my-learncard';
+export type { PrefetchChunkKey };
+
+/** How long a failed prefetch blocks the next attempt for the same key (gitStream on #2104). */
+export const PREFETCH_FAIL_COOLDOWN_MS = 20_000;
+
+/** Per-file fetch timeout so a hung request can't leave the attempt pending forever. */
+export const PREFETCH_FETCH_TIMEOUT_MS = 30_000;
 
 let list: Partial<Record<PrefetchChunkKey, string[]>> | null = null;
 
@@ -21,7 +29,7 @@ const filesFor = (key: PrefetchChunkKey): string[] => {
 /**
  * Paths the page already loaded as scripts or styles (e.g. FullApp, which the modal imports but
  * startup has already pulled in). Our own fetch() entries don't count, so a failed prefetch
- * is retried.
+ * is retried (after the cooldown).
  */
 const loadedPaths = (): Set<string> => {
     const entries = (performance.getEntriesByType?.('resource') ?? []) as Array<
@@ -36,21 +44,70 @@ const loadedPaths = (): Set<string> => {
 };
 
 const attempts = new Map<PrefetchChunkKey, Promise<boolean>>();
+const cooldownUntil = new Map<PrefetchChunkKey, number>();
+
+/**
+ * In-flight (and successfully completed) download promises keyed by asset URL.
+ * Idle prefetchRoutes starts many routes together; Achievements and Qualifications both
+ * pull shared chunks (e.g. CredentialPage). Without URL-level sharing, each route key
+ * would start its own fetch for the same file — measured under Cache-Control: no-cache
+ * across Firefox / Chromium / WebKit. Failed downloads are dropped so a later retry
+ * (after the route cooldown) can fetch again.
+ */
+const downloadsByUrl = new Map<string, Promise<void>>();
+
+const downloadFile = (file: string): Promise<void> => {
+    const known = downloadsByUrl.get(file);
+    if (known) return known;
+
+    // AbortController + setTimeout (not AbortSignal.timeout) so vitest fake
+    // timers can advance a hung fetch the same way production wall-clock does.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), PREFETCH_FETCH_TIMEOUT_MS);
+    const download = (async () => {
+        try {
+            const response = await fetch(file, {
+                priority: 'low',
+                signal: controller.signal,
+            } as RequestInit);
+            if (!response.ok) throw new Error(`${response.status} ${file}`);
+            await response.arrayBuffer();
+        } finally {
+            clearTimeout(timer);
+        }
+    })();
+
+    downloadsByUrl.set(file, download);
+    return download.then(
+        () => undefined,
+        error => {
+            if (downloadsByUrl.get(file) === download) downloadsByUrl.delete(file);
+            throw error;
+        }
+    );
+};
 
 /**
  * Download a lazy chunk's files into the HTTP cache so the later import() finds them there.
  *
  * This uses fetch(), never import(). A speculative import() that fails (a 503, a dropped
  * connection) is remembered by Firefox and some Chromium versions, so the real open would
- * fail without another request. A failed fetch() leaves nothing behind: we forget it, the
- * next prefetch tries again, and the open does its own import() through lazyWithRetry.
+ * fail without another request. A failed fetch() leaves nothing behind: we forget it (after a
+ * short cooldown so every hover/focus doesn't re-hit a broken network), and the open does its
+ * own import() through lazyWithRetry.
+ *
+ * Each file fetch has a timeout so a hung connection can't leave the attempt pending forever.
+ * Concurrent route warm-ups that list the same asset URL share one in-flight download
+ * (downloadsByUrl); each route still keeps its own completion promise in `attempts`.
  *
  * Resolves true once every file is downloaded (or was already loaded), false when the list is
- * missing or a download failed. Never rejects.
+ * missing, a download failed, or we're in the post-failure cooldown. Never rejects.
  */
 export const prefetchChunk = (key: PrefetchChunkKey): Promise<boolean> => {
     const known = attempts.get(key);
     if (known) return known;
+    const until = cooldownUntil.get(key);
+    if (until !== undefined && Date.now() < until) return Promise.resolve(false);
     const listed = filesFor(key);
     if (listed.length === 0) return Promise.resolve(false);
     const loaded = loadedPaths();
@@ -58,15 +115,13 @@ export const prefetchChunk = (key: PrefetchChunkKey): Promise<boolean> => {
 
     // allSettled, not all: one failed file mustn't end the attempt while the others still
     // download, or waitForPrefetch would let the open request them a second time.
-    const attempt = Promise.allSettled(
-        files.map(async file => {
-            const response = await fetch(file, { priority: 'low' } as RequestInit);
-            if (!response.ok) throw new Error(`${response.status} ${file}`);
-            await response.arrayBuffer();
-        })
-    ).then(results => {
-        if (results.every(result => result.status === 'fulfilled')) return true;
+    const attempt = Promise.allSettled(files.map(downloadFile)).then(results => {
+        if (results.every(result => result.status === 'fulfilled')) {
+            cooldownUntil.delete(key);
+            return true;
+        }
         attempts.delete(key);
+        cooldownUntil.set(key, Date.now() + PREFETCH_FAIL_COOLDOWN_MS);
         return false;
     });
     attempts.set(key, attempt);
