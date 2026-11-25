@@ -8,6 +8,7 @@
  * server don't break older clients.
  */
 
+import { profileSchemasValidator } from './profileFields';
 import { z, type ZodIssue } from 'zod';
 
 /**
@@ -536,6 +537,9 @@ export const tenantConfigSchema = z
         email: tenantEmailConfigSchema.optional(),
         native: tenantNativeConfigSchema.optional(),
         ecosystem: tenantEcosystemConfigSchema.optional(),
+        verifiableDataKeysByCategory: z.record(z.string(), z.string().min(1)).optional(),
+        verifiableDataSchemas: profileSchemasValidator.optional(),
+        verifiableDataConsentNotice: z.string().trim().min(1).optional(),
         // Parse an absent block so each registry field receives its declared default.
         registries: tenantRegistriesConfigSchema.prefault({}),
     })

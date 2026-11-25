@@ -20,6 +20,10 @@ vi.mock('../useWallet', () => ({
     }),
 }));
 
+vi.mock('../../stores/pendingContractSyncStore', () => ({
+    enqueuePendingContractSyncSafely: vi.fn(),
+}));
+
 // ---------------------------------------------------------------------------
 // Mock wallet factory
 // ---------------------------------------------------------------------------
@@ -49,9 +53,15 @@ const createMockWallet = () => {
 
     return {
         id: { did: () => TEST_DID },
-        invoke: { issueCredential },
+        invoke: {
+            issueCredential,
+            learnCloudGetIndexRecordForUpdate: vi.fn().mockResolvedValue([]),
+            learnCloudCompareAndSwapIndexRecord: vi.fn().mockResolvedValue(true),
+        },
         store: { LearnCloud: { uploadEncrypted } },
-        index: { LearnCloud: { get: indexGet, add: indexAdd, update: indexUpdate, remove: indexRemove } },
+        index: {
+            LearnCloud: { get: indexGet, add: indexAdd, update: indexUpdate, remove: indexRemove },
+        },
         read: { get: readGet },
     };
 };
@@ -111,7 +121,9 @@ describe('saveVerifiableData', () => {
             typeof c === 'string' ? c : '__inline__'
         );
         expect(contexts).not.toContain('https://purl.imsglobal.org/spec/ob/v3p0/context.json');
-        expect(contexts).not.toContain('https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json');
+        expect(contexts).not.toContain(
+            'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'
+        );
 
         expect(unsigned.credentialSubject).not.toHaveProperty('achievement');
     });
@@ -142,6 +154,16 @@ describe('saveVerifiableData', () => {
         expect(indexed.issuanceDate).toBeDefined();
     });
 
+    it('keeps profile answers out of both new and updated index records', async () => {
+        const category = 'VerifiableData:demo:profile:branch';
+        await saveVerifiableData(wallet as never, category, { branch: 'North' }, { category });
+        wallet.index.LearnCloud.get.mockResolvedValueOnce([{ uri: 'lc:old' }]);
+        await saveVerifiableData(wallet as never, category, { branch: 'South' }, { category });
+        const writes = wallet.invoke.learnCloudCompareAndSwapIndexRecord.mock.calls;
+        expect(writes).toHaveLength(2);
+        for (const [, record] of writes) expect(record).not.toHaveProperty('verifiableData');
+    });
+
     it('uses a custom category when provided', async () => {
         await saveVerifiableData(wallet as never, 'key', {}, { category: 'CustomCategory' });
 
@@ -167,9 +189,9 @@ describe('saveVerifiableData', () => {
     it('throws when uploadEncrypted returns falsy', async () => {
         wallet.store.LearnCloud.uploadEncrypted.mockResolvedValueOnce(null);
 
-        await expect(
-            saveVerifiableData(wallet as never, 'key', {})
-        ).rejects.toThrow('Failed to store verifiable data credential.');
+        await expect(saveVerifiableData(wallet as never, 'key', {})).rejects.toThrow(
+            'Failed to store verifiable data credential.'
+        );
     });
 
     // --- Update vs Add ---
@@ -212,9 +234,14 @@ describe('saveVerifiableData', () => {
     // --- name / description ---
 
     it('includes name on the credential when provided', async () => {
-        await saveVerifiableData(wallet as never, 'goals', { g: 1 }, {
-            name: 'Career Goals',
-        });
+        await saveVerifiableData(
+            wallet as never,
+            'goals',
+            { g: 1 },
+            {
+                name: 'Career Goals',
+            }
+        );
 
         const unsigned = wallet.invoke.issueCredential.mock.calls[0][0];
         expect(unsigned.name).toBe('Career Goals');
@@ -222,9 +249,14 @@ describe('saveVerifiableData', () => {
     });
 
     it('includes description on the credential when provided', async () => {
-        await saveVerifiableData(wallet as never, 'goals', { g: 1 }, {
-            description: 'Self-reported career goals',
-        });
+        await saveVerifiableData(
+            wallet as never,
+            'goals',
+            { g: 1 },
+            {
+                description: 'Self-reported career goals',
+            }
+        );
 
         const unsigned = wallet.invoke.issueCredential.mock.calls[0][0];
         expect(unsigned.description).toBe('Self-reported career goals');
@@ -232,10 +264,15 @@ describe('saveVerifiableData', () => {
     });
 
     it('includes both name and description when provided', async () => {
-        await saveVerifiableData(wallet as never, 'salary', { s: 50000 }, {
-            name: 'Salary Info',
-            description: 'Current salary data',
-        });
+        await saveVerifiableData(
+            wallet as never,
+            'salary',
+            { s: 50000 },
+            {
+                name: 'Salary Info',
+                description: 'Current salary data',
+            }
+        );
 
         const unsigned = wallet.invoke.issueCredential.mock.calls[0][0];
         expect(unsigned.name).toBe('Salary Info');
@@ -282,6 +319,25 @@ describe('saveVerifiableData', () => {
 // ---------------------------------------------------------------------------
 
 describe('getVerifiableDataForKey', () => {
+    it('loads a profile answer from the fresh index when a stale page exists', async () => {
+        const wallet = createMockWallet();
+        const category = 'VerifiableData:demo:profile:branch';
+        wallet.index.LearnCloud.get.mockResolvedValue([{ uri: 'lc:stale' }]);
+        wallet.invoke.learnCloudGetIndexRecordForUpdate.mockResolvedValue([{ uri: 'lc:current' }]);
+        wallet.read.get.mockResolvedValue({
+            validFrom: '2026-11-20T00:00:00.000Z',
+            credentialSubject: { dataKey: category, dataPayload: { branch: 'Current' } },
+        });
+
+        await expect(getVerifiableDataForKey(wallet as never, category)).resolves.toEqual({
+            branch: 'Current',
+        });
+        expect(wallet.index.LearnCloud.get).not.toHaveBeenCalled();
+        expect(wallet.invoke.learnCloudGetIndexRecordForUpdate).toHaveBeenCalledWith(
+            `__verifiable_data_${category}__`
+        );
+        expect(wallet.read.get).toHaveBeenCalledWith('lc:current');
+    });
     let wallet: MockWallet;
 
     beforeEach(() => {
@@ -357,9 +413,7 @@ describe('getVerifiableDataForKey', () => {
         ]);
 
         wallet.read.get.mockResolvedValueOnce({
-            credentialSubject: [
-                { id: TEST_DID, dataKey: 'k', dataPayload: { x: 42 } },
-            ],
+            credentialSubject: [{ id: TEST_DID, dataKey: 'k', dataPayload: { x: 42 } }],
             validFrom: '2025-01-01T00:00:00Z',
         });
 

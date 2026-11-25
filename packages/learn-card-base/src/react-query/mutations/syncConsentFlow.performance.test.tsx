@@ -63,7 +63,18 @@ it('invalidates cached terms even when a later contract fails after an earlier u
         uri: 'terms-a',
         contract: { uri: 'contract-a', owner: { did: 'owner-a' } },
         terms: {
-            read: { credentials: { categories: { Achievement: { shared: ['deleted-uri'] } } } },
+            read: {
+                credentials: {
+                    categories: {
+                        Achievement: { shared: ['deleted-uri'] },
+                        'VerifiableData:demo:profile:branch': {
+                            shareAll: false,
+                            sharing: true,
+                            shared: ['previously-approved-answer'],
+                        },
+                    },
+                },
+            },
         },
     } as unknown as ConsentedContract;
     await act(async () => {
@@ -75,7 +86,102 @@ it('invalidates cached terms even when a later contract fails after an earlier u
         ).rejects.toThrow('offline');
     });
     expect(update).toHaveBeenCalledTimes(1);
+    expect(update).toHaveBeenCalledWith(
+        'terms-a',
+        expect.objectContaining({
+            terms: {
+                read: {
+                    credentials: {
+                        categories: {
+                            Achievement: { shared: [] },
+                            'VerifiableData:demo:profile:branch': {
+                                shareAll: false,
+                                sharing: true,
+                                shared: ['previously-approved-answer'],
+                            },
+                        },
+                    },
+                },
+            },
+        })
+    );
     expect(await client.fetchQuery(options)).toEqual([updated]);
     expect(get).toHaveBeenCalledTimes(2);
+    client.clear();
+});
+
+it('syncs the exact live profile field and rejects normalized aliases in both directions', async () => {
+    const category = 'VerifiableData:demo:profile:birthDate';
+    const alias = 'verifiabledata-demo-profile-birth-date';
+    const { getOrCreateSharedUriForWallet } =
+        await import('learn-card-base/hooks/useSharedUrisInTerms');
+    vi.mocked(getOrCreateSharedUriForWallet).mockResolvedValue('shared:date');
+    const sync = vi.fn();
+    const fresh = vi.fn().mockResolvedValue([]);
+    host.wallet = {
+        id: { did: () => 'holder' },
+        read: { get: async () => ({ validFrom: '2026-01-01T00:00:00.000Z' }) },
+        index: { LearnCloud: { getPage: async () => ({ records: [], hasMore: false }) } },
+        invoke: {
+            getContract: async () => ({ owner: { did: 'owner' }, audienceVersion: 1 }),
+            syncCredentialsToContract: sync,
+            learnCloudGetIndexRecordForUpdate: fresh,
+        },
+    } as unknown as BespokeLearnCard;
+    const client = new QueryClient();
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+        <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    );
+    const { result } = renderHook(useSyncConsentContractsMutation, { wrapper });
+    const grant = (key: string): ConsentedContract =>
+        ({
+            uri: 'terms-live',
+            contract: { uri: 'contract', owner: { did: 'owner' } },
+            terms: {
+                read: { credentials: { categories: { [key]: { sharing: true, shareAll: true } } } },
+            },
+        }) as ConsentedContract;
+    await act(async () => {
+        await result.current.mutateAsync({
+            recordsByCategory: { [category]: ['cred:date'] },
+            allContracts: [grant(alias)],
+        });
+        await result.current.mutateAsync({
+            recordsByCategory: { [alias]: ['cred:alias'] },
+            allContracts: [grant(category)],
+        });
+    });
+    expect(getOrCreateSharedUriForWallet).not.toHaveBeenCalled();
+    expect(sync).not.toHaveBeenCalled();
+    fresh.mockResolvedValue([{ id: `__verifiable_data_${category}__`, category, uri: 'cred:new' }]);
+    await act(async () => {
+        await result.current.mutateAsync({
+            // The scan returned an obsolete source; the current record must win.
+            recordsByCategory: { [category]: ['cred:old'] },
+            allContracts: [grant(category)],
+        });
+    });
+    expect(getOrCreateSharedUriForWallet).toHaveBeenCalledWith(
+        host.wallet,
+        ['owner'],
+        client,
+        'cred:new',
+        category
+    );
+    expect(sync).toHaveBeenCalledExactlyOnceWith(
+        'terms-live',
+        { [category]: ['shared:date'] },
+        1,
+        true,
+        { [category]: expect.stringMatching(/^2026-01-01T00:00:00\.000Z:[a-f0-9]{64}$/) }
+    );
+    sync.mockClear();
+    await act(async () => {
+        await result.current.mutateAsync({
+            recordsByCategory: {},
+            allContracts: [grant(category)],
+        });
+    });
+    expect(sync).toHaveBeenCalledOnce();
     client.clear();
 });

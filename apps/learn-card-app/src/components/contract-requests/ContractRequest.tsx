@@ -1,3 +1,4 @@
+import { useContractProfileFieldLabel } from '../../hooks/useContractProfileFieldLabel';
 import React, { useCallback, useEffect, useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import {
@@ -34,8 +35,6 @@ const isExpired = (expiresAt?: string): boolean =>
         expiresAt?.trim() &&
         (!Number.isFinite(Date.parse(expiresAt)) || Date.parse(expiresAt) <= Date.now())
     );
-const categoryLabel = (category: string): string =>
-    localizeCategoryTitle(contractCategoryNameToCategoryMetadata(category)?.title ?? category);
 const formatLabels = (labels: string[]): string =>
     labels.length
         ? new Intl.ListFormat(getLocale(), { style: 'long', type: 'conjunction' }).format(labels)
@@ -73,6 +72,10 @@ export const ContractRequest: React.FC<RequestProps> = ({
     const confirm = useConfirmation();
     const { presentToast } = useToast();
     const branding = useBrandingConfig();
+    const getProfileFieldLabel = useContractProfileFieldLabel();
+    const categoryLabel = (category: string): string =>
+        getProfileFieldLabel(category) ??
+        localizeCategoryTitle(contractCategoryNameToCategoryMetadata(category)?.title ?? category);
     const [busyAction, setBusyAction] = useState<'accept' | 'decline' | 'dismiss' | 'retry' | null>(
         null
     );

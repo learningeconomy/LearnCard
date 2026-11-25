@@ -34,6 +34,7 @@ import XApiDataFeedModal from './XApiDataFeedModal';
 import * as m from '../../paraglide/messages.js';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import { useAiConsentToggle } from '../../hooks/useAiConsentToggle';
+import { useContractProfileFieldLabel } from '../../hooks/useContractProfileFieldLabel';
 import TransP from '../../i18n/TransP';
 import { buildPermissionText } from './consentSummary';
 import { hasOpenNewOptionsWindow } from '@learncard/helpers';
@@ -566,6 +567,7 @@ export const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract
 };
 
 const PermissionsList: React.FC<{ contract: ConsentedContract }> = ({ contract }) => {
+    const getProfileFieldLabel = useContractProfileFieldLabel();
     // Filter to only show categories where sharing is enabled (matching AppInstallConsentModal logic)
     const acceptedReadCategories = contract.terms?.read?.credentials?.categories
         ? Object.entries(contract.terms.read.credentials.categories)
@@ -620,7 +622,8 @@ const PermissionsList: React.FC<{ contract: ConsentedContract }> = ({ contract }
                                     {metadata?.IconWithShape && (
                                         <metadata.IconWithShape className="w-3.5 h-3.5" />
                                     )}
-                                    {metadata?.title || category}
+                                    {getProfileFieldLabel(category) ??
+                                        (metadata?.title || category)}
                                 </span>
                             );
                         })}
@@ -653,7 +656,8 @@ const PermissionsList: React.FC<{ contract: ConsentedContract }> = ({ contract }
                                     {metadata?.IconWithShape && (
                                         <metadata.IconWithShape className="w-3.5 h-3.5" />
                                     )}
-                                    {metadata?.title || category}
+                                    {getProfileFieldLabel(category) ??
+                                        (metadata?.title || category)}
                                 </span>
                             );
                         })}

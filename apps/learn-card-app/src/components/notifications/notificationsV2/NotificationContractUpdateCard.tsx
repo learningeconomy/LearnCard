@@ -1,3 +1,4 @@
+import { useContractProfileFieldLabel } from '../../../hooks/useContractProfileFieldLabel';
 import React, { useState } from 'react';
 import type { NotificationType } from '@learncard/lca-api-plugin';
 import { useHistory } from 'react-router-dom';
@@ -14,6 +15,7 @@ type Props = { notification: NotificationType; handleArchive?: () => void | Prom
 const NotificationContractUpdateCard: React.FC<Props> = ({ notification, handleArchive }) => {
     const history = useHistory();
     const { closeAllModals } = useModal();
+    const getProfileFieldLabel = useContractProfileFieldLabel();
     const locale = useLocale();
     const { mutateAsync: updateNotification } = useUpdateNotification();
     const [dismissing, setDismissing] = useState(false);
@@ -34,9 +36,13 @@ const NotificationContractUpdateCard: React.FC<Props> = ({ notification, handleA
             : undefined;
     const appName = data?.contractName ?? sender ?? m['dataSharing.unknownApp']();
     const quietChange = data?.kind === 'relaxed' || data?.kind === 'expanded_optional';
-    const removed =
-        data?.preview?.rows?.find(row => row.change === 'removed')?.label ??
-        data?.diff?.removed?.[0]?.key?.replace(/[_-]+/g, ' ').toLowerCase();
+    const removedKey = data?.diff?.removed?.[0]?.key;
+    const removedLabel = data?.preview?.rows?.find(row => row.change === 'removed')?.label;
+    const removedDisplay = removedLabel
+        ? (getProfileFieldLabel(removedLabel) ?? removedLabel)
+        : removedKey
+          ? (getProfileFieldLabel(removedKey) ?? removedKey.replace(/[_-]+/g, ' ').toLowerCase())
+          : undefined;
     const generatedPreview =
         data?.kind && data.diff
             ? buildContractUpdatePreview({
@@ -44,13 +50,17 @@ const NotificationContractUpdateCard: React.FC<Props> = ({ notification, handleA
                   kind: data.kind,
                   diff: data.diff,
                   translate: (key, values) => mDynamic(key, values),
+                  getCredentialLabel: getProfileFieldLabel,
               })
             : undefined;
     const message =
         generatedPreview?.headline ??
         (data?.kind === 'relaxed'
-            ? removed
-                ? m['consentUpdate.notification.relaxedWithItem']({ appName, removed })
+            ? removedDisplay
+                ? m['consentUpdate.notification.relaxedWithItem']({
+                      appName,
+                      removed: removedDisplay,
+                  })
                 : m['consentUpdate.notification.changed']({ appName })
             : data?.kind === 'requires_consent'
               ? m['consentUpdate.notification.review']({ appName })

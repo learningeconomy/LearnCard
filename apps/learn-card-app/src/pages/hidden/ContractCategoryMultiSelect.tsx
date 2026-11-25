@@ -1,3 +1,4 @@
+import { useContractProfileFieldLabel } from '../../hooks/useContractProfileFieldLabel';
 import React from 'react';
 import { produce } from 'immer';
 
@@ -37,6 +38,7 @@ const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = 
     availableCategories = CONTRACT_CATEGORIES,
 }) => {
     const { newModal } = useModal();
+    const getProfileFieldLabel = useContractProfileFieldLabel();
 
     const shouldHideVerifiableDataCategories = mode === 'write' && hideVerifiableDataOnWrite;
     const selectedCategories = Object.keys(values);
@@ -96,7 +98,7 @@ const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = 
                 category={category}
                 onChange={onChange}
                 values={values}
-                titleOverride={categoryTitleOverrides[category]}
+                titleOverride={categoryTitleOverrides[category] ?? getProfileFieldLabel(category)}
             />,
             {
                 sectionClassName: 'max-w-[500px]!',
@@ -108,7 +110,8 @@ const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = 
     const inputs = visibleCategories.map((category, index) => {
         const metadata = contractCategoryNameToCategoryMetadata(category);
         const { title, IconWithShape } = metadata || {};
-        const displayTitle = categoryTitleOverrides[category] ?? title ?? category;
+        const displayTitle =
+            categoryTitleOverrides[category] ?? getProfileFieldLabel(category) ?? title ?? category;
 
         const settings = values[category];
 

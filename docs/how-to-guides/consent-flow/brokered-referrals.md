@@ -340,3 +340,26 @@ PW_RECORD_VIDEO=true bun run test-mock -- contract-request.mocked.spec.ts --retr
 Videos are saved under the app's ignored `test-results/` directory. The recording option does not change ordinary test runs.
 
 See [Contract Requests and Events](../../sdks/learncard-network/contract-requests-and-events.md) for status transitions, API methods, retry semantics, and scope requirements.
+
+### Request profile fields at consent
+
+Tenant configuration defines the field labels, types (`text`, `select`, or ISO `date`), and preset select values in `verifiableDataSchemas`. Add `{ "type": "custom" }` among the select values to offer a self-described answer in that position. A tenant can set `verifiableDataConsentNotice` to display a notice once above the requested field form. A field may declare `maxAgeDays` to require a fresh answer. VetPass local and staging configurations include the initial `military-profile` fields: branch of service, disability status, gender, and date of birth. Each answer belongs to the learner: its encrypted credential uses the learner’s DID as issuer and subject. A contract can request any subset. The current picklists and formats are for testing. Confirm accepted values, required fields and Salesforce mappings with the partner before production use.
+
+Use `requestProfileFields` from `@learncard/types` to build a contract's read categories. The following requests just the branch field. Omitting the field list expands the schema to its current field keys when creating the contract.
+
+```typescript
+import { requestProfileFields } from '@learncard/types';
+
+const categories = requestProfileFields(
+    'vetpass',
+    'military-profile',
+    tenantConfig.verifiableDataSchemas,
+    ['branch'],
+    true // required for this contract
+);
+const contract = { read: { credentials: { categories } } };
+```
+
+For REST clients the equivalent category is `"VerifiableData:vetpass:military-profile:branch": { "required": true }` under `contract.read.credentials.categories`. Each field has its own category so existing ConsentFlow audience, sync and versioning rules apply independently. A request for branch does not include other profile fields.
+
+At consent the learner reviews the audience, chooses whether to allow a field once or keep it updated, and can decline optional fields. Each answer is saved as an encrypted self-issued credential with the field category in `credentialSubject.dataKey` and a single field in `credentialSubject.dataPayload`. A stale or invalid stored answer requires a new value. An unknown required field prevents confirmation.

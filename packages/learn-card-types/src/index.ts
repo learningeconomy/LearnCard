@@ -23,3 +23,4 @@ export * from './share-previews';
 export * from './skillIcons';
 export * from './readable-delivery';
 export * from './aiPassport';
+export * from './verifiable-data-fields';

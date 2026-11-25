@@ -1,0 +1,189 @@
+// @vitest-environment jsdom
+import React from 'react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, expect, it, vi } from 'vitest';
+import type { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
+import { requestProfileFields } from '@learncard/types';
+import { TenantConfigProvider } from '../../config/TenantConfigProvider';
+import type { TenantConfig } from '../../config/tenantConfig';
+import { ConsentProfileFields } from '../ConsentProfileFields';
+
+const storage = vi.hoisted(() => ({ getVerifiableData: vi.fn(), saveVerifiableData: vi.fn() }));
+vi.mock('../useVerifiableData', () => storage);
+afterEach(() => {
+    cleanup();
+    vi.resetAllMocks();
+});
+const schemas = {
+    profile: {
+        label: 'Test',
+        fields: {
+            branch: { label: 'Branch', type: 'select', values: ['North', 'South'], maxAgeDays: 1 },
+            birthDate: { label: 'Birthday', type: 'date' },
+            gender: {
+                label: 'Gender',
+                type: 'select',
+                values: ['Man', 'Woman', 'Other', { type: 'custom' }, 'Prefer not to say'],
+            },
+        },
+    },
+} as const;
+const branch = 'VerifiableData:demo:profile:branch';
+const gender = 'VerifiableData:demo:profile:gender';
+const renderFields = (
+    categories = requestProfileFields('demo', 'profile', schemas, ['branch'], true),
+    tenantId = 'demo'
+) => {
+    const onConfirm = vi.fn();
+    render(
+        <TenantConfigProvider
+            config={{ tenantId, verifiableDataSchemas: schemas } as unknown as TenantConfig}
+        >
+            <ConsentProfileFields
+                contract={
+                    {
+                        contract: { read: { credentials: { categories } } },
+                    } as ConsentFlowContractDetails
+                }
+                review={{
+                    wallet: {} as never,
+                    terms: { read: { credentials: { categories: {} } } } as ConsentFlowTerms,
+                }}
+                onConfirm={onConfirm}
+                onCancel={vi.fn()}
+            />
+        </TenantConfigProvider>
+    );
+    return onConfirm;
+};
+it('confirms only the requested answer without writing or publishing it', async () => {
+    storage.getVerifiableData.mockResolvedValue({});
+    const confirm = renderFields();
+    const input = await screen.findByLabelText('Branch', { exact: true });
+    expect(screen.queryByLabelText('Birthday')).toBeNull();
+    fireEvent.change(input, { target: { value: 'North' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm Sharing' }));
+    await waitFor(() => expect(confirm).toHaveBeenCalledOnce());
+    expect(storage.saveVerifiableData).not.toHaveBeenCalled();
+    expect(confirm.mock.calls[0][0].changes).toEqual([
+        { category: branch, label: 'Branch', value: 'North' },
+    ]);
+    expect(confirm.mock.calls[0][0].terms.read.credentials.categories).toEqual({
+        [branch]: { sharing: true, shareAll: false, shared: [] },
+    });
+});
+it('requires a new answer once its configured age has elapsed', async () => {
+    storage.getVerifiableData.mockResolvedValue({
+        uri: 'urn:old',
+        data: { branch: 'North' },
+        issuanceDate: '2020-01-01T00:00:00Z',
+    });
+    renderFields();
+    expect(
+        ((await screen.findByLabelText('Branch', { exact: true })) as HTMLSelectElement).value
+    ).toBe('');
+});
+it('offers preset genders and stores the text entered through Prefer to self-describe', async () => {
+    storage.getVerifiableData.mockResolvedValue({});
+    const confirm = renderFields(
+        requestProfileFields('demo', 'profile', schemas, ['gender'], true)
+    );
+    const select = await screen.findByRole('combobox', { name: 'Gender', exact: true });
+    expect(Array.from((select as HTMLSelectElement).options, option => option.text)).toEqual([
+        'Choose an option',
+        'Man',
+        'Woman',
+        'Other',
+        'Prefer to self-describe',
+        'Prefer not to say',
+    ]);
+
+    fireEvent.change(select, { target: { value: 'custom' } });
+    const input = screen.getByRole<HTMLInputElement>('textbox', {
+        name: 'Gender — Prefer to self-describe',
+    });
+    expect(input.required).toBe(true);
+    fireEvent.change(input, { target: { value: 'Nonbinary' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm Sharing' }));
+
+    await waitFor(() => expect(confirm).toHaveBeenCalledOnce());
+    expect(confirm.mock.calls[0][0].changes).toEqual([
+        { category: gender, label: 'Gender', value: 'Nonbinary' },
+    ]);
+    expect(storage.saveVerifiableData).not.toHaveBeenCalled();
+});
+
+it('prefills an earlier free-text gender answer and reuses its credential', async () => {
+    storage.getVerifiableData.mockResolvedValue({
+        data: { gender: 'Nonbinary' },
+        uri: 'urn:old',
+    });
+    const confirm = renderFields(
+        requestProfileFields('demo', 'profile', schemas, ['gender'], true)
+    );
+    const input = await screen.findByRole<HTMLInputElement>('textbox', {
+        name: 'Gender — Prefer to self-describe',
+    });
+    expect(input.value).toBe('Nonbinary');
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm Sharing' }));
+    await waitFor(() => expect(confirm).toHaveBeenCalledOnce());
+    expect(storage.saveVerifiableData).not.toHaveBeenCalled();
+    expect(confirm.mock.calls[0][0].terms.read.credentials.categories[gender].shared).toEqual([
+        'urn:old',
+    ]);
+});
+it('declining an optional field publishes no credential', async () => {
+    storage.getVerifiableData.mockResolvedValue({
+        data: { branch: 'South' },
+        uri: 'urn:old',
+        issuanceDate: new Date().toISOString(),
+    });
+    const confirm = renderFields(requestProfileFields('demo', 'profile', schemas, ['branch']));
+    await screen.findByLabelText('Branch — Permission');
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm Sharing' }));
+    await waitFor(() => expect(confirm).toHaveBeenCalledOnce());
+    expect(storage.saveVerifiableData).not.toHaveBeenCalled();
+    expect(confirm.mock.calls[0][0].terms.read.credentials.categories[branch]).toEqual({
+        sharing: false,
+        shareAll: false,
+        shared: [],
+    });
+});
+it('blocks a required field owned by another tenant before reading storage', async () => {
+    renderFields(undefined, 'other');
+    await screen.findByText('Field unavailable');
+    expect(
+        (screen.getByRole('button', { name: 'Confirm Sharing' }) as HTMLButtonElement).disabled
+    ).toBe(true);
+    expect(storage.getVerifiableData).not.toHaveBeenCalled();
+});
+
+it('projects a saved multi-field answer into a new single-field credential', async () => {
+    storage.getVerifiableData.mockResolvedValue({
+        data: { branch: 'North', birthDate: '2000-01-01' },
+        uri: 'urn:combined',
+        issuanceDate: new Date().toISOString(),
+    });
+    const confirm = renderFields();
+    await screen.findByLabelText('Branch', { exact: true });
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm Sharing' }));
+    await waitFor(() => expect(confirm).toHaveBeenCalledOnce());
+    expect(confirm.mock.calls[0][0].changes).toEqual([
+        { category: branch, label: 'Branch', value: 'North' },
+    ]);
+    expect(confirm.mock.calls[0][0].terms.read.credentials.categories[branch].shared).toEqual([]);
+});
+
+it('discards a valid first answer when another required answer is missing or the learner cancels', async () => {
+    storage.getVerifiableData.mockResolvedValue({});
+    const confirm = renderFields(
+        requestProfileFields('demo', 'profile', schemas, ['branch', 'gender'], true)
+    );
+    const branchInput = await screen.findByLabelText('Branch', { exact: true });
+    fireEvent.change(branchInput, { target: { value: 'North' } });
+    fireEvent.submit(branchInput.closest('form')!);
+    expect(await screen.findByRole('alert')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(confirm).not.toHaveBeenCalled();
+    expect(storage.saveVerifiableData).not.toHaveBeenCalled();
+});

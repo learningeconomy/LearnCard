@@ -5,8 +5,9 @@ import * as m from '../../paraglide/messages.js';
 
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 
-import { getInfoFromContractKey } from '../../helpers/contract.helpers';
-import { VERIFIABLE_DATA_KEY_BY_CATEGORY } from './ConsentFlowVerifiableDataConstants';
+import { useContractCategoryInfo } from '../../hooks/useContractCategoryInfo';
+import { legacyProfileDataKeys } from 'learn-card-base/config/profileFields';
+import { useOptionalTenantConfig } from 'learn-card-base/config/TenantConfigProvider';
 import {
     SelfAssignedSkillsSummary,
     VerifiableDataSummary,
@@ -32,8 +33,9 @@ const ConsentFlowVerifiableDataSharingItem: React.FC<ConsentFlowVerifiableDataSh
     onModeChange,
 }) => {
     const { IconComponent, iconSrc, title, iconClassName, iconCircleClass } =
-        getInfoFromContractKey(category);
+        useContractCategoryInfo(category);
 
+    const tenant = useOptionalTenantConfig();
     const isLiveSync = Boolean(term.sharing && term.shareAll);
     const isShareOnce = Boolean(term.sharing && !term.shareAll);
 
@@ -89,7 +91,11 @@ const ConsentFlowVerifiableDataSharingItem: React.FC<ConsentFlowVerifiableDataSh
                             ) : (
                                 <VerifiableDataSummary
                                     category={category}
-                                    dataKey={VERIFIABLE_DATA_KEY_BY_CATEGORY[category] ?? category}
+                                    dataKey={
+                                        tenant?.verifiableDataKeysByCategory?.[category] ??
+                                        legacyProfileDataKeys[category] ??
+                                        category
+                                    }
                                 />
                             )}
 

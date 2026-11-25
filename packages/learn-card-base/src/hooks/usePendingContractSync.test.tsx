@@ -14,6 +14,8 @@ const mocks = vi.hoisted(() => ({
     contracts: vi.fn(),
     share: vi.fn(),
     readIndex: vi.fn(),
+    readFresh: vi.fn(),
+    readCredential: vi.fn(),
     syncContract: vi.fn(),
 }));
 vi.mock('./useWallet', () => ({
@@ -43,7 +45,7 @@ vi.mock('./consentAudience', () => ({
     }),
 }));
 vi.mock('../logging/logger', () => ({
-    getLogger: () => ({ info: vi.fn(), error: vi.fn() }),
+    getLogger: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() }),
 }));
 import { usePendingContractSync } from './usePendingContractSync';
 import {
@@ -89,11 +91,17 @@ beforeEach(async () => {
     mocks.initWallet.mockImplementation(async () => ({
         id: { did: (method?: string) => (method === 'key' ? mocks.keyDid : mocks.activeDid) },
         index: { LearnCloud: { get: mocks.readIndex } },
-        invoke: { syncCredentialsToContract: mocks.syncContract },
+        invoke: {
+            syncCredentialsToContract: mocks.syncContract,
+            learnCloudGetIndexRecordForUpdate: mocks.readFresh,
+        },
+        read: { get: mocks.readCredential },
     }));
     mocks.sync.mockReset().mockResolvedValue(true);
     mocks.contracts.mockReset().mockResolvedValue([]);
     mocks.readIndex.mockReset().mockResolvedValue([source]);
+    mocks.readFresh.mockReset().mockResolvedValue([source]);
+    mocks.readCredential.mockReset().mockResolvedValue({ validFrom: '2026-01-01T00:00:00.000Z' });
     mocks.share.mockReset().mockResolvedValue('shared-uri');
 });
 afterEach(() => {
@@ -127,6 +135,72 @@ it('persists queued credentials and reports successful sync progress', async () 
             onTermsSynced: expect.any(Function),
             onContractsFailed: expect.any(Function),
         })
+    );
+});
+
+it('checks a queued profile answer against the fresh index', async () => {
+    const category = 'VerifiableData:demo:profile:branch';
+    const current = { id: `__verifiable_data_${category}__`, uri: 'answer:b', category };
+    mocks.readIndex.mockResolvedValue([{ ...current, uri: 'answer:a' }]);
+    mocks.readFresh.mockResolvedValue([current]);
+    const job = await enqueuePendingContractSync({
+        kind: 'credential',
+        profileDid: 'did:example:learner',
+        record: current,
+        category,
+    });
+    mount();
+    await waitFor(() => expect(pendingContractSyncStore.get.jobs()[job.id].status).toBe('done'));
+    expect(mocks.readFresh).toHaveBeenCalledWith(current.id);
+    expect(mocks.readIndex).not.toHaveBeenCalled();
+    expect(mocks.sync).toHaveBeenCalledWith(
+        { record: current, category },
+        expect.anything(),
+        expect.any(Set),
+        expect.anything()
+    );
+});
+
+it('discovers and versions the current profile answer in a contract-wide job', async () => {
+    const category = 'VerifiableData:demo:profile:branch';
+    const current = { id: `__verifiable_data_${category}__`, uri: 'answer:b', category };
+    mocks.readIndex.mockResolvedValue([{ ...current, uri: 'answer:a' }]);
+    mocks.readFresh.mockResolvedValue([current]);
+    mocks.contracts.mockResolvedValue([
+        {
+            uri: 'terms-original',
+            status: 'live',
+            contract: { uri: 'contract-original', owner: { did: 'did:example:owner' } },
+            terms: {
+                read: {
+                    credentials: { categories: { [category]: { shareAll: true, sharing: true } } },
+                },
+            },
+        },
+    ]);
+    const job = await enqueuePendingContractSync({
+        profileDid: 'did:example:learner',
+        contractUri: 'contract-original',
+        termsUri: 'terms-original',
+        ownerDid: 'did:example:owner',
+    });
+    mount();
+    await waitFor(() => expect(pendingContractSyncStore.get.jobs()[job.id].status).toBe('done'));
+    expect(mocks.readFresh).toHaveBeenCalledWith(current.id);
+    expect(mocks.readIndex).not.toHaveBeenCalled();
+    expect(mocks.share).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        current.uri,
+        category
+    );
+    expect(mocks.syncContract).toHaveBeenCalledWith(
+        'terms-original',
+        { [category]: ['shared-uri'] },
+        2,
+        true,
+        { [category]: expect.stringMatching(/^2026-01-01T00:00:00\.000Z:[a-f0-9]{64}$/) }
     );
 });
 

@@ -4374,6 +4374,20 @@
             },
             "expires": "Expires"
         },
+        "profileFields": {
+            "unavailable": "Field unavailable",
+            "permission": "Permission",
+            "off": "Keep private",
+            "once": "Allow once",
+            "live": "Keep updated",
+            "choose": "Choose an option",
+            "selfDescribe": "Prefer to self-describe",
+            "enterAnswer": "Enter your answer",
+            "error": "Something went wrong. Please try again.",
+            "retry": "Try again",
+            "loading": "Loading…",
+            "saving": "Saving…"
+        },
         "consentAudience": {
             "fullCredential": "{{organizations}} can receive a complete copy of each credential you select, including your details and any issuer signature.",
             "title": "Review who receives your data",

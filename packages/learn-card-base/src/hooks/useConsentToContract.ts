@@ -1,3 +1,8 @@
+import {
+    prepareReviewedFields,
+    commitAcceptedFields,
+    type ReviewedProfileFields,
+} from './reviewedProfileFields';
 import { useRef, useState } from 'react';
 import { ConsentFlowTerms } from '@learncard/types';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -20,6 +25,7 @@ export const useConsentToContract = (
     const publication = useRef<
         | {
               uri: string;
+              fields: Awaited<ReturnType<typeof prepareReviewedFields>>;
               holderDid: string;
               recipientToken: string;
               submission: {
@@ -85,6 +91,7 @@ export const useConsentToContract = (
                         structuredClone(saved.submission),
                         saved.recipientToken
                     );
+                    if (result) await commitAcceptedFields(currentWallet, saved.fields);
                     clearPublicationRetry();
                     return result;
                 } catch (error) {
@@ -105,8 +112,23 @@ export const useConsentToContract = (
             }
             clearPublicationRetry();
 
+            let changes: ReviewedProfileFields['changes'] = [];
             const audience = await loadContractAudience(wallet, uri);
-            await reviewAudience(audience.contract);
+            if (
+                Object.keys(audience.contract.contract?.read.credentials.categories ?? {}).some(
+                    category => category.startsWith('VerifiableData:')
+                )
+            ) {
+                const reviewed = await reviewAudience(audience.contract, {
+                    wallet,
+                    terms: submission.terms,
+                });
+                if (!reviewed) throw new Error('Profile field review was interrupted.');
+                submission.terms = reviewed.terms;
+                changes = reviewed.changes;
+            } else {
+                await reviewAudience(audience.contract);
+            }
             const terms =
                 skipSharedUriMaterialization &&
                 Object.values(submission.terms.read.credentials.categories).every(
@@ -124,6 +146,12 @@ export const useConsentToContract = (
                           submission
                       );
 
+            const fields = await prepareReviewedFields(
+                wallet,
+                audience.recipients,
+                terms.terms,
+                changes
+            );
             const prepared = structuredClone({
                 ...terms,
                 audienceVersion: audience.audienceVersion,
@@ -132,11 +160,13 @@ export const useConsentToContract = (
             const holderDid = recipientToken ? await wallet.id.did() : undefined;
             await beforeSubmit?.();
             try {
-                return await wallet.invoke.consentToContract(
+                const result = await wallet.invoke.consentToContract(
                     uri,
                     structuredClone(prepared),
                     recipientToken
                 );
+                if (result) await commitAcceptedFields(wallet, fields);
+                return result;
             } catch (error) {
                 if (
                     recipientToken &&
@@ -149,7 +179,13 @@ export const useConsentToContract = (
                     'code' in error.data &&
                     error.data.code === 'BAD_GATEWAY'
                 ) {
-                    publication.current = { uri, holderDid, recipientToken, submission: prepared };
+                    publication.current = {
+                        uri,
+                        holderDid,
+                        recipientToken,
+                        fields,
+                        submission: prepared,
+                    };
                     setRetryContext({ uri, recipientToken });
                 }
                 throw error;

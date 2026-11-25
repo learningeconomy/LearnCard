@@ -898,7 +898,9 @@ export type LearnCardNetworkPluginMethods = {
         categories: Record<string, string[]>,
         audienceVersion?: number,
         /** Require current category-wide consent for automatic delivery. Omit for explicit selections. */
-        automatic?: boolean
+        automatic?: boolean,
+        /** Source generations for automatically synchronized profile fields. */
+        fieldGenerations?: Record<string, string>
     ) => Promise<boolean>;
 
     deleteCredentialFromAllContracts: (deletedUris: string[]) => Promise<{

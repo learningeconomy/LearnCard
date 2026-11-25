@@ -1,19 +1,23 @@
+import { indexLatestProfileField } from './profileFieldIndex';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { enqueuePendingContractSyncSafely } from '../stores/pendingContractSyncStore';
 import { useWallet } from './useWallet';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { LCR } from 'learn-card-base/types/credential-records';
-import type { UnsignedVC } from '@learncard/types';
+import {
+    createVerifiableDataCredential,
+    getVerifiableDataIndexId,
+    VERIFIABLE_DATA_INDEX_PREFIX,
+} from './createVerifiableDataCredential';
 import { getLogger } from '../logging/logger';
 const log = getLogger('use-verifiable-data');
 
 const VERIFIABLE_DATA_CATEGORY = 'VerifiableData';
 
-/** Prefix used for the LearnCloud index `id` of every verifiable-data record. */
-export const VERIFIABLE_DATA_INDEX_PREFIX = '__verifiable_data_';
-
-/** Builds the canonical index `id` for a verifiable-data key. */
-export const getVerifiableDataIndexId = (key: string): string =>
-    `${VERIFIABLE_DATA_INDEX_PREFIX}${key}__`;
+export {
+    getVerifiableDataIndexId,
+    VERIFIABLE_DATA_INDEX_PREFIX,
+} from './createVerifiableDataCredential';
 
 /** True when a credential record is internal verifiable-data plumbing (not a user-facing credential). */
 export const isVerifiableDataRecord = (record?: { id?: string } | null): boolean =>
@@ -30,53 +34,10 @@ export type VerifiableDataOptions = {
     description?: string;
 };
 
-type VerifiableDataRecord<T> = LCR & {
+type VerifiableDataRecord<T> = Omit<LCR, 'category'> & {
+    category: string;
     verifiableData?: T;
     issuanceDate?: string;
-};
-
-/**
- * Inline JSON-LD context for VerifiableData credentials.
- * Uses @json type so the payload is preserved as a native JSON literal
- * without needing to stringify/parse.
- */
-const VERIFIABLE_DATA_CONTEXT = {
-    VerifiableData: 'https://docs.learncard.com/schemas/credentials/verifiable-data#VerifiableData',
-    dataKey: 'https://docs.learncard.com/schemas/credentials/verifiable-data#dataKey',
-    dataPayload: {
-        '@id': 'https://docs.learncard.com/schemas/credentials/verifiable-data#dataPayload',
-        '@type': '@json',
-    },
-} as const;
-
-/**
- * Creates a simple self-issued VC v2 credential containing arbitrary data.
- * The data is stored as a native JSON literal via the @json-typed dataPayload field.
- */
-const createVerifiableDataCredential = async <T>(
-    wallet: BespokeLearnCard,
-    key: string,
-    data: T,
-    options?: Pick<VerifiableDataOptions, 'name' | 'description'>
-) => {
-    const did = wallet.id.did();
-    const validFrom = new Date().toISOString();
-
-    const unsignedCredential: UnsignedVC = {
-        '@context': ['https://www.w3.org/ns/credentials/v2', VERIFIABLE_DATA_CONTEXT],
-        type: ['VerifiableCredential', 'VerifiableData'],
-        issuer: did,
-        validFrom,
-        ...(options?.name && { name: options.name }),
-        ...(options?.description && { description: options.description }),
-        credentialSubject: {
-            id: did,
-            dataKey: key,
-            dataPayload: data,
-        },
-    };
-
-    return wallet.invoke.issueCredential(unsignedCredential);
 };
 
 /**
@@ -92,11 +53,13 @@ const storeVerifiableData = async <T>(
     options?: Pick<VerifiableDataOptions, 'name' | 'description'>
 ): Promise<string> => {
     const indexId = getVerifiableDataIndexId(key);
+    // Profile answers belong only in the encrypted credential, never in index metadata.
+    const indexPayload = key.startsWith('VerifiableData:') ? {} : { verifiableData: data };
 
-    // Check whether an index record already exists for this key
-    const existingRecords = await wallet.index.LearnCloud.get<VerifiableDataRecord<T>>({
-        id: indexId,
-    });
+    const isProfileField = category === key && key.startsWith('VerifiableData:');
+    const existingRecords = isProfileField
+        ? []
+        : await wallet.index.LearnCloud.get<VerifiableDataRecord<T>>({ id: indexId });
 
     // Create and sign the credential
     const credential = await createVerifiableDataCredential(wallet, key, data, options);
@@ -109,15 +72,35 @@ const storeVerifiableData = async <T>(
     // Use the credential's own validFrom as the canonical timestamp
     const issuanceDate = credential.validFrom ?? new Date().toISOString();
 
-    if (existingRecords?.length > 0) {
-        // Update the existing index record in place
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await wallet.index.LearnCloud.update(indexId, {
+    if (isProfileField) {
+        const current = await indexLatestProfileField(wallet, {
+            id: indexId,
             uri,
             category,
             title: `VerifiableData: ${key}`,
             hidden: true,
-            verifiableData: data as any,
+            issuanceDate,
+            sharedUris: {},
+        });
+        if (current?.uri !== uri) throw new Error('The profile answer has been superseded.');
+        // These self-issued answers are absent from the incoming ConsentFlow credential feed.
+        await enqueuePendingContractSyncSafely({
+            kind: 'credential',
+            profileDid: wallet.id.did(),
+            record: { id: indexId, uri, category },
+            category,
+        });
+        return uri;
+    }
+
+    if (existingRecords?.length > 0) {
+        // Update the existing index record in place
+        await wallet.index.LearnCloud.update<{ verifiableData?: unknown }>(indexId, {
+            uri,
+            category,
+            title: `VerifiableData: ${key}`,
+            hidden: true,
+            ...indexPayload,
             issuanceDate,
             sharedUris: {},
         });
@@ -129,7 +112,7 @@ const storeVerifiableData = async <T>(
             category,
             title: `VerifiableData: ${key}`,
             hidden: true,
-            verifiableData: data,
+            ...indexPayload,
             issuanceDate,
         });
     }
@@ -138,6 +121,7 @@ const storeVerifiableData = async <T>(
 };
 
 type VerifiableDataResult<T> = {
+    uri?: string;
     data: T | undefined;
     issuanceDate: string | undefined;
 };
@@ -145,18 +129,21 @@ type VerifiableDataResult<T> = {
 /**
  * Retrieves verifiable data for a given key.
  */
-const getVerifiableData = async <T>(
+export const getVerifiableData = async <T>(
     wallet: BespokeLearnCard,
     key: string
 ): Promise<VerifiableDataResult<T>> => {
-    const records = await wallet.index.LearnCloud.get<VerifiableDataRecord<T>>({
-        id: getVerifiableDataIndexId(key),
-    });
-
-    if (records?.length > 0 && records[0].verifiableData !== undefined) {
+    const scopedField = key.startsWith('VerifiableData:');
+    const id = getVerifiableDataIndexId(key);
+    const records = scopedField
+        ? ((await wallet.invoke.learnCloudGetIndexRecordForUpdate(id)) as VerifiableDataRecord<T>[])
+        : await wallet.index.LearnCloud.get<VerifiableDataRecord<T>>({ id });
+    if (scopedField && records.length > 1) throw new Error('Ambiguous profile field index record.');
+    if (!scopedField && records?.length > 0 && records[0].verifiableData !== undefined) {
         // Return the data from the index record directly (faster)
         return {
             data: records[0].verifiableData,
+            uri: records[0].uri,
             issuanceDate: records[0].issuanceDate,
         };
     }
@@ -170,13 +157,21 @@ const getVerifiableData = async <T>(
                 ? credential.credentialSubject[0]
                 : credential?.credentialSubject;
 
+            if (
+                scopedField &&
+                (Array.isArray(credential?.credentialSubject) || subject?.dataKey !== key)
+            ) {
+                return { data: undefined, issuanceDate: undefined };
+            }
             if (subject?.dataPayload !== undefined) {
                 return {
                     data: subject.dataPayload as T,
+                    uri: records[0].uri,
                     issuanceDate: credential?.validFrom ?? records[0].issuanceDate,
                 };
             }
         } catch (e) {
+            if (scopedField) throw e;
             log.warn('Failed to read verifiable data credential:', e);
         }
     }

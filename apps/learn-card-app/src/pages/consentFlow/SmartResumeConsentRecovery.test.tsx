@@ -93,7 +93,8 @@ vi.mock('learn-card-base', async () => ({
     ModalTypes: { Right: 'right', FullScreen: 'fullscreen' },
     ToastTypeEnum: { Error: 'error', Success: 'success' },
 }));
-vi.mock('learn-card-base/config/TenantConfigProvider', () => ({
+vi.mock('learn-card-base/config/TenantConfigProvider', async importOriginal => ({
+    ...(await importOriginal<typeof import('learn-card-base/config/TenantConfigProvider')>()),
     useBrandingConfig: () => ({ name: 'LearnCard' }),
 }));
 vi.mock('learn-card-base/components/modals/useModal', () => ({

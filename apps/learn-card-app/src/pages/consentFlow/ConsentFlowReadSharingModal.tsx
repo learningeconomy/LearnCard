@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import moment from 'moment';
-import { ConsentFlowTerm, CredentialRecord } from '@learncard/types';
+import { VERIFIABLE_DATA_FIELD_PREFIX, ConsentFlowTerm, CredentialRecord } from '@learncard/types';
 import { Updater } from 'use-immer';
 import { capitalizeFirstLetter } from '@learncard/helpers';
 import {
@@ -23,9 +23,10 @@ import {
     useModal,
     categoryMetadata,
 } from 'learn-card-base';
+import { useT } from 'learn-card-base/i18n';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import Calendar from '../../components/svgs/Calendar';
-import { getInfoFromContractKey } from '../../helpers/contract.helpers';
+import { useContractCategoryInfo } from '../../hooks/useContractCategoryInfo';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarnedCard';
@@ -43,7 +44,7 @@ type ConsentFlowReadSharingModalProps = {
     contractOwnerDid: string;
 };
 
-const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = ({
+const CredentialReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = ({
     term: initialTerm,
     setTerm: saveTerm,
     category,
@@ -60,7 +61,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
     const [onContinue, setOnContinue] = useState(() => () => {});
     const [formerSharedUris, setFormerSharedUris] = useState<string[]>();
 
-    const { IconComponent, plural, title } = getInfoFromContractKey(category);
+    const { IconComponent, plural, title } = useContractCategoryInfo(category);
 
     const presentDatePicker = () => {
         newModal(
@@ -437,5 +438,68 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
         </IonPage>
     );
 };
+
+const ProfileFieldPermissionModal: React.FC<ConsentFlowReadSharingModalProps> = ({
+    term,
+    setTerm,
+    category,
+    required,
+}) => {
+    const { closeModal } = useModal();
+    const { title } = useContractCategoryInfo(category);
+    const t = useT();
+    const [mode, setMode] = useState(
+        term.sharing ? (term.shareAll ? 'live' : 'once') : required ? 'once' : 'off'
+    );
+    return (
+        <IonPage className="bg-white font-poppins text-grayscale-900">
+            <IonContent>
+                <div className="mx-auto flex max-w-md flex-col gap-5 p-6">
+                    <h2 className="text-xl font-semibold">{title}</h2>
+                    <fieldset className="flex flex-col gap-3">
+                        <legend className="mb-2 text-sm font-medium">
+                            {t('profileFields.permission')}
+                        </legend>
+                        {(['live', 'once', 'off'] as const)
+                            .filter(choice => choice !== 'off' || !required)
+                            .map(choice => (
+                                <label key={choice} className="flex items-center gap-3">
+                                    <input
+                                        type="radio"
+                                        name="field-permission"
+                                        checked={choice === mode}
+                                        onChange={() => setMode(choice)}
+                                    />
+                                    {t(`profileFields.${choice}`)}
+                                </label>
+                            ))}
+                    </fieldset>
+                    <button
+                        type="button"
+                        className="rounded-[20px] bg-grayscale-900 px-4 py-3 text-sm font-medium text-white"
+                        onClick={() => {
+                            setTerm({
+                                ...term,
+                                sharing: mode !== 'off',
+                                shareAll: mode === 'live',
+                                shared: mode === 'off' ? [] : term.shared,
+                            });
+                            closeModal();
+                        }}
+                    >
+                        {m['common.save']()}
+                    </button>
+                </div>
+            </IonContent>
+        </IonPage>
+    );
+};
+
+const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = props =>
+    props.category.startsWith(VERIFIABLE_DATA_FIELD_PREFIX) ? (
+        <ProfileFieldPermissionModal {...props} />
+    ) : (
+        <CredentialReadSharingModal {...props} />
+    );
 
 export default ConsentFlowReadSharingModal;

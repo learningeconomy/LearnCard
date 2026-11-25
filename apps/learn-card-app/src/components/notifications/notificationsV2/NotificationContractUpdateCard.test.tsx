@@ -57,7 +57,10 @@ const OpenAlerts = ({ children }: { children: React.ReactNode }) => {
     );
 };
 
-const showAlerts = async (notification: React.ReactNode) => {
+const showAlerts = async (
+    notification: React.ReactNode,
+    config = DEFAULT_LEARNCARD_TENANT_CONFIG
+) => {
     const root = document.createElement('div');
     root.id = 'app-router';
     document.body.append(root);
@@ -67,7 +70,7 @@ const showAlerts = async (notification: React.ReactNode) => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
     renderReact(
         <QueryClientProvider client={client}>
-            <TenantConfigProvider config={DEFAULT_LEARNCARD_TENANT_CONFIG}>
+            <TenantConfigProvider config={config}>
                 <ModalsProvider>
                     <OpenAlerts>{notification}</OpenAlerts>
                     <Modals />
@@ -88,6 +91,39 @@ const notification = {
     data: { contractUri: 'https://example.test/contract' },
 } as unknown as NotificationType;
 describe('NotificationContractUpdateCard', () => {
+    it('uses tenant labels in the headline for a newly requested profile field', async () => {
+        const key = 'VerifiableData:vetpass:military-profile:branch';
+        await showAlerts(
+            <NotificationContractUpdateCard
+                notification={{
+                    ...notification,
+                    data: {
+                        ...notification.data,
+                        contractName: 'Acme',
+                        kind: 'requires_consent',
+                        diff: {
+                            added: [{ area: 'read', type: 'credential', key, required: true }],
+                            removed: [],
+                            changed: [],
+                        },
+                    },
+                }}
+            />,
+            {
+                ...DEFAULT_LEARNCARD_TENANT_CONFIG,
+                tenantId: 'vetpass',
+                verifiableDataSchemas: {
+                    'military-profile': {
+                        label: 'Military profile',
+                        fields: { branch: { label: 'Branch of service', type: 'text' } },
+                    },
+                },
+            }
+        );
+        expect(screen.getByText(/Acme is asking to see your Branch of service/)).toBeVisible();
+        expect(screen.queryByText(/VerifiableData:/)).toBeNull();
+    });
+
     it('closes Alerts and navigates without waiting for the read-status request', async () => {
         let resolveUpdate!: () => void;
         state.update.mockReturnValueOnce(new Promise<void>(resolve => (resolveUpdate = resolve)));

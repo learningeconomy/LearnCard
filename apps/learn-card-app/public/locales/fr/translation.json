@@ -4322,6 +4322,20 @@
             },
             "expires": "Expire"
         },
+        "profileFields": {
+            "unavailable": "Champ indisponible",
+            "permission": "Autorisation",
+            "off": "Garder privé",
+            "once": "Autoriser une fois",
+            "live": "Tenir à jour",
+            "choose": "Choisir une option",
+            "selfDescribe": "Je préfère me décrire",
+            "enterAnswer": "Saisissez votre réponse",
+            "error": "Une erreur est survenue. Veuillez réessayer.",
+            "retry": "Réessayer",
+            "loading": "Chargement…",
+            "saving": "Enregistrement…"
+        },
         "consentAudience": {
             "fullCredential": "{{organizations}} peut recevoir une copie complète de chaque justificatif que vous sélectionnez, y compris vos informations et toute signature de l’émetteur.",
             "title": "Vérifiez qui reçoit vos données",

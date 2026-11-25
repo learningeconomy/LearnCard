@@ -61,6 +61,46 @@ describe('LearnCloud Plugin', () => {
         mockGetClient.mockResolvedValue(mockClient);
     });
 
+    it('reads the current encrypted record without the cached index for CAS', async () => {
+        const current = { id: 'field', uri: 'answer' };
+        const encryptedRecord = { ...current, ciphertext: 'revision' };
+        const encryptedPage = { ciphertext: 'page' };
+        const getForUpdate = vi.fn().mockResolvedValue(encryptedPage);
+        const replaceIfCurrent = vi.fn().mockResolvedValue(true);
+        mockGetClient.mockResolvedValue({
+            ...mockClient,
+            index: {
+                get: { query: vi.fn() },
+                getForUpdate: { query: getForUpdate },
+                replaceIfCurrent: { mutate: replaceIfCurrent },
+            },
+        });
+        const learnCard = makeLearnCard();
+        // Model the decrypted stored record separately from its ciphertext.
+        learnCard.invoke.decryptDagJwe.mockImplementation(async value =>
+            value === encryptedPage ? { records: [{ encryptedRecord }] } : current
+        );
+        const plugin = await getLearnCloudPlugin(learnCard as never, 'https://cloud.example');
+
+        expect(
+            await plugin.methods.learnCloudGetIndexRecordForUpdate(learnCard as never, 'field')
+        ).toEqual([current]);
+        expect(
+            await plugin.methods.learnCloudCompareAndSwapIndexRecord(learnCard as never, current, {
+                id: 'field',
+                uri: 'new',
+            })
+        ).toBe(true);
+        expect(getForUpdate).toHaveBeenCalledTimes(2);
+        expect(getForUpdate).toHaveBeenCalledWith({ id: 'hash:field' });
+        expect(replaceIfCurrent).toHaveBeenCalledWith(
+            expect.objectContaining({
+                id: 'hash:field',
+                expectedCiphertext: 'revision',
+            })
+        );
+    });
+
     it.each([undefined, { category: 'Achievement' }])(
         'normalizes a restored null cursor before querying the index with %j',
         async query => {

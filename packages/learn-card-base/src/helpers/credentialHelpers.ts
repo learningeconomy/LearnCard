@@ -1,3 +1,4 @@
+import { isProfileFieldCategory } from '../config/profileFields';
 import moment from 'moment';
 import {
     UnsignedVC,
@@ -433,7 +434,11 @@ export const CATEGORY_MAP: Record<
 
 // unwrapBoost helper returns inner vc of boost or if normal vc returns vc
 export const unwrapBoostCredential = (vc?: VC | UnsignedVC) => {
-    if (vc?.type?.includes('CertifiedBoostCredential') && vc?.boostCredential) {
+    if (
+        Array.isArray(vc?.type) &&
+        vc.type.includes('CertifiedBoostCredential') &&
+        vc.boostCredential
+    ) {
         return vc.boostCredential;
     } else {
         return vc;
@@ -441,7 +446,11 @@ export const unwrapBoostCredential = (vc?: VC | UnsignedVC) => {
 };
 
 export const isBoostCredential = (vc: VC | UnsignedVC) => {
-    if (vc?.type?.includes('CertifiedBoostCredential') && vc?.boostCredential) {
+    if (
+        Array.isArray(vc?.type) &&
+        vc.type.includes('CertifiedBoostCredential') &&
+        vc.boostCredential
+    ) {
         return true;
     } else {
         return false;
@@ -449,7 +458,7 @@ export const isBoostCredential = (vc: VC | UnsignedVC) => {
 };
 
 export const isClrCredential = (vc: VC | UnsignedVC) => {
-    return vc?.type?.includes('ClrCredential');
+    return Array.isArray(vc?.type) && vc.type.includes('ClrCredential');
 };
 export const isEndorsementCredential = (vc: VC | UnsignedVC) => {
     return vc?.type?.includes('EndorsementCredential');
@@ -550,9 +559,27 @@ export const getDefaultCategoryForCredential = (
 ): CredentialCategory => {
     const _credential = unwrapBoostCredential(credential);
 
+    if (
+        Array.isArray(_credential?.type) &&
+        _credential.type.includes('VerifiableData') &&
+        !Array.isArray(_credential.credentialSubject)
+    ) {
+        const key = _credential.credentialSubject?.dataKey;
+        const issuer =
+            typeof _credential.issuer === 'string' ? _credential.issuer : _credential.issuer?.id;
+        if (
+            typeof issuer === 'string' &&
+            issuer.startsWith('did:') &&
+            issuer === _credential.credentialSubject?.id &&
+            isProfileFieldCategory(key)
+        )
+            return key as CredentialCategory;
+    }
+
     // An explicit `lc:category` display-hint tag is a deliberate issuer choice and takes priority over all type inference below.
     const lcCategory = parseLcTags(getCredentialSubjectAchievement(_credential)?.tag).category;
-    if (lcCategory) return lcCategory as CredentialCategory;
+    if (lcCategory && !lcCategory.startsWith('VerifiableData:'))
+        return lcCategory as CredentialCategory;
 
     // course meta VC is a metaversity specific case for now
     if (isCourseMetaVC(_credential)) return 'Learning History';
@@ -677,7 +704,10 @@ export const getCredentialSubjectAchievement = (credential: UnsignedVC) => {
 
 export const getCredentialSubject = (credential: UnsignedVC) => {
     if (!credential) return;
-    if (credential.type?.includes(CREDENTIAL_TYPES.CERTIFIED_BOOST)) {
+    if (
+        Array.isArray(credential.type) &&
+        credential.type.includes(CREDENTIAL_TYPES.CERTIFIED_BOOST)
+    ) {
         credential = credential?.boostCredential;
     }
     const credentialSubject = Array.isArray(credential?.credentialSubject)
@@ -1139,9 +1169,11 @@ export const getAllSortedCredentials = async (
 };
 
 export const isCourseMetaVC = (vc: UnsignedVC): vc is CourseMetaVC => {
-    if (!vc?.credentialSubject) return false;
-    // oxlint-disable-next-line no-unsafe-optional-chaining
-    return 'potentialVCs' in vc?.credentialSubject;
+    return Boolean(
+        vc?.credentialSubject &&
+        typeof vc.credentialSubject === 'object' &&
+        'potentialVCs' in vc.credentialSubject
+    );
 };
 
 export const isEntryVC = (vc: UnsignedVC): vc is EntryVC => {

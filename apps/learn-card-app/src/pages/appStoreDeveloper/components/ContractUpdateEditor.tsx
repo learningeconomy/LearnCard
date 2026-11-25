@@ -1,3 +1,4 @@
+import { useContractProfileFieldLabel } from '../../../hooks/useContractProfileFieldLabel';
 import React, { useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useImmer } from 'use-immer';
@@ -56,6 +57,7 @@ const LoadedContractUpdateEditor: React.FC<{
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
     useLocale();
+    const getProfileFieldLabel = useContractProfileFieldLabel();
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
@@ -145,6 +147,7 @@ const LoadedContractUpdateEditor: React.FC<{
                     kind: result.kind,
                     diff,
                     translate: mDynamic,
+                    getCredentialLabel: getProfileFieldLabel,
                 });
                 const defaults = getUnchangedDefaultAccessScopes(baseline, diff);
                 newModal(
@@ -163,6 +166,7 @@ const LoadedContractUpdateEditor: React.FC<{
                             kind: 'requires_consent',
                             diff: { added: defaults, removed: [], changed: [] },
                             translate: mDynamic,
+                            getCredentialLabel: getProfileFieldLabel,
                         }).rows.map(row => ({ area: row.scope.area, label: row.label }))}
                         accessContext="defaults"
                         readOnly
