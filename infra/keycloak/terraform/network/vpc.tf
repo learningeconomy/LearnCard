@@ -4,7 +4,7 @@ data "aws_ssm_parameter" "workload_boundary" {
 
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
-  version = "6.7.3"
+  version = "6.8.0"
 
   name            = local.name
   cidr            = var.vpc_cidr
