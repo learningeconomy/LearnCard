@@ -217,6 +217,38 @@ describe('single inbox durable idempotency', () => {
         });
         return { opened, open };
     };
+    // The stored decision of this key's single-call request (one payload per key in these tests).
+    const decisionOf = async (
+        key: string
+    ): Promise<
+        { winner: string | null; decidedSeq: number | null; admitted: number } | undefined
+    > => {
+        const result = await neogma.queryRunner.run(
+            `MATCH (d:InboxBatchRequest {issuer: $issuerId, requestId: $requestId})
+             RETURN d.winner AS winner, d.decidedSeq AS decidedSeq, d.admitted AS admitted`,
+            { issuerId, requestId: `inbox.issue:${fingerprint(key)}` }
+        );
+        const row = result.records[0];
+        if (!row) return undefined;
+        const decidedSeq = row.get('decidedSeq');
+        return {
+            winner: row.get('winner') ?? null,
+            decidedSeq: decidedSeq == null ? null : Number(decidedSeq),
+            admitted: Number(row.get('admitted')),
+        };
+    };
+    // Asks the database until `count` transactions wait for a lock (or `done` says the awaited
+    // party finished instead). A probe of state, not a pause: it fails if neither happens.
+    const blocked = async (count: number, done?: () => boolean): Promise<void> => {
+        for (let asked = 0; asked < 5000 && !done?.(); asked += 1) {
+            const result = await neogma.queryRunner.run(
+                `SHOW TRANSACTIONS YIELD status WHERE status STARTS WITH 'Blocked'
+                 RETURN count(*) AS waiting`
+            );
+            if (Number(result.records[0]!.get('waiting')) >= count) return;
+        }
+        if (!done?.()) throw new Error(`Expected ${count} transaction(s) waiting for a lock`);
+    };
     // Other files in the same CI run (e.g. credential-storage.neo4j.spec.ts) create
     // profiles for these default-seed DIDs, so nothing may outlive this file.
     const clearInboxGraph = async (): Promise<void> => {
@@ -224,7 +256,7 @@ describe('single inbox durable idempotency', () => {
             await model.delete({ detach: true, where: {} });
         }
         await neogma.queryRunner.run(`MATCH (n) WHERE n:InboxBatch OR n:InboxBatchItem
-            OR n:InboxBatchIssuer OR n:InboxBatchReplay DETACH DELETE n`);
+            OR n:InboxBatchIssuer OR n:InboxBatchReplay OR n:InboxBatchRequest DETACH DELETE n`);
     };
     beforeAll(async () => {
         issuer = await getUser('a'.repeat(64));
@@ -1265,6 +1297,232 @@ describe('single inbox durable idempotency', () => {
         } finally {
             vi.useRealTimers();
         }
+    }, 30000);
+
+    it("a job admitted between the winner's checkpoint and its receipt is covered by that receipt: it does not issue after the receipt expired", async () => {
+        const key = randomUUID();
+        const input = await inputFor(issuer, key);
+        const now = freezeClock();
+        const passed = gate();
+        const deliver = gate();
+        try {
+            const aged = await admit(input, true);
+            await setJobCreatedAt(aged, now - DAY);
+            const start = batchStore.markBatchIssuanceStarted;
+            vi.spyOn(batchStore, 'markBatchIssuanceStarted').mockImplementationOnce(
+                async (...step) => {
+                    await start(...step);
+                    passed.open();
+                    await deliver.opened;
+                }
+            );
+            const working = processInboxQueueMessage(JSON.stringify({ itemId: `${aged}:0` }));
+            await passed.opened;
+            const later = await admit(input, true);
+            // The checkpoint decided for what was admitted then: the first job only.
+            expect(await decisionOf(key)).toEqual({
+                winner: `${aged}:0`,
+                decidedSeq: 1,
+                admitted: 2,
+            });
+            deliver.open();
+            await working;
+            expect(await decisionOf(key)).toMatchObject({ decidedSeq: 2, admitted: 2 });
+            await expectCounts(1);
+            await expireReceipt(key);
+            await runLateWorker();
+            await expectCounts(1);
+            expect((await getInboxBatch(issuerId, later)).items[0]).toMatchObject({
+                state: 'COMPLETED',
+                result: { success: false, error: { code: 'CONFLICT' } },
+            });
+        } finally {
+            vi.useRealTimers();
+        }
+    }, 30000);
+
+    it('a refusal that arrives while the winner of its request is delivering is held back: the call answers in progress and that delivery stands', async () => {
+        const key = randomUUID();
+        const replayKey = inboxItemReplayKey(issuerId, key);
+        const input = await inputFor(issuer, key);
+        const foreign = await inputFor(issuer, key, 'Another payload');
+        const reached = gate();
+        const decide = gate();
+        const passed = gate();
+        const deliver = gate();
+        // Another payload holds the key: a worker claimed its batch item and reserved.
+        const owner = await issuer.clients.fullAuth.inbox.issueBatch({ items: [foreign] });
+        await reserve(`${owner.batchId}:0`, 'foreign-worker');
+        const close = batchStore.closeBatchRequest;
+        vi.spyOn(batchStore, 'closeBatchRequest').mockImplementationOnce(async (...step) => {
+            reached.open();
+            await decide.opened;
+            return close(...step);
+        });
+        const refused = issuer.clients.fullAuth.inbox.issue(input);
+        await reached.opened; // The call found nothing of its own waiting and is about to refuse.
+        expect(
+            await batchReplayStore(`${owner.batchId}:0`, 'foreign-worker', replayKey).compareAndSet(
+                '',
+                JSON.stringify({
+                    state: 'processing',
+                    owner: 'foreign-worker',
+                    requestHash: 'interrupted-worker',
+                }),
+                null,
+                0
+            )
+        ).toBe(true); // The other payload let go of the key.
+        const own = await admit(input, true);
+        const start = batchStore.markBatchIssuanceStarted;
+        vi.spyOn(batchStore, 'markBatchIssuanceStarted').mockImplementationOnce(async (...step) => {
+            await start(...step);
+            passed.open();
+            await deliver.opened;
+        });
+        const working = processInboxQueueMessage(JSON.stringify({ itemId: `${own}:0` }));
+        await passed.opened; // An item of the same request is past its checkpoint.
+        decide.open();
+        await expect(refused).rejects.toMatchObject({
+            code: 'CONFLICT',
+            message: expect.stringContaining('in progress'),
+        });
+        expect(await decisionOf(key)).toEqual({ winner: `${own}:0`, decidedSeq: 1, admitted: 1 });
+        deliver.open();
+        await working;
+        expect(await issuedCount(input)).toBe(1);
+        await expectCounts(1);
+        expect((await getInboxBatch(issuerId, own)).items[0]).toMatchObject({
+            state: 'COMPLETED',
+            result: { success: true },
+        });
+    }, 30000);
+
+    it('maintenance keeps the decision of a request while one of its jobs exists and deletes it after the last one is gone', async () => {
+        const key = randomUUID();
+        const input = await inputFor(issuer, key);
+        const now = freezeClock();
+        // Completed more than 30 days ago: retention removes the job.
+        const expire = async (batchId: string): Promise<void> => {
+            await neogma.queryRunner.run(
+                'MATCH (b:InboxBatch {id: $batchId}) SET b.completedAt = 0',
+                { batchId }
+            );
+            await recoverInboxJobs();
+        };
+        try {
+            const first = await admit(input, true);
+            await setJobCreatedAt(first, now - DAY);
+            const second = await admit(input, true);
+            await expire(first);
+            expect((await admissionJobs(key)).map(job => job.id)).toEqual([second]);
+            expect(await decisionOf(key)).toMatchObject({ admitted: 2 });
+            await expire(second);
+            expect(await admissionJobs(key)).toEqual([]);
+            expect(await decisionOf(key)).toBeUndefined();
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('an admission that races the deletion of its request decision ends with the decision that numbered its job', async () => {
+        const key = randomUUID();
+        const input = await inputFor(issuer, key);
+        const first = await admit(input, true);
+        // Retention removed the last job of the request; its decision is still stored.
+        await neogma.queryRunner.run(
+            'MATCH (b:InboxBatch {id: $first})-[:HAS_ITEM]->(i) DETACH DELETE i, b',
+            { first }
+        );
+        expect(await decisionOf(key)).toMatchObject({ admitted: 1 });
+        const written = gate();
+        const commit = gate();
+        const open = neogma.driver.session.bind(neogma.driver);
+        let armed = true;
+        vi.spyOn(neogma.driver, 'session').mockImplementation((...config) => {
+            const session = open(...config);
+            const write = session.executeWrite.bind(session);
+            vi.spyOn(session, 'executeWrite').mockImplementation((work, options) =>
+                write(async tx => {
+                    const result = await work(tx);
+                    if (armed) {
+                        armed = false;
+                        written.open(); // The job is created and numbered; nothing is committed.
+                        await commit.opened;
+                    }
+                    return result;
+                }, options)
+            );
+            return session;
+        });
+        const admission = admit(input, true);
+        await written.opened;
+        const cleaning = recoverInboxJobs();
+        await blocked(1); // The deletion read "no job" and waits for the request lock.
+        commit.open();
+        const second = await admission;
+        await cleaning;
+        expect(await decisionOf(key)).toMatchObject({ admitted: 2 });
+        const job = await neogma.queryRunner.run(
+            'MATCH (b:InboxBatch {id: $second}) RETURN b.requestSeq AS seq',
+            { second }
+        );
+        expect(Number(job.records[0]!.get('seq'))).toBe(2);
+    }, 30000);
+
+    it('a refusal cannot be written between the read and the write of a checkpoint: the request lock orders the two', async () => {
+        const key = randomUUID();
+        const input = await inputFor(issuer, key);
+        const atCheckpoint = gate();
+        const go = gate();
+        const own = await admit(input, true);
+        const itemId = `${own}:0`;
+        const start = batchStore.markBatchIssuanceStarted;
+        vi.spyOn(batchStore, 'markBatchIssuanceStarted').mockImplementationOnce(async (...step) => {
+            atCheckpoint.open();
+            await go.opened;
+            return start(...step);
+        });
+        const working = processInboxQueueMessage(JSON.stringify({ itemId }));
+        await atCheckpoint.opened;
+        // The item lock, held from outside: the checkpoint reads the decision under the request
+        // lock and then waits here, between that read and its write.
+        const session = neogma.driver.session();
+        const holder = session.beginTransaction();
+        await holder.run(
+            'MATCH (i:InboxBatchItem {id: $itemId}) SET i.lock = coalesce(i.lock, 0) + 1',
+            { itemId }
+        );
+        go.open();
+        await blocked(1);
+        const request = await neogma.queryRunner.run(
+            `MATCH (b:InboxBatch {id: $own}) RETURN b.issuer AS issuer, b.requestId AS requestId,
+             b.requestHash AS requestHash`,
+            { own }
+        );
+        let landed = false;
+        // The competing write: a call about to answer a mismatch for this request.
+        const closing = batchStore
+            .closeBatchRequest(
+                {
+                    issuer: String(request.records[0]!.get('issuer')),
+                    requestId: String(request.records[0]!.get('requestId')),
+                    requestHash: String(request.records[0]!.get('requestHash')),
+                },
+                true
+            )
+            .then(written => {
+                landed = true;
+                return written;
+            });
+        await blocked(2, () => landed);
+        const between = landed;
+        await holder.rollback();
+        await session.close();
+        await working;
+        expect(between).toBe(false); // It waited for the request lock instead of landing.
+        expect(await closing).toBe(false); // Then it met a winner that is delivering.
+        await expectCounts(1);
     }, 30000);
 
     it('the batch endpoint answers a reused requestId from its newest job when two are inside the lookup', async () => {
