@@ -2365,7 +2365,8 @@
             "email": "e-mail",
             "profilePicture": "photo de profil"
         },
-        "retryPublication": "Vos choix de partage sont enregistrés. Réessayez pour terminer leur envoi."
+        "retryPublication": "Vos choix de partage sont enregistrés. Réessayez pour terminer leur envoi.",
+        "readableDeliveryDisclosure": "LearnCard peut lire les informations sélectionnées pour le compte de {{organizations}}."
     },
     "recovery": {
         "pin": {
@@ -4322,6 +4323,7 @@
             "expires": "Expire"
         },
         "consentAudience": {
+            "fullCredential": "{{organizations}} peut recevoir une copie complète de chaque justificatif que vous sélectionnez, y compris vos informations et toute signature de l’émetteur.",
             "title": "Vérifiez qui reçoit vos données",
             "description": "Les informations que vous choisissez seront accessibles à toutes les personnes ci-dessous.",
             "confirm": "Confirmer le partage",

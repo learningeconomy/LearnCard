@@ -1,4 +1,6 @@
 import React from 'react';
+import { FullCredentialDisclosure } from 'learn-card-base/components/FullCredentialDisclosure';
+import * as m from '../../paraglide/messages';
 import Plus from 'learn-card-base/svgs/Plus';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import EmptyImage from 'learn-card-base/assets/images/empty-image.png';
@@ -28,6 +30,8 @@ const ConsentFlowHeader: React.FC<ConsentFlowHeaderProps> = ({
 
     const name = appName ?? contractName;
     const image = appImage ?? contractImage;
+    const readableRecipients =
+        contractDetails?.readableDeliveryRecipients?.filter(recipient => recipient.enabled) ?? [];
 
     return (
         <header className="flex items-center flex-col gap-[15px] w-full">
@@ -85,6 +89,19 @@ const ConsentFlowHeader: React.FC<ConsentFlowHeaderProps> = ({
             <span className="text-grayscale-900 font-notoSans text-[22px] font-[600] leading-[130%] text-center tracking-[-0.25px]">
                 {name}
             </span>
+            {!!readableRecipients.length && (
+                <p
+                    data-testid="readable-delivery-disclosure"
+                    className="font-poppins text-sm text-grayscale-600 leading-relaxed text-center"
+                >
+                    {m['consentFlow.readableDeliveryDisclosure']({
+                        organizations: readableRecipients
+                            .map(recipient => recipient.displayName)
+                            .join(', '),
+                    })}
+                    <FullCredentialDisclosure recipients={readableRecipients} />
+                </p>
+            )}
         </header>
     );
 };

@@ -97,10 +97,11 @@ type WebhookRequest = {
     signal: AbortSignal;
 };
 
-export const fetchNotificationWebhook = async (
+const fetchPinnedResource = async (
     destination: string,
-    request: WebhookRequest,
-    isOffline: boolean
+    request: Omit<WebhookRequest, 'method' | 'body'> & { method: 'GET' | 'POST'; body?: string },
+    isOffline: boolean,
+    maxBytes = 64 * 1024
 ): Promise<Pick<Response, 'ok' | 'status' | 'text'>> => {
     let url: URL;
     try {
@@ -146,7 +147,9 @@ export const fetchNotificationWebhook = async (
                 headers: {
                     ...request.headers,
                     Host: url.host,
-                    'Content-Length': String(Buffer.byteLength(request.body)),
+                    ...(request.body === undefined
+                        ? {}
+                        : { 'Content-Length': String(Buffer.byteLength(request.body)) }),
                 },
                 servername: isIP(hostname) ? undefined : hostname,
                 rejectUnauthorized: true,
@@ -168,9 +171,13 @@ export const fetchNotificationWebhook = async (
                 response.on('error', reject);
                 response.on('data', (chunk: Buffer) => {
                     bytes += chunk.length;
-                    if (bytes > 64 * 1024) {
+                    if (bytes > maxBytes) {
                         response.destroy(
-                            new Error('Notification webhook acknowledgement exceeds 64 KiB')
+                            new Error(
+                                maxBytes === 64 * 1024
+                                    ? 'Notification webhook acknowledgement exceeds 64 KiB'
+                                    : 'Response exceeds size limit'
+                            )
                         );
                         return;
                     }
@@ -188,4 +195,50 @@ export const fetchNotificationWebhook = async (
         outgoing.on('error', reject);
         outgoing.end(request.body);
     });
+};
+
+/** Existing notification contract, using the shared DNS-pinned transport. */
+export const fetchNotificationWebhook = (
+    destination: string,
+    request: WebhookRequest,
+    isOffline: boolean
+): Promise<Pick<Response, 'ok' | 'status' | 'text'>> =>
+    fetchPinnedResource(destination, request, isOffline);
+
+/** Public verification documents only; the owned local origin is the sole development exception. */
+export const fetchVerificationResource = async (
+    destination: string,
+    signal: AbortSignal,
+    localOrigin?: string
+): Promise<string> => {
+    const url = new URL(destination);
+    const local = localOrigin !== undefined && url.origin === localOrigin;
+    if ((!local && url.protocol !== 'https:') || url.username || url.password || url.hash)
+        throw new UnsafeNotificationWebhookError();
+    const response = await fetchPinnedResource(
+        destination,
+        { method: 'GET', headers: { Accept: 'application/json, application/ld+json' }, signal },
+        local,
+        2 * 1024 * 1024
+    );
+    if (!response.ok) throw new Error('Verification document unavailable');
+    // The offline transport uses fetch, so bound its body as well.
+    if ('body' in response && response.body instanceof ReadableStream) {
+        const reader = response.body.getReader();
+        const chunks: Uint8Array[] = [];
+        let bytes = 0;
+        try {
+            for (;;) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                bytes += value.byteLength;
+                if (bytes > 2 * 1024 * 1024) throw new Error('Response exceeds size limit');
+                chunks.push(value);
+            }
+            return Buffer.concat(chunks).toString('utf8');
+        } finally {
+            await reader.cancel();
+        }
+    }
+    return response.text();
 };

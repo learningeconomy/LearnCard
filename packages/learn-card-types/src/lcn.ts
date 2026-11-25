@@ -1,6 +1,7 @@
 import type {} from 'zod-openapi';
 import { z } from 'zod/v4';
 
+import { ReadableDeliveryDisclosureVersionValidator } from './readable-delivery';
 import { PaginationResponseValidator } from './mongo';
 import { BaseStringQuery, StringQuery } from './queries';
 import { UnsignedVCValidator, VCValidator, VPValidator } from './vc';
@@ -862,6 +863,16 @@ export type ConsentFlowContractNotificationData = z.infer<
 >;
 
 export const ConsentFlowContractValidator = z.object({
+    /** Additional outcome issuers accepted by the contract owner. */
+    expectedIssuers: z
+        .array(
+            z
+                .string()
+                .regex(/^did:[a-z0-9]+:[^\s]+$/)
+                .max(2048)
+        )
+        .max(50)
+        .optional(),
     read: z
         .object({
             anonymize: z.boolean().optional(),
@@ -933,6 +944,15 @@ const ConsentFlowContractScopePatchValidator = z
 export const ConsentFlowContractChangesValidator = z.object({
     contract: z
         .object({
+            expectedIssuers: z
+                .array(
+                    z
+                        .string()
+                        .regex(/^did:[a-z0-9]+:[^\s]+$/)
+                        .max(2048)
+                )
+                .max(50)
+                .optional(),
             read: z
                 .object({
                     anonymize: z.boolean().optional(),
@@ -980,6 +1000,17 @@ export const ConsentFlowContractChangesValidator = z.object({
 export type ConsentFlowContractChanges = z.input<typeof ConsentFlowContractChangesValidator>;
 
 export const ConsentFlowContractDetailsValidator = z.object({
+    readableDeliveryRecipients: z
+        .array(
+            z.object({
+                profileId: z.string(),
+                displayName: z.string(),
+                agentDid: z.string(),
+                enabled: z.boolean(),
+                disclosureVersion: ReadableDeliveryDisclosureVersionValidator,
+            })
+        )
+        .optional(),
     contract: ConsentFlowContractValidator,
     owner: LCNProfileValidator,
     name: z.string(),

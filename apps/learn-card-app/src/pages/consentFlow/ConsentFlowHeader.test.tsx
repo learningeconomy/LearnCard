@@ -1,4 +1,5 @@
 import React from 'react';
+import { ConsentFlowContractDetailsValidator } from '@learncard/types';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -43,8 +44,8 @@ vi.mock('../../config/brandingAssets', () => ({
 
 describe('consent account avatar', () => {
     let queryClient: QueryClient;
-    const renderHeader = () =>
-        render(<ConsentFlowHeader showCurrentUserPic />, {
+    const renderHeader = (props: Partial<React.ComponentProps<typeof ConsentFlowHeader>> = {}) =>
+        render(<ConsentFlowHeader showCurrentUserPic {...props} />, {
             wrapper: ({ children }) => (
                 <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
             ),
@@ -61,6 +62,83 @@ describe('consent account avatar', () => {
         cleanup();
         queryClient.clear();
         currentUserStore.set.parentUserDid(null);
+    });
+
+    it('discloses LearnCard access only for a readable delivery recipient', () => {
+        const contract = ConsentFlowContractDetailsValidator.parse({
+            contract: {},
+            owner: { profileId: 'partner', did: 'did:key:partner', displayName: 'Partner' },
+            name: 'Partner contract',
+            uri: 'lc:network:test/trpc:contract:one',
+            version: 1,
+            createdAt: '2026-11-12',
+            updatedAt: '2026-11-12',
+        });
+        const view = renderHeader({ contractDetails: contract });
+        expect(screen.queryByTestId('readable-delivery-disclosure')).toBeNull();
+        view.rerender(
+            <ConsentFlowHeader
+                contractDetails={{
+                    ...contract,
+                    readableDeliveryRecipients: [
+                        {
+                            profileId: 'readable-partner',
+                            displayName: 'Example Organization',
+                            agentDid: 'did:key:agent',
+                            enabled: true,
+                            disclosureVersion: '1',
+                        },
+                    ],
+                }}
+            />
+        );
+        expect(screen.getByTestId('readable-delivery-disclosure').textContent).toBe(
+            'LearnCard can read your selected information on behalf of Example Organization.'
+        );
+        view.rerender(
+            <ConsentFlowHeader
+                contractDetails={{
+                    ...contract,
+                    readableDeliveryRecipients: [
+                        {
+                            profileId: 'legacy',
+                            displayName: 'Legacy Org',
+                            agentDid: 'did:key:legacy',
+                            enabled: true,
+                            disclosureVersion: '1',
+                        },
+                        {
+                            profileId: 'full',
+                            displayName: 'Full Org',
+                            agentDid: 'did:key:full',
+                            enabled: true,
+                            disclosureVersion: '2',
+                        },
+                    ],
+                }}
+            />
+        );
+        expect(screen.getByTestId('readable-delivery-disclosure').textContent).toBe(
+            'LearnCard can read your selected information on behalf of Legacy Org, Full Org.' +
+                'Full Org can receive a complete copy of each credential you select, including your details and any issuer signature.'
+        );
+        view.rerender(
+            <ConsentFlowHeader
+                contractDetails={{
+                    ...contract,
+                    readableDeliveryRecipients: [
+                        {
+                            profileId: 'disabled-partner',
+                            displayName: 'Disabled Organization',
+                            agentDid: 'did:key:agent',
+                            enabled: false,
+                            disclosureVersion: '1',
+                        },
+                    ],
+                }}
+            />
+        );
+        expect(screen.queryByTestId('readable-delivery-disclosure')).toBeNull();
     });
 
     it('shows the selected organization image instead of a stale local-account image', () => {

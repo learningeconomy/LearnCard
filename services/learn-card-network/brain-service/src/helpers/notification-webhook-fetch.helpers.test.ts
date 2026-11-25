@@ -13,6 +13,7 @@ import {
     NotificationWebhookRedirectError,
     UnsafeNotificationWebhookError,
     fetchNotificationWebhook,
+    fetchVerificationResource,
     isPublicNotificationAddress,
 } from './notification-webhook-fetch.helpers';
 
@@ -46,6 +47,48 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('notification destination boundary', () => {
+    it('permits only public HTTPS verification GETs without credentials or redirects', async () => {
+        resolve([{ address: '8.8.8.8', family: 4 }]);
+        await fetchVerificationResource(
+            'https://issuer.example/did.json',
+            AbortSignal.timeout(1000)
+        );
+        expect(mocks.request.mock.calls[0]?.[0]).toMatchObject({
+            hostname: '8.8.8.8',
+            method: 'GET',
+        });
+        for (const url of [
+            'http://issuer.example/did.json',
+            'https://user:pass@issuer.example/',
+            'https://169.254.169.254/latest/meta-data/',
+        ])
+            await expect(
+                fetchVerificationResource(url, AbortSignal.timeout(1000))
+            ).rejects.toThrow();
+        respond(302);
+        await expect(
+            fetchVerificationResource('https://issuer.example/', AbortSignal.timeout(1000))
+        ).rejects.toThrow();
+    });
+    it('limits the offline exception to the exact owned origin and bounds its body', async () => {
+        const fetchMock = vi.fn().mockResolvedValue(new Response('x'.repeat(2 * 1024 * 1024 + 1)));
+        vi.stubGlobal('fetch', fetchMock);
+        await expect(
+            fetchVerificationResource(
+                'http://localhost:3456/did.json',
+                AbortSignal.timeout(1000),
+                'http://localhost:3456'
+            )
+        ).rejects.toThrow('size limit');
+        await expect(
+            fetchVerificationResource(
+                'http://localhost:3457/private',
+                AbortSignal.timeout(1000),
+                'http://localhost:3456'
+            )
+        ).rejects.toThrow();
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
     it.each([
         '0.0.0.0',
         '10.0.0.1',
