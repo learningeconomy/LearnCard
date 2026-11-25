@@ -7,7 +7,7 @@ import { compileProjectedSchema } from './bedrockSchema';
 // Exact profiles and Responses protocol from AI Passport LC-2205 (#92).
 export const BEDROCK_BASE_URL = 'https://bedrock-runtime.us-east-1.amazonaws.com/openai/v1';
 export const GENERATION_MODELS = {
-    reasoning: 'us.openai.gpt-6.1-sol',
+    reasoning: 'us.openai.gpt-6.2-sol',
     formatting: 'us.openai.gpt-6-luna',
 } as const;
 type GenerationTask = keyof typeof GENERATION_MODELS;

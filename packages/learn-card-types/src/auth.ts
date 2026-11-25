@@ -478,6 +478,16 @@ export interface EscrowRecoveryExpectations {
 }
 
 /**
+ * Outcome of an archived legacy key lookup. `absent` means the archive service confirmed it
+ * holds no key for this login; `failed` covers network, HTTP, malformed and unreleasable
+ * responses, so a caller must never treat it as proof that no identity exists.
+ */
+export type ArchivedKeyLookup =
+    | { status: 'found'; privateKey: string; did: string }
+    | { status: 'absent' }
+    | { status: 'failed' };
+
+/**
  * Key Derivation Strategy
  *
  * Abstract interface for different key derivation implementations.
@@ -578,11 +588,14 @@ export interface KeyDerivationStrategy<
     /** Fetch the server-side key status for the authenticated user */
     fetchServerKeyStatus(token: string, providerType: AuthProviderType): Promise<ServerKeyStatus>;
 
-    /** Fetch a server-attested legacy key for account upgrade; unavailable responses return null. */
+    /**
+     * Look up a server-attested legacy key for account upgrade. Only `absent` proves the
+     * server holds no archived key for this login; every other outcome is `failed`.
+     */
     fetchArchivedKey?(
         authToken: string,
         providerType: AuthProviderType
-    ): Promise<{ privateKey: string; did: string } | null>;
+    ): Promise<ArchivedKeyLookup>;
 
     /** Store the remote key component on the server */
     storeAuthShare(

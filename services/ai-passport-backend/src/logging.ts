@@ -396,7 +396,7 @@ export const logSafeEvent = (
             event.detectedFileType = metrics.detectedFileType;
         if (metrics.pipelineVersion === 'file-extraction-v1')
             event.pipelineVersion = metrics.pipelineVersion;
-        if (metrics.model === 'us.openai.gpt-6-luna' || metrics.model === 'us.openai.gpt-6.1-sol')
+        if (metrics.model === 'us.openai.gpt-6-luna' || metrics.model === 'us.openai.gpt-6.2-sol')
             event.model = metrics.model;
         if (metrics.ocrModel === 'tesseract-local') event.ocrModel = metrics.ocrModel;
     }

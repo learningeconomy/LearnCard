@@ -199,7 +199,7 @@ const boundedFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
         throw new Error('Smoke endpoint/request rejected');
     const body = JSON.parse(options.body);
     if (
-        !['us.openai.gpt-6.1-sol', 'us.openai.gpt-6-luna'].includes(body.model) ||
+        !['us.openai.gpt-6.2-sol', 'us.openai.gpt-6-luna'].includes(body.model) ||
         body.store !== false ||
         body.previous_response_id ||
         body.background
@@ -263,7 +263,7 @@ const results: {
     eventTypes?: string[];
 }[] = [];
 try {
-    for (const model of ['gpt-6.1-sol', 'gpt-6-luna-none']) {
+    for (const model of ['gpt-6.2-sol', 'gpt-6-luna-none']) {
         for (const transport of ['text-stream', 'required-tool', 'tool-stream']) {
             if (
                 focused &&

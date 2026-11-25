@@ -1,8 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
-import { resolveMigrationKey } from './resolveMigrationKey';
+import { MigrationKeyDerivationError, resolveMigrationKey } from './resolveMigrationKey';
 
 describe('resolveMigrationKey', () => {
-    const archived = { privateKey: 'a'.repeat(64), did: 'did:key:zArchive' };
+    const archived = {
+        status: 'found' as const,
+        privateKey: 'a'.repeat(64),
+        did: 'did:key:zArchive',
+    };
+    const absent = { status: 'absent' as const };
+    const failed = { status: 'failed' as const };
 
     it('uses the archive without deriving and anchors the expected DID', async () => {
         const deriveLegacyKey = vi.fn();
@@ -19,13 +25,13 @@ describe('resolveMigrationKey', () => {
         expect(deriveLegacyKey).not.toHaveBeenCalled();
     });
 
-    it.each(['miss', 'error'])('derives only after an archive %s', async outcome => {
+    it.each(['absent', 'failed', 'error'])('derives only after an archive %s', async outcome => {
         const order: string[] = [];
         const result = await resolveMigrationKey({
             fetchArchivedKey: async () => {
                 order.push('archive');
                 if (outcome === 'error') throw new Error('lookup failed');
-                return null;
+                return outcome === 'absent' ? absent : failed;
             },
             deriveLegacyKey: async () => {
                 order.push('derive');
@@ -68,21 +74,39 @@ describe('resolveMigrationKey', () => {
         ).toMatchObject({ source: 'archive', expectedDid: archived.did });
     });
 
-    it('preserves null and throwing legacy derivation outcomes', async () => {
-        const fetchArchivedKey = async (): Promise<null> => null;
+    it('preserves a null legacy derivation outcome', async () => {
         expect(
-            await resolveMigrationKey({ fetchArchivedKey, deriveLegacyKey: async () => null })
+            await resolveMigrationKey({
+                fetchArchivedKey: async () => absent,
+                deriveLegacyKey: async () => null,
+            })
         ).toBeNull();
-        const error = new Error('derivation failed');
-        await expect(
-            resolveMigrationKey({
+    });
+
+    it.each([
+        ['absent', async () => absent, 'absent'],
+        ['failed', async () => failed, 'failed'],
+        [
+            'thrown',
+            async () => {
+                throw new Error('lookup failed');
+            },
+            'failed',
+        ],
+    ] as const)(
+        'tags a legacy derivation error with the %s archive lookup',
+        async (_label, fetchArchivedKey, archivedKey) => {
+            const error = new Error('No legacy key was assigned to this account.');
+            const rejection = await resolveMigrationKey({
                 fetchArchivedKey,
                 deriveLegacyKey: async () => {
                     throw error;
                 },
-            })
-        ).rejects.toBe(error);
-    });
+            }).catch((reason: unknown) => reason);
+            expect(rejection).toBeInstanceOf(MigrationKeyDerivationError);
+            expect(rejection).toMatchObject({ derivationError: error, archivedKey });
+        }
+    );
 
     it.each(['hit', 'miss', 'error'])(
         'discards an obsolete archive %s without deriving',
@@ -94,7 +118,7 @@ describe('resolveMigrationKey', () => {
                     fetchArchivedKey: async () => {
                         current = false;
                         if (outcome === 'error') throw new Error('lookup failed');
-                        return outcome === 'hit' ? archived : null;
+                        return outcome === 'hit' ? archived : absent;
                     },
                     deriveLegacyKey,
                     isCurrentAttempt: () => current,
@@ -108,7 +132,7 @@ describe('resolveMigrationKey', () => {
         let current = true;
         expect(
             await resolveMigrationKey({
-                fetchArchivedKey: async () => null,
+                fetchArchivedKey: async () => absent,
                 deriveLegacyKey: async () => {
                     current = false;
                     return 'legacy-key';

@@ -46,7 +46,7 @@ function fixture(
 }
 
 describe('Responses effort contract', () => {
-    for (const model of ['gpt-6.1-sol', 'gpt-6-luna']) {
+    for (const model of ['gpt-6.2-sol', 'gpt-6-luna']) {
         for (const effort of [
             'low',
             'medium',
@@ -80,7 +80,7 @@ describe('Responses effort contract', () => {
     test('unsupported Sol none and unapproved profiles reject', () => {
         expect(() =>
             buildResponsesRequest({
-                model: 'gpt-6.1-sol-none',
+                model: 'gpt-6.2-sol-none',
                 message: 'Synthetic',
             })
         ).toThrow();
@@ -89,7 +89,7 @@ describe('Responses effort contract', () => {
     test('history keeps client-owned tool identifiers and results', () => {
         delete process.env.OPENAI_REASONING_EFFORT;
         const request = buildResponsesRequest({
-            model: 'gpt-6.1-sol',
+            model: 'gpt-6.2-sol',
             systemPrompt: 'Synthetic instructions',
             message: [
                 { role: 'developer', content: 'More instructions' },
@@ -134,7 +134,7 @@ test('real SDK refreshes tokens, pins endpoint, disables storage and ambient hea
         expect(
             await f.provider.streamingCall({
                 message: 'Synthetic',
-                model: 'gpt-6.1-sol',
+                model: 'gpt-6.2-sol',
                 options: {
                     onChunk: async chunk => {
                         seen.push(chunk);
@@ -182,7 +182,7 @@ for (const events of [
         await expect(
             fixture(events).provider.streamingCall({
                 message: 'Synthetic',
-                model: 'gpt-6.1-sol',
+                model: 'gpt-6.2-sol',
             })
         ).rejects.toThrow();
     });
@@ -193,7 +193,7 @@ test('credential errors are redacted before real SDK receives them', async () =>
         throw new Error('synthetic-secret-token');
     });
     const error = await client.responses
-        .create({ model: 'us.openai.gpt-6.1-sol', input: 'Synthetic' })
+        .create({ model: 'us.openai.gpt-6.2-sol', input: 'Synthetic' })
         .catch(error => error);
     expect(inspect(error)).not.toContain('synthetic-secret-token');
     expect(fetch).not.toHaveBeenCalled();
@@ -206,7 +206,7 @@ test('abort and deadline bound pending token resolution without a request', asyn
     const owner = new AbortController();
     const promise = provider.streamingCall({
         message: 'Synthetic',
-        model: 'gpt-6.1-sol',
+        model: 'gpt-6.2-sol',
         options: { signal: owner.signal, timeoutMs: 500 },
     });
     owner.abort();
@@ -214,7 +214,7 @@ test('abort and deadline bound pending token resolution without a request', asyn
     await expect(
         provider.streamingCall({
             message: 'Synthetic',
-            model: 'gpt-6.1-sol',
+            model: 'gpt-6.2-sol',
             options: { timeoutMs: 10 },
         })
     ).rejects.toThrow();
@@ -227,7 +227,7 @@ test('callback backpressure and cancellation propagate', async () => {
     await expect(
         f.provider.streamingCall({
             message: 'Synthetic',
-            model: 'gpt-6.1-sol',
+            model: 'gpt-6.2-sol',
             options: {
                 signal: owner.signal,
                 onChunk: async () => {
@@ -262,7 +262,7 @@ const answerSchema = z.object({
     answer: z.string().min(3),
     optional: z.string().optional(),
 });
-for (const model of ['gpt-6.1-sol', 'gpt-6-luna-none']) {
+for (const model of ['gpt-6.2-sol', 'gpt-6-luna-none']) {
     test(`${model} keeps optional semantics and uses required non-strict client tools`, async () => {
         delete process.env.OPENAI_REASONING_EFFORT;
         const f = jsonFixture([functionCall('{"answer":"valid"}')]);
@@ -311,7 +311,7 @@ for (const [label, output, status] of [
         delete process.env.OPENAI_REASONING_EFFORT;
         await expect(
             jsonFixture([...output], status).provider.call({
-                model: 'gpt-6.1-sol',
+                model: 'gpt-6.2-sol',
                 message: 'Synthetic',
                 output: answerSchema,
             })
@@ -325,7 +325,7 @@ test('selected array schema, wrapped scalars and async transformations retain or
     });
     expect(
         await jsonFixture([functionCall('{"answer":"valid"}', 'function_1')]).provider.call({
-            model: 'gpt-6.1-sol',
+            model: 'gpt-6.2-sol',
             message: 'Synthetic',
             output: [z.object({ count: z.number() }), transformed],
         })
@@ -372,7 +372,7 @@ function structuredEvents(argumentsText: string, name = 'answer') {
     ];
 }
 const streamParams = {
-    model: 'gpt-6.1-sol',
+    model: 'gpt-6.2-sol',
     systemPrompt: 'Synthetic',
     message: 'Synthetic',
     output: answerSchema,
@@ -435,7 +435,7 @@ test('all nineteen default generation shapes serialize locally without model/eff
     expect(generationSchemaInventory.length).toBe(19);
     for (const entry of generationSchemaInventory) {
         const model =
-            entry.role === 'chat' || entry.role === 'planning' ? 'gpt-6.1-sol' : 'gpt-6-luna-none';
+            entry.role === 'chat' || entry.role === 'planning' ? 'gpt-6.2-sol' : 'gpt-6-luna-none';
         expect(buildResponsesRequest({ model, message: 'Synthetic' }).model).toMatch(
             /^us\.openai\./
         );
@@ -466,7 +466,7 @@ test('real SDK does not retry failed Responses inference and refuses redirects',
     );
     await expect(
         new BedrockResponsesProvider(() => client).streamingCall({
-            model: 'gpt-6.1-sol',
+            model: 'gpt-6.2-sol',
             message: 'Synthetic',
         })
     ).rejects.toMatchObject({ code: 'ai_provider_rate_limited' });
@@ -499,7 +499,7 @@ for (const structured of [false, true]) {
                       onPartial: pending,
                   })
                 : f.provider.streamingCall({
-                      model: 'gpt-6.1-sol',
+                      model: 'gpt-6.2-sol',
                       message: 'Synthetic',
                       options: { timeoutMs: 20, onChunk: pending },
                   })
@@ -560,7 +560,7 @@ test('abort stops a never-settling callback without delivering later chunks', as
         complete,
     ]);
     const pending = f.provider.streamingCall({
-        model: 'gpt-6.1-sol',
+        model: 'gpt-6.2-sol',
         message: 'Synthetic',
         options: { signal: owner.signal, onChunk: callback },
     });
@@ -582,7 +582,7 @@ test('malformed SSE is rejected without logging its raw payload', async () => {
         );
         await expect(
             new BedrockResponsesProvider(() => client).streamingCall({
-                model: 'gpt-6.1-sol',
+                model: 'gpt-6.2-sol',
                 message: 'Synthetic',
             })
         ).rejects.toThrow();
@@ -592,7 +592,7 @@ test('malformed SSE is rejected without logging its raw payload', async () => {
     }
 });
 
-for (const model of ['gpt-6.1-sol', 'gpt-6-luna', 'gpt-6-luna-none']) {
+for (const model of ['gpt-6.2-sol', 'gpt-6-luna', 'gpt-6-luna-none']) {
     test(`${model} normalizes empty effort and preserves valid/invalid overrides`, () => {
         delete process.env.OPENAI_REASONING_EFFORT;
         const expected = buildResponsesRequest({ model, message: 'Synthetic' }).reasoning;
@@ -627,7 +627,7 @@ for (const type of ['error', 'response.failed', 'response.incomplete', 'response
             ]);
             let error: any;
             try {
-                await f.provider.streamingCall({ model: 'gpt-6.1-sol', message: 'Synthetic' });
+                await f.provider.streamingCall({ model: 'gpt-6.2-sol', message: 'Synthetic' });
             } catch (caught) {
                 error = caught;
             }
@@ -654,7 +654,7 @@ for (const status of ['failed', 'incomplete', 'in_progress']) {
         let error: any;
         try {
             await f.provider.call({
-                model: 'gpt-6.1-sol',
+                model: 'gpt-6.2-sol',
                 message: 'Synthetic',
                 output: answerSchema,
             });
