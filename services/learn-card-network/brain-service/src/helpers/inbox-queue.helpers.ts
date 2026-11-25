@@ -23,6 +23,7 @@ import { getProfileByProfileId } from '@accesslayer/profile/read';
 import {
     batchReplayStore,
     claimBatchItem,
+    closeBatchRequest,
     createBatchJob,
     finishBatchItem,
     markBatchIssuanceStarted,
@@ -250,6 +251,16 @@ export const processInboxQueueMessage = async (body: string, inline = false): Pr
         return;
     }
     const input = payload.batch.items[Number(item.index)]!;
+    // A keyed single request is decided once, at the checkpoint, on its own identity.
+    const request =
+        job.requestId?.startsWith(INBOX_ISSUE_REQUEST_ID_PREFIX) && job.requestHash
+            ? {
+                  issuer: job.issuer,
+                  requestId: job.requestId,
+                  requestHash: job.requestHash,
+                  seq: Number(job.requestSeq ?? 0),
+              }
+            : undefined;
     const result = await issueInboxBatch(
         profile,
         {
@@ -262,8 +273,12 @@ export const processInboxQueueMessage = async (body: string, inline = false): Pr
             user: { did: profile.did, isChallengeValid: true, scope: payload.scope },
         },
         {
-            cache: batchReplayStore(item.id, owner, item.replayKey),
-            beforeIssue: () => markBatchIssuanceStarted(item.id, owner),
+            cache: batchReplayStore(item.id, owner, item.replayKey, request),
+            // Batch items keep the plain checkpoint; a keyed request is decided in it.
+            beforeIssue: () =>
+                request
+                    ? markBatchIssuanceStarted(item.id, owner, request)
+                    : markBatchIssuanceStarted(item.id, owner),
         }
     );
     await finishBatchItem(item.id, owner, {
@@ -314,12 +329,13 @@ export const issueKeyedInboxCredential = async (
     // is known, record it there as a worker would, so that no later worker issues the item.
     // A job holding another payload under this request id is not this caller's to settle.
     // There is no age limit: an item stays dispatchable for as long as it is QUEUED.
+    const identity = {
+        issuer: profile.profileId,
+        requestId: request.requestId,
+        requestHash: batchRequestHash(request, ctx),
+    };
     const ownOutstanding = async (): ReturnType<typeof readOutstandingBatchItems> =>
-        readOutstandingBatchItems(
-            profile.profileId,
-            request.requestId,
-            batchRequestHash(request, ctx)
-        );
+        readOutstandingBatchItems(identity.issuer, identity.requestId, identity.requestHash);
     const settleWaiting = async (result: IssueInboxCredentialBatchItemResult): Promise<void> => {
         for (const item of await ownOutstanding())
             if (item.state === 'QUEUED') await settleQueuedBatchItem(item.itemId, result);
@@ -336,6 +352,47 @@ export const issueKeyedInboxCredential = async (
             rejected = (await rejectWaitingBatchItem(item.itemId, result)) && rejected;
         return rejected;
     };
+    // The key belongs to another payload: from its record, or from a job that holds the
+    // request id. Both go through the same fence and the same second look at the key.
+    const refuse = async (
+        error: InboxBatchConflict
+    ): Promise<ReturnType<typeof IssueInboxCredentialResponseValidator.parse>> => {
+        const rejected = await rejectWaiting({
+            success: false,
+            index: 0,
+            error: { code: 'CONFLICT', message: error.message, reason: error.reason },
+            idempotencyKey,
+            recipient: input.recipient,
+        });
+        // The refusal is decided again after the fence, from the record that holds the key
+        // now. Since the first look, an own item may have reserved the key, or delivered and
+        // completed: then the answer is that item's.
+        const current = await readBatchReplay(replayKey);
+        let own: IssueInboxCredentialBatchItemResult | undefined;
+        if (current !== null) {
+            try {
+                own = replayResult(current, inboxItemRequestHash(input), 0);
+            } catch (again) {
+                const foreign =
+                    again instanceof InboxBatchConflict && again.reason === 'IDEMPOTENCY_MISMATCH';
+                if (!foreign) throw again;
+            }
+        }
+        if (own) {
+            await closeBatchRequest(identity, false);
+            await settleWaiting({ ...own, index: 0, idempotencyKey });
+            return IssueInboxCredentialResponseValidator.parse(own);
+        }
+        // An own item that could not be fenced can still issue, even if it has let go of the
+        // key in the meantime: a mismatch would be a stale answer.
+        if (!rejected) throw new InboxBatchConflict('IN_PROGRESS', IN_PROGRESS_MESSAGE);
+        // The answer itself is the durable decision of this request, under the request lock:
+        // no item admitted so far passes its checkpoint afterwards. Not written while one is
+        // past it.
+        if (!(await closeBatchRequest(identity, true)))
+            throw new InboxBatchConflict('IN_PROGRESS', IN_PROGRESS_MESSAGE);
+        throw error;
+    };
     const replay = async (
         stored: string
     ): Promise<ReturnType<typeof IssueInboxCredentialResponseValidator.parse>> => {
@@ -345,39 +402,13 @@ export const issueKeyedInboxCredential = async (
         } catch (error) {
             // IN_PROGRESS is rethrown as is: the owner's outcome is not known yet, so a
             // waiting item must stay queued.
-            if (error instanceof InboxBatchConflict && error.reason === 'IDEMPOTENCY_MISMATCH') {
-                const rejected = await rejectWaiting({
-                    success: false,
-                    index: 0,
-                    error: { code: 'CONFLICT', message: error.message, reason: error.reason },
-                    idempotencyKey,
-                    recipient: input.recipient,
-                });
-                // The refusal is decided again after the fence, from the record that holds the
-                // key now. Since the record above was read, an own item may have reserved the
-                // key, or delivered and completed: then the answer is that item's.
-                const current = await readBatchReplay(replayKey);
-                let own: IssueInboxCredentialBatchItemResult | undefined;
-                if (current !== null) {
-                    try {
-                        own = replayResult(current, inboxItemRequestHash(input), 0);
-                    } catch (again) {
-                        const foreign =
-                            again instanceof InboxBatchConflict &&
-                            again.reason === 'IDEMPOTENCY_MISMATCH';
-                        if (!foreign) throw again;
-                    }
-                }
-                if (own) {
-                    await settleWaiting({ ...own, index: 0, idempotencyKey });
-                    return IssueInboxCredentialResponseValidator.parse(own);
-                }
-                // An own item that could not be fenced can still issue, even if it has let go
-                // of the key in the meantime: a mismatch would be a stale answer.
-                if (!rejected) throw new InboxBatchConflict('IN_PROGRESS', IN_PROGRESS_MESSAGE);
-            }
+            if (error instanceof InboxBatchConflict && error.reason === 'IDEMPOTENCY_MISMATCH')
+                return refuse(error);
             throw error;
         }
+        // Decided under the request lock for every job admitted so far, whatever their number;
+        // the settle below only makes the outcome readable on the first waiting items.
+        await closeBatchRequest(identity, false);
         await settleWaiting({ ...result, index: 0, idempotencyKey });
         return IssueInboxCredentialResponseValidator.parse(result);
     };
@@ -390,20 +421,24 @@ export const issueKeyedInboxCredential = async (
     // The admission lookup forgets a job after a day, so this can be a newer job for a request
     // whose earlier item is still waiting. Admission retires such an item in its own
     // transaction; nothing is retired from here, where two calls could retire each other's job.
-    const receipt = await submitInboxBatch(profile, request, ctx, {
-        success: false,
-        index: 0,
-        error: { code: 'CONFLICT', message: SUPERSEDED_MESSAGE },
-        idempotencyKey,
-        recipient: input.recipient,
-    }).catch((error: unknown) => {
-        if (error instanceof InboxBatchRequestIdConflict)
-            throw new InboxBatchConflict(
+    let receipt: InboxBatchReceipt;
+    try {
+        receipt = await submitInboxBatch(profile, request, ctx, {
+            success: false,
+            index: 0,
+            error: { code: 'CONFLICT', message: SUPERSEDED_MESSAGE },
+            idempotencyKey,
+            recipient: input.recipient,
+        });
+    } catch (error) {
+        if (!(error instanceof InboxBatchRequestIdConflict)) throw error;
+        return refuse(
+            new InboxBatchConflict(
                 'IDEMPOTENCY_MISMATCH',
                 'This idempotency key was used for a different issuance.'
-            );
-        throw error;
-    });
+            )
+        );
+    }
     // A separate job's IN_PROGRESS snapshot is not authoritative once its owner
     // commits the shared receipt. Validate the live record before trusting that job.
     const stored = await readBatchReplay(replayKey);

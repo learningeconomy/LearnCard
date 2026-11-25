@@ -29,6 +29,7 @@ vi.mock('@accesslayer/inbox-batch/store', () => ({
     batchReplayStore: () => mocks.replay,
     // These jobs are batch jobs: no newer job of a keyed single request exists.
     hasNewerBatchJob: async () => false,
+    closeBatchRequest: async () => true,
 }));
 vi.mock('@accesslayer/profile/read', () => ({ getProfileByProfileId: mocks.profile }));
 vi.mock('./inbox.helpers', () => ({

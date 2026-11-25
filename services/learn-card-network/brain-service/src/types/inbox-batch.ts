@@ -23,6 +23,10 @@ export type BatchJob = {
     id: string;
     issuer: string;
     createdAt: number;
+    requestId?: string;
+    requestHash?: string;
+    /** Ordinal among the jobs of one keyed single request. Absent on older jobs: 0. */
+    requestSeq?: number;
     payload?: string;
     completedAt?: number;
 };

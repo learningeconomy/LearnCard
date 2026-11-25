@@ -197,7 +197,7 @@ describe('Universal Inbox batch issuance', () => {
             const ready = await neogma.queryRunner.run(
                 'SHOW CONSTRAINTS YIELD name WHERE name STARTS WITH "inboxbatch" RETURN count(*) AS total'
             );
-            expect(ready.records[0].get('total').toNumber()).toBe(4);
+            expect(ready.records[0].get('total').toNumber()).toBe(5);
             const readyIndexes = await neogma.queryRunner.run(
                 'SHOW INDEXES YIELD name WHERE name STARTS WITH "inbox_batch_" RETURN count(*) AS total'
             );
