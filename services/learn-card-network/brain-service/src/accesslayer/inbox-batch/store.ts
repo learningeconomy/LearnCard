@@ -392,8 +392,9 @@ export const batchReplayStore = (
     itemId: string,
     owner: string,
     replayKey: string,
-    /** Keyed single requests only: the request whose decision a stored receipt extends. */
-    request?: BatchRequestIdentity
+    /** Keyed single requests only: a stored receipt extends the decision of this request, and
+     * a release by the item that holds it gives it back. */
+    request?: BatchRequestIdentity & { seq: number }
 ): BatchReplayStore => ({
     get: async (_key: string): Promise<string | null> => readBatchReplay(replayKey),
     setIfAbsent: async (_key: string, value: string, _ttl: number): Promise<'OK' | null> => {
@@ -423,10 +424,9 @@ export const batchReplayStore = (
     ): Promise<boolean> => {
         const encrypted = value === null ? null : await encryptInboxCredential(value);
         return transaction(async tx => {
-            // REQUEST lock first (request, item, replay): the receipt also covers a job
-            // admitted between this item's checkpoint and this write.
-            const decision =
-                request && value !== null ? await lockRequestDecision(tx, request) : undefined;
+            // REQUEST lock first (request, item, replay): a receipt also covers a job admitted
+            // between this item's checkpoint and this write; a release gives the decision back.
+            const decision = request ? await lockRequestDecision(tx, request) : undefined;
             await lockOwnedItem(tx, itemId, owner);
             const rows = await tx.run(
                 `MATCH (r:InboxBatchReplay {id: $id}) SET r.lock = coalesce(r.lock, 0) + 1 RETURN r.marker AS marker`,
@@ -439,6 +439,17 @@ export const batchReplayStore = (
                 await tx.run(`MATCH (i:InboxBatchItem {id: $itemId}) SET i.phase = 'PREPARING'`, {
                     itemId,
                 });
+                // Nothing was delivered and the key is free again in this same transaction. An
+                // item that holds the decision (its checkpoint committed) gives it back with
+                // the key: its own job and every later one are undecided again; earlier jobs
+                // stay decided, as they were before it won. Any other item changes nothing.
+                if (decision && request)
+                    await tx.run(
+                        `MATCH (d:InboxBatchRequest {id: $id}) WHERE d.winner = $itemId
+                        SET d.winner = null, d.decidedSeq =
+                            CASE WHEN $seq > 0 THEN toInteger($seq) - 1 ELSE null END`,
+                        { id: decision.id, itemId, seq: request.seq }
+                    );
             } else {
                 await tx.run(
                     `MATCH (r:InboxBatchReplay {id: $id}) SET r.value = $value,

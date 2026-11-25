@@ -1222,6 +1222,51 @@ describe('single inbox durable idempotency', () => {
         }
     }, 30000);
 
+    it('a winner whose checkpoint committed without an acknowledgement gives the decision back with its marker: the request is still delivered, once', async () => {
+        const key = randomUUID();
+        const input = await inputFor(issuer, key);
+        const now = freezeClock();
+        const reserved = gate();
+        const resume = gate();
+        try {
+            const aged = await admit(input, true);
+            await setJobCreatedAt(aged, now - DAY);
+            const start = batchStore.markBatchIssuanceStarted;
+            vi.spyOn(batchStore, 'markBatchIssuanceStarted').mockImplementationOnce(
+                async (...step) => {
+                    reserved.open();
+                    await resume.opened;
+                    await start(...step); // Committed: A holds the decision, which covers B.
+                    throw new Error('The acknowledgement of the checkpoint was lost.');
+                }
+            );
+            const working = processInboxQueueMessage(JSON.stringify({ itemId: `${aged}:0` }));
+            await reserved.opened;
+            const later = await admit(input, true); // B: admitted before A's checkpoint.
+            expect(later).not.toBe(aged);
+            resume.open();
+            await working; // Nothing was delivered: A let go of the key and waits for a retry.
+            await expectCounts(0);
+            expect(await readBatchReplay(inboxItemReplayKey(issuerId, key))).toBeNull();
+            expect((await getInboxBatch(issuerId, aged)).items[0]?.state).toBe('QUEUED');
+            await runLateWorker();
+            await expectCounts(1);
+            expect((await getInboxBatch(issuerId, later)).items[0]).toMatchObject({
+                state: 'COMPLETED',
+                result: { success: true },
+            });
+            expect((await getInboxBatch(issuerId, aged)).items[0]).toMatchObject({
+                state: 'COMPLETED',
+                result: { success: false, error: { code: 'CONFLICT' } },
+            });
+            await expireReceipt(key);
+            await runLateWorker();
+            await expectCounts(1);
+        } finally {
+            vi.useRealTimers();
+        }
+    }, 30000);
+
     it('the batch endpoint answers a reused requestId from its newest job when two are inside the lookup', async () => {
         const requestId = randomUUID();
         const batch = { requestId, items: [await inputFor(issuer, randomUUID())] };
