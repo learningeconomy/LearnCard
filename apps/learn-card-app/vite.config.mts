@@ -464,6 +464,9 @@ export default defineConfig(async ({ mode, command }) => {
                 : {}),
             alias: {
                 ...stdlibbrowser,
+                // cbor-x (via @sd-jwt/sd-jwt-vc status lists) declares a top-level `Buffer` that
+                // collides with the injected Buffer polyfill in pre-bundled deps. Its UMD build keeps it scoped.
+                'cbor-x': 'cbor-x/index-no-eval',
                 '@web3auth/openlogin-adapter':
                     '@web3auth/openlogin-adapter/dist/openloginAdapter.umd.min.js',
                 'learn-card-base': path.resolve(__dirname, '../../packages/learn-card-base/src'),
