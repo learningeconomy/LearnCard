@@ -46,6 +46,7 @@ import {
     ESCROW_PIN_LOCKED_MESSAGE,
     ESCROW_PIN_MISMATCH_PATTERN,
     ESCROW_PIN_UNAVAILABLE_MESSAGE,
+    type ArchivedKeyLookup,
     type EscrowRecoveryExpectations,
 } from '@learncard/types';
 import {
@@ -2814,7 +2815,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         fetchArchivedKey: async (
             authToken: string,
             providerType: AuthProviderType
-        ): Promise<{ privateKey: string; did: string } | null> => {
+        ): Promise<ArchivedKeyLookup> => {
             const controller = new AbortController();
             const timer = setTimeout(() => controller.abort(), 8000);
 
@@ -2825,13 +2826,19 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     signal: controller.signal,
                     body: JSON.stringify({ authToken, providerType }),
                 });
-                if (!response.ok) return null;
+                if (!response.ok) return { status: 'failed' };
 
                 const body: unknown = await response.json();
+                if (!body || typeof body !== 'object' || !('available' in body)) {
+                    return { status: 'failed' };
+                }
+                // Only the server's explicit storage miss proves there is no archived identity.
+                if (body.available === false) {
+                    return 'reason' in body && body.reason === 'not_archived'
+                        ? { status: 'absent' }
+                        : { status: 'failed' };
+                }
                 if (
-                    !body ||
-                    typeof body !== 'object' ||
-                    !('available' in body) ||
                     body.available !== true ||
                     !('privateKey' in body) ||
                     typeof body.privateKey !== 'string' ||
@@ -2840,12 +2847,12 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     typeof body.did !== 'string' ||
                     !body.did.startsWith('did:key:')
                 )
-                    return null;
+                    return { status: 'failed' };
 
-                return { privateKey: body.privateKey, did: body.did };
+                return { status: 'found', privateKey: body.privateKey, did: body.did };
             } catch {
-                // Optional lookup: never forward response bodies or raw errors containing credentials.
-                return null;
+                // Never forward response bodies or raw errors containing credentials.
+                return { status: 'failed' };
             } finally {
                 clearTimeout(timer);
             }
