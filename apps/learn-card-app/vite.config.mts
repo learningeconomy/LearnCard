@@ -4,7 +4,6 @@ import { execSync } from 'child_process';
 import { createRequire } from 'module';
 import { readdirSync, readFileSync, existsSync } from 'fs';
 
-import { NodeGlobalsPolyfillPlugin as GlobalPolyfill } from '@esbuild-plugins/node-globals-polyfill';
 import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react-swc';
 import svgr from 'vite-plugin-svgr';
@@ -12,7 +11,6 @@ import stdlibbrowser from 'node-stdlib-browser';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
-import type { Plugin as EsbuildPlugin } from 'esbuild';
 
 import { findDuplicateMessageImports } from './scripts/check-i18n-imports.mjs';
 import { paraglideMissingKeyOnWarn } from './paraglideOnWarn';
@@ -23,14 +21,9 @@ import {
     CHUNK_PREFETCH_ELEMENT_ID,
     type BundleChunk,
 } from './src/buildPlugins/chunkPrefetchList';
+import { createManualChunks } from './src/buildPlugins/vendorChunks';
 import { parseLearnCardAppEnvironment } from './src/config/buildEnvironment';
 import { registryProxyDevServer } from '../../packages/learn-card-base/src/registry-proxy/registryProxyDevServer';
-
-// The polyfill package ships against a different esbuild type instance than Vite.
-const globalPolyfillPlugin = GlobalPolyfill({
-    process: true,
-    buffer: true,
-}) as unknown as EsbuildPlugin;
 
 // Re-optimization can replace chunks without changing a dependency entry's URL version.
 // Revalidate dev responses instead of keeping Vite's year-long immutable browser cache.
@@ -242,6 +235,20 @@ const minifySvgPathData = (): Plugin => ({
     },
 });
 
+// Paraglide's messages.js only re-exports messages/_index.js, plus the `m` namespace object that
+// mDynamic reads by key. Rolldown keeps a bare `import "./messages-*.js"` in every chunk that
+// imports it, and that chunk holds the whole namespace (~100 KB gzip), so it landed on the startup
+// path. It has no side effects; saying so lets static `m.key()` calls skip that chunk.
+const PARAGLIDE_MESSAGES_BARREL = /[\\/]paraglide[\\/]messages\.js$/;
+const paraglideBarrelWithoutSideEffects = (): Plugin => ({
+    name: 'learncard-paraglide-barrel-no-side-effects',
+    apply: 'build',
+    transform(code, id) {
+        if (!PARAGLIDE_MESSAGES_BARREL.test(id)) return null;
+        return { code, map: null, moduleSideEffects: false };
+    },
+});
+
 // Lazy chunks the app warms ahead of time with plain fetch() (src/helpers/prefetchChunk.ts).
 // Writes each one's file URLs into index.html as JSON. Dev has no chunks, so it lists the
 // source module, which is what the dev server's import() requests.
@@ -287,6 +294,12 @@ const chunkPrefetchList = (): Plugin => {
     };
 };
 
+const paraglideBaseLocale = (
+    JSON.parse(readFileSync(path.join(__dirname, 'project.inlang/settings.json'), 'utf8')) as {
+        baseLocale: string;
+    }
+).baseLocale;
+
 export default defineConfig(async ({ mode, command }) => {
     const loadedEnvironment = loadEnv(mode, __dirname, '');
     const environment = parseLearnCardAppEnvironment(
@@ -330,6 +343,7 @@ export default defineConfig(async ({ mode, command }) => {
             registryProxyDevServer(),
             i18nImportGuard(),
             chunkPrefetchList(),
+            paraglideBarrelWithoutSideEffects(),
             react(),
             svgr(),
             tsconfigPaths({ root: '../../' }),
@@ -340,9 +354,7 @@ export default defineConfig(async ({ mode, command }) => {
             }),
             // Only the active language's strings load at startup (production builds).
             paraglideLazyLocales(
-                JSON.parse(
-                    readFileSync(path.join(__dirname, 'project.inlang/settings.json'), 'utf8')
-                ).baseLocale,
+                paraglideBaseLocale,
                 path.join(__dirname, 'src/paraglide/messages')
             ),
             ...(environment.ANALYZE
@@ -363,18 +375,8 @@ export default defineConfig(async ({ mode, command }) => {
             rollupOptions: {
                 onwarn: paraglideMissingKeyOnWarn,
                 output: {
-                    manualChunks: {
-                        // Core framework
-                        'vendor-react': ['react', 'react-dom', 'react-router', 'react-router-dom'],
-                        'vendor-ionic': ['@ionic/react', '@ionic/react-router', '@ionic/core'],
-                        // Heavy deps in their own chunks
-                        'vendor-firebase': ['firebase/app', 'firebase/auth', 'firebase/analytics'],
-                        'vendor-sentry': ['@sentry/react', '@sentry/browser'],
-                        'vendor-launchdarkly': ['launchdarkly-react-client-sdk'],
-                        'vendor-swiper': ['swiper'],
-                        'vendor-lottie': ['react-lottie-player'],
-                        'vendor-tanstack': ['@tanstack/react-query'],
-                    },
+                    // Rolldown (Vite 8) only takes the function form. See vendorChunks.ts.
+                    manualChunks: createManualChunks({ paraglideBaseLocale }),
                 },
             },
         },
@@ -438,10 +440,13 @@ export default defineConfig(async ({ mode, command }) => {
             ],
             // Exclude workspace packages from pre-bundling so Vite serves their TypeScript sources.
             exclude: workspacePackages,
-            esbuildOptions: {
-                target: 'esnext',
-                define: { global: 'globalThis' },
-                plugins: [globalPolyfillPlugin],
+            // Vite 8 pre-bundles with Rolldown, which can't run esbuild plugins. Oxc's inject and
+            // define do what NodeGlobalsPolyfillPlugin did: provide `process`, `Buffer` and `global`.
+            rolldownOptions: {
+                transform: {
+                    define: { global: 'globalThis' },
+                    inject: { process: 'process', Buffer: ['buffer', 'Buffer'] },
+                },
             },
         },
         define: {
