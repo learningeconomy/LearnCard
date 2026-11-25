@@ -739,6 +739,108 @@ describe('single inbox durable idempotency', () => {
         }
     });
 
+    it('two calls on either side of the 24-hour admission boundary do not retire each other: the request is delivered once', async () => {
+        const key = randomUUID();
+        const input = await inputFor(issuer, key);
+        const now = freezeClock();
+        const reusing = { admitted: gate(), resume: gate(), beforeReread: gate(), reread: gate() };
+        const crossing = { admitted: gate(), resume: gate() };
+        try {
+            const older = await admit(input);
+            // Inside the lookup at `now`, on its boundary one millisecond later.
+            await setJobCreatedAt(older, now - DAY + 1);
+            const create = batchStore.createBatchJob;
+            const holds = [reusing, crossing];
+            vi.spyOn(batchStore, 'createBatchJob').mockImplementation(async job => {
+                const hold = holds.shift();
+                const receipt = await create(job);
+                hold?.admitted.open();
+                await hold?.resume.opened;
+                return receipt;
+            });
+            // The third read of the key is the reusing call's look after admission, right
+            // before its own attempt: by then it has done everything it does to other jobs.
+            const read = batchStore.readBatchReplay;
+            let reads = 0;
+            vi.spyOn(batchStore, 'readBatchReplay').mockImplementation(async id => {
+                reads += 1;
+                if (reads === 3) {
+                    reusing.beforeReread.open();
+                    await reusing.reread.opened;
+                }
+                return read(id);
+            });
+            const settle = <T>(call: Promise<T>): Promise<{ value?: T; error?: unknown }> =>
+                call.then(
+                    value => ({ value }),
+                    (error: unknown) => ({ error })
+                );
+            const first = settle(issuer.clients.fullAuth.inbox.issue(input));
+            await reusing.admitted.opened; // Reuses the older job.
+            vi.setSystemTime(now + 1);
+            const second = settle(issuer.clients.fullAuth.inbox.issue(input));
+            await crossing.admitted.opened; // No longer finds it: admits a newer job.
+            reusing.resume.open();
+            await reusing.beforeReread.opened;
+            crossing.resume.open();
+            const crossed = await second;
+            reusing.reread.open();
+            const reused = await first;
+
+            await expectCounts(1);
+            expect(await issuedCount(input)).toBe(1);
+            const jobs = await admissionJobs(key);
+            expect(jobs.map(job => job.id)[0]).toBe(older);
+            expect(jobs).toHaveLength(2);
+            // The newest job is never retired: it holds the delivery.
+            expect((await getInboxBatch(issuerId, jobs[1]!.id)).items[0]?.result).toMatchObject({
+                success: true,
+            });
+            expect(crossed.value?.status).toBe('ISSUED');
+            for (const outcome of [crossed, reused])
+                if (outcome.error) expect(outcome.error).toMatchObject({ code: 'CONFLICT' });
+            // A retry is answered from the receipt.
+            expect((await issuer.clients.fullAuth.inbox.issue(input)).issuanceId).toBe(
+                crossed.value?.issuanceId
+            );
+            await runLateWorker();
+            await expectCounts(1);
+        } finally {
+            vi.useRealTimers();
+        }
+    }, 30000);
+
+    it('an older item a worker held when a newer job was admitted does not issue after that worker is lost, the item is recovered and the newer receipt has expired', async () => {
+        const key = randomUUID();
+        const input = await inputFor(issuer, key);
+        const now = freezeClock();
+        try {
+            const aged = await admit(input);
+            await setJobCreatedAt(aged, now - DAY); // The admission lookup no longer finds it.
+            const itemId = `${aged}:0`;
+            // A worker claims the old item and is lost before it reserves the key.
+            expect(await claimBatchItem(itemId, 'lost-worker')).toBeDefined();
+            const first = await issuer.clients.fullAuth.inbox.issue(input);
+            expect(first.status).toBe('ISSUED');
+            await expectCounts(1);
+            expect(await admittedStates(key, '')).toContain('PROCESSING');
+            await neogma.queryRunner.run('MATCH (i:InboxBatchItem {id:$id}) SET i.leaseUntil=0', {
+                id: itemId,
+            });
+            await recoverInboxJobs();
+            expect((await getInboxBatch(issuerId, aged)).items[0]?.state).toBe('QUEUED');
+            await expireReceipt(key);
+            await runLateWorker();
+            await expectCounts(1);
+            expect((await getInboxBatch(issuerId, aged)).items[0]).toMatchObject({
+                state: 'COMPLETED',
+                result: { success: false, error: { code: 'CONFLICT' } },
+            });
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
     it('a replayed or rejected keyed call admits nothing', async () => {
         const key = randomUUID();
         const input = await inputFor(issuer, key);

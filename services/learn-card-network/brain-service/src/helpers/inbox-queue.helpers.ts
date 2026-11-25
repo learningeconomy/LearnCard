@@ -26,7 +26,9 @@ import {
     createBatchJob,
     finishBatchItem,
     markBatchIssuanceStarted,
+    hasNewerBatchJob,
     InboxBatchRequestIdConflict,
+    OUTSTANDING_ITEMS_LIMIT,
     readOutstandingBatchItems,
     readBatchJob,
     readBatchReplay,
@@ -77,7 +79,9 @@ const batchRequestHash = (batch: IssueInboxCredentialBatch, ctx: Context): strin
 export const submitInboxBatch = async (
     profile: ProfileType,
     batch: IssueInboxCredentialBatch,
-    ctx: Context
+    ctx: Context,
+    /** Keyed single calls only: the outcome recorded on waiting items of older jobs. */
+    superseded?: IssueInboxCredentialBatchItemResult
 ): Promise<InboxBatchReceipt> => {
     if (Buffer.byteLength(JSON.stringify(batch), 'utf8') > INBOX_BATCH_MAX_BYTES)
         throw new TRPCError({
@@ -124,6 +128,9 @@ export const submitInboxBatch = async (
         items,
         limit:
             Number.isSafeInteger(configuredLimit) && configuredLimit > 0 ? configuredLimit : 10_000,
+        ...(superseded
+            ? { superseded: await encryptInboxCredential(JSON.stringify(superseded)) }
+            : {}),
     });
 };
 
@@ -224,6 +231,13 @@ export const processInboxQueueMessage = async (body: string, inline = false): Pr
         );
         return;
     }
+    // A keyed single request is its newest job's. An older item that was held when that job
+    // was admitted ends here, at its next claim: after a recovery or a requeue, and whether or
+    // not the newer job's receipt still exists.
+    if (await hasNewerBatchJob(job.id, INBOX_ISSUE_REQUEST_ID_PREFIX)) {
+        await finishBatchItem(item.id, owner, fail('CONFLICT', SUPERSEDED_MESSAGE));
+        return;
+    }
     const payload = JSON.parse(await decryptInboxCredential(job.payload)) as BatchJobPayload;
     const profile = await getProfileByProfileId(job.issuer);
     if (!profile) {
@@ -269,6 +283,7 @@ export const processInboxQueueMessage = async (body: string, inline = false): Pr
  * the batch route refuses a caller-supplied requestId that starts with it.
  */
 export const INBOX_ISSUE_REQUEST_ID_PREFIX = 'inbox.issue:';
+const SUPERSEDED_MESSAGE = 'Superseded by a later admission of this idempotency key.';
 
 /**
  * Single-request adapter over the existing durable batch lifecycle. A concurrent
@@ -296,26 +311,25 @@ export const issueKeyedInboxCredential = async (
     // is known, record it there as a worker would, so that no later worker issues the item.
     // A job holding another payload under this request id is not this caller's to settle.
     // There is no age limit: an item stays dispatchable for as long as it is QUEUED.
-    const ownOutstanding = async (): ReturnType<typeof readOutstandingBatchItems> => {
-        const requestHash = batchRequestHash(request, ctx);
-        const items = await readOutstandingBatchItems(profile.profileId, request.requestId);
-        return items.filter(item => item.requestHash === requestHash);
-    };
-    const settleWaiting = async (
-        result: IssueInboxCredentialBatchItemResult,
-        exceptBatchId?: string
-    ): Promise<void> => {
+    const ownOutstanding = async (): ReturnType<typeof readOutstandingBatchItems> =>
+        readOutstandingBatchItems(
+            profile.profileId,
+            request.requestId,
+            batchRequestHash(request, ctx)
+        );
+    const settleWaiting = async (result: IssueInboxCredentialBatchItemResult): Promise<void> => {
         for (const item of await ownOutstanding())
-            if (item.state === 'QUEUED' && item.batchId !== exceptBatchId)
-                await settleQueuedBatchItem(item.itemId, result);
+            if (item.state === 'QUEUED') await settleQueuedBatchItem(item.itemId, result);
     };
     // A refusal must also hold against a worker that has claimed the item and has not reserved
     // the key yet: if the record this call was refused against is released, that worker would
     // find the key free and issue the refused payload. The store decides in one guarded step.
-    // False: the worker of one of the items has already reserved the key.
+    // False: the worker of one of the items has already reserved the key, or there were more
+    // items than one call looks at.
     const rejectWaiting = async (result: IssueInboxCredentialBatchItemResult): Promise<boolean> => {
-        let rejected = true;
-        for (const item of await ownOutstanding())
+        const items = await ownOutstanding();
+        let rejected = items.length < OUTSTANDING_ITEMS_LIMIT;
+        for (const item of items)
             rejected = (await rejectWaitingBatchItem(item.itemId, result)) && rejected;
         return rejected;
     };
@@ -357,7 +371,16 @@ export const issueKeyedInboxCredential = async (
     if (known !== null) return replay(known);
     // The request id is derived from the key, so a job holding another payload under it
     // means the key was reused. This caller never sent a requestId: answer about its key.
-    const receipt = await submitInboxBatch(profile, request, ctx).catch((error: unknown) => {
+    // The admission lookup forgets a job after a day, so this can be a newer job for a request
+    // whose earlier item is still waiting. Admission retires such an item in its own
+    // transaction; nothing is retired from here, where two calls could retire each other's job.
+    const receipt = await submitInboxBatch(profile, request, ctx, {
+        success: false,
+        index: 0,
+        error: { code: 'CONFLICT', message: SUPERSEDED_MESSAGE },
+        idempotencyKey,
+        recipient: input.recipient,
+    }).catch((error: unknown) => {
         if (error instanceof InboxBatchRequestIdConflict)
             throw new InboxBatchConflict(
                 'IDEMPOTENCY_MISMATCH',
@@ -365,22 +388,6 @@ export const issueKeyedInboxCredential = async (
             );
         throw error;
     });
-    // The admission lookup forgets a job after a day, so this can be a second job for a request
-    // whose first item is still QUEUED. From here the request is this job's: retire the older
-    // item now, so that nothing of it is left to run after this job's receipt has expired.
-    await settleWaiting(
-        {
-            success: false,
-            index: 0,
-            error: {
-                code: 'CONFLICT',
-                message: 'Superseded by a later admission of this idempotency key.',
-            },
-            idempotencyKey,
-            recipient: input.recipient,
-        },
-        receipt.batchId
-    );
     // A separate job's IN_PROGRESS snapshot is not authoritative once its owner
     // commits the shared receipt. Validate the live record before trusting that job.
     const stored = await readBatchReplay(replayKey);

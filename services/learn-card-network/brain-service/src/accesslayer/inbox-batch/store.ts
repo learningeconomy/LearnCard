@@ -42,10 +42,39 @@ export const createBatchJob = async (input: {
     payload: string;
     items: { replayKey: string; duplicate: boolean; correlation?: string }[];
     limit: number;
+    /** Encrypted outcome for waiting items of strictly older jobs of this request. */
+    superseded?: string;
 }): Promise<InboxBatchReceipt> => {
     const now = Date.now();
     const id = randomUUID();
     return transaction(async tx => {
+        // The jobs of one request are ordered by (createdAt, id), which never change, and only
+        // the newest may issue. Retiring in the transaction that selected the job, under the
+        // issuer lock, means two admissions can never retire each other's job. Each item is
+        // decided again under its own lock: one a worker has claimed is left to that worker,
+        // which retires it at its next claim (hasNewerBatchJob).
+        const retireOlder = async (selected: string, createdAt: number): Promise<void> => {
+            if (!input.requestId || !input.superseded) return;
+            const retired = await tx.run(
+                `MATCH (b:InboxBatch {issuer: $issuer, requestId: $requestId, requestHash: $hash})
+                WHERE b.createdAt < $createdAt OR (b.createdAt = $createdAt AND b.id < $selected)
+                MATCH (b)-[:HAS_ITEM]->(i:InboxBatchItem) WHERE i.state = 'QUEUED'
+                WITH b, i LIMIT 100 SET i.lock = coalesce(i.lock, 0) + 1
+                WITH b, i WHERE i.state = 'QUEUED'
+                SET i.state = 'COMPLETED', i.result = $result, i.owner = null,
+                    i.leaseUntil = null, i.dispatchAt = 0
+                RETURN DISTINCT b.id AS id`,
+                {
+                    issuer: input.issuer,
+                    requestId: input.requestId,
+                    hash: input.requestHash,
+                    selected,
+                    createdAt,
+                    result: input.superseded,
+                }
+            );
+            for (const record of retired.records) await finalizeSettledBatch(tx, record.get('id'));
+        };
         // The property write acquires Neo4j's exclusive node lock until commit. Concurrent
         // admissions therefore cannot read quota between this statement and the update below.
         const locked = await tx.run(
@@ -60,13 +89,15 @@ export const createBatchJob = async (input: {
             const prior = await tx.run(
                 `MATCH (b:InboxBatch {issuer: $issuer, requestId: $requestId})
                 WHERE b.createdAt > $cutoff
-                MATCH (b)-[:HAS_ITEM]->(i:InboxBatchItem) RETURN b, collect(i.state) AS states`,
+                MATCH (b)-[:HAS_ITEM]->(i:InboxBatchItem)
+                RETURN b, collect(i.state) AS states ORDER BY b.createdAt DESC, b.id DESC LIMIT 1`,
                 { issuer: input.issuer, requestId: input.requestId, cutoff: now - DAY }
             );
             const batch = prior.records[0]?.get('b').properties;
             if (batch) {
                 if (batch.requestHash !== input.requestHash)
                     throw new InboxBatchRequestIdConflict();
+                await retireOlder(batch.id, Number(batch.createdAt));
                 return {
                     batchId: batch.id,
                     status: getInboxBatchState(prior.records[0]!.get('states')),
@@ -103,6 +134,7 @@ export const createBatchJob = async (input: {
                 items: input.items.map((item, index) => ({ ...item, index, id: `${id}:${index}` })),
             }
         );
+        await retireOlder(id, now);
         return { batchId: id, status: 'QUEUED', createdAt: new Date(now).toISOString() };
     });
 };
@@ -123,29 +155,48 @@ export const readBatchJob = async (
     };
 };
 
-/** Read-only: every item admitted under this request id that could still be issued, whatever
- * the age of its job. createBatchJob looks one day back when it decides whether to admit, but a
- * QUEUED item has no age limit and stays eligible for dispatch, so a caller that settles its own
- * waiting items must not stop at that window.
+/** Most waiting items one keyed call looks at. Admission leaves one QUEUED item per request
+ * and a held older item ends at its next claim, so this is a backstop, not a working size.
+ */
+export const OUTSTANDING_ITEMS_LIMIT = 20;
+
+/** Read-only: the items of this request (same payload fingerprint) that could still be issued,
+ * oldest job first, whatever the age of the job. createBatchJob looks one day back when it
+ * decides whether to admit, but a QUEUED item has no age limit and stays eligible for dispatch.
  */
 export const readOutstandingBatchItems = async (
     issuer: string,
-    requestId: string
-): Promise<
-    { requestHash: string; batchId: string; itemId: string; state: BatchItem['state'] }[]
-> => {
+    requestId: string,
+    requestHash: string
+): Promise<{ batchId: string; itemId: string; state: BatchItem['state'] }[]> => {
     const result = await neogma.queryRunner.run(
-        `MATCH (b:InboxBatch {issuer: $issuer, requestId: $requestId})-[:HAS_ITEM]->(i:InboxBatchItem)
+        `MATCH (b:InboxBatch {issuer: $issuer, requestId: $requestId, requestHash: $requestHash})
+            -[:HAS_ITEM]->(i:InboxBatchItem)
         WHERE i.state IN ['QUEUED', 'PROCESSING']
-        RETURN b.requestHash AS requestHash, b.id AS batchId, i.id AS itemId, i.state AS state`,
-        { issuer, requestId }
+        RETURN b.id AS batchId, i.id AS itemId, i.state AS state
+        ORDER BY b.createdAt, b.id LIMIT toInteger($limit)`,
+        { issuer, requestId, requestHash, limit: OUTSTANDING_ITEMS_LIMIT }
     );
     return result.records.map(record => ({
-        requestHash: String(record.get('requestHash')),
         batchId: String(record.get('batchId')),
         itemId: String(record.get('itemId')),
         state: record.get('state') as BatchItem['state'],
     }));
+};
+
+/** True once a strictly newer job of the same request exists: (createdAt, id) is the order.
+ * Both are immutable and jobs are only added, so the answer never goes back to false while
+ * that job is kept. Only request ids in the given namespace are looked at.
+ */
+export const hasNewerBatchJob = async (batchId: string, namespace: string): Promise<boolean> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (b:InboxBatch {id: $batchId}) WHERE b.requestId STARTS WITH $namespace
+        MATCH (n:InboxBatch {issuer: b.issuer, requestId: b.requestId, requestHash: b.requestHash})
+        WHERE n.createdAt > b.createdAt OR (n.createdAt = b.createdAt AND n.id > b.id)
+        RETURN n.id AS id LIMIT 1`,
+        { batchId, namespace }
+    );
+    return result.records.length > 0;
 };
 
 /** Lock before testing ownership: concurrent SQS deliveries must not both enter issuance. */
