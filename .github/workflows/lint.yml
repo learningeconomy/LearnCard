@@ -155,6 +155,12 @@ jobs:
               if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
               run: node --test scripts/check-no-jest.test.mjs
 
+            - name: Check paired native keyboard patches
+              if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
+              run: |
+                  node --test scripts/check-keyboard-patches.test.mjs
+                  node scripts/check-keyboard-patches.mjs
+
             - name: Check test-runner contract
               if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
               run: node scripts/check-no-jest.mjs

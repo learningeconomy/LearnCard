@@ -40,3 +40,121 @@ The review build can use a local frontend with the production tenant config.
 Sign-in and saved changes then use the production services. The standalone
 fixtures are available at `/tests/keyboard-focus/form.html` and
 `/tests/keyboard-focus/resume.html` on the local server.
+
+## Native keyboard animation
+
+`animation.html` is a backend-free native fixture with a full-height Ionic page,
+Search and Lower field inputs, and a Dismiss keyboard button. Load it from a
+local frontend in a Debug Simulator shell with Capgo auto-update disabled. Keep
+the software keyboard enabled. `?focusManager=0` disables only the shared focus
+manager for an A/B comparison with Capacitor's own resizing.
+
+For a repeatable native recording, with that Debug shell installed and pointing
+to the fixture, run from this app directory:
+
+```sh
+ruby tests/keyboard-focus/native/review.rb <Simulator-UDID> /tmp
+```
+
+This uses the CocoaPods `xcodeproj` gem to generate an isolated XCTest runner in
+a temporary directory, opens and dismisses the real software keyboard twice,
+and retains a native MP4 plus XCTest results there. No account is needed. Inspect
+the video at reduced speed: the page should fill the exposed space during both
+keyboard animations without the old half-second white rectangle. These checks
+exercise iOS itself; the browser script cannot prove native animation timing.
+The Swift test verifies keyboard interaction, not pixel correctness. Review the
+recording as well.
+
+The iOS fix is a version-specific Bun patch to `@capacitor/keyboard@8.0.6`.
+Native mode follows a UIKit animation guide on opening; dismissal restores the
+full WebView before the keyboard exposes it, avoiding WebKit's asynchronous
+paint lag during expansion. The shared focus manager still reveals covered
+fields, but does not impose a second host height in iOS native resize mode.
+Browser and native overlay mode retain their viewport sizing fallback. Revisit
+the patch when upgrading this dependency; it requires rebuilding the native
+binary and cannot be delivered by a frontend-only OTA update.
+
+### Android
+
+The Android fix patches both `@capacitor/android@8.5.2` (SystemBars) and
+`@capacitor/keyboard@8.0.6`. SystemBars normally applies the final IME bottom
+padding before animation starts. The keyboard callback now defers that layout
+in `onPrepare`, follows the opening animation's interpolated fraction, and
+restores full height early on dismissal so WebView can paint ahead of the IME.
+Other system-bar insets retain their existing handling. Both patches must ship
+in the same rebuilt native binary; an OTA cannot install them.
+
+The patched Android `getResizeMode` reports `native` when SystemBars owns the
+viewport. The shared focus manager then avoids imposing another host height,
+and uses the native layout height when older WebViews temporarily subtract the
+IME a second time from VisualViewport. Unpatched or SystemBars-disabled shells
+retain their existing fallback when that capability is unavailable.
+
+For repeatable native regression checks, select an emulator you own, serve the
+local frontend, and configure the generated Android Debug shell's `server.url`
+to `http://10.0.2.2:<port>/tests/keyboard-focus/animation.html` with Capgo
+`autoUpdate: false`. With JDK 21 and `ANDROID_HOME` configured, run from the repository root:
+
+```sh
+python3 apps/learn-card-app/tests/keyboard-focus/native/android/review.py \
+  --device emulator-5558 --output /tmp --all-tests
+```
+
+This builds and installs only on the explicitly selected emulator, adds the
+JUnit source through an isolated Gradle init script, drives real native taps
+and Android Back, and retains logs, APK hash, source state, and an MP4 privately.
+It checks two open/dismiss cycles, switching to the lower field, Back dismissal,
+and rapid interruption. `--capture-only` records a broken baseline without
+asserting host height; it is diagnostic evidence, not a passing sizing gate.
+Review the video as well: layout assertions cannot prove every animation frame.
+The runner does not start/stop the emulator or frontend. Keep the checkout
+unchanged while recording, and inspect media before publishing.
+
+Also compare the same interaction in the actual app, preferably Resume Builder
+on the demo account. Focus the summary, dismiss with Android Back, and repeat
+without editing or publishing a resume. Capture the baseline native binary and
+its baseline frontend together, then the fixed binary and fixed frontend.
+Fixture recordings supplement this app comparison; they do not replace it.
+Physical devices, alternative IMEs/WebView versions, split-screen, rotation,
+and disabled system animations need separate QA.
+
+### Shared release and interruption safeguards
+
+LearnCard App **and ScoutPass** resolve the same patched native plugins. Both
+apps and `learn-card-base` pin Keyboard to `8.0.6`; both native apps pin Android
+to `8.5.2`. Upgrade the native patches as a pair. Do not hide a missing native
+patch behind reflection: failing the version contract is preferable to silently
+shipping the old keyboard timing. The source-only CI guard checks manifest
+pins, lockfile declarations/resolutions, and patch-file presence:
+
+```sh
+node --test scripts/check-keyboard-patches.test.mjs
+node scripts/check-keyboard-patches.mjs
+```
+
+ScoutPass receives the iOS and Android native timing changes on its next binary
+build. It does not mount `KeyboardFocusManager`, so the shared manager's host
+sizing changes do not apply there. ScoutPass native forms have **not** been
+smoke-tested for this patch; include them in device QA alongside LearnCard.
+
+On Android 11, an animation cancelled after `onPrepare` can have no subsequent
+`onStart` or `onEnd` ([Android callback contract](<https://developer.android.com/reference/android/view/WindowInsetsAnimation.Callback#onPrepare(android.view.WindowInsetsAnimation)>)).
+SystemBars therefore bounds the padding deferral by the reported animation
+duration plus 250ms (1250ms if no duration is available). Normal completion
+cancels that recovery task. Activity destruction removes callbacks and releases
+the deferral. The native test suite also models a preparation with no follow-up
+callbacks and checks that subsequent inset updates can apply.
+
+An interrupted opening no longer forces its obsolete destination padding in
+`onEnd`: reconciliation waits until the next frame so a replacement preparation
+can claim ownership. Review intermediate frames during rapid open/dismiss on
+older Android releases, including both possible orders of the old `onEnd` and
+new `onPrepare`. Final-height assertions alone do not prove those frames.
+
+On iOS, completed opening and immediate dismissal reset the scroll view after
+the final frame assignment, matching upstream inset cleanup. Switching away
+from native resize mode invalidates the display link and animation guide so
+an old completion cannot overwrite the new policy. Include resize-mode changes
+while opening, teardown, and background/foreground in native QA. Shared tests
+cover late native-capability resolution on both platforms: opening before the
+promise resolves releases the fallback host height and keeps the field revealed.

@@ -2,15 +2,25 @@
 import React from 'react';
 import { act, cleanup, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { Keyboard, KeyboardResize } from '@capacitor/keyboard';
 import { KeyboardFocusManager } from './KeyboardFocusManager';
 
 const native = vi.hoisted(() => ({
     callbacks: new Map<string, (info: { keyboardHeight: number }) => void>(),
     remove: vi.fn(),
+    platform: 'android',
+    resizeMode: 'none',
 }));
-vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => true } }));
+vi.mock('@capacitor/core', () => ({
+    Capacitor: { isNativePlatform: () => true, getPlatform: () => native.platform },
+}));
 vi.mock('@capacitor/keyboard', () => ({
+    KeyboardResize: { Native: 'native' },
     Keyboard: {
+        getResizeMode: vi.fn(async () => {
+            if (native.resizeMode === 'unsupported') throw new Error('Not implemented');
+            return { mode: native.resizeMode };
+        }),
         addListener: vi.fn(async (event, callback) => {
             native.callbacks.set(event, callback);
             return { remove: native.remove };
@@ -23,6 +33,8 @@ describe('KeyboardFocusManager', () => {
         vi.useFakeTimers();
         native.callbacks.clear();
         native.remove.mockClear();
+        native.platform = 'android';
+        native.resizeMode = 'none';
         vi.stubGlobal('innerHeight', 800);
         vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) =>
             setTimeout(() => callback(0), 16)
@@ -97,10 +109,129 @@ describe('KeyboardFocusManager', () => {
         await settle();
         expect(document.documentElement.hasAttribute('data-lc-keyboard-open')).toBe(false);
         unmount();
-        expect(native.remove).toHaveBeenCalledTimes(3);
+        expect(native.remove).toHaveBeenCalledTimes(4);
         expect(
             document.documentElement.style.getPropertyValue('--lc-keyboard-viewport-height')
         ).toBe('');
+    });
+
+    it('lets iOS native resizing own host bounds through opening and dismissal', async () => {
+        native.platform = 'ios';
+        native.resizeMode = 'native';
+        const { first, scroller } = form();
+        await settle();
+        first.focus({ preventScroll: true });
+        native.callbacks.get('keyboardWillShow')!({ keyboardHeight: 300 });
+        await settle();
+        const root = document.documentElement;
+        expect(root.hasAttribute('data-lc-keyboard-overlay')).toBe(false);
+        expect(root.style.getPropertyValue('--lc-keyboard-viewport-height')).toBe('');
+        expect(scroller.scrollTop).toBe(206);
+
+        vi.stubGlobal('innerHeight', 500);
+        native.callbacks.get('keyboardDidShow')!({ keyboardHeight: 300 });
+        await settle();
+        native.callbacks.get('keyboardWillHide')!({ keyboardHeight: 0 });
+        vi.stubGlobal('innerHeight', 800);
+        window.dispatchEvent(new Event('resize'));
+        await settle();
+        // Do not wait for keyboardDidHide to release the app's old height.
+        expect(root.hasAttribute('data-lc-keyboard-open')).toBe(false);
+        expect(root.style.getPropertyValue('--lc-keyboard-viewport-height')).toBe('');
+        expect(document.activeElement).toBe(first);
+    });
+
+    it.each(['ios', 'android'])(
+        'releases overlay sizing when %s native mode resolves after focus',
+        async platform => {
+            native.platform = platform;
+            let resolveMode!: (value: { mode: KeyboardResize.Native }) => void;
+            vi.mocked(Keyboard.getResizeMode).mockImplementationOnce(
+                () =>
+                    new Promise(resolve => {
+                        resolveMode = resolve;
+                    })
+            );
+            const { first, scroller } = form();
+            first.focus({ preventScroll: true });
+            native.callbacks.get('keyboardWillShow')!({ keyboardHeight: 300 });
+            await settle();
+            const root = document.documentElement;
+            expect(root.hasAttribute('data-lc-keyboard-overlay')).toBe(true);
+            expect(root.style.getPropertyValue('--lc-keyboard-viewport-height')).toBe('500px');
+
+            vi.stubGlobal('innerHeight', 500);
+            await act(async () => {
+                resolveMode({ mode: KeyboardResize.Native });
+            });
+            await settle();
+            expect(root.hasAttribute('data-lc-keyboard-overlay')).toBe(false);
+            expect(root.style.getPropertyValue('--lc-keyboard-viewport-height')).toBe('');
+            expect(root.style.getPropertyValue('--lc-keyboard-viewport-top')).toBe('');
+            expect(document.activeElement).toBe(first);
+            expect(first.getBoundingClientRect().bottom).toBeLessThanOrEqual(484);
+            expect(scroller.scrollTop).toBe(206);
+        }
+    );
+
+    it('uses Android native bounds when VisualViewport briefly subtracts the keyboard twice', async () => {
+        native.resizeMode = 'native';
+        vi.stubGlobal('innerHeight', 914);
+        const viewport = Object.assign(new EventTarget(), { height: 914, offsetTop: 0, scale: 1 });
+        vi.stubGlobal('visualViewport', viewport);
+        const { first, scroller } = form();
+        await settle();
+
+        vi.stubGlobal('innerHeight', 578);
+        viewport.height = 242;
+        first.focus({ preventScroll: true });
+        native.callbacks.get('keyboardWillShow')!({ keyboardHeight: 336 });
+        await settle();
+        expect(document.documentElement.hasAttribute('data-lc-keyboard-overlay')).toBe(false);
+        expect(
+            document.documentElement.style.getPropertyValue('--lc-keyboard-viewport-height')
+        ).toBe('');
+        expect(scroller.scrollTop).toBe(128);
+
+        native.callbacks.get('keyboardWillHide')!({ keyboardHeight: 0 });
+        vi.stubGlobal('innerHeight', 914);
+        window.dispatchEvent(new Event('resize'));
+        await settle();
+        expect(document.activeElement).toBe(first);
+        expect(document.documentElement.hasAttribute('data-lc-keyboard-open')).toBe(false);
+    });
+
+    it('keeps the overlay fallback in older Android binaries without getResizeMode', async () => {
+        native.resizeMode = 'unsupported';
+        const { first, scroller } = form();
+        await settle();
+        first.focus({ preventScroll: true });
+        native.callbacks.get('keyboardWillShow')!({ keyboardHeight: 300 });
+        await settle();
+        expect(document.documentElement.hasAttribute('data-lc-keyboard-overlay')).toBe(true);
+        expect(
+            document.documentElement.style.getPropertyValue('--lc-keyboard-viewport-height')
+        ).toBe('500px');
+        expect(scroller.scrollTop).toBe(206);
+    });
+
+    it('retains the overlay fallback on iOS when native resizing is disabled', async () => {
+        native.platform = 'ios';
+        native.resizeMode = 'none';
+        const { first, scroller } = form();
+        await settle();
+        first.focus({ preventScroll: true });
+        native.callbacks.get('keyboardWillShow')!({ keyboardHeight: 300 });
+        await settle();
+        expect(document.documentElement.hasAttribute('data-lc-keyboard-overlay')).toBe(true);
+        expect(
+            document.documentElement.style.getPropertyValue('--lc-keyboard-viewport-height')
+        ).toBe('500px');
+        expect(scroller.scrollTop).toBe(206);
+        first.blur();
+        native.callbacks.get('keyboardWillHide')!({ keyboardHeight: 0 });
+        await settle();
+        expect(document.documentElement.hasAttribute('data-lc-keyboard-open')).toBe(false);
     });
 
     it('leaves pinch zoom and panning alone, and resumes reveal when zoom ends', async () => {
