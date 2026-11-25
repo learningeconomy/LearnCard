@@ -24,7 +24,7 @@ function harness(summary: string, finalInsight = insight) {
         async (_url: RequestInfo | URL, options?: RequestInit) => {
             const body = JSON.parse(options!.body as string);
             requests.push(body);
-            expect(body.model).toBe('us.openai.gpt-6.1-sol');
+            expect(body.model).toBe('us.openai.gpt-6.2-sol');
             expect(body.reasoning).toEqual({ effort: 'medium' });
             expect(body.store).toBe(false);
             expect(body.parallel_tool_calls).toBe(false);
@@ -96,7 +96,7 @@ test('#97 full evidence compaction and bounded named stream traverse real Respon
         summarize: input =>
             f.provider.call({
                 ...input,
-                model: 'gpt-6.1-sol',
+                model: 'gpt-6.2-sol',
                 output: InsightCohortSummaryValidator,
                 timeoutMs: 60_000,
             }),
@@ -108,7 +108,7 @@ test('#97 full evidence compaction and bounded named stream traverse real Respon
     const output = await f.provider.structuredStreamingCall({
         systemPrompt: 'Synthetic final instructions',
         message: result.message,
-        model: 'gpt-6.1-sol',
+        model: 'gpt-6.2-sol',
         output: AIInsightDataValidator,
         toolName: 'generateAIInsights',
         timeoutMs: 60_000,
@@ -127,7 +127,7 @@ test('#97 cohort bounds remain authoritative through Responses validation', asyn
     await expect(
         f.provider.call({
             message: 'Synthetic',
-            model: 'gpt-6.1-sol',
+            model: 'gpt-6.2-sol',
             output: InsightCohortSummaryValidator,
         })
     ).rejects.toThrow();
@@ -141,7 +141,7 @@ test('cohort and final bounds failures retain normal safe classification without
     try {
         await cohort.provider.call({
             message: 'Synthetic',
-            model: 'gpt-6.1-sol',
+            model: 'gpt-6.2-sol',
             output: InsightCohortSummaryValidator,
         });
     } catch (error) {
@@ -160,7 +160,7 @@ test('cohort and final bounds failures retain normal safe classification without
         await final.provider.structuredStreamingCall({
             systemPrompt: 'Synthetic',
             message: 'Synthetic',
-            model: 'gpt-6.1-sol',
+            model: 'gpt-6.2-sol',
             output: AIInsightDataValidator,
             toolName: 'generateAIInsights',
             timeoutMs: 60000,

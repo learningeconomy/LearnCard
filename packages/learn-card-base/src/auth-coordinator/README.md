@@ -390,17 +390,33 @@ method using the same server URL and tenant headers as its auth-share requests.
 { "available": true, "privateKey": "<64-character hex private key>", "did": "did:key:z..." }
 ```
 
+**Response (200, confirmed not archived):**
+
+```json
+{ "available": false, "reason": "not_archived" }
+```
+
+Sent only when storage reports no archive object for the verified login.
+
 **Response (200, unavailable):**
 
 ```json
 { "available": false }
 ```
 
-The client returns `null` for unavailable material, non-success HTTP responses,
-network errors, malformed JSON or fields, and an eight-second request timeout.
-It accepts only a 64-character hexadecimal private key and a `did:key:` DID.
-Lookup failures fall back to legacy derivation without logging response bodies
-or forwarding raw errors.
+Sent when the archive is disabled, the login is not eligible, or an archive
+exists but cannot be released. Storage and KMS failures return a 5xx.
+
+The client returns an `ArchivedKeyLookup`: `found` with validated material,
+`absent` only for `reason: "not_archived"`, and `failed` for everything else
+(unavailable without a reason, non-success HTTP responses, network errors,
+malformed JSON or fields, and an eight-second request timeout). It accepts only
+a 64-character hexadecimal private key and a `did:key:` DID. Any non-`found`
+result falls back to legacy derivation without logging response bodies or
+forwarding raw errors. If the legacy provider then reports that it never
+assigned a key, the coordinator enters `needs_setup` only after an `absent`
+lookup; after `failed` it stays a retryable error, so a lookup outage never
+creates a new identity for an existing account.
 
 ### `POST /keys/auth-share` — Fetch key status
 

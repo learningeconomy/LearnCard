@@ -100,9 +100,9 @@ export const FileExtractionDiagnosticValidator = FileExtractionAttemptValidator.
     model: z
         .enum([
             'us.openai.gpt-6-luna',
-            'us.openai.gpt-6.1-sol',
+            'us.openai.gpt-6.2-sol',
             'gpt-6-luna-none',
-            'gpt-6.1-sol',
+            'gpt-6.2-sol',
             'gpt-5.6-luna-none',
             'gpt-5.6-sol-medium',
             'not_used',
@@ -113,7 +113,7 @@ export const FileExtractionDiagnosticValidator = FileExtractionAttemptValidator.
         .enum([
             'tesseract-local',
             'gpt-6-luna-none',
-            'gpt-6.1-sol',
+            'gpt-6.2-sol',
             'gpt-5.6-luna-none',
             'gpt-5.6-sol-medium',
             'not_used',

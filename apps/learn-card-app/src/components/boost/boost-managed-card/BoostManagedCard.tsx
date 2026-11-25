@@ -11,6 +11,7 @@ import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinne
 import { BoostSmallCard } from '@learncard/react';
 import { ErrorBoundary } from 'react-error-boundary';
 import FamilyCard from '../../familyCMS/FamilyCard/FamilyCard';
+import { getClrCredentialDisplayTitle } from '../../clr-transcript/ClrTranscriptTitleDisplay';
 import { BoostIssuanceLoading } from '../boostLoader/BoostLoader';
 import CustomManagedBoostButton from './helpers/CustomManagedBoostButton';
 import BoostListItem from 'learn-card-base/components/boost/BoostListItem';
@@ -312,7 +313,7 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
             )}
             {!isCardView && (
                 <BoostListItem
-                    title={cardTitle}
+                    title={getClrCredentialDisplayTitle(boostVC, cardTitle)}
                     onClick={innerOnClick}
                     onOptionsClick={handleOptionsMenu}
                     credential={cred}

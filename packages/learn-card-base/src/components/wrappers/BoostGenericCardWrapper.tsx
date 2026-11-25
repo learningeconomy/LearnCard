@@ -95,6 +95,7 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
             <BoostListItem
                 credential={credential}
                 title={title}
+                issuerName={issuerName}
                 categoryType={categoryType}
                 onClick={innerOnClick}
                 onOptionsClick={optionsTriggerOnClick}
