@@ -1,0 +1,22 @@
+# Example ownership model. Use the profile IDs agreed for the target network.
+issuer:
+    profileId: mapmyfuture
+    displayName: MapMyFuture
+    signingAuthority: { type: learncard-hosted, name: outcomes }
+profileManager:
+    displayName: MapMyFuture issuers
+    managed:
+        - { profileId: mapmyfuture-signer, displayName: MapMyFuture outcomes }
+referralRecipients:
+    - { profileId: hhusa-salesforce, displayName: Hire Heroes USA }
+referralPrograms:
+    - name: HHUSA → MapMyFuture
+      partner: mapmyfuture
+      referrers: [hhusa-salesforce]
+      outcomes: { issuer: mapmyfuture-signer, category: Work History }
+      asks:
+          personal: [name, email]
+          verifiableData: ['vetpass:military-profile']
+      delivery:
+          readable: true
+          webhookEnv: HHUSA_REFERRAL_WEBHOOK_URL

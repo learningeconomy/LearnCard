@@ -45,6 +45,7 @@ export const DbContractVersionValidator = z.object({
 export type DbContractVersionType = z.infer<typeof DbContractVersionValidator>;
 
 export const DbContractValidator = z.object({
+    referralProgram: z.string().optional(),
     id: z.string(),
     name: z.string(),
     subtitle: z.string().optional(),

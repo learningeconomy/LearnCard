@@ -585,7 +585,7 @@ export const connectAsDidWebSigner = async (
         seed,
         network: services.network === PRODUCTION_NETWORK ? true : services.network,
         didWeb,
-        ...(services.cloud && { cloud: { url: services.cloud } }),
+        ...walletConfig(options, services.cloud, true),
         ...(options.didkit && { didkit: options.didkit }),
     });
     return learnCard.addPlugin(

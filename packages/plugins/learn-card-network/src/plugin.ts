@@ -2913,6 +2913,10 @@ export async function getLearnCardNetworkPlugin(
                 });
             },
 
+            reconcileReferralAudience: async (_learnCard, input) => {
+                await ensureUser();
+                return client.contracts.reconcileReferralAudience.mutate(input);
+            },
             addContractRecipient: async (_learnCard, contractUri, recipient) => {
                 await ensureUser();
                 return client.contracts.addContractRecipient.mutate({ contractUri, recipient });
