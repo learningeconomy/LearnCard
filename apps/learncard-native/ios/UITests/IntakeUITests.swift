@@ -117,9 +117,26 @@ import XCTest
         let app = launch(); reveal(app.buttons["build-credential-file"], app); app.buttons["build-credential-file"].tap()
         let sample = app.buttons["intake-synthetic-file"]; XCTAssertTrue(sample.waitForExistence(timeout: 5)); reveal(sample, app); sample.tap()
         let course = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'intake-candidate-' AND label CONTAINS 'Imported course'")).firstMatch
-        XCTAssertTrue(course.waitForExistence(timeout: 5)); reveal(course, app); course.tap()
+        let projectCandidate = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'intake-candidate-' AND label CONTAINS 'Imported project'")).firstMatch
+        let save = app.buttons["intake-file-action"]
+        XCTAssertTrue(course.waitForExistence(timeout: 5))
+        XCTAssertTrue(projectCandidate.isSelected); XCTAssertTrue(course.isSelected)
+        let review = app.scrollViews.containing(.staticText, identifier: "intake-file-title").firstMatch
+        for _ in 0..<6 {
+            if course.isHittable && course.frame.maxY < save.frame.minY - 16 { break }
+            // The sheet's content can be inset on Duo. Start in the margin beyond
+            // the candidate, where the gesture cannot change a selection.
+            let gutter = (course.frame.maxX + 12 - review.frame.minX) / review.frame.width
+            let start = review.coordinate(withNormalizedOffset: CGVector(dx: gutter, dy: 0.69))
+            let end = review.coordinate(withNormalizedOffset: CGVector(dx: gutter, dy: 0.34))
+            start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.2)
+        }
+        XCTAssertTrue(course.isHittable); XCTAssertLessThan(course.frame.maxY, save.frame.minY - 16)
+        XCTAssertTrue(projectCandidate.isSelected); XCTAssertTrue(course.isSelected)
+        course.tap()
         XCTAssertFalse(course.isSelected); capture(app, "Native credential review with explicit selection")
-        app.buttons["intake-file-action"].tap(); XCTAssertTrue(app.staticTexts["intake-complete"].waitForExistence(timeout: 5)); XCTAssertTrue(app.staticTexts["intake-complete"].label.contains("1"))
+        XCTAssertTrue(projectCandidate.isSelected); XCTAssertTrue(save.isEnabled)
+        save.tap(); XCTAssertTrue(app.staticTexts["intake-complete"].waitForExistence(timeout: 5)); XCTAssertTrue(app.staticTexts["intake-complete"].label.contains("1"))
         app.buttons["intake-file-action"].tap(); app.buttons["nav-collection"].tap()
         let project = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Imported project'")).firstMatch
         XCTAssertTrue(project.waitForExistence(timeout: 5)); XCTAssertFalse(app.buttons.matching(NSPredicate(format: "label CONTAINS 'Imported course'")).firstMatch.exists)

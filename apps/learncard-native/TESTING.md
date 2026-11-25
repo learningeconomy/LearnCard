@@ -6,6 +6,8 @@
 - **243 Swift cases** pass (28 core XCTest, 182 account XCTest, 33 Swift Testing). Claim tests cover pending and absent requests, the same request ID on retry after relaunch, and safe handling of older receipts.
 - **12 shared coordinator cases** pass for legacy key resolution. This includes the distinction between confirmed absence and failed archive lookup. Native retains the staging web handoff for old accounts that still need that lookup.
 - Native TypeScript source contracts pass with 27 pre-existing dependency diagnostics. Scoped workspace lint and formatting pass.
+- **Three distinct iOS 27.1 fixture checks** pass across the initial run and targeted reruns. Claim review requires confirmation, a confirmed backup resumes setup, and JSON review saves only the selected credential to Passport. The initial import test changed selection while scrolling. The corrected test starts the drag in the sheet's gutter and verifies selection before saving. Simulator results are in `artifacts/native-parity-2026-11-25.xcresult` and `artifacts/native-parity-intake-{repeat,final}.xcresult`.
+- The normal Debug app launched to email sign-in on Native Lab. All 48 installed files match the build. Live staging claim, import delivery, and cross-device recovery remain unverified. The Linux verifier stops at preflight on macOS and its catalog does not drive the native SwiftUI app.
 
 ## Sync with main — November 25, 2026
 
