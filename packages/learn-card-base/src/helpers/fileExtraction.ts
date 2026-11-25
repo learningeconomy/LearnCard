@@ -1,5 +1,6 @@
 import { aiPassportFetch, createAiPassportRequestScope } from './aiPassportAuth';
-import { isUploadCapacityRejection, waitForUploadCapacity } from './uploadCapacity';
+import { isUploadCapacityRejection } from './uploadCapacity';
+import { sendWithUploadReservation } from './uploadReservation';
 import { addActiveLocaleToUrl } from '../i18n';
 import { networkStore } from '../stores/NetworkStore';
 import { getDiagnosticCollectionContext, getLogger } from '../logging/logger';
@@ -181,17 +182,16 @@ export const extractFileCredentials = async (input: {
     try {
         let response: Response;
         try {
-            response = await waitForUploadCapacity(
-                async () => {
-                    // Admission rejections never start extraction: reuse its correlation and budget.
-                    input.onAttempt?.(attempt);
+            input.onAttempt?.(attempt);
+            response = await sendWithUploadReservation(
+                async reservationHeaders => {
                     return aiPassportFetch(
                         addActiveLocaleToUrl(
                             `${networkStore.get.aiServiceUrl()}/credentials/parse-file`
                         ),
                         {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: { 'Content-Type': 'application/json', ...reservationHeaders },
                             signal: scope.signal,
                             body: JSON.stringify({
                                 file: input.file,
@@ -203,6 +203,10 @@ export const extractFileCredentials = async (input: {
                     );
                 },
                 {
+                    url: addActiveLocaleToUrl(
+                        `${networkStore.get.aiServiceUrl()}/credentials/parse-file/reservations`
+                    ),
+                    did: input.did,
                     signal: scope.signal,
                     waitSignal: input.waitSignal,
                     onWaiting: input.onWaiting,
