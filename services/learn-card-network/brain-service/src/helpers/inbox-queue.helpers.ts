@@ -28,6 +28,7 @@ import {
     markBatchIssuanceStarted,
     hasNewerBatchJob,
     InboxBatchRequestIdConflict,
+    InboxItemLeaseLost,
     OUTSTANDING_ITEMS_LIMIT,
     readOutstandingBatchItems,
     readBatchJob,
@@ -407,7 +408,13 @@ export const issueKeyedInboxCredential = async (
     // commits the shared receipt. Validate the live record before trusting that job.
     const stored = await readBatchReplay(replayKey);
     if (stored !== null) return replay(stored);
-    await processInboxQueueMessage(JSON.stringify({ itemId: `${receipt.batchId}:0` }), true);
+    await processInboxQueueMessage(JSON.stringify({ itemId: `${receipt.batchId}:0` }), true).catch(
+        (error: unknown) => {
+            // This attempt lost its item to a refusal recorded by another call, or to recovery.
+            // That is an outcome, not a failure: the item read below holds it.
+            if (!(error instanceof InboxItemLeaseLost)) throw error;
+        }
+    );
     const batch = await getInboxBatch(profile.profileId, receipt.batchId);
     const result = batch.items[0]?.result;
     if (!result) {

@@ -24,6 +24,15 @@ export class InboxBatchRequestIdConflict extends TRPCError {
     }
 }
 
+/** A step by a worker that no longer holds its item: recovery took an expired lease, or a
+ * refusal was recorded on the item. Typed so that a caller can tell it from a failure.
+ */
+export class InboxItemLeaseLost extends Error {
+    constructor() {
+        super('Inbox item lease lost');
+    }
+}
+
 const transaction = async <T>(fn: (tx: ManagedTransaction) => Promise<T>): Promise<T> => {
     await ensureInboxBatchConstraints();
     const session = neogma.driver.session();
@@ -241,7 +250,7 @@ const lockOwnedItem = async (
         item.state !== 'PROCESSING' ||
         Number(item.leaseUntil) <= Date.now()
     )
-        throw new Error('Inbox item lease lost');
+        throw new InboxItemLeaseLost();
     return item;
 };
 

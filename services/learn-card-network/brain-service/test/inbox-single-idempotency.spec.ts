@@ -763,6 +763,50 @@ describe('single inbox durable idempotency', () => {
         await expectCounts(1);
     }, 30000);
 
+    it("a call whose inline attempt was fenced by another call's refusal answers the recorded refusal, not a server error", async () => {
+        const key = randomUUID();
+        const input = await inputFor(issuer, key);
+        const substituted = await inputFor(issuer, key, 'Substituted');
+        const mismatch = {
+            code: 'CONFLICT',
+            message: 'This idempotency key was used for a different issuance.',
+        };
+        const claimed = gate();
+        const resumed = gate();
+        const ownerEntered = gate();
+        const ownerReleased = gate();
+        // The first claim is the first call's own attempt: hold it before it reserves the key.
+        const claim = batchStore.claimBatchItem;
+        vi.spyOn(batchStore, 'claimBatchItem').mockImplementationOnce(async (...args) => {
+            const lease = await claim(...args);
+            claimed.open();
+            await resumed.opened;
+            return lease;
+        });
+        const first = issuer.clients.fullAuth.inbox.issue(input).then(
+            () => undefined,
+            (error: unknown) => error
+        );
+        await claimed.opened;
+        vi.spyOn(inboxHelpers, 'issueToInbox').mockImplementationOnce(async () => {
+            ownerEntered.open();
+            await ownerReleased.opened;
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Owner failed preflight.' });
+        });
+        const owner = await issuer.clients.fullAuth.inbox.issueBatch({ items: [substituted] });
+        const owning = processInboxQueueMessage(JSON.stringify({ itemId: `${owner.batchId}:0` }));
+        await ownerEntered.opened;
+        // A second call with the same payload meets the other payload's marker: it is refused
+        // and fences the first call's claimed item.
+        await expect(issuer.clients.fullAuth.inbox.issue(input)).rejects.toMatchObject(mismatch);
+        ownerReleased.open();
+        await owning;
+        resumed.open();
+        expect(await first).toMatchObject(mismatch);
+        expect(await issuedCount(input)).toBe(0);
+        await expectCounts(0);
+    }, 30000);
+
     it('a queued item admitted more than 24 hours ago does not issue after a later call under its key succeeded and that receipt expired', async () => {
         const key = randomUUID();
         const input = await inputFor(issuer, key);
