@@ -158,7 +158,7 @@ for (const state of [
                     fixture.getByRole('button', { name: 'Theme:', exact: false })
                 ).toBeVisible();
             } else {
-                await expect(fixture.locator('ion-tab-bar').first()).toBeVisible();
+                await expect(fixture.locator('[data-app-tab-bar]').first()).toBeVisible();
                 const header = fixture.locator('.learn-card-header').first();
                 await expect(header.locator('ion-grid').first()).toHaveCSS('padding-top', '5px');
                 await expect(header.locator('ion-col').first()).toHaveCSS('padding-left', '5px');

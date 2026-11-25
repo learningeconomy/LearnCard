@@ -15,7 +15,9 @@ import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import LearnCardTextLogo from '../svgs/LearnCardTextLogo';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import SideMenuSecondaryLinks from './SideMenuSecondaryLinks';
-import { IonMenu, IonContent, IonMenuToggle } from '@ionic/react';
+import { IonContent } from '@ionic/react';
+import { AppMenu } from '../app-shell/AppMenu';
+import { AppMenuToggle } from '../app-shell/AppMenuToggle';
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
 import Settings from '../svgs/Settings';
 import ThemeSelector, { themeSelectorViewMode } from '../../theme/components/ThemeSelector';
@@ -95,7 +97,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
         }
     }, [location.pathname]);
 
-    if (!isLoggedIn) return <IonMenu contentId="main" />;
+    if (!isLoggedIn) return null;
 
     const handleBoost = async () => {
         if (location.pathname.includes('/boost')) return;
@@ -107,7 +109,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
     };
 
     return (
-        <IonMenu contentId="main" swipeGesture menuId="appSideMenu" disabled={false}>
+        <AppMenu contentId="main" swipeGesture menuId="appSideMenu" disabled={false}>
             <IonContent
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                 style={{ ['--background' as any]: '#ffffff' }}
@@ -118,7 +120,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                         <div className="shrink-0">
                             <div className="flex w-full flex-col items-center justify-center">
                                 <div className="side-menu-logo w-full flex items-center justify-between mt-8 mb-4 px-6">
-                                    <IonMenuToggle autoHide={false} className="cursor-pointer">
+                                    <AppMenuToggle autoHide={false} className="cursor-pointer">
                                         <div className="max-w-[90%] flex items-center justify-center">
                                             {resolvedAssets.textLogoDark ? (
                                                 <img
@@ -134,13 +136,13 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                                                 />
                                             )}
                                         </div>
-                                    </IonMenuToggle>
+                                    </AppMenuToggle>
 
                                     {/* Mobile-only close affordance (LC-1921): tap or swipe to
                                         dismiss the drawer. Hidden on desktop where the menu is
                                         a persistent split-pane. */}
                                     {isMobile && (
-                                        <IonMenuToggle
+                                        <AppMenuToggle
                                             autoHide={false}
                                             aria-label={m['sidemenu.closeMenu']()}
                                             className="cursor-pointer flex items-center justify-center p-2 -mr-2"
@@ -149,7 +151,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                                                 className="text-grayscale-400 h-[22px] w-auto"
                                                 opacity="1"
                                             />
-                                        </IonMenuToggle>
+                                        </AppMenuToggle>
                                     )}
                                 </div>
 
@@ -157,7 +159,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                                 <div className="self-stretch mx-6 border-t border-solid border-grayscale-200" />
 
                                 <div className="flex flex-col justify-center items-center w-full gap-[10px] mt-4 mb-2">
-                                    <IonMenuToggle autoHide={false} className="w-full max-w-[90%]">
+                                    <AppMenuToggle autoHide={false} className="w-full max-w-[90%]">
                                         <button
                                             type="button"
                                             onClick={handleBoost}
@@ -169,7 +171,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                                                 aria-hidden="true"
                                             />
                                         </button>
-                                    </IonMenuToggle>
+                                    </AppMenuToggle>
                                 </div>
                             </div>
                         </div>
@@ -194,7 +196,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                         <div className="mt-auto flex flex-col gap-[5px] pt-2 pb-4">
                             <div className="mx-4 mb-1 border-t border-solid border-grayscale-200" />
 
-                            <IonMenuToggle autoHide={false} className="w-full px-4">
+                            <AppMenuToggle autoHide={false} className="w-full px-4">
                                 <button
                                     type="button"
                                     onClick={openMyLearnCard}
@@ -204,7 +206,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                                     <Settings className="h-[35px] w-[35px] text-grayscale-400" />
                                     {m['sidemenu.settings']()}
                                 </button>
-                            </IonMenuToggle>
+                            </AppMenuToggle>
 
                             <ThemeSelector viewMode={themeSelectorViewMode.Compact} />
 
@@ -223,7 +225,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                     </div>
                 </GenericErrorBoundary>
             </IonContent>
-        </IonMenu>
+        </AppMenu>
     );
 };
 

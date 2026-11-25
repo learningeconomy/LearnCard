@@ -2,7 +2,7 @@ import React, { Suspense, useEffect } from 'react';
 import { InAppMessagesAnalyticsHost } from './analytics/InAppMessagesAnalyticsHost';
 import { SharedI18nProvider } from './i18n/SharedI18nProvider';
 import { createBrowserHistory } from 'history';
-import { IonReactRouter } from '@ionic/react-router';
+import { AppShellRouter } from './components/app-shell/AppShellRouter';
 import { QueryClient, onlineManager } from '@tanstack/react-query';
 import { BatchedPersistQueryClientProvider } from './providers/BatchedPersistQueryClientProvider';
 import { connectivityStore, networkStore } from 'learn-card-base';
@@ -212,7 +212,7 @@ const FullApp: React.FC = () => {
             <AnalyticsContextProvider>
                 <div className="app-bar-top relative top-0 left-0 w-full z-[9999] bg-black" />
                 {/* <ReactQueryDevtools /> */}
-                <IonReactRouter history={history}>
+                <AppShellRouter history={history}>
                     <Suspense
                         fallback={
                             <FallbackMarker boundary="root">
@@ -291,7 +291,7 @@ const FullApp: React.FC = () => {
                             </ExternalAuthServiceProvider>
                         </AuthCoordinatorProvider>
                     </Suspense>
-                </IonReactRouter>
+                </AppShellRouter>
             </AnalyticsContextProvider>
         </BatchedPersistQueryClientProvider>
     );

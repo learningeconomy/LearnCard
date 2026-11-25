@@ -598,7 +598,8 @@
             "pathways": "المسارات"
         },
         "settings": "الإعدادات",
-        "closeMenu": "إغلاق القائمة"
+        "closeMenu": "إغلاق القائمة",
+        "openMenu": "فتح القائمة"
     },
     "myAssistant": {
         "schedules": {

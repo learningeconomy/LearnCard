@@ -1,7 +1,7 @@
 import React, { useRef, lazy } from 'react';
 
 import { createBrowserHistory } from 'history';
-import { IonReactRouter } from '@ionic/react-router';
+import { AppShellRouter } from './components/app-shell/AppShellRouter';
 import { QueryClient } from '@tanstack/react-query';
 import * as Sentry from '@sentry/react';
 import { IonApp, setupIonicReact } from '@ionic/react';
@@ -71,13 +71,13 @@ const App: React.FC = () => {
         !/^\/s(?:\/|$)/.test(window.location.pathname)
     ) {
         return (
-            <IonReactRouter history={history}>
+            <AppShellRouter history={history}>
                 <IonApp>
                     <React.Suspense fallback={null}>
                         <IntroSlides />
                     </React.Suspense>
                 </IonApp>
-            </IonReactRouter>
+            </AppShellRouter>
         );
     } else {
         // Paint the same loader AppRouter shows during auth init while FullApp's chunks download,

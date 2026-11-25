@@ -3,7 +3,8 @@ import { useHistory, useLocation } from 'react-router-dom';
 
 import { m } from '../../../paraglide/messages.js';
 
-import { IonFooter, IonMenuToggle } from '@ionic/react';
+import { IonFooter } from '@ionic/react';
+import { AppMenuToggle } from '../../app-shell/AppMenuToggle';
 import BurgerIcon from '../../../components/svgs/Burger';
 import BlueMagicWand from 'learn-card-base/svgs/BlueMagicWand';
 import AiPassportPersonalizationContainer from '../../ai-passport/AiPassportPersonalizationContainer';
@@ -80,9 +81,9 @@ const AiSessionsNavbar: React.FC = () => {
                                 {unreadCount}
                             </div>
                         )}
-                        <IonMenuToggle menu="appSideMenu">
+                        <AppMenuToggle menu="appSideMenu">
                             <BurgerIcon className="text-grayscale-900 h-[35px] w-[35px] m-[10px]" />
-                        </IonMenuToggle>
+                        </AppMenuToggle>
                     </div>
 
                     <button

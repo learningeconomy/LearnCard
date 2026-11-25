@@ -2,15 +2,8 @@ import React from 'react';
 import { useLocation, useHistory } from 'react-router-dom';
 import * as m from '../../paraglide/messages.js';
 
-import {
-    IonCol,
-    IonGrid,
-    IonHeader,
-    IonMenuToggle,
-    IonProgressBar,
-    IonRow,
-    IonToolbar,
-} from '@ionic/react';
+import { IonCol, IonGrid, IonHeader, IonProgressBar, IonRow, IonToolbar } from '@ionic/react';
+import { AppMenuToggle } from '../app-shell/AppMenuToggle';
 import HeaderBranding from '../headerBranding/HeaderBranding';
 
 import Burger from '../svgs/Burger';
@@ -152,9 +145,9 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
                                 </button>
                             )}
                             {showSideMenuButton && isLoggedIn && (
-                                <IonMenuToggle menu="appSideMenu">
+                                <AppMenuToggle menu="appSideMenu">
                                     <Burger className="text-grayscale-900 h-[35px] w-[35px] mr-2 ml-[-10px]" />
-                                </IonMenuToggle>
+                                </AppMenuToggle>
                             )}
                             {mainHeaderBranding}
                         </IonCol>

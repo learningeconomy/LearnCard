@@ -2,7 +2,8 @@ import { AnnouncementPreferences } from './AnnouncementPreferences';
 import { useVerifierHistoryEligibility } from '../../helpers/verifier-history/useEligibility';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 
-import { IonContent, IonPage, useIonViewWillEnter } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
+import { useViewWillEnter } from '../../components/app-shell/AppOutlet';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useHistory } from 'react-router-dom';
 import {
@@ -77,7 +78,7 @@ const PrivacySettingsPage: React.FC = () => {
     const [openSavedOnEntry, setOpenSavedOnEntry] = useState(false);
     const [savingField, setSavingField] = useState<string | null>(null);
 
-    useIonViewWillEnter(() => {
+    useViewWillEnter(() => {
         const requested = new URLSearchParams(history.location.search).get('view') === 'saved';
         setOpenSavedOnEntry(requested);
         if (hasEnteredRef.current) {

@@ -12,7 +12,9 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@ionic/react', () => ({
     IonList: ({ children }: React.PropsWithChildren) => <nav>{children}</nav>,
-    IonMenuToggle: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
+}));
+vi.mock('../app-shell/AppMenuToggle', () => ({
+    AppMenuToggle: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
 }));
 vi.mock('launchdarkly-react-client-sdk', () => ({
     useFlags: () => ({ enableLearnCardAssistant: true }),

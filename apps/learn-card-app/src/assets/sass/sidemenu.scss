@@ -1,11 +1,12 @@
-ion-split-pane {
+// AppSplitPane > AppMenu (replaced ion-split-pane > ion-menu).
+.app-split-pane {
     // LC-1921: Side Nav surface is white (was legacy navy). Width is pinned
     // to 290px by `.side-menu-split-pane-container-visible` in nav.scss.
-    & > ion-menu {
+    & > .app-menu {
         // Soft right-edge shadow per the Figma Side Nav.
         --box-shadow: 1px 0 6px rgba(0, 0, 0, 0.12);
 
-        & > ion-content {
+        & > .app-menu-inner > ion-content {
             --background: #ffffff;
         }
     }

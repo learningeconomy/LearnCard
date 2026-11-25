@@ -53,7 +53,7 @@ export class GameFlowPage {
         if (!this.fromLaunchPad) {
             // no sidebar
             //   conditional because this will still be attached for LaunchPad flows
-            await expect(this.page.locator('ion-menu')).not.toBeAttached();
+            await expect(this.page.locator('[data-app-menu]')).not.toBeAttached();
         }
 
         // background

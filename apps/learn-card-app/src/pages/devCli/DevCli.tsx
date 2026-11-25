@@ -6,7 +6,6 @@ import {
     IonToolbar,
     IonTitle,
     IonButtons,
-    IonBackButton,
     IonButton,
     IonIcon,
 } from '@ionic/react';
@@ -25,6 +24,7 @@ import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url
 import CommandSidebar, { COMMANDS } from './CommandSidebar';
 import ChainBuilder, { Chain, ChainStep } from './ChainBuilder';
 import TutorialComponent from './Tutorial';
+import DevCliBackButton from './DevCliBackButton';
 
 const WELCOME_MESSAGE = `
 Welcome to the LearnCard Browser CLI!
@@ -733,7 +733,7 @@ const DevCli: React.FC = () => {
             <IonHeader className="cli-header">
                 <IonToolbar className="cli-toolbar">
                     <IonButtons slot="start">
-                        <IonBackButton defaultHref="/launchpad" className="cli-back-btn" />
+                        <DevCliBackButton defaultHref="/launchpad" className="cli-back-btn" />
                     </IonButtons>
 
                     <IonTitle className="cli-title">LearnCard CLI</IonTitle>

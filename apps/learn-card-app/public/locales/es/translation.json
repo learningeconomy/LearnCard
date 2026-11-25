@@ -598,7 +598,8 @@
             "pathways": "Caminos"
         },
         "settings": "Ajustes",
-        "closeMenu": "Cerrar menú"
+        "closeMenu": "Cerrar menú",
+        "openMenu": "Abrir menú"
     },
     "myAssistant": {
         "schedules": {

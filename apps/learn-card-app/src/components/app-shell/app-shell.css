@@ -1,0 +1,492 @@
+/*
+ * Styles for the app-owned shell (AppSplitPane, AppMenu, AppMenuToggle, AppTabs, AppTabBar,
+ * AppTabButton, AppOutlet). Ported from @ionic/core 8.7.2 (ion-split-pane, ion-menu,
+ * ion-backdrop, ion-menu-toggle, ion-tabs, ion-tab-bar, ion-tab-button, ion-router-outlet).
+ *
+ * Ionic's `:host` / `::slotted` rules lost to every light-DOM author rule (Tailwind's unlayered
+ * preflight and utilities, nav.scss, ...). They live in a cascade layer here so that stays true.
+ * Rules for elements that were inside Ionic's shadow roots (.button-native, .tabs-inner,
+ * .menu-inner, the backdrop) were unreachable by app CSS, so they stay unlayered with class
+ * selectors that outrank the global element resets.
+ */
+
+@layer app-shell-host {
+    /* ion-split-pane :host */
+    .app-split-pane {
+        --side-width: 100%;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        display: flex;
+        position: absolute;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        contain: strict;
+    }
+
+    .app-split-pane.md {
+        --border: 1px solid
+            var(
+                --ion-item-border-color,
+                var(
+                    --ion-border-color,
+                    var(
+                        --ion-color-step-150,
+                        var(--ion-background-color-step-150, rgba(0, 0, 0, 0.13))
+                    )
+                )
+            );
+        --side-min-width: 270px;
+        --side-max-width: 28%;
+    }
+
+    .app-split-pane.ios {
+        --border: 0.55px solid
+            var(
+                --ion-item-border-color,
+                var(
+                    --ion-border-color,
+                    var(--ion-color-step-250, var(--ion-background-color-step-250, #c8c7cc))
+                )
+            );
+        --side-min-width: 270px;
+        --side-max-width: 28%;
+    }
+
+    /* ::slotted(.split-pane-main) */
+    .app-split-pane.split-pane-visible > .split-pane-main {
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        position: relative;
+        flex: 1;
+        box-shadow: none;
+        overflow: hidden;
+        z-index: 0;
+    }
+
+    .app-split-pane > .split-pane-side:not(.app-menu) {
+        display: none;
+    }
+
+    /* ion-menu :host (overlay type) */
+    .app-menu {
+        --width: 304px;
+        --min-width: auto;
+        --max-width: auto;
+        --height: 100%;
+        --min-height: auto;
+        --max-height: auto;
+        --background: var(--ion-background-color, #fff);
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        display: none;
+        position: absolute;
+        contain: strict;
+    }
+
+    .app-menu.show-menu {
+        display: block;
+    }
+
+    .app-menu.menu-type-overlay {
+        z-index: 1000;
+    }
+
+    .app-menu.menu-pane-visible {
+        flex: 0 1 auto;
+        width: var(--side-width, var(--width));
+        min-width: var(--side-min-width, var(--min-width));
+        max-width: var(--side-max-width, var(--max-width));
+    }
+
+    .app-menu.menu-pane-visible.split-pane-side {
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        position: relative;
+        box-shadow: none;
+        z-index: 0;
+    }
+
+    .app-menu.menu-pane-visible.split-pane-side.menu-enabled {
+        display: flex;
+        flex-shrink: 0;
+    }
+
+    .app-menu.menu-pane-visible.split-pane-side {
+        order: -1;
+        border-inline-start: 0;
+        border-inline-end: var(--border);
+        border-top: 0;
+        border-bottom: 0;
+        min-width: var(--side-min-width);
+        max-width: var(--side-max-width);
+    }
+
+    /* ion-menu-toggle :host — a custom element, so inline unless a class says otherwise. */
+    .app-menu-toggle {
+        display: inline;
+    }
+
+    .app-menu-toggle.menu-toggle-hidden {
+        display: none;
+    }
+
+    /* ion-tabs :host */
+    .app-tabs {
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        display: flex;
+        position: absolute;
+        flex-direction: column;
+        width: 100%;
+        height: 100%;
+        contain: layout size style;
+        z-index: 0;
+    }
+
+    /* ion-router-outlet :host */
+    .app-router-outlet {
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        position: absolute;
+        contain: layout size style;
+        z-index: 0;
+    }
+
+    /*
+     * ion-tab-bar :host. Ionic's safe-area side/bottom padding is omitted: Tailwind's unlayered
+     * preflight already zeroed it, and floating-tab-bar.css / MobileNavBar set the bar padding.
+     */
+    .app-tab-bar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: auto;
+        border-top: var(--border);
+        background: var(--background);
+        color: var(--color);
+        text-align: center;
+        contain: strict;
+        user-select: none;
+        z-index: 10;
+        box-sizing: content-box !important;
+    }
+
+    .app-tab-bar.tab-bar-hidden {
+        display: none !important;
+    }
+
+    .app-tab-bar.md {
+        --background: var(--ion-tab-bar-background, var(--ion-background-color, #fff));
+        --background-focused: var(--ion-tab-bar-background-focused, #e0e0e0);
+        --border: 1px solid
+            var(
+                --ion-tab-bar-border-color,
+                var(
+                    --ion-border-color,
+                    var(
+                        --ion-color-step-150,
+                        var(--ion-background-color-step-150, rgba(0, 0, 0, 0.07))
+                    )
+                )
+            );
+        --color: var(
+            --ion-tab-bar-color,
+            var(--ion-color-step-650, var(--ion-text-color-step-350, #595959))
+        );
+        --color-selected: var(--ion-tab-bar-color-selected, var(--ion-color-primary, #0054e9));
+        height: 56px;
+    }
+
+    .app-tab-bar.ios {
+        --background: var(
+            --ion-tab-bar-background,
+            var(--ion-color-step-50, var(--ion-background-color-step-50, #f7f7f7))
+        );
+        --background-focused: var(--ion-tab-bar-background-focused, #e0e0e0);
+        --border: 0.55px solid
+            var(
+                --ion-tab-bar-border-color,
+                var(
+                    --ion-border-color,
+                    var(
+                        --ion-color-step-150,
+                        var(--ion-background-color-step-150, rgba(0, 0, 0, 0.2))
+                    )
+                )
+            );
+        --color: var(
+            --ion-tab-bar-color,
+            var(--ion-color-step-600, var(--ion-text-color-step-400, #666666))
+        );
+        --color-selected: var(--ion-tab-bar-color-selected, var(--ion-color-primary, #0054e9));
+        height: 50px;
+    }
+
+    /* ion-tab-button :host */
+    .app-tab-button {
+        --ripple-color: var(--color-selected);
+        --background-focused-opacity: 1;
+        flex: 1;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        outline: none;
+        background: var(--background);
+        color: var(--color);
+    }
+
+    .app-tab-button.tab-selected {
+        color: var(--color-selected);
+    }
+
+    .app-tab-button.md {
+        --padding-top: 0;
+        --padding-end: 12px;
+        --padding-bottom: 0;
+        --padding-start: 12px;
+        max-width: 168px;
+        font-size: 12px;
+        font-weight: normal;
+        letter-spacing: 0.03em;
+    }
+
+    .app-tab-button.ios {
+        --padding-top: 0;
+        --padding-end: 2px;
+        --padding-bottom: 0;
+        --padding-start: 2px;
+        max-width: 240px;
+        font-size: 10px;
+    }
+
+    /* ion-tab-button ::slotted(ion-label) */
+    .app-tab-button-inner > ion-label {
+        display: block;
+        align-self: center;
+        max-width: 100%;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow: hidden;
+        box-sizing: border-box;
+        order: 0;
+    }
+
+    .app-tab-button.tab-has-label-only .app-tab-button-inner > ion-label {
+        white-space: normal;
+    }
+
+    .app-tab-button.md .app-tab-button-inner > ion-label {
+        margin-left: 0;
+        margin-right: 0;
+        margin-top: 2px;
+        margin-bottom: 2px;
+        text-transform: none;
+    }
+
+    .app-tab-button.md.tab-layout-icon-top .app-tab-button-inner > ion-label {
+        margin-top: 0;
+        margin-bottom: 6px;
+    }
+
+    .app-tab-button.md.tab-has-label-only .app-tab-button-inner > ion-label {
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+
+    .app-tab-button.ios .app-tab-button-inner > ion-label {
+        margin-top: 0;
+        margin-bottom: 1px;
+        min-height: 11px;
+        font-weight: 500;
+    }
+
+    .app-tab-button.ios.tab-has-label-only .app-tab-button-inner > ion-label {
+        margin-left: 0;
+        margin-right: 0;
+        margin-top: 2px;
+        margin-bottom: 2px;
+        font-size: 14px;
+        line-height: 1.1;
+    }
+}
+
+/* ---- Former shadow-DOM internals (unlayered) ---- */
+
+/* ion-tabs .tabs-inner */
+.app-tabs-inner {
+    position: relative;
+    flex: 1;
+    contain: layout size style;
+}
+
+/* ion-tab-button .button-native / .button-inner */
+.app-tab-button-native {
+    border-radius: inherit;
+    margin: 0;
+    padding-inline-start: var(--padding-start);
+    padding-inline-end: var(--padding-end);
+    padding-top: var(--padding-top);
+    padding-bottom: var(--padding-bottom);
+    font-family: inherit;
+    font-size: inherit;
+    font-style: inherit;
+    font-weight: inherit;
+    letter-spacing: inherit;
+    text-indent: inherit;
+    text-overflow: inherit;
+    text-transform: inherit;
+    text-align: inherit;
+    white-space: inherit;
+    color: inherit;
+    display: flex;
+    position: relative;
+    flex-direction: inherit;
+    align-items: inherit;
+    justify-content: inherit;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    outline: none;
+    background: transparent;
+    text-decoration: none;
+    cursor: pointer;
+    overflow: hidden;
+    box-sizing: border-box;
+    -webkit-user-drag: none;
+}
+
+.app-tab-button-native::after {
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    position: absolute;
+    content: '';
+    opacity: 0;
+}
+
+.app-tab-button-inner {
+    display: flex;
+    position: relative;
+    flex-flow: inherit;
+    align-items: inherit;
+    justify-content: inherit;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+.app-tab-button.ion-focused .app-tab-button-native {
+    color: var(--color-focused);
+}
+
+.app-tab-button.ion-focused .app-tab-button-native::after {
+    background: var(--background-focused);
+    opacity: var(--background-focused-opacity);
+}
+
+@media (any-hover: hover) {
+    .app-tab-button-native:hover {
+        color: var(--color-selected);
+    }
+}
+
+/* ion-menu .menu-inner */
+.app-menu-inner {
+    transform: translateX(-9999px);
+    display: flex;
+    position: absolute;
+    flex-direction: column;
+    justify-content: space-between;
+    width: var(--width);
+    min-width: var(--min-width);
+    max-width: var(--max-width);
+    height: var(--height);
+    min-height: var(--min-height);
+    max-height: var(--max-height);
+    background: var(--background);
+    contain: strict;
+}
+
+.app-menu.menu-side-start .app-menu-inner {
+    top: 0;
+    bottom: 0;
+    inset-inline-start: 0;
+    inset-inline-end: auto;
+}
+
+@media (max-width: 340px) {
+    .app-menu-inner {
+        --width: 264px;
+    }
+}
+
+.app-menu.menu-pane-visible .app-menu-inner {
+    left: 0;
+    right: 0;
+    width: auto;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Last in ion-menu's md sheet, so it also applies (clipped by contain) when docked. */
+.app-menu.md.menu-type-overlay .app-menu-inner {
+    box-shadow: 4px 0px 16px rgba(0, 0, 0, 0.18);
+}
+
+/* ion-backdrop :host, as styled by ion-menu */
+.app-menu-backdrop {
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    display: none;
+    position: absolute;
+    transform: translateZ(0);
+    contain: strict;
+    cursor: pointer;
+    opacity: 0.01;
+    touch-action: none;
+    z-index: -1;
+    background-color: var(--ion-backdrop-color, #000);
+}
+
+.app-menu.menu-type-overlay .app-menu-backdrop.show-backdrop {
+    display: block;
+    cursor: pointer;
+}
+
+/* Ionic's gesture-controller `backdrop-no-scroll`, under its own name. */
+.app-menu-no-scroll {
+    overflow: hidden;
+}
+
+/*
+ * <IonContent fullscreen> under AppTabs: add the tab bar back into ion-content's bottom offset
+ * (see useFullscreenContentOffset in AppTabs.tsx). Mirrors ion-content's own .inner-scroll /
+ * #background-content rules with `--offset-bottom + --app-tab-bar-offset`.
+ */
+.app-tabs-inner ion-content.app-tabs-fullscreen-content::part(background),
+.app-tabs-inner ion-content.app-tabs-fullscreen-content::part(scroll) {
+    bottom: calc((var(--offset-bottom) + var(--app-tab-bar-offset, 0px)) * -1);
+}
+
+.app-tabs-inner ion-content.app-tabs-fullscreen-content::part(scroll) {
+    padding-bottom: calc(
+        var(--padding-bottom) + var(--keyboard-offset) + var(--offset-bottom) +
+            var(--app-tab-bar-offset, 0px)
+    );
+}
