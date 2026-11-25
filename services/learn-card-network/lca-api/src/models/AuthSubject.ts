@@ -16,6 +16,12 @@ export interface MongoAuthSubjectType extends AuthSubjectAttributes {
     identityKey: string;
     createdAt: Date;
     lastLoginAt: Date;
+    /**
+     * Set only while a ClassLink personal-email verify that inserted this `email:` subject has
+     * not finished (LC-2409): its token, so only that call (or the demote of its pending
+     * record) can release the reservation. Removed when the verify commits.
+     */
+    reservedBy?: string;
 }
 
 export const getAuthSubjectsCollection = (): Collection<MongoAuthSubjectType> =>

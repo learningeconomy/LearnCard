@@ -185,6 +185,14 @@ const TEMPLATE_FIXTURES: { [K in TemplateId]: TemplateDataMap[K] } = {
     'account-secured': {
         securedAt: 'October 2, 2026, 3:00 PM',
     },
+    'escrow-reset-started': {
+        requestedAt: 'September 25, 2026, 3:00 PM',
+        releaseAfter: 'October 2, 2026, 3:00 PM',
+    },
+    'sign-in-email-changed': {
+        changedAt: 'November 20, 2026, 3:00 PM',
+        maskedEmail: 'p*******@example.com',
+    },
 };
 
 const ALL_TEMPLATE_IDS = Object.keys(TEMPLATE_FIXTURES) as TemplateId[];
@@ -677,6 +685,71 @@ describe('renderEmail — escrow hold lifecycle', () => {
             `Contact the organization that gave you access to ${DEFAULT_BRANDING.brandName} right away`
         );
         expect(text).not.toContain('I lost access to my school email or login');
+    });
+
+    it('escrow-reset-started tells the school address without a cancel link (LC-2409)', async () => {
+        const iso = {
+            requestedAt: '2026-11-19T15:00:00.000Z',
+            releaseAfter: '2026-11-26T15:00:00.000Z',
+        };
+        const { html, text, subject } = await renderEmail(
+            'escrow-reset-started',
+            DEFAULT_BRANDING,
+            iso
+        );
+
+        expect(subject).toBe('A PIN reset was started on your account');
+        expect(text).toContain('November 19, 2026');
+        expect(text).toContain('November 26, 2026');
+        expect(text).toContain('school email');
+        // A recycled or shared school inbox must not be able to cancel the owner's reset.
+        expect(html).not.toContain('/recovery/cancel');
+        expect(text).toContain(`contact ${DEFAULT_BRANDING.supportEmail} right away`);
+        assertNoJargon(html);
+        assertNoJargon(text);
+        assertNoJargon(subject);
+
+        const fallback = await renderEmail(
+            'escrow-reset-started',
+            { ...DEFAULT_BRANDING, supportEmail: '' },
+            iso
+        );
+        expect(fallback.text).toContain(
+            `contact the organization that gave you access to ${DEFAULT_BRANDING.brandName}`
+        );
+    });
+
+    it('sign-in-email-changed names the masked new address and sends the reader to the school (LC-2409)', async () => {
+        const { html, text, subject } = await renderEmail(
+            'sign-in-email-changed',
+            DEFAULT_BRANDING,
+            {
+                changedAt: '2026-11-20T15:00:00.000Z',
+                maskedEmail: 'p*******@example.com',
+            }
+        );
+
+        expect(subject).toBe('Your sign-in email was changed');
+        expect(text).toContain('November 20, 2026');
+        expect(text).toContain('was changed to p*******@example.com');
+        expect(text).toContain('sign in with your school account');
+        expect(text).toContain(
+            `contact your school or ${DEFAULT_BRANDING.supportEmail} right away`
+        );
+        // No link: the reader acts through their school sign-in, not this email.
+        expect(html).not.toContain('/recovery/cancel');
+        assertNoJargon(html);
+        assertNoJargon(text);
+        assertNoJargon(subject);
+
+        const noAddress = await renderEmail(
+            'sign-in-email-changed',
+            { ...DEFAULT_BRANDING, supportEmail: '' },
+            { changedAt: '2026-11-20T15:00:00.000Z' }
+        );
+        expect(noAddress.text).toContain('account was changed.');
+        expect(noAddress.text).not.toContain('undefined');
+        expect(noAddress.text).toContain('contact your school right away');
     });
 
     it('all escrow hold templates include the "This wasn\'t me" cancel CTA when a cancel URL is present', async () => {

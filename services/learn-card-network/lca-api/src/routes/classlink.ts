@@ -30,6 +30,7 @@ import {
     classLinkExchangeInput,
     classLinkNonce,
     classLinkRedirectUri,
+    hasRecognizedClassLinkRole,
     isClassLinkStudent,
     requireClassLinkConfig,
     verifyClassLinkExchange,
@@ -62,6 +63,7 @@ import {
     clearClassLinkIdentityPrimaryDid,
     findClassLinkIdentityByFirebaseUid,
     findClassLinkIdentityByIdentityKey,
+    getClassLinkIdentitiesCollection,
     upsertClassLinkIdentity,
     type MongoClassLinkIdentityType,
 } from '../models/ClassLinkIdentity';
@@ -147,6 +149,18 @@ const assertNoOtherClassLinkIdentity = async (
     const byAccount = userKey ? await findClassLinkIdentityForAccount(userKey) : null;
     if (byAccount && byAccount.identityKey !== identityKey) conflict(tenantId, 'other_school');
 };
+
+/** Whether a ClassLink identity other than `identityKey` signs in with `subject`. */
+const isSubjectOfOtherClassLinkIdentity = async (
+    subject: string,
+    identityKey: string
+): Promise<boolean> =>
+    Boolean(
+        await getClassLinkIdentitiesCollection().findOne(
+            { subject, identityKey: { $ne: identityKey } },
+            { projection: { _id: 1 } }
+        )
+    );
 
 /**
  * Fail closed when a known identity's Firebase uid was deliberately unlinked from its account.
@@ -298,9 +312,11 @@ export const classlinkRouter = t.router({
                 };
                 const joined = !existing && otherEmailUser ? otherEmailUser.uid : undefined;
                 const uid = existingUid ?? joined ?? ownUid;
-                // The identity moved off its deterministic user, which still holds the school
-                // email: release it so the email resolves to no stale account.
-                if (auth && existing && uid !== ownUid && emailUser?.uid === ownUid)
+                // The identity moved off its deterministic user, which may still hold a real
+                // email (the school email, or a personal email promoted before the move):
+                // release it so neither address resolves to a stale account. A no-op when that
+                // user is gone or already synthetic.
+                if (auth && existing && uid !== ownUid)
                     await releaseClassLinkFirebaseEmail(auth, identityKey);
                 if (auth && uid !== joined)
                     await ensureClassLinkFirebaseUser(auth, uid, {
@@ -308,12 +324,27 @@ export const classlinkRouter = t.router({
                         trustedEmail: emailTrusted && !emailHeldElsewhere ? email : undefined,
                         // The deterministic user can outlive its identity row (deleteMyData).
                         isNew: !existing && emailUser?.uid !== ownUid,
+                        personalEmailPrimary: Boolean(existing?.primaryEmail),
                     });
                 let subject = existing?.subject;
                 if (!subject) {
-                    const emailSubject = emailTrusted
+                    const found = emailTrusted
                         ? await findAuthSubjectByIdentityKey(`email:${email}`)
                         : null;
+                    // LC-2409: a promoted student's school address no longer sits on their
+                    // Firebase user, so the email-account guard above does not see it. A
+                    // recycled school address must not hand this new identity the previous
+                    // student's subject: reuse it only while no other ClassLink identity has it.
+                    const emailSubject =
+                        found &&
+                        (await isSubjectOfOtherClassLinkIdentity(found.subject, identityKey))
+                            ? null
+                            : found;
+                    if (found && !emailSubject)
+                        console.warn('classlink.email_subject.mismatch', {
+                            tenantId,
+                            reason: 'other_identity',
+                        });
                     subject = (
                         emailSubject
                             ? await getOrCreateAuthSubjectLinkedTo(
@@ -351,6 +382,8 @@ export const classlinkRouter = t.router({
                     lastAuthTime,
                     // Preferences require a DID; apply this hint when the account first binds one.
                     isMinorHint: isStudent,
+                    // Whether that hint rests on a recognized role (continuity fails closed otherwise).
+                    studentStatusKnown: isStudent || hasRecognizedClassLinkRole(claims),
                 });
                 const hintChanged = !existing || existing.isMinorHint !== isStudent;
                 // A recorded DID that no live account holds: its owner was deleted and the
@@ -436,7 +469,7 @@ export const classlinkRouter = t.router({
             const result = await deleteClassLinkDataForAccount(
                 userKey ?? { authProviders: [], primaryDid: ctx.user.accountDid, linkedDids: [] },
                 // The lock is lifted only after the account's key is gone (account deletion).
-                { clearPrivacyLock: !userKey }
+                { clearPrivacyLock: !userKey, accountDeleted: !userKey }
             );
             return { deleted: result.identities + result.transcriptRequests };
         }),

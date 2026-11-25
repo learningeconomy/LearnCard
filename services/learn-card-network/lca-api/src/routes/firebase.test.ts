@@ -4,6 +4,20 @@ const mocks = vi.hoisted(() => ({
     environment: { IS_OFFLINE: true, IS_E2E_TEST: false },
     verifyIdToken: vi.fn(),
     getDidAuthVp: vi.fn(),
+    resolveOrCreate: vi.fn(),
+    recordEmailCodeSignIn: vi.fn(),
+    recordFirebaseSignIn: vi.fn(),
+    cache: { get: vi.fn(), set: vi.fn(), delete: vi.fn() },
+    verifyPresentation: vi.fn(),
+    isAuthorizedDID: vi.fn(),
+    adminAuth: {
+        getUser: vi.fn(),
+        getUserByEmail: vi.fn(),
+        createUser: vi.fn(),
+        updateUser: vi.fn(),
+        deleteUser: vi.fn(),
+        createCustomToken: vi.fn(async (uid: string) => `token-${uid}`),
+    },
 }));
 
 vi.mock('@environment', () => ({ environment: mocks.environment }));
@@ -18,14 +32,34 @@ vi.mock('@routes', async () => {
 });
 vi.mock('@helpers/learnCard.helpers', () => ({
     getDidWebLearnCard: async () => ({ invoke: { getDidAuthVp: mocks.getDidAuthVp } }),
-    getEmptyLearnCard: vi.fn(),
+    getEmptyLearnCard: async () => ({
+        invoke: { verifyPresentation: mocks.verifyPresentation },
+    }),
 }));
-vi.mock('@cache', () => ({ default: {} }));
+vi.mock('@cache', () => ({ default: mocks.cache }));
+vi.mock('@helpers/rateLimit.helpers', () => ({
+    checkRateLimit: vi.fn(async () => true),
+    clearRateLimit: vi.fn(),
+    decrementRateLimit: vi.fn(),
+}));
+vi.mock('@helpers/classlinkPrimaryEmail.helpers', () => ({
+    resolveOrCreateFirebaseUserByEmail: mocks.resolveOrCreate,
+    recordEmailCodeSignIn: mocks.recordEmailCodeSignIn,
+    recordFirebaseSignIn: mocks.recordFirebaseSignIn,
+}));
+vi.mock('@helpers/firebaseAdminAuth.helpers', () => ({ getAdminAuth: () => mocks.adminAuth }));
+vi.mock('jwt-decode', () => ({
+    default: () => ({
+        vp: { holder: 'did:web:network.example' },
+        nonce: 'handoff:contact_method_session:email:Student@Example.EDU',
+    }),
+}));
 vi.mock('../services/delivery', () => ({ getDeliveryService: vi.fn(), getFrom: vi.fn() }));
 vi.mock('../helpers/locale.helpers', () => ({ resolveLocaleByEmail: vi.fn() }));
-vi.mock('@helpers/dids.helpers', () => ({ isAuthorizedDID: vi.fn() }));
+vi.mock('@helpers/dids.helpers', () => ({ isAuthorizedDID: mocks.isAuthorizedDID }));
 
 import { firebaseRouter } from './firebase';
+import { createFirebaseTokenForKeycloakUser } from '@helpers/firebase.helpers';
 
 const tokenFor = (claims: Record<string, string>): string =>
     `e30.${Buffer.from(JSON.stringify({ sub: 'local-user', ...claims })).toString('base64url')}.test`;
@@ -90,5 +124,148 @@ describe('getProofOfLoginVp', () => {
             proofFormat: 'jwt',
             challenge: 'proof-of-login:email:verified@example.com',
         });
+    });
+});
+
+describe('email sign-in resolution (LC-2409)', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        mocks.cache.get.mockResolvedValue('123456');
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+    });
+
+    it('verifyLoginCode resolves the lowercased email through the alias-aware helper', async () => {
+        mocks.resolveOrCreate.mockResolvedValue({ status: 'alias', uid: 'classlink-t' });
+        await expect(
+            caller.verifyLoginCode({ email: 'Student@Example.EDU', code: '123456' })
+        ).resolves.toEqual({ success: true, token: 'token-classlink-t' });
+        expect(mocks.resolveOrCreate).toHaveBeenCalledWith(mocks.adminAuth, 'student@example.edu', {
+            allowCreate: true,
+        });
+        // The sign-in counts as recent for a sign-in email change (hasRecentSignIn).
+        expect(mocks.recordEmailCodeSignIn).toHaveBeenCalledWith('Student@Example.EDU');
+        // A school-email alias is not the login's own email: no sign-in on the uid.
+        expect(mocks.recordFirebaseSignIn).not.toHaveBeenCalled();
+    });
+
+    it("verifyLoginCode with a login's own email records a fresh sign-in on that uid", async () => {
+        mocks.resolveOrCreate.mockResolvedValue({ status: 'found', uid: 'own-uid' });
+        await expect(
+            caller.verifyLoginCode({ email: 'me@example.org', code: '123456' })
+        ).resolves.toEqual({ success: true, token: 'token-own-uid' });
+        expect(mocks.recordFirebaseSignIn).toHaveBeenCalledWith('own-uid');
+    });
+
+    it('a newly created user records no sign-in on a uid', async () => {
+        mocks.resolveOrCreate.mockResolvedValue({ status: 'created', uid: 'new-uid' });
+        await caller.verifyLoginCode({ email: 'new@example.org', code: '123456' });
+        expect(mocks.recordFirebaseSignIn).not.toHaveBeenCalled();
+    });
+
+    it('a wrong code records no sign-in', async () => {
+        await expect(
+            caller.verifyLoginCode({ email: 'student@example.edu', code: '000000' })
+        ).resolves.toMatchObject({ success: false });
+        expect(mocks.recordEmailCodeSignIn).not.toHaveBeenCalled();
+    });
+
+    it.each(['moved', 'blocked'] as const)(
+        'a %s account gets the generic error and no token',
+        async status => {
+            mocks.resolveOrCreate.mockResolvedValue({ status });
+            await expect(
+                caller.verifyLoginCode({ email: 'student@example.edu', code: '123456' })
+            ).resolves.toEqual({ success: false, error: 'Unable to find or create user.' });
+            expect(mocks.adminAuth.createCustomToken).not.toHaveBeenCalled();
+            expect(mocks.adminAuth.createUser).not.toHaveBeenCalled();
+            expect(mocks.recordEmailCodeSignIn).not.toHaveBeenCalled();
+        }
+    );
+
+    it('network hand-off uses the same resolution (alias included)', async () => {
+        mocks.verifyPresentation.mockResolvedValue({ warnings: [], errors: [], checks: ['JWS'] });
+        mocks.isAuthorizedDID.mockReturnValue(true);
+        mocks.resolveOrCreate.mockResolvedValue({ status: 'alias', uid: 'classlink-t' });
+        await expect(caller.verifyNetworkHandoffToken({ token: 'jwt' })).resolves.toEqual({
+            success: true,
+            token: 'token-classlink-t',
+        });
+        expect(mocks.resolveOrCreate).toHaveBeenCalledWith(mocks.adminAuth, 'student@example.edu', {
+            allowCreate: true,
+        });
+        mocks.resolveOrCreate.mockResolvedValue({ status: 'moved' });
+        await expect(caller.verifyNetworkHandoffToken({ token: 'jwt' })).resolves.toMatchObject({
+            success: false,
+        });
+    });
+});
+
+describe('Keycloak bridge (LC-2409)', () => {
+    const auth = mocks.adminAuth;
+    beforeEach(() => {
+        vi.clearAllMocks();
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+    });
+
+    it('does not map an unverified Keycloak email onto an existing user', async () => {
+        auth.getUser.mockRejectedValue({ code: 'auth/user-not-found' });
+        await createFirebaseTokenForKeycloakUser(
+            { sub: 'kc-sub', email: 'Taken@Example.com', email_verified: false },
+            auth as never
+        );
+        expect(mocks.resolveOrCreate).not.toHaveBeenCalled();
+        // The unverified address is never written to Firebase.
+        expect(auth.createUser).toHaveBeenCalledWith({ uid: 'kc-sub', displayName: null });
+        expect(auth.updateUser).not.toHaveBeenCalled();
+        expect(auth.createCustomToken).toHaveBeenCalledWith('kc-sub', expect.anything());
+        // Nor does it travel as a custom token claim (it would reach the ID token's `email`).
+        expect((auth.createCustomToken.mock.calls[0] as unknown[])[1]).not.toHaveProperty('email');
+    });
+
+    it('never puts an email claim in the custom token, verified or not', async () => {
+        auth.getUser.mockRejectedValue({ code: 'auth/user-not-found' });
+        await createFirebaseTokenForKeycloakUser(
+            { sub: 'kc-sub', email: 'nobody@example.com', name: 'N', roles: ['scout'] },
+            auth as never
+        );
+        mocks.resolveOrCreate.mockResolvedValue({ status: 'alias', uid: 'classlink-t' });
+        await createFirebaseTokenForKeycloakUser(
+            { sub: 'kc-sub', email: 'student@example.edu', email_verified: true, name: 'S' },
+            auth as never
+        );
+        expect(auth.createCustomToken).toHaveBeenNthCalledWith(1, 'kc-sub', {
+            name: 'N',
+            roles: ['scout'],
+        });
+        expect(auth.createCustomToken).toHaveBeenNthCalledWith(2, 'classlink-t', {
+            name: 'S',
+            roles: [],
+        });
+    });
+
+    it('maps a verified email through the alias and never rewrites the aliased user', async () => {
+        mocks.resolveOrCreate.mockResolvedValue({ status: 'alias', uid: 'classlink-t' });
+        await createFirebaseTokenForKeycloakUser(
+            { sub: 'kc-sub', email: 'Student@Example.EDU', email_verified: true },
+            auth as never
+        );
+        expect(mocks.resolveOrCreate).toHaveBeenCalledWith(
+            auth,
+            'student@example.edu',
+            expect.objectContaining({ allowCreate: true })
+        );
+        expect(auth.updateUser).not.toHaveBeenCalled();
+        expect(auth.createCustomToken).toHaveBeenCalledWith('classlink-t', expect.anything());
+    });
+
+    it('refuses a moved or orphaned account', async () => {
+        mocks.resolveOrCreate.mockResolvedValue({ status: 'blocked' });
+        await expect(
+            createFirebaseTokenForKeycloakUser(
+                { sub: 'kc-sub', email: 'student@example.edu', email_verified: true },
+                auth as never
+            )
+        ).rejects.toThrow('Firebase user creation or lookup failed');
+        expect(auth.createCustomToken).not.toHaveBeenCalled();
     });
 });

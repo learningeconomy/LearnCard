@@ -72,6 +72,12 @@ export const lcaApiEnvironmentShape = {
     CLASSLINK_MAX_AUTH_AGE_SECONDS: optionalEnvironmentString
         .transform(value => (value === undefined ? 86_400 : Number(value)))
         .pipe(z.number().int().positive()),
+    // Master switch for ClassLink personal email (LC-2409); off resolves every district to off.
+    CLASSLINK_ACCOUNT_CONTINUITY_ENABLED: optionalEnvironmentBoolean.transform(
+        value => value ?? false
+    ),
+    // JSON AccountContinuityPolicy layer over the code default; names no district.
+    CLASSLINK_ACCOUNT_CONTINUITY_DEFAULT: optionalEnvironmentString,
     // JSON registry keyed by the tenant's transcriptIssuer (or "default").
     TRANSCRIPT_ISSUERS: optionalEnvironmentString,
     KEYCLOAK_ISSUERS: optionalEnvironmentString,

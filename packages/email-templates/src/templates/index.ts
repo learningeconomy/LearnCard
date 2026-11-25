@@ -118,6 +118,18 @@ export {
 } from './escrow-pin-sign-in';
 
 export {
+    EscrowResetStarted,
+    getEscrowResetStartedSubject,
+    type EscrowResetStartedProps,
+} from './escrow-reset-started';
+
+export {
+    SignInEmailChanged,
+    getSignInEmailChangedSubject,
+    type SignInEmailChangedProps,
+} from './sign-in-email-changed';
+
+export {
     AccountSecured,
     getAccountSecuredSubject,
     type AccountSecuredProps,

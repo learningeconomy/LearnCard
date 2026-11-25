@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+    collectAccountContinuityWarnings,
     collectClassLinkConfigProblems,
     parseTranscriptIssuers,
 } from './classlinkConfigValidation';
@@ -47,6 +48,35 @@ describe('offline ClassLink configuration diagnostics', () => {
             [expect.stringContaining('CLASSLINK_TENANTS must be valid JSON')]
         );
     });
+
+    it('accepts schoolEmailAliasMaxIdleDays, including 0 (alias off)', () => {
+        for (const days of [0, 30, 365, 3650])
+            expect(
+                collectClassLinkConfigProblems({
+                    ...validEnv(),
+                    CLASSLINK_TENANTS: JSON.stringify({
+                        example: { ...tenant, schoolEmailAliasMaxIdleDays: days },
+                    }),
+                })
+            ).toEqual([]);
+    });
+
+    it.each([-1, 1.5, 3651, '365', null])(
+        'names an invalid schoolEmailAliasMaxIdleDays (%s) without printing values',
+        days => {
+            const problems = collectClassLinkConfigProblems({
+                ...validEnv(),
+                CLASSLINK_TENANTS: JSON.stringify({
+                    'secret-district': { ...tenant, schoolEmailAliasMaxIdleDays: days },
+                }),
+            });
+            expect(problems).toEqual([
+                expect.stringContaining('CLASSLINK_TENANTS must be valid JSON'),
+                expect.stringContaining('entry 1 has an invalid schoolEmailAliasMaxIdleDays'),
+            ]);
+            expect(problems.join('\n')).not.toContain('secret-district');
+        }
+    );
 
     it.each(['{bad json', 'null', '[]', '{"default":{}}'])('rejects invalid issuers: %s', value => {
         expect(
@@ -169,6 +199,74 @@ describe('offline ClassLink configuration diagnostics', () => {
         expect(
             collectClassLinkConfigProblems({ ...validEnv(), CLASSLINK_PII_KEY_PREVIOUS: key })
         ).toEqual([]);
+    });
+
+    describe('account continuity', () => {
+        const secret = 'sensitive-district-key';
+        const withContinuity = (accountContinuity: unknown, envDefault?: string) => ({
+            ...validEnv(),
+            CLASSLINK_TENANTS: JSON.stringify({ [secret]: { ...tenant, accountContinuity } }),
+            CLASSLINK_ACCOUNT_CONTINUITY_DEFAULT: envDefault,
+        });
+
+        it('accepts valid overrides and the env default', () => {
+            const env = withContinuity(
+                { minimumAge: 14 },
+                '{"personalEmail":"all","minimumAge":13}'
+            );
+            expect(collectClassLinkConfigProblems(env)).toEqual([]);
+            expect(collectAccountContinuityWarnings(env)).toEqual([]);
+        });
+
+        it.each([
+            { personalEmail: 'sometimes' },
+            { minimumAge: 12 },
+            { minimumAge: 13.5 },
+            { approval: 'parent' },
+            { rebindProofs: ['passkey'] },
+            'all',
+        ])('reports an invalid district value without its key or value: %j', value => {
+            const problems = collectClassLinkConfigProblems(withContinuity(value));
+            expect(problems).toEqual([
+                expect.stringContaining('entry 1 has an invalid accountContinuity'),
+            ]);
+            expect(problems.join('\n')).not.toContain(secret);
+            expect(problems.join('\n')).not.toContain(JSON.stringify(value));
+        });
+
+        it.each(['{bad', '{"personalEmail":"everyone"}', '{"extra":true}'])(
+            'reports an invalid env default (%s), even without tenants',
+            value => {
+                const problems = collectClassLinkConfigProblems({
+                    CLASSLINK_ACCOUNT_CONTINUITY_DEFAULT: value,
+                });
+                expect(problems).toEqual([
+                    expect.stringContaining('CLASSLINK_ACCOUNT_CONTINUITY_DEFAULT must be JSON'),
+                ]);
+                expect(problems.join('\n')).not.toContain(value);
+            }
+        );
+
+        it('warns on all without minimumAge and on guardian approval', () => {
+            expect(
+                collectAccountContinuityWarnings(
+                    withContinuity(undefined, '{"personalEmail":"all"}')
+                )
+            ).toEqual([
+                expect.stringContaining('CLASSLINK_ACCOUNT_CONTINUITY_DEFAULT lets students'),
+            ]);
+            const warnings = collectAccountContinuityWarnings(
+                withContinuity({ personalEmail: 'all', approval: 'guardian' })
+            );
+            expect(warnings).toEqual([
+                expect.stringContaining('entry 1 lets students'),
+                expect.stringContaining('entry 1 requires guardian approval'),
+            ]);
+            expect(warnings.join('\n')).not.toContain(secret);
+            expect(
+                collectAccountContinuityWarnings(withContinuity({ approval: 'guardian' }))
+            ).toEqual([]);
+        });
     });
 
     it('collects independent problems without leaking values or map keys', () => {
