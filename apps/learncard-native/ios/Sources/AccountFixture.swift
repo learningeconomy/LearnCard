@@ -195,7 +195,8 @@ private actor FixtureClaimService: ClaimService {
     let demo: DemoClaimService
     init(service: any CredentialService) { demo = DemoClaimService(service: service) }
     func preview(_ link: NativeClaimLink) async throws -> Credential { try await demo.preview(NativeClaimLink("learncard-native-demo://claim/first-aid", allowDemo: true)) }
-    func issue(_ link: NativeClaimLink) async throws -> ClaimReceipt { try await demo.issue(NativeClaimLink("learncard-native-demo://claim/first-aid", allowDemo: true)) }
-    func finish(_ receipt: ClaimReceipt) async throws -> Credential { try await demo.finish(receipt) }
+    func status(_ link: NativeClaimLink, requestID: UUID) -> String? { nil }
+    func issue(_ link: NativeClaimLink, requestID: UUID) async throws -> ClaimReceipt { try await demo.issue(NativeClaimLink("learncard-native-demo://claim/first-aid", allowDemo: true), requestID: requestID) }
+    func finish(_ receipt: ClaimReceipt, link: NativeClaimLink) async throws -> Credential { try await demo.finish(receipt, link: link) }
 }
 #endif

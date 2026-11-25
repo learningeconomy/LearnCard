@@ -175,6 +175,50 @@ const IndexRecord = z
     })
     .passthrough();
 type IndexRecord = z.infer<typeof IndexRecord>;
+export const materializeCredential = async (
+    wallet: ConsumerWallet,
+    record: IndexRecord,
+    recipients: string[],
+    assertCurrent: () => void
+): Promise<string> => {
+    assertCurrent();
+    const audienceKey = `audience:${JSON.stringify(recipients)}`;
+    const saved = record.sharedUris?.[audienceKey]?.at(-1);
+    if (saved) return saved;
+
+    const credential = await wallet.read.get(record.uri);
+    assertCurrent();
+    if (!credential || typeof credential !== 'object') throw new ConsumerFailure('changed');
+    const upload = wallet.store.LearnCloud.uploadEncrypted;
+    if (!upload) throw new ConsumerFailure('unavailable');
+    const shared = await upload(credential, { recipients });
+    assertCurrent();
+    if (!shared) throw new ConsumerFailure('connection');
+    const sharedUris = { ...record.sharedUris, [audienceKey]: [shared] };
+    if (!(await wallet.index.LearnCloud.update(record.id, { sharedUris })))
+        throw new ConsumerFailure('connection');
+    assertCurrent();
+    record.sharedUris = sharedUris;
+    return shared;
+};
+
+export const loadConsentedTerms = async (wallet: ConsumerWallet, assertCurrent: () => void) => {
+    const records = [],
+        seen = new Set<string>();
+    let cursor: string | undefined;
+    do {
+        assertCurrent();
+        const page = await wallet.invoke.getConsentedContracts({ limit: 50, cursor });
+        assertCurrent();
+        records.push(...page.records);
+        if (!page.hasMore) return records;
+        if (!page.cursor || seen.has(page.cursor) || seen.size >= 100)
+            throw new ConsumerFailure('connection');
+        cursor = page.cursor;
+        seen.add(cursor);
+    } while (cursor);
+    return records;
+};
 const categoryRecords = async (
     wallet: ConsumerWallet,
     category: string
@@ -203,10 +247,10 @@ const categoryRecords = async (
 export const materializeSelections = async (
     wallet: ConsumerWallet,
     contract: ConsentFlowContractDetails,
-    categories: Record<string, string[]>
+    categories: Record<string, string[]>,
+    assertCurrent: () => void = () => {}
 ): Promise<Record<string, string[]>> => {
     const recipients = getContractAudienceDids(contract);
-    const audienceKey = `audience:${JSON.stringify(recipients)}`;
     const result: Record<string, string[]> = Object.create(null) as Record<string, string[]>;
     for (const [category, selected] of Object.entries(categories)) {
         const records = selected.length ? await categoryRecords(wallet, category) : [];
@@ -214,20 +258,9 @@ export const materializeSelections = async (
         for (const uri of [...new Set(selected)]) {
             const record = records.find(x => x.uri === uri);
             if (!record) throw new ConsumerFailure('changed');
-            const saved = record.sharedUris?.[audienceKey]?.at(-1);
-            if (saved) {
-                result[category].push(saved);
-                continue;
-            }
-            const credential = await wallet.read.get(uri);
-            if (!credential || typeof credential !== 'object') throw new ConsumerFailure('changed');
-            const upload = wallet.store.LearnCloud.uploadEncrypted;
-            if (!upload) throw new ConsumerFailure('unavailable');
-            const shared = await upload(credential, { recipients });
-            if (!shared) throw new ConsumerFailure('connection');
-            record.sharedUris = { ...record.sharedUris, [audienceKey]: [shared] };
-            await wallet.index.LearnCloud.update(record.id, { sharedUris: record.sharedUris });
-            result[category].push(shared);
+            result[category].push(
+                await materializeCredential(wallet, record, recipients, assertCurrent)
+            );
         }
     }
     return result;
@@ -306,17 +339,10 @@ export const createConsumerCommands = (
         return found;
     };
     const allTerms = async () => {
-        let page = await wallet().invoke.getConsentedContracts({ limit: 50 });
-        const records = [...page.records],
-            seen = new Set<string>();
-        while (page.hasMore) {
-            if (!page.cursor || seen.has(page.cursor) || seen.size >= 100)
-                throw new ConsumerFailure('connection');
-            seen.add(page.cursor);
-            page = await wallet().invoke.getConsentedContracts({ limit: 50, cursor: page.cursor });
-            records.push(...page.records);
-        }
-        return records;
+        const current = wallet();
+        return loadConsentedTerms(current, () => {
+            if (wallet() !== current) throw new ConsumerFailure('signIn');
+        });
     };
     const liveTerms = async (uri: string) => {
         const terms = (await allTerms()).find(
@@ -488,7 +514,9 @@ export const createConsumerCommands = (
                 const selected = Object.fromEntries(
                     input.readCategories.map(key => [key, input.selectedCredentials[key] ?? []])
                 );
-                const shared = await materializeSelections(wallet(), fresh, selected);
+                const shared = await materializeSelections(wallet(), fresh, selected, () => {
+                    if (wallet() !== saved.wallet) throw new ConsumerFailure('signIn');
+                });
                 // Recheck audience immediately before publication after potentially slow encryption.
                 const beforeCommit = await wallet().invoke.getContract(fresh.uri);
                 if (contractFingerprint(beforeCommit) !== contractFingerprint(fresh))

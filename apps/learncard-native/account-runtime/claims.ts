@@ -1,4 +1,5 @@
 import { CATEGORY_MAP } from '../../../packages/learn-card-base/src/helpers/credentialCategoryMap';
+import { ClaimLinkRequestStatusValidator } from '@learncard/types';
 import { z } from 'zod';
 import type { ConsumerWallet } from './consumer-apps';
 import { credentialCategoryForDisplay } from './credential-category';
@@ -35,6 +36,8 @@ const link = z
             ),
     })
     .strict();
+const request = link.extend({ requestID: z.string().uuid() });
+const issuedURI = uri('credential');
 const object = (value: unknown): Record<string, unknown> =>
     value && typeof value === 'object' && !Array.isArray(value)
         ? (value as Record<string, unknown>)
@@ -81,9 +84,8 @@ export const createClaimCommands = (
     const current = (lc: ConsumerWallet) => {
         if (currentWallet() !== lc) throw new ClaimFailure('signIn');
     };
-    const template = async (input: unknown) => {
-        const value = link.parse(input),
-            lc = wallet();
+    const template = async (value: z.infer<typeof link>) => {
+        const lc = wallet();
         const raw = object(await resolve(value.boostURI, value.challenge));
         current(lc);
         if (!raw['@context'] || !raw.credentialSubject || !raw.type)
@@ -96,9 +98,21 @@ export const createClaimCommands = (
             throw new ClaimFailure('family');
         return { value, lc, raw };
     };
+    const requestStatus = async (lc: ConsumerWallet, input: z.infer<typeof request>) => {
+        const status = ClaimLinkRequestStatusValidator.parse(
+            await lc.invoke.getClaimBoostWithLinkStatus(
+                input.boostURI,
+                input.challenge,
+                input.requestID
+            )
+        );
+        current(lc);
+        if (status.status === 'complete') issuedURI.parse(status.credentialUri);
+        return status;
+    };
     return {
         claimsPreview: async (input: unknown) => {
-            const { value, lc, raw } = await template(input);
+            const { value, lc, raw } = await template(link.parse(input));
             const credential = await display(
                 { uri: value.boostURI, category: categoryForClaim(raw) },
                 false,
@@ -109,26 +123,45 @@ export const createClaimCommands = (
             previews.set(JSON.stringify(value), JSON.stringify(raw));
             return credential;
         },
+        claimsStatus: async (input: unknown) => requestStatus(wallet(), request.parse(input)),
         claimsIssue: async (input: unknown) => {
-            const { value, lc, raw } = await template(input);
+            const { requestID, ...linkInput } = request.parse(input);
+            const { value, lc, raw } = await template(linkInput);
             if (previews.get(JSON.stringify(value)) !== JSON.stringify(raw))
                 throw new ClaimFailure('changed');
             // Remove before the write: repeated commands cannot issue again in this host.
             previews.delete(JSON.stringify(value));
-            const result = await lc.invoke.claimBoostWithLink(value.boostURI, value.challenge);
+            const result = await lc.invoke.claimBoostWithLink(
+                value.boostURI,
+                value.challenge,
+                requestID
+            );
             current(lc);
-            return { uri: uri('credential').parse(result) };
+            return { uri: issuedURI.parse(result) };
         },
         claimsFinish: async (input: unknown) => {
             const value = z
-                    .object({ uri: uri('credential') })
+                    .object({ uri: issuedURI, request: request.optional() })
                     .strict()
                     .parse(input),
                 lc = wallet();
-            const received = await lc.invoke.getReceivedCredentials();
-            current(lc);
-            if (!received.some(item => item.uri === value.uri && item.received))
-                throw new ClaimFailure('pending');
+            if (value.request) {
+                // The request receipt proves acceptance for this exact credential. The
+                // recent-receipts list is capped and cannot prove absence on busy accounts.
+                const status = await requestStatus(lc, value.request);
+                if (status.status !== 'complete' || status.credentialUri !== value.uri)
+                    throw new ClaimFailure('pending');
+                const lifecycle = await lc.invoke.getMyCredentialLifecycleStatuses({
+                    uris: [value.uri],
+                });
+                current(lc);
+                if (lifecycle[value.uri] === 'revoked') throw new ClaimFailure('unavailable');
+            } else {
+                const received = await lc.invoke.getReceivedCredentials();
+                current(lc);
+                if (!received.some(item => item.uri === value.uri && item.received))
+                    throw new ClaimFailure('pending');
+            }
             const raw = object(await lc.read.get(value.uri));
             current(lc);
             const proof = await lc.invoke.verifyCredential(raw as never, { checks: ['proof'] });
@@ -145,16 +178,21 @@ export const createClaimCommands = (
                       : 'Credential';
             const indexed = await lc.index.LearnCloud.get({ uri: value.uri });
             current(lc);
-            if (!indexed.length)
-                await lc.index.LearnCloud.add({
+            if (!indexed.length) {
+                const saved = await lc.index.LearnCloud.add({
                     id: value.uri,
                     uri: value.uri,
                     title,
                     category: category as never,
                 });
+                current(lc);
+                if (!saved && !(await lc.index.LearnCloud.get({ uri: value.uri })).length)
+                    throw new ClaimFailure('connection');
+            }
             current(lc);
             return display({ uri: value.uri, title, category }, true, raw);
         },
+        // Receipts created before request IDs had only the template and time window.
         claimsReconcile: async (input: unknown) => {
             const value = z
                     .object({ boostURI: uri('boost'), since: z.string().datetime() })

@@ -45,7 +45,10 @@ public struct NativeClaimLink: Equatable, Sendable {
 public struct ClaimReceipt: Codable, Sendable {
     public var uri: String?
     public var startedAt: Date?
-    public init(uri: String? = nil, startedAt: Date = Date()) { self.uri = uri; self.startedAt = startedAt }
+    public var requestID: UUID?
+    public init(uri: String? = nil, startedAt: Date = Date(), requestID: UUID? = nil) {
+        self.uri = uri; self.startedAt = startedAt; self.requestID = requestID
+    }
 }
 public protocol ClaimJournal: Sendable {
     func read(_ key: String) async throws -> ClaimReceipt?
@@ -68,8 +71,10 @@ public actor MemoryClaimJournal: ClaimJournal {
 }
 public protocol ClaimService: Sendable {
     func preview(_ link: NativeClaimLink) async throws -> Credential
-    func issue(_ link: NativeClaimLink) async throws -> ClaimReceipt
-    func finish(_ receipt: ClaimReceipt) async throws -> Credential
+    func issue(_ link: NativeClaimLink, requestID: UUID) async throws -> ClaimReceipt
+    func finish(_ receipt: ClaimReceipt, link: NativeClaimLink) async throws -> Credential
+    /// Returns an issued URI, nil for confirmed absence, or throws for pending/terminal status.
+    func status(_ link: NativeClaimLink, requestID: UUID) async throws -> String?
     func reconcile(_ link: NativeClaimLink, since: Date) async throws -> ClaimReceipt?
 }
 public extension ClaimService { func reconcile(_ link: NativeClaimLink, since: Date) async throws -> ClaimReceipt? { nil } }
@@ -77,10 +82,30 @@ public extension ClaimService { func reconcile(_ link: NativeClaimLink, since: D
     private let runtime: AccountRuntime
     public init(runtime: AccountRuntime) { self.runtime = runtime }
     public func preview(_ link: NativeClaimLink) async throws -> Credential { try await runtime.command("claimsPreview", input: link.input) }
-    public func issue(_ link: NativeClaimLink) async throws -> ClaimReceipt { try await runtime.command("claimsIssue", input: link.input) }
-    public func finish(_ receipt: ClaimReceipt) async throws -> Credential {
+    public func issue(_ link: NativeClaimLink, requestID: UUID) async throws -> ClaimReceipt {
+        try await runtime.command("claimsIssue", input: requestInput(link, requestID))
+    }
+    public func status(_ link: NativeClaimLink, requestID: UUID) async throws -> String? {
+        struct Reply: Decodable { let status: String; let credentialUri: String?; let reason: String? }
+        let reply: Reply = try await runtime.command("claimsStatus", input: requestInput(link, requestID))
+        switch reply.status {
+        case "absent": return nil
+        case "complete":
+            guard let uri = reply.credentialUri else { throw ClaimError.uncertain }
+            return uri
+        case "pending": throw ClaimError.pending
+        case "terminal": throw reply.reason == "expired" ? ClaimError.expired : ClaimError.unavailable
+        default: throw ClaimError.uncertain
+        }
+    }
+    private func requestInput(_ link: NativeClaimLink, _ requestID: UUID) -> [String: Any] {
+        link.input.merging(["requestID": requestID.uuidString.lowercased()]) { _, new in new }
+    }
+    public func finish(_ receipt: ClaimReceipt, link: NativeClaimLink) async throws -> Credential {
         guard let uri = receipt.uri else { throw ClaimError.uncertain }
-        return try await runtime.command("claimsFinish", input: ["uri": uri])
+        var input: [String: Any] = ["uri": uri]
+        if let requestID = receipt.requestID { input["request"] = requestInput(link, requestID) }
+        return try await runtime.command("claimsFinish", input: input)
     }
     public func reconcile(_ link: NativeClaimLink, since: Date) async throws -> ClaimReceipt? {
         try await runtime.command("claimsReconcile", input: ["boostURI": link.boostURI, "since": ISO8601DateFormatter().string(from: since)])
@@ -94,8 +119,9 @@ public actor DemoClaimService: ClaimService {
         guard let value = (snapshot.offers + snapshot.credentials).first(where: { $0.id == id }) else { throw ClaimError.unavailable }
         return value
     }
-    public func issue(_ link: NativeClaimLink) -> ClaimReceipt { ClaimReceipt(uri: link.boostURI.replacingOccurrences(of: "demo:", with: "")) }
-    public func finish(_ receipt: ClaimReceipt) async throws -> Credential {
+    public func status(_ link: NativeClaimLink, requestID: UUID) -> String? { nil }
+    public func issue(_ link: NativeClaimLink, requestID: UUID) -> ClaimReceipt { ClaimReceipt(uri: link.boostURI.replacingOccurrences(of: "demo:", with: "")) }
+    public func finish(_ receipt: ClaimReceipt, link: NativeClaimLink) async throws -> Credential {
         let snapshot = try await service.snapshot()
         if let existing = snapshot.credentials.first(where: { $0.id == receipt.uri }) { return existing }
         guard let id = receipt.uri, let value = try await service.claim(offerID: id).credentials.first(where: { $0.id == id }) else { throw ClaimError.unavailable }
@@ -136,18 +162,14 @@ public enum ClaimEntryMode: String, Sendable { case scan, link, photo }
     public func resolve() async {
         guard let link else { return }
         guard let service, let accountID else { phase = "signIn"; return }
-        guard Date().timeIntervalSince(receivedAt) < 900 else { fail(ClaimError.expired, retry: false); return }
         let expected = generation; phase = "resolving"; error = nil; canRetry = false
         do {
-            if let receipt = try await journal.read(link.receiptKey(accountID: accountID)) {
+            let key = link.receiptKey(accountID: accountID)
+            let receipt = try await journal.read(key)
+            guard expected == generation else { return }
+            if let receipt, let known = try await reconcile(receipt, link: link, service: service, key: key) {
                 guard expected == generation else { return }
-                var known = receipt
-                if known.uri == nil {
-                    guard let reconciled = try await service.reconcile(link, since: receipt.startedAt ?? receivedAt) else { throw ClaimError.uncertain }
-                    try await journal.write(reconciled, key: link.receiptKey(accountID: accountID)); known = reconciled
-                }
-                guard expected == generation else { return }
-                let value = try await service.finish(known)
+                let value = try await service.finish(known, link: link)
                 guard expected == generation else { return }; credential = value; phase = "complete"; return
             }
             guard expected == generation else { return }
@@ -159,41 +181,58 @@ public enum ClaimEntryMode: String, Sendable { case scan, link, photo }
         guard phase == "review", let link, let service, let accountID else { return }
         let expected = generation, key = link.receiptKey(accountID: accountID)
         phase = "claiming"; error = nil; canRetry = false
-        var issued: ClaimReceipt?
         var attempted = false
         do {
-            if let previous = try await journal.read(key) { guard previous.uri != nil else { throw ClaimError.uncertain }; issued = previous }
-            else {
+            let previous = try await journal.read(key)
+            guard expected == generation else { return }
+            var receipt = previous ?? ClaimReceipt(requestID: UUID())
+            if previous == nil {
                 // Fail closed before issuance if the protected attempt record cannot be saved.
-                try await journal.write(ClaimReceipt(), key: key)
+                try await journal.write(receipt, key: key)
                 guard expected == generation else {
                     // No mutation was started. Do not strand the user behind an uncertain marker.
                     try? await journal.remove(key)
                     return
                 }
-                attempted = true
-                let receipt = try await service.issue(link)
-                // Even a late reply is saved for this original account before touching UI.
-                try await journal.write(receipt, key: key); issued = receipt
             }
-            guard expected == generation, let issued else { return }
-            let value = try await service.finish(issued)
+            if let known = try await reconcile(receipt, link: link, service: service, key: key) {
+                receipt = known
+            } else {
+                guard expected == generation, let requestID = receipt.requestID else { return }
+                attempted = true
+                let issued = try await service.issue(link, requestID: requestID)
+                guard let uri = issued.uri else { throw ClaimError.uncertain }
+                receipt.uri = uri
+                // Save a late reply under the original account before touching UI.
+                try await journal.write(receipt, key: key)
+                attempted = false
+            }
+            guard expected == generation else { return }
+            let value = try await service.finish(receipt, link: link)
             guard expected == generation else { return }; credential = value; phase = "complete"
         } catch {
-            if issued == nil, let failure = error as? ClaimError, [.changed, .family, .unavailable].contains(failure) {
-                // These typed failures are emitted only by preflight, before issuance.
-                try? await journal.remove(key)
-                if expected == generation { fail(failure, retry: true) }
-            } else if expected == generation {
-                let failure: any Error = issued == nil ? (attempted ? ClaimError.uncertain : (error as? ClaimError ?? .storage)) : error
-                fail(failure, retry: true)
-            }
+            guard expected == generation else { return }
+            let typed = error as? ClaimError
+            fail(attempted && (typed == nil || typed == .connection) ? ClaimError.uncertain : error, retry: true)
         }
+    }
+    private func reconcile(_ receipt: ClaimReceipt, link: NativeClaimLink, service: any ClaimService, key: String) async throws -> ClaimReceipt? {
+        if receipt.uri != nil { return receipt }
+        var resolved = receipt
+        if let requestID = receipt.requestID {
+            guard let uri = try await service.status(link, requestID: requestID) else { return nil }
+            resolved.uri = uri
+        } else {
+            guard let legacy = try await service.reconcile(link, since: receipt.startedAt ?? receivedAt), let uri = legacy.uri else { throw ClaimError.uncertain }
+            resolved.uri = uri
+        }
+        try await journal.write(resolved, key: key)
+        return resolved
     }
     public func lock() {
         generation += 1; service = nil; accountID = nil; credential = nil; error = nil; canRetry = false
         entryMode = .scan; phase = link == nil ? "entry" : "signIn"; isPresented = false
     }
     public func clear() { generation += 1; link = nil; boundAccount = nil; credential = nil; error = nil; canRetry = false; phase = "entry"; isPresented = false }
-    private func fail(_ value: any Error, retry: Bool) { error = value as? ClaimError ?? .connection; canRetry = retry && error != .family && error != .signature; phase = "failed" }
+    private func fail(_ value: any Error, retry: Bool) { error = value as? ClaimError ?? .connection; canRetry = retry && error != .family && error != .signature && error != .expired; phase = "failed" }
 }

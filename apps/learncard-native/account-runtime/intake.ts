@@ -4,6 +4,7 @@ import type { ConsumerWallet } from './consumer-apps';
 import { categoryForClaim } from './claims';
 import { validateCollectionCursor } from './collection-pagination';
 import { extractCredentialsFromText } from '../../../apps/learn-card-app/src/hooks/extractCredentialsFromText';
+import { importSharingPending } from './import-sharing';
 
 export const documentKinds = ['resume', 'certificate', 'transcript', 'diploma'] as const;
 export const MAX_DOCUMENT_BYTES = 4 * 1024 * 1024;
@@ -425,7 +426,7 @@ export const createIntakeCommands = (currentWallet: () => ConsumerWallet | undef
                             );
                             check(lc);
                             if (!uri) throw new IntakeFailure('connection');
-                            await lc.index.LearnCloud.add({
+                            const saved = await lc.index.LearnCloud.add({
                                 id,
                                 uri,
                                 category: item.category,
@@ -433,8 +434,10 @@ export const createIntakeCommands = (currentWallet: () => ConsumerWallet | undef
                                 fileSize: String(pending.size),
                                 fileType: 'JSON',
                                 uploadType: 'rawVC',
+                                nativeImportSharing: importSharingPending,
                             });
                             check(lc);
+                            if (!saved) throw new IntakeFailure('connection');
                             added++;
                         } catch {
                             check(lc);

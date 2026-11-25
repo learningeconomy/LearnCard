@@ -173,7 +173,7 @@ test.each(['inboxList', 'inboxAction'])(
     }
 );
 
-test.each(['claimsPreview', 'claimsIssue', 'claimsFinish', 'claimsReconcile'])(
+test.each(['claimsPreview', 'claimsStatus', 'claimsIssue', 'claimsFinish', 'claimsReconcile'])(
     'native %s handler fails signed-out input without transport',
     async method => {
         const reply = JSON.parse(await account.call(method, {}));

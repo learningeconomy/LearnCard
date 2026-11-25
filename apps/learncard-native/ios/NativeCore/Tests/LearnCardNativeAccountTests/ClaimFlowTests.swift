@@ -10,6 +10,8 @@ private let publicClaim = "https://staging.learncard.app/claim/boost?boostUri=lc
 @MainActor private final class ClaimStub: ClaimService {
     var previews = 0, issues = 0, finishes = 0
     var lostReply = false, failFinish = false, reconcileKnown = false
+    var lookupError: ClaimError?
+    var requestIDs: [UUID] = [], statusIDs: [UUID] = []
     var previewGate: CheckedContinuation<Void, Never>?
     var issueGate: CheckedContinuation<Void, Never>?
     var holdPreview = false, holdIssue = false
@@ -19,13 +21,19 @@ private let publicClaim = "https://staging.learncard.app/claim/boost?boostUri=lc
         if holdPreview { await withCheckedContinuation { previewGate = $0 } }
         return value
     }
-    func issue(_ link: NativeClaimLink) async throws -> ClaimReceipt {
+    func issue(_ link: NativeClaimLink, requestID: UUID) async throws -> ClaimReceipt {
         issues += 1
+        requestIDs.append(requestID)
         if holdIssue { await withCheckedContinuation { issueGate = $0 } }
         if lostReply { throw ClaimError.connection }
         return ClaimReceipt(uri: value.id)
     }
-    func finish(_ receipt: ClaimReceipt) async throws -> Credential { finishes += 1; if failFinish { throw ClaimError.connection }; return value }
+    func finish(_ receipt: ClaimReceipt, link: NativeClaimLink) async throws -> Credential { finishes += 1; if failFinish { throw ClaimError.connection }; return value }
+    func status(_ link: NativeClaimLink, requestID: UUID) throws -> String? {
+        statusIDs.append(requestID)
+        if let lookupError { throw lookupError }
+        return reconcileKnown ? value.id : nil
+    }
     func reconcile(_ link: NativeClaimLink, since: Date) -> ClaimReceipt? { reconcileKnown ? ClaimReceipt(uri: value.id) : nil }
 }
 
@@ -108,9 +116,32 @@ private actor RefusingClaimJournal: ClaimJournal {
         let journal = MemoryClaimJournal(), service = ClaimStub(), first = NativeClaimStore(journal: journal)
         first.connect(service: service, accountID: "alice"); await first.receive(publicClaim); service.lostReply = true
         await first.confirm(); XCTAssertEqual(first.error, .uncertain); XCTAssertEqual(service.issues, 1)
+        service.lookupError = .pending
         let next = NativeClaimStore(journal: journal); next.connect(service: service, accountID: "alice"); await next.receive(publicClaim)
-        XCTAssertEqual(next.error, .uncertain); await next.confirm(); XCTAssertEqual(service.issues, 1)
-        service.reconcileKnown = true; await next.resolve(); XCTAssertEqual(next.phase, "complete"); XCTAssertEqual(service.issues, 1)
+        XCTAssertEqual(next.error, .pending); await next.confirm(); XCTAssertEqual(service.issues, 1)
+        service.lookupError = nil; service.reconcileKnown = true
+        await next.resolve(); XCTAssertEqual(next.phase, "complete"); XCTAssertEqual(service.issues, 1)
+        XCTAssertEqual(service.statusIDs, Array(repeating: service.requestIDs[0], count: 3))
+    }
+    func testAbsentRequestCanBeReviewedAndRetriedWithTheSameID() async throws {
+        let journal = MemoryClaimJournal(), service = ClaimStub(), first = NativeClaimStore(journal: journal)
+        first.connect(service: service, accountID: "alice"); await first.receive(publicClaim)
+        service.lostReply = true; await first.confirm()
+        let next = NativeClaimStore(journal: journal)
+        next.connect(service: service, accountID: "alice"); await next.receive(publicClaim)
+        XCTAssertEqual(next.phase, "review"); XCTAssertEqual(service.issues, 1)
+        service.lostReply = false; await next.confirm()
+        XCTAssertEqual(next.phase, "complete"); XCTAssertEqual(service.issues, 2)
+        XCTAssertEqual(Set(service.requestIDs).count, 1)
+    }
+    func testOldAmbiguousReceiptNeverStartsANewRequest() async throws {
+        let journal = MemoryClaimJournal(), service = ClaimStub(), flow = NativeClaimStore(journal: journal)
+        let key = try NativeClaimLink(publicClaim).receiptKey(accountID: "alice")
+        await journal.write(ClaimReceipt(), key: key)
+        flow.connect(service: service, accountID: "alice"); await flow.receive(publicClaim)
+        XCTAssertEqual(flow.error, .uncertain); XCTAssertTrue(service.statusIDs.isEmpty)
+        await flow.confirm(); XCTAssertEqual(service.issues, 0)
+        service.reconcileKnown = true; await flow.resolve(); XCTAssertEqual(flow.phase, "complete")
     }
     func testLateIssueReceiptIsSavedButCannotUpdateLockedUI() async throws {
         let journal = MemoryClaimJournal(), service = ClaimStub(), flow = NativeClaimStore(journal: journal)

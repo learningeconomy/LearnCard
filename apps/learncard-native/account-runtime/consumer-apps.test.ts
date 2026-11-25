@@ -99,6 +99,7 @@ function fixture() {
                 getPage: async () => ({ records, hasMore: false }),
                 update: async (_id: string, value: unknown) => {
                     updates.push(value);
+                    return true;
                 },
             },
         },

@@ -1,5 +1,12 @@
 # Native regression checks
 
+## Upstream parity — November 25, 2026
+
+- **251 Bun cases** pass across the native runtime and staging SDK fixture suite. New regressions cover exact claim request binding, a completed URI missing from the recent list, automatic delivery to the current full audience, interrupted delivery, and cancellation when the account changes. Intake tests confirm the pending handoff is written with the private index record.
+- **243 Swift cases** pass (28 core XCTest, 182 account XCTest, 33 Swift Testing). Claim tests cover pending and absent requests, the same request ID on retry after relaunch, and safe handling of older receipts.
+- **12 shared coordinator cases** pass for legacy key resolution. This includes the distinction between confirmed absence and failed archive lookup. Native retains the staging web handoff for old accounts that still need that lookup.
+- Native TypeScript source contracts pass with 27 pre-existing dependency diagnostics. Scoped workspace lint and formatting pass.
+
 ## Sync with main — November 25, 2026
 
 Merged `origin/main` at `65e369b10` into the restored `codex/vesper-73` worktree. All 71 merge conflicts were outside `apps/learncard-native` and came from the branch’s older referral base. The resolved tree takes current upstream web, service, documentation and lockfile content. It carries the native app, its manual workflow and two shared contracts needed by the app. The extracted category map initializer is byte-identical to upstream and the public helper retains its exports. The shared age helper preserves the existing native Ireland threshold of 16 in both maps.
