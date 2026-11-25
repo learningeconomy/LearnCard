@@ -1,3 +1,6 @@
+import { generateKeyPairSync, sign, webcrypto } from 'node:crypto';
+import { TextDecoder, TextEncoder } from 'node:util';
+
 import { vi } from 'vitest';
 import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc';
 import { StoredCredentialEnvelopeValidator, isStoredCredentialEnvelope } from '@learncard/types';
@@ -11,9 +14,6 @@ import {
 import { parseSdJwtVc } from '../../plugins/sd-jwt-vc/src/parse';
 import { sha256Hasher } from '../../plugins/sd-jwt-vc/src/hasher';
 import { randomSalt } from '../../plugins/sd-jwt-vc/src/salt';
-
-const { webcrypto } = require('node:crypto');
-const { TextEncoder, TextDecoder } = require('node:util');
 
 if (!globalThis.crypto) {
     Object.assign(globalThis, { crypto: webcrypto });
@@ -57,14 +57,11 @@ const decodeBase64UrlObject = (segment: string): Record<string, unknown> => {
 };
 
 const makeIssuerSigner = async () => {
-    const cryptoModule = require('node:crypto');
-    const { privateKey, publicKey } = cryptoModule.generateKeyPairSync('ed25519');
+    const { privateKey, publicKey } = generateKeyPairSync('ed25519');
     const publicJwk = publicKey.export({ format: 'jwk' }) as Record<string, unknown>;
 
     const signer = async (data: string): Promise<string> => {
-        return cryptoModule
-            .sign(null, Buffer.from(data, 'utf-8'), privateKey)
-            .toString('base64url');
+        return sign(null, Buffer.from(data, 'utf-8'), privateKey).toString('base64url');
     };
 
     return { signer, publicJwk };
@@ -74,9 +71,8 @@ const issueRealSdJwtCompact = async (): Promise<{
     compact: string;
     holderPublicJwk: Record<string, unknown>;
 }> => {
-    const cryptoModule = require('node:crypto');
     const { signer } = await makeIssuerSigner();
-    const holderKeypair = cryptoModule.generateKeyPairSync('ed25519');
+    const holderKeypair = generateKeyPairSync('ed25519');
     const holderPublicJwk = holderKeypair.publicKey.export({
         format: 'jwk',
     }) as Record<string, unknown>;
@@ -113,7 +109,7 @@ const makeSdJwtSynthesisLearnCard = () =>
             parseSdJwtVc,
             verifySdJwtVc: vi.fn().mockResolvedValue({ checks: [], warnings: [], errors: [] }),
         },
-    } as never);
+    }) as never;
 
 type TestCredentialRecord = {
     id: string;
@@ -292,7 +288,7 @@ describe('toStoredCredential — inferred from shape (legacy records)', () => {
             '@context': ['https://www.w3.org/2018/credentials/v1'],
             type: ['VerifiableCredential'],
             proof: [{ type: 'Ed25519Signature2020' }, { type: 'JwtProof2020', jwt: compact }],
-        } as any;
+        };
         const stored = toStoredCredential(make({ vc: wrapper }));
         expect(stored.format).toBe('jwt-vc-json');
         if (stored.format === 'jwt-vc-json') {
@@ -306,7 +302,7 @@ describe('toStoredCredential — inferred from shape (legacy records)', () => {
             '@context': ['https://www.w3.org/ns/credentials/v2'],
             type: ['VerifiableCredential', 'SdJwtVcCredential'],
             proof: [{ type: 'Ed25519Signature2020' }, { type: 'SdJwtCompactProof', jwt: compact }],
-        } as any;
+        };
         const stored = toStoredCredential(make({ vc: wrapper }));
         expect(stored.format).toBe('dc+sd-jwt');
         if (stored.format === 'dc+sd-jwt') {
@@ -575,8 +571,11 @@ describe('StoredCredentialEnvelope', () => {
 
             const vc = projectEnvelopeToDisplayVc({ format: 'dc+sd-jwt', data: tamperedCompact });
 
+            // @sd-jwt/core >= 0.20 rejects the whole disclosure set (GHSA-f9j6-8p6x-r9j6),
+            // so the projection keeps only issuer-payload claims.
+            expect(vc).toBeDefined();
             expect((vc?.credentialSubject as Record<string, unknown>).email).toBeUndefined();
-            expect((vc?.credentialSubject as Record<string, unknown>).given_name).toBeDefined();
+            expect((vc?.credentialSubject as Record<string, unknown>).given_name).toBeUndefined();
         });
 
         it('vc+sd-jwt legacy alias works identically', () => {

@@ -11,7 +11,7 @@ const buildOptions = {
         '@learncard/didkit-plugin',
         '@learncard/types',
         '@learncard/vc-plugin',
-        '@sd-jwt/decode',
+        '@sd-jwt/core',
         '@sd-jwt/sd-jwt-vc',
         'jose',
     ],
