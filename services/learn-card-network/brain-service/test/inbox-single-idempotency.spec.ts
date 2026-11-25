@@ -11,8 +11,10 @@ import { Profile, Credential, InboxCredential, ContactMethod } from '@models';
 import { neogma } from '@instance';
 import cache from '@cache';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
+import * as profileRead from '@accesslayer/profile/read';
 import { createContactMethod } from '@accesslayer/contact-method/create';
 import { createProfileContactMethodRelationship } from '@accesslayer/contact-method/relationships/create';
+import * as batchStore from '@accesslayer/inbox-batch/store';
 import {
     batchReplayStore,
     claimBatchItem,
@@ -22,7 +24,11 @@ import {
     takeInboxDispatches,
     DAY,
 } from '@accesslayer/inbox-batch/store';
-import { fingerprint, inboxItemReplayKey } from '@helpers/inbox-batch.helpers';
+import {
+    fingerprint,
+    inboxItemReplayKey,
+    inboxItemRequestHash,
+} from '@helpers/inbox-batch.helpers';
 import {
     getInboxBatch,
     processInboxQueueMessage,
@@ -165,6 +171,14 @@ describe('single inbox durable idempotency', () => {
             )
         );
         return delivered.filter(credential => credential?.id === id).length;
+    };
+    // A point a test holds a participant at, and lets it pass: no timing is involved.
+    const gate = (): { opened: Promise<void>; open: () => void } => {
+        let open!: () => void;
+        const opened = new Promise<void>(resolve => {
+            open = resolve;
+        });
+        return { opened, open };
     };
     // Other files in the same CI run (e.g. credential-storage.neo4j.spec.ts) create
     // profiles for these default-seed DIDs, so nothing may outlive this file.
@@ -493,6 +507,123 @@ describe('single inbox durable idempotency', () => {
         expect(await issuedCount(substituted)).toBe(0);
         await expectCounts(0);
     }, 30000);
+    it('a waiting item a worker has claimed does not issue after its call is refused as a mismatch and the other owner releases the key', async () => {
+        const key = randomUUID();
+        const replayKey = inboxItemReplayKey(issuerId, key);
+        const input = await inputFor(issuer, key);
+        const substituted = await inputFor(issuer, key, 'Substituted');
+        const ownerEntered = gate();
+        const ownerReleased = gate();
+        const workerClaimed = gate();
+        const workerResumed = gate();
+        const waiting = await admit(input); // This call's own admission item: QUEUED.
+        vi.spyOn(inboxHelpers, 'issueToInbox').mockImplementationOnce(async () => {
+            ownerEntered.open();
+            await ownerReleased.opened; // The other payload's owner holds the key's marker.
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Owner failed preflight.' });
+        });
+        const owner = await issuer.clients.fullAuth.inbox.issueBatch({ items: [substituted] });
+        const owning = processInboxQueueMessage(JSON.stringify({ itemId: `${owner.batchId}:0` }));
+        let worker: Promise<string> | undefined;
+        try {
+            await ownerEntered.opened;
+            // The worker reads the issuer profile right after its claim and before it reserves
+            // the key: hold it there, with the item PROCESSING and nothing reserved.
+            const readProfile = profileRead.getProfileByProfileId;
+            let hold = true;
+            vi.spyOn(profileRead, 'getProfileByProfileId').mockImplementation(async id => {
+                if (hold) {
+                    hold = false;
+                    workerClaimed.open();
+                    await workerResumed.opened;
+                }
+                return readProfile(id);
+            });
+            worker = processInboxQueueMessage(JSON.stringify({ itemId: `${waiting}:0` })).then(
+                () => 'finished',
+                (error: unknown) => (error instanceof Error ? error.message : String(error))
+            );
+            await workerClaimed.opened;
+            expect(await admittedStates(key, owner.batchId)).toEqual(['PROCESSING']);
+            await expect(issuer.clients.fullAuth.inbox.issue(input)).rejects.toMatchObject({
+                code: 'CONFLICT',
+                message: 'This idempotency key was used for a different issuance.',
+            });
+        } finally {
+            ownerReleased.open();
+            await owning;
+        }
+        // The other owner released the key without issuing: it is free when the worker resumes.
+        expect(await readBatchReplay(replayKey)).toBeNull();
+        workerResumed.open();
+        const outcome = await worker;
+        expect(await issuedCount(input)).toBe(0);
+        await expectCounts(0);
+        expect(outcome).toBe('Inbox item lease lost');
+        expect((await getInboxBatch(issuerId, waiting)).items[0]).toMatchObject({
+            state: 'COMPLETED',
+            result: { success: false, error: { code: 'CONFLICT', reason: 'IDEMPOTENCY_MISMATCH' } },
+        });
+        expect(await readBatchReplay(replayKey)).toBeNull();
+        await runLateWorker();
+        await expectCounts(0);
+    }, 30000);
+
+    it('a call that read another owner as holding the key answers in progress once its own claimed item is past the issuance checkpoint', async () => {
+        const key = randomUUID();
+        const replayKey = inboxItemReplayKey(issuerId, key);
+        const input = await inputFor(issuer, key);
+        const substituted = await inputFor(issuer, key, 'Substituted');
+        const ownerEntered = gate();
+        const ownerReleased = gate();
+        const waiting = await admit(input);
+        vi.spyOn(inboxHelpers, 'issueToInbox').mockImplementationOnce(async () => {
+            ownerEntered.open();
+            await ownerReleased.opened;
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Owner failed preflight.' });
+        });
+        const owner = await issuer.clients.fullAuth.inbox.issueBatch({ items: [substituted] });
+        const owning = processInboxQueueMessage(JSON.stringify({ itemId: `${owner.batchId}:0` }));
+        await ownerEntered.opened;
+        // Between the call's read of the key (the other payload's marker) and its look at its
+        // own item: the other owner releases, and this item's worker reserves the key for the
+        // call's own payload and passes the checkpoint after which a delivery may exist.
+        const worker = randomUUID();
+        const readAdmission = batchStore.readBatchAdmission;
+        vi.spyOn(batchStore, 'readBatchAdmission').mockImplementationOnce(async (...args) => {
+            ownerReleased.open();
+            await owning;
+            const claimed = await claimBatchItem(`${waiting}:0`, worker);
+            if (!claimed) throw new Error('Expected fresh lease');
+            expect(
+                await batchReplayStore(claimed.item.id, worker, replayKey).setIfAbsent(
+                    '',
+                    JSON.stringify({
+                        state: 'processing',
+                        owner: worker,
+                        requestHash: inboxItemRequestHash(input),
+                    }),
+                    86400
+                )
+            ).toBe('OK');
+            await markBatchIssuanceStarted(claimed.item.id, worker);
+            return readAdmission(...args);
+        });
+        await expect(issuer.clients.fullAuth.inbox.issue(input)).rejects.toMatchObject({
+            code: 'CONFLICT',
+            message: expect.stringMatching(
+                /^Issuance is in progress or its outcome is unconfirmed/
+            ),
+        });
+        // The item is still its worker's, and so is the key.
+        expect(await admittedStates(key, owner.batchId)).toEqual(['PROCESSING']);
+        expect(JSON.parse((await readBatchReplay(replayKey)) ?? 'null')).toMatchObject({
+            state: 'processing',
+            owner: worker,
+        });
+        await expectCounts(0);
+    }, 30000);
+
     it('a replayed or rejected keyed call admits nothing', async () => {
         const key = randomUUID();
         const input = await inputFor(issuer, key);
