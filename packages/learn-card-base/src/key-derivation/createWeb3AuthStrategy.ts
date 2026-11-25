@@ -22,6 +22,7 @@ import { AuthSessionError } from '@learncard/types';
 import { getLogger } from '../logging/logger';
 import { isNetworkError } from '../helpers/networkError';
 import { ACCOUNT_USES_NEWER_SIGN_IN_MESSAGE } from './accountSignInErrors';
+import { LegacyKeyUnassignedError } from '../auth-coordinator/errors';
 
 const log = getLogger('web3auth-key-derivation');
 const DERIVATION_LOCK = 'learncard:web3auth:key-derivation';
@@ -377,7 +378,7 @@ export const createWeb3AuthStrategy = (
 
         const web3auth = new Web3Auth({
             clientId: config.clientId,
-            web3AuthNetwork: config.web3AuthNetwork as Parameters<
+            web3AuthNetwork: config.web3AuthNetwork as ConstructorParameters<
                 typeof Web3Auth
             >[0]['web3AuthNetwork'],
             privateKeyProvider,
@@ -518,6 +519,13 @@ export const createWeb3AuthStrategy = (
                     throw error;
                 }
                 const message = rawFailureText(error);
+                if (
+                    progress.stage === 'connect' &&
+                    error instanceof Error &&
+                    error.message === 'new key assignment is temporarily disabled'
+                ) {
+                    throw new LegacyKeyUnassignedError();
+                }
                 const tokenAlreadyUsed = /token is used|duplicate token/i.test(message);
                 const networkFailure =
                     !lockWaitTimedOut && (isNetworkError(error) || isNetworkError(message));

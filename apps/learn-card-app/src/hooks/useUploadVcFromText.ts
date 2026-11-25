@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
     useWallet,
     CredentialCategory,
+    invalidateCredentialIndexQueries,
     enqueuePendingContractSyncSafely,
     switchedProfileStore,
     invalidateVisibleCredentialCounts,
@@ -66,6 +67,11 @@ export const useUploadVcFromText = () => {
         void invalidateVisibleCredentialCounts(queryClient, profileDid);
         return queryClient.invalidateQueries({ queryKey: ['useGetCredentialList', profileDid] });
     };
+
+    // Raw imports bypass the add mutations, so refresh the index-backed aggregates (skills, IDs, counts).
+    // Callers fire and forget: the import is done once the index write lands, not after refetches.
+    const refreshCredentialIndex = () =>
+        invalidateCredentialIndexQueries(queryClient, switchedProfileStore.get.switchedDid());
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const isOpenBadgeV2 = (obj: any) => {
@@ -309,7 +315,10 @@ export const useUploadVcFromText = () => {
         }
 
         const addedCount = results.filter(r => r.success).length;
-        if (addedCount > 0) void invalidateCredentialList();
+        if (addedCount > 0) {
+            void invalidateCredentialList();
+            void refreshCredentialIndex();
+        }
         const failedCount = results.length - addedCount;
         const errors = [
             ...extractionErrors,
@@ -379,6 +388,7 @@ export const useUploadVcFromText = () => {
                             category,
                         });
                         void invalidateCredentialList();
+                        void refreshCredentialIndex();
 
                         return {
                             success: true,

@@ -15,6 +15,14 @@ export class RecoveryInProgressError extends Error {
     }
 }
 
+/** The legacy provider definitively reports that it never assigned a key. */
+export class LegacyKeyUnassignedError extends Error {
+    constructor() {
+        super('No legacy key was assigned to this account.');
+        this.name = 'LegacyKeyUnassignedError';
+    }
+}
+
 /**
  * The PIN chosen to replace a PIN with recorded wrong entries is the same PIN. Only a
  * different PIN gets a fresh attempt budget.

@@ -168,7 +168,7 @@ describe('generic contract requests and correlated events', () => {
         async role => {
             const uri = await create();
             const sender = { owner, writer, recipient }[role];
-            await expect(send(uri, sender)).resolves.toBe(true);
+            await expect(send(uri, sender)).resolves.toMatchObject({ status: 'pending' });
             // Inline delivery has a one-second budget; finish persisted work before asserting it.
             await flush(uri);
             expect(await status(uri, sender)).toMatchObject({
@@ -1036,7 +1036,7 @@ describe('generic contract requests and correlated events', () => {
     it('commits state through a transport outage, retries with the same delivery key, and leases overlapping workers', async () => {
         const uri = await create();
         queue.mockRejectedValue(new Error('synthetic outage'));
-        await expect(send(uri)).resolves.toBe(true);
+        await expect(send(uri)).resolves.toMatchObject({ status: 'pending' });
         const request = await status(uri);
         const eventId = request!.requestId!;
         let rows = await eventRows(uri);
@@ -1600,7 +1600,7 @@ describe('generic contract requests and correlated events', () => {
             vi.spyOn(learnCardHelpers, 'getDidWebLearnCard').mockResolvedValue({
                 invoke: { getDidAuthVp: async () => 'synthetic.auth.jwt' },
             } as unknown as Awaited<ReturnType<typeof learnCardHelpers.getDidWebLearnCard>>);
-            await expect(send(uri)).resolves.toBe(true);
+            await expect(send(uri)).resolves.toMatchObject({ status: 'pending' });
             expect(bodies).toHaveLength(1);
             const eventId = (await status(uri))!.requestId!;
             await due(eventId);

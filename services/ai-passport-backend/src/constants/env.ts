@@ -142,8 +142,8 @@ export const QDRANT_HTTPS = process.env.QDRANT_HTTPS === 'true';
 export const QDRANT_API_KEY = process.env.QDRANT_API_KEY;
 
 // AI Model configuration
-export const CHAT_MODEL = process.env.CHAT_MODEL || 'gpt-6.1-sol';
-export const PLANNING_MODEL = process.env.PLANNING_MODEL || 'gpt-6.1-sol';
+export const CHAT_MODEL = process.env.CHAT_MODEL || 'gpt-6.2-sol';
+export const PLANNING_MODEL = process.env.PLANNING_MODEL || 'gpt-6.2-sol';
 export const FORMATTING_MODEL = process.env.FORMATTING_MODEL || 'gpt-6-luna-none';
 export const TITLE_MODEL = process.env.TITLE_MODEL || 'gpt-6-luna-none';
 export const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || 'text-embedding-3-small';

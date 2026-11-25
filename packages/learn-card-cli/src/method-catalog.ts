@@ -189,6 +189,7 @@ export const STATIC_INVOKE_METHODS: readonly string[] = [
     'getConsentedContracts',
     'getContract',
     'getContractConnections',
+    'getContractRequest',
     'getContractSentRequests',
     'getContractVersions',
     'getContracts',

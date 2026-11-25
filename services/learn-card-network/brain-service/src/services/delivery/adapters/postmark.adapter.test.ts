@@ -121,3 +121,36 @@ describe('campaign provider boundary', () => {
         expect(mocks.legacySend).not.toHaveBeenCalled();
     });
 });
+
+describe('contract request invite email', () => {
+    const invite: Notification = {
+        contactMethod: { type: 'email', value: 'invitee@example.com' },
+        templateId: 'contract-request-invite',
+        templateModel: {
+            inviteUrl: 'https://learncard.app',
+            referrer: { name: 'Referrer' },
+            contractOwner: { name: 'Owner' },
+        },
+    };
+
+    it('renders the local template and sends once', async () => {
+        await new PostmarkAdapter('test-key').send(invite);
+        expect(mocks.render).toHaveBeenCalledWith(
+            'contract-request-invite',
+            expect.anything(),
+            invite.templateModel,
+            undefined
+        );
+        expect(mocks.send).toHaveBeenCalledTimes(1);
+        expect(mocks.legacySend).not.toHaveBeenCalled();
+    });
+
+    it('does not fall back to a legacy template and does not log the provider error', async () => {
+        const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        mocks.send.mockRejectedValueOnce(new Error('Illegal address invitee@example.com'));
+        await expect(new PostmarkAdapter('test-key').send(invite)).rejects.toThrow();
+        expect(mocks.legacySend).not.toHaveBeenCalled();
+        expect(error).not.toHaveBeenCalled();
+        error.mockRestore();
+    });
+});

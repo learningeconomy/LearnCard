@@ -145,6 +145,11 @@ const TEMPLATE_FIXTURES: { [K in TemplateId]: TemplateDataMap[K] } = {
         credential: { name: 'Introduction to Biology' },
     },
     'account-sign-in-changed': {},
+    'contract-request-invite': {
+        inviteUrl: 'https://learncard.app',
+        referrer: { name: 'Hire Heroes USA' },
+        contractOwner: { name: 'Hiring Our Heroes' },
+    },
 
     'escrow-hold-started': {
         requestedAt: 'September 25, 2026, 3:00 PM',
@@ -898,5 +903,42 @@ describe('announcement', () => {
             expect(output).toContain(data.unsubscribeUrl);
             expect(output).toContain('Second line');
         }
+    });
+});
+
+describe('renderEmail — contract-request-invite', () => {
+    const data = TEMPLATE_FIXTURES['contract-request-invite'];
+
+    it('names both parties and links to the app', async () => {
+        const { html, text, subject } = await renderEmail(
+            'contract-request-invite',
+            DEFAULT_BRANDING,
+            data
+        );
+        expect(subject).toBe('Hire Heroes USA would like to connect you with Hiring Our Heroes');
+        expect(html).toContain('https://learncard.app');
+        expect(text).toContain('Hire Heroes USA');
+        expect(text).toContain('Hiring Our Heroes');
+        expect(text).toContain('Review request');
+    });
+
+    it('uses neutral wording when a name is missing', async () => {
+        const { text, subject } = await renderEmail('contract-request-invite', DEFAULT_BRANDING, {
+            inviteUrl: 'https://learncard.app',
+            referrer: { name: 'Hire Heroes USA' },
+        });
+        expect(subject).toBe('You have a new connection request');
+        expect(text).not.toContain('Hire Heroes USA');
+    });
+
+    it('renders in Spanish', async () => {
+        const { subject, text } = await renderEmail(
+            'contract-request-invite',
+            DEFAULT_BRANDING,
+            data,
+            'es'
+        );
+        expect(subject).toBe('Hire Heroes USA quiere conectarte con Hiring Our Heroes');
+        expect(text).toContain('Revisar solicitud');
     });
 });

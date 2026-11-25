@@ -5,8 +5,10 @@ import {
     type ContractEventDispatchSummary,
 } from './src/helpers/contract-events.helpers';
 import { runIntegrationEventPass } from './src/helpers/integration-events.helpers';
+import { deliverContractRequestInvites } from './src/helpers/contract-request-invites.helpers';
 
 const MAX_INTEGRATION_PASS_BUDGET_MS = 15_000;
+const MAX_INVITE_DELIVERY_BUDGET_MS = 10_000;
 
 /** Recover committed event intents after process failure; scheduler input cannot alter scope. */
 export const contractEventsHandler = async (
@@ -28,6 +30,16 @@ export const contractEventsHandler = async (
         });
     } catch {
         console.warn('integration_events: pass_failed');
+    }
+
+    // Email-addressed sends are attached or emailed here, off the request path.
+    try {
+        await deliverContractRequestInvites({
+            limit: 50,
+            budgetMs: Math.min(MAX_INVITE_DELIVERY_BUDGET_MS, Math.floor(budgetMs / 4)),
+        });
+    } catch {
+        console.warn('contract_request_invite: delivery_pending');
     }
 
     return dispatchContractEvents({

@@ -7,6 +7,9 @@ import type {
     IntegrationTestEventResult,
     IntegrationEventsResponse,
     PaginatedContractConnections,
+    SendContractRequestResult,
+    ContractRequest,
+    ContractSentRequest,
     ConsentFlowContractRequestForProfile,
     GuardianApprovalRequestStatus,
 } from '@learncard/types';
@@ -33,6 +36,7 @@ import type {
     ConsentFlowContractUpdateResult,
     ConsentFlowContractVersion,
     ConsentFlowConsentStatus,
+    ConsentFlowExternalGrantExpectation,
 } from '@learncard/types';
 import {
     LCNProfile,
@@ -63,6 +67,7 @@ import {
     ShareLinkAttachmentChunkOutput,
     AcknowledgeViewOutput,
     Boost,
+    BoostExclusion,
     BoostQuery,
     LCNSigningAuthorityForUserType,
     LCNBoostClaimLinkSigningAuthorityType,
@@ -506,7 +511,7 @@ export type LearnCardNetworkPluginMethods = {
     /** @deprecated Use getPaginatedBoosts */
     getBoosts: (query?: BoostQuery) => Promise<{ name?: string; uri: string }[]>;
     getPaginatedBoosts: (
-        options?: PaginationOptionsType & { query?: BoostQuery }
+        options?: PaginationOptionsType & { query?: BoostQuery; exclude?: BoostExclusion }
     ) => Promise<PaginatedBoostsType>;
     countBoosts: (query?: BoostQuery) => Promise<number>;
     getBoostChildren: (
@@ -820,7 +825,11 @@ export type LearnCardNetworkPluginMethods = {
         did: string,
         contractUri: string,
         credential: VC | JWE,
-        boostUri: string
+        boostUri: string,
+        options?: {
+            /** Require this external consent revision/hash at the locked delivery gate. */
+            expectedExternalGrant?: ConsentFlowExternalGrantExpectation;
+        }
     ) => Promise<string>;
 
     consentToContract: (
@@ -883,8 +892,14 @@ export type LearnCardNetworkPluginMethods = {
         removedSharedUris: number;
     }>;
 
-    /** Sends one attributed request; identical pending retries are idempotent. */
-    sendContractRequest: (request: SendContractRequest) => Promise<boolean>;
+    /**
+     * Sends one attributed request to a profile (`targetProfileId`) or to an email address
+     * (`targetEmail`); pass exactly one. An identical pending retry returns the same request ID.
+     * A send to an email always answers `pending`, whether or not the email has an account.
+     */
+    sendContractRequest: (request: SendContractRequest) => Promise<SendContractRequestResult>;
+    /** Reads one request by the ID that sendContractRequest returned. */
+    getContractRequest: (contractUri: string, requestId: string) => Promise<ContractRequest>;
     /** Target-only denial preserves the request and its referral reference. */
     denyContractRequest: (contractUri: string) => Promise<boolean>;
 
@@ -900,9 +915,8 @@ export type LearnCardNetworkPluginMethods = {
         childProfileId?: string
     ) => Promise<boolean>;
 
-    getContractSentRequests: (
-        contractUri: string
-    ) => Promise<ConsentFlowContractRequestForProfile[]>;
+    /** A request addressed to an email has no `profile` until it is accepted. */
+    getContractSentRequests: (contractUri: string) => Promise<ContractSentRequest[]>;
 
     getRequestStatusForProfile: (
         targetProfileId: string,
@@ -936,7 +950,11 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<boolean>;
 
     markContractRequestAsSeen: (contractUri: string, targetProfileId: string) => Promise<boolean>;
-    cancelContractRequest: (contractUri: string, targetProfileId: string) => Promise<boolean>;
+    /** Cancel by target profile ID (a string) or by request ID (`{ requestId }`). */
+    cancelContractRequest: (
+        contractUri: string,
+        target: string | { requestId: string }
+    ) => Promise<boolean>;
     /**
      * Snapshot of a contract's current connections (consenters whose terms are live,
      * needs_reconsent or suspended, and not expired). Owner or data recipient only.

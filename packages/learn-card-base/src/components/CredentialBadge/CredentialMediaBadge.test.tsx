@@ -14,6 +14,9 @@ const { getFilestackPreviewUrlMock } = vi.hoisted(() => ({
     getFilestackPreviewUrlMock: vi.fn(),
 }));
 
+vi.mock('learn-card-base/hooks/useRegistry', () => ({
+    useKnownDIDRegistry: () => ({ data: undefined }),
+}));
 vi.mock('learn-card-base', () => ({
     categoryMetadata: {
         accomplishment: {

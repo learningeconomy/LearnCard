@@ -38,6 +38,7 @@ import ShareBoostLink from '../boost-options-menu/ShareBoostLink';
 import NonBoostPreview from '../boostCMS/BoostPreview/NonBoostPreview';
 import IDDisplayCard from 'learn-card-base/components/id/IDDisplayCard';
 import CustomIssuerName from './helpers/CustomIssuerName';
+import { getClrCredentialDisplayTitle } from '../../clr-transcript/ClrTranscriptTitleDisplay';
 import BoostTextSkeleton from 'learn-card-base/components/boost/boostSkeletonLoaders/BoostSkeletons';
 import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
 import CustomBoostTitleDisplay from './helpers/CustomBoostTitleDisplay';
@@ -567,7 +568,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                             />
                         )
                     }
-                    title={title}
+                    title={isCardView ? title : getClrCredentialDisplayTitle(cred, title)}
                     customTitle={customTitle}
                     type={categoryType}
                     categoryType={categoryType}
@@ -644,7 +645,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                                 />
                             </>
                         }
-                        title={title}
+                        title={isCardView ? title : getClrCredentialDisplayTitle(cred, title)}
                         type={type}
                         categoryType={categoryType}
                         boostPageViewMode={boostPageViewMode}
@@ -749,7 +750,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                             />
                         )
                     }
-                    title={title}
+                    title={isCardView ? title : getClrCredentialDisplayTitle(cred, title)}
                     customTitle={customTitle}
                     type={categoryType}
                     categoryType={categoryType}

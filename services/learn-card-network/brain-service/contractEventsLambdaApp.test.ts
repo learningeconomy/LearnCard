@@ -1,13 +1,18 @@
 import type { Context } from 'aws-lambda';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { dispatchContractEvents, runIntegrationEventPass } = vi.hoisted(() => ({
-    dispatchContractEvents: vi.fn(),
-    runIntegrationEventPass: vi.fn(),
-}));
+const { dispatchContractEvents, runIntegrationEventPass, deliverContractRequestInvites } =
+    vi.hoisted(() => ({
+        dispatchContractEvents: vi.fn(),
+        runIntegrationEventPass: vi.fn(),
+        deliverContractRequestInvites: vi.fn(),
+    }));
 
 vi.mock('./src/helpers/contract-events.helpers', () => ({ dispatchContractEvents }));
 vi.mock('./src/helpers/integration-events.helpers', () => ({ runIntegrationEventPass }));
+vi.mock('./src/helpers/contract-request-invites.helpers', () => ({
+    deliverContractRequestInvites,
+}));
 
 import { contractEventsHandler } from './contractEventsLambdaApp';
 
@@ -19,6 +24,7 @@ describe('contractEventsHandler', () => {
     beforeEach(() => {
         dispatchContractEvents.mockReset().mockResolvedValue(summary);
         runIntegrationEventPass.mockReset().mockResolvedValue({ events: 0, records: 0 });
+        deliverContractRequestInvites.mockReset().mockResolvedValue(0);
         vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     });
 
@@ -89,5 +95,24 @@ describe('contractEventsHandler', () => {
             limit: 100,
             budgetMs: 14_000,
         });
+    });
+
+    it('delivers email invites between the integration pass and dispatch, and survives a failure', async () => {
+        const order: string[] = [];
+        runIntegrationEventPass.mockImplementation(async () => {
+            order.push('integration');
+            return { events: 0, records: 0 };
+        });
+        deliverContractRequestInvites.mockImplementation(async () => {
+            order.push('invites');
+            throw new Error('synthetic');
+        });
+        dispatchContractEvents.mockImplementation(async () => {
+            order.push('dispatch');
+            return summary;
+        });
+        await contractEventsHandler({}, contextWith(60_000));
+        expect(order).toEqual(['integration', 'invites', 'dispatch']);
+        expect(deliverContractRequestInvites).toHaveBeenCalledWith({ limit: 50, budgetMs: 10_000 });
     });
 });

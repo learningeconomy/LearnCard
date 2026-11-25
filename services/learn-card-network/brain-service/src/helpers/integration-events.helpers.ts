@@ -30,7 +30,7 @@ export {
     encodeIntegrationEventCursor,
 } from './integration-event-cursor.helpers';
 
-const defaultDomain = (): string => environment.DOMAIN_NAME ?? 'network.learncard.com';
+export const defaultDomain = (): string => environment.DOMAIN_NAME ?? 'network.learncard.com';
 
 const optionalString = (value: unknown): string | undefined =>
     typeof value === 'string' && value.length > 0 ? value : undefined;
@@ -63,6 +63,7 @@ export const toIntegrationEvent = (record: Record<string, unknown>): Integration
     const requestId = optionalString(record.requestId);
     const externalReferenceId = optionalString(record.externalReferenceId);
     const reason = optionalString(record.reason);
+    const category = optionalString(record.category);
 
     return IntegrationEventValidator.parse({
         eventId: record.eventId,
@@ -77,6 +78,7 @@ export const toIntegrationEvent = (record: Record<string, unknown>): Integration
         ...(requestId ? { requestId } : {}),
         ...(externalReferenceId ? { externalReferenceId } : {}),
         ...(reason ? { reason } : {}),
+        ...(category ? { category } : {}),
         role: record.role,
         occurredAt: record.occurredAt,
     });
@@ -153,6 +155,7 @@ const REQUEST_EVENT_TYPES: IntegrationEventType[] = [
     'request_sent',
     'request_denied',
     'request_cancelled',
+    'request_expired',
 ];
 
 const unique = (values: (string | undefined | null)[]): string[] => [
@@ -336,6 +339,7 @@ const fanOutEvent = async (event: Record<string, unknown>): Promise<number> => {
                     type: type.data,
                     termsUri: role === 'requester' ? undefined : termsUri,
                     reason: optionalString(event.reason),
+                    category: optionalString(event.category),
                 }
             );
             if (wasCreated) created++;

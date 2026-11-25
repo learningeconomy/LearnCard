@@ -5,13 +5,13 @@ import {
     parseOpenAIModelAlias,
 } from './providers';
 
-const solModels = ['gpt-6.1-sol', 'us.openai.gpt-6.1-sol'];
+const solModels = ['gpt-6.2-sol', 'us.openai.gpt-6.2-sol'];
 const lunaModels = ['gpt-6-luna', 'us.openai.gpt-6-luna'];
 const solEfforts = ['low', 'medium', 'high', 'xhigh', 'max'] as const;
 const lunaEfforts = ['none', ...solEfforts] as const;
 
 // These helpers validate first-party/configuration values, not Bedrock acceptance.
-describe('first-party Sol6.1 and Luna reasoning configuration contracts', () => {
+describe('first-party Sol6.2 and Luna reasoning configuration contracts', () => {
     it.each([...solModels, ...lunaModels])(
         'uses the documented medium default without an explicit effort for %s',
         model => {
@@ -48,10 +48,10 @@ describe('first-party Sol6.1 and Luna reasoning configuration contracts', () => 
     }
 
     it.each([
-        'gpt-6.1-sol-none',
-        'us.openai.gpt-6.1-sol-none',
-        'gpt-6.1-sol-minimal',
-        'us.openai.gpt-6.1-sol-minimal',
+        'gpt-6.2-sol-none',
+        'us.openai.gpt-6.2-sol-none',
+        'gpt-6.2-sol-minimal',
+        'us.openai.gpt-6.2-sol-minimal',
         'gpt-6-luna-minimal',
         'us.openai.gpt-6-luna-minimal',
     ])('rejects unsupported aliases instead of substituting an effort for %s', model => {

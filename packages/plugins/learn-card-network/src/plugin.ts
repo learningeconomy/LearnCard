@@ -2969,7 +2969,8 @@ export async function getLearnCardNetworkPlugin(
                 did,
                 contractUri,
                 credential,
-                boostUri
+                boostUri,
+                options
             ) => {
                 await ensureUser();
 
@@ -2978,6 +2979,9 @@ export async function getLearnCardNetworkPlugin(
                     contractUri,
                     credential,
                     boostUri,
+                    ...(options?.expectedExternalGrant !== undefined
+                        ? { expectedExternalGrant: options.expectedExternalGrant }
+                        : {}),
                 });
             },
 
@@ -3096,6 +3100,10 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
                 return client.contracts.sendContractRequest.mutate(request);
             },
+            getContractRequest: async (_learnCard, contractUri, requestId) => {
+                await ensureUser();
+                return client.contracts.getContractRequest.query({ contractUri, requestId });
+            },
             denyContractRequest: async (_learnCard, contractUri) => {
                 await ensureUser();
                 return client.contracts.denyContractRequest.mutate({ contractUri });
@@ -3193,13 +3201,14 @@ export async function getLearnCardNetworkPlugin(
                 });
             },
 
-            cancelContractRequest: async (_learnCard, contractUri, targetProfileId) => {
+            cancelContractRequest: async (_learnCard, contractUri, target) => {
                 await ensureUser();
 
-                return client.contracts.cancelContractRequest.mutate({
-                    contractUri,
-                    targetProfileId,
-                });
+                return client.contracts.cancelContractRequest.mutate(
+                    typeof target === 'string'
+                        ? { contractUri, targetProfileId: target }
+                        : { contractUri, requestId: target.requestId }
+                );
             },
 
             getContractConnections: async (_learnCard, contractUri, options = {}) => {
