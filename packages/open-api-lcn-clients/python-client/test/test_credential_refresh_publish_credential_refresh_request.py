@@ -38,6 +38,7 @@ class TestCredentialRefreshPublishCredentialRefreshRequest(unittest.TestCase):
                 refresh_id = '0',
                 notify_holder = True,
                 update_summary = '',
+                update_reason = 'corrected',
                 idempotency_key = '',
                 mode = 'signing-authority',
                 signed_credential = {

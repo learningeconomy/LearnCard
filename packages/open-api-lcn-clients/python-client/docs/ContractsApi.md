@@ -21,6 +21,8 @@ All URIs are relative to _/api_
 | [**contracts_get_consented_data**](ContractsApi.md#contracts_get_consented_data)                                                                 | **POST** /consent-flow-contract/data                                 | Get the data that has been consented for all of your contracts               |
 | [**contracts_get_consented_data_for_contract**](ContractsApi.md#contracts_get_consented_data_for_contract)                                       | **POST** /consent-flow-contract/data-for-contract                    | Get the data that has been consented for a contract                          |
 | [**contracts_get_consented_data_for_did**](ContractsApi.md#contracts_get_consented_data_for_did)                                                 | **POST** /consent-flow-contract/data-for-did                         | Get the data that has been consented by a did                                |
+| [**contracts_get_contract_connections**](ContractsApi.md#contracts_get_contract_connections)                                                     | **GET** /consent-flow-contracts/connections                          | Get the current connections of a contract                                    |
+| [**contracts_get_contract_request**](ContractsApi.md#contracts_get_contract_request)                                                             | **GET** /consent-flow-contracts/request                              | Get one contract request by its request ID                                   |
 | [**contracts_get_contract_sent_requests**](ContractsApi.md#contracts_get_contract_sent_requests)                                                 | **GET** /consent-flow-contracts/sent-requests                        | Get requests sent for a given contract                                       |
 | [**contracts_get_credentials_for_contract**](ContractsApi.md#contracts_get_credentials_for_contract)                                             | **POST** /consent-flow-contract/credentials                          | Get credentials issued via a contract                                        |
 | [**contracts_get_request_status_for_profile**](ContractsApi.md#contracts_get_request_status_for_profile)                                         | **GET** /consent-flow-contracts/request-status                       | Get request status for a specific profile under a contract                   |
@@ -200,11 +202,11 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 # **contracts_cancel_contract_request**
 
-> bool contracts_cancel_contract_request(contracts_mark_contract_request_as_seen_request)
+> bool contracts_cancel_contract_request(contracts_cancel_contract_request_request)
 
 Cancels/removes a contract request
 
-Cancels a pending generic request while retaining its history. Owner/writers, the requesting recipient, or the target may cancel. Legacy requests retain deletion behavior.
+Cancels a pending generic request while retaining its history. Owner/writers, the requesting recipient, or the target may cancel. Pass requestId, or targetProfileId for a request addressed to a profile. Legacy requests retain deletion behavior.
 
 ### Example
 
@@ -212,7 +214,7 @@ Cancels a pending generic request while retaining its history. Owner/writers, th
 
 ```python
 import openapi_client
-from openapi_client.models.contracts_mark_contract_request_as_seen_request import ContractsMarkContractRequestAsSeenRequest
+from openapi_client.models.contracts_cancel_contract_request_request import ContractsCancelContractRequestRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -236,11 +238,11 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ContractsApi(api_client)
-    contracts_mark_contract_request_as_seen_request = openapi_client.ContractsMarkContractRequestAsSeenRequest() # ContractsMarkContractRequestAsSeenRequest |
+    contracts_cancel_contract_request_request = openapi_client.ContractsCancelContractRequestRequest() # ContractsCancelContractRequestRequest |
 
     try:
         # Cancels/removes a contract request
-        api_response = api_instance.contracts_cancel_contract_request(contracts_mark_contract_request_as_seen_request)
+        api_response = api_instance.contracts_cancel_contract_request(contracts_cancel_contract_request_request)
         print("The response of ContractsApi->contracts_cancel_contract_request:\n")
         pprint(api_response)
     except Exception as e:
@@ -249,9 +251,9 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-| Name                                                | Type                                                                                          | Description | Notes |
-| --------------------------------------------------- | --------------------------------------------------------------------------------------------- | ----------- | ----- |
-| **contracts_mark_contract_request_as_seen_request** | [**ContractsMarkContractRequestAsSeenRequest**](ContractsMarkContractRequestAsSeenRequest.md) |             |
+| Name                                          | Type                                                                                  | Description | Notes |
+| --------------------------------------------- | ------------------------------------------------------------------------------------- | ----------- | ----- |
+| **contracts_cancel_contract_request_request** | [**ContractsCancelContractRequestRequest**](ContractsCancelContractRequestRequest.md) |             |
 
 ### Return type
 
@@ -764,7 +766,7 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 Get all contract requests for a target profile
 
-Gets all contract requests from all contracts for a specified target profile. Users can query their own requests.
+Gets all contract requests from all contracts for a specified target profile. Users can query their own requests. Requests that were sent to a verified email of the profile are attached first (at most 20 per call).
 
 ### Example
 
@@ -1406,13 +1408,181 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **contracts_get_contract_connections**
+
+> ContractsGetContractConnections200Response contracts_get_contract_connections(contract_uri, limit=limit, cursor=cursor)
+
+Get the current connections of a contract
+
+Snapshot of who is currently connected to a contract: one record per consenter whose terms are live, awaiting re-consent or suspended, and not expired. Identifiers only. To stay in sync, read `latestCursor` from the Integration event feed, page through this snapshot, then follow the feed from that cursor; take a new snapshot when the feed answers CURSOR_EXPIRED. The caller must be the contract owner, a contract writer or a data recipient. A profile that only sent a referral and is no longer a data recipient cannot read it, and receives no consent events for the contract either. Each request reads a bounded number of rows, so a page can hold fewer than `limit` records, or none, while `hasMore` is true: keep following `cursor` until `hasMore` is false.
+
+### Example
+
+- Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.contracts_get_contract_connections200_response import ContractsGetContractConnections200Response
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.ContractsApi(api_client)
+    contract_uri = 'contract_uri_example' # str |
+    limit = 100 # int |  (optional) (default to 100)
+    cursor = 'cursor_example' # str |  (optional)
+
+    try:
+        # Get the current connections of a contract
+        api_response = api_instance.contracts_get_contract_connections(contract_uri, limit=limit, cursor=cursor)
+        print("The response of ContractsApi->contracts_get_contract_connections:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ContractsApi->contracts_get_contract_connections: %s\n" % e)
+```
+
+### Parameters
+
+| Name             | Type    | Description | Notes                       |
+| ---------------- | ------- | ----------- | --------------------------- |
+| **contract_uri** | **str** |             |
+| **limit**        | **int** |             | [optional] [default to 100] |
+| **cursor**       | **str** |             | [optional]                  |
+
+### Return type
+
+[**ContractsGetContractConnections200Response**](ContractsGetContractConnections200Response.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **404**     | Not found                  | -                |
+| **500**     | Internal server error      | -                |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **contracts_get_contract_request**
+
+> ContractsGetContractRequest200Response contracts_get_contract_request(contract_uri, request_id)
+
+Get one contract request by its request ID
+
+Returns the status of a request sent with sendContractRequest. A request addressed to an email shows only that email until it is accepted.
+
+### Example
+
+- Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.contracts_get_contract_request200_response import ContractsGetContractRequest200Response
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.ContractsApi(api_client)
+    contract_uri = 'contract_uri_example' # str |
+    request_id = 'request_id_example' # str |
+
+    try:
+        # Get one contract request by its request ID
+        api_response = api_instance.contracts_get_contract_request(contract_uri, request_id)
+        print("The response of ContractsApi->contracts_get_contract_request:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ContractsApi->contracts_get_contract_request: %s\n" % e)
+```
+
+### Parameters
+
+| Name             | Type    | Description | Notes |
+| ---------------- | ------- | ----------- | ----- |
+| **contract_uri** | **str** |             |
+| **request_id**   | **str** |             |
+
+### Return type
+
+[**ContractsGetContractRequest200Response**](ContractsGetContractRequest200Response.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **404**     | Not found                  | -                |
+| **500**     | Internal server error      | -                |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **contracts_get_contract_sent_requests**
 
 > List[ContractsGetContractSentRequests200ResponseInner] contracts_get_contract_sent_requests(contract_uri)
 
 Get requests sent for a given contract
 
-Gets a list of users and their request statuses for a given contract.
+Gets a list of requests and their statuses for a given contract. A request addressed to an email has no profile and shows target.email until it is accepted.
 
 ### Example
 
@@ -1574,7 +1744,7 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 Get request status for a specific profile under a contract
 
-Returns the request status and read status for a given profile in a specific contract.
+Returns the request status and read status for a given profile in a specific contract. A request addressed to an email is returned only to its target until it is accepted; use getContractRequest with the request ID instead.
 
 ### Example
 
@@ -2215,9 +2385,11 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 # **contracts_send_contract_request**
 
-> bool contracts_send_contract_request(contracts_send_contract_request_request)
+> ContractsSendContractRequest200Response contracts_send_contract_request(contracts_send_contract_request_request)
 
 Send an attributed contract request
+
+Send to a profile (targetProfileId) or to an email address (targetEmail), never both. Returns the request ID. An email-addressed send always answers pending.
 
 ### Example
 
@@ -2225,6 +2397,7 @@ Send an attributed contract request
 
 ```python
 import openapi_client
+from openapi_client.models.contracts_send_contract_request200_response import ContractsSendContractRequest200Response
 from openapi_client.models.contracts_send_contract_request_request import ContractsSendContractRequestRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
@@ -2268,7 +2441,7 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 ### Return type
 
-**bool**
+[**ContractsSendContractRequest200Response**](ContractsSendContractRequest200Response.md)
 
 ### Authorization
 

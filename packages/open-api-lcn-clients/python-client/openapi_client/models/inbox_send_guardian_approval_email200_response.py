@@ -17,7 +17,7 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List
 from typing import Optional, Set
 from typing_extensions import Self
@@ -29,8 +29,16 @@ class InboxSendGuardianApprovalEmail200Response(BaseModel):
     """ # noqa: E501
     message: StrictStr
     approval_url: StrictStr = Field(alias="approvalUrl")
+    status: StrictStr
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["message", "approvalUrl"]
+    __properties: ClassVar[List[str]] = ["message", "approvalUrl", "status"]
+
+    @field_validator('status')
+    def status_validate_enum(cls, value):
+        """Validates the enum"""
+        if value not in set(['accepted']):
+            raise ValueError("must be one of enum values ('accepted')")
+        return value
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -90,7 +98,8 @@ class InboxSendGuardianApprovalEmail200Response(BaseModel):
 
         _values = {
             "message": obj.get("message"),
-            "approvalUrl": obj.get("approvalUrl")
+            "approvalUrl": obj.get("approvalUrl"),
+            "status": obj.get("status")
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

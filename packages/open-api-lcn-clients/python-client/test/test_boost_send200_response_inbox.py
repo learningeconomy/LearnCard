@@ -37,9 +37,8 @@ class TestBoostSend200ResponseInbox(unittest.TestCase):
             return BoostSend200ResponseInbox(
                 refresh = openapi_client.models.boost_send_200_response_inbox_refresh.boost_send_200_response_inbox_refresh(
                     refresh_id = '0', 
-                    refresh_service = {
-                        'key' : null
-                        }, 
+                    refresh_service = null, 
+                    refresh_service_binding = 'managed-entry', 
                     credential_id = '0', 
                     issuer_did = '0', 
                     credential_status = null, 

@@ -2,11 +2,12 @@
 
 ## Properties
 
-| Name               | Type                                                                                                                                                                                          | Description | Notes      |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
-| **read**           | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsRead**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsRead.md) |             |
-| **write**          | [**StorageResolve200ResponseAnyOf1Write**](StorageResolve200ResponseAnyOf1Write.md)                                                                                                           |             |
-| **denied_writers** | **List[str]**                                                                                                                                                                                 |             | [optional] |
+| Name               | Type                                                                                                                                                                                                            | Description | Notes      |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **external_grant** | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsExternalGrant**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsExternalGrant.md) |             | [optional] |
+| **read**           | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsRead**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsRead.md)                   |             |
+| **write**          | [**StorageResolve200ResponseAnyOf1Write**](StorageResolve200ResponseAnyOf1Write.md)                                                                                                                             |             |
+| **denied_writers** | **List[str]**                                                                                                                                                                                                   |             | [optional] |
 
 ## Example
 

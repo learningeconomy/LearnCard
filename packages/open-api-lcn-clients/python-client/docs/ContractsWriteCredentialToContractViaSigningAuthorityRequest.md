@@ -2,12 +2,13 @@
 
 ## Properties
 
-| Name                  | Type                                                                                                                        | Description | Notes |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
-| **did**               | **str**                                                                                                                     |             |
-| **contract_uri**      | **str**                                                                                                                     |             |
-| **boost_uri**         | **str**                                                                                                                     |             |
-| **signing_authority** | [**BoostSendBoostViaSigningAuthorityRequestSigningAuthority**](BoostSendBoostViaSigningAuthorityRequestSigningAuthority.md) |             |
+| Name                        | Type                                                                                                                                                                          | Description | Notes      |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **did**                     | **str**                                                                                                                                                                       |             |
+| **contract_uri**            | **str**                                                                                                                                                                       |             |
+| **boost_uri**               | **str**                                                                                                                                                                       |             |
+| **signing_authority**       | [**BoostSendBoostViaSigningAuthorityRequestSigningAuthority**](BoostSendBoostViaSigningAuthorityRequestSigningAuthority.md)                                                   |             |
+| **expected_external_grant** | [**ContractsWriteCredentialToContractViaSigningAuthorityRequestExpectedExternalGrant**](ContractsWriteCredentialToContractViaSigningAuthorityRequestExpectedExternalGrant.md) |             | [optional] |
 
 ## Example
 

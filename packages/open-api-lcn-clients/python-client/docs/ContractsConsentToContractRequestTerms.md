@@ -2,11 +2,12 @@
 
 ## Properties
 
-| Name               | Type                                                                                              | Description | Notes      |
-| ------------------ | ------------------------------------------------------------------------------------------------- | ----------- | ---------- |
-| **read**           | [**ContractsConsentToContractRequestTermsRead**](ContractsConsentToContractRequestTermsRead.md)   |             | [optional] |
-| **write**          | [**ContractsConsentToContractRequestTermsWrite**](ContractsConsentToContractRequestTermsWrite.md) |             | [optional] |
-| **denied_writers** | **List[str]**                                                                                     |             | [optional] |
+| Name               | Type                                                                                                                                                                                                            | Description | Notes      |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **external_grant** | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsExternalGrant**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsExternalGrant.md) |             | [optional] |
+| **read**           | [**ContractsConsentToContractRequestTermsRead**](ContractsConsentToContractRequestTermsRead.md)                                                                                                                 |             | [optional] |
+| **write**          | [**ContractsConsentToContractRequestTermsWrite**](ContractsConsentToContractRequestTermsWrite.md)                                                                                                               |             | [optional] |
+| **denied_writers** | **List[str]**                                                                                                                                                                                                   |             | [optional] |
 
 ## Example
 

@@ -93,6 +93,10 @@ class CredentialSharePreviewsPublishRequest(BaseModel):
                 _dict[_key] = _value
 
         # Preserve a supplied nullable value.
+        if self.image is None and "image" in self.model_fields_set and "image" not in excluded_fields:
+            _dict['image'] = None
+
+        # Preserve a supplied nullable value.
         if self.id is None and "id" in self.model_fields_set and "id" not in excluded_fields:
             _dict['id'] = None
 

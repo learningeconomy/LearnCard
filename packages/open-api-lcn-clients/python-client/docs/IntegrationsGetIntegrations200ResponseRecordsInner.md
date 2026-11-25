@@ -2,18 +2,21 @@
 
 ## Properties
 
-| Name                    | Type                                                                                                                              | Description | Notes                |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----------- | -------------------- |
-| **id**                  | **str**                                                                                                                           |             |
-| **name**                | **str**                                                                                                                           |             |
-| **description**         | **str**                                                                                                                           |             | [optional]           |
-| **publishable_key**     | **str**                                                                                                                           |             |
-| **whitelisted_domains** | [**List[IntegrationsAddIntegrationRequestWhitelistedDomainsInner]**](IntegrationsAddIntegrationRequestWhitelistedDomainsInner.md) |             | [default to []]      |
-| **status**              | **str**                                                                                                                           |             | [default to 'setup'] |
-| **guide_type**          | **str**                                                                                                                           |             | [optional]           |
-| **guide_state**         | **Dict[str, Optional[object]]**                                                                                                   |             | [optional]           |
-| **created_at**          | **str**                                                                                                                           |             | [optional]           |
-| **updated_at**          | **str**                                                                                                                           |             | [optional]           |
+| Name                           | Type                                                                                                                              | Description | Notes                |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- | ----------- | -------------------- |
+| **id**                         | **str**                                                                                                                           |             |
+| **name**                       | **str**                                                                                                                           |             |
+| **description**                | **str**                                                                                                                           |             | [optional]           |
+| **publishable_key**            | **str**                                                                                                                           |             |
+| **whitelisted_domains**        | [**List[IntegrationsAddIntegrationRequestWhitelistedDomainsInner]**](IntegrationsAddIntegrationRequestWhitelistedDomainsInner.md) |             | [default to []]      |
+| **webhook_url**                | **str**                                                                                                                           |             | [optional]           |
+| **has_webhook_secret**         | **bool**                                                                                                                          |             | [optional]           |
+| **contract_events_enabled_at** | **str**                                                                                                                           |             | [optional]           |
+| **status**                     | **str**                                                                                                                           |             | [default to 'setup'] |
+| **guide_type**                 | **str**                                                                                                                           |             | [optional]           |
+| **guide_state**                | **Dict[str, Optional[object]]**                                                                                                   |             | [optional]           |
+| **created_at**                 | **str**                                                                                                                           |             | [optional]           |
+| **updated_at**                 | **str**                                                                                                                           |             | [optional]           |
 
 ## Example
 

@@ -34,8 +34,9 @@ class CredentialRefreshGetCredentialRefreshHistory200ResponseRecordsInner(BaseMo
     etag: Optional[StrictStr] = None
     signing_mode: Optional[StrictStr] = Field(default=None, alias="signingMode")
     update_summary: Optional[StrictStr] = Field(default=None, alias="updateSummary")
+    update_reason: Optional[StrictStr] = Field(default=None, alias="updateReason")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["version", "publishedAt", "effectiveAt", "etag", "signingMode", "updateSummary"]
+    __properties: ClassVar[List[str]] = ["version", "publishedAt", "effectiveAt", "etag", "signingMode", "updateSummary", "updateReason"]
 
     @field_validator('signing_mode')
     def signing_mode_validate_enum(cls, value):
@@ -45,6 +46,16 @@ class CredentialRefreshGetCredentialRefreshHistory200ResponseRecordsInner(BaseMo
 
         if value not in set(['issuer-signed', 'signing-authority']):
             raise ValueError("must be one of enum values ('issuer-signed', 'signing-authority')")
+        return value
+
+    @field_validator('update_reason')
+    def update_reason_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['corrected', 'updated', 'reissued']):
+            raise ValueError("must be one of enum values ('corrected', 'updated', 'reissued')")
         return value
 
     model_config = ConfigDict(
@@ -109,7 +120,8 @@ class CredentialRefreshGetCredentialRefreshHistory200ResponseRecordsInner(BaseMo
             "effectiveAt": obj.get("effectiveAt"),
             "etag": obj.get("etag"),
             "signingMode": obj.get("signingMode"),
-            "updateSummary": obj.get("updateSummary")
+            "updateSummary": obj.get("updateSummary"),
+            "updateReason": obj.get("updateReason")
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

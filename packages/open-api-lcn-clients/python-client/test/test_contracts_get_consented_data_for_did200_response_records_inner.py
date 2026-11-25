@@ -61,6 +61,11 @@ class TestContractsGetConsentedDataForDid200ResponseRecordsInner(unittest.TestCa
                 status = 'live',
                 expires_at = '',
                 terms = openapi_client.models.storage_resolve_200_response_any_of_1.storage_resolve_200_response_anyOf_1(
+                    external_grant = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_terms_external_grant.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_terms_externalGrant(
+                        issuer = 'k0', 
+                        ref = 'k0', 
+                        revision = 0, 
+                        hash = 'k0', ), 
                     read = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_terms_read.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_terms_read(
                         anonymize = True, 
                         credentials = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_terms_read_credentials.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_terms_read_credentials(
@@ -114,6 +119,11 @@ class TestContractsGetConsentedDataForDid200ResponseRecordsInner(unittest.TestCa
                 terms_uri = '',
                 status = 'live',
                 terms = openapi_client.models.storage_resolve_200_response_any_of_1.storage_resolve_200_response_anyOf_1(
+                    external_grant = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_terms_external_grant.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_terms_externalGrant(
+                        issuer = 'k0', 
+                        ref = 'k0', 
+                        revision = 0, 
+                        hash = 'k0', ), 
                     read = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_terms_read.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_terms_read(
                         anonymize = True, 
                         credentials = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_terms_read_credentials.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_terms_read_credentials(

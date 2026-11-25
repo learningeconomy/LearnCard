@@ -35,6 +35,11 @@ class TestCredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTerms(u
         model = CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTerms()
         if include_optional:
             return CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTerms(
+                external_grant = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_terms_external_grant.credential_getHolderExportMetadata_200_response_consentRecords_inner_terms_externalGrant(
+                    issuer = 'k0', 
+                    ref = 'k0', 
+                    revision = 0, 
+                    hash = 'k0', ),
                 read = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_terms_read.credential_getHolderExportMetadata_200_response_consentRecords_inner_terms_read(
                     anonymize = True, 
                     credentials = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_terms_read_credentials.credential_getHolderExportMetadata_200_response_consentRecords_inner_terms_read_credentials(

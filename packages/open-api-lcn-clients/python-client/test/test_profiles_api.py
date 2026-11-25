@@ -40,6 +40,13 @@ class TestProfilesApi(unittest.TestCase):
         """
         pass
 
+    def test_inbox_get_guardian_approval_status(self) -> None:
+        """Test case for inbox_get_guardian_approval_status
+
+        Get Guardian Approval Email Status
+        """
+        pass
+
     def test_inbox_send_guardian_approval_email(self) -> None:
         """Test case for inbox_send_guardian_approval_email
 
