@@ -569,7 +569,7 @@ describe('single inbox durable idempotency', () => {
         await expectCounts(0);
     }, 30000);
 
-    it('a call that read another owner as holding the key answers in progress once its own claimed item is past the issuance checkpoint', async () => {
+    it('a call that read another owner as holding the key answers in progress once its own claimed item has reserved the key', async () => {
         const key = randomUUID();
         const replayKey = inboxItemReplayKey(issuerId, key);
         const input = await inputFor(issuer, key);
@@ -587,7 +587,7 @@ describe('single inbox durable idempotency', () => {
         await ownerEntered.opened;
         // Between the call's read of the key (the other payload's marker) and its look at its
         // own item: the other owner releases, and this item's worker reserves the key for the
-        // call's own payload and passes the checkpoint after which a delivery may exist.
+        // call's own payload.
         const worker = randomUUID();
         const readAdmission = batchStore.readBatchAdmission;
         vi.spyOn(batchStore, 'readBatchAdmission').mockImplementationOnce(async (...args) => {
@@ -606,7 +606,6 @@ describe('single inbox durable idempotency', () => {
                     86400
                 )
             ).toBe('OK');
-            await markBatchIssuanceStarted(claimed.item.id, worker);
             return readAdmission(...args);
         });
         await expect(issuer.clients.fullAuth.inbox.issue(input)).rejects.toMatchObject({

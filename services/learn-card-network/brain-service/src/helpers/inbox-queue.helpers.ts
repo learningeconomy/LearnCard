@@ -306,7 +306,7 @@ export const issueKeyedInboxCredential = async (
     // A refusal must also hold against a worker that has claimed the item and has not reserved
     // the key yet: if the record this call was refused against is released, that worker would
     // find the key free and issue the refused payload. The store decides in one guarded step.
-    // False: the item's worker is already past its issuance checkpoint.
+    // False: the item's worker has already reserved the key.
     const rejectWaiting = async (result: IssueInboxCredentialBatchItemResult): Promise<boolean> => {
         const admission = await ownAdmission();
         if (admission?.state !== 'QUEUED' && admission?.state !== 'PROCESSING') return true;
@@ -330,8 +330,8 @@ export const issueKeyedInboxCredential = async (
                     recipient: input.recipient,
                 });
                 if (!rejected) {
-                    // This call's own item is being issued, so the record read above no longer
-                    // holds the key: answer from the record that does.
+                    // This call's own item has reserved the key since the record above was
+                    // read: answer from the record that holds the key now.
                     const current = await readBatchReplay(replayKey);
                     if (current !== null)
                         return IssueInboxCredentialResponseValidator.parse(

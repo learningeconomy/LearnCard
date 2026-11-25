@@ -346,12 +346,12 @@ export const settleQueuedBatchItem = async (
 };
 
 /** Records a refusal on a waiting item so that it can no longer issue: an unowned QUEUED item,
- * and also one a worker has claimed but not taken past its issuance checkpoint. One guarded
- * statement under the item lock decides it, so it is serialised with claimBatchItem and with
- * every step of an owner, which all take the same lock and then test ownership. Clearing the
- * owner fences that worker as recovery does: its next step fails with a lost lease. A marker the
- * item reserved is removed with it; before the checkpoint nothing has been delivered.
- * Returns false only when the item's owner is past the checkpoint: the outcome is then its own.
+ * and also one a worker has claimed but that has not reserved the key yet. One guarded statement
+ * under the item lock decides it, so it is serialised with claimBatchItem and with every step of
+ * an owner, including its reservation: each takes the same lock and then tests ownership.
+ * Clearing the owner fences that worker as recovery does: its next step fails with a lost lease.
+ * Returns false only for a claimed item that holds a replay record: it is left to its worker,
+ * and the key's record is then that item's own.
  */
 export const rejectWaitingBatchItem = async (
     id: string,
@@ -361,12 +361,11 @@ export const rejectWaitingBatchItem = async (
     return transaction(async tx => {
         const rejected = await tx.run(
             `MATCH (i:InboxBatchItem {id: $id}) SET i.lock = coalesce(i.lock, 0) + 1
-            WITH i WHERE i.state = 'QUEUED'
-                OR (i.state = 'PROCESSING' AND coalesce(i.phase, 'PREPARING') <> 'ISSUING')
+            WITH i WHERE i.state = 'QUEUED' OR (i.state = 'PROCESSING'
+                AND NOT EXISTS { MATCH (r:InboxBatchReplay {itemId: i.id}) })
             SET i.state = 'COMPLETED', i.result = $encrypted, i.owner = null,
                 i.leaseUntil = null, i.dispatchAt = 0
-            WITH i OPTIONAL MATCH (r:InboxBatchReplay {itemId: i.id}) WHERE r.marker IS NOT NULL
-            DELETE r RETURN DISTINCT i.batchId AS batchId`,
+            RETURN i.batchId AS batchId`,
             { id, encrypted }
         );
         const batchId = rejected.records[0]?.get('batchId');
