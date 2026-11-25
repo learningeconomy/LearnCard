@@ -1,8 +1,14 @@
 import { Profile } from '@models';
 import { neogma } from '@instance';
 import { ProfileType } from 'types/profile';
+import { deleteHcpDataForSubject } from 'src/hcp';
 
 export const deleteProfile = async (profile: ProfileType): Promise<void> => {
+    // HCP data is keyed by the profile DID (the HCP router's subjectDid). Delete it
+    // first, in its own transaction: if it fails, the profile is not deleted, so no
+    // HCP data is orphaned and the delete can be retried.
+    await deleteHcpDataForSubject(profile.did);
+
     // Expire any pending guardian credentials this profile was waiting on approval for
     await neogma.queryRunner.run(
         `MATCH (p:Profile {profileId: $profileId})-[:CREATED_INBOX_CREDENTIAL]->(ic:InboxCredential)

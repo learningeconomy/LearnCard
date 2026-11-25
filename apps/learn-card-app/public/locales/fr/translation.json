@@ -2365,7 +2365,15 @@
             "email": "e-mail",
             "profilePicture": "photo de profil"
         },
-        "retryPublication": "Vos choix de partage sont enregistrés. Réessayez pour terminer leur envoi."
+        "retryPublication": "Vos choix de partage sont enregistrés. Réessayez pour terminer leur envoi.",
+        "writeOff": "Désactivé",
+        "suggestOnly": "Suggestion uniquement",
+        "addDirectly": "Ajouter directement",
+        "writeModeLabel": "Comment cette app peut ajouter {{category}}",
+        "suggested": "Suggéré",
+        "suggestedCredential": "Cette app vous a suggéré un justificatif à accepter.",
+        "dismissed": "Ignoré",
+        "dismissedCredential": "Vous avez ignoré un justificatif suggéré."
     },
     "recovery": {
         "pin": {
@@ -10613,5 +10621,111 @@
         "loadingTitle": "Préparation de votre demande",
         "loadingDescription": "Vérification des informations que vous pouvez partager.",
         "returnToApp": "Revenir à l’application"
+    },
+    "hcp": {
+        "title": "Applis qui peuvent voir vos infos",
+        "subtitle": "Choisissez ce que les applis savent de vous. Rien n'est partagé sans votre accord.",
+        "tabs": {
+            "info": "Mes infos",
+            "apps": "Applis avec accès",
+            "activity": "Activité"
+        },
+        "categories": {
+            "generalPreferences": "Préférences",
+            "goalsAndConstraints": "Objectifs",
+            "healthContext": "Santé",
+            "educationLearnerProfile": "Apprentissage",
+            "workContext": "Travail",
+            "purchaseHistoryPreferences": "Achats",
+            "valuesAndEthics": "Valeurs",
+            "locationContext": "Lieux",
+            "coordinationContext": "Emploi du temps"
+        },
+        "info": {
+            "add": "Ajouter une info",
+            "topic": "Sujet",
+            "textLabel": "Que doivent savoir les applis ?",
+            "textPlaceholder": "Par exemple : j'apprends mieux avec des exemples courts",
+            "remove": "Retirer",
+            "removeConfirm": "Retirer ceci ? Les applis ne le verront plus.",
+            "notShared": "N'est plus partagé",
+            "emptyTitle": "Rien pour l'instant",
+            "emptyBody": "Ajoutez ce que vous voulez que les applis sachent. Rien n'est partagé sans votre accord.",
+            "removing": "Suppression...",
+            "truncated": "Affichage de vos 500 premiers éléments.",
+            "suggested": "Suggéré par une app. Les apps ne le voient pas tant que vous ne l’acceptez pas.",
+            "accept": "Accepter",
+            "dismiss": "Ignorer"
+        },
+        "apps": {
+            "canSee": "Peut voir : {{categories}}",
+            "why": "Pourquoi : {{purpose}}",
+            "until": "Jusqu'au {{date}}",
+            "untilStopped": "Jusqu'à ce que vous arrêtiez",
+            "stop": "Arrêter le partage",
+            "stopping": "Arrêt...",
+            "stopConfirm": "Arrêter le partage avec {{app}} ? Elle ne verra rien de nouveau, mais peut garder ce qu'elle a déjà vu.",
+            "emptyTitle": "Aucune appli ne voit vos infos",
+            "emptyBody": "Quand vous autorisez une appli, elle apparaît ici."
+        },
+        "activity": {
+            "anApp": "Une appli",
+            "youAdded": "Vous avez ajouté une info à {{categories}}",
+            "appAdded": "{{app}} a ajouté une info à {{categories}}",
+            "youUpdated": "Vous avez modifié {{categories}}",
+            "appUpdated": "{{app}} a modifié {{categories}}",
+            "youRemoved": "Vous avez retiré une info de {{categories}}",
+            "appRemoved": "{{app}} a retiré une info de {{categories}}",
+            "expired": "Une info de {{categories}} a expiré",
+            "exported": "Vous avez téléchargé une copie de vos infos",
+            "allowed": "Vous avez autorisé {{app}} à voir {{categories}}",
+            "youStopped": "Vous avez arrêté le partage avec {{app}}",
+            "appStopped": "{{app}} n'utilise plus vos infos",
+            "ended": "Le partage avec {{app}} a pris fin",
+            "youRead": "Vous avez consulté vos infos",
+            "appRead": "{{app}} a vu {{categories}}",
+            "appReadNothing": "{{app}} a cherché dans {{categories}} sans rien trouver",
+            "appDenied": "{{app}} a demandé des infos auxquelles il n'a pas accès et n'a rien reçu",
+            "strangerDenied": "Une appli avec laquelle vous ne partagez rien a essayé d'utiliser l'accès de {{app}} et n'a rien reçu",
+            "replaced": "L'accès précédent de {{app}} a été remplacé quand vous l'avez de nouveau autorisé",
+            "more": "Voir plus",
+            "emptyTitle": "Aucune activité",
+            "emptyBody": "Quand vous ou une appli utilisez vos infos, cela apparaît ici.",
+            "appSuggested": "{{app}} a suggéré une info pour {{categories}}",
+            "youAccepted": "Vous avez accepté une suggestion pour {{categories}}"
+        },
+        "connect": {
+            "heading": "Partager vos infos",
+            "title": "{{app}} aimerait voir certaines de vos infos",
+            "readOnly": "Elle peut seulement regarder. Elle ne peut rien modifier.",
+            "canSuggest": "Elle peut regarder et suggérer des ajouts. Rien n'est enregistré tant que vous n'acceptez pas.",
+            "whatLabel": "Ce qu'elle peut voir",
+            "whyLabel": "Pourquoi",
+            "howLongLabel": "Pendant combien de temps",
+            "for1h": "1 heure",
+            "for4h": "4 heures",
+            "for24h": "24 heures",
+            "untilStopped": "Jusqu'à ce que vous arrêtiez",
+            "stopAnytime": "Vous pouvez arrêter le partage à tout moment dans Applis avec accès.",
+            "allow": "Autoriser",
+            "allowing": "Autorisation...",
+            "deny": "Ne pas autoriser",
+            "badTitle": "Ce lien ne fonctionne pas",
+            "badBody": "Demandez un nouveau lien à l'appli et réessayez.",
+            "unverified": "N'autorisez que les applis en qui vous avez confiance. LearnCard ne peut pas confirmer qui a créé ce lien.",
+            "offeredBy": "Proposé par le compte LearnCard de {{owner}}."
+        },
+        "error": {
+            "title": "Un problème est survenu",
+            "body": "Chargement impossible pour le moment. Vous pouvez réessayer sans risque.",
+            "save": "Enregistrement impossible. Veuillez réessayer.",
+            "allow": "Impossible d'autoriser l'accès. Veuillez réessayer.",
+            "remove": "Impossible de supprimer. Veuillez réessayer."
+        },
+        "profile": {
+            "title": "Configurez d'abord votre profil",
+            "body": "Vos informations sont liées à votre profil LearnCard. Configurez-le, puis revenez ici.",
+            "setUp": "Configurer le profil"
+        }
     }
 }

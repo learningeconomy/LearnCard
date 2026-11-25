@@ -9,7 +9,7 @@ import { curriedStateSlice } from '@learncard/helpers';
 
 import { BrandingEnum } from 'learn-card-base';
 
-import ConsentFlowWriteSharingItem from './ConsentFlowWriteSharingItem';
+import ConsentFlowWriteSharingItem, { type WriteModeControl } from './ConsentFlowWriteSharingItem';
 import ConsentFlowAiSessionsWriteItem from './ConsentFlowAiSessionsWriteItem';
 
 import { sidemenuLinks } from 'learn-card-base/components/sidemenu/sidemenuHelpers';
@@ -44,6 +44,19 @@ const ConsentFlowWriteSharing: React.FC<ConsentFlowWriteSharingProps> = ({
     const updateCategory = curriedStateSlice(updateCategories);
     const updatePersonal = curriedStateSlice(updateSlice('personal'));
 
+    // LC-2423: Off / Suggest only / Add directly per credential category.
+    const writeModeFor = (category: string): WriteModeControl => ({
+        canWrite: terms.credentials.canWrite?.[category],
+        directAllowed: contract.credentials.categories[category]?.canWrite !== false,
+        setCanWrite: canWrite =>
+            setState(draft => {
+                draft.credentials.canWrite = {
+                    ...(draft.credentials.canWrite ?? {}),
+                    [category]: canWrite,
+                };
+            }),
+    });
+
     const sidemenuOrder: Record<string, number> = {};
     sidemenuLinks[BrandingEnum.learncard].forEach((linkInfo, index) => {
         sidemenuOrder[linkInfo.name] = index;
@@ -55,6 +68,7 @@ const ConsentFlowWriteSharing: React.FC<ConsentFlowWriteSharingProps> = ({
             required: boolean;
             term: ConsentFlowTerms['write']['credentials']['categories'][string];
             setTerm: Updater<ConsentFlowTerms['write']['credentials']['categories'][string]>;
+            writeMode: WriteModeControl;
         };
     } = {};
 
@@ -72,6 +86,7 @@ const ConsentFlowWriteSharing: React.FC<ConsentFlowWriteSharingProps> = ({
                 required,
                 term: terms.credentials.categories[category] ?? false,
                 setTerm: updateCategory(category),
+                writeMode: writeModeFor(category),
             };
             return undefined;
         }
@@ -85,6 +100,7 @@ const ConsentFlowWriteSharing: React.FC<ConsentFlowWriteSharingProps> = ({
                 setTerm={updateCategory(category)}
                 category={category}
                 required={required}
+                writeMode={writeModeFor(category)}
             />
         );
     });

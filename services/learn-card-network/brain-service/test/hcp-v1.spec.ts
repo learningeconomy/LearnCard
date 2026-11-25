@@ -1,0 +1,913 @@
+import { randomUUID } from 'node:crypto';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import Fastify, { type FastifyInstance } from 'fastify';
+import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
+import { fastifyTRPCOpenApiPlugin } from 'trpc-to-openapi';
+
+import { Profile } from '@models';
+import { neogma } from '@instance';
+import { setValidChallengeForDid } from '@cache/challenges';
+import { deleteProfile } from '@accesslayer/profile/delete';
+import { getProfileByProfileId } from '@accesslayer/profile/read';
+
+import { appRouter, createContext } from '../src/app';
+import { getClient, getUser } from './helpers/getClient';
+
+const PURPOSE = 'https://purpose.example/tutoring';
+const READ_DENIED = 'https://learncard.com/hcp/v1/events/read-denied' as const;
+const GENERAL = 'https://hcp.example/spec/profiles/general-context/2.0';
+const BADGES = 'https://learncard.com/hcp/categories/badges';
+const LABELS = [
+    'HcpV1ContextEntry',
+    'HcpV1EntryVersion',
+    'HcpV1EntryRef',
+    'HcpV1Grant',
+    'HcpV1Event',
+];
+
+let subject: Awaited<ReturnType<typeof getUser>>;
+let agent: Awaited<ReturnType<typeof getUser>>;
+let otherAgent: Awaited<ReturnType<typeof getUser>>;
+let readOnlyToken: Awaited<ReturnType<typeof getUser>>;
+
+const entry = (subjectDid: string, value: string, extra: Record<string, unknown> = {}) => ({
+    schema: 'https://hcp.example/spec/entry/2.0' as const,
+    subject: { id: subjectDid },
+    content: { profile: GENERAL as typeof GENERAL, value },
+    classification: { categories: ['education_learner_profile'] },
+    assertion: { declarationType: 'person-declared' as const },
+    record: { provenance: { source: 'person-input' } },
+    ...extra,
+});
+
+const resetHcp = async (): Promise<void> => {
+    await neogma.queryRunner.run(
+        'MATCH (n) WHERE any(label IN labels(n) WHERE label IN $labels) DETACH DELETE n',
+        { labels: LABELS }
+    );
+};
+
+describe('HCP v1 router (hcp.v1.*)', () => {
+    beforeAll(async () => {
+        subject = await getUser('a'.repeat(64));
+        agent = await getUser('b'.repeat(64));
+        otherAgent = await getUser('e'.repeat(64));
+        readOnlyToken = await getUser('a'.repeat(64), 'credentials:read');
+    });
+
+    beforeEach(async () => {
+        await resetHcp();
+        await Profile.delete({ detach: true, where: {} });
+        await subject.clients.fullAuth.profile.createProfile({ profileId: 'hcp-subject' });
+    });
+
+    it('serves discovery without authentication', async () => {
+        const meta = await getClient().hcp.v1.meta();
+        expect(meta).toMatchObject({ api_version: 'v1', hcp_version: '2.0-draft-3' });
+        expect(meta.spec.commit).toBe('b790561830702c067cd7810c96ee78dd3d84741c');
+    });
+
+    it('lists the subject entries with the subject id that create accepts (LC-2424)', async () => {
+        const own = subject.clients.fullAuth.hcp.v1;
+        const profile = await subject.clients.fullAuth.profile.getProfile();
+        const empty = await own.entries.list();
+
+        // The HCP subject is profile.did (did:key), not the did:web profile routes return.
+        expect(empty).toEqual({
+            subject: { id: subject.learnCard.id.did() },
+            entries: [],
+            truncated: false,
+        });
+        expect(profile?.did).toMatch(/^did:web:/);
+        await expect(own.entries.create(entry(profile!.did, 'wrong id'))).rejects.toMatchObject({
+            hcp: { type: 'scope-denied' },
+        });
+
+        const created = await own.entries.create(entry(empty.subject.id, 'Prefers mornings'));
+        const listed = await own.entries.list({});
+        expect(listed.entries.map(e => e.id)).toEqual([(created as { id: string }).id]);
+        expect((await own.audit.list({})).events.map(e => e.eventType)).toEqual([
+            'context.created',
+        ]);
+        await expect(agent.clients.fullAuth.hcp.v1.entries.list()).rejects.toMatchObject({
+            hcp: { type: 'scope-denied' },
+        });
+    });
+
+    it('requires DID auth with a valid challenge, and the hcp scope for API tokens', async () => {
+        await expect(
+            getClient().hcp.v1.entries.query({ query: 'x', purpose: PURPOSE })
+        ).rejects.toMatchObject({ code: 'UNAUTHORIZED', hcp: { type: 'invalid-token' } });
+        await expect(
+            agent.clients.partialAuth.hcp.v1.entries.query({ query: 'x', purpose: PURPOSE })
+        ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        await expect(
+            readOnlyToken.clients.fullAuth.hcp.v1.entries.query({ query: 'x', purpose: PURPOSE })
+        ).rejects.toMatchObject({
+            code: 'UNAUTHORIZED',
+            hcp: { type: 'invalid-token', detail: 'This operation requires hcp:read scope' },
+        });
+    });
+
+    it('runs the grant lifecycle end to end for a profile-less agent DID', async () => {
+        const subjectDid = subject.learnCard.id.did();
+        const agentDid = agent.learnCard.id.did();
+        const own = subject.clients.fullAuth.hcp.v1;
+        const asAgent = agent.clients.fullAuth.hcp.v1;
+
+        await own.entries.create(entry(subjectDid, 'Learns best with worked examples'));
+        await own.entries.create(
+            entry(subjectDid, 'Has a peanut allergy', {
+                classification: { categories: ['health_context'] },
+            })
+        );
+
+        // No grant: the agent has no profile, so it cannot act as a subject either.
+        await expect(
+            asAgent.entries.query({ query: 'examples', purpose: PURPOSE })
+        ).rejects.toMatchObject({
+            code: 'FORBIDDEN',
+            hcp: {
+                type: 'scope-denied',
+                detail: "The request is outside the caller's grant, or the entry does not exist.",
+            },
+        });
+        await expect(
+            asAgent.grants.create({
+                client: { id: agentDid, name: 'Self-granted' },
+                access: [
+                    {
+                        actions: ['read'],
+                        categories: ['education_learner_profile'],
+                        purposes: [{ code: PURPOSE, description: 'Tutoring' }],
+                    },
+                ],
+            })
+        ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+
+        const grant = await own.grants.create({
+            client: { id: agentDid, name: 'Tutor Agent' },
+            access: [
+                {
+                    actions: ['read', 'write'],
+                    categories: ['education_learner_profile'],
+                    purposes: [{ code: PURPOSE, description: 'Tutoring' }],
+                },
+            ],
+            canWrite: true,
+        });
+        expect(grant).toMatchObject({
+            subject: { id: subjectDid },
+            status: 'active',
+            grantType: 'temporary',
+            canWrite: true,
+        });
+        await expect(asAgent.grants.get({ grantId: grant.grantId })).resolves.toMatchObject({
+            grantId: grant.grantId,
+        });
+        await expect(
+            otherAgent.clients.fullAuth.hcp.v1.entries.query({
+                grantId: grant.grantId,
+                query: 'examples',
+                purpose: PURPOSE,
+            })
+        ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+
+        const result = await asAgent.entries.query({
+            grantId: grant.grantId,
+            query: 'examples',
+            purpose: PURPOSE,
+        });
+        expect(result.categoriesSearched).toEqual(['education_learner_profile']);
+        expect(result.entries).toHaveLength(1);
+        const [disclosure] = result.entries;
+        expect(disclosure).toHaveProperty('ref');
+        expect(disclosure).not.toHaveProperty('id');
+        const ref = (disclosure as { ref: string }).ref;
+
+        await expect(
+            asAgent.entries.query({
+                grantId: grant.grantId,
+                query: 'allergy',
+                purpose: PURPOSE,
+                categories: ['health_context'],
+            })
+        ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+
+        const revised = await asAgent.entries.revise({
+            grantId: grant.grantId,
+            ref,
+            expectedVersion: 1,
+            content: { profile: GENERAL, value: 'Learns best with worked examples and diagrams' },
+            reason: 'Observed in session',
+            record: { provenance: { source: 'conversation' } },
+        });
+        expect(revised).toMatchObject({ ref, version: 2 });
+        await expect(
+            asAgent.entries.revise({
+                grantId: grant.grantId,
+                ref,
+                expectedVersion: 1,
+                content: { profile: GENERAL, value: 'stale' },
+                reason: 'race',
+                record: { provenance: { source: 'conversation' } },
+            })
+        ).rejects.toMatchObject({ code: 'CONFLICT', hcp: { type: 'version-conflict' } });
+
+        await expect(
+            asAgent.entries.withdraw({ grantId: grant.grantId, ref, reason: 'outdated' })
+        ).resolves.toMatchObject({ ref, status: 'deleted' });
+        await expect(
+            asAgent.entries.withdraw({ grantId: grant.grantId, ref, reason: 'outdated' })
+        ).resolves.toMatchObject({ status: 'deleted' });
+        await expect(
+            asAgent.entries.get({ grantId: grant.grantId, ref, purpose: PURPOSE })
+        ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+
+        const exported = await own.export({ includeVersions: true });
+        const learner = exported.entries.find(e =>
+            e.classification.categories.includes('education_learner_profile')
+        );
+        expect(learner?.record).toMatchObject({ status: 'deleted', version: 2 });
+        expect(exported.versions.map(v => v.record.version)).toEqual([1]);
+        await expect(asAgent.export({})).rejects.toMatchObject({ code: 'FORBIDDEN' });
+
+        await asAgent.grants.revoke({ grantId: grant.grantId });
+        await expect(own.grants.revoke({ grantId: grant.grantId })).resolves.toMatchObject({
+            status: 'revoked',
+        });
+        await expect(
+            asAgent.entries.query({ grantId: grant.grantId, query: 'examples', purpose: PURPOSE })
+        ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+        expect(await own.grants.list()).toEqual([]);
+        expect((await own.grants.list({ status: 'revoked' })).map(g => g.grantId)).toEqual([
+            grant.grantId,
+        ]);
+
+        const audit = await own.audit.list({ limit: 100 });
+        expect(audit.events.map(e => e.eventType).reverse()).toEqual([
+            'context.created',
+            'context.created',
+            'grant.issued',
+            READ_DENIED, // otherAgent presented the agent's grant
+            'context.read',
+            READ_DENIED, // health_context is outside the grant
+            'context.revised',
+            'context.withdrawn',
+            READ_DENIED, // get of the withdrawn entry
+            'context.exported',
+            'grant.revoked',
+            READ_DENIED, // query under the revoked grant
+        ]);
+        await expect(asAgent.audit.list({})).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    });
+
+    it("shows an agent's reads and refusals to the subject in audit.list (LC-2422)", async () => {
+        const subjectDid = subject.learnCard.id.did();
+        const agentDid = agent.learnCard.id.did();
+        const own = subject.clients.fullAuth.hcp.v1;
+        const asAgent = agent.clients.fullAuth.hcp.v1;
+
+        const created = (await own.entries.create(
+            entry(subjectDid, 'Learns best with examples')
+        )) as { id: string };
+        const { grantId } = await own.grants.create({
+            client: { id: agentDid, name: 'Demo Tutor' },
+            access: [
+                {
+                    actions: ['read'],
+                    categories: ['education_learner_profile', 'goals_and_constraints'],
+                    purposes: [{ code: PURPOSE, description: 'Tutoring' }],
+                },
+            ],
+        });
+
+        const result = await asAgent.entries.query({
+            grantId,
+            query: 'examples',
+            purpose: PURPOSE,
+            purposeDescription: 'Plan a lesson',
+        });
+        const ref = (result.entries[0] as { ref: string }).ref;
+        const got = await asAgent.entries.get({ grantId, ref, purpose: PURPOSE });
+        await expect(
+            asAgent.entries.query({
+                grantId,
+                query: 'x',
+                purpose: 'https://purpose.example/advertising',
+            })
+        ).rejects.toMatchObject({ code: 'FORBIDDEN', hcp: { type: 'scope-denied' } });
+
+        const reads = await own.audit.list({ eventTypes: ['context.read'] });
+        expect(reads.events).toHaveLength(2);
+        const [getRead, queryRead] = reads.events;
+        expect(queryRead).toMatchObject({
+            participants: {
+                initiator: { role: 'context-client', id: agentDid },
+                retrievalId: result.retrievalId,
+            },
+            categories: ['education_learner_profile'],
+            purpose: PURPOSE,
+            purposeDescription: 'Plan a lesson',
+            grantId,
+            disclosed: [{ entryId: created.id, version: 1 }],
+            data: {
+                maxEntries: 5,
+                categoriesSearched: ['goals_and_constraints', 'education_learner_profile'],
+            },
+        });
+        expect(getRead).toMatchObject({
+            entryId: created.id,
+            participants: { retrievalId: got.retrievalId },
+            disclosed: [{ entryId: created.id, version: 1 }],
+        });
+        expect(JSON.stringify(reads)).not.toContain(ref);
+
+        // Another DID presenting the grant: same response, logged as a stranger.
+        const strangerError = await otherAgent.clients.fullAuth.hcp.v1.entries
+            .query({ grantId, query: 'x', purpose: PURPOSE })
+            .catch((error: { code?: string; message?: string; data?: { hcp?: unknown } }) => error);
+        const ownError = await asAgent.entries
+            .query({ grantId, query: 'x', purpose: 'https://purpose.example/advertising' })
+            .catch((error: { code?: string; message?: string; data?: { hcp?: unknown } }) => error);
+        expect(strangerError).toMatchObject({ code: 'FORBIDDEN' });
+        expect({
+            code: (strangerError as { data?: { code?: string } }).data?.code,
+            message: (strangerError as { message?: string }).message,
+            hcp: (strangerError as { data?: { hcp?: unknown } }).data?.hcp,
+        }).toEqual({
+            code: (ownError as { data?: { code?: string } }).data?.code,
+            message: (ownError as { message?: string }).message,
+            hcp: (ownError as { data?: { hcp?: unknown } }).data?.hcp,
+        });
+
+        const denials = await own.audit.list({ eventTypes: [READ_DENIED] });
+        expect(denials.events).toEqual([
+            expect.objectContaining({
+                grantId,
+                data: { operation: 'query', reason: 'outside-grant', grantStatus: 'active' },
+            }),
+            expect.objectContaining({
+                grantId,
+                participants: expect.objectContaining({
+                    initiator: {
+                        role: 'context-client',
+                        id: otherAgent.learnCard.id.did(),
+                    },
+                }),
+                data: { operation: 'query', reason: 'not-grant-client', grantStatus: 'active' },
+            }),
+            expect.objectContaining({
+                grantId,
+                purpose: 'https://purpose.example/advertising',
+                data: { operation: 'query', reason: 'outside-grant', grantStatus: 'active' },
+            }),
+        ]);
+    });
+
+    it('issues grants from a ConsentFlow contract HCP section and follows its versions (LC-2421)', async () => {
+        await neogma.queryRunner.run(
+            'MATCH (n) WHERE n:ConsentFlowContract OR n:ConsentFlowContractVersion DETACH DELETE n'
+        );
+        const operator = await getUser('f'.repeat(64));
+        await operator.clients.fullAuth.profile.createProfile({
+            profileId: 'hcp-operator',
+            displayName: 'Tutor Co',
+        });
+        const own = subject.clients.fullAuth.hcp.v1;
+        const asAgent = agent.clients.fullAuth.hcp.v1;
+        const agentDid = agent.learnCard.id.did();
+        const { subject: id } = await own.entries.list({});
+        await own.entries.create(entry(id.id, 'My study plan for June'));
+        await own.entries.create(
+            entry(id.id, 'Exam plan: pass algebra', {
+                classification: { categories: ['goals_and_constraints'] },
+            })
+        );
+        await own.entries.create(
+            entry(id.id, 'Morning plan person', {
+                classification: { categories: ['general_preferences'] },
+            })
+        );
+
+        const hcp = {
+            agents: [agentDid],
+            categories: ['education_learner_profile', 'goals_and_constraints'],
+            actions: ['read' as const],
+            purposes: [{ code: PURPOSE, description: 'Tutoring' }],
+            duration: '4h' as const,
+        };
+        const contractUri = await operator.clients.fullAuth.contracts.createConsentFlowContract({
+            name: 'Demo Tutor',
+            contract: { hcp },
+        });
+        const update = (next: typeof hcp | Record<string, unknown>, reason?: string) =>
+            operator.clients.fullAuth.contracts.updateConsentFlowContract({
+                uri: contractUri,
+                changes: { contract: { hcp: next as typeof hcp } },
+                ...(reason ? { reason } : {}),
+            });
+        const read = (grantId: string, client = asAgent) =>
+            client.entries
+                .query({ grantId, query: 'plan', purpose: PURPOSE })
+                .then(result => result.categoriesSearched);
+
+        const offer = await own.grants.offer({ contractUri });
+        expect(offer).toMatchObject({
+            version: 1,
+            name: 'Demo Tutor',
+            owner: { profileId: 'hcp-operator', displayName: 'Tutor Co' },
+            agents: [agentDid],
+            duration: '4h',
+        });
+
+        const first = await own.grants.create({
+            client: { id: agentDid },
+            source: { type: 'consentflow', contractUri, contractVersion: 1 },
+        });
+        expect(first).toMatchObject({
+            client: { id: agentDid, name: 'Demo Tutor' },
+            grantType: 'temporary',
+            source: { type: 'consentflow', contractUri, contractVersion: 1 },
+        });
+        expect(await read(first.grantId)).toEqual([
+            'goals_and_constraints',
+            'education_learner_profile',
+        ]);
+
+        // A DID the grant was not issued to gets nothing, even with the grant id.
+        await expect(read(first.grantId, otherAgent.clients.fullAuth.hcp.v1)).rejects.toMatchObject(
+            { hcp: { type: 'scope-denied' } }
+        );
+
+        // relaxed: narrowing applies to the existing grant at once.
+        const relaxed = await update({ ...hcp, categories: ['education_learner_profile'] });
+        expect(relaxed.version).toBe(2);
+        expect(await read(first.grantId)).toEqual(['education_learner_profile']);
+
+        // Widening needs a reason, and does not reach the existing grant.
+        const wider = {
+            ...hcp,
+            categories: [
+                'education_learner_profile',
+                'goals_and_constraints',
+                'general_preferences',
+            ],
+        };
+        await expect(update(wider)).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        expect((await update(wider, 'Adds your preferences')).version).toBe(3);
+        // The grant reaches no further than its v1 pin: goals again, never preferences.
+        expect(await read(first.grantId)).toEqual([
+            'goals_and_constraints',
+            'education_learner_profile',
+        ]);
+
+        // Allowing the reviewed version needs that version; then the new grant replaces the old.
+        await expect(
+            own.grants.create({
+                client: { id: agentDid },
+                source: { type: 'consentflow', contractUri, contractVersion: 2 },
+            })
+        ).rejects.toMatchObject({ hcp: { type: 'version-conflict' } });
+        const second = await own.grants.create({
+            client: { id: agentDid },
+            source: { type: 'consentflow', contractUri, contractVersion: 3 },
+        });
+        expect(await read(second.grantId)).toEqual([
+            'general_preferences',
+            'goals_and_constraints',
+            'education_learner_profile',
+        ]);
+        expect((await own.grants.get({ grantId: first.grantId })).status).toBe('revoked');
+        await expect(read(first.grantId)).rejects.toMatchObject({ hcp: { type: 'scope-denied' } });
+
+        // Dropping the agent from the contract ends its access.
+        // (Naming a new agent asks for more, so it needs a reason too.)
+        await update({ ...wider, agents: [otherAgent.learnCard.id.did()] }, 'New tutor agent');
+        await expect(read(second.grantId)).rejects.toMatchObject({ hcp: { type: 'scope-denied' } });
+
+        // No ConsentFlow terms were created for the person.
+        const terms = await neogma.queryRunner.run(
+            'MATCH (t:ConsentFlowTerms)-[:CONSENTS_TO]->(c:ConsentFlowContract) RETURN count(t) AS n'
+        );
+        expect(Number(terms.records[0]?.get('n'))).toBe(0);
+    });
+
+    it('rejects malformed requests at the boundary', async () => {
+        const subjectDid = subject.learnCard.id.did();
+        const own = subject.clients.fullAuth.hcp.v1;
+
+        await expect(
+            own.entries.create(entry(subjectDid, 'x', { classification: { categories: [] } }))
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST', hcp: { type: 'malformed-request' } });
+        await expect(
+            own.entries.create(
+                entry(subjectDid, 'x', { assertion: { declarationType: 'model-inferred' } })
+            )
+        ).rejects.toMatchObject({
+            code: 'BAD_REQUEST',
+            message: 'model-inferred entries require assertion.confidence.',
+            hcp: {
+                type: 'malformed-request',
+                detail: 'model-inferred entries require assertion.confidence.',
+            },
+        });
+        await expect(
+            own.entries.get({ entryId: 'urn:uuid:a', ref: 'b', purpose: PURPOSE })
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+    });
+
+    it('stores, queries and grants custom categories through the router (Draft 3 §4.5)', async () => {
+        const subjectDid = subject.learnCard.id.did();
+        const own = subject.clients.fullAuth.hcp.v1;
+        const asAgent = agent.clients.fullAuth.hcp.v1;
+
+        await own.entries.create(
+            entry(subjectDid, 'Earned the robotics badge', {
+                classification: { categories: [BADGES] },
+            })
+        );
+        await own.entries.create(entry(subjectDid, 'Learns robotics with worked examples'));
+
+        const mine = await own.entries.query({ query: 'robotics', purpose: PURPOSE });
+        expect(mine.entries).toHaveLength(2);
+        expect(mine.categoriesSearched).toContain(BADGES);
+
+        const grant = await own.grants.create({
+            client: { id: agent.learnCard.id.did(), name: 'Badge Agent' },
+            access: [
+                {
+                    actions: ['read'],
+                    categories: [BADGES],
+                    purposes: [{ code: PURPOSE, description: 'Tutoring' }],
+                },
+            ],
+        });
+        expect(grant.scopes).toEqual([]);
+        const read = await asAgent.entries.query({
+            grantId: grant.grantId,
+            query: 'robotics',
+            purpose: PURPOSE,
+        });
+        expect(read.entries.map(e => e.content.value)).toEqual(['Earned the robotics badge']);
+        await expect(
+            asAgent.entries.query({
+                grantId: grant.grantId,
+                query: 'robotics',
+                purpose: PURPOSE,
+                categories: ['education_learner_profile'],
+            })
+        ).rejects.toMatchObject({ code: 'FORBIDDEN', hcp: { type: 'scope-denied' } });
+        await expect(
+            own.entries.create(
+                entry(subjectDid, 'x', { classification: { categories: ['urn:learncard:x'] } })
+            )
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST', hcp: { type: 'malformed-request' } });
+    });
+
+    describe('profile delete cascade', () => {
+        const PURPOSE_GRANT = [{ code: PURPOSE, description: 'Tutoring' }];
+
+        /** Counts HcpV1 nodes for a subject; refs are reached through the subject's grants. */
+        const hcpNodes = async (subjectDid: string, grantIds: string[]) => {
+            const result = await neogma.queryRunner.run(
+                `UNWIND $labels AS label
+                CALL (label) {
+                    MATCH (n) WHERE label IN labels(n)
+                      AND (n.subjectDid = $subjectDid OR n.grantId IN $grantIds)
+                    RETURN count(n) AS c
+                }
+                RETURN label, c`,
+                { labels: LABELS, subjectDid, grantIds }
+            );
+            return Object.fromEntries(
+                result.records.map(r => [r.get('label'), Number(r.get('c'))])
+            );
+        };
+
+        /** Entries with a revision, a grant the agent reads under (refs), and audit events. */
+        const seed = async (user: typeof subject, value: string): Promise<string> => {
+            const did = user.learnCard.id.did();
+            const own = user.clients.fullAuth.hcp.v1;
+            const created = await own.entries.create(entry(did, value));
+            await own.entries.revise({
+                entryId: (created as { id: string }).id,
+                expectedVersion: 1,
+                content: { profile: GENERAL, value: `${value}, revised` },
+                reason: 'Updated',
+                record: { provenance: { source: 'person-input' } },
+            });
+            const grant = await own.grants.create({
+                client: { id: agent.learnCard.id.did(), name: 'Tutor Agent' },
+                access: [
+                    {
+                        actions: ['read'],
+                        categories: ['education_learner_profile'],
+                        purposes: PURPOSE_GRANT,
+                    },
+                ],
+            });
+            const read = await agent.clients.fullAuth.hcp.v1.entries.query({
+                grantId: grant.grantId,
+                query: value.split(' ')[0]!,
+                purpose: PURPOSE,
+            });
+            expect(read.entries).toHaveLength(1);
+            return grant.grantId;
+        };
+
+        it("deletes every HcpV1 node of the profile through the real route, and no one else's", async () => {
+            await otherAgent.clients.fullAuth.profile.createProfile({ profileId: 'hcp-other' });
+            const profile = await getProfileByProfileId('hcp-subject');
+            const mineDid = subject.learnCard.id.did();
+            const theirsDid = otherAgent.learnCard.id.did();
+            const mineGrant = await seed(subject, 'Worked examples help');
+            const theirsGrant = await seed(otherAgent, 'Diagrams help');
+
+            // The cascade's key is exactly the subjectDid HCP stored for this profile.
+            expect(profile?.did).toBe(mineDid);
+            const before = await hcpNodes(mineDid, [mineGrant]);
+            expect(before).toEqual({
+                HcpV1ContextEntry: 1,
+                HcpV1EntryVersion: 2,
+                HcpV1EntryRef: 1,
+                HcpV1Grant: 1,
+                // created, revised, grant.issued, and the agent's context.read
+                HcpV1Event: 4,
+            });
+            const theirsBefore = await hcpNodes(theirsDid, [theirsGrant]);
+            expect(theirsBefore).toEqual(before);
+
+            await expect(subject.clients.fullAuth.profile.deleteProfile()).resolves.toBe(true);
+
+            expect(await getProfileByProfileId('hcp-subject')).toBeFalsy();
+            expect(await hcpNodes(mineDid, [mineGrant])).toEqual({
+                HcpV1ContextEntry: 0,
+                HcpV1EntryVersion: 0,
+                HcpV1EntryRef: 0,
+                HcpV1Grant: 0,
+                HcpV1Event: 0,
+            });
+            expect(await hcpNodes(theirsDid, [theirsGrant])).toEqual(theirsBefore);
+        });
+
+        it('keeps the profile when the HCP cascade fails', async () => {
+            const profile = await getProfileByProfileId('hcp-subject');
+            await seed(subject, 'Worked examples help');
+            const session = vi.spyOn(neogma.driver, 'session').mockImplementationOnce(() => {
+                throw new Error('neo4j unavailable');
+            });
+            try {
+                await expect(deleteProfile(profile!)).rejects.toThrow('neo4j unavailable');
+            } finally {
+                session.mockRestore();
+            }
+            expect(await getProfileByProfileId('hcp-subject')).toBeTruthy();
+            const left = await subject.clients.fullAuth.hcp.v1.entries.query({
+                query: 'examples',
+                purpose: PURPOSE,
+            });
+            expect(left.entries).toHaveLength(1);
+        });
+    });
+
+    it('lands a write without canWrite as a suggestion the subject accepts (LC-2423)', async () => {
+        const subjectDid = subject.learnCard.id.did();
+        const own = subject.clients.fullAuth.hcp.v1;
+        const asAgent = agent.clients.fullAuth.hcp.v1;
+        const grant = await own.grants.create({
+            client: { id: agent.learnCard.id.did(), name: 'Suggesting Agent' },
+            access: [
+                {
+                    actions: ['read', 'write'],
+                    categories: ['goals_and_constraints'],
+                    purposes: [{ code: PURPOSE, description: 'Tutoring' }],
+                },
+            ],
+        });
+        expect(grant.canWrite).toBe(false);
+
+        const created = await asAgent.entries.create({
+            ...entry(subjectDid, 'Pass algebra in June', {
+                classification: { categories: ['goals_and_constraints'] },
+            }),
+            grantId: grant.grantId,
+        });
+        expect(created).toMatchObject({ suggested: true });
+        const query = () =>
+            asAgent.entries.query({ grantId: grant.grantId, query: 'algebra', purpose: PURPOSE });
+        expect((await query()).entries).toEqual([]);
+
+        const suggested = (await own.entries.list({})).entries.find(
+            e => e.record.status === 'suggested'
+        );
+        expect(suggested?.content).toMatchObject({ value: 'Pass algebra in June' });
+
+        await expect(asAgent.entries.accept({ entryId: suggested!.id })).rejects.toMatchObject({
+            code: 'FORBIDDEN',
+        });
+        await expect(own.entries.accept({ entryId: suggested!.id })).resolves.toMatchObject({
+            record: { status: 'active' },
+        });
+        expect((await query()).entries).toHaveLength(1);
+        const events = await own.audit.list({});
+        expect(events.events.map(e => e.eventType)).toContain(
+            'https://learncard.com/hcp/v1/events/suggestion-accepted'
+        );
+    });
+
+    it('documents every v1 procedure in the OpenAPI document under /hcp/v1', async () => {
+        const { openApiDocument } = await import('../src/openapi');
+        const paths = Object.keys(openApiDocument.paths ?? {}).filter(path =>
+            path.startsWith('/hcp/v1')
+        );
+        expect(paths.sort()).toEqual([
+            '/hcp/v1/audit',
+            '/hcp/v1/contract-offer',
+            '/hcp/v1/entries',
+            '/hcp/v1/entries/accept',
+            '/hcp/v1/entries/get',
+            '/hcp/v1/entries/list',
+            '/hcp/v1/entries/query',
+            '/hcp/v1/entries/revisions',
+            '/hcp/v1/entries/withdraw',
+            '/hcp/v1/export',
+            '/hcp/v1/grants',
+            '/hcp/v1/grants/{grantId}',
+            '/hcp/v1/meta',
+        ]);
+    });
+});
+
+describe('HCP v1 Core errors over HTTP (Draft 3 §5.5)', () => {
+    let server: FastifyInstance;
+
+    const bearer = async (user: Awaited<ReturnType<typeof getUser>>): Promise<string> => {
+        const challenge = randomUUID();
+        await setValidChallengeForDid(user.learnCard.id.did(), challenge);
+        const token = await user.learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
+        return `Bearer ${token}`;
+    };
+
+    /** OpenAPI: POST /api/hcp/v1/...; the error body is the tRPC error shape. */
+    const rest = async (path: string, body: object, user?: Awaited<ReturnType<typeof getUser>>) => {
+        const response = await server.inject({
+            method: 'POST',
+            url: `/api/hcp/v1${path}`,
+            payload: body,
+            headers: user ? { authorization: await bearer(user) } : {},
+        });
+        return { status: response.statusCode, body: response.json() };
+    };
+
+    /** tRPC HTTP: the error is `{ error: shape }`. */
+    const trpcQuery = async (
+        procedure: string,
+        input: object,
+        user?: Awaited<ReturnType<typeof getUser>>
+    ) => {
+        const response = await server.inject({
+            method: 'GET',
+            url: `/trpc/hcp.v1.${procedure}?input=${encodeURIComponent(JSON.stringify(input))}`,
+            headers: user ? { authorization: await bearer(user) } : {},
+        });
+        return { status: response.statusCode, body: response.json() };
+    };
+
+    beforeAll(async () => {
+        subject = await getUser('a'.repeat(64));
+        agent = await getUser('b'.repeat(64));
+        server = Fastify();
+        await server.register(fastifyTRPCOpenApiPlugin, {
+            basePath: '/api',
+            router: appRouter,
+            createContext,
+        });
+        await server.register(fastifyTRPCPlugin, {
+            prefix: '/trpc',
+            trpcOptions: { router: appRouter, createContext },
+        });
+    });
+
+    afterAll(async () => {
+        await server.close();
+    });
+
+    beforeEach(async () => {
+        await resetHcp();
+        await Profile.delete({ detach: true, where: {} });
+        await subject.clients.fullAuth.profile.createProfile({ profileId: 'hcp-subject' });
+    });
+
+    const QUERY = { query: 'examples', purpose: PURPOSE };
+
+    it('invalid-token: no DID auth', async () => {
+        const viaRest = await rest('/entries/query', QUERY);
+        expect(viaRest.status).toBe(401);
+        expect(viaRest.body).toMatchObject({
+            code: 'UNAUTHORIZED',
+            data: {
+                hcp: {
+                    type: 'invalid-token',
+                    detail: 'Missing, malformed, or expired authorization evidence.',
+                },
+            },
+        });
+
+        const viaTrpc = await trpcQuery('entries.query', QUERY);
+        expect(viaTrpc.status).toBe(401);
+        expect(viaTrpc.body.error.data).toMatchObject({
+            code: 'UNAUTHORIZED',
+            hcp: { type: 'invalid-token' },
+        });
+    });
+
+    it('scope-denied: an agent without a grant', async () => {
+        const viaRest = await rest('/entries/query', QUERY, agent);
+        expect(viaRest.status).toBe(403);
+        expect(viaRest.body).toMatchObject({
+            code: 'FORBIDDEN',
+            message: "The request is outside the caller's grant, or the entry does not exist.",
+            data: {
+                hcp: {
+                    type: 'scope-denied',
+                    detail: "The request is outside the caller's grant, or the entry does not exist.",
+                },
+            },
+        });
+
+        const viaTrpc = await trpcQuery('entries.query', QUERY, agent);
+        expect(viaTrpc.status).toBe(403);
+        expect(viaTrpc.body.error.data.hcp).toEqual({
+            type: 'scope-denied',
+            detail: "The request is outside the caller's grant, or the entry does not exist.",
+        });
+    });
+
+    it('malformed-request: a service rule and a schema failure', async () => {
+        const subjectDid = subject.learnCard.id.did();
+        const rule = await rest(
+            '/entries',
+            entry(subjectDid, 'x', { assertion: { declarationType: 'model-inferred' } }),
+            subject
+        );
+        expect(rule.status).toBe(400);
+        expect(rule.body.data.hcp).toEqual({
+            type: 'malformed-request',
+            detail: 'model-inferred entries require assertion.confidence.',
+        });
+
+        const schema = await rest(
+            '/entries',
+            entry(subjectDid, 'x', { classification: { categories: ['not_a_category'] } }),
+            subject
+        );
+        expect(schema.status).toBe(400);
+        expect(schema.body).toMatchObject({
+            code: 'BAD_REQUEST',
+            message: 'Input validation failed',
+            data: {
+                hcp: {
+                    type: 'malformed-request',
+                    detail: expect.stringMatching(/^classification\.categories\.0: /),
+                },
+            },
+        });
+        expect(schema.body.issues).toHaveLength(1);
+    });
+
+    it('version-conflict: a stale expectedVersion', async () => {
+        const subjectDid = subject.learnCard.id.did();
+        const created = await rest('/entries', entry(subjectDid, 'Learns by doing'), subject);
+        expect(created.status).toBe(200);
+        const revise = (expectedVersion: number) => ({
+            entryId: created.body.id,
+            expectedVersion,
+            content: { profile: GENERAL, value: 'Learns by doing and reading' },
+            reason: 'Updated',
+            record: { provenance: { source: 'person-input' } },
+        });
+        expect((await rest('/entries/revisions', revise(1), subject)).status).toBe(200);
+
+        const stale = await rest('/entries/revisions', revise(1), subject);
+        expect(stale.status).toBe(409);
+        expect(stale.body).toMatchObject({
+            code: 'CONFLICT',
+            data: {
+                hcp: {
+                    type: 'version-conflict',
+                    detail: "expectedVersion is not the entry's current version.",
+                },
+            },
+        });
+    });
+
+    it('leaves other routes without data.hcp', async () => {
+        const response = await server.inject({
+            method: 'GET',
+            url: `/trpc/profile.getProfile`,
+        });
+        expect(response.statusCode).toBe(401);
+        expect(response.json().error.data).not.toHaveProperty('hcp');
+    });
+});

@@ -1,6 +1,7 @@
 import type {
     ConsentFlowContract,
     ConsentFlowContractChangeKind,
+    ConsentFlowContractHcp,
     ConsentFlowContractDetailChange,
     ConsentFlowContractDiff,
     ConsentFlowContractScope,
@@ -34,12 +35,14 @@ const scopes = (contract: ConsentFlowContract): ConsentFlowContractScope[] => {
     for (const area of ['read', 'write'] as const) {
         const access = contract[area];
         for (const [key, config] of Object.entries(access.credentials.categories)) {
+            const canWrite = (config as { canWrite?: boolean }).canWrite;
             result.push({
                 area,
                 type: 'credential',
                 key,
                 required: config.required,
                 reason: config.reason,
+                ...(area === 'write' && canWrite !== undefined ? { canWrite } : {}),
             });
         }
         for (const [key, config] of Object.entries(access.personal)) {
@@ -54,6 +57,10 @@ const scopes = (contract: ConsentFlowContract): ConsentFlowContractScope[] => {
     }
     return result.sort((a, b) => scopeKey(a).localeCompare(scopeKey(b)));
 };
+
+/** Missing canWrite means direct write, so contracts from before LC-2423 keep it. */
+const directWrite = (scope: ConsentFlowContractScope): boolean =>
+    scope.area === 'write' && scope.type === 'credential' && scope.canWrite !== false;
 
 const scopeKey = ({ area, type, key }: ConsentFlowContractScope): string =>
     `${area}:${type}:${key}`;
@@ -70,7 +77,11 @@ const diffScopes = (
     for (const [key, scope] of after) {
         const old = before.get(key);
         if (!old) added.push(scope);
-        else if (old.required !== scope.required || old.reason !== scope.reason)
+        else if (
+            old.required !== scope.required ||
+            old.reason !== scope.reason ||
+            directWrite(old) !== directWrite(scope)
+        )
             changed.push(scope);
     }
     for (const [key, scope] of before) if (!after.has(key)) removed.push(scope);
@@ -164,6 +175,9 @@ export const classifyContractChange = (
         const previous = before.get(scopeKey(scope));
         if (scope.reason !== previous?.reason || (scope.required && !previous?.required))
             requiresConsent = true;
+        // LC-2423: letting the app add directly instead of only suggesting is a new
+        // option holders choose; taking it away (true -> false) only narrows, so relaxed.
+        if (previous && directWrite(scope) && !directWrite(previous)) expandedOptional = true;
     }
     const oldBoosts = set(prev.autoboosts);
     if ([...set(next.autoboosts)].some(boost => !oldBoosts.has(boost))) requiresConsent = true;
@@ -171,6 +185,76 @@ export const classifyContractChange = (
     if (expandedOptional) return 'expanded_optional';
     return 'relaxed';
 };
+
+export type ContractWriteMode = 'write' | 'suggest' | 'refused';
+
+/**
+ * The effective write mode for one credential category (LC-2423). The terms category
+ * flag means the app may at least suggest; direct write also needs both the holder's
+ * and the contract's canWrite, each defaulting to true when missing. `mode: 'suggest'`
+ * lets a sender ask for a suggestion even where it could write. The brain enforces the
+ * same rule in Cypher (`contractWriteActionCypher`).
+ */
+export const contractWriteMode = ({
+    contract,
+    terms,
+    category,
+    mode,
+}: {
+    contract: Pick<ConsentFlowContract, 'write'>;
+    terms: {
+        write: {
+            credentials: {
+                categories: Record<string, boolean>;
+                canWrite?: Record<string, boolean>;
+            };
+        };
+    };
+    category: string;
+    mode?: 'suggest';
+}): ContractWriteMode => {
+    if (terms.write.credentials.categories[category] !== true) return 'refused';
+    if (mode === 'suggest') return 'suggest';
+    if (terms.write.credentials.canWrite?.[category] === false) return 'suggest';
+    if (contract.write.credentials.categories[category]?.canWrite === false) return 'suggest';
+    return 'write';
+};
+
+const HCP_DURATION_HOURS: Record<ConsentFlowContractHcp['duration'], number> = {
+    '1h': 1,
+    '4h': 4,
+    '24h': 24,
+    ongoing: Number.POSITIVE_INFINITY,
+};
+
+const widens = (before: readonly string[], after: readonly string[]): boolean =>
+    after.some(value => !before.includes(value));
+
+/**
+ * Classifies a change to a contract's HCP section (LC-2421) in the LC-2194 change
+ * kinds. Kept apart from `classifyContractChange`: HCP grants are not ConsentFlow
+ * terms, so an HCP change never moves terms holders. Anything that reaches further
+ * (a new agent, category, action or purpose, a changed purpose description, a
+ * longer duration, or a section that did not exist) is `requires_consent`; HCP has
+ * no optional access, so `expanded_optional` never applies. Narrowing, or removing
+ * the section, is `relaxed`.
+ */
+export const classifyHcpChange = (
+    prev: ConsentFlowContractHcp | undefined,
+    next: ConsentFlowContractHcp | undefined
+): ConsentFlowContractChangeKind => {
+    if (!next) return 'relaxed';
+    if (!prev) return 'requires_consent';
+    const descriptions = new Map(prev.purposes.map(p => [p.code, p.description]));
+    const reaches =
+        widens(prev.agents, next.agents) ||
+        widens(prev.categories, next.categories) ||
+        widens(prev.actions, next.actions) ||
+        next.purposes.some(p => descriptions.get(p.code) !== p.description) ||
+        HCP_DURATION_HOURS[next.duration] > HCP_DURATION_HOURS[prev.duration];
+    return reaches ? 'requires_consent' : 'relaxed';
+};
+
 const CANONICAL_SCOPE_COPY: Record<
     string,
     { messageKey: string; label: string; description: string }

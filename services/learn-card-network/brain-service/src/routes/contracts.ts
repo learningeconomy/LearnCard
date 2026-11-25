@@ -119,6 +119,7 @@ import {
     withdrawTerms,
 } from '@accesslayer/consentflowcontract/relationships/update';
 import { consentToContract } from '@accesslayer/consentflowcontract/relationships/create';
+import { dismissContractSuggestion } from '@accesslayer/consentflowcontract/relationships/suggestions';
 import { getProfileByDid, getProfileByProfileId } from '@accesslayer/profile/read';
 import { sendBoost, isDraftBoost } from '@helpers/boost.helpers';
 import { setCredentialSubjectIds } from '@helpers/credentialSubject.helpers';
@@ -929,6 +930,8 @@ export const contractsRouter = t.router({
                 contractUri: z.string(),
                 boostUri: z.string(),
                 credential: VCValidator.or(JWEValidator),
+                /** 'suggest' lands it for the holder to accept even where the app may write. */
+                mode: z.enum(['suggest']).optional(),
                 expectedExternalGrant: ConsentFlowExternalGrantExpectationValidator.optional(),
             })
         )
@@ -936,7 +939,7 @@ export const contractsRouter = t.router({
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
             const { domain } = ctx;
-            const { did, contractUri, boostUri, credential } = input;
+            const { did, contractUri, boostUri, credential, mode } = input;
 
             const decodedDid = decodeURIComponent(did);
             // Get the other profile by DID
@@ -1053,6 +1056,7 @@ export const contractsRouter = t.router({
                 skipNotification: true,
                 autoAcceptCredential: false,
                 contractTerms: terms,
+                forceSuggest: mode === 'suggest',
                 expectedExternalGrant: input.expectedExternalGrant,
             });
         }),
@@ -1080,13 +1084,15 @@ export const contractsRouter = t.router({
                     name: z.string(),
                     endpoint: z.string(),
                 }),
+                /** 'suggest' lands it for the holder to accept even where the app may write. */
+                mode: z.enum(['suggest']).optional(),
                 expectedExternalGrant: ConsentFlowExternalGrantExpectationValidator.optional(),
             })
         )
         .output(z.string())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { did, contractUri, boostUri, signingAuthority } = input;
+            const { did, contractUri, boostUri, signingAuthority, mode } = input;
             const normalizedSigningAuthority = {
                 ...signingAuthority,
                 name: signingAuthority.name.toLowerCase(),
@@ -1247,6 +1253,7 @@ export const contractsRouter = t.router({
                 skipNotification: true,
                 autoAcceptCredential: false,
                 contractTerms: terms,
+                forceSuggest: mode === 'suggest',
                 expectedExternalGrant: input.expectedExternalGrant,
             });
         }),
@@ -2086,6 +2093,10 @@ export const contractsRouter = t.router({
                     contractUri: constructUri('contract', terms.contract.id, domain),
                     credentialUri: constructUri('credential', cred.credentialUri, domain),
                     boostUri: constructUri('boost', cred.boostUri, domain),
+                    action:
+                        (cred.transaction as { action?: string } | undefined)?.action === 'suggest'
+                            ? ('suggest' as const)
+                            : ('write' as const),
                 })),
             };
         }),
@@ -2107,18 +2118,27 @@ export const contractsRouter = t.router({
             PaginationOptionsValidator.extend({
                 includeReceived: z.boolean().default(false),
                 limit: PaginationOptionsValidator.shape.limit.default(25),
+                /**
+                 * LC-2423: which deliveries to list. Defaults to direct writes, which
+                 * clients may store; 'suggest' records wait for the holder to accept.
+                 */
+                actions: z
+                    .array(z.enum(['write', 'suggest']))
+                    .min(1)
+                    .optional(),
             }).default({ includeReceived: false, limit: 25 })
         )
         .output(PaginatedContractCredentialsValidator)
         .query(async ({ ctx, input }) => {
             const { profile } = ctx.user;
             const { domain } = ctx;
-            const { includeReceived, limit, cursor } = input;
+            const { includeReceived, limit, cursor, actions } = input;
 
             const results = await getAllCredentialsForProfileTerms(profile.profileId, {
                 limit: limit + 1,
                 cursor,
                 includeReceived,
+                actions,
             });
 
             const credentials = results.slice(0, limit);
@@ -2135,8 +2155,38 @@ export const contractsRouter = t.router({
                     credentialUri: constructUri('credential', cred.credential.id, domain),
                     boostUri: constructUri('boost', cred.boost.id, domain),
                     termsUri: constructUri('terms', cred.terms.id, domain),
+                    action: cred.transaction.action === 'suggest' ? 'suggest' : 'write',
                 })),
             };
+        }),
+
+    dismissContractSuggestion: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/consent-flow-contracts/credentials/dismiss',
+                tags: ['Contracts'],
+                summary: 'Dismiss a suggested credential',
+                description:
+                    'Dismisses a credential a contract app suggested (LC-2423). It leaves your incoming list and is recorded on your terms. Idempotent.',
+            },
+            requiredScope: 'credentials:write',
+        })
+        .input(z.object({ credentialUri: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const dismissed = await dismissContractSuggestion(
+                ctx.user.profile.profileId,
+                getIdFromUri(input.credentialUri)
+            );
+            if (!dismissed) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'No pending suggestion found for this credential',
+                });
+            }
+            return true;
         }),
 
     addAutoBoostsToContract: profileRoute

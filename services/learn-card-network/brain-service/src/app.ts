@@ -28,6 +28,7 @@ import {
     credentialSharePreviewsRouter,
     CredentialSharePreviewsRouter,
 } from '@routes/credential-share-previews';
+import { hcpRouter, HcpRouter } from './hcp';
 
 /** For end-to-end testing, only available in test environment */
 import { testRouter, TestRouter } from '@routes/test';
@@ -63,6 +64,7 @@ export const appRouter = t.router<{
     shareLinks: ShareLinksRouter;
     publicShareLinks: PublicShareLinksRouter;
     credentialSharePreviews: CredentialSharePreviewsRouter;
+    hcp: HcpRouter;
     test?: TestRouter;
     bench?: BenchRouter;
 }>({
@@ -91,6 +93,7 @@ export const appRouter = t.router<{
     shareLinks: shareLinksRouter,
     publicShareLinks: publicShareLinksRouter,
     credentialSharePreviews: credentialSharePreviewsRouter,
+    hcp: hcpRouter,
     test: environment.IS_E2E_TEST ? testRouter : undefined,
     bench: environment.ENABLE_BENCH_ROUTES ? benchRouter : undefined,
 });
