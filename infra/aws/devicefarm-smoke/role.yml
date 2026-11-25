@@ -58,27 +58,36 @@ Resources:
                                 - !Sub arn:${AWS::Partition}:devicefarm:us-west-2:${AWS::AccountId}:project:${PilotProjectId}
                                 - !Sub arn:${AWS::Partition}:devicefarm:us-west-2:${AWS::AccountId}:devicepool:${PilotProjectId}/*
                                 - !Sub arn:${AWS::Partition}:devicefarm:us-west-2:${AWS::AccountId}:upload:${PilotProjectId}/*
+                          # The mobile API also authorizes these child operations against their pilot project.
                           - Sid: ReadPilotUploads
                             Effect: Allow
                             Action: devicefarm:GetUpload
-                            Resource: !Sub arn:${AWS::Partition}:devicefarm:us-west-2:${AWS::AccountId}:upload:${PilotProjectId}/*
+                            Resource:
+                                - !Sub arn:${AWS::Partition}:devicefarm:us-west-2:${AWS::AccountId}:project:${PilotProjectId}
+                                - !Sub arn:${AWS::Partition}:devicefarm:us-west-2:${AWS::AccountId}:upload:${PilotProjectId}/*
                           - Sid: CleanUpPilotPools
                             Effect: Allow
                             Action:
                                 - devicefarm:DeleteDevicePool
                                 - devicefarm:GetDevicePool
-                            Resource: !Sub arn:${AWS::Partition}:devicefarm:us-west-2:${AWS::AccountId}:devicepool:${PilotProjectId}/*
+                            Resource:
+                                - !Sub arn:${AWS::Partition}:devicefarm:us-west-2:${AWS::AccountId}:project:${PilotProjectId}
+                                - !Sub arn:${AWS::Partition}:devicefarm:us-west-2:${AWS::AccountId}:devicepool:${PilotProjectId}/*
                           - Sid: MonitorPilotRuns
                             Effect: Allow
                             Action:
                                 - devicefarm:GetRun
                                 - devicefarm:ListJobs
                                 - devicefarm:StopRun
-                            Resource: !Sub arn:${AWS::Partition}:devicefarm:us-west-2:${AWS::AccountId}:run:${PilotProjectId}/*
+                            Resource:
+                                - !Sub arn:${AWS::Partition}:devicefarm:us-west-2:${AWS::AccountId}:project:${PilotProjectId}
+                                - !Sub arn:${AWS::Partition}:devicefarm:us-west-2:${AWS::AccountId}:run:${PilotProjectId}/*
                           - Sid: ReadPilotArtifacts
                             Effect: Allow
                             Action: devicefarm:ListArtifacts
-                            Resource: !Sub arn:${AWS::Partition}:devicefarm:us-west-2:${AWS::AccountId}:job:${PilotProjectId}/*
+                            Resource:
+                                - !Sub arn:${AWS::Partition}:devicefarm:us-west-2:${AWS::AccountId}:project:${PilotProjectId}
+                                - !Sub arn:${AWS::Partition}:devicefarm:us-west-2:${AWS::AccountId}:job:${PilotProjectId}/*
 Outputs:
     RoleArn:
         Description: Set DEVICEFARM_SMOKE_ROLE_ARN to this ARN
