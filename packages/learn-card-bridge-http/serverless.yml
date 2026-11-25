@@ -9,6 +9,10 @@ plugins:
     - serverless-plugin-warmup
 
 custom:
+    sprintoTag:
+        production: prod
+        dev: notprod
+        staging: notprod
     esbuild:
         packager: bun
     warmup:
@@ -16,6 +20,10 @@ custom:
             enabled: true
 
 provider:
+    tags:
+        sprinto: ${self:custom.sprintoTag.${sls:stage}, 'notprod'}
+    stackTags:
+        sprinto: ${self:custom.sprintoTag.${sls:stage}, 'notprod'}
     name: aws
     runtime: nodejs14.x
     stage: dev
@@ -56,4 +64,4 @@ functions:
             default:
                 enabled:
                     - dev
-                    - prod
+                    - production

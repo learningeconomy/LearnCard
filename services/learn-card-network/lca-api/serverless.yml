@@ -14,6 +14,10 @@ plugins:
     - serverless-prune-plugin
 
 custom:
+    sprintoTag:
+        production: prod
+        dev: notprod
+        staging: notprod
     prune:
         automatic: true
         number: 3
@@ -123,6 +127,10 @@ layers:
             - x86_64
 
 provider:
+    tags:
+        sprinto: ${self:custom.sprintoTag.${sls:stage}, 'notprod'}
+    stackTags:
+        sprinto: ${self:custom.sprintoTag.${sls:stage}, 'notprod'}
     name: aws
     runtime: nodejs24.x
     # Attach the native DIDKit layer to every function in this service.
