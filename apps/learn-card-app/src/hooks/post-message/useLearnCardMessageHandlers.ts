@@ -3,18 +3,16 @@ import { loadContractAudience } from 'learn-card-base/hooks/consentAudience';
 import React, { useMemo, useCallback, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useHistory } from 'react-router-dom';
+import type { ConsentRequest } from '@learncard/partner-connect-core';
 import {
     useIsLoggedIn,
     useWallet,
     useModal,
     ModalTypes,
     getOrFetchIntegrationForListing,
-    pendingContractSyncStore,
     getCategoryForCredential,
     getOrCreateSharedUriForWallet,
     contractCategoryNameToCategoryMetadata,
-    isJobTerminal,
-    MAX_JOB_RETRIES,
 } from 'learn-card-base';
 import { UnsignedVP, VC, VP } from '@learncard/types';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
@@ -23,7 +21,7 @@ import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import { switchedProfileStore, walletStore } from 'learn-card-base/stores/walletStore';
 
 import { ActionHandlers, AppEvent, VerifiablePresentationRequest } from './useLearnCardPostMessage';
-import { createActionHandlers } from './useLearnCardPostMessage.handlers';
+import { createActionHandlers, IntegrationHint } from './useLearnCardPostMessage.handlers';
 import FullScreenConsentFlow from '../../pages/consentFlow/FullScreenConsentFlow';
 import sdkActivityStore from '../../stores/sdkActivityStore';
 import { publishWalletEvent } from '../../pages/pathways/events/walletEventBus';
@@ -40,6 +38,8 @@ import {
     type LearnerContextRequestOptions,
     type LearnerContextSourceData,
 } from './learnerContext.helpers';
+import { savePartnerCredential } from './partnerCredentialSave';
+import { getPendingSyncStatus, waitForPendingSync } from './pendingSyncStatus.helpers';
 
 interface LaunchConfig {
     url?: string;
@@ -61,6 +61,13 @@ interface UseLearnCardMessageHandlersOptions {
         priority?: string;
     }) => void;
     debug?: boolean;
+    onIntegrationHint?: (hint: IntegrationHint) => void;
+    /**
+     * When true, LAUNCH_FEATURE opens the feature in a new tab instead of
+     * navigating the host SPA away. Used by dev/preview surfaces (e.g. the
+     * publish workspace) where navigation would destroy the builder session.
+     */
+    launchFeaturesInNewTab?: boolean;
 }
 
 import { getLogger } from 'learn-card-base';
@@ -95,79 +102,6 @@ const LearnerContextAppSourceValidator = z.object({
     personalData: z.record(z.string(), z.string()).optional(),
 });
 
-const getPendingSyncStatus = (contractUri?: string) => {
-    const allJobs = Object.values(pendingContractSyncStore.get.jobs());
-    // When a contractUri is provided (a partner app asking about its own
-    // contract), only consider that contract's jobs so an unrelated contract's
-    // sync can't make this app appear to be syncing or skew its progress
-    // totals. With no contractUri we fall back to the store-global view.
-    const jobs = contractUri ? allJobs.filter(job => job.contractUri === contractUri) : allJobs;
-    // A job that just errored but still has retries left is not terminal — it
-    // will be retried by the worker — so treat it as active. Otherwise a
-    // waitForSync caller could see a premature "ready" during the retry window.
-    const activeJobs = jobs.filter(
-        job =>
-            job.status === 'queued' ||
-            job.status === 'running' ||
-            (job.status === 'error' && job.retryCount < MAX_JOB_RETRIES)
-    );
-    const latestTerminalJob = jobs
-        .filter(isJobTerminal)
-        .sort((a, b) => b.updatedAt - a.updatedAt)[0];
-
-    const relevantJobs =
-        activeJobs.length > 0 ? activeJobs : latestTerminalJob ? [latestTerminalJob] : [];
-
-    const progress = relevantJobs.reduce(
-        (summary, job) => ({
-            totalCredentials: summary.totalCredentials + job.totalCredentials,
-            completedCredentials: summary.completedCredentials + job.completedCredentials,
-            failedCredentials: summary.failedCredentials + job.failedCredentials,
-            retryCount: summary.retryCount + job.retryCount,
-        }),
-        {
-            totalCredentials: 0,
-            completedCredentials: 0,
-            failedCredentials: 0,
-            retryCount: 0,
-        }
-    );
-
-    if (activeJobs.length > 0) {
-        return {
-            status: 'syncing' as const,
-            progress,
-        };
-    }
-
-    if (latestTerminalJob?.status === 'error') {
-        return {
-            status: 'error' as const,
-            progress,
-            lastError: latestTerminalJob.lastError,
-        };
-    }
-
-    return {
-        status: 'ready' as const,
-        progress,
-    };
-};
-
-const waitForPendingSync = async (contractUri?: string, timeoutMs = 25000) => {
-    const startedAt = Date.now();
-
-    while (Date.now() - startedAt < timeoutMs) {
-        const status = getPendingSyncStatus(contractUri);
-        if (status.status !== 'syncing') return status;
-        const { promise, resolve } = createDeferred<void>();
-        setTimeout(resolve, 500);
-        await promise;
-    }
-
-    return getPendingSyncStatus(contractUri);
-};
-
 /**
  * Shared hook for creating LEARNCARD_V1 message handlers.
  * Used by both EmbedIframeModal and EmbedAppFullScreen to ensure consistent behavior.
@@ -181,6 +115,8 @@ export function useLearnCardMessageHandlers({
     onCredentialIssued,
     onAppNotification,
     debug = false,
+    onIntegrationHint,
+    launchFeaturesInNewTab = false,
 }: UseLearnCardMessageHandlersOptions): ActionHandlers {
     const isLoggedIn = useIsLoggedIn();
     const { initWallet, storeAndAddVCToWallet } = useWallet();
@@ -294,7 +230,10 @@ export function useLearnCardMessageHandlers({
 
                     // Check if already consented
                     const consentedContract = consentedContracts?.find(
-                        c => c?.contract?.uri === contractUri && c?.status !== 'withdrawn'
+                        c =>
+                            c?.contract?.uri === contractUri &&
+                            c?.status !== 'withdrawn' &&
+                            c?.status !== 'consumed'
                     );
 
                     const isPostConsent = !!consentedContract;
@@ -387,6 +326,46 @@ export function useLearnCardMessageHandlers({
                 ?.contractUri || guideState?.config?.consentFlowConfig?.contractUri
         );
     };
+
+    const upsertScopedContract = useCallback(
+        async (scopes: ConsentRequest): Promise<string | undefined> => {
+            if (!appId) {
+                log('Scoped consent contract upsert skipped: appId not available');
+                return undefined;
+            }
+
+            const learnCard = await initWallet();
+
+            if (!learnCard) {
+                logError('Scoped consent contract upsert failed: wallet not initialized');
+                return undefined;
+            }
+
+            if (!learnCard.invoke.sendAppEvent) {
+                logError('Scoped consent contract upsert failed: sendAppEvent not available');
+                return undefined;
+            }
+
+            try {
+                const result = await learnCard.invoke.sendAppEvent(appId, {
+                    type: 'upsert-consent-contract',
+                    scopes,
+                });
+                const contractUri =
+                    typeof result.contractUri === 'string' ? result.contractUri : undefined;
+
+                if (!contractUri) {
+                    logError('Scoped consent contract upsert returned no contractUri', result);
+                }
+
+                return contractUri;
+            } catch (error) {
+                logError('Failed to upsert scoped consent contract:', error);
+                return undefined;
+            }
+        },
+        [appId, initWallet, log, logError]
+    );
 
     const normalizeLearnerContextOptions = useCallback(
         (options: LearnerContextRequestOptions = {}): LearnerContextRequestOptions => ({
@@ -564,10 +543,10 @@ export function useLearnCardMessageHandlers({
                                     onReject: handleReject,
                                 }),
                                 {
-                                    sectionClassName: '!max-w-[500px]',
+                                    sectionClassName: 'max-w-[500px]!',
                                     hideButton: true,
                                     usePortal: true,
-                                    portalClassName: '!max-w-[500px]',
+                                    portalClassName: 'max-w-[500px]!',
                                 }
                             );
                         } catch (error) {
@@ -605,11 +584,13 @@ export function useLearnCardMessageHandlers({
                     log('Consent requested for contract:', contractUri, options);
                     return showConsentFlow(contractUri, options);
                 },
+                upsertScopedContract,
                 getContractUri: () => launchConfig?.contractUri as string | undefined,
                 getIntegrationContractUri: async () => {
                     return getConfiguredContractUri();
                 },
                 prewarmLearnerContext,
+                onIntegrationHint,
 
                 // Credential handlers
                 showCredentialAcceptanceModal: async (credential: unknown) => {
@@ -633,14 +614,10 @@ export function useLearnCardMessageHandlers({
 
                                 // Save the credential to wallet
                                 try {
-                                    const credentialId = (
-                                        await storeAndAddVCToWallet(
-                                            vc,
-                                            { title: vc.name || 'Credential' },
-                                            'LearnCloud',
-                                            true
-                                        )
-                                    )?.credentialUri;
+                                    const credentialId = await savePartnerCredential(
+                                        vc,
+                                        storeAndAddVCToWallet
+                                    );
 
                                     // Announce the ingest to the pathway
                                     // reactor. Without this, pathway nodes
@@ -701,10 +678,10 @@ export function useLearnCardMessageHandlers({
                                     accepting,
                                 }),
                                 {
-                                    sectionClassName: '!max-w-[500px] !h-[90vh] !max-h-[90vh]',
+                                    sectionClassName: 'max-w-[500px]! h-[90vh]! max-h-[90vh]!',
                                     hideButton: true,
                                     usePortal: true,
-                                    portalClassName: '!max-w-[500px]',
+                                    portalClassName: 'max-w-[500px]!',
                                 }
                             );
                         } catch (error) {
@@ -719,14 +696,11 @@ export function useLearnCardMessageHandlers({
                     const vc = credential as VC;
                     log('Saving credential:', vc);
 
-                    const stored = await storeAndAddVCToWallet(
-                        vc,
-                        { title: vc.name || 'Credential' },
-                        'LearnCloud',
-                        true
-                    );
-                    sdkActivityStore.set.endActivity();
-                    return stored.credentialUri;
+                    try {
+                        return await savePartnerCredential(vc, storeAndAddVCToWallet);
+                    } finally {
+                        sdkActivityStore.set.endActivity();
+                    }
                 },
                 getCredentialById: async (id: string) => {
                     log('Fetching credential:', id);
@@ -781,7 +755,8 @@ export function useLearnCardMessageHandlers({
                                     {
                                         [category]: [sharedUri],
                                     },
-                                    audience.audienceVersion
+                                    audience.audienceVersion,
+                                    true
                                 );
                             }
                         }
@@ -834,7 +809,7 @@ export function useLearnCardMessageHandlers({
                                     origin: embedOrigin,
                                 }),
                                 {
-                                    sectionClassName: '!max-w-[600px] h-full',
+                                    sectionClassName: 'max-w-[600px]! h-full',
                                     hideButton: true,
                                     usePortal: true,
                                 }
@@ -931,7 +906,7 @@ export function useLearnCardMessageHandlers({
                                     origin: embedOrigin,
                                 }),
                                 {
-                                    sectionClassName: '!max-w-[1200px] !h-[95vh] min-h-[95vh]',
+                                    sectionClassName: 'max-w-[1200px]! h-[95vh]! min-h-[95vh]',
                                     hideButton: true,
                                     usePortal: true,
                                 }
@@ -1002,10 +977,10 @@ export function useLearnCardMessageHandlers({
                                     signing,
                                 }),
                                 {
-                                    sectionClassName: '!max-w-[500px] !h-[90vh] !max-h-[90vh]',
+                                    sectionClassName: 'max-w-[500px]! h-[90vh]! max-h-[90vh]!',
                                     hideButton: true,
                                     usePortal: true,
-                                    portalClassName: '!max-w-[500px]',
+                                    portalClassName: 'max-w-[500px]!',
                                 }
                             );
                         } catch (error) {
@@ -1055,6 +1030,31 @@ export function useLearnCardMessageHandlers({
                 navigate: (path: string, params?: Record<string, string>) => {
                     log('Navigating to:', path, params);
                     const queryParams = params ? '?' + new URLSearchParams(params).toString() : '';
+
+                    if (launchFeaturesInNewTab) {
+                        // No 'noopener' feature: window.open returns null for
+                        // noopener windows EVEN ON SUCCESS (spec), which made the
+                        // popup-blocked fallback below also navigate in place.
+                        // The target is our own same-origin app, so omitting it is
+                        // safe and restores accurate block detection.
+                        const opened = window.open(
+                            `${window.location.origin}${path}${queryParams}`,
+                            '_blank'
+                        );
+
+                        // Iframe clicks don't grant the host user-activation, so
+                        // popup blockers may return null; fall back to in-place
+                        // navigation rather than silently doing nothing.
+                        if (!opened) {
+                            log('Popup blocked for feature launch; navigating in place:', path);
+                            history.push(path + queryParams);
+                            onNavigate?.();
+                        }
+
+                        sdkActivityStore.set.endActivity();
+                        return;
+                    }
+
                     history.push(path + queryParams);
 
                     // Call optional onNavigate callback (e.g., to close modal)
@@ -1144,10 +1144,10 @@ export function useLearnCardMessageHandlers({
                                     showBoostContext: true,
                                 }),
                                 {
-                                    sectionClassName: '!max-w-[500px]',
+                                    sectionClassName: 'max-w-[500px]!',
                                     hideButton: true,
                                     usePortal: true,
-                                    portalClassName: '!max-w-[500px]',
+                                    portalClassName: 'max-w-[500px]!',
                                 },
                                 { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
                             );
@@ -1268,7 +1268,11 @@ export function useLearnCardMessageHandlers({
                                       if (topicCredential) {
                                           await storeAndAddVCToWallet(
                                               topicCredential,
-                                              { title: topicCredential.name || 'AI Topic' },
+                                              {
+                                                  title: topicCredential.name || 'AI Topic',
+                                                  networkUri: topicCredentialUri as string,
+                                                  deferContractSync: true,
+                                              },
                                               'LearnCloud',
                                               true
                                           );
@@ -1286,7 +1290,11 @@ export function useLearnCardMessageHandlers({
                                       if (sessionCredential) {
                                           await storeAndAddVCToWallet(
                                               sessionCredential,
-                                              { title: sessionCredential.name || 'AI Session' },
+                                              {
+                                                  title: sessionCredential.name || 'AI Session',
+                                                  networkUri: sessionCredentialUri as string,
+                                                  deferContractSync: true,
+                                              },
                                               'LearnCloud',
                                               true
                                           );
@@ -1339,7 +1347,11 @@ export function useLearnCardMessageHandlers({
                           const appContractUri = await getConfiguredContractUri();
 
                           if (options.waitForSync) {
-                              const syncStatus = await waitForPendingSync(appContractUri);
+                              const syncStatus = await waitForPendingSync(
+                                  switchedProfileStore.get.switchedDid() ??
+                                      walletStore.get.wallet()?.id.did(),
+                                  appContractUri
+                              );
 
                               if (syncStatus.status === 'syncing') {
                                   return {
@@ -1419,7 +1431,25 @@ export function useLearnCardMessageHandlers({
                           };
                       }
                     : undefined,
-                getSyncStatus: async () => getPendingSyncStatus(await getConfiguredContractUri()),
+                // The SDK's host-presence probe (ambiguous localhost parents) gives
+                // GET_SYNC_STATUS only ~1500ms before falling back to mock mode, so
+                // this must answer fast: race the contract lookup (network fetch on
+                // cold cache) against a short deadline and fall back to the global
+                // sync view rather than blocking the response.
+                getSyncStatus: async () => {
+                    const contractUri = await Promise.race([
+                        getConfiguredContractUri().catch(() => undefined),
+                        new Promise<undefined>(resolve =>
+                            setTimeout(() => resolve(undefined), 300)
+                        ),
+                    ]);
+
+                    return getPendingSyncStatus(
+                        switchedProfileStore.get.switchedDid() ??
+                            walletStore.get.wallet()?.id.did(),
+                        contractUri
+                    );
+                },
             }),
         [
             isLoggedIn,
@@ -1445,6 +1475,8 @@ export function useLearnCardMessageHandlers({
             normalizeLearnerContextOptions,
             prewarmLearnerContext,
             resolveLearnerContextCredentials,
+            upsertScopedContract,
+            launchFeaturesInNewTab,
         ]
     );
 

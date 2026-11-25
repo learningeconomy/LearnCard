@@ -20,10 +20,12 @@ const CredentialBadgeNew = lazy(
 /** Render the shared original without applying issuer edits or exposing owner actions. */
 export const ShareCredentialVisual = ({
     credential,
+    category,
     proof,
     endorsements,
 }: {
     credential: VC;
+    category?: string;
     proof?: ProofState;
     endorsements: VC[];
 }) => {
@@ -38,21 +40,19 @@ export const ShareCredentialVisual = ({
               ? m['shareLinks.failed']()
               : m['shareLinks.unavailable']();
     const displayCredential = unwrapBoostCredential(credential);
+    const resolvedCategory = (category ||
+        getDefaultCategoryForCredential(credential)) as BoostCategoryOptionsEnum;
     return (
         <button
             type="button"
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[20px] !bg-grayscale-900 px-5 py-3 text-sm font-medium leading-none !text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[20px] bg-grayscale-900! px-5 py-3 text-sm font-medium leading-none text-white! transition-opacity hover:opacity-90 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
             onClick={() =>
                 newModal(
                     <Suspense fallback={<p role="status">{m['shareLinks.loading']()}</p>}>
                         <CredentialPreview
                             credential={credential}
                             sharedOriginal
-                            categoryType={
-                                getDefaultCategoryForCredential(
-                                    credential
-                                ) as BoostCategoryOptionsEnum
-                            }
+                            categoryType={resolvedCategory}
                             titleOverride={credentialText(credential).name}
                             issuerOverride={credentialText(credential).issuer}
                             customThumbComponent={
@@ -61,11 +61,7 @@ export const ShareCredentialVisual = ({
                                     backgroundImage=""
                                     backgroundColor=""
                                     credential={displayCredential}
-                                    boostType={
-                                        getDefaultCategoryForCredential(
-                                            credential
-                                        ) as BoostCategoryOptionsEnum
-                                    }
+                                    boostType={resolvedCategory}
                                     achievementType={getAchievementType(credential)}
                                     badgeThumbnail={getImageUrlFromCredential(credential)}
                                     fallbackCircleText={credentialText(credential).name}

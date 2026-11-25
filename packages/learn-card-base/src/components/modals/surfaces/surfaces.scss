@@ -5,6 +5,12 @@
 // safe area.
 
 // Full-bleed-style variants: the section paints the surface and owns insets.
+// The dialog host receives programmatic focus when it has no controls. Its
+// backdrop rectangle is not the visible card and must not draw a browser outline.
+[data-lc-surface]:focus {
+    outline: none;
+}
+
 .lc-surface {
     box-sizing: border-box;
     padding-top: var(--lc-safe-top);
@@ -13,6 +19,40 @@
 
 .lc-surface--bottom-sheet {
     padding-top: 0;
+}
+
+// Message chrome stays in flow; these layouts must retain the surface's insets.
+#full-screen-modal > section.lc-message-story,
+#full-screen-modal > section.lc-message-iframe {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    padding-inline: 0;
+    padding-top: var(--lc-safe-top);
+    padding-bottom: var(--lc-safe-bottom);
+    overflow: auto;
+}
+
+#center-modal > section.lc-message-story {
+    width: 100%;
+    max-width: 480px;
+    max-height: 100%;
+    padding: 0;
+    border-radius: 28px;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(24px);
+    overflow: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #center-modal:has(> .lc-message-story),
+    #full-screen-modal:has(> .lc-message-story),
+    #full-screen-modal:has(> .lc-message-iframe),
+    section.lc-message-story,
+    section.lc-message-iframe {
+        animation: none !important;
+        transition: none !important;
+    }
 }
 
 // Centered variants: the aside is the centering container; padding there
@@ -145,6 +185,13 @@
 
 .lc-surface:has(.lc-content-owns-bottom) > * {
     --lc-overlay-inset-bottom: var(--lc-safe-bottom);
+}
+
+// A scrolling view can own the bottom edge too. Keep its viewport full-height
+// and reserve device clearance only AFTER its content, rather than clipping
+// every scroll position above a permanently padded surface edge.
+.lc-surface .lc-scroll-to-edge {
+    padding-bottom: calc(20px + var(--lc-safe-bottom));
 }
 
 // ─── COMPAT SHIMS — DELETE IN LC-1962 GROUP 5 (Task 11) ─────────────────────

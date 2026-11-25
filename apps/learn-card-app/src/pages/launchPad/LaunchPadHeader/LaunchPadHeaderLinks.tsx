@@ -88,7 +88,7 @@ const LaunchPadHeaderLinks: React.FC = () => {
                     className="relative flex flex-col items-center justify-center p-4 rounded-3xl flex-1 xxs:p-1 max-h-[133px] min-h-[133px]"
                 >
                     <div
-                        className={`py-[2px] px-[12px] font-bold rounded-[20px] text-sm flex items-center justify-center notification-badge xxs:top-[-0px] xxs:right-[15px] ${styles?.indicatorStyles} ${alerts.indicatorTextColor} ${alerts.indicatorBgColor}`}
+                        className={`py-[2px] px-[12px] font-bold rounded-[20px] text-sm flex items-center justify-center notification-badge xxs:top-0 xxs:right-[15px] ${styles?.indicatorStyles} ${alerts.indicatorTextColor} ${alerts.indicatorBgColor}`}
                     >
                         {unreadCount ?? 0}
                     </div>

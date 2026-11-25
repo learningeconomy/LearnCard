@@ -6,6 +6,9 @@ on:
             - 'apps/learn-card-app/src/theme/schemas/**'
             - 'apps/learn-card-app/src/theme/validators/**'
 
+permissions:
+    contents: read
+
 jobs:
     validate:
         name: Validate theme schemas

@@ -591,10 +591,10 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             {/* Header */}
             <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                <FileSpreadsheet className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <FileSpreadsheet className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
 
                 <div className="text-sm text-amber-800">
                     <p className="font-medium mb-1">
@@ -607,7 +607,7 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
             {/* Step 1: Mode-specific setup */}
             {isMultiTemplateMode ? (
                 // Multi-template mode: show info about course boost selection
-                <div className="space-y-3">
+                <div className="space-y-v3-3">
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-violet-100 rounded-lg flex items-center justify-center">
                             <FileStack className="w-4 h-4 text-violet-700" />
@@ -629,12 +629,12 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                             {m['developerPortal.dashboards.tabs.csvUpload.requiredColumns']()}
                         </p>
                         <div className="flex flex-wrap gap-2">
-                            <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-medium">
+                            <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-sm text-xs font-medium">
                                 {m[
                                     'developerPortal.dashboards.tabs.csvUpload.recipientColumnLabel'
                                 ]()}
                             </span>
-                            <span className="px-2 py-1 bg-violet-200 text-violet-800 rounded text-xs font-medium">
+                            <span className="px-2 py-1 bg-violet-200 text-violet-800 rounded-sm text-xs font-medium">
                                 {m[
                                     'developerPortal.dashboards.tabs.csvUpload.courseIdColumnLabel'
                                 ]()}
@@ -642,7 +642,7 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                             {sharedVariables.map(v => (
                                 <span
                                     key={v}
-                                    className="px-2 py-1 bg-cyan-100 text-cyan-700 rounded text-xs"
+                                    className="px-2 py-1 bg-cyan-100 text-cyan-700 rounded-sm text-xs"
                                 >
                                     {v.replace(/_/g, ' ')}
                                 </span>
@@ -655,7 +655,7 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                 </div>
             ) : (
                 // Single template mode: template selector
-                <div className="space-y-3">
+                <div className="space-y-v3-3">
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-cyan-100 rounded-lg flex items-center justify-center">
                             <span className="text-cyan-700 font-bold text-sm">1</span>
@@ -668,7 +668,7 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                     <select
                         value={selectedTemplateId}
                         onChange={e => setSelectedTemplateId(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-white focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                     >
                         <option value="">
                             {m['developerPortal.dashboards.tabs.csvUpload.templatePlaceholder']()}
@@ -688,14 +688,14 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                                 ]()}
                             </p>
                             <div className="flex flex-wrap gap-2">
-                                <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-medium">
+                                <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-sm text-xs font-medium">
                                     {m['developerPortal.dashboards.tabs.csvUpload.recipient']()}{' '}
                                     {m['developerPortal.dashboards.tabs.csvUpload.required']()}
                                 </span>
                                 {templateVariables.map(v => (
                                     <span
                                         key={v}
-                                        className="px-2 py-1 bg-cyan-100 text-cyan-700 rounded text-xs"
+                                        className="px-2 py-1 bg-cyan-100 text-cyan-700 rounded-sm text-xs"
                                     >
                                         {v}
                                     </span>
@@ -707,7 +707,7 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
             )}
 
             {/* Step 2: Download Template / Upload CSV */}
-            <div className="space-y-3">
+            <div className="space-y-v3-3">
                 <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-cyan-100 rounded-lg flex items-center justify-center">
                         <span className="text-cyan-700 font-bold text-sm">2</span>
@@ -745,7 +745,7 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                 </div>
 
                 {csvFileName && (
-                    <div className="space-y-3">
+                    <div className="space-y-v3-3">
                         <div className="flex items-center gap-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
                             <Check className="w-5 h-5 text-emerald-600" />
                             <div className="flex-1">
@@ -773,7 +773,7 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                         </div>
 
                         {/* Recipient Column Selector */}
-                        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-3">
+                        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-v3-3">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <Users className="w-4 h-4 text-emerald-600" />
@@ -785,7 +785,7 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                                     </label>
                                 </div>
                                 {recipientColumn && (
-                                    <span className="text-xs text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded">
+                                    <span className="text-xs text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-sm">
                                         ✓{' '}
                                         {m[
                                             'developerPortal.dashboards.tabs.csvUpload.autoDetected'
@@ -797,7 +797,7 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                             <select
                                 value={recipientColumn}
                                 onChange={e => setRecipientColumn(e.target.value)}
-                                className="w-full px-3 py-2 border border-emerald-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                className="w-full px-3 py-2 border border-emerald-300 rounded-lg bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
                             >
                                 <option value="">
                                     {m[
@@ -822,7 +822,7 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
 
                         {/* Course ID Column Selector (multi-template mode only) */}
                         {isMultiTemplateMode && (
-                            <div className="p-4 bg-violet-50 border border-violet-200 rounded-xl space-y-3">
+                            <div className="p-4 bg-violet-50 border border-violet-200 rounded-xl space-y-v3-3">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <FileStack className="w-4 h-4 text-violet-600" />
@@ -834,7 +834,7 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                                         </label>
                                     </div>
                                     {boostSelectorColumn && (
-                                        <span className="text-xs text-violet-600 bg-violet-100 px-2 py-0.5 rounded">
+                                        <span className="text-xs text-violet-600 bg-violet-100 px-2 py-0.5 rounded-sm">
                                             ✓{' '}
                                             {m[
                                                 'developerPortal.dashboards.tabs.csvUpload.autoDetected'
@@ -846,7 +846,7 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                                 <select
                                     value={boostSelectorColumn}
                                     onChange={e => setBoostSelectorColumn(e.target.value)}
-                                    className="w-full px-3 py-2 border border-violet-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                                    className="w-full px-3 py-2 border border-violet-300 rounded-lg bg-white focus:outline-hidden focus:ring-2 focus:ring-violet-500"
                                 >
                                     <option value="">
                                         {m[
@@ -941,7 +941,7 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
             </div>
 
             {/* Step 3: Process */}
-            <div className="space-y-3">
+            <div className="space-y-v3-3">
                 <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-cyan-100 rounded-lg flex items-center justify-center">
                         <span className="text-cyan-700 font-bold text-sm">3</span>
@@ -954,7 +954,7 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                 <button
                     onClick={handleProcessCsv}
                     disabled={!canProcess}
-                    className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-violet-500 text-white rounded-xl font-medium hover:from-cyan-600 hover:to-violet-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-linear-to-r/srgb from-cyan-500 to-violet-500 text-white rounded-xl font-medium hover:from-cyan-600 hover:to-violet-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                     {isProcessing ? (
                         <>
@@ -983,7 +983,7 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
 
             {/* Results */}
             {showResults && processingResults.length > 0 && (
-                <div className="space-y-3">
+                <div className="space-y-v3-3">
                     <button
                         onClick={() => setShowResults(!showResults)}
                         className="flex items-center gap-2 text-sm font-medium text-gray-700"

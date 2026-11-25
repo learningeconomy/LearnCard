@@ -21,6 +21,7 @@ import {
     createSSSStrategy,
     formatVersionedEmailShare,
     IdentityRecoverySessionConsumedError,
+    DuplicateShareCoordinateError,
     parseVersionedEmailShare,
     selectRecoveryPhraseChallengeIndices,
     withRotationLock,
@@ -156,10 +157,17 @@ describe('escrow strategy', () => {
     let calls: Array<{ path: string; init?: RequestInit }>;
     let pinSalt: string | undefined;
     let attemptsRemaining: number;
+    let enrollBodies: Array<Record<string, unknown>>;
+    /** Verified wrong entries against the current PIN; undefined models a legacy record. */
+    let wrongAttempts: number | undefined;
     let holdNumber: number;
     let releasePolicy: 'hold' | 'pin';
     let consumed: boolean;
     let burned: string[];
+    let escrowStale: 'mode-mismatch' | 'key-rotated' | undefined;
+    /** Retained auth share history by version, as lca-api's previousAuthShares. */
+    let history: Record<number, string>;
+    let consumedRebindTokens: Set<string>;
     const hold = () => ({
         holdId: holdNumber <= 1 ? 'escrow-hold' : `escrow-hold-${holdNumber}`,
         status: cancelled ? 'cancelled' : 'pending',
@@ -176,6 +184,7 @@ describe('escrow strategy', () => {
         enclaveKeys = await generateEscrowKeyPair();
         version = 1;
         authShare = (await splitAndVerify(privateKey)).shares.authShare;
+        history = { 1: authShare };
         blob = undefined;
         clientPublicKey = '';
         holdStarted = false;
@@ -186,10 +195,14 @@ describe('escrow strategy', () => {
         calls = [];
         pinSalt = undefined;
         attemptsRemaining = 10;
+        enrollBodies = [];
+        wrongAttempts = 0;
         holdNumber = 0;
         releasePolicy = 'hold';
         consumed = false;
         burned = [];
+        escrowStale = undefined;
+        consumedRebindTokens = new Set();
         config = {
             serverUrl: 'https://test.example/api',
             storage,
@@ -211,20 +224,28 @@ describe('escrow strategy', () => {
                 if (init?.method === 'PUT') {
                     authShare = body.authShare.encryptedData;
                     version++;
+                    history[version] = authShare;
                     pinSalt = undefined;
                     return json({ shareVersion: version });
                 }
+                const requested =
+                    body.shareVersion != null ? (history[body.shareVersion] ?? null) : authShare;
                 return json({
                     primaryDid: did,
-                    authShare: { encryptedData: authShare, encryptedDek: '', iv: '' },
+                    authShare: requested
+                        ? { encryptedData: requested, encryptedDek: '', iv: '' }
+                        : null,
                     shareVersion: version,
                     recoveryMethods: methods,
                     escrowOptedOut: optedOut,
                     escrowPin: {
+                        state: !pinSalt ? 'none' : attemptsRemaining > 0 ? 'enabled' : 'locked',
                         enabled: !!pinSalt && attemptsRemaining > 0,
                         attemptsRemaining,
                         ...(pinSalt ? { salt: pinSalt } : {}),
+                        ...(pinSalt && wrongAttempts !== undefined ? { wrongAttempts } : {}),
                     },
+                    ...(escrowStale ? { escrowStale } : {}),
                 });
             }
             if (path === '/keys/recovery' || path === '/keys/recovery/confirm')
@@ -263,9 +284,19 @@ describe('escrow strategy', () => {
             }
             if (path === '/keys/escrow') {
                 expect(new Headers(init?.headers).get('Authorization')).toMatch(/^Bearer vp-/);
+                // Same-PIN refresh: written only while the PIN still shows these charges.
+                if (
+                    body.expectedPinCharges &&
+                    (body.expectedPinCharges.attemptsRemaining !== attemptsRemaining ||
+                        body.expectedPinCharges.wrongAttempts !== wrongAttempts)
+                )
+                    return new Response(null, { status: 409 });
+                enrollBodies.push(body);
                 blob = await decryptEscrowBlob(body.envelope, enclaveKeys.privateKey);
                 pinSalt = body.pinSalt;
                 attemptsRemaining = 10;
+                wrongAttempts = 0;
+                escrowStale = undefined;
                 expect(blob.did).toBe(did);
                 expect(blob.shareVersion).toBe(version);
                 expect(
@@ -316,6 +347,7 @@ describe('escrow strategy', () => {
                 consumed = true;
                 if (releasePolicy === 'pin' && body.pinProof !== blob.pinVerifier) {
                     attemptsRemaining--;
+                    if (wrongAttempts !== undefined) wrongAttempts++;
                     burned.push(hold().holdId);
                     cancelled = true;
                     return new Response(
@@ -328,6 +360,8 @@ describe('escrow strategy', () => {
                         { status: attemptsRemaining <= 0 ? 429 : 403 }
                     );
                 }
+                // Like lca-api, every PIN release is charged, right or wrong.
+                if (releasePolicy === 'pin') attemptsRemaining--;
                 return json({
                     sealedShare: await sealEscrowRelease(
                         { ...blob, holdId: hold().holdId, ...overrides },
@@ -344,7 +378,37 @@ describe('escrow strategy', () => {
                 expect(new Headers(init?.headers).get('X-Auth-Token') === token).toBe(true);
                 authShare = body.authShare.encryptedData;
                 version++;
+                // Mirrors completeIdentityRebind: lca-api drops the PIN record and history.
+                history = { [version]: authShare };
+                pinSalt = undefined;
                 return json({ shareVersion: version, recoveryMethodsRequireConfirmation: [] });
+            }
+            if (path === '/keys/recovery-session/pin-sign-in') {
+                expect(body.recoverySessionToken === 'rebind-secret').toBe(true);
+                expect(new Headers(init?.headers).get('Authorization')).toMatch(/^Bearer vp-/);
+                if (consumedRebindTokens.has(body.recoverySessionToken))
+                    return new Response(JSON.stringify({ message: 'expired' }), { status: 401 });
+                consumedRebindTokens.add(body.recoverySessionToken);
+                // Links the login only: shares, history, methods and escrow are untouched.
+                return json({ success: true, shareVersion: version, linked: true });
+            }
+            if (path === '/keys/revoke-other-devices') {
+                expect(new Headers(init?.headers).get('Authorization')).toMatch(/^Bearer vp-/);
+                expect(body.authToken === token).toBe(true);
+                if (body.expectedShareVersion !== version)
+                    return new Response(JSON.stringify({ message: 'conflict' }), { status: 409 });
+                authShare = body.authShare.encryptedData;
+                version++;
+                // Mirrors revokeOtherDeviceShares: wipe history, methods pending, escrow unset.
+                history = { [version]: authShare };
+                methods = [];
+                pinSalt = undefined;
+                blob = undefined;
+                return json({
+                    success: true,
+                    shareVersion: version,
+                    recoveryMethodsRequireConfirmation: [],
+                });
             }
             throw new Error('Unexpected test request');
         });
@@ -454,6 +518,38 @@ describe('escrow strategy', () => {
         });
     });
 
+    it.each(
+        [
+            'codeMismatch',
+            'codeExpired',
+            'codeLocked',
+            'secret response',
+            null,
+            403,
+            { code: 'codeMismatch' },
+            ['codeLocked'],
+        ].map(message => ({ message }))
+    )('only exposes allowlisted code refusal metadata: %s', async ({ message }) => {
+        vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+            new Response(JSON.stringify({ message }), { status: 403 })
+        );
+        await expect(
+            strategy.confirmEscrowRecovery!({
+                holdId: 'hold',
+                resumeToken: 'resume',
+                code: '12345678',
+            })
+        ).rejects.toMatchObject({
+            name: 'EscrowRequestError',
+            status: 403,
+            message: 'Escrow request failed',
+            reason:
+                message === 'codeMismatch' || message === 'codeExpired' || message === 'codeLocked'
+                    ? message
+                    : undefined,
+        });
+    });
+
     it('exposes the precondition status without exposing the response body', async () => {
         optOutStatus = 412;
         await expect(strategy.disableEscrowRecovery!(params)).rejects.toMatchObject({
@@ -480,7 +576,7 @@ describe('escrow strategy', () => {
         });
         methods[0].shareVersion = 1;
         expect(await strategy.getEscrowEnrollmentState!(params)).toMatchObject({
-            state: 'not-enrolled',
+            state: 'stale',
         });
         methods[0].shareVersion = version;
         methods[0].confirmedAt = undefined;
@@ -543,7 +639,7 @@ describe('escrow strategy', () => {
         await strategy.setupRecoveryMethod!({ ...params, input: { method: 'phrase' } });
         expect(config.onEscrowError).toHaveBeenCalledWith(
             expect.objectContaining({
-                message: 'Nitro attestation verification is not implemented yet',
+                message: 'Escrow attestation mode mismatch',
             })
         );
     });
@@ -571,6 +667,77 @@ describe('escrow strategy', () => {
         });
         expect(calls).toHaveLength(0);
     });
+    it('getEscrowEnrollmentState reports stale with a reason when the server flags the blob', async () => {
+        await strategy.ensureEscrowEnrollment!(params);
+        escrowStale = 'mode-mismatch';
+        expect(await strategy.getEscrowEnrollmentState!(params)).toMatchObject({
+            state: 'stale',
+            staleReason: 'mode-mismatch',
+        });
+        escrowStale = 'key-rotated';
+        expect(await strategy.getEscrowEnrollmentState!(params)).toMatchObject({
+            state: 'stale',
+            staleReason: 'key-rotated',
+        });
+    });
+    it('does not trigger the stale-repair path when the server reports no staleness', async () => {
+        await strategy.ensureEscrowEnrollment!(params);
+        calls = [];
+        await expect(strategy.ensureEscrowEnrollment!(params)).resolves.toEqual({
+            enrolled: true,
+            changed: false,
+        });
+        expect(calls.some(call => call.path === '/keys/escrow/attestation')).toBe(false);
+    });
+    it('rotates a stale enrollment through the normal rotation path, at most once per session', async () => {
+        await strategy.ensureEscrowEnrollment!(params);
+        escrowStale = 'mode-mismatch';
+        await expect(strategy.ensureEscrowEnrollment!(params)).resolves.toEqual({
+            enrolled: true,
+            changed: true,
+            shareVersion: 3,
+        });
+        expect(version).toBe(3);
+        expect(blob?.shareVersion).toBe(3);
+        // A real re-enroll clears server-side staleness (the mock's '/keys/escrow'
+        // handler already reset it); force it stale again so this assertion proves
+        // the session-scoped rate limit — not the mock's own healing — stops the retry.
+        escrowStale = 'mode-mismatch';
+        calls = [];
+        await expect(strategy.ensureEscrowEnrollment!(params)).resolves.toEqual({
+            enrolled: true,
+            changed: false,
+        });
+        expect(calls.some(call => call.path === '/keys/escrow/attestation')).toBe(false);
+        expect(version).toBe(3);
+        // A fresh strategy instance (the next app session) attempts the repair again.
+        const nextSession = createSSSStrategy(config);
+        await expect(nextSession.ensureEscrowEnrollment!(params)).resolves.toEqual({
+            enrolled: true,
+            changed: true,
+            shareVersion: 4,
+        });
+        expect(version).toBe(4);
+    });
+    it('swallows a failed automatic stale-blob repair instead of throwing to the caller', async () => {
+        await strategy.ensureEscrowEnrollment!(params);
+        escrowStale = 'key-rotated';
+        attestationFailure = true;
+        await expect(strategy.ensureEscrowEnrollment!(params)).resolves.toEqual({
+            enrolled: true,
+            changed: false,
+        });
+        expect(version).toBe(2);
+        expect(config.onEscrowError).toHaveBeenCalledOnce();
+        vi.mocked(config.onEscrowError!).mockClear();
+        // Still rate-limited to one attempt this session, even though it failed.
+        await expect(strategy.ensureEscrowEnrollment!(params)).resolves.toEqual({
+            enrolled: true,
+            changed: false,
+        });
+        expect(config.onEscrowError).not.toHaveBeenCalled();
+        expect(version).toBe(2);
+    });
     it('requires DID verification before attempting PIN recovery', async () => {
         await expect(
             strategy.executeRecovery({
@@ -585,6 +752,24 @@ describe('escrow strategy', () => {
         expect(storage.clearAllShares).not.toHaveBeenCalled();
         expect(strategy.hasPendingIdentityRecovery!()).toBe(false);
     });
+    it.each(['set', 'clear'] as const)(
+        'rejects explicit %s PIN on a stale account when the enclave is unreachable',
+        async action => {
+            await strategy.ensureEscrowEnrollment!(params);
+            escrowStale = 'key-rotated';
+            attestationFailure = true;
+            await expect(
+                action === 'set'
+                    ? strategy.setEscrowPin!({ ...params, pin: '135790' })
+                    : strategy.clearEscrowPin!(params)
+            ).rejects.toThrow();
+            expect(version).toBe(2);
+            expect(config.onEscrowError).not.toHaveBeenCalled();
+            // Explicit actions must not consume the automatic repair attempt.
+            await strategy.ensureEscrowEnrollment!(params);
+            expect(config.onEscrowError).toHaveBeenCalledOnce();
+        }
+    );
     const recoverPin = (pin = '135790') =>
         strategy.executeRecovery({
             ...params,
@@ -612,6 +797,33 @@ describe('escrow strategy', () => {
         expect(JSON.parse(String(enrollment?.init?.body))).toMatchObject({ clearPin: true });
         expect(version).toBe(4);
         expect(pinSalt).toBeUndefined();
+        expect(blob?.pinVerifier).toBeUndefined();
+    });
+
+    it('repairs only a prior enrollment when requirePriorEnrollment is set', async () => {
+        const options = { clearPin: true, requirePriorEnrollment: true };
+        await expect(strategy.ensureEscrowEnrollment!({ ...params, options })).resolves.toEqual({
+            enrolled: false,
+            reason: 'not-enrolled',
+        });
+        expect(version).toBe(1);
+        await strategy.ensureEscrowEnrollment!(params);
+        expect(version).toBe(2);
+        await expect(
+            strategy.ensureEscrowEnrollment!({ ...params, options })
+        ).resolves.toMatchObject({ enrolled: true });
+    });
+
+    it('treats a current PIN-free enrollment as satisfying a clear request', async () => {
+        await strategy.ensureEscrowEnrollment!(params);
+        expect(version).toBe(2);
+        await expect(
+            strategy.ensureEscrowEnrollment!({ ...params, options: { clearPin: true } })
+        ).resolves.toEqual({ enrolled: true, changed: false });
+        expect(version).toBe(2);
+        await strategy.setEscrowPin!({ ...params, pin: '135790' });
+        await strategy.ensureEscrowEnrollment!({ ...params, options: { clearPin: true } });
+        expect(version).toBe(4);
         expect(blob?.pinVerifier).toBeUndefined();
     });
 
@@ -664,15 +876,821 @@ describe('escrow strategy', () => {
         expect(calls).toHaveLength(0);
     });
 
-    it('recovers with a PIN and rotates to hold-only material', async () => {
+    it('signs in with a PIN without re-splitting and re-sets the same PIN for a fresh budget', async () => {
         await strategy.setEscrowPin!({ ...params, pin: '135790' });
+        const previousSalt = pinSalt;
+        const releasedShare = blob!.recoveryShare;
+        const serverShare = authShare;
+        attemptsRemaining = 7;
+        calls = [];
         const recovered = await recoverPin();
-        expect(recovered).toEqual({ privateKey, did });
-        expect(version).toBe(3);
-        expect(blob?.pinVerifier).toBeUndefined();
+        expect(recovered).toEqual({
+            privateKey,
+            did,
+            escrowEnrolled: true,
+            escrowRecovery: true,
+            pinSignIn: { mode: 'kept', pinRefreshed: true, newPinRequired: false },
+        });
+        // Nothing rotated: same version, same server share, no rebind or auth-share write.
+        expect(version).toBe(2);
+        expect(authShare).toBe(serverShare);
+        expect(calls.some(call => call.path === '/keys/recovery-session/rebind')).toBe(false);
+        expect(
+            calls.some(call => call.path === '/keys/auth-share' && call.init?.method === 'PUT')
+        ).toBe(false);
+        // The released recovery piece becomes this device's share at that version.
+        expect((await storage.getDeviceShare()) === releasedShare).toBe(true);
+        expect(await storage.getShareVersion()).toBe(2);
+        expect(await strategy.hasPendingIdentityRecovery!()).toBe(false);
+        // Same PIN, new salt, enrolled at the same version: a fresh attempt budget.
+        const enrollment = calls.filter(call => call.path === '/keys/escrow').at(-1);
+        const body = JSON.parse(String(enrollment?.init?.body));
+        expect(body).not.toHaveProperty('clearPin');
+        expect(body.shareVersion).toBe(2);
+        expect(body.pinSalt).toBe(pinSalt);
+        expect(pinSalt).not.toBe(previousSalt);
+        expect(blob?.pinVerifier).toBe(await derivePinProof('135790', pinSalt!));
+        expect(blob?.recoveryShare === releasedShare).toBe(true);
+        expect(await strategy.getEscrowEnrollmentState!(params)).toMatchObject({
+            escrowPin: { enabled: true, attemptsRemaining: 10 },
+        });
         expect(await reconstructFromShares([(await storage.getDeviceShare())!, authShare])).toBe(
             privateKey
         );
+        // The automatic status refresh on ready finds a current enrollment: no rotation.
+        await expect(strategy.ensureEscrowEnrollment!(params)).resolves.toEqual({
+            enrolled: true,
+            changed: false,
+        });
+        // The kept PIN releases again.
+        await expect(recoverPin()).resolves.toMatchObject({ pinSignIn: { mode: 'kept' } });
+        expect(version).toBe(2);
+    });
+
+    it('does not refresh the budget of a PIN with recorded wrong entries until a new PIN is set', async () => {
+        await strategy.setEscrowPin!({ ...params, pin: '135790' });
+        await expect(recoverPin('246802')).rejects.toMatchObject({
+            name: 'EscrowPinMismatchError',
+        });
+        const saltBefore = pinSalt;
+        const verifier = blob!.pinVerifier;
+        calls = [];
+        // The owner signs in with the right PIN after a guess.
+        await expect(recoverPin()).resolves.toMatchObject({
+            escrowEnrolled: true,
+            pinSignIn: { mode: 'kept', pinRefreshed: false, newPinRequired: true },
+        });
+        // Nothing re-set: same salt and verifier, the reduced budget stands.
+        expect(calls.some(call => call.path === '/keys/escrow')).toBe(false);
+        expect(pinSalt).toBe(saltBefore);
+        expect(blob?.pinVerifier).toBe(verifier);
+        // One wrong guess and one owner release, each charged.
+        expect(attemptsRemaining).toBe(8);
+        expect(await strategy.getEscrowEnrollmentState!(params)).toMatchObject({
+            escrowPin: { enabled: true, attemptsRemaining: 8, wrongAttempts: 1 },
+        });
+        // A second owner sign-in still gets no fresh budget for the same PIN.
+        await expect(recoverPin()).resolves.toMatchObject({
+            pinSignIn: { pinRefreshed: false, newPinRequired: true },
+        });
+        expect(attemptsRemaining).toBe(7);
+
+        // Choosing a new PIN restores the full budget and a clean count.
+        await strategy.setEscrowPin!({ ...params, pin: '864209' });
+        expect(attemptsRemaining).toBe(10);
+        expect(await strategy.getEscrowEnrollmentState!(params)).toMatchObject({
+            escrowPin: { enabled: true, attemptsRemaining: 10, wrongAttempts: 0 },
+        });
+        await expect(recoverPin('864209')).resolves.toMatchObject({
+            pinSignIn: { mode: 'kept', pinRefreshed: true, newPinRequired: false },
+        });
+    });
+
+    it('treats an unknown wrong-entry count as recorded and keeps the reduced budget', async () => {
+        await strategy.setEscrowPin!({ ...params, pin: '135790' });
+        // A legacy PIN record without the verified counter.
+        wrongAttempts = undefined;
+        attemptsRemaining = 8;
+        calls = [];
+        await expect(recoverPin()).resolves.toMatchObject({
+            pinSignIn: { mode: 'kept', pinRefreshed: false, newPinRequired: true },
+        });
+        expect(calls.some(call => call.path === '/keys/escrow')).toBe(false);
+        // Only this release was charged; no fresh budget.
+        expect(attemptsRemaining).toBe(7);
+    });
+
+    it('keeps the reduced budget of a legacy PIN even when the count reads 0 after the release', async () => {
+        await strategy.setEscrowPin!({ ...params, pin: '135790' });
+        // A legacy PIN record: no verified count before the release. lca-api's
+        // reservation then initialises the count to 0, so only the earlier read shows
+        // that the history is unknown.
+        wrongAttempts = undefined;
+        attemptsRemaining = 6;
+        const originalFetch = vi.mocked(fetch).getMockImplementation()!;
+        vi.mocked(fetch).mockImplementation(async (url, init) => {
+            if (String(url).endsWith('/keys/escrow/complete')) wrongAttempts = 0;
+            return originalFetch(url, init);
+        });
+        calls = [];
+        await expect(recoverPin()).resolves.toMatchObject({
+            pinSignIn: { mode: 'kept', pinRefreshed: false, newPinRequired: true },
+        });
+        expect(calls.some(call => call.path === '/keys/escrow')).toBe(false);
+        expect(attemptsRemaining).toBe(5);
+    });
+
+    it('does not refresh when another charge landed during the release (a guess still in flight)', async () => {
+        await strategy.setEscrowPin!({ ...params, pin: '135790' });
+        const originalFetch = vi.mocked(fetch).getMockImplementation()!;
+        vi.mocked(fetch).mockImplementation(async (url, init) => {
+            // Someone else's reservation, not yet resolved as a wrong entry.
+            if (String(url).endsWith('/keys/escrow/complete')) attemptsRemaining--;
+            return originalFetch(url, init);
+        });
+        calls = [];
+        await expect(recoverPin()).resolves.toMatchObject({
+            pinSignIn: { mode: 'kept', pinRefreshed: false, newPinRequired: false },
+        });
+        expect(calls.some(call => call.path === '/keys/escrow')).toBe(false);
+        expect(attemptsRemaining).toBe(8);
+    });
+
+    it('sends the expected charges with a same-PIN refresh and keeps the budget when they changed', async () => {
+        await strategy.setEscrowPin!({ ...params, pin: '135790' });
+        enrollBodies = [];
+        await expect(recoverPin()).resolves.toMatchObject({
+            pinSignIn: { mode: 'kept', pinRefreshed: true },
+        });
+        expect(enrollBodies.at(-1)?.expectedPinCharges).toEqual({
+            attemptsRemaining: 9,
+            wrongAttempts: 0,
+        });
+
+        // A guess reserved after the client's check: the server refuses the write.
+        const originalFetch = vi.mocked(fetch).getMockImplementation()!;
+        vi.mocked(fetch).mockImplementation(async (url, init) => {
+            const path = new URL(String(url)).pathname.replace('/api', '');
+            if (path === '/keys/escrow' && init?.method === 'POST') attemptsRemaining--;
+            return originalFetch(url, init);
+        });
+        const saltBefore = pinSalt;
+        await expect(recoverPin()).resolves.toMatchObject({
+            pinSignIn: { mode: 'kept', pinRefreshed: false },
+        });
+        expect(pinSalt).toBe(saltBefore);
+        expect(attemptsRemaining).toBe(8);
+    });
+
+    describe('own-typos rule (wrong entries made in this sign-in flow)', () => {
+        const recoverInFlow = (
+            pin: string,
+            pinAttempts: { priorWrongAttempts?: number; ownWrongAttempts: number; pinSalt?: string }
+        ) =>
+            strategy.executeRecovery({
+                ...params,
+                input: { method: 'escrow-pin', pin, pinAttempts },
+                didFromPrivateKey: async key => (key === privateKey ? did : ''),
+            });
+
+        it("refreshes the budget after the user's own typo, sending their wrong entry as expected", async () => {
+            await strategy.setEscrowPin!({ ...params, pin: '135790' });
+            const saltBefore = pinSalt;
+            enrollBodies = [];
+            // Flow starts with a clean PIN; the user mistypes once, then gets it right.
+            await expect(
+                recoverInFlow('246802', { priorWrongAttempts: 0, ownWrongAttempts: 0 })
+            ).rejects.toMatchObject({ name: 'EscrowPinMismatchError' });
+            await expect(
+                recoverInFlow('135790', { priorWrongAttempts: 0, ownWrongAttempts: 1 })
+            ).resolves.toMatchObject({
+                pinSignIn: { mode: 'kept', pinRefreshed: true, newPinRequired: false },
+            });
+            expect(enrollBodies.at(-1)?.expectedPinCharges).toEqual({
+                attemptsRemaining: 8,
+                wrongAttempts: 1,
+            });
+            expect(pinSalt).not.toBe(saltBefore);
+            expect(attemptsRemaining).toBe(10);
+            expect(wrongAttempts).toBe(0);
+        });
+
+        it('keeps the reduced budget when wrong entries were recorded before the flow started', async () => {
+            await strategy.setEscrowPin!({ ...params, pin: '135790' });
+            // Someone else's guess, before this sign-in.
+            await expect(recoverPin('246802')).rejects.toMatchObject({
+                name: 'EscrowPinMismatchError',
+            });
+            calls = [];
+            await expect(
+                recoverInFlow('135790', { priorWrongAttempts: 1, ownWrongAttempts: 0 })
+            ).resolves.toMatchObject({
+                pinSignIn: { mode: 'kept', pinRefreshed: false, newPinRequired: true },
+            });
+            expect(calls.some(call => call.path === '/keys/escrow')).toBe(false);
+            expect(attemptsRemaining).toBe(8);
+        });
+
+        it('does not excuse a foreign wrong entry that landed during the flow', async () => {
+            await strategy.setEscrowPin!({ ...params, pin: '135790' });
+            await expect(
+                recoverInFlow('246802', { priorWrongAttempts: 0, ownWrongAttempts: 0 })
+            ).rejects.toMatchObject({ name: 'EscrowPinMismatchError' });
+            // A guess from somewhere else between the user's typo and their right PIN.
+            await expect(recoverPin('975310')).rejects.toMatchObject({
+                name: 'EscrowPinMismatchError',
+            });
+            calls = [];
+            await expect(
+                recoverInFlow('135790', { priorWrongAttempts: 0, ownWrongAttempts: 1 })
+            ).resolves.toMatchObject({
+                pinSignIn: { mode: 'kept', pinRefreshed: false, newPinRequired: true },
+            });
+            expect(calls.some(call => call.path === '/keys/escrow')).toBe(false);
+        });
+
+        it('does not excuse a foreign wrong entry that lands during the release', async () => {
+            await strategy.setEscrowPin!({ ...params, pin: '135790' });
+            await expect(
+                recoverInFlow('246802', { priorWrongAttempts: 0, ownWrongAttempts: 0 })
+            ).rejects.toMatchObject({ name: 'EscrowPinMismatchError' });
+            const originalFetch = vi.mocked(fetch).getMockImplementation()!;
+            vi.mocked(fetch).mockImplementation(async (url, init) => {
+                const response = await originalFetch(url, init);
+                // A foreign wrong entry resolved right after this release.
+                if (String(url).endsWith('/keys/escrow/complete') && response.ok) {
+                    attemptsRemaining--;
+                    wrongAttempts = (wrongAttempts ?? 0) + 1;
+                }
+                return response;
+            });
+            calls = [];
+            await expect(
+                recoverInFlow('135790', { priorWrongAttempts: 0, ownWrongAttempts: 1 })
+            ).resolves.toMatchObject({
+                pinSignIn: { mode: 'kept', pinRefreshed: false, newPinRequired: true },
+            });
+            expect(calls.some(call => call.path === '/keys/escrow')).toBe(false);
+        });
+
+        it('lets the server refuse the refresh when a foreign wrong entry lands after the checks', async () => {
+            await strategy.setEscrowPin!({ ...params, pin: '135790' });
+            await expect(
+                recoverInFlow('246802', { priorWrongAttempts: 0, ownWrongAttempts: 0 })
+            ).rejects.toMatchObject({ name: 'EscrowPinMismatchError' });
+            const originalFetch = vi.mocked(fetch).getMockImplementation()!;
+            vi.mocked(fetch).mockImplementation(async (url, init) => {
+                const path = new URL(String(url)).pathname.replace('/api', '');
+                if (path === '/keys/escrow' && init?.method === 'POST') {
+                    attemptsRemaining--;
+                    wrongAttempts = (wrongAttempts ?? 0) + 1;
+                }
+                return originalFetch(url, init);
+            });
+            const saltBefore = pinSalt;
+            await expect(
+                recoverInFlow('135790', { priorWrongAttempts: 0, ownWrongAttempts: 1 })
+            ).resolves.toMatchObject({
+                // The refused refresh re-checks the status: the foreign entry shows, so
+                // the user gets the warning sheet, not "You're signed in".
+                pinSignIn: {
+                    mode: 'kept',
+                    pinRefreshed: false,
+                    newPinRequired: true,
+                    pinRefreshFailed: true,
+                },
+            });
+            expect(pinSalt).toBe(saltBefore);
+            expect(wrongAttempts).toBe(2);
+        });
+
+        it('warns on a 409-refused refresh when the status cannot be re-read', async () => {
+            await strategy.setEscrowPin!({ ...params, pin: '135790' });
+            await expect(
+                recoverInFlow('246802', { priorWrongAttempts: 0, ownWrongAttempts: 0 })
+            ).rejects.toMatchObject({ name: 'EscrowPinMismatchError' });
+            const originalFetch = vi.mocked(fetch).getMockImplementation()!;
+            let refused = false;
+            vi.mocked(fetch).mockImplementation(async (url, init) => {
+                const path = new URL(String(url)).pathname.replace('/api', '');
+                if (path === '/keys/escrow' && init?.method === 'POST') {
+                    refused = true;
+                    return new Response(JSON.stringify({ message: 'changed' }), { status: 409 });
+                }
+                if (refused && path === '/keys/auth-share') throw new TypeError('offline');
+                return originalFetch(url, init);
+            });
+            await expect(
+                recoverInFlow('135790', { priorWrongAttempts: 0, ownWrongAttempts: 1 })
+            ).resolves.toMatchObject({
+                pinSignIn: { pinRefreshed: false, newPinRequired: true, pinRefreshFailed: true },
+            });
+        });
+
+        it('ignores flow counts taken against another PIN generation (new salt)', async () => {
+            await strategy.setEscrowPin!({ ...params, pin: '135790' });
+            // The flow's own typo was against an earlier PIN; this record's one wrong
+            // entry is someone else's guess against the current PIN.
+            await expect(recoverPin('246802')).rejects.toMatchObject({
+                name: 'EscrowPinMismatchError',
+            });
+            calls = [];
+            await expect(
+                recoverInFlow('135790', {
+                    priorWrongAttempts: 0,
+                    ownWrongAttempts: 1,
+                    pinSalt: 'an-earlier-generation-salt',
+                })
+            ).resolves.toMatchObject({
+                pinSignIn: { mode: 'kept', pinRefreshed: false, newPinRequired: true },
+            });
+            expect(calls.some(call => call.path === '/keys/escrow')).toBe(false);
+            expect(wrongAttempts).toBe(1);
+        });
+
+        it('still refreshes after an own typo when the flow saw the same PIN generation', async () => {
+            await strategy.setEscrowPin!({ ...params, pin: '135790' });
+            const flowSalt = pinSalt;
+            await expect(
+                recoverInFlow('246802', {
+                    priorWrongAttempts: 0,
+                    ownWrongAttempts: 0,
+                    pinSalt: flowSalt,
+                })
+            ).rejects.toMatchObject({ name: 'EscrowPinMismatchError' });
+            await expect(
+                recoverInFlow('135790', {
+                    priorWrongAttempts: 0,
+                    ownWrongAttempts: 1,
+                    pinSalt: flowSalt,
+                })
+            ).resolves.toMatchObject({
+                pinSignIn: { mode: 'kept', pinRefreshed: true, newPinRequired: false },
+            });
+        });
+
+        it.each([
+            ['an unknown prior count', { ownWrongAttempts: 0 }],
+            ['an invalid own count', { priorWrongAttempts: 0, ownWrongAttempts: -1 }],
+        ])('treats %s as wrong entries recorded', async (_label, pinAttempts) => {
+            await strategy.setEscrowPin!({ ...params, pin: '135790' });
+            calls = [];
+            await expect(recoverInFlow('135790', pinAttempts)).resolves.toMatchObject({
+                pinSignIn: { mode: 'kept', pinRefreshed: false, newPinRequired: true },
+            });
+            expect(calls.some(call => call.path === '/keys/escrow')).toBe(false);
+        });
+
+        it('keeps a legacy record (no verified count) blocked even with a clean prior count', async () => {
+            await strategy.setEscrowPin!({ ...params, pin: '135790' });
+            wrongAttempts = undefined;
+            calls = [];
+            await expect(
+                recoverInFlow('135790', { priorWrongAttempts: 0, ownWrongAttempts: 0 })
+            ).resolves.toMatchObject({
+                pinSignIn: { pinRefreshed: false, newPinRequired: true },
+            });
+            expect(calls.some(call => call.path === '/keys/escrow')).toBe(false);
+        });
+
+        it.each([
+            [1, 0, false],
+            [2, 0, true],
+            [1, 1, true],
+        ])(
+            'excuses only own typos after a lost-login sign-in (recorded %s, prior %s)',
+            async (recorded, prior, expected) => {
+                await strategy.setEscrowPin!({ ...params, pin: '135790' });
+                wrongAttempts = recorded;
+                await strategy.executeRecovery({
+                    token: '',
+                    providerType,
+                    input: {
+                        method: 'escrow-pin',
+                        pin: '135790',
+                        recoverySessionToken: 'otp',
+                        pinAttempts: { priorWrongAttempts: prior, ownWrongAttempts: 1 },
+                    },
+                    didFromPrivateKey: async () => did,
+                });
+                await expect(strategy.completeIdentityRecovery!(params)).resolves.toMatchObject({
+                    pinSignIn: { mode: 'relinked', pinRefreshed: false, newPinRequired: expected },
+                });
+            }
+        );
+    });
+
+    it.each([
+        [0, false],
+        [2, true],
+    ])(
+        'reports a needed new PIN after a lost-login sign-in (wrong entries: %s)',
+        async (recorded, expected) => {
+            await strategy.setEscrowPin!({ ...params, pin: '135790' });
+            wrongAttempts = recorded;
+            await strategy.executeRecovery({
+                token: '',
+                providerType,
+                input: { method: 'escrow-pin', pin: '135790', recoverySessionToken: 'otp' },
+                didFromPrivateKey: async () => did,
+            });
+            calls = [];
+            await expect(strategy.completeIdentityRecovery!(params)).resolves.toMatchObject({
+                pinSignIn: { mode: 'relinked', pinRefreshed: false, newPinRequired: expected },
+            });
+            expect(calls.some(call => call.path === '/keys/escrow')).toBe(false);
+        }
+    );
+
+    it('keeps a released PIN that no longer meets the PIN rules without re-setting it', async () => {
+        await strategy.setEscrowPin!({ ...params, pin: '135790' });
+        // A legacy PIN the current rules reject (sequential pattern).
+        blob = { ...blob!, pinVerifier: await derivePinProof('123456', pinSalt!) };
+        const saltBefore = pinSalt;
+        calls = [];
+        await expect(recoverPin('123456')).resolves.toMatchObject({
+            escrowEnrolled: true,
+            pinSignIn: { mode: 'kept', pinRefreshed: false },
+        });
+        // Keep mode never alters escrow: no enrollment, no clear.
+        expect(calls.some(call => call.path === '/keys/escrow')).toBe(false);
+        expect(pinSalt).toBe(saltBefore);
+        expect(blob?.pinVerifier).toBe(await derivePinProof('123456', pinSalt!));
+        expect(version).toBe(2);
+    });
+
+    it('keeps the PIN valid and reports no secret when the budget re-set fails', async () => {
+        await strategy.setEscrowPin!({ ...params, pin: '135790' });
+        const verifier = blob!.pinVerifier;
+        const original = vi.mocked(fetch).getMockImplementation()!;
+        let failEnroll = true;
+        vi.mocked(fetch).mockImplementation((url, init) =>
+            failEnroll &&
+            String(url).endsWith('/keys/escrow') &&
+            init?.method === 'POST' &&
+            JSON.parse(String(init.body)).pinSalt
+                ? Promise.resolve(new Response('upstream failure', { status: 500 }))
+                : original(url, init)
+        );
+        const consoles = (['log', 'info', 'warn', 'error', 'debug'] as const).map(level =>
+            vi.spyOn(console, level).mockImplementation(() => undefined)
+        );
+        const recovered = await recoverPin('135790');
+        // The blob and PIN at this version are still valid; only the budget was not refreshed.
+        expect(recovered).toMatchObject({
+            escrowEnrolled: true,
+            escrowRecovery: true,
+            pinSignIn: { mode: 'kept', pinRefreshed: false },
+        });
+        expect(config.onEscrowError).toHaveBeenCalled();
+        const reported = vi.mocked(config.onEscrowError!).mock.calls.flat();
+        const logged = consoles.flatMap(spy => spy.mock.calls.flat());
+        for (const value of [...reported, ...logged]) {
+            const text =
+                value instanceof Error
+                    ? `${value.message} ${value.stack ?? ''} ${JSON.stringify(value)}`
+                    : typeof value === 'string'
+                      ? value
+                      : JSON.stringify(value);
+            expect(text ?? '').not.toContain('135790');
+        }
+        failEnroll = false;
+        calls = [];
+        // No clear-PIN repair was scheduled: the automatic refresh changes nothing.
+        await expect(strategy.ensureEscrowEnrollment!(params)).resolves.toEqual({
+            enrolled: true,
+            changed: false,
+        });
+        expect(calls.some(call => call.path === '/keys/escrow')).toBe(false);
+        expect(blob?.pinVerifier).toBe(verifier);
+        expect(version).toBe(2);
+    });
+
+    it('stores the released version when another device rotated after the release', async () => {
+        await strategy.setEscrowPin!({ ...params, pin: '135790' });
+        const releasedShare = blob!.recoveryShare;
+        const original = vi.mocked(fetch).getMockImplementation()!;
+        let raced = false;
+        vi.mocked(fetch).mockImplementation(async (url, init) => {
+            const result = await original(url, init);
+            if (!raced && String(url).endsWith('/keys/escrow/complete')) {
+                raced = true;
+                // Another device's ordinary (non-wiping) rotation lands meanwhile.
+                const next = await splitAndVerify(privateKey);
+                version++;
+                authShare = next.shares.authShare;
+                history[version] = authShare;
+            }
+            return result;
+        });
+        calls = [];
+        await expect(recoverPin()).resolves.toMatchObject({
+            escrowEnrolled: true,
+            pinSignIn: { mode: 'deferred-rotation', pinRefreshed: false },
+        });
+        expect((await storage.getDeviceShare()) === releasedShare).toBe(true);
+        expect(await storage.getShareVersion()).toBe(2);
+        expect(version).toBe(3);
+        expect(calls.some(call => call.path === '/keys/escrow')).toBe(false);
+        // The next start-up reconciles the historical device share without wiping.
+        await expect(
+            strategy.reconcileShares!({
+                token,
+                providerType,
+                expectedDid: did,
+                didFromPrivateKey: async key => (key === privateKey ? did : ''),
+                signDidAuthVp,
+            })
+        ).resolves.toMatchObject({ privateKey });
+        expect(version).toBe(4);
+        expect(history[2]).toBeDefined();
+    });
+
+    it('fails closed without storing anything when the released version is gone', async () => {
+        await strategy.setEscrowPin!({ ...params, pin: '135790' });
+        const original = vi.mocked(fetch).getMockImplementation()!;
+        vi.mocked(fetch).mockImplementation(async (url, init) => {
+            const result = await original(url, init);
+            if (String(url).endsWith('/keys/escrow/complete')) {
+                // A concurrent "secure my account" wiped the released version.
+                const next = await splitAndVerify(privateKey);
+                version++;
+                authShare = next.shares.authShare;
+                history = { [version]: authShare };
+            }
+            return result;
+        });
+        vi.mocked(storage.storeDeviceShare).mockClear();
+        vi.mocked(storage.storeShareVersion).mockClear();
+        calls = [];
+        await expect(recoverPin()).rejects.toMatchObject({ name: 'PinSignInStaleError' });
+        expect(storage.storeDeviceShare).not.toHaveBeenCalled();
+        expect(storage.storeShareVersion).not.toHaveBeenCalled();
+        expect(strategy.hasPendingIdentityRecovery!()).toBe(false);
+        // Never falls back to a rotation or rebind.
+        expect(
+            calls.some(
+                call =>
+                    call.path === '/keys/recovery-session/rebind' ||
+                    call.path === '/keys/escrow' ||
+                    (call.path === '/keys/auth-share' && call.init?.method === 'PUT')
+            )
+        ).toBe(false);
+    });
+
+    it('requires a login or a verified recovery session before starting a PIN release', async () => {
+        await expect(
+            strategy.executeRecovery({
+                token: '',
+                providerType,
+                input: { method: 'escrow-pin', pin: '135790' },
+                didFromPrivateKey: async () => did,
+            })
+        ).rejects.toThrow('PIN recovery requires signing in first.');
+        expect(calls).toHaveLength(0);
+    });
+
+    it('links a new login after a lost-login PIN sign-in without changing shares', async () => {
+        await strategy.setEscrowPin!({ ...params, pin: '135790' });
+        const releasedShare = blob!.recoveryShare;
+        const serverShare = authShare;
+        calls = [];
+        await expect(
+            strategy.executeRecovery({
+                token: '',
+                providerType,
+                input: {
+                    method: 'escrow-pin',
+                    pin: '135790',
+                    recoverySessionToken: 'otp-session',
+                },
+                didFromPrivateKey: async key => (key === privateKey ? did : ''),
+            })
+        ).resolves.toEqual({ privateKey, did });
+        const start = JSON.parse(
+            String(calls.find(call => call.path === '/keys/escrow/recover')?.init?.body)
+        );
+        expect(start).toMatchObject({ recoverySessionToken: 'otp-session', releasePolicy: 'pin' });
+        expect(start).not.toHaveProperty('authToken');
+        expect(strategy.hasPendingIdentityRecovery!()).toBe(true);
+        expect(storage.storeDeviceShare).not.toHaveBeenCalledWith(releasedShare, undefined);
+
+        await expect(strategy.completeIdentityRecovery!(params)).resolves.toEqual({
+            privateKey,
+            did,
+            escrowEnrolled: true,
+            escrowRecovery: true,
+            pinSignIn: { mode: 'relinked', pinRefreshed: false, newPinRequired: false },
+        });
+        expect(calls.some(call => call.path === '/keys/recovery-session/pin-sign-in')).toBe(true);
+        expect(calls.some(call => call.path === '/keys/recovery-session/rebind')).toBe(false);
+        expect(calls.some(call => call.path === '/keys/escrow')).toBe(false);
+        const link = calls.find(call => call.path === '/keys/recovery-session/pin-sign-in');
+        expect(new Headers(link?.init?.headers).get('X-Auth-Token') === token).toBe(true);
+        expect(JSON.stringify(JSON.parse(String(link?.init?.body)))).not.toContain('135790');
+        expect(version).toBe(2);
+        expect(authShare).toBe(serverShare);
+        expect((await storage.getDeviceShare()) === releasedShare).toBe(true);
+        expect(await storage.getShareVersion()).toBe(2);
+        expect(strategy.hasPendingIdentityRecovery!()).toBe(false);
+    });
+
+    it.each([true, false])(
+        'resolves a lost link acknowledgement from server state (linked: %s)',
+        async linked => {
+            await strategy.setEscrowPin!({ ...params, pin: '135790' });
+            const releasedShare = blob!.recoveryShare;
+            await strategy.executeRecovery({
+                token: '',
+                providerType,
+                input: { method: 'escrow-pin', pin: '135790', recoverySessionToken: 'otp' },
+                didFromPrivateKey: async () => did,
+            });
+            const original = vi.mocked(fetch).getMockImplementation()!;
+            vi.mocked(fetch).mockImplementation(async (url, init) => {
+                const path = new URL(String(url)).pathname.replace('/api', '');
+                if (path === '/keys/recovery-session/pin-sign-in') {
+                    if (linked) await original(url, init);
+                    return new Response(null, { status: 503 });
+                }
+                // An unlinked login has no account to resolve.
+                if (!linked && path === '/keys/auth-share')
+                    return new Response(null, { status: 404 });
+                return original(url, init);
+            });
+            vi.mocked(storage.storeDeviceShare).mockClear();
+            const completing = strategy.completeIdentityRecovery!(params);
+            if (linked) {
+                await expect(completing).resolves.toMatchObject({
+                    pinSignIn: { mode: 'relinked' },
+                });
+                expect((await storage.getDeviceShare()) === releasedShare).toBe(true);
+            } else {
+                await expect(completing).rejects.toThrow();
+                expect(storage.storeDeviceShare).not.toHaveBeenCalled();
+                expect(strategy.hasPendingIdentityRecovery!()).toBe(true);
+            }
+        }
+    );
+
+    it('still rebinds and clears the PIN when a hold release is completed', async () => {
+        await strategy.setEscrowPin!({ ...params, pin: '135790' });
+        const start = await strategy.startEscrowRecovery!({
+            recoverySessionToken: 'otp-session',
+        });
+        await strategy.executeRecovery({
+            token: '',
+            providerType,
+            input: { method: 'escrow', ...start, resumeToken: start.resumeToken! },
+            didFromPrivateKey: async () => did,
+        });
+        calls = [];
+        await expect(strategy.completeIdentityRecovery!(params)).resolves.toMatchObject({
+            escrowEnrolled: true,
+        });
+        expect(calls.some(call => call.path === '/keys/recovery-session/rebind')).toBe(true);
+        expect(calls.some(call => call.path === '/keys/recovery-session/pin-sign-in')).toBe(false);
+        const enrollment = calls.filter(call => call.path === '/keys/escrow').at(-1);
+        expect(JSON.parse(String(enrollment?.init?.body))).toMatchObject({ clearPin: true });
+        expect(blob?.pinVerifier).toBeUndefined();
+        expect(version).toBe(3);
+    });
+
+    describe('revokeOtherDevices', () => {
+        const revoke = (pin: string | null) =>
+            strategy.revokeOtherDevices!({ ...params, did, pin });
+
+        it('re-splits, wipes history and re-enrolls escrow with the PIN just entered', async () => {
+            await strategy.setEscrowPin!({ ...params, pin: '135790' });
+            const deviceBefore = await storage.getDeviceShare();
+            calls = [];
+            await expect(revoke('246802')).resolves.toEqual({
+                shareVersion: 3,
+                escrowEnrolled: true,
+                pinKept: true,
+            });
+            expect(Object.keys(history)).toEqual(['3']);
+            expect((await storage.getDeviceShare()) === deviceBefore).toBe(false);
+            expect(await storage.getShareVersion()).toBe(3);
+            expect(
+                await reconstructFromShares([(await storage.getDeviceShare())!, authShare])
+            ).toBe(privateKey);
+            expect(await readPendingShareCandidates(storage)).toEqual([]);
+            const body = JSON.parse(
+                String(calls.find(call => call.path === '/keys/revoke-other-devices')?.init?.body)
+            );
+            expect(body.expectedShareVersion).toBe(2);
+            expect(JSON.stringify(body)).not.toContain('246802');
+            expect(blob?.shareVersion).toBe(3);
+            expect(blob?.pinVerifier).toBe(await derivePinProof('246802', pinSalt!));
+        });
+
+        it('re-enrolls without a PIN when the user skips it', async () => {
+            await strategy.setEscrowPin!({ ...params, pin: '135790' });
+            calls = [];
+            await expect(revoke(null)).resolves.toEqual({
+                shareVersion: 3,
+                escrowEnrolled: true,
+                pinKept: false,
+            });
+            const enrollment = calls.filter(call => call.path === '/keys/escrow').at(-1);
+            expect(JSON.parse(String(enrollment?.init?.body))).toMatchObject({ clearPin: true });
+            expect(blob?.pinVerifier).toBeUndefined();
+        });
+
+        it.each([
+            [403, true, 2],
+            [409, false, 1],
+        ])(
+            'retries the re-enrolment once only after a definite authority refusal (%i)',
+            async (status, pinKept, attempts) => {
+                await strategy.setEscrowPin!({ ...params, pin: '135790' });
+                const original = vi.mocked(fetch).getMockImplementation()!;
+                let refuse = true;
+                vi.mocked(fetch).mockImplementation(async (url, init) => {
+                    const path = new URL(String(url)).pathname.replace('/api', '');
+                    if (refuse && path === '/keys/escrow' && init?.method === 'POST') {
+                        refuse = false;
+                        calls.push({ path, init });
+                        return new Response(null, { status });
+                    }
+                    return original(url, init);
+                });
+                calls = [];
+                await expect(revoke('246802')).resolves.toEqual({
+                    shareVersion: 3,
+                    escrowEnrolled: pinKept,
+                    pinKept,
+                });
+                expect(
+                    calls.filter(
+                        call => call.path === '/keys/escrow' && call.init?.method === 'POST'
+                    )
+                ).toHaveLength(attempts);
+                if (pinKept)
+                    expect(blob?.pinVerifier).toBe(await derivePinProof('246802', pinSalt!));
+            }
+        );
+
+        it('does not enroll escrow for an account that never had it', async () => {
+            await expect(revoke(null)).resolves.toEqual({
+                shareVersion: 2,
+                escrowEnrolled: false,
+                pinKept: false,
+            });
+            expect(calls.some(call => call.path === '/keys/escrow')).toBe(false);
+        });
+
+        it('rejects an invalid PIN before writing anything', async () => {
+            await expect(revoke('123456')).rejects.toThrow(/PIN/);
+            expect(calls).toHaveLength(0);
+        });
+
+        it('rolls back the staged share on a version conflict', async () => {
+            await strategy.ensureEscrowEnrollment!(params);
+            const deviceBefore = await storage.getDeviceShare();
+            const original = vi.mocked(fetch).getMockImplementation()!;
+            vi.mocked(fetch).mockImplementation(async (url, init) => {
+                if (String(url).endsWith('/keys/revoke-other-devices')) {
+                    return new Response(JSON.stringify({ message: 'conflict' }), {
+                        status: 409,
+                    });
+                }
+                return original(url, init);
+            });
+            await expect(revoke(null)).rejects.toThrow();
+            expect(version).toBe(2);
+            expect((await storage.getDeviceShare()) === deviceBefore).toBe(true);
+            expect(await readPendingShareCandidates(storage)).toEqual([]);
+        });
+
+        it('keeps the staged share after a lost acknowledgement so reconciliation promotes it', async () => {
+            await strategy.ensureEscrowEnrollment!(params);
+            const original = vi.mocked(fetch).getMockImplementation()!;
+            vi.mocked(fetch).mockImplementation(async (url, init) => {
+                if (String(url).endsWith('/keys/revoke-other-devices')) {
+                    await original(url, init);
+                    return new Response(null, { status: 503 });
+                }
+                return original(url, init);
+            });
+            await expect(revoke(null)).rejects.toThrow();
+            expect(version).toBe(3);
+            const candidates = await readPendingShareCandidates(storage);
+            expect(candidates).toHaveLength(1);
+            vi.mocked(fetch).mockImplementation(original);
+            await expect(
+                strategy.reconcileShares!({
+                    token,
+                    providerType,
+                    expectedDid: did,
+                    didFromPrivateKey: async key => (key === privateKey ? did : ''),
+                    signDidAuthVp,
+                })
+            ).resolves.toMatchObject({ privateKey });
+            expect((await storage.getDeviceShare()) === candidates[0].share).toBe(true);
+            expect(await readPendingShareCandidates(storage)).toEqual([]);
+        });
     });
 
     it('burns a wrong PIN hold and uses a fresh hold and key for the next call', async () => {
@@ -686,7 +1704,14 @@ describe('escrow strategy', () => {
         expect(burned).toEqual(['escrow-hold']);
         expect(storage.storeDeviceShare).not.toHaveBeenCalled();
         expect(storage.storeShareVersion).not.toHaveBeenCalled();
-        await expect(recoverPin()).resolves.toEqual({ privateKey, did });
+        await expect(recoverPin()).resolves.toEqual({
+            privateKey,
+            did,
+            escrowEnrolled: true,
+            escrowRecovery: true,
+            // A wrong entry is recorded: no fresh budget for this PIN.
+            pinSignIn: { mode: 'kept', pinRefreshed: false, newPinRequired: true },
+        });
         const starts = calls.filter(call => call.path === '/keys/escrow/recover');
         const completes = calls.filter(call => call.path === '/keys/escrow/complete');
         expect(starts).toHaveLength(2);
@@ -811,11 +1836,13 @@ describe('escrow strategy', () => {
     });
 
     it('round trips real crypto, rebinds and persists a new device share', async () => {
-        await strategy.ensureEscrowEnrollment!(params);
+        await strategy.setEscrowPin!({ ...params, pin: '135790' });
+        const options = { recoveryEmail: 'owner@example.com', recoveryLanguage: 'es' };
         const previous = await storage.getDeviceShare();
         const start = await strategy.startEscrowRecovery!({ token, providerType });
         const recovered = await strategy.executeRecovery({
             ...params,
+            options,
             input: { method: 'escrow', ...start, resumeToken: start.resumeToken! },
             didFromPrivateKey: async key => (key === privateKey ? did : ''),
         });
@@ -829,8 +1856,11 @@ describe('escrow strategy', () => {
         expect(blob?.shareVersion).toBe(3);
         expect(strategy.hasPendingIdentityRecovery!()).toBe(false);
         expect(calls.some(call => call.path === '/keys/recovery-session/rebind')).toBe(true);
+        // A hold release proves no PIN and lca-api lost the PIN record, so it is cleared.
         const reEnrollment = calls.filter(call => call.path === '/keys/escrow').at(-1);
         expect(JSON.parse(String(reEnrollment?.init?.body))).toMatchObject({ clearPin: true });
+        expect(JSON.parse(String(reEnrollment?.init?.body))).not.toHaveProperty('pinSalt');
+        expect(blob?.pinVerifier).toBeUndefined();
     });
     it('lets the server carry the PIN after a non-escrow recovery', async () => {
         await strategy.ensureEscrowEnrollment!({ ...params, options: { pin: '135790' } });
@@ -1456,6 +2486,16 @@ describe('createSSSStrategy', () => {
 
             expect(reconstructed).toBe(originalKey);
         });
+
+        it('classifies duplicate coordinates without changing other reconstruction errors', async () => {
+            const { localKey } = await strategy.splitKey('a'.repeat(64));
+            await expect(strategy.reconstructKey(localKey, localKey)).rejects.toBeInstanceOf(
+                DuplicateShareCoordinateError
+            );
+            await expect(strategy.reconstructKey('bad', 'bad')).rejects.not.toBeInstanceOf(
+                DuplicateShareCoordinateError
+            );
+        });
     });
 
     // -----------------------------------------------------------------------
@@ -1907,6 +2947,8 @@ describe('createSSSStrategy', () => {
             await expect(strategy.completeIdentityRecovery!(fixture.params)).resolves.toEqual({
                 privateKey: fixture.privateKey,
                 did: fixture.did,
+                escrowEnrolled: false,
+                escrowRecovery: false,
             });
             expect(fixture.getRebindCalls()).toBe(1);
             expect(vi.mocked(storage.storeDeviceShare).mock.calls.slice(writes)).toEqual([

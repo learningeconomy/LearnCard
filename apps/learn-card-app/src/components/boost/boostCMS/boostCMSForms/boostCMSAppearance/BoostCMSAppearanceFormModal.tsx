@@ -23,7 +23,9 @@ type BoostCMSAppearanceFormModalProps = {
     setState: React.Dispatch<React.SetStateAction<BoostCMSState>>;
     showCloseButton: boolean;
     boostUserType: BoostUserTypeEnum;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     customTypes: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     setCustomTypes: React.Dispatch<any>;
     errors?: Record<string, string[]>;
     disabled?: boolean;
@@ -65,7 +67,9 @@ const BoostCMSAppearanceFormModal: React.FC<BoostCMSAppearanceFormModalProps> = 
         });
     };
 
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let activeFormEl = null;
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let formBackgroundColor: string = '';
 
     if (activeForm === BoostCMSActiveAppearanceForm.badgeForm) {

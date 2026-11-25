@@ -39,10 +39,7 @@ interface EvidenceUploaderProps {
 
 const URL_PATTERN = /^https?:\/\/\S+$/i;
 
-const inferArtifactType = (
-    text: string,
-    expected: ArtifactType,
-): ArtifactType => {
+const inferArtifactType = (text: string, expected: ArtifactType): ArtifactType => {
     if (URL_PATTERN.test(text.trim())) return 'link';
 
     return expected;
@@ -153,7 +150,7 @@ const EvidenceUploader: React.FC<EvidenceUploaderProps> = ({
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -4 }}
                         transition={{ duration: 0.2, ease: 'easeOut' }}
-                        className="p-4 rounded-2xl border border-grayscale-200 bg-white space-y-3"
+                        className="p-4 rounded-2xl border border-grayscale-200 bg-white space-y-v3-3"
                     >
                         <textarea
                             ref={textareaRef}
@@ -163,7 +160,7 @@ const EvidenceUploader: React.FC<EvidenceUploaderProps> = ({
                             rows={3}
                             className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900
                                        placeholder:text-grayscale-400 bg-white
-                                       focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent
+                                       focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent
                                        resize-none font-poppins"
                             maxLength={500}
                         />

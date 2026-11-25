@@ -9,7 +9,7 @@ import { useGetCredentialList } from 'learn-card-base';
 
 import { AiFeatureGate } from '../ai-feature-gate/AiFeatureGate';
 import AiSessionsPage from '../../pages/ai-sessions/AiSessionsPage';
-import NewAiSessionContainer from '../new-ai-session/NewAiSessionContainer';
+import NewAiSessionContainer from '../new-ai-session/LazyNewAiSessionContainer';
 
 import { NewAiSessionStepEnum } from '../new-ai-session/newAiSession.helpers';
 
@@ -93,11 +93,13 @@ export const AiSessionTopicsContainer: React.FC = () => {
         // capture the loading render's empty list.
         if (topicsLoading || isModalOpen) return;
 
+        // The URL effect updates the persisted selection after this render. Honor
+        // it now so the modal cannot capture a previous session's step.
         newModal(
             <NewAiSessionContainer
                 existingTopics={existingTopics}
                 showAiAppSelector
-                shortCircuitStep={chatBotSelected}
+                shortCircuitStep={shortCircuitStep || chatBotSelected}
                 handleStartOver={handleStartOver}
             />,
             {
@@ -117,6 +119,7 @@ export const AiSessionTopicsContainer: React.FC = () => {
         handleStartOver,
         isModalOpen,
         newModal,
+        shortCircuitStep,
         topicsLoading,
     ]);
 

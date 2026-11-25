@@ -24,10 +24,20 @@ export const resolveNotificationRoute = (notification: LCNNotification): string 
     const { type } = notification;
 
     switch (type) {
+        case LCNNotificationTypeEnumValidator.enum.ANNOUNCEMENT: {
+            const id = notification.data?.metadata?.campaignId;
+            return notification.data?.metadata?.campaignHasInApp === true &&
+                typeof id === 'string' &&
+                id.trim().length > 0
+                ? `/m/${encodeURIComponent(id)}`
+                : '/notifications';
+        }
         case LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST:
             return '/notifications';
         case LCNNotificationTypeEnumValidator.enum.CONNECTION_ACCEPTED:
             return '/contacts';
+        case LCNNotificationTypeEnumValidator.enum.CONSENT_FLOW_CONTRACT_UPDATED:
+            return resolveConsentFlowContractUpdateRoute(notification);
         case LCNNotificationTypeEnumValidator.enum.CREDENTIAL_REFRESHED:
             return resolveCredentialRefreshRoute(notification);
         case LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED:
@@ -67,6 +77,13 @@ const resolveCredentialRefreshRoute = (notification: LCNNotification): string =>
     if (typeof refreshId !== 'string' || refreshId.length === 0) return '/notifications';
 
     return `/notifications?refreshId=${encodeURIComponent(refreshId)}&refresh=true`;
+};
+const resolveConsentFlowContractUpdateRoute = (notification: LCNNotification): string => {
+    const contractUri = notification.data?.contractUri;
+
+    if (typeof contractUri !== 'string' || contractUri.length === 0) return '/notifications';
+
+    return `/consent-flow/review?uri=${encodeURIComponent(contractUri)}`;
 };
 
 export const getNotificationToastCopy = (
@@ -149,7 +166,13 @@ const TOAST_EXCLUDED_TYPES: LCNNotification['type'][] = [
     LCNNotificationTypeEnumValidator.enum.CONSENT_FLOW_TRANSACTION,
 ];
 
-export const shouldToastNotification = (notification: LCNNotification): boolean =>
-    !TOAST_EXCLUDED_TYPES.includes(notification.type);
+export const shouldToastNotification = (notification: LCNNotification): boolean => {
+    if (notification.type === LCNNotificationTypeEnumValidator.enum.CONSENT_FLOW_CONTRACT_UPDATED) {
+        const kind = notification.data?.kind;
+        return kind !== 'relaxed' && kind !== 'expanded_optional';
+    }
+
+    return !TOAST_EXCLUDED_TYPES.includes(notification.type);
+};
 
 export { handlePushNotificationActionPerformed as default };

@@ -239,7 +239,7 @@ const composerCall = (index = 0) =>
     modalHost.openModal.mock.calls[index] as [
         ComposerElement,
         Record<string, unknown>,
-        { desktop: string; mobile: string }
+        { desktop: string; mobile: string },
     ];
 
 type PromptToastElement = ReactElement<{
@@ -393,7 +393,7 @@ describe('FeedbackProvider reportProblem', () => {
         await expect(element.props.pendingContext).resolves.toBe(CONTEXT);
         expect(element.props.draft.capturedAt).toBe(new Date(clock.nowMs).toISOString());
         expect(options).toEqual({
-            sectionClassName: '!max-w-[480px] !bg-white',
+            sectionClassName: 'max-w-[480px]! bg-white!',
             onClose: expect.any(Function),
         });
         expect(type).toEqual({ desktop: 'center', mobile: 'full-screen' });

@@ -95,11 +95,11 @@ export const TroopCMSWallpaperSelect: React.FC<{
 
     return (
         <div
-            className={`flex items-center justify-between w-full bg-grayscale-100 p-2 pb-4 pl-[10px] mb-2 border-b-white border-b-solid border-b-[2px] ${className}`}
+            className={`flex items-center justify-between w-full bg-grayscale-100 p-2 pb-4 pl-[10px] mb-2 border-b-white border-b-solid border-b-2 ${className}`}
         >
             <div className="flex items-center justify-start w-[70%] overflow-hidden">
                 <div
-                    className={`relative flex items-center justify-center object-contain overflow-hidden w-[50px] h-[50px] bg-grayscale-300 rounded-[10px] border-solid border-white border-[1px]`}
+                    className={`relative flex items-center justify-center object-contain overflow-hidden w-[50px] h-[50px] bg-grayscale-300 rounded-[10px] border-solid border-white border`}
                 >
                     {(!wallpaper && !state?.inheritNetworkStyles && !isInIDMode) ||
                     (!wallpaper && isInIDMode) ? (

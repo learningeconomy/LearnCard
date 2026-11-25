@@ -55,7 +55,7 @@ export const ShareSearchEmpty = ({
             <button
                 type="button"
                 onClick={onClear}
-                className="mt-4 rounded-[20px] border border-grayscale-300 bg-white px-4 py-2.5 text-sm font-medium text-grayscale-700 transition-colors hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                className="mt-4 rounded-[20px] border border-grayscale-300 bg-white px-4 py-2.5 text-sm font-medium text-grayscale-700 transition-colors hover:bg-emerald-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
             >
                 {m['shareLinks.clearSearch']()}
             </button>

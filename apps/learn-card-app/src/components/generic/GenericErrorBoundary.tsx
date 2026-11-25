@@ -86,13 +86,13 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({
                 {showError && !isChunkError && (
                     <div className="bg-red-50 p-4 rounded-lg mb-4 w-full max-w-md">
                         <p className="text-red-800 font-medium">Error:</p>
-                        <p className="text-red-700 text-sm mt-1 break-words">{error.message}</p>
+                        <p className="text-red-700 text-sm mt-1 wrap-break-word">{error.message}</p>
                         {error.stack && (
                             <details className="mt-2">
                                 <summary className="text-sm text-red-600 cursor-pointer">
                                     View stack trace
                                 </summary>
-                                <pre className="bg-black/5 p-2 rounded text-xs mt-1 overflow-auto max-h-40">
+                                <pre className="bg-black/5 p-2 rounded-sm text-xs mt-1 overflow-auto max-h-40">
                                     {error.stack}
                                 </pre>
                             </details>
@@ -105,7 +105,7 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({
                     <button
                         className={`bg-${
                             primaryColor || 'grayscale-900'
-                        } py-[7px] px-[15px] rounded-[30px] text-[14px] text-white font-[600] leading-[24px] tracking-[0.25px] shadow-button-bottom font-poppins`}
+                        } py-[7px] px-[15px] rounded-[30px] text-[14px] text-white font-semibold leading-[24px] tracking-[0.25px] shadow-button-bottom font-poppins`}
                         onClick={() => window.location.reload()}
                     >
                         Refresh
@@ -123,7 +123,7 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({
                 ) : (
                     <>
                         <button
-                            className="bg-white py-[7px] px-[15px] rounded-[30px] text-grayscale-900 text-[14px] shadow-button-bottom font-poppins border-[1px] border-grayscale-200 border-solid"
+                            className="bg-white py-[7px] px-[15px] rounded-[30px] text-grayscale-900 text-[14px] shadow-button-bottom font-poppins border border-grayscale-200 border-solid"
                             onClick={
                                 resetErrorBoundary
                                     ? resetErrorBoundary
@@ -134,7 +134,7 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({
                         </button>
                         {onReportProblem && (
                             <button
-                                className="bg-white py-[7px] px-[15px] rounded-[30px] text-grayscale-700 text-[14px] shadow-button-bottom font-poppins border-[1px] border-grayscale-300 border-solid"
+                                className="bg-white py-[7px] px-[15px] rounded-[30px] text-grayscale-700 text-[14px] shadow-button-bottom font-poppins border border-grayscale-300 border-solid"
                                 onClick={onReportProblem}
                             >
                                 {m['feedback.reporting.sendReport']()}
@@ -143,7 +143,7 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({
                         {extraButtons?.map(button => (
                             <button
                                 key={button.label}
-                                className="bg-white py-[7px] px-[15px] rounded-[30px] text-grayscale-900 text-[14px] shadow-button-bottom font-poppins border-[1px] border-grayscale-200 border-solid"
+                                className="bg-white py-[7px] px-[15px] rounded-[30px] text-grayscale-900 text-[14px] shadow-button-bottom font-poppins border border-grayscale-200 border-solid"
                                 onClick={button.onClick}
                             >
                                 {button.label}
@@ -151,7 +151,7 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({
                         ))}
                         {!hideGoHome && (
                             <button
-                                className={`bg-${primaryColor} py-[7px] px-[15px] rounded-[30px] text-[14px] text-white font-[600] leading-[24px] tracking-[0.25px] shadow-button-bottom font-poppins`}
+                                className={`bg-${primaryColor} py-[7px] px-[15px] rounded-[30px] text-[14px] text-white font-semibold leading-[24px] tracking-[0.25px] shadow-button-bottom font-poppins`}
                                 onClick={() => (window.location.href = '/')}
                             >
                                 {m['error.goHome']()}

@@ -55,7 +55,7 @@ const useAddToLearnCardActions = (): AddToLearnCardActions => {
             <Suspense fallback={<PasteOrUploadClaimModalFallback />}>
                 <LazyPasteOrUploadClaimModal />
             </Suspense>,
-            { hideButton: true, sectionClassName: '!max-w-[500px]' }
+            { hideButton: true, sectionClassName: 'max-w-[500px]!' }
         );
     };
 

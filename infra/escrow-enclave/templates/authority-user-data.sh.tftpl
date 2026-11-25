@@ -1,0 +1,38 @@
+# Explicitly enabled authority foundations extend the base KMS-only allowlist.
+%{ for name, proxy in proxies ~}
+cat >> /etc/nitro_enclaves/vsock-proxy.yaml <<AUTH_ALLOWLIST_EOF
+  - {address: ${proxy.service}.${aws_region}.amazonaws.com, port: 443}
+AUTH_ALLOWLIST_EOF
+cat > /etc/systemd/system/vsock-proxy-${name}.service <<AUTH_PROXY_EOF
+[Unit]
+Description=Enclave TLS byte proxy for ${proxy.service}
+After=network-online.target nitro-enclaves-allocator.service
+Wants=network-online.target
+Requires=nitro-enclaves-allocator.service
+[Service]
+Type=simple
+ExecStart=/usr/bin/vsock-proxy ${proxy.port} ${proxy.service}.${aws_region}.amazonaws.com 443 --config /etc/nitro_enclaves/vsock-proxy.yaml
+Restart=always
+RestartSec=2
+User=root
+[Install]
+WantedBy=multi-user.target
+AUTH_PROXY_EOF
+%{ endfor ~}
+install -d -m 0755 /etc/systemd/system/escrow-enclave-host.service.d
+cat > /etc/systemd/system/escrow-enclave-host.service.d/authority.conf <<AUTH_HOST_EOF
+[Unit]
+After=${join(" ", [for name in keys(proxies) : "vsock-proxy-${name}.service"])}
+Requires=${join(" ", [for name in keys(proxies) : "vsock-proxy-${name}.service"])}
+%{ if deliver ~}
+[Service]
+Environment=ESCROW_AUTHORITY_CREDENTIAL_OBJECT=credentials/authority-writer/${generation}
+%{ if email ~}
+Environment=ESCROW_EMAIL_CREDENTIAL_OBJECT=credentials/email-sender/${generation}
+%{ endif ~}
+%{ endif ~}
+AUTH_HOST_EOF
+systemctl daemon-reload
+%{ for name in keys(proxies) ~}
+systemctl enable --now vsock-proxy-${name}.service
+%{ endfor ~}

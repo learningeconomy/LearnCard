@@ -60,7 +60,7 @@ const NotificationsPage: React.FC = () => {
         <IonPage className="bg-white h-full">
             <MainHeader
                 showBackButton={false}
-                customClassName="bg-gradient-to-b from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-white md:border-none md:bg-none md:backdrop-blur-none"
+                customClassName="bg-linear-to-b/srgb from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-white md:border-none md:bg-none md:backdrop-blur-none"
             >
                 <NotificationsSubHeader isEmptyState={isEmptyState} tab={tab} setTab={setTab} />
             </MainHeader>
@@ -71,7 +71,7 @@ const NotificationsPage: React.FC = () => {
                     scrollEvents
                     onIonScroll={onHeaderScroll}
                 >
-                    <IonCol className="flex mx-auto relative items-start flex-wrap w-full h-auto min-h-[100%] notifications-list-container bg-white px-[20px]">
+                    <IonCol className="flex mx-auto relative items-start flex-wrap w-full h-auto min-h-full notifications-list-container bg-white px-[20px]">
                         <NotificationsListView
                             isEmptyState={isEmptyState}
                             setIsEmptyState={setIsEmptyState}

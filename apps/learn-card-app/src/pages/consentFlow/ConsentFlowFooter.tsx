@@ -66,7 +66,7 @@ const ConsentFlowFooter: React.FC<ConsentFlowFooterProps> = ({
             className={
                 compact
                     ? 'shrink-0 w-full bg-white border-t border-grayscale-200 px-6 py-4 font-poppins'
-                    : 'absolute bottom-0 left-0 w-full bg-white bg-opacity-70 border-t-[1px] border-solid border-white p-[20px] backdrop-blur-[10px] z-50'
+                    : 'absolute bottom-0 left-0 w-full bg-white/70  border-t border-solid border-white p-[20px] backdrop-blur-[10px] z-50'
             }
         >
             <div className="max-w-[600px] flex gap-[10px] items-center mx-auto">
@@ -98,7 +98,7 @@ const ConsentFlowFooter: React.FC<ConsentFlowFooterProps> = ({
                         type="button"
                         className={
                             compact
-                                ? 'flex-1 py-3 px-4 rounded-[20px] border border-solid border-grayscale-300 bg-white text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2'
+                                ? 'flex-1 py-3 px-4 rounded-[20px] border border-solid border-grayscale-300 bg-white text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2'
                                 : 'w-full text-[17px] text-grayscale-900 font-notoSans bg-white shadow-button-bottom rounded-[35px] leading-[24px] tracking-[0.25px] h-[44px]'
                         }
                         onClick={onSecondaryButtonClick}
@@ -111,7 +111,7 @@ const ConsentFlowFooter: React.FC<ConsentFlowFooterProps> = ({
                         type="button"
                         className={
                             compact
-                                ? 'flex-1 py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2'
+                                ? 'flex-1 py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2'
                                 : `w-full py-[7px] px-[15px] text-[17px] ${
                                       actionButtonColorClass ?? `bg-${primaryColor}`
                                   } rounded-[35px] font-notoSans text-white shadow-button-bottom disabled:opacity-60 h-[44px] leading-[24px] tracking-[0.25px] font-[600]`

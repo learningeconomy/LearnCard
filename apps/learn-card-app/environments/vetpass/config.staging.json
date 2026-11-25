@@ -1,4 +1,5 @@
 {
+    "stage": "staging",
     "domain": "staging.vetpass.app",
     "apis": {
         "brainService": "https://staging.network.learncard.com/trpc",
@@ -7,7 +8,37 @@
         "lcaApi": "https://staging.api.learncard.app/trpc",
         "xapi": "https://staging.network.learncard.com/xapi"
     },
+    "auth": {
+        "keyDerivation": "sss",
+        "sss": {
+            "serverUrl": "https://staging.api.learncard.app/api",
+            "escrowEnclaveMode": "nitro",
+            "escrowAuthorityTenant": "learncard",
+            "escrowSealEmailBrand": true,
+            "escrowEnclavePublicKeys": [
+                "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAErzuapPkQxSAb0oEQdYHWQIGXt8aSTKZwUWxrFoysw6WggnF8caCLNZiaFBeAfBd2PUty+/pXmgmpFsIo86zzcQ=="
+            ],
+            "escrowEnclaveMeasurements": [
+                {
+                    "pcr0": "69543e24d0bc0df81108411308cc721bc9b957f714e43a23e75118d3f14ccfabdd057be9b2f9fb6ea6bbe1f772864396",
+                    "pcr1": "4b4d5b3661b3efc12920900c80e126e4ce783c522de6c02a2a5bf7af3a2b9327b86776f188e4be1c1c404a129dbda493",
+                    "pcr2": "5113a698a18534fe44a25149cd717c72227e4c6d54fc710f0b81262aee6052c12cd791f30d046ac69a739d635b0ab8b8"
+                },
+                {
+                    "pcr0": "ae3e13e49ebf0b694a198c7f9e4734d66c6e08150474f243ec62821ba3d7e8a9c55afbbf74357d64c0a397b3dc8759e9",
+                    "pcr1": "4b4d5b3661b3efc12920900c80e126e4ce783c522de6c02a2a5bf7af3a2b9327b86776f188e4be1c1c404a129dbda493",
+                    "pcr2": "4b15623ee296990eccdc31de06bd126eeaa40e7e5f7b4917538089c9dc017de14ad58bb5c6e77cd369c64fe3544c056e"
+                },
+                {
+                    "pcr0": "00a32cbce52e7ba2eafb85d4ade3d5f9accf1aa0a721c3d464e6146ce1f4c9b88d6807e42080bb150e8d2abcd42ca9fa",
+                    "pcr1": "4b4d5b3661b3efc12920900c80e126e4ce783c522de6c02a2a5bf7af3a2b9327b86776f188e4be1c1c404a129dbda493",
+                    "pcr2": "d2fb871dbb28c197f1ab4634b3c86a77659695062be2adaf8162b549a519b9bc6db0cfc02d4778756fa45a4db17db56c"
+                }
+            ]
+        }
+    },
     "features": {
+        "escrowRolloutPercent": 100,
         "useSeededSkillFrameworks": true
     },
     "observability": {

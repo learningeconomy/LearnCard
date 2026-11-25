@@ -85,6 +85,7 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
     const metadataFields = fields.filter(field => field.type === 'metadata');
     const lastMetadataField = metadataFields[metadataFields.length - 1];
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const info = vc ? getInfoFromCredential(vc as any, 'MMM yyyy', { uppercaseDate: false }) : null;
     const selectedStartDate = credentialStartDates?.[uri] ?? '';
     const selectedEndDate = credentialEndDates?.[uri] ?? '';
@@ -132,7 +133,7 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
             </div>,
             {
                 disableCloseHandlers: true,
-                sectionClassName: '!bg-transparent !border-none !shadow-none !rounded-none',
+                sectionClassName: 'bg-transparent! border-none! shadow-none! rounded-none!',
             },
             {
                 desktop: ModalTypes.Center,
@@ -169,6 +170,7 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
 
         const categoryType = (getDefaultCategoryForCredential(unwrapBoostCredential(vc), {
             skipValidation: true,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         }) || section) as any;
         const previewProps = {
             credential: vc,
@@ -210,12 +212,12 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
                                     <button
                                         type="button"
                                         onClick={openCredentialPreview}
-                                        className="max-w-full cursor-pointer bg-transparent border-none p-0 text-left text-sm font-semibold text-grayscale-800 leading-tight break-words hover:underline hover:underline-offset-2"
+                                        className="max-w-full cursor-pointer bg-transparent border-none p-0 text-left text-sm font-semibold text-grayscale-800 leading-tight wrap-break-word hover:underline hover:underline-offset-2"
                                     >
                                         {title || m['passport.resumeBuilder.credential']()}
                                     </button>
                                 ) : (
-                                    <span className="text-sm font-semibold text-grayscale-800 leading-tight break-words">
+                                    <span className="text-sm font-semibold text-grayscale-800 leading-tight wrap-break-word">
                                         {title || m['passport.resumeBuilder.credential']()}
                                     </span>
                                 )}

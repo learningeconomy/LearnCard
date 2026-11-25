@@ -1,7 +1,14 @@
 import { vi } from 'vitest';
-import { LEARNCARD_APP_SHORTCUTS } from './learnCardAppShortcuts';
+import { LEARNCARD_APP_SHORTCUTS, SCHOOL_CONNECT_SHORTCUT } from './learnCardAppShortcuts';
 
 describe('LEARNCARD_APP_SHORTCUTS', () => {
+    it('defines SCHOOL_CONNECT_SHORTCUT', () => {
+        expect(SCHOOL_CONNECT_SHORTCUT.title).toBe('School Connect');
+        const push = vi.fn();
+        SCHOOL_CONNECT_SHORTCUT.getAction({ push })();
+        expect(push).toHaveBeenCalledWith('/school-connect');
+    });
+
     it('defines the 8 shortcuts in the ticket order', () => {
         expect(LEARNCARD_APP_SHORTCUTS.map(s => s.title)).toEqual([
             'Skill Insights',
@@ -49,7 +56,7 @@ describe('LEARNCARD_APP_SHORTCUTS', () => {
     });
 
     it('gives every shortcut an icon and gradient stops', () => {
-        for (const s of LEARNCARD_APP_SHORTCUTS) {
+        for (const s of [...LEARNCARD_APP_SHORTCUTS, SCHOOL_CONNECT_SHORTCUT]) {
             expect(s.Icon).toBeTruthy();
             expect(s.gradientFrom).toMatch(/^#/);
             expect(s.gradientTo).toMatch(/^#/);

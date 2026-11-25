@@ -21,7 +21,7 @@ const UserOptions: React.FC<{
     handleLogout: () => void;
     showFixedFooter?: boolean;
     showCloseButton?: boolean;
-    title?: String | React.ReactNode;
+    title?: string | React.ReactNode;
     footer?: React.ReactNode;
 }> = ({
     handleCloseModal,

@@ -61,7 +61,7 @@ const RecipientMediaAttachmentsList: React.FC<RecipientMediaAttachmentsListProps
                 </button>
             </div>
 
-            <div className="pt-5 space-y-4">
+            <div className="pt-5 space-y-v3-4">
                 <button
                     type="button"
                     onClick={onAddMedia}
@@ -71,7 +71,7 @@ const RecipientMediaAttachmentsList: React.FC<RecipientMediaAttachmentsListProps
                     <Plus className="w-7 h-7 text-grayscale-700" />
                 </button>
 
-                <div className="space-y-4">
+                <div className="space-y-v3-4">
                     {photos.map((photo, index) => (
                         <BoostMediaCMSFormPhotoItem
                             key={photo.url}

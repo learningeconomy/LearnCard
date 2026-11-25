@@ -2,6 +2,7 @@ import react from '@vitejs/plugin-react-swc';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import path from 'path';
+import { paraglideLazyLocales } from './src/i18n/paraglideLazyLocales';
 import { createVitestConfig, happyDomPreset } from '../../vitest.shared';
 import type { LearnCardAppEnvironment } from './src/config/buildEnvironment';
 
@@ -30,6 +31,8 @@ export default createVitestConfig(happyDomPreset, {
             outdir: './src/paraglide',
             outputStructure: 'locale-modules',
         }),
+        // Serves `virtual:paraglide-lazy-locales` as no-ops; tests keep every locale static.
+        paraglideLazyLocales('en', path.resolve(__dirname, 'src/paraglide/messages')),
     ],
     test: {
         // DOMPurify's SVG sanitization and computed CSS serialization require jsdom semantics.

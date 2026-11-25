@@ -69,7 +69,7 @@ const ConsentActivityDetailModal: React.FC<ConsentActivityDetailModalProps> = ({
                 </section>
             }
         >
-            <section className="w-full px-6 py-7 space-y-5 text-grayscale-900">
+            <section className="w-full px-6 py-7 space-y-v3-5 text-grayscale-900">
                 <div className="flex items-center gap-3 min-w-0 pr-8">
                     <div className="w-[56px] h-[56px] shrink-0 overflow-hidden rounded-full">
                         <UserProfilePicture
@@ -119,7 +119,7 @@ const ConsentActivityDetailModal: React.FC<ConsentActivityDetailModalProps> = ({
                     </div>
                 )}
 
-                <div className="space-y-3">
+                <div className="space-y-v3-3">
                     <h2 className="text-sm font-semibold text-grayscale-900">
                         {m['dashboard.activity.title']()}
                     </h2>

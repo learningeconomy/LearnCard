@@ -76,7 +76,7 @@ export const AdminToolsBulkBoostImportUploadStep: React.FC<{
                 imageTracking={imageTracking}
             />,
             {
-                sectionClassName: '!max-w-[500px] !bg-white',
+                sectionClassName: 'max-w-[500px]! bg-white!',
                 hideButton: true,
             }
         );
@@ -100,7 +100,7 @@ export const AdminToolsBulkBoostImportUploadStep: React.FC<{
 
                 <div className="w-full flex gap-[5px] rounded-[10px] bg-indigo-100 justify-center ion-padding mt-4">
                     <div className="flex flex-col">
-                        <p className="flex items-center justify-start text-[18px] text-indigo-600 font-poppins font-[600]">
+                        <p className="flex items-center justify-start text-[18px] text-indigo-600 font-poppins font-semibold">
                             <CircleCheckOutlineIcon className="inline mr-2" />{' '}
                             {m['adminTools.bulkImport.checkBeforeUploading']()}
                         </p>

@@ -51,7 +51,7 @@ const CompletionMoment: React.FC<CompletionMomentProps> = ({ title, onDismiss })
             }}
             className="shrink-0 mt-0.5 w-7 h-7 rounded-full bg-emerald-600
                        flex items-center justify-center
-                       shadow-sm shadow-emerald-600/30"
+                       shadow-xs shadow-emerald-600/30"
             aria-hidden
         >
             {/*

@@ -1,0 +1,83 @@
+# Infisical AWS Secrets Manager sync role
+
+Human-admin-owned root that provisions the single IAM role the hosted Infisical
+US instance assumes to push application secrets into AWS Secrets Manager. It
+creates one role and one inline policy. It does not create, read, or delete any
+secret values itself, and it manages no other infrastructure.
+
+Terraform >= 1.10; AWS provider `~> 6.0` (exact version in the committed
+three-platform lockfile). Applied in the account that owns the synced secrets
+(`206533012615`, us-east-1).
+
+## What it grants
+
+Infisical authenticates by assuming `learncard-infisical-sync-<env>` from its
+shared AWS account root (`arn:aws:iam::381492033652:root`). The trust policy
+requires `sts:ExternalId` to equal the Infisical **project ID**, which blocks the
+confused-deputy problem: the shared Infisical account cannot assume this role for
+any project other than the one whose ID it presents.
+
+The root creates one role per service stage: `<name>-dev` (dev bundles) and
+`<name>` (production bundles; the original name, so existing production syncs are
+unaffected). Use a separate Infisical AWS connection for each, so a staging sync
+can never import or overwrite a production bundle. Each role's inline policy
+allows exactly:
+
+- `secretsmanager:ListSecrets` and `secretsmanager:BatchGetSecretValue` on `*`.
+  These two actions do not support resource-level scoping; `ListSecrets` exposes
+  no secret values.
+- `secretsmanager:GetSecretValue`, `CreateSecret`, `UpdateSecret`,
+  `PutSecretValue`, `DescribeSecret`, `TagResource`, and `UntagResource`, scoped
+  to this account's secrets named `lca-api/<stage>/runtime-secrets-*`,
+  `brain-service/<stage>/runtime-secrets-*`, and
+  `learn-cloud-service/<stage>/runtime-secrets-*` (its own stage only) in each region listed in
+  `secret_regions` (LearnCard `us-east-1`, ScoutPass `eu-west-1`).
+
+## Disable Secret Deletion
+
+Enable Infisical's **Disable Secret Deletion** option on every sync integration.
+
+This role deliberately has **no** `secretsmanager:DeleteSecret` (nor
+`DeleteResourcePolicy` or other destructive actions). Infisical can create and
+update the runtime secrets it manages but can never delete them. Secret deletion
+remains a manual, human-reviewed operation performed with a separate privileged
+session. Do not add `DeleteSecret` to this policy to "clean up" synced secrets;
+schedule deletion out of band instead. Removing this restriction would let a
+compromise of the shared Infisical account destroy production runtime secrets.
+
+## Inputs
+
+| Input                         | Default / purpose                                                                                                                                                             |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `environment`                 | Required: staging or production                                                                                                                                               |
+| `expected_account_id`         | Required, 12 digits; per-env file; provider allowlist and resource precondition                                                                                               |
+| `aws_region`                  | us-east-1; provider region (IAM is global)                                                                                                                                    |
+| `secret_regions`              | `["us-east-1", "eu-west-1"]`; regions whose runtime bundles the role may manage                                                                                               |
+| `infisical_aws_principal_arn` | `arn:aws:iam::381492033652:root` (Infisical US); the assuming principal                                                                                                       |
+| `infisical_project_id`        | Required; the **LearnCard Runtime** Infisical project ID used as the `sts:ExternalId` guard (not secret, but supply via `TF_VAR_infisical_project_id` rather than committing) |
+
+## Outputs
+
+| Output                     | Meaning                                                                                              |
+| -------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `infisical_sync_role_arns` | Map of service stage (`dev`, `production`) to the role ARN for that stage's Infisical AWS connection |
+
+## Offline checks and references
+
+```bash
+terraform fmt -check -recursive
+terraform init -backend=false
+terraform validate
+tflint --init && tflint
+terraform providers lock -platform=linux_amd64 -platform=linux_arm64 -platform=darwin_arm64
+```
+
+Offline checks do not test IAM authorization or live secret access; a human must
+confirm the Infisical sync connects and that denials (notably any delete attempt)
+behave as intended. No cloud apply is part of this change.
+
+Argument references: [AWS 6.66.0 resources](https://github.com/hashicorp/terraform-provider-aws/tree/v6.66.0/website/docs/r)
+(`iam_role`, `iam_role_policy`) and
+[Infisical AWS Secrets Manager sync](https://infisical.com/docs/integrations/secret-syncs/aws-secrets-manager).
+The account guard checks provider identity, not the backend; independently verify
+the backend bucket/account/key before init.

@@ -70,13 +70,11 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
 
     const globalFrameworkInfos = React.useMemo<ApiFrameworkInfo[]>(
         () =>
-            globalSkillFrameworks.map(
-                (framework): ApiFrameworkInfo => ({
-                    id: framework.frameworkId,
-                    name: framework.name,
-                    status: 'active',
-                })
-            ) as ApiFrameworkInfo[],
+            globalSkillFrameworks.map((framework): ApiFrameworkInfo => ({
+                id: framework.frameworkId,
+                name: framework.name,
+                status: 'active',
+            })) as ApiFrameworkInfo[],
         [globalSkillFrameworks]
     );
 
@@ -151,7 +149,7 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
                 newModal(
                     <ManageSkills initialFrameworkId={framework.id} />,
                     {
-                        sectionClassName: '!bg-transparent !shadow-none',
+                        sectionClassName: 'bg-transparent! shadow-none!',
                     },
                     { desktop: ModalTypes.Right, mobile: ModalTypes.FullScreen }
                 );
@@ -236,7 +234,7 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
             newModal(
                 <CreateFrameworkModal />,
                 {
-                    sectionClassName: '!bg-transparent !shadow-none',
+                    sectionClassName: 'bg-transparent! shadow-none!',
                 },
                 { desktop: ModalTypes.Right, mobile: ModalTypes.FullScreen }
             );
@@ -334,7 +332,7 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
                         value={openSaltRef}
                         onIonInput={event => setOpenSaltRef(event.detail.value ?? '')}
                         placeholder="Paste an OpenSALT framework link"
-                        className="bg-grayscale-100 rounded-[12px] !px-[12px] text-[14px] font-poppins !text-grayscale-900 placeholder:text-grayscale-500"
+                        className="bg-grayscale-100 rounded-[12px] px-[12px]! text-[14px] font-poppins text-grayscale-900! placeholder:text-grayscale-500"
                     />
                     <button
                         type="button"

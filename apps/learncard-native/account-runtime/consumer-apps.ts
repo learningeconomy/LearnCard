@@ -150,6 +150,8 @@ const audienceDTO = (contract: ConsentFlowContractDetails) => {
 const contractFingerprint = (contract: ConsentFlowContractDetails) =>
     JSON.stringify({
         uri: contract.uri,
+        version: contract.version,
+        status: contract.status,
         updatedAt: contract.updatedAt,
         audienceVersion: contract.audienceVersion ?? 0,
         audience: getContractAudienceDids(contract),
@@ -374,16 +376,18 @@ export const createConsumerCommands = (
                 await wallet().invoke.getContract(uri)
             );
             const blockReason =
-                Object.hasOwn(sampleContracts, id) && !contract.autoBoosts?.length
-                    ? 'unavailable'
-                    : contract.needsGuardianConsent
-                      ? 'guardian'
-                      : contract.frontDoorBoostUri ||
-                          contract.owner.profileId.includes('smart-resume')
-                        ? 'unsupported'
-                        : contract.expiresAt && Date.parse(contract.expiresAt) <= Date.now()
-                          ? 'inactive'
-                          : undefined;
+                contract.status === 'retired'
+                    ? 'inactive'
+                    : Object.hasOwn(sampleContracts, id) && !contract.autoBoosts?.length
+                      ? 'unavailable'
+                      : contract.needsGuardianConsent
+                        ? 'guardian'
+                        : contract.frontDoorBoostUri ||
+                            contract.owner.profileId.includes('smart-resume')
+                          ? 'unsupported'
+                          : contract.expiresAt && Date.parse(contract.expiresAt) <= Date.now()
+                            ? 'inactive'
+                            : undefined;
             const choices = new Map<string, Set<string>>();
             const readCredentials = [];
             for (const [category, permission] of Object.entries(
@@ -448,6 +452,7 @@ export const createConsumerCommands = (
                 );
                 if (contractFingerprint(fresh) !== contractFingerprint(saved.contract))
                     throw new ConsumerFailure('changed');
+                if (fresh.status === 'retired') throw new ConsumerFailure('inactive');
                 if (fresh.needsGuardianConsent) throw new ConsumerFailure('guardian');
                 if (fresh.frontDoorBoostUri || fresh.owner.profileId.includes('smart-resume'))
                     throw new ConsumerFailure('unsupported');
@@ -548,6 +553,7 @@ export const createConsumerCommands = (
             if (config.contractUri) {
                 await liveTerms(config.contractUri);
                 const contract = await wallet().invoke.getContract(config.contractUri);
+                if (contract.status === 'retired') throw new ConsumerFailure('inactive');
                 if (contract.needsGuardianConsent) throw new ConsumerFailure('guardian');
                 if (contract.expiresAt && Date.parse(contract.expiresAt) <= Date.now())
                     throw new ConsumerFailure('inactive');

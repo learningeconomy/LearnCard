@@ -27,6 +27,8 @@ interface LaunchConfigStepProps {
     onChange: (data: Partial<AppStoreListingCreate>) => void;
     errors: Record<string, string>;
     onPreview?: () => void;
+    /** Only the fields: no heading, help card, or config preview (used inside the listing editor). */
+    fieldsOnly?: boolean;
 }
 
 export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
@@ -34,6 +36,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
     onChange,
     errors,
     onPreview,
+    fieldsOnly = false,
 }) => {
     const [selectedContract, setSelectedContract] = useState<ConsentFlowContractDetails | null>(
         null
@@ -67,7 +70,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
         switch (data.launch_type) {
             case 'EMBEDDED_IFRAME':
                 return (
-                    <div className="space-y-5">
+                    <div className="space-y-v3-5">
                         <div>
                             <label className="block text-sm font-medium text-gray-600 mb-1">
                                 {m['developerPortal.components.launchConfigStep.embedUrl']()}
@@ -78,7 +81,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                 value={config.url || ''}
                                 onChange={e => updateConfig({ url: e.target.value })}
                                 placeholder="https://yourapp.com/embed"
-                                className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
+                                className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
                                     errors.url ? 'border-red-300' : 'border-gray-200'
                                 }`}
                             />
@@ -101,7 +104,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                 ]()}
                             </p>
 
-                            <div className="space-y-2">
+                            <div className="space-y-v3-2">
                                 {PERMISSION_OPTIONS.map(permission => (
                                     <label
                                         key={permission.value}
@@ -123,7 +126,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                                       );
                                                 updateConfig({ permissions: newPermissions });
                                             }}
-                                            className="w-4 h-4 text-cyan-600 rounded mt-0.5"
+                                            className="w-4 h-4 text-cyan-600 rounded-sm mt-0.5"
                                         />
 
                                         <div>
@@ -206,7 +209,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                             value={config.url || ''}
                             onChange={e => updateConfig({ url: e.target.value })}
                             placeholder="https://yourapp.com"
-                            className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
+                            className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
                                 errors.url ? 'border-red-300' : 'border-gray-200'
                             }`}
                         />
@@ -221,7 +224,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
 
             case 'DIRECT_LINK':
                 return (
-                    <div className="space-y-5">
+                    <div className="space-y-v3-5">
                         <div>
                             <label className="block text-sm font-medium text-gray-600 mb-1">
                                 {m['developerPortal.components.launchConfigStep.appUrl']()}
@@ -232,7 +235,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                 value={config.url || ''}
                                 onChange={e => updateConfig({ url: e.target.value })}
                                 placeholder="https://yourapp.com"
-                                className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
+                                className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
                                     errors.url ? 'border-red-300' : 'border-gray-200'
                                 }`}
                             />
@@ -275,7 +278,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                     </div>
                 );
 
-            case 'CONSENT_REDIRECT':
+            case 'CONSENT_REDIRECT': {
                 const readCategories =
                     selectedContract?.contract?.read?.credentials?.categories || {};
                 const writeCategories =
@@ -284,7 +287,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                 const hasWriteCategories = Object.keys(writeCategories).length > 0;
 
                 return (
-                    <div className="space-y-5">
+                    <div className="space-y-v3-5">
                         <ConsentFlowContractSelector
                             value={config.contractUri || ''}
                             onChange={uri => updateConfig({ contractUri: uri })}
@@ -302,7 +305,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                 value={config.redirectUri || ''}
                                 onChange={e => updateConfig({ redirectUri: e.target.value })}
                                 placeholder="https://yourapp.com/callback"
-                                className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
+                                className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
                                     errors.redirectUri ? 'border-red-300' : 'border-gray-200'
                                 }`}
                             />
@@ -318,7 +321,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
 
                         {/* Contract Permissions Display */}
                         {selectedContract && (
-                            <div className="space-y-4">
+                            <div className="space-y-v3-4">
                                 <label className="block text-sm font-medium text-gray-600">
                                     {m[
                                         'developerPortal.components.launchConfigStep.contractPermissions'
@@ -418,13 +421,14 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                         )}
                     </div>
                 );
+            }
 
             case 'SERVER_HEADLESS':
                 return (
-                    <div className="space-y-5">
+                    <div className="space-y-v3-5">
                         <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
                             <div className="flex gap-3">
-                                <Server className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                                <Server className="w-5 h-5 text-emerald-600 shrink-0" />
 
                                 <div className="text-sm text-emerald-800">
                                     <p className="font-medium">
@@ -446,10 +450,10 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
 
             case 'AI_TUTOR':
                 return (
-                    <div className="space-y-5">
+                    <div className="space-y-v3-5">
                         <div className="p-4 bg-violet-50 border border-violet-200 rounded-xl">
                             <div className="flex gap-3">
-                                <Sparkles className="w-5 h-5 text-violet-600 flex-shrink-0" />
+                                <Sparkles className="w-5 h-5 text-violet-600 shrink-0" />
 
                                 <div className="text-sm text-violet-800">
                                     <p className="font-medium">
@@ -478,7 +482,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                 value={config.aiTutorUrl || ''}
                                 onChange={e => updateConfig({ aiTutorUrl: e.target.value })}
                                 placeholder="https://yourtutor.com"
-                                className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
+                                className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
                                     errors.aiTutorUrl ? 'border-red-300' : 'border-gray-200'
                                 }`}
                             />
@@ -489,7 +493,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
 
                             <p className="text-sm text-gray-400 mt-1">
                                 {m['developerPortal.components.launchConfigStep.aiTutorUrlDesc']()}{' '}
-                                <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">
+                                <code className="text-xs bg-gray-100 px-1 py-0.5 rounded-sm">
                                     {config.aiTutorUrl || 'https://yourtutor.com'}
                                     /chats?topic=...
                                 </code>
@@ -505,7 +509,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
 
                         <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
                             <div className="flex gap-3">
-                                <Info className="w-5 h-5 text-gray-500 flex-shrink-0" />
+                                <Info className="w-5 h-5 text-gray-500 shrink-0" />
 
                                 <div className="text-sm text-gray-600">
                                     <p className="font-medium">
@@ -514,7 +518,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                         ]()}
                                     </p>
 
-                                    <ol className="mt-2 space-y-1 list-decimal list-inside text-xs">
+                                    <ol className="mt-2 space-y-v3-1 list-decimal list-inside text-xs">
                                         <li>
                                             {m[
                                                 'developerPortal.components.launchConfigStep.aiTutorStep1'
@@ -547,8 +551,10 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
         }
     };
 
+    if (fieldsOnly) return <div className="space-y-v3-5">{renderConfigFields()}</div>;
+
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div className="text-center mb-6">
                 <div className="flex items-center justify-center gap-2">
                     <h2 className="text-xl font-semibold text-gray-700">
@@ -577,7 +583,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
             {data.launch_type && (
                 <button
                     onClick={() => setShowGuide(true)}
-                    className="w-full flex items-center gap-3 p-4 bg-gradient-to-r from-cyan-50 to-indigo-50 border border-cyan-200 rounded-xl hover:from-cyan-100 hover:to-indigo-100 transition-colors text-left"
+                    className="w-full flex items-center gap-3 p-4 bg-linear-to-r/srgb from-cyan-50 to-indigo-50 border border-cyan-200 rounded-xl hover:from-cyan-100 hover:to-indigo-100 transition-colors text-left"
                 >
                     <div className="p-2 bg-cyan-100 rounded-lg">
                         <BookOpen className="w-5 h-5 text-cyan-600" />

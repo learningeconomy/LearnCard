@@ -1,7 +1,7 @@
 {
     "extends": "../../tsconfig.test.json",
     "compilerOptions": {
-        "moduleResolution": "Node",
+        "moduleResolution": "bundler",
         "removeComments": true,
         "preserveConstEnums": true,
         "alwaysStrict": true,
@@ -10,7 +10,6 @@
         "noUnusedParameters": true,
         "allowUnreachableCode": false,
         "noFallthroughCasesInSwitch": true,
-        "baseUrl": ".",
         "paths": {
             "@learncard/openid4vc-plugin": ["../../packages/plugins/openid4vc/src/index.ts"]
         }

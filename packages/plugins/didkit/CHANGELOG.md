@@ -1,5 +1,113 @@
 # learn-card-core
 
+## 1.11.0
+
+### Minor Changes
+
+- [#2048](https://github.com/learningeconomy/LearnCard/pull/2048) [`261e0f46814595d06460dc617ba50800671f03b1`](https://github.com/learningeconomy/LearnCard/commit/261e0f46814595d06460dc617ba50800671f03b1) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Faster LCA cold start on the cached-key path:
+
+    - `@learncard/didkey-plugin`: add `getEd25519DidKeyFromSeed`, a plain-JS (`@noble/ed25519`) did:key derivation that matches the DIDKit path, and derive the secp256k1 keypair only on first use.
+    - `@learncard/didkit-plugin`: concurrent and repeated `init()` calls share one WASM init (no 250 ms polling); a failed init clears so the next call retries. Add `initDidKit` to start that init without building a plugin.
+    - `learn-card-app` / `learn-card-base`: the auth coordinator derives the DID in JS instead of building a signing wallet, and app entry warms DIDKit without awaiting it.
+
+### Patch Changes
+
+- [#2087](https://github.com/learningeconomy/LearnCard/pull/2087) [`6d5afc9c348c20ac6ac9c7b35651e5b850b13401`](https://github.com/learningeconomy/LearnCard/commit/6d5afc9c348c20ac6ac9c7b35651e5b850b13401) Thanks [@e2e-test-playwright-runner](https://github.com/apps/e2e-test-playwright-runner)! - [Auto] Update DIDKit WASM
+
+- [#2068](https://github.com/learningeconomy/LearnCard/pull/2068) [`0bb92c2cc8047aa4bf307fd0952c1714219286a9`](https://github.com/learningeconomy/LearnCard/commit/0bb92c2cc8047aa4bf307fd0952c1714219286a9) Thanks [@e2e-test-playwright-runner](https://github.com/apps/e2e-test-playwright-runner)! - Update DIDKit WASM from didkit 9dc227081584 and ssi 6d71e5f46e59, including the HTTP bridge artifact and integrity pin.
+
+- Updated dependencies [[`e096512e4291bcaa5e424b7abbfc0932ca2a2317`](https://github.com/learningeconomy/LearnCard/commit/e096512e4291bcaa5e424b7abbfc0932ca2a2317), [`ff6f013bdedc9aee84e9849fa5736a8ad4a90c81`](https://github.com/learningeconomy/LearnCard/commit/ff6f013bdedc9aee84e9849fa5736a8ad4a90c81), [`e096512e4291bcaa5e424b7abbfc0932ca2a2317`](https://github.com/learningeconomy/LearnCard/commit/e096512e4291bcaa5e424b7abbfc0932ca2a2317), [`154941805bd8e2aa626afe3582e7794921debd27`](https://github.com/learningeconomy/LearnCard/commit/154941805bd8e2aa626afe3582e7794921debd27), [`1e4a9e97b825c18300ae0f00c2b9324120be196f`](https://github.com/learningeconomy/LearnCard/commit/1e4a9e97b825c18300ae0f00c2b9324120be196f), [`bd450e7b0467a94bbd30573fa0aebfcd6333db22`](https://github.com/learningeconomy/LearnCard/commit/bd450e7b0467a94bbd30573fa0aebfcd6333db22), [`acda1d1bd362add238a7c6ff8096c295e844e586`](https://github.com/learningeconomy/LearnCard/commit/acda1d1bd362add238a7c6ff8096c295e844e586)]:
+    - @learncard/types@6.2.0
+    - @learncard/core@10.0.0
+
+## 1.10.12
+
+### Patch Changes
+
+- Updated dependencies [[`f3f3d678156b46a67a2f916b62789aeef4e40bc7`](https://github.com/learningeconomy/LearnCard/commit/f3f3d678156b46a67a2f916b62789aeef4e40bc7)]:
+    - @learncard/types@6.1.1
+    - @learncard/core@9.4.46
+
+## 1.10.11
+
+### Patch Changes
+
+- [#2003](https://github.com/learningeconomy/LearnCard/pull/2003) [`c245cba6fc162e6896c4f9439a8a8da42d4189c9`](https://github.com/learningeconomy/LearnCard/commit/c245cba6fc162e6896c4f9439a8a8da42d4189c9) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Stop sending inline JSON-LD context objects to the DIDKit WASM context loader. Signing or verifying a credential with an inline context (such as the managed refresh context) no longer triggers WASM out-of-bounds traps (LC-2380).
+
+- [#2013](https://github.com/learningeconomy/LearnCard/pull/2013) [`6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480`](https://github.com/learningeconomy/LearnCard/commit/6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Dedupe and short-TTL cache concurrent did:web `did.json` fetches so opening one credential no longer stampedes the issuer document.
+
+    `getDidKitPlugin` keeps the generic 10s default and never raises a shorter preinstalled TTL. LearnCard App wallet boot calls `installWalletDidWebDocumentFetchCache()` (`WALLET_DID_WEB_DOCUMENT_TTL_MS` = 60s) before `initLearnCard` as an explicit opt-in.
+
+- Updated dependencies [[`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c), [`f086c95870f57896331b2bbbdd97a94f6ddc3339`](https://github.com/learningeconomy/LearnCard/commit/f086c95870f57896331b2bbbdd97a94f6ddc3339), [`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c)]:
+    - @learncard/types@6.1.0
+    - @learncard/core@9.4.45
+
+## 1.10.10
+
+### Patch Changes
+
+- Updated dependencies [[`e9d738eea3b477dbd82bde171d3c5f8ffa2efbc5`](https://github.com/learningeconomy/LearnCard/commit/e9d738eea3b477dbd82bde171d3c5f8ffa2efbc5), [`69b80366c48e0f458b3bb50f25166c90ecaa2d6d`](https://github.com/learningeconomy/LearnCard/commit/69b80366c48e0f458b3bb50f25166c90ecaa2d6d), [`0caa0e478bce246793893e488f37ee90c9b00a1a`](https://github.com/learningeconomy/LearnCard/commit/0caa0e478bce246793893e488f37ee90c9b00a1a), [`bde3fe0f15a780d9fafc699096a9a0307502f529`](https://github.com/learningeconomy/LearnCard/commit/bde3fe0f15a780d9fafc699096a9a0307502f529), [`784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3`](https://github.com/learningeconomy/LearnCard/commit/784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3), [`751579d9c14116dbf6d0e7f7d62f489c81c39db2`](https://github.com/learningeconomy/LearnCard/commit/751579d9c14116dbf6d0e7f7d62f489c81c39db2), [`2c60b1a760958cbfe2525bc951d2381332e1aa48`](https://github.com/learningeconomy/LearnCard/commit/2c60b1a760958cbfe2525bc951d2381332e1aa48)]:
+    - @learncard/types@6.0.0
+    - @learncard/core@9.4.44
+
+## 1.10.9
+
+### Patch Changes
+
+- Updated dependencies [[`27be1a449118c3c9b69f1fd961cf0b7fe3cbcdb6`](https://github.com/learningeconomy/LearnCard/commit/27be1a449118c3c9b69f1fd961cf0b7fe3cbcdb6)]:
+    - @learncard/types@5.24.2
+    - @learncard/core@9.4.43
+
+## 1.10.8
+
+### Patch Changes
+
+- Updated dependencies [[`c20460f6fef685272227f506f536b6811f90b8a0`](https://github.com/learningeconomy/LearnCard/commit/c20460f6fef685272227f506f536b6811f90b8a0)]:
+    - @learncard/types@5.24.1
+    - @learncard/core@9.4.42
+
+## 1.10.7
+
+### Patch Changes
+
+- [#1836](https://github.com/learningeconomy/LearnCard/pull/1836) [`4ec92c41442b56341c1205e6ddd6ae784aecc990`](https://github.com/learningeconomy/LearnCard/commit/4ec92c41442b56341c1205e6ddd6ae784aecc990) Thanks [@Custard7](https://github.com/Custard7)! - chore: update DIDKit WASM after DIDKit #19
+
+## 1.10.6
+
+### Patch Changes
+
+- [#1734](https://github.com/learningeconomy/LearnCard/pull/1734) [`d93c1b15856f341b4bd36415bf39052de9b6b198`](https://github.com/learningeconomy/LearnCard/commit/d93c1b15856f341b4bd36415bf39052de9b6b198) Thanks [@github-actions](https://github.com/apps/github-actions)! - Update DIDKit WASM from didkit 671537f36948 and ssi 6d71e5f46e59, including the HTTP bridge artifact and integrity pin.
+
+- Updated dependencies [[`4fae096473fd0824be1dd6aefb4a783062377104`](https://github.com/learningeconomy/LearnCard/commit/4fae096473fd0824be1dd6aefb4a783062377104), [`4fae096473fd0824be1dd6aefb4a783062377104`](https://github.com/learningeconomy/LearnCard/commit/4fae096473fd0824be1dd6aefb4a783062377104), [`d1708a1ce43f052862fedda2cf0d922a71ad1762`](https://github.com/learningeconomy/LearnCard/commit/d1708a1ce43f052862fedda2cf0d922a71ad1762)]:
+    - @learncard/types@5.24.0
+    - @learncard/core@9.4.41
+
+## 1.10.5
+
+### Patch Changes
+
+- Updated dependencies [[`bf329d9fb188f32fa715bfc7200397030ec9b385`](https://github.com/learningeconomy/LearnCard/commit/bf329d9fb188f32fa715bfc7200397030ec9b385), [`3231ed0b37d9af8c8e49c17f89b62778aec34f5c`](https://github.com/learningeconomy/LearnCard/commit/3231ed0b37d9af8c8e49c17f89b62778aec34f5c)]:
+    - @learncard/types@5.23.2
+    - @learncard/core@9.4.40
+
+## 1.10.4
+
+### Patch Changes
+
+- Updated dependencies [[`9018e3173393f2ec9645286edd99bb80aa3b2c6c`](https://github.com/learningeconomy/LearnCard/commit/9018e3173393f2ec9645286edd99bb80aa3b2c6c)]:
+    - @learncard/types@5.23.1
+    - @learncard/core@9.4.39
+
+## 1.10.3
+
+### Patch Changes
+
+- [#1645](https://github.com/learningeconomy/LearnCard/pull/1645) [`590adf48867d6c6fd504e66a11c9827d5102122d`](https://github.com/learningeconomy/LearnCard/commit/590adf48867d6c6fd504e66a11c9827d5102122d) Thanks [@github-actions](https://github.com/apps/github-actions)! - Update DIDKit WASM from didkit 543de99bb356 and ssi 6d71e5f46e59, including the HTTP bridge artifact and integrity pin.
+
+- Updated dependencies [[`6209da80c52ac056a7644dab14669192740c9dad`](https://github.com/learningeconomy/LearnCard/commit/6209da80c52ac056a7644dab14669192740c9dad), [`5890451789b18afee45dc5ecbab3fa30aa90f085`](https://github.com/learningeconomy/LearnCard/commit/5890451789b18afee45dc5ecbab3fa30aa90f085), [`1387cd0a08fa6b0a706c86a5a0376b6c7d706856`](https://github.com/learningeconomy/LearnCard/commit/1387cd0a08fa6b0a706c86a5a0376b6c7d706856), [`d7ca528898d988c65f0dc7084cfdcd41767648c5`](https://github.com/learningeconomy/LearnCard/commit/d7ca528898d988c65f0dc7084cfdcd41767648c5), [`8f3bc66ab3d3e5e1edb3fbf5f362025875a914ba`](https://github.com/learningeconomy/LearnCard/commit/8f3bc66ab3d3e5e1edb3fbf5f362025875a914ba), [`1387cd0a08fa6b0a706c86a5a0376b6c7d706856`](https://github.com/learningeconomy/LearnCard/commit/1387cd0a08fa6b0a706c86a5a0376b6c7d706856), [`267cf40291b3a63caf178857be0e57feaf5e0948`](https://github.com/learningeconomy/LearnCard/commit/267cf40291b3a63caf178857be0e57feaf5e0948), [`c78c982f9f4911f1ca2973380f19d80db775e012`](https://github.com/learningeconomy/LearnCard/commit/c78c982f9f4911f1ca2973380f19d80db775e012)]:
+    - @learncard/types@5.23.0
+    - @learncard/core@9.4.38
+
 ## 1.10.2
 
 ### Patch Changes

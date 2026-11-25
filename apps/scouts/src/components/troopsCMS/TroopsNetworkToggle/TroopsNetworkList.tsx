@@ -24,7 +24,7 @@ const TroopsNetworkList: React.FC<TroopsNetworkListProps> = ({
 }) => {
     return (
         <IonPage>
-            <ModalLayout handleOnClick={handleCloseModal} containerClass="!pt-6 px-[10px]">
+            <ModalLayout handleOnClick={handleCloseModal} containerClass="pt-6! px-[10px]">
                 {nationalNetworkIds?.map(networkBoost => {
                     const uri = networkBoost?.boostId;
 

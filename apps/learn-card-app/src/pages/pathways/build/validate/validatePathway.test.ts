@@ -417,7 +417,7 @@ describe('validatePathway — sort order', () => {
         expect(firstError).toBeLessThan(firstWarning);
     });
 
-    it('orders per-node issues by outline order', () => {
+    it('orders per-node issues by outline-solid order', () => {
         const p = pathway({
             nodes: [
                 node('a', {

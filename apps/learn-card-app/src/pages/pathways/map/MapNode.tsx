@@ -239,7 +239,7 @@ const NodeAvatar: React.FC<{
         return (
             <span
                 aria-hidden
-                className={`shrink-0 w-8 h-8 rounded-[8px] overflow-hidden bg-white ring-1 ring-grayscale-200 shadow-sm ${dimClass}`}
+                className={`shrink-0 w-8 h-8 rounded-[8px] overflow-hidden bg-white ring-1 ring-grayscale-200 shadow-xs ${dimClass}`}
             >
                 <img
                     src={appListingIconUrl}
@@ -263,7 +263,7 @@ const NodeAvatar: React.FC<{
         return (
             <span
                 aria-hidden
-                className={`shrink-0 w-8 h-8 rounded-full overflow-hidden bg-white ring-1 ring-grayscale-200 shadow-sm ${dimClass}`}
+                className={`shrink-0 w-8 h-8 rounded-full overflow-hidden bg-white ring-1 ring-grayscale-200 shadow-xs ${dimClass}`}
             >
                 <img
                     src={badgeImage}
@@ -372,7 +372,7 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
             <Handle
                 type="target"
                 position={Position.Bottom}
-                className="!bg-grayscale-300 !border-0 !w-1.5 !h-1.5 !opacity-60"
+                className="bg-grayscale-300! border-0! w-1.5! h-1.5! opacity-60!"
             />
 
             <div
@@ -385,7 +385,7 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
                         isFocusNode
                             ? 'ring-2 ring-emerald-400/70 ring-offset-2 ring-offset-grayscale-10 shadow-[0_0_24px_-4px_rgba(16,185,129,0.45)]'
                             : inFocus
-                              ? 'shadow-sm'
+                              ? 'shadow-xs'
                               : ''
                     }
                     ${data.isOnRoute === false ? 'opacity-80' : ''}
@@ -420,7 +420,7 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
                 {status === 'completed' && (
                     <span
                         aria-hidden
-                        className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-emerald-600 text-white text-[10px] leading-[20px] text-center font-bold shadow-sm"
+                        className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-emerald-600 text-white text-[10px] leading-[20px] text-center font-bold shadow-xs"
                     >
                         ✓
                     </span>
@@ -450,7 +450,7 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
                                     inline-flex items-center gap-1
                                     rounded-full border
                                     text-[10px] font-medium
-                                    shadow-sm
+                                    shadow-xs
                                     ${
                                         childInfo.missing
                                             ? 'bg-grayscale-100 border-grayscale-200 text-grayscale-500'
@@ -511,9 +511,9 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
                         className="absolute -bottom-2 -right-2 h-5 px-1.5
                                    inline-flex items-center gap-1
                                    rounded-full border border-grayscale-200
-                                   bg-white/90 backdrop-blur-sm
+                                   bg-white/90 backdrop-blur-xs
                                    text-[10px] font-medium text-grayscale-600
-                                   shadow-sm
+                                   shadow-xs
                                    hover:bg-white hover:text-grayscale-900
                                    hover:border-grayscale-300
                                    transition-colors"
@@ -537,7 +537,7 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
                         className="absolute top-2 right-2 w-5 h-5 rounded-full
                                    bg-emerald-600 text-white
                                    flex items-center justify-center
-                                   shadow-sm shadow-emerald-600/40"
+                                   shadow-xs shadow-emerald-600/40"
                     >
                         <IonIcon icon={chevronForwardOutline} className="text-[10px]" />
                     </span>
@@ -691,7 +691,7 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
             <Handle
                 type="source"
                 position={Position.Top}
-                className="!bg-grayscale-300 !border-0 !w-1.5 !h-1.5 !opacity-60"
+                className="bg-grayscale-300! border-0! w-1.5! h-1.5! opacity-60!"
             />
         </motion.div>
     );

@@ -13,7 +13,7 @@ const GoogleLoginHelpModal: React.FC<Props> = ({ message }) => {
     return (
         <section className="px-5 py-5 text-grayscale-900">
             <h3 className="text-xl font-semibold mb-3">{m['auth.troubleSigningIn']()}</h3>
-            {message && <p className="text-sm mb-4 break-words">{message}</p>}
+            {message && <p className="text-sm mb-4 wrap-break-word">{message}</p>}
             <p className="text-sm mb-3">{m['auth.downloadScoutPass']()}</p>
             <div className="flex flex-col gap-5">
                 <div>

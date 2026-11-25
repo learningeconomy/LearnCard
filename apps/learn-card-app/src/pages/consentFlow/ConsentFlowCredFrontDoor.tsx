@@ -49,7 +49,10 @@ const ConsentFlowCredFrontDoor: React.FC<ConsentFlowCredFrontDoorProps> = ({
 
     const { data: consentedContracts } = useConsentedContracts();
     const consentedContract = consentedContracts?.find(
-        c => c?.contract?.uri === contractDetails?.uri && c?.status !== 'withdrawn'
+        c =>
+            c?.contract?.uri === contractDetails?.uri &&
+            c?.status !== 'withdrawn' &&
+            c?.status !== 'consumed'
     );
     const hasAlreadyConsented = !!consentedContract;
 
@@ -75,7 +78,7 @@ const ConsentFlowCredFrontDoor: React.FC<ConsentFlowCredFrontDoorProps> = ({
                 contractDetails={contractDetails}
                 handleAcceptContract={handleAccept}
             />,
-            { sectionClassName: '!max-w-[400px]' }
+            { sectionClassName: 'max-w-[400px]!' }
         );
     };
 
@@ -114,11 +117,11 @@ const ConsentFlowCredFrontDoor: React.FC<ConsentFlowCredFrontDoorProps> = ({
                 backgroundColor: boost?.display?.backgroundColor,
             }}
         >
-            <div className="h-full w-full bg-black bg-opacity-20 backdrop-blur-[5px] flex items-center justify-center">
+            <div className="h-full w-full bg-black/20  backdrop-blur-[5px] flex items-center justify-center">
                 {isLoading && (
                     <BoostLoader
                         darkBackground
-                        className="bg-opacity-50 backdrop-blur-[5px]"
+                        className="bg-grayscale-800/50 backdrop-blur-[5px]"
                         text={
                             isSyncingCredentials
                                 ? `Syncing Credentials...`

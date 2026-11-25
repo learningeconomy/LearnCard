@@ -5,6 +5,7 @@ import type { ShareLinkPolicySnapshot } from '@helpers/share-link-policy/types';
 
 import { ensureShareLinkConstraints } from '../../models/share-link-constraints';
 import { failShareLink } from './errors';
+import { verifyPinnedShareAttachment, queueShareAttachmentCleanup } from './attachment';
 import {
     deleteReservation,
     enqueueCleanupJob,
@@ -157,12 +158,33 @@ export const finalizeReservation = async (
             }
 
             const previousObjectRef = share.activeObjectRef;
+            if (
+                reservation.contentVersion !== null &&
+                reservation.attachmentId &&
+                reservation.attachmentChunkCount
+            ) {
+                if (input.verifiedAttachmentId !== reservation.attachmentId) {
+                    failShareLink('PRECONDITION_FAILED', 'attachment was not verified');
+                }
+                await verifyPinnedShareAttachment(
+                    tx,
+                    {
+                        namespace: reservation.namespace,
+                        ownerProfileId: reservation.ownerProfileId,
+                        shareId: reservation.shareId,
+                        contentVersion: reservation.contentVersion,
+                        attachmentId: reservation.attachmentId,
+                        chunkCount: reservation.attachmentChunkCount,
+                    },
+                    reservation.requestHash
+                );
+            }
             const nextObjectRef = reservation.objectRef ?? share.activeObjectRef;
             const nextContentVersion = reservation.contentVersion ?? share.contentVersion;
 
-            // A fresh graph-local recheck is needed before enabling counting.
-            // In particular, shares created while age was unavailable retain
-            // an unknown snapshot until the owner explicitly updates them.
+            // Unknown snapshots and old service restrictions may be refreshed on
+            // explicit edits, but only after a fresh graph-local check. The
+            // reservation still caps eligibility for stale replays and recovery.
             const currentPolicy: ShareLinkPolicySnapshot = {
                 isMinor: share.minorPolicyIsMinor,
                 policyResolved: share.minorPolicyResolved,
@@ -172,18 +194,23 @@ export const finalizeReservation = async (
             const checkedPolicy = input.resolveCurrentPolicy
                 ? await input
                       .resolveCurrentPolicy(tx, share.ownerProfileId, now)
-                      .catch(() => DEFAULT_SHARE_LINK_POLICY)
+                      .catch(() => ({ ...DEFAULT_SHARE_LINK_POLICY, isServiceProfile: false }))
                 : null;
             const reservationPolicy = checkedPolicy
                 ? mergeShareLinkPolicyConservatively(reservation.policy, checkedPolicy)
                 : mergeShareLinkPolicyConservatively(reservation.policy, currentPolicy);
+            const mayRefreshExplicitService =
+                checkedPolicy?.isServiceProfile === true &&
+                checkedPolicy.isMinor === false &&
+                reservation.opKind === 'update';
             const mayReplaceUnknown =
                 checkedPolicy !== null &&
                 !currentPolicy.policyResolved &&
                 (reservation.opKind === 'create' || reservation.opKind === 'update');
-            const effectivePolicy = mayReplaceUnknown
-                ? reservationPolicy
-                : mergeShareLinkPolicyConservatively(currentPolicy, reservationPolicy);
+            const effectivePolicy =
+                mayRefreshExplicitService || mayReplaceUnknown
+                    ? reservationPolicy
+                    : mergeShareLinkPolicyConservatively(currentPolicy, reservationPolicy);
 
             await tx.run(
                 `MATCH (s:ShareLink {id: $shareId})
@@ -193,6 +220,12 @@ export const finalizeReservation = async (
                     props: {
                         version: share.version + 1,
                         contentVersion: nextContentVersion,
+                        attachmentId: reservation.objectRef
+                            ? (reservation.attachmentId ?? null)
+                            : (share.attachmentId ?? null),
+                        attachmentChunkCount: reservation.objectRef
+                            ? (reservation.attachmentChunkCount ?? null)
+                            : (share.attachmentChunkCount ?? null),
                         status: 'active',
                         contentState: 'finalized',
                         activeObjectRef: nextObjectRef,
@@ -244,6 +277,21 @@ export const finalizeReservation = async (
             let cleanupQueuedFor: string | null = null;
 
             if (previousObjectRef && previousObjectRef !== nextObjectRef) {
+                if (share.attachmentId && share.attachmentChunkCount) {
+                    await queueShareAttachmentCleanup(
+                        tx,
+                        {
+                            namespace: share.namespace,
+                            ownerProfileId: share.ownerProfileId,
+                            shareId: share.id,
+                            contentVersion: share.contentVersion,
+                            attachmentId: share.attachmentId,
+                            chunkCount: share.attachmentChunkCount,
+                        },
+                        'superseded',
+                        nowIso
+                    );
+                }
                 await enqueueCleanupJob(tx, {
                     objectRef: previousObjectRef,
                     operationId: share.activeObjectOperationId!,

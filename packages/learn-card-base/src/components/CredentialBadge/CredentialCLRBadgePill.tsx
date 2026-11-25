@@ -29,7 +29,7 @@ const CredentialCLRBadgePill: React.FC<CredentialCLRBadgePillProps> = ({ kind })
     const Icon = config.Icon;
 
     return (
-        <div className="absolute bottom-[-10px] left-1/2 z-[60] flex -translate-x-1/2 items-center gap-1.5 rounded-full border-[2px] border-solid border-white bg-grayscale-100 px-3 py-1">
+        <div className="absolute bottom-[-10px] left-1/2 z-[60] flex -translate-x-1/2 items-center gap-1.5 rounded-full border-2 border-solid border-white bg-grayscale-100 px-3 py-1">
             {kind === 'transcript' ? (
                 <Icon className="h-4 w-4 shrink-0 text-grayscale-700" />
             ) : (

@@ -14,6 +14,7 @@ import AddContactView, { AddContactViewMode } from '../addressBook/addContactVie
 const ConnectModal: React.FC<{
     profileId: string;
     handleCancel: () => void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     updateCacheOnSuccessCallback: any;
 }> = ({ profileId, handleCancel, updateCacheOnSuccessCallback }) => {
     const isLoggedIn = useIsLoggedIn();

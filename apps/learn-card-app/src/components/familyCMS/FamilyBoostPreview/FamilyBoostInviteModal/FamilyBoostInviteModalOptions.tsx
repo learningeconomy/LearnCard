@@ -2,7 +2,6 @@ import React from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { useIonModal } from '@ionic/react';
-import ChildInviteModal from '../../FamilyCMSInviteModal/ChildInviteModal/ChildInviteModal';
 import FamilyInviteGuardian from './FamilyInviteGuardian';
 import AddUser from '../../../svgs/AddUser';
 
@@ -13,6 +12,12 @@ import { ModalTypes, useGetBoostChildrenProfileManagers, useModal } from 'learn-
 import { useCreateChildAccount } from 'apps/learn-card-app/src/hooks/useCreateChildAccount';
 import { m } from '../../../../paraglide/messages.js';
 import { getFamilyTitleLabel } from '../../FamilyCMSMemberTitlesForm/FamilyCMSMemberTitlesToggle/familyTitles.helpers';
+import { lazyModalContent } from '../../../generic/lazyModalContent';
+
+// The invite form (date picker, ~210 KB) only opens from this menu.
+const ChildInviteModal = lazyModalContent(
+    () => import('../../FamilyCMSInviteModal/ChildInviteModal/ChildInviteModal')
+);
 
 const FamilyBoostInviteModalOptions: React.FC<{
     credential?: VC;
@@ -70,7 +75,7 @@ const FamilyBoostInviteModalOptions: React.FC<{
                         handleCloseModal();
                         openGuardianInviteModal();
                     }}
-                    className="w-full flex items-center justify-between px-2 border-b-grayscale-200 py-4 border-solid border-b-[1px]"
+                    className="w-full flex items-center justify-between px-2 border-b-grayscale-200 py-4 border-solid border-b"
                 >
                     <div className="flex flex-col items-start justify-center">
                         <p className="m-0 p-0 text-lg font-poppins text-grayscale-900">

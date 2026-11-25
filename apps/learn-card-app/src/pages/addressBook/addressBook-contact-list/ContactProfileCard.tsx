@@ -28,7 +28,7 @@ const ContactProfileCard: React.FC<ContactProfileCardProps> = ({ contact }) => {
                 <div className="relative shrink-0">
                     <UserProfilePicture
                         customContainerClass="flex h-[92px] w-[92px] items-center justify-center overflow-hidden rounded-[28px] border-2 border-white text-4xl font-medium text-white shadow-lg"
-                        customImageClass="block h-full w-full !rounded-[26px] object-cover"
+                        customImageClass="block h-full w-full rounded-[26px]! object-cover"
                         customSize={240}
                         user={contact}
                     />

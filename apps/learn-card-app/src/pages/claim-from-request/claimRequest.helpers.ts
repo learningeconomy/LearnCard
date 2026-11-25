@@ -47,15 +47,14 @@ export const isInboxClaimInteraction = (requestUrl: unknown): boolean => {
 };
 
 /**
- * Inbox credentials are finalized before they are returned to the app. After the learner saves
- * that batch, an empty follow-up request would incorrectly start the already-completed exchange.
+ * Credentials are finalized before the app receives them. After the learner saves a batch, an
+ * empty callback is a local completion signal, not another exchange request.
  */
-export const shouldCompleteInboxClaimLocally = (
-    requestUrl: unknown,
+export const shouldCompleteCredentialClaimLocally = (
     credentialClaimCount: number | undefined,
     body: unknown
 ): boolean => {
-    if (!isInboxClaimInteraction(requestUrl) || !credentialClaimCount) return false;
+    if (!credentialClaimCount || credentialClaimCount <= 0) return false;
     if (!body || typeof body !== 'object') return true;
 
     return !('verifiablePresentation' in body) && !('@context' in body);

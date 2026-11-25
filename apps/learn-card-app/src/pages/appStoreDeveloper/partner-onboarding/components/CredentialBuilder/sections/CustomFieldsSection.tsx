@@ -84,7 +84,7 @@ export const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({
                 className="text-xs text-gray-500 mb-3"
                 dangerouslySetInnerHTML={{
                     __html: m['developerPortal.credentialBuilder.customFields.description']({
-                        code: '<code class="bg-gray-100 px-1 rounded">credentialSubject.extensions</code>',
+                        code: '<code class="bg-gray-100 px-1 rounded-sm">credentialSubject.extensions</code>',
                     }),
                 }}
             />
@@ -98,7 +98,7 @@ export const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({
                     placeholder={m[
                         'developerPortal.credentialBuilder.customFields.addFieldPlaceholder'
                     ]()}
-                    className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                    className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-hidden"
                     onKeyDown={e => e.key === 'Enter' && addCustomField()}
                 />
 
@@ -118,7 +118,7 @@ export const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({
                     {m['developerPortal.credentialBuilder.customFields.noFields']()}
                 </p>
             ) : (
-                <div className="space-y-4">
+                <div className="space-y-v3-4">
                     {customFields.map((field, index) => (
                         <div
                             key={field.id}
@@ -135,13 +135,13 @@ export const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({
                                 <button
                                     type="button"
                                     onClick={() => removeField(index)}
-                                    className="p-1 text-gray-400 hover:text-red-500 rounded"
+                                    className="p-1 text-gray-400 hover:text-red-500 rounded-sm"
                                 >
                                     <X className="w-4 h-4" />
                                 </button>
                             </div>
 
-                            <div className="space-y-3">
+                            <div className="space-y-v3-3">
                                 <FieldEditor
                                     label={m[
                                         'developerPortal.credentialBuilder.customFields.fieldKey'

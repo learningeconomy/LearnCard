@@ -21,7 +21,7 @@ export const ScoutPassIDCMSFooter: React.FC<{
     return (
         <IonFooter
             mode="ios"
-            className="w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] absolute bottom-0 bg-white max-h-[100px]"
+            className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] absolute bottom-0 bg-white/60 max-h-[100px]"
         >
             <IonToolbar color="transparent" mode="ios">
                 <div className="w-full flex items-center justify-center">

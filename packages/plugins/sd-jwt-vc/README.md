@@ -2,8 +2,8 @@
 
 SD-JWT-VC holder + verifier support for LearnCard. Implements:
 
--   [RFC 9901](https://www.rfc-editor.org/rfc/rfc9901.html) — Selective Disclosure for JWTs (SD-JWT)
--   [draft-ietf-oauth-sd-jwt-vc-16](https://datatracker.ietf.org/doc/draft-ietf-oauth-sd-jwt-vc/16/) — SD-JWT-VC profile for Verifiable Credentials
+- [RFC 9901](https://www.rfc-editor.org/rfc/rfc9901.html) — Selective Disclosure for JWTs (SD-JWT)
+- [draft-ietf-oauth-sd-jwt-vc-16](https://datatracker.ietf.org/doc/draft-ietf-oauth-sd-jwt-vc/16/) — SD-JWT-VC profile for Verifiable Credentials
 
 Token Status List (revocation / suspension) is on the roadmap — see Slice 4 in the status table below.
 
@@ -28,16 +28,17 @@ Token Status List (revocation / suspension) is on the roadmap — see Slice 4 in
 
 ## Spec versions
 
--   **SD-JWT**: RFC 9901 (Proposed Standard, Nov 2025)
--   **SD-JWT-VC**: draft-ietf-oauth-sd-jwt-vc-16 (May 2026). Format string `dc+sd-jwt` is canonical; legacy `vc+sd-jwt` is accepted on read for back-compat.
+- **SD-JWT**: RFC 9901 (Proposed Standard, Nov 2025)
+- **SD-JWT-VC**: draft-ietf-oauth-sd-jwt-vc-16 (May 2026). Format string `dc+sd-jwt` is canonical; legacy `vc+sd-jwt` is accepted on read for back-compat.
 
 ## Architectural notes
 
--   **Format-plugin, not transport.** The plugin is self-contained — it knows nothing about OID4VCI, OID4VP, or VC-API. The `openid4vc` plugin delegates to this plugin via `learnCard.invoke.parseSdJwtVc()`, `verifySdJwtVc()`, etc.
--   **Extends `verifyCredential`** the same way `expiration-plugin` does — implements `VerifyExtension` so calls to `learnCard.invoke.verifyCredential(vc)` route SD-JWT credentials (proof.type `'SdJwtCompactProof'`) through the SD-JWT-aware verifier, and leave all other credentials on the previously-chained verify path. `vc-plugin` has no SD-JWT knowledge; the routing lives entirely here. Plugin-install order matters: install this plugin **after** `vc-plugin` and any other `VerifyExtension`-providing plugins (e.g., `expiration-plugin`).
--   **Library**: `@sd-jwt/core` + `@sd-jwt/sd-jwt-vc` (OpenWallet Foundation, Apache-2.0). Callback-based crypto so our existing `jose` Ed25519 signer plugs in.
--   **DID resolution**: delegated to `@learncard/didkit-plugin` (`resolveDid()`). Supports `did:key`, `did:web`, `did:jwk`, `did:ethr`, `did:pkh:*`, `did:tz`.
--   **Browser-first**: no Node-only dependencies. Uses Web Crypto SHA-256, `crypto.getRandomValues`, and `jose`.
+- **Format-plugin, not transport.** The plugin is self-contained — it knows nothing about OID4VCI, OID4VP, or VC-API. The `openid4vc` plugin delegates to this plugin via `learnCard.invoke.parseSdJwtVc()`, `verifySdJwtVc()`, etc.
+- **Extends `verifyCredential`** the same way `expiration-plugin` does — implements `VerifyExtension` so calls to `learnCard.invoke.verifyCredential(vc)` route SD-JWT credentials (proof.type `'SdJwtCompactProof'`) through the SD-JWT-aware verifier, and leave all other credentials on the previously-chained verify path. `vc-plugin` has no SD-JWT knowledge; the routing lives entirely here. Plugin-install order matters: install this plugin **after** `vc-plugin` and any other `VerifyExtension`-providing plugins (e.g., `expiration-plugin`).
+- **Library**: `@sd-jwt/core` + `@sd-jwt/sd-jwt-vc` (OpenWallet Foundation, Apache-2.0). Callback-based crypto so our existing `jose` Ed25519 signer plugs in.
+- **DID resolution**: delegated to `@learncard/didkit-plugin` (`resolveDid()`). Supports `did:key`, `did:web`, `did:jwk`, `did:ethr`, `did:pkh:*`, `did:tz`.
+- **Browser-first**: no Node-only dependencies. Uses Web Crypto SHA-256, `crypto.getRandomValues`, and `jose`.
+- **Portable Ed25519 verification**: older WebViews can verify without Ed25519 WebCrypto support. Explicit issuer JWK `key_ops` must allow public-key verification only, preserving the browser import restriction.
 
 ## Verification model
 

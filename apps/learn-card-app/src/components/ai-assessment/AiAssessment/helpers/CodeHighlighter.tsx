@@ -13,6 +13,7 @@ import { createHighlighterCore, type HighlighterCore } from 'shiki/core';
 import { createOnigurumaEngine } from 'shiki/engine/oniguruma';
 
 // Only import the languages we actually need for AI chat code rendering
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 const LANG_IMPORTS: Record<string, () => Promise<any>> = {
     javascript: () => import('@shikijs/langs/javascript'),
     js: () => import('@shikijs/langs/javascript'),
@@ -60,7 +61,7 @@ function getHighlighter(): Promise<HighlighterCore> {
     if (!highlighterPromise) {
         highlighterPromise = createHighlighterCore({
             themes: [import('@shikijs/themes/one-light')],
-            langs: [],  // Load languages on-demand
+            langs: [], // Load languages on-demand
             engine: createOnigurumaEngine(import('shiki/wasm')),
         });
     }
@@ -85,7 +86,9 @@ const CodeHighlighter: React.FC<CodeHighlighterProps> = ({
 
     useEffect(() => {
         isMounted.current = true;
-        return () => { isMounted.current = false; };
+        return () => {
+            isMounted.current = false;
+        };
     }, []);
 
     useEffect(() => {
@@ -114,7 +117,12 @@ const CodeHighlighter: React.FC<CodeHighlighterProps> = ({
                 lang: actualLang,
                 theme: 'one-light',
                 transformers: [
-                    { pre(node) { node.properties.tabindex = '-1'; return node; } },
+                    {
+                        pre(node) {
+                            node.properties.tabindex = '-1';
+                            return node;
+                        },
+                    },
                 ],
             });
 
@@ -123,28 +131,46 @@ const CodeHighlighter: React.FC<CodeHighlighterProps> = ({
             }
         })();
 
-        return () => { cancelled = true; };
+        return () => {
+            cancelled = true;
+        };
     }, [code, language]);
 
     if (!rendered) {
         return (
             <Element
                 className="relative not-prose"
-                style={{ borderRadius: '0.5rem', padding: '1.25rem 1.5rem', overflow: 'auto', background: '#fafafa' }}
+                style={{
+                    borderRadius: '0.5rem',
+                    padding: '1.25rem 1.5rem',
+                    overflow: 'auto',
+                    background: '#fafafa',
+                }}
             >
-                <pre><code>{code}</code></pre>
+                <pre>
+                    <code>{code}</code>
+                </pre>
             </Element>
         );
     }
 
     return (
-        <Element className="relative not-prose" style={{ borderRadius: '0.5rem', overflow: 'auto' }}>
+        <Element
+            className="relative not-prose"
+            style={{ borderRadius: '0.5rem', overflow: 'auto' }}
+        >
             {showLanguage && language && language !== 'text' && (
-                <span style={{
-                    position: 'absolute', right: '0.75rem', top: '0.5rem',
-                    fontFamily: 'monospace', fontSize: '0.75rem',
-                    letterSpacing: '-0.05em', color: 'rgba(107, 114, 128, 0.85)',
-                }}>
+                <span
+                    style={{
+                        position: 'absolute',
+                        right: '0.75rem',
+                        top: '0.5rem',
+                        fontFamily: 'monospace',
+                        fontSize: '0.75rem',
+                        letterSpacing: '-0.05em',
+                        color: 'rgba(107, 114, 128, 0.85)',
+                    }}
+                >
                     {language}
                 </span>
             )}
@@ -158,10 +184,13 @@ export default CodeHighlighter;
 /**
  * Checks if a hast node is inline code (single line, no newlines).
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 export function isInlineCode(node: any): boolean {
     const children = node?.children || [];
     const text = children
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         .filter((c: any) => c.type === 'text')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         .map((c: any) => c.value)
         .join('');
     return !text.includes('\n');

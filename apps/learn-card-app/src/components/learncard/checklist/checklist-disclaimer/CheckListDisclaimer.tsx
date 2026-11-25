@@ -2,6 +2,7 @@ import React from 'react';
 
 import useTheme from '../../../../theme/hooks/useTheme';
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type, no-empty-pattern -- existing empty props type; replacing it changes the accepted props type; dropping the empty destructure removes the implicit non-null argument check
 const CheckListDisclaimer: React.FC<{}> = ({}) => {
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;

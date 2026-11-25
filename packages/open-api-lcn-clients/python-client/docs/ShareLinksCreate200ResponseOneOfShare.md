@@ -2,26 +2,28 @@
 
 ## Properties
 
-| Name                   | Type                                                                                                        | Description | Notes      |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
-| **id**                 | **str**                                                                                                     |             |
-| **title**              | **str**                                                                                                     |             |
-| **note**               | **str**                                                                                                     |             | [optional] |
-| **selected_count**     | **int**                                                                                                     |             |
-| **version**            | **int**                                                                                                     |             |
-| **content_version**    | **int**                                                                                                     |             |
-| **status**             | **str**                                                                                                     |             |
-| **content_state**      | **str**                                                                                                     |             |
-| **created_at**         | **datetime**                                                                                                |             |
-| **updated_at**         | **datetime**                                                                                                |             |
-| **expires_at**         | **datetime**                                                                                                |             |
-| **stopped_at**         | **datetime**                                                                                                |             |
-| **last_viewed_at**     | **datetime**                                                                                                |             |
-| **view_count**         | **int**                                                                                                     |             | [optional] |
-| **passcode_protected** | **bool**                                                                                                    |             |
-| **notify_on_view**     | **bool**                                                                                                    |             |
-| **minor_policy**       | [**ShareLinksCreate200ResponseOneOfShareMinorPolicy**](ShareLinksCreate200ResponseOneOfShareMinorPolicy.md) |             |
-| **content_url**        | **str**                                                                                                     |             | [optional] |
+| Name                       | Type                                                                                                        | Description | Notes      |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **id**                     | **str**                                                                                                     |             |
+| **title**                  | **str**                                                                                                     |             |
+| **note**                   | **str**                                                                                                     |             | [optional] |
+| **selected_count**         | **int**                                                                                                     |             |
+| **version**                | **int**                                                                                                     |             |
+| **content_version**        | **int**                                                                                                     |             |
+| **status**                 | **str**                                                                                                     |             |
+| **attachment_id**          | **UUID**                                                                                                    |             | [optional] |
+| **attachment_chunk_count** | **int**                                                                                                     |             | [optional] |
+| **content_state**          | **str**                                                                                                     |             |
+| **created_at**             | **datetime**                                                                                                |             |
+| **updated_at**             | **datetime**                                                                                                |             |
+| **expires_at**             | **datetime**                                                                                                |             |
+| **stopped_at**             | **datetime**                                                                                                |             |
+| **last_viewed_at**         | **datetime**                                                                                                |             |
+| **view_count**             | **int**                                                                                                     |             | [optional] |
+| **passcode_protected**     | **bool**                                                                                                    |             |
+| **notify_on_view**         | **bool**                                                                                                    |             |
+| **minor_policy**           | [**ShareLinksCreate200ResponseOneOfShareMinorPolicy**](ShareLinksCreate200ResponseOneOfShareMinorPolicy.md) |             |
+| **content_url**            | **str**                                                                                                     |             | [optional] |
 
 ## Example
 

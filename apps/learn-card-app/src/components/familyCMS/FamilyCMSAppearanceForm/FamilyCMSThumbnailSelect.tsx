@@ -59,7 +59,7 @@ export const FamilyCMSThumbnailSelect: React.FC<{
                 <div className="flex items-center justify-between w-full bg-grayscale-100 rounded-[15px] mt-4 p-2">
                     <div className="flex items-center justify-start w-[70%] overflow-hidden">
                         <div
-                            className={`relative flex items-center justify-center object-contain overflow-hidden w-[50px] h-[50px] bg-grayscale-300 rounded-full border-solid border-white border-[1px]`}
+                            className={`relative flex items-center justify-center object-contain overflow-hidden w-[50px] h-[50px] bg-grayscale-300 rounded-full border-solid border-white border`}
                         >
                             {!thumbnail ? (
                                 <div className="flex items-center justify-center p-[6px] rounded-full overflow-hidden">

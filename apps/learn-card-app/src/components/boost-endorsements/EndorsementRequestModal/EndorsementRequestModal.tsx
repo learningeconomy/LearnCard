@@ -211,7 +211,7 @@ export const EndorsementRequestModal: React.FC<{
                                 subjectProfileImageElement
                             )}
                         </div>
-                        <div className="w-full flex flex-col items-center justify-center border-b-[2px] border-grayscale-100 pb-4 px-[16px]">
+                        <div className="w-full flex flex-col items-center justify-center border-b-2 border-grayscale-100 pb-4 px-[16px]">
                             <p className="text-center w-full text-grayscale-900 text-base">
                                 <TransP
                                     m={m['endorsement.modal.requestedEndorsement']}
@@ -233,7 +233,7 @@ export const EndorsementRequestModal: React.FC<{
                             existingEndorsements={existingEndorsements}
                             credential={credential}
                             categoryType={categoryType}
-                            className="shadow-none !p-0 !m-0 !gap-2 rounded-b-[20px]"
+                            className="shadow-none p-0! m-0! gap-2! rounded-b-[20px]"
                             dateFormat="DD MMM, YY"
                             showDetails
                         />

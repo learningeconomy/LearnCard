@@ -1,0 +1,8 @@
+{
+    "SENTRY_ENV": "learn-cloud-example",
+    "SERVER_URL": "https://cloud.example.com",
+    "SHARE_CONTENT_AUDIENCE": "did:web:cloud.example.com",
+    "SHARE_CONTENT_NAMESPACE_BINDINGS": "{\"did:web:network.example.com\":[\"learncard\"]}",
+    "SHARE_CONTENT_SERVICE_DIDS": "did:web:network.example.com",
+    "SHARE_CONTENT_VERIFICATION_METHODS": "did:web:network.example.com#owner"
+}

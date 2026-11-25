@@ -35,12 +35,12 @@ const ConsentAudienceReview = ({
         ).values(),
     ];
     return (
-        <div className="p-6 font-poppins space-y-5 bg-white text-grayscale-900">
+        <div className="p-6 font-poppins space-y-v3-5 bg-white text-grayscale-900">
             <h2 className="text-xl font-semibold">{t('consentAudience.title')}</h2>
             <p className="text-sm text-grayscale-600 leading-relaxed">
                 {t('consentAudience.description')}
             </p>
-            <ul className="space-y-3 max-h-64 overflow-y-auto">
+            <ul className="space-y-v3-3 max-h-64 overflow-y-auto">
                 {profiles.map(profile => (
                     <li key={profile.profileId} className="text-sm text-grayscale-700">
                         <span className="font-medium">

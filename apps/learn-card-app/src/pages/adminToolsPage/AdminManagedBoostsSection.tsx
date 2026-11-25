@@ -46,16 +46,20 @@ const AdminManagedBoostsSection: React.FC<AdminManagedBoostsSectionProps> = ({
         isFetching: managedBoostsFetching,
         hasNextPage: managedBoostsHasNextPage,
         fetchNextPage: managedBoostsFetchNextPage,
+        // eslint-disable-next-line react-hooks/rules-of-hooks -- existing conditional hook call; restructuring it changes render behavior
     } = useGetPaginatedManagedBoosts(
         boostCategoryMetadata[category].credentialType as CredentialCategory,
         { limit: 12 }
     );
 
+    // eslint-disable-next-line react-hooks/rules-of-hooks -- existing conditional hook call; restructuring it changes render behavior
     const managedBoostInfiniteScrollRef = useRef<HTMLDivElement>(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, react-hooks/rules-of-hooks -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR; existing conditional hook call; restructuring it changes render behavior
     const managedBoostsOnScreen = useOnScreen(managedBoostInfiniteScrollRef as any, '-20px', [
         managedBoosts?.pages?.[0]?.records?.length,
     ]);
 
+    // eslint-disable-next-line react-hooks/rules-of-hooks -- existing conditional hook call; restructuring it changes render behavior
     useEffect(() => {
         if (managedBoostsOnScreen && managedBoostsHasNextPage) managedBoostsFetchNextPage();
     }, [

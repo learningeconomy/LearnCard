@@ -1,0 +1,8 @@
+{
+    "SENTRY_ENV": "learn-cloud-production",
+    "SERVER_URL": "https://cloud.learncard.com",
+    "SHARE_CONTENT_AUDIENCE": "did:web:cloud.learncard.com",
+    "SHARE_CONTENT_NAMESPACE_BINDINGS": "{\"did:web:network.learncard.com\":[\"learncard\"]}",
+    "SHARE_CONTENT_SERVICE_DIDS": "did:web:network.learncard.com",
+    "SHARE_CONTENT_VERIFICATION_METHODS": "did:web:network.learncard.com#owner"
+}

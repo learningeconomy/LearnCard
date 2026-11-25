@@ -31,7 +31,7 @@ class BoostGetBoostAdminsRequest(BaseModel):
     cursor: Optional[StrictStr] = None
     sort: Optional[StrictStr] = None
     include_self: Optional[StrictBool] = Field(default=True, alias="includeSelf")
-    uri: Optional[StrictStr]
+    uri: StrictStr
     __properties: ClassVar[List[str]] = ["limit", "cursor", "sort", "includeSelf", "uri"]
 
     model_config = ConfigDict(
@@ -61,9 +61,8 @@ class BoostGetBoostAdminsRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -73,21 +72,6 @@ class BoostGetBoostAdminsRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if cursor (nullable) is None
-        # and model_fields_set contains the field
-        if self.cursor is None and "cursor" in self.model_fields_set:
-            _dict['cursor'] = None
-
-        # set to None if sort (nullable) is None
-        # and model_fields_set contains the field
-        if self.sort is None and "sort" in self.model_fields_set:
-            _dict['sort'] = None
-
-        # set to None if uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.uri is None and "uri" in self.model_fields_set:
-            _dict['uri'] = None
-
         return _dict
 
     @classmethod

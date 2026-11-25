@@ -89,7 +89,7 @@ const ViewAlignmentInfo: React.FC<ViewAlignmentInfoProps> = ({
                     }`}
                 >
                     <section className="bg-white rounded-[24px] flex flex-col overflow-y-auto shadow-box-bottom max-w-[450px] mx-auto min-w-[300px]">
-                        <div className="flex flex-col gap-[5px] px-[20px] py-[10px] border-b-[1px] border-grayscale-200 border-solid">
+                        <div className="flex flex-col gap-[5px] px-[20px] py-[10px] border-b border-grayscale-200 border-solid">
                             <div className="flex items-center gap-[10px]">
                                 <FrameworkImage
                                     image={frameworkImage}
@@ -104,7 +104,7 @@ const ViewAlignmentInfo: React.FC<ViewAlignmentInfoProps> = ({
                             <SkillBreadcrumbText frameworkId={frameworkId} skillId={skillId} />
                         </div>
 
-                        <div className="bg-grayscale-50 flex flex-col gap-[10px] items-center p-[20px] border-b-[1px] border-grayscale-200 border-solid">
+                        <div className="bg-grayscale-50 flex flex-col gap-[10px] items-center p-[20px] border-b border-grayscale-200 border-solid">
                             <div
                                 className={`${
                                     isTier
@@ -181,7 +181,7 @@ const ViewAlignmentInfo: React.FC<ViewAlignmentInfoProps> = ({
                 {isMobile && (
                     <IonFooter
                         mode="ios"
-                        className="w-full flex justify-center items-center bg-opacity-80 backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white border-solid border-[1px] border-white"
+                        className="w-full flex justify-center items-center  backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white/80 border-solid border border-white"
                     >
                         <div className="w-full flex items-center justify-center gap-[10px] max-w-[600px]">
                             <button

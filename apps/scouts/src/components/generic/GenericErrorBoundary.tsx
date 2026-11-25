@@ -23,13 +23,13 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({ error, resetErrorBoundary
                 {showError && (
                     <div className="bg-red-50 p-4 rounded-lg mb-4 w-full max-w-md">
                         <p className="text-red-800 font-medium">{m['errorDebug.detailsLabel']()}</p>
-                        <p className="text-red-700 text-sm mt-1 break-words">{error.message}</p>
+                        <p className="text-red-700 text-sm mt-1 wrap-break-word">{error.message}</p>
                         {error.stack && (
                             <details className="mt-2">
                                 <summary className="text-sm text-red-600 cursor-pointer">
                                     {m['errorDebug.viewStackTrace']()}
                                 </summary>
-                                <pre className="bg-black/5 p-2 rounded text-xs mt-1 overflow-auto max-h-40">
+                                <pre className="bg-black/5 p-2 rounded-sm text-xs mt-1 overflow-auto max-h-40">
                                     {error.stack}
                                 </pre>
                             </details>
@@ -39,7 +39,7 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({ error, resetErrorBoundary
             </div>
             <div className="flex gap-[10px]">
                 <button
-                    className="bg-white py-[7px] px-[15px] rounded-[30px] text-grayscale-900 text-[14px] shadow-button-bottom font-poppins border-[1px] border-grayscale-200 border-solid"
+                    className="bg-white py-[7px] px-[15px] rounded-[30px] text-grayscale-900 text-[14px] shadow-button-bottom font-poppins border border-grayscale-200 border-solid"
                     onClick={
                         resetErrorBoundary ? resetErrorBoundary : () => window.location.reload()
                     }

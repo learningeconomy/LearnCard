@@ -14,7 +14,7 @@ const SdkActivityIndicator: React.FC = () => {
 
     return (
         <div className="fixed top-[env(safe-area-inset-top,0px)] left-0 right-0 z-[999991] h-1 overflow-hidden bg-violet-200/30">
-            <div className="h-full w-1/3 rounded-r bg-gradient-to-r from-violet-500 to-indigo-500 animate-[sdk-bar_1.4s_ease-in-out_infinite]" />
+            <div className="h-full w-1/3 rounded-r bg-linear-to-r/srgb from-violet-500 to-indigo-500 animate-[sdk-bar_1.4s_ease-in-out_infinite]" />
         </div>
     );
 };

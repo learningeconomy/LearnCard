@@ -126,7 +126,7 @@ const GrowSkillsMediaItem: React.FC<GrowSkillsMediaItemProps> = ({
             onClickCapture={handleClickCapture}
             role="button"
         >
-            <div className="relative h-[162px] overflow-hidden flex-shrink-0 bg-grayscale-200">
+            <div className="relative h-[162px] overflow-hidden shrink-0 bg-grayscale-200">
                 {metaData?.thumbnailUrl && (
                     <div
                         aria-hidden="true"
@@ -142,14 +142,14 @@ const GrowSkillsMediaItem: React.FC<GrowSkillsMediaItemProps> = ({
                         <Play className="h-[25px] w-[25px] text-grayscale-800 fill-current stroke-current" />
                     </span>
                 </div>
-                <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black to-transparent"></div>
+                <div className="absolute bottom-0 left-0 w-full h-1/2 bg-linear-to-t/srgb from-black to-transparent"></div>
             </div>
             <div className="p-[10px] flex flex-col h-full gap-[10px] min-h-[92px]">
                 <div className="flex gap-[10px] items-start">
                     <img
                         src={careerOneStopLogo}
                         alt="Career One Stop"
-                        className="!w-[40px] !h-[40px] rounded-full object-contain shrink-0"
+                        className="w-[40px]! h-[40px]! rounded-full object-contain shrink-0"
                     />
                     <div className="flex flex-col gap-[5px]">
                         <p className="text-grayscale-900 text-[14px] font-bold">{title}</p>

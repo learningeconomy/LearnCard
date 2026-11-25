@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { observable } from '@trpc/server/observable';
 
 import { callbackLink } from '../src/callbackLink';
-import { getClient } from '../src/index';
+import { getClient, getApiTokenClient } from '../src/index';
 
 const CHALLENGES = ['challenge-1', 'challenge-2', 'challenge-3'];
 
@@ -101,6 +101,32 @@ const stubFetch = (options?: {
 describe('getClient challenge fetching', () => {
     beforeEach(() => {
         vi.unstubAllGlobals();
+    });
+
+    it('isolates inbox batch mutations from other operations and each other', async () => {
+        const { calls } = stubFetch();
+        const client = await getApiTokenClient('https://example.com/api', 'token');
+        const body = {
+            items: [
+                {
+                    recipient: { type: 'email' as const, value: 'person@test.com' },
+                    templateUri: 'template',
+                },
+            ],
+        };
+        await Promise.all([
+            client.inbox.issueBatch.mutate(body),
+            client.inbox.issueBatch.mutate(body),
+            client.utilities.healthCheck.query(),
+        ]);
+        expect(calls).toHaveLength(3);
+        expect(calls.filter(call => call.url.includes('inbox.issueBatch'))).toHaveLength(2);
+        expect(calls.every(call => !new URL(call.url).pathname.includes(','))).toBe(true);
+        expect(
+            JSON.parse(
+                calls.find(call => call.url.includes('inbox.issueBatch'))!.init!.body as string
+            )
+        ).toEqual({ '0': JSON.stringify(body) });
     });
 
     it('defers challenge requests until the first authenticated operation', async () => {

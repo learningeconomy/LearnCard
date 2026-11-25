@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { BindParam, QueryBuilder } from 'neogma';
 import { TRPCError } from '@trpc/server';
-import type { SendContractRequest } from '@learncard/types';
+import { neogma } from '@instance';
+import { cancelContractRequestInvite } from '@accesslayer/contract-request-invite/update';
+import type { SendContractRequest, SendContractRequestResult } from '@learncard/types';
 import {
     getContractByUri,
     getContractRequestAccess,
@@ -17,9 +19,40 @@ import {
 import { getProfileIdFromString } from './did.helpers';
 import { userHasRequiredScopes } from './auth-grant.helpers';
 import { enforceRateLimits } from './rateLimit.helpers';
-import { requestEventCypher, tryDispatchContractEvent } from './contract-events.helpers';
+import {
+    requestEventCypher,
+    tryDispatchContractEvent,
+    tryFanOutContractIntegrationEvents,
+} from './contract-events.helpers';
 import type { ProfileType } from 'types/profile';
 import type { DbContractType } from 'types/consentflowcontract';
+
+/** The contract exists and the profile may manage its requests. Throws otherwise. */
+const authorizeContractRequestManager = async (
+    contractUri: string,
+    profile: ProfileType,
+    allowRecipients: boolean
+): Promise<DbContractType> => {
+    const contract = await getContractByUri(contractUri);
+    if (!contract) throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
+    if (!(await canManageContractRequests(contract, profile.profileId, allowRecipients)))
+        throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'You do not have permission to send requests for this contract.',
+        });
+    return contract;
+};
+
+/** Resolves a profile ID or network DID to an existing profile. Throws NOT_FOUND otherwise. */
+const resolveContractRequestTarget = async (
+    targetIdentifier: string,
+    domain: string
+): Promise<ProfileType> => {
+    const targetId = await getProfileIdFromString(targetIdentifier, domain);
+    const target = targetId ? await getProfileByProfileId(targetId) : null;
+    if (!target) throw new TRPCError({ code: 'NOT_FOUND', message: 'Target profile not found' });
+    return target;
+};
 
 /** Resolve shared request inputs without granting writers access to consented data. */
 export const resolveContractRequest = async (
@@ -29,17 +62,28 @@ export const resolveContractRequest = async (
     domain: string,
     allowRecipients = true
 ): Promise<{ contract: DbContractType; target: ProfileType }> => {
-    const contract = await getContractByUri(contractUri);
-    if (!contract) throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
-    if (!(await canManageContractRequests(contract, profile.profileId, allowRecipients)))
-        throw new TRPCError({
-            code: 'UNAUTHORIZED',
-            message: 'You do not have permission to send requests for this contract.',
-        });
-    const targetId = await getProfileIdFromString(targetIdentifier, domain);
-    const target = targetId ? await getProfileByProfileId(targetId) : null;
-    if (!target) throw new TRPCError({ code: 'NOT_FOUND', message: 'Target profile not found' });
-    return { contract, target };
+    const contract = await authorizeContractRequestManager(contractUri, profile, allowRecipients);
+    return { contract, target: await resolveContractRequestTarget(targetIdentifier, domain) };
+};
+
+/**
+ * Checks shared by every send: the contract exists, the sender may send, and the rate limit.
+ * The limit is counted before anything about the target is looked up, so it reveals nothing.
+ */
+export const authorizeContractRequestSend = async (
+    contractUri: string,
+    profile: ProfileType
+): Promise<DbContractType> => {
+    const contract = await authorizeContractRequestManager(contractUri, profile, true);
+    await enforceRateLimits([
+        {
+            key: `contract-request-rate:${contract.id}:${profile.profileId}`,
+            limit: 500,
+            windowSeconds: 3600,
+            description: '500 contract requests per hour',
+        },
+    ]);
+    return contract;
 };
 
 export const canManageContractRequests = async (
@@ -51,47 +95,50 @@ export const canManageContractRequests = async (
     return access.isManager || (allowRecipients && access.isRecipient);
 };
 
-/** One request per contract/target in v1. Exact pending retries do not create another event. */
-export const sendGenericContractRequest = async (
-    input: SendContractRequest,
-    profile: ProfileType,
-    domain: string
-): Promise<boolean> => {
-    const { contract, target } = await resolveContractRequest(
-        input.contractUri,
-        input.targetProfileId,
-        profile,
-        domain
-    );
-    if (target.profileId === profile.profileId)
-        throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'You cannot send a request to yourself.',
-        });
-    await enforceRateLimits([
-        {
-            key: `contract-request-rate:${contract.id}:${profile.profileId}`,
-            limit: 500,
-            windowSeconds: 3600,
-            description: '500 contract requests per hour',
-        },
-    ]);
-    const requestId = randomUUID();
+export type CreateRequestForProfileInput = {
+    contractId: string;
+    targetProfileId: string;
+    senderProfileId: string;
+    /** Used only when a new relationship is created. */
+    requestId: string;
+    externalReferenceId?: string | null;
+    message?: string | null;
+    domain: string;
+    /** ID of the ContractRequestInvite this request converts. It equals `requestId`. */
+    inviteId?: string | null;
+};
+
+/**
+ * The single place that creates a REQUESTED_FOR request for a resolved profile.
+ * A profile-targeted send that meets the same sender's own email-addressed request (pending,
+ * expired or cancelled) replaces it in place with the new request ID. The invite is detached
+ * and keeps the status it had, so it reads and later expires exactly like an invite to an
+ * address with no account: a correct guess of the profile behind an email looks like a miss.
+ * An invite from the same sender replaces their earlier email-addressed request the same way
+ * once that request is cancelled, expired or past its expiry date, so a resend after expiry
+ * reaches the profile whether or not the first invite had attached.
+ * Returns null when the request rules do not pass. The caller decides what that means:
+ * a profile-targeted send answers CONFLICT, an invite stays pending.
+ */
+export const createRequestForProfile = async (
+    input: CreateRequestForProfileInput
+): Promise<SendContractRequestResult | null> => {
     const query = lockContractAudience(
         new QueryBuilder(
             new BindParam({
-                targetProfileId: target.profileId,
-                senderProfileId: profile.profileId,
-                requestId,
+                targetProfileId: input.targetProfileId,
+                senderProfileId: input.senderProfileId,
+                requestId: input.requestId,
                 externalReferenceId: input.externalReferenceId ?? null,
                 message: input.message ?? null,
+                inviteId: input.inviteId ?? null,
                 now: new Date().toISOString(),
-                domain,
-                eventFrom: profile.profileId,
+                domain: input.domain,
+                eventFrom: input.senderProfileId,
                 eventKind: 'request_sent',
             })
         ),
-        contract.id
+        input.contractId
     ).raw(`
         MATCH (target:Profile {profileId: $targetProfileId})
         WITH contract, target WHERE $targetProfileId <> $senderProfileId AND EXISTS {
@@ -99,30 +146,91 @@ export const sendGenericContractRequest = async (
         } AND CASE WHEN contract.expiresAt IS NULL OR trim(contract.expiresAt) = '' THEN true ELSE datetime(contract.expiresAt) > datetime($now) END
         AND NOT EXISTS {
             MATCH (target)-[:CREATED_BY]->(terms:ConsentFlowTerms)-[:CONSENTS_TO]->(contract)
-            WHERE (terms.status = 'live' OR (terms.status = 'stale' AND terms.oneTime = true)) AND
+            WHERE (terms.status = 'live' OR (terms.status = 'consumed' AND terms.oneTime = true)) AND
                 CASE WHEN terms.expiresAt IS NULL OR trim(terms.expiresAt) = '' THEN true ELSE datetime(terms.expiresAt) > datetime($now) END
         }
         OPTIONAL MATCH (contract)-[existing:REQUESTED_FOR]->(target)
-        WITH contract, target, existing WHERE existing IS NULL OR
-            (existing.status = 'pending' AND existing.requestId IS NOT NULL AND
+        WITH contract, target, existing,
+            coalesce(existing.addressedByEmail = true AND existing.requestedBy = $senderProfileId AND
+                (($inviteId IS NULL AND existing.status IN ['pending', 'expired', 'cancelled']) OR
+                 ($inviteId IS NOT NULL AND (existing.status IN ['expired', 'cancelled'] OR
+                    (existing.status = 'pending' AND existing.expiresAt <= $now)))), false) AS replacing
+        WITH contract, target, existing, replacing WHERE existing IS NULL OR replacing OR
+            ($inviteId IS NULL AND existing.status = 'pending' AND existing.requestId IS NOT NULL AND
+                coalesce(existing.addressedByEmail, false) = false AND
                 existing.requestedBy = $senderProfileId AND
                 coalesce(existing.externalReferenceId, '') = coalesce($externalReferenceId, '') AND
                 coalesce(existing.message, '') = coalesce($message, ''))
+        WITH contract, target, replacing,
+            CASE WHEN replacing THEN existing.requestId END AS replacedId,
+            CASE WHEN replacing THEN existing.status END AS replacedStatus
+        OPTIONAL MATCH (contract)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite)
+            WHERE invite.id = $inviteId
+        WITH contract, target, invite, replacing, replacedId, replacedStatus WHERE $inviteId IS NULL OR
+            (invite IS NOT NULL AND invite.status = 'pending' AND invite.expiresAt > $now)
         MERGE (contract)-[request:REQUESTED_FOR]->(target)
         ON CREATE SET request += {requestId: $requestId, requestedBy: $senderProfileId,
             externalReferenceId: $externalReferenceId, message: $message,
-            requestedAt: $now, status: 'pending', readStatus: 'unseen'}
+            requestedAt: coalesce(invite.requestedAt, $now), status: 'pending', readStatus: 'unseen',
+            addressedByEmail: CASE WHEN $inviteId IS NULL THEN null ELSE true END,
+            expiresAt: invite.expiresAt}
+        FOREACH (_ IN CASE WHEN replacing THEN [1] ELSE [] END |
+            SET request.requestId = $requestId, request.requestedBy = $senderProfileId,
+                request.externalReferenceId = $externalReferenceId, request.message = $message,
+                request.requestedAt = coalesce(invite.requestedAt, $now), request.status = 'pending',
+                request.readStatus = 'unseen',
+                request.addressedByEmail = CASE WHEN $inviteId IS NULL THEN null ELSE true END,
+                request.expiresAt = invite.expiresAt, request.expiredAt = null)
+        FOREACH (_ IN CASE WHEN invite IS NULL THEN [] ELSE [1] END |
+            SET invite.status = 'attached', invite.attachedProfileId = target.profileId,
+                invite.attachedAt = $now)
+        WITH contract, request, target, replacing, replacedId, replacedStatus
+        OPTIONAL MATCH (contract)-[:HAS_REQUEST_INVITE]->(replaced:ContractRequestInvite)
+            WHERE replacing AND replaced.id = replacedId
+        FOREACH (_ IN CASE WHEN replaced IS NULL THEN [] ELSE [1] END |
+            SET replaced.attachedProfileId = null, replaced.attachedAt = null,
+                replaced.status = replacedStatus)
         ${requestEventCypher}
     `);
     const result = await runAudienceMutation(query);
-    if (!result.records.length)
+    const record = result.records[0];
+    if (!record) return null;
+    await tryDispatchContractEvent(record.get('eventId'));
+    const request = record.get('request').properties as { requestId: string };
+    return { requestId: request.requestId, status: 'pending' };
+};
+
+/** One request per contract/target. Exact pending retries return the same request ID. */
+export const sendGenericContractRequest = async (
+    input: SendContractRequest,
+    profile: ProfileType,
+    domain: string
+): Promise<SendContractRequestResult> => {
+    const contract = await authorizeContractRequestSend(input.contractUri, profile);
+    if (!input.targetProfileId)
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'targetProfileId is required' });
+    const target = await resolveContractRequestTarget(input.targetProfileId, domain);
+    if (target.profileId === profile.profileId)
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'You cannot send a request to yourself.',
+        });
+    const result = await createRequestForProfile({
+        contractId: contract.id,
+        targetProfileId: target.profileId,
+        senderProfileId: profile.profileId,
+        requestId: randomUUID(),
+        externalReferenceId: input.externalReferenceId,
+        message: input.message,
+        domain,
+    });
+    if (!result)
         throw new TRPCError({
             code: 'CONFLICT',
             message:
                 'Active consent or a conflicting/terminal request already exists, or the contract changed.',
         });
-    await tryDispatchContractEvent(result.records[0]!.get('eventId'));
-    return true;
+    return result;
 };
 
 /** Target-only denial; cancellation also permits owner/writers and the requesting recipient. */
@@ -132,16 +240,24 @@ export const decideGenericContractRequest = async ({
     actorProfileId,
     status,
     domain,
+    requestId,
 }: {
     contract: DbContractType;
     targetProfileId: string;
     actorProfileId: string;
     status: 'denied' | 'cancelled';
     domain: string;
+    /** When set, only this request is changed: a request that replaced it is left alone. */
+    requestId?: string;
 }): Promise<boolean> => {
     const request = await getStoredContractRequest(contract.id, targetProfileId);
     if (!request?.requestId)
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract request not found' });
+    if (requestId && request.requestId !== requestId)
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Request already decided or permission changed',
+        });
     const isTarget = actorProfileId === targetProfileId;
     const writers = await getWritersForContract(contract);
     const authorized =
@@ -163,12 +279,15 @@ export const decideGenericContractRequest = async ({
                     now: new Date().toISOString(),
                     eventKind: status === 'denied' ? 'request_denied' : 'request_cancelled',
                     eventFrom: actorProfileId,
+                    requestId: requestId ?? null,
                 })
             ),
             contract.id
         ).raw(`
         MATCH (contract)-[request:REQUESTED_FOR]->(target:Profile {profileId: $targetProfileId})
         WHERE request.requestId IS NOT NULL AND request.status IN ['pending', $status]
+            AND ($requestId IS NULL OR request.requestId = $requestId)
+            AND (request.status = $status OR request.expiresAt IS NULL OR request.expiresAt > $now)
             AND ($actorProfileId = $targetProfileId OR ($status = 'cancelled' AND
                 (EXISTS { MATCH (contract)-[:CREATED_BY|CAN_WRITE]->(:Profile {profileId: $actorProfileId}) } OR
                  (request.requestedBy = $actorProfileId AND EXISTS {
@@ -184,6 +303,75 @@ export const decideGenericContractRequest = async ({
         });
     await tryDispatchContractEvent(result.records[0]!.get('eventId'));
     return true;
+};
+
+/** Cancels by request ID. Unknown IDs and callers without permission both get NOT_FOUND. */
+export const cancelContractRequestById = async ({
+    contract,
+    requestId,
+    actorProfileId,
+    domain,
+}: {
+    contract: DbContractType;
+    requestId: string;
+    actorProfileId: string;
+    domain: string;
+}): Promise<boolean> => {
+    const notFound = new TRPCError({ code: 'NOT_FOUND', message: 'Contract request not found' });
+    const findTarget = async (): Promise<string | undefined> =>
+        (
+            await neogma.queryRunner.run(
+                `MATCH (:ConsentFlowContract {id: $contractId})-[request:REQUESTED_FOR]->(target:Profile)
+                 WHERE request.requestId = $requestId
+                 RETURN target.profileId AS targetProfileId`,
+                { contractId: contract.id, requestId }
+            )
+        ).records[0]?.get('targetProfileId');
+    // Two rounds: the ID can move between the read and the locked write, when an invite attaches
+    // or when a newer request replaces the one with this ID. Each round resolves the ID again.
+    for (let round = 0; round < 2; round += 1) {
+        const targetProfileId = await findTarget();
+        if (!targetProfileId) {
+            // No profile holds this ID: the request is still an invite addressed to an email.
+            const outcome = await cancelContractRequestInvite(
+                contract.id,
+                requestId,
+                actorProfileId,
+                domain
+            );
+            if (outcome === 'cancelled') {
+                await tryFanOutContractIntegrationEvents(contract.id);
+                return true;
+            }
+            // Same answer as an attached request that can no longer be cancelled.
+            if (outcome === 'expired')
+                throw new TRPCError({
+                    code: 'CONFLICT',
+                    message: 'Request already decided or permission changed',
+                });
+            continue;
+        }
+        try {
+            return await decideGenericContractRequest({
+                contract,
+                targetProfileId,
+                actorProfileId,
+                status: 'cancelled',
+                domain,
+                requestId,
+            });
+        } catch (error) {
+            if (error instanceof TRPCError && error.code === 'UNAUTHORIZED') throw notFound;
+            if (
+                error instanceof TRPCError &&
+                error.code === 'CONFLICT' &&
+                (await findTarget()) !== targetProfileId
+            )
+                continue;
+            throw error;
+        }
+    }
+    throw notFound;
 };
 
 export const markGenericContractRequestSeen = async (

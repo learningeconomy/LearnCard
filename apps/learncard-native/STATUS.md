@@ -1,4 +1,16 @@
-# Native experiment handoff — 2026-10-23
+# Native experiment handoff — 2026-11-25
+
+The native branch now merges `origin/main` at `65e369b10`. It keeps the SwiftUI app and its manual Vesper workflow. The merge uses current upstream web, backend, referral and lockfile code because the native branch started from an older referral stack. The shared category map is extracted from the current upstream helper so both clients use the same entries and existing exports. The canonical shared age helper keeps the native branch’s existing Ireland consent threshold of 16. Native agreement review checks the current version and status before acting on saved choices. See [merge verification](TESTING.md#sync-with-main--november-25-2026).
+
+The new upstream DIDKit WASM is 3,935,119 bytes, down from 8,840,701. The native bundle was regenerated from the merged source with the repository’s pinned Bun 1.4.4. The Debug build is installed in Native Lab and opens to email sign-in.
+
+The next upstream parity pass should review how native handles ambiguous claim responses, revised agreements, automatic sharing after imports, and accounts with no legacy key. The bundled SDK and auth coordinator already include upstream changes, so focus the review on native-owned flows. [Claim reconciliation](https://github.com/learningeconomy/LearnCard/pull/1983), [agreement updates](https://github.com/learningeconomy/LearnCard/pull/1819), [import consent sync](https://github.com/learningeconomy/LearnCard/pull/2038), [legacy account setup](https://github.com/learningeconomy/LearnCard/pull/2078).
+
+Recent web fixes also give native two cases to compare against its Passport projections and store. Check issuer/title fallback on generic credentials and check that writes refresh cached credentials across navigation. [Credential display names](https://github.com/learningeconomy/LearnCard/pull/2134), [credential index cache](https://github.com/learningeconomy/LearnCard/pull/2014).
+
+The iPhone Duo design and learner skills remain in the native plan. [Native plan](PLAN.md).
+
+## October 23 baseline
 
 **Elastic sky follow-up complete:** the sky now fills the full unobscured space revealed by a deep pull, settles with native scrolling into the compact loading strip and collapses after the actual read. Characters/clouds retain their resting-strip size. Native video caught and corrected an initial navigation-bar clipping issue. [Current native clip, comparison and behavior](LOADING_FEEDBACK.md#elastic-sky-follow-up).
 

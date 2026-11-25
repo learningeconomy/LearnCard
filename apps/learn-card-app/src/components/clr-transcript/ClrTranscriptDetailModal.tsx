@@ -4,7 +4,10 @@ import ClrTranscriptFullPage from './surfaces/ClrTranscriptFullPage';
 import { useVerification } from '../boost/boostCMS/BoostPreview/BoostPreview';
 import VerificationsBox from '../../pages/ids/view-id/IdDetails/VerificationsBox';
 
-import type { ClrTranscriptDisplayModel, ViewOptions } from '../../helpers/clrRenderer.helpers';
+import type {
+    ClrTranscriptDisplayModel,
+    ViewOptions,
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 
 import { VC } from '@learncard/types';
 
@@ -17,12 +20,13 @@ const ClrTranscriptDetailModal: React.FC<{
     const verificationItems = useVerification(boost);
 
     return (
-        <div className="h-full overflow-y-auto pb-[100px] safe-area-top-margin">
+        <div className="h-full overflow-y-auto pb-[100px]">
             <ClrTranscriptFullPage
                 model={model}
                 options={options}
                 boost={boost}
                 boostUri={boostUri}
+                verificationItems={verificationItems}
             />
             {verificationItems.length > 0 && (
                 <div className="px-4 pb-10">

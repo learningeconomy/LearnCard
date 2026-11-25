@@ -30,7 +30,10 @@ import '@ionic/react/css/normalize.css';
 import '@ionic/react/css/structure.css';
 import '@ionic/react/css/typography.css';
 
-import '../../../packages/learn-card-base/src/assets/styles/modal.scss';
+// Keep the renderer and host stylesheet order aligned with App.tsx.
+import '@learncard/react/main.css';
+import '../src/tailwind.css';
+import '../src/index.scss';
 import './preview.css';
 
 setupIonicReact({ swipeBackEnabled: false });
@@ -75,8 +78,8 @@ const preview: Preview = {
             <IonApp>
                 <TenantConfigProvider config={DEFAULT_LEARNCARD_TENANT_CONFIG}>
                     <LocaleProvider>
-                        <AnalyticsContextProvider>
-                            <QueryClientProvider client={queryClient}>
+                        <QueryClientProvider client={queryClient}>
+                            <AnalyticsContextProvider>
                                 <MemoryRouter>
                                     <ModalsProvider>
                                         <div className="font-poppins bg-grayscale-100 h-screen overflow-y-auto">
@@ -85,8 +88,8 @@ const preview: Preview = {
                                         <Modals />
                                     </ModalsProvider>
                                 </MemoryRouter>
-                            </QueryClientProvider>
-                        </AnalyticsContextProvider>
+                            </AnalyticsContextProvider>
+                        </QueryClientProvider>
                     </LocaleProvider>
                 </TenantConfigProvider>
             </IonApp>

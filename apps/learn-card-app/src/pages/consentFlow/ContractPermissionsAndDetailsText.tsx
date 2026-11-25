@@ -5,7 +5,7 @@ import HumanReadableContractTerms from './HumanReadableContractTerms';
 import { openExternalLink } from '../../helpers/externalLinkHelpers';
 import { LaunchPadAppListItem } from 'learn-card-base';
 import { ConsentFlowContractDetails } from '@learncard/types';
-import { isSupportedPersonalField } from '../../helpers/contract.helpers';
+import { isSupportedPersonalField } from '../../helpers/consentPersonalFields';
 import { isRegExp } from 'lodash-es';
 
 import useTheme from '../../theme/hooks/useTheme';

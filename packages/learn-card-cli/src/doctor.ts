@@ -1,5 +1,11 @@
 import type { Command } from 'commander';
-import { connect, loadProject, resolveServices, type ProjectOptions } from './project';
+import {
+    connect,
+    loadProject,
+    requireIdentity,
+    resolveServices,
+    type ProjectOptions,
+} from './project';
 import { validateScope } from './token';
 import { out } from './out';
 import {
@@ -47,17 +53,13 @@ type DoctorOptions = ProjectOptions & {
 };
 
 export const runDoctor = async (options: DoctorOptions): Promise<void> => {
-    const project = await loadProject(options.cwd ?? process.cwd());
-    if (!project.env.SECURE_SEED) {
-        throw new Error(
-            'No SECURE_SEED in .env. Run `npx @learncard/cli init` or `org apply` first.'
-        );
-    }
-    const learnCard = await connect(project, { ...options, readOnly: true });
-    const services = resolveServices(project.env, options.network);
     const requiredScopes = options.scopes
         ? validateScope(options.scopes).split(' ').filter(Boolean)
         : DEFAULT_REQUIRED_SCOPES;
+    const project = await loadProject(options.cwd ?? process.cwd());
+    requireIdentity(project);
+    const learnCard = await connect(project, { ...options, readOnly: true });
+    const services = resolveServices(project.env, options.network);
     const webhookUrl = options.webhookUrl || project.env.WEBHOOK_URL || undefined;
     const context: DoctorContext = {
         project,
@@ -91,10 +93,15 @@ export const runDoctor = async (options: DoctorOptions): Promise<void> => {
 
 export type RunCommand = (
     command: string,
-    options: { json?: boolean },
+    options: { json?: boolean; network?: string },
     action: (didkit: Promise<Buffer>) => Promise<void>,
-    wrap?: boolean
+    settings?: RunCommandSettings
 ) => Promise<void>;
+
+export interface RunCommandSettings {
+    /** Extra human-mode stderr line after an error (e.g. a troubleshooting link). */
+    humanFooter?: (message: string) => string | undefined;
+}
 
 export const registerDoctorCommand = (program: Command, run: RunCommand): void => {
     program
@@ -102,7 +109,7 @@ export const registerDoctorCommand = (program: Command, run: RunCommand): void =
         .description("Preflight: check this project's issuer setup against the network.")
         .option('-y, --yes', 'accept defaults without prompting')
         .option('--profile-id <id>', 'public handle for your issuer profile')
-        .option('--network <url>', 'network tRPC URL or staging (default: production)')
+        .option('--network <url>', 'production|staging|local or a tRPC URL (default: production)')
         .option('--json', 'print a single JSON result on stdout')
         .option(
             '--scopes <list>',

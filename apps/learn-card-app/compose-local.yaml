@@ -52,11 +52,16 @@ services:
         ports:
             - '3100:3100'
         depends_on:
-            - neo4j
-            - mongodb
-            - redis
-            - redis2
-            - redis3
+            neo4j:
+                condition: service_started
+            mongodb:
+                condition: service_healthy
+            redis:
+                condition: service_started
+            redis2:
+                condition: service_started
+            redis3:
+                condition: service_started
         extra_hosts:
             - 'localhost:host-gateway'
         networks:
@@ -68,7 +73,7 @@ services:
             __DELETE_SERVICE__NEO4J_URI: bolt://neo4j:7687
             __DELETE_SERVICE__NEO4J_USERNAME: neo4j
             __DELETE_SERVICE__NEO4J_PASSWORD: this-is-the-password
-            __DELETE_SERVICE__MONGO_URI: mongodb://mongodb:27017?ssl=false&replicaSet=rs0
+            __DELETE_SERVICE__MONGO_URI: mongodb://mongodb:27017?ssl=false&replicaSet=rs0&directConnection=true
             __DELETE_SERVICE__MONGO_DB_NAME1: learn-cloud
             __DELETE_SERVICE__MONGO_DB_NAME2: lca-api
             __DELETE_SERVICE__REDIS1_HOST: redis
@@ -141,6 +146,14 @@ services:
             AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-notARealSecretKey}
             NOTIFICATIONS_QUEUE_POLL_URL: ${NOTIFICATIONS_QUEUE_POLL_URL:-http://elasticmq:9324/notifications}
             NOTIFICATIONS_QUEUE_URL: ${NOTIFICATIONS_QUEUE_URL:-http://elasticmq:9324/notifications}
+            # Skill embeddings (Amazon Nova 2 on Bedrock) stay off locally unless you opt in with real
+            # AWS credentials that may call bedrock:InvokeModel in us-east-1 (see LC-2206).
+            SKILL_EMBEDDING_BEDROCK_ENABLED: ${SKILL_EMBEDDING_BEDROCK_ENABLED:-false}
+            SKILL_EMBEDDING_BEDROCK_MODEL_ID: ${SKILL_EMBEDDING_BEDROCK_MODEL_ID:-amazon.nova-2-multimodal-embeddings-v1:0}
+            SKILL_EMBEDDING_DIMENSION: ${SKILL_EMBEDDING_DIMENSION:-1024}
+            # Semantic search reads the Nova index only when this is true (default: legacy Google index).
+            SKILL_EMBEDDING_BEDROCK_READ_ENABLED: ${SKILL_EMBEDDING_BEDROCK_READ_ENABLED:-false}
+            # Legacy Google embeddings (LC-2206 transition): legacy search reads and legacy vector writes.
             SKILL_EMBEDDING_GOOGLE_API_KEY: ${SKILL_EMBEDDING_GOOGLE_API_KEY:-}
             SKILL_EMBEDDING_GOOGLE_MODEL: ${SKILL_EMBEDDING_GOOGLE_MODEL:-gemini-embedding-001}
             SMART_RESUME_CLIENT_ID: ${SMART_RESUME_CLIENT_ID:-5B5AE2CE}
@@ -158,8 +171,10 @@ services:
         ports:
             - '4100:4100'
         depends_on:
-            - mongodb
-            - redis2
+            mongodb:
+                condition: service_healthy
+            redis2:
+                condition: service_started
         networks:
             - learn-card
         extra_hosts:
@@ -183,7 +198,7 @@ services:
             SKIP_DIDKIT_NAPI: '1'
             CHOKIDAR_USEPOLLING: 'true'
             CHOKIDAR_INTERVAL: '1000'
-            LEARN_CLOUD_MONGO_URI: ${LEARN_CLOUD_MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0}
+            LEARN_CLOUD_MONGO_URI: ${LEARN_CLOUD_MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0&directConnection=true}
             LEARN_CLOUD_MONGO_DB_NAME: ${LEARN_CLOUD_MONGO_DB_NAME:-learn-cloud}
             REDIS_HOST: redis2
             REDIS_PORT: 6379
@@ -206,8 +221,10 @@ services:
         ports:
             - '5100:5100'
         depends_on:
-            - mongodb
-            - redis3
+            mongodb:
+                condition: service_healthy
+            redis3:
+                condition: service_started
         networks:
             - learn-card
         extra_hosts:
@@ -227,12 +244,22 @@ services:
             PORT: 5100
             SEED: c
             AUTHORIZED_DIDS: did:web:localhost%3A4000
+            NETWORK_BRAIN_SERVICE_URL: http://brain:4000/trpc
             SKIP_DIDKIT_NAPI: '1'
-            MONGO_URI: ${MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0}
+            MONGO_URI: ${MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0&directConnection=true}
             MONGO_DB_NAME: ${MONGO_DB_NAME:-lca-api}
             REDIS_HOST: redis3
             REDIS_PORT: 6379
             METABASE_SECRET_KEY: ${METABASE_SECRET_KEY:-notARealSecretKey}
+            KEYCLOAK_ISSUERS: http://localhost:8081/realms/learncard
+            KEYCLOAK_AUDIENCES: learncard-app
+            KEYCLOAK_JWKS_URL_OVERRIDES: http://localhost:8081/realms/learncard=http://keycloak:8080/realms/learncard/protocol/openid-connect/certs
+            OIDC_ISSUER: http://localhost:5100
+            OIDC_CLIENT_ID: keycloak-broker
+            OIDC_CLIENT_SECRET: dev-only-broker-secret # Public local-development placeholder
+            # Set by `bun run lc dev` from the tenant's native Firebase files + bundle ID (see `lc auth-audiences`).
+            GOOGLE_OAUTH_CLIENT_IDS: ${GOOGLE_OAUTH_CLIENT_IDS:-}
+            APPLE_OAUTH_CLIENT_IDS: ${APPLE_OAUTH_CLIENT_IDS:-}
 
     ai-agent:
         image: learncard-monorepo-local
@@ -252,14 +279,17 @@ services:
                 export AI_AGENT_CLOUD_URL="$${AI_AGENT_CLOUD_URL:-http://cloud:4100/trpc}"
                 export AI_AGENT_NETWORK_URL="$${AI_AGENT_NETWORK_URL:-http://brain:4000/trpc}"
                 export AI_AGENT_CONSENT_FLOW_APP_URL="$${AI_AGENT_CONSENT_FLOW_APP_URL:-http://localhost:3000}"
-                export AI_AGENT_MONGO_URI="$${AI_AGENT_MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0}"
+                export AI_AGENT_MONGO_URI="$${AI_AGENT_MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0&directConnection=true}"
                 export AI_AGENT_MONGO_DB_NAME="$${AI_AGENT_MONGO_DB_NAME:-learn-card-ai-agent}"
                 export AI_AGENT_WALLET_SEED="$${AI_AGENT_WALLET_SEED:-$${SEED:-d}}"
                 bun run --cwd services/learn-card-network/ai-agent dev
         depends_on:
-            - brain
-            - cloud
-            - mongodb
+            brain:
+                condition: service_started
+            cloud:
+                condition: service_started
+            mongodb:
+                condition: service_healthy
         networks:
             - learn-card
         extra_hosts:
@@ -352,8 +382,10 @@ services:
         extra_hosts:
             - 'localhost:host-gateway'
         healthcheck:
+            # Wait for writable primary, not merely a responding replica.
+            # Host tools use localhost; container clients must use directConnection.
             test: >
-                mongosh --host localhost --port 27017 --quiet --eval "try { rs.status().ok } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'localhost:27017'}]}) }"
+                mongosh --host 127.0.0.1 --port 27017 --quiet --eval "try { rs.status() } catch (err) { if (err.code !== 94) throw err; rs.initiate({_id:'rs0',members:[{_id:0,host:'localhost:27017'}]}); } quit(db.hello().isWritablePrimary ? 0 : 1)"
             interval: 5s
             timeout: 30s
             start_period: 0s
@@ -414,6 +446,50 @@ services:
             # If Postgres is too slow to start, increase this
             LRSQL_POOL_INITIALIZATION_FAIL_TIMEOUT: 10000
             LRSQL_ALLOW_ALL_ORIGINS: true
+
+    keycloak:
+        image: learncard-keycloak-dev
+        build:
+            context: ../../infra/keycloak
+            dockerfile: Dockerfile.dev
+        command: start-dev --import-realm
+        environment:
+            KC_BOOTSTRAP_ADMIN_USERNAME: admin
+            KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+            KC_HEALTH_ENABLED: 'true'
+            KC_HOSTNAME: http://localhost:8081
+            KC_HTTP_ENABLED: 'true'
+            # Web Google/Apple brokering (infra/keycloak/README.md#google-and-apple-web).
+            # Dev placeholder defaults let the realm import with zero setup; only override
+            # in apps/learn-card-app/.env with real values to test an actual provider.
+            GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-dev-google-client-id.apps.googleusercontent.com}
+            GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-dev-google-client-secret}
+            APPLE_SERVICE_ID: ${APPLE_SERVICE_ID:-com.learncard.dev.signin}
+            APPLE_TEAM_ID: ${APPLE_TEAM_ID:-dev-apple-team-id}
+            APPLE_KEY_ID: ${APPLE_KEY_ID:-dev-apple-key-id}
+            APPLE_P8_CONTENT: ${APPLE_P8_CONTENT:-dev-placeholder-not-a-real-key}
+        ports:
+            - '8081:8080'
+        networks:
+            - learn-card
+        extra_hosts:
+            - 'host.docker.internal:host-gateway'
+        volumes:
+            - ../../infra/keycloak/realms/learncard-dev-realm.json:/opt/keycloak/data/import/learncard-realm.json:ro
+            - keycloak-data:/opt/keycloak/data
+        healthcheck:
+            test:
+                [
+                    'CMD-SHELL',
+                    "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '\"status\": *\"UP\"' <&3",
+                ]
+            interval: 5s
+            timeout: 5s
+            retries: 40
+            start_period: 20s
+
+volumes:
+    keycloak-data:
 
 networks:
     learn-card:

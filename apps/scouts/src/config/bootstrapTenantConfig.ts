@@ -177,14 +177,26 @@ const initializeTenantSubsystems = async (config: TenantConfig): Promise<void> =
     initNetworkStoreFromTenant(config.apis, config.tenantId);
 };
 
-export const getResolvedTenantConfig = (): TenantConfig => {
+/**
+ * Non-throwing variant of `getResolvedTenantConfig()`: returns `null` when
+ * `bootstrapTenantConfig()` has not resolved yet. Use it where a pre-bootstrap
+ * call is a legitimate, tolerated state, instead of wrapping
+ * `getResolvedTenantConfig()` in a catch-all that would also hide real bugs.
+ */
+export const peekResolvedTenantConfig = (): TenantConfig | null => {
     const config = _resolvedConfig ?? getBootstrapState().resolvedConfig;
+
+    if (config) _resolvedConfig = config;
+
+    return config;
+};
+
+export const getResolvedTenantConfig = (): TenantConfig => {
+    const config = peekResolvedTenantConfig();
 
     if (!config) {
         throw new Error('TenantConfig not yet resolved. Call bootstrapTenantConfig() first.');
     }
-
-    _resolvedConfig = config;
 
     return config;
 };

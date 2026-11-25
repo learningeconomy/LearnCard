@@ -1,20 +1,16 @@
 import React from 'react';
-import moment from 'moment';
+import { formatCredentialDate } from 'learn-card-base/helpers/credentialHelpers';
 
 import { VC } from '@learncard/types';
 import InfoIcon from '../../svgs/InfoIcon';
 import Checkmark from '../../svgs/Checkmark';
 
-import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import { m } from '../../../paraglide/messages.js';
 
 export const FamilyBoostPreviewBackFace: React.FC<{
     credential: VC;
 }> = ({ credential }) => {
-    const { createdAt } = getInfoFromCredential(credential, 'MMMM DD, YYYY', {
-        uppercaseDate: false,
-    });
-    const issueDate = moment(createdAt).format('MMMM DD, YYYY');
+    const issueDate = formatCredentialDate(credential);
 
     return (
         <div className="w-full max-w-[400px] pb-[100px] vc-preview-modal-safe-area">
@@ -33,7 +29,7 @@ export const FamilyBoostPreviewBackFace: React.FC<{
             {/* <section className="bg-white ion-padding rounded-[20px] shadow-soft-bottom mt-[20px]">
                 <h3 className="font-poppins text-[22px] font-normal text-grayscale-900">History</h3>
 
-                <div className="w-full flex flex-col items-start justify-start text-left border-b-[2px] pb-4">
+                <div className="w-full flex flex-col items-start justify-start text-left border-b-2 pb-4">
                     <p className="text-grayscale-600 font-normal mt-1 text-sm font-poppins">
                         Updated on {issueDate} at 00:00 AM PST
                     </p>
@@ -63,7 +59,7 @@ export const FamilyBoostPreviewBackFace: React.FC<{
                     </button>
                 </button>
 
-                <div className="w-full flex flex-col items-start justify-center mb-4 border-b-[2px] pb-4">
+                <div className="w-full flex flex-col items-start justify-center mb-4 border-b-2 pb-4">
                     <div className="flex items-center justify-start text-emerald-700 mb-2">
                         <span className="bg-emerald-700 rounded-full">
                             <Checkmark className="text-white w-[20px] h-[20px]" />

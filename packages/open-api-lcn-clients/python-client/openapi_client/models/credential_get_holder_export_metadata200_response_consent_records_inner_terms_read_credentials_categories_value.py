@@ -61,9 +61,8 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsReadCr
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -79,21 +78,6 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsReadCr
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if sharing (nullable) is None
-        # and model_fields_set contains the field
-        if self.sharing is None and "sharing" in self.model_fields_set:
-            _dict['sharing'] = None
-
-        # set to None if share_all (nullable) is None
-        # and model_fields_set contains the field
-        if self.share_all is None and "share_all" in self.model_fields_set:
-            _dict['shareAll'] = None
-
-        # set to None if share_until (nullable) is None
-        # and model_fields_set contains the field
-        if self.share_until is None and "share_until" in self.model_fields_set:
-            _dict['shareUntil'] = None
 
         return _dict
 

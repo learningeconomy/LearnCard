@@ -1,18 +1,32 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import brandNames from '../../../../sss-key-manager/src/__fixtures__/escrow-authority-brand-names-v1.json';
+
 import {
     clearAuthConfigOverrides,
     getAuthConfig,
     getConfigCapabilities,
+    getKeycloakConfig,
     getSSSConfig,
     isEmailRelayConfigured,
     getEscrowStrategyConfig,
+    getEscrowAuthorityTenant,
+    getEscrowEmailSender,
+    getEscrowEmailSenderBrand,
+    escrowAuthorityBrandName,
     isEmailBackupShareEnabled,
+    isProductionTenant,
     setAuthConfigFromTenant,
     setAuthConfigOverrides,
     shouldUseSSS,
 } from '../authConfig';
 import { DEFAULT_LEARNCARD_TENANT_CONFIG } from '../tenantDefaults';
+import { tenantConfigSchema, tenantKeycloakConfigSchema } from '../tenantConfigSchema';
+
+const PCR0 = 'a'.repeat(96);
+const PCR1 = 'b'.repeat(96);
+const PCR2 = 'c'.repeat(96);
+const ROOT_SHA256 = 'd'.repeat(64);
 
 describe('authConfig', () => {
     beforeEach(() => clearAuthConfigOverrides());
@@ -36,6 +50,8 @@ describe('authConfig', () => {
         expect(getAuthConfig()).toMatchObject({
             authProvider: 'firebase',
             keyDerivation: 'sss',
+            escrowRolloutPercent: 0,
+            escrowRolloutAllowlist: [],
         });
         expect(getSSSConfig()).toEqual({
             serverUrl: 'http://localhost:5100/api',
@@ -44,6 +60,8 @@ describe('authConfig', () => {
             escrowEnclaveMode: 'off',
             escrowEnclavePublicKeys: [],
             escrowEnclaveMeasurements: [],
+            escrowSealEmailBrand: false,
+            escrowSharedEmailBrands: [],
             enableEmailBackupShare: true,
             requireEmailForPhoneUsers: true,
         });
@@ -76,7 +94,7 @@ describe('authConfig', () => {
         expect(isEmailRelayConfigured()).toBe(false);
     });
 
-    it('maps explicit enclave policies and leaves escrow disabled by default', () => {
+    it('maps the software enclave policy and leaves escrow disabled by default', () => {
         expect(getEscrowStrategyConfig(getSSSConfig())).toBeUndefined();
         setAuthConfigOverrides({
             providerConfig: {
@@ -90,18 +108,408 @@ describe('authConfig', () => {
             enabled: true,
             attestation: { mode: 'software', pinnedPublicKeys: ['dev-key'] },
         });
+    });
+
+    it('maps a valid nitro PCR tuple, passing through root hash and max age', () => {
+        const pcrTuple = { pcr0: PCR0, pcr1: PCR1, pcr2: PCR2 };
         setAuthConfigOverrides({
             providerConfig: {
                 sss: {
                     escrowEnclaveMode: 'nitro',
-                    escrowEnclaveMeasurements: [{ imageSha384: 'measurement' }],
+                    escrowEnclaveMeasurements: [pcrTuple],
+                    escrowEnclaveRootSha256: ROOT_SHA256,
+                    escrowEnclaveMaxAgeMs: 60000,
                 },
             },
         });
         expect(getEscrowStrategyConfig(getSSSConfig())).toEqual({
             enabled: true,
-            attestation: { mode: 'nitro', pinnedMeasurements: [{ imageSha384: 'measurement' }] },
+            attestation: {
+                mode: 'nitro',
+                pinnedMeasurements: [pcrTuple],
+                rootCertificateSha256: ROOT_SHA256,
+                maxAgeMs: 60000,
+            },
         });
+    });
+
+    it('disables escrow and logs an error for a legacy image-only nitro config (no PCR pins)', () => {
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        setAuthConfigOverrides({
+            providerConfig: {
+                sss: {
+                    escrowEnclaveMode: 'nitro',
+                    escrowEnclaveMeasurements: [{ imageSha384: 'a'.repeat(96) }],
+                },
+            },
+        });
+
+        expect(getEscrowStrategyConfig(getSSSConfig())).toBeUndefined();
+        expect(errorSpy).toHaveBeenCalledWith(
+            '[auth-config]',
+            'escrow.nitro-mode.no-pcr-pins',
+            expect.anything()
+        );
+    });
+
+    it('disables escrow and logs an error for nitro mode with an empty pin list', () => {
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        setAuthConfigOverrides({
+            providerConfig: {
+                sss: { escrowEnclaveMode: 'nitro', escrowEnclaveMeasurements: [] },
+            },
+        });
+
+        expect(getEscrowStrategyConfig(getSSSConfig())).toBeUndefined();
+        expect(errorSpy).toHaveBeenCalledWith(
+            '[auth-config]',
+            'escrow.nitro-mode.no-pcr-pins',
+            expect.anything()
+        );
+    });
+
+    it('blocks software mode for a production tenant on a production deploy stage, and logs an error', () => {
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        setAuthConfigOverrides({
+            tenantId: 'learncard',
+            providerConfig: {
+                sss: { escrowEnclaveMode: 'software', escrowEnclavePublicKeys: ['dev-key'] },
+            },
+        });
+
+        expect(getEscrowStrategyConfig(getSSSConfig(), { stage: 'production' })).toBeUndefined();
+        expect(errorSpy).toHaveBeenCalledWith(
+            '[auth-config]',
+            'escrow.software-mode.blocked-in-production',
+            { tenantId: 'learncard', stage: 'production' }
+        );
+    });
+
+    it('allows software mode for a production tenant on a staging deploy', () => {
+        setAuthConfigOverrides({
+            tenantId: 'learncard',
+            providerConfig: {
+                sss: { escrowEnclaveMode: 'software', escrowEnclavePublicKeys: ['dev-key'] },
+            },
+        });
+
+        expect(getEscrowStrategyConfig(getSSSConfig(), { stage: 'staging' })).toEqual({
+            enabled: true,
+            attestation: { mode: 'software', pinnedPublicKeys: ['dev-key'] },
+        });
+    });
+
+    it('allows software mode on a local deploy, even for a production tenant', () => {
+        setAuthConfigOverrides({
+            tenantId: 'learncard',
+            providerConfig: {
+                sss: { escrowEnclaveMode: 'software', escrowEnclavePublicKeys: ['dev-key'] },
+            },
+        });
+
+        expect(getEscrowStrategyConfig(getSSSConfig(), { stage: 'local' })).toEqual({
+            enabled: true,
+            attestation: { mode: 'software', pinnedPublicKeys: ['dev-key'] },
+        });
+    });
+
+    it('keeps software mode working for a non-production tenant even on a production deploy stage', () => {
+        setAuthConfigOverrides({
+            tenantId: 'some-dev-tenant',
+            providerConfig: {
+                sss: { escrowEnclaveMode: 'software', escrowEnclavePublicKeys: ['dev-key'] },
+            },
+        });
+
+        expect(getEscrowStrategyConfig(getSSSConfig(), { stage: 'production' })).toEqual({
+            enabled: true,
+            attestation: { mode: 'software', pinnedPublicKeys: ['dev-key'] },
+        });
+    });
+
+    it('treats a missing stage as production and blocks software mode for a production tenant (fail-closed)', () => {
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        setAuthConfigOverrides({
+            tenantId: 'learncard',
+            providerConfig: {
+                sss: { escrowEnclaveMode: 'software', escrowEnclavePublicKeys: ['dev-key'] },
+            },
+        });
+
+        // No `stage` override at all — getAuthConfig().stage falls back to 'production'.
+        expect(getEscrowStrategyConfig(getSSSConfig())).toBeUndefined();
+        expect(errorSpy).toHaveBeenCalledWith(
+            '[auth-config]',
+            'escrow.software-mode.blocked-in-production',
+            { tenantId: 'learncard', stage: 'production' }
+        );
+    });
+
+    describe('escrow authority tenant', () => {
+        const pcrTuple = { pcr0: PCR0, pcr1: PCR1, pcr2: PCR2 };
+
+        it('forwards an explicit authority tenant with the nitro trust policy', () => {
+            setAuthConfigOverrides({
+                tenantId: 'vetpass',
+                providerConfig: {
+                    sss: {
+                        escrowEnclaveMode: 'nitro',
+                        escrowEnclaveMeasurements: [pcrTuple],
+                        escrowAuthorityTenant: 'learncard',
+                    },
+                },
+            });
+            expect(getSSSConfig().escrowAuthorityTenant).toBe('learncard');
+            expect(getEscrowStrategyConfig(getSSSConfig())).toMatchObject({
+                enabled: true,
+                attestation: { mode: 'nitro', pinnedMeasurements: [pcrTuple] },
+                authorityTenant: 'learncard',
+            });
+            expect(getEscrowAuthorityTenant(getSSSConfig())).toBe('learncard');
+        });
+
+        it('forwards nothing when unset, so the strategy keeps its app-tenant default', () => {
+            setAuthConfigOverrides({
+                tenantId: 'learncard',
+                providerConfig: {
+                    sss: { escrowEnclaveMode: 'nitro', escrowEnclaveMeasurements: [pcrTuple] },
+                },
+            });
+            expect(getSSSConfig()).not.toHaveProperty('escrowAuthorityTenant');
+            expect(getEscrowStrategyConfig(getSSSConfig())).not.toHaveProperty('authorityTenant');
+            expect(getEscrowAuthorityTenant(getSSSConfig())).toBe('learncard');
+            expect(getEscrowAuthorityTenant({}, 'scoutpass')).toBe('scoutpass');
+            expect(getEscrowAuthorityTenant({}, undefined)).toBe('learncard');
+        });
+
+        it('disables escrow and logs when the authority tenant label is malformed', () => {
+            const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            setAuthConfigOverrides({
+                tenantId: 'vetpass',
+                providerConfig: {
+                    sss: {
+                        escrowEnclaveMode: 'nitro',
+                        escrowEnclaveMeasurements: [pcrTuple],
+                        escrowAuthorityTenant: 'learn card',
+                    },
+                },
+            });
+            expect(getEscrowStrategyConfig(getSSSConfig())).toBeUndefined();
+            expect(errorSpy).toHaveBeenCalledWith(
+                '[auth-config]',
+                'escrow.authority-tenant.invalid',
+                { tenantId: 'vetpass' }
+            );
+        });
+
+        it('names the enclave email sender only when it differs from the app brand', () => {
+            // Shared with the enclave's `brand_name` test (escrow-enclave-app authority/email/tests.rs).
+            expect(brandNames.cases.length).toBeGreaterThan(0);
+            for (const { label, brand } of brandNames.cases) {
+                expect(escrowAuthorityBrandName(label)).toBe(brand);
+            }
+            expect(getEscrowEmailSenderBrand('VetPass', 'learncard')).toBe('LearnCard');
+            expect(getEscrowEmailSenderBrand('LearnCard', 'learncard')).toBeUndefined();
+            expect(getEscrowEmailSenderBrand(undefined, 'learncard')).toBeUndefined();
+        });
+
+        it('reads the app brand from branding.name, not the email block', () => {
+            const sss = { escrowAuthorityTenant: 'learncard' };
+            expect(
+                getEscrowEmailSender({ tenantId: 'vetpass', branding: { name: 'VetPass' } }, sss)
+            ).toEqual({ sender: 'LearnCard', brand: 'VetPass', mixed: false });
+            expect(
+                getEscrowEmailSender({ tenantId: 'learncard', branding: { name: 'LearnCard' } }, {})
+            ).toBeUndefined();
+            expect(getEscrowEmailSender({ tenantId: 'vetpass' }, sss)).toBeUndefined();
+        });
+    });
+
+    // D21: the owner-sealed enclave email brand.
+    describe('escrow sealed email brand', () => {
+        const pcrTuple = { pcr0: PCR0, pcr1: PCR1, pcr2: PCR2 };
+        const configure = (escrowSealEmailBrand?: boolean) =>
+            setAuthConfigOverrides({
+                tenantId: 'vetpass',
+                providerConfig: {
+                    sss: {
+                        escrowEnclaveMode: 'nitro',
+                        escrowEnclaveMeasurements: [pcrTuple],
+                        escrowAuthorityTenant: 'learncard',
+                        ...(escrowSealEmailBrand !== undefined ? { escrowSealEmailBrand } : {}),
+                    },
+                },
+            });
+
+        it('seals no brand with the flag off or unset', () => {
+            for (const flag of [undefined, false]) {
+                configure(flag);
+                expect(getSSSConfig().escrowSealEmailBrand).toBe(false);
+                expect(
+                    getEscrowStrategyConfig(getSSSConfig(), { appBrandName: 'VetPass' })
+                ).not.toHaveProperty('emailBrand');
+            }
+        });
+
+        it('seals the canonical app brand with the flag on', () => {
+            configure(true);
+            expect(
+                getEscrowStrategyConfig(getSSSConfig(), { appBrandName: ' Vet  Pass ' })
+            ).toMatchObject({
+                enabled: true,
+                authorityTenant: 'learncard',
+                emailBrand: 'Vet Pass',
+            });
+        });
+
+        it('omits an unsealable brand and logs, without disabling escrow', () => {
+            const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            configure(true);
+            for (const appBrandName of [undefined, 'vetpass.com', 'Café']) {
+                const escrow = getEscrowStrategyConfig(getSSSConfig(), { appBrandName });
+                expect(escrow).toMatchObject({ enabled: true, authorityTenant: 'learncard' });
+                expect(escrow).not.toHaveProperty('emailBrand');
+            }
+            expect(errorSpy).toHaveBeenCalledWith('[auth-config]', 'escrow.email-brand.invalid', {
+                tenantId: 'vetpass',
+            });
+        });
+
+        it('words the in-app note as "either brand" only when this app seals its brand', () => {
+            const tenant = { tenantId: 'vetpass', branding: { name: 'VetPass' } };
+            const sss = { escrowAuthorityTenant: 'learncard' };
+            expect(getEscrowEmailSender(tenant, { ...sss, escrowSealEmailBrand: true })).toEqual({
+                sender: 'LearnCard',
+                brand: 'VetPass',
+                mixed: true,
+            });
+            expect(getEscrowEmailSender(tenant, { ...sss, escrowSealEmailBrand: false })).toEqual({
+                sender: 'LearnCard',
+                brand: 'VetPass',
+                mixed: false,
+            });
+            // An unsealable name never gets sealed, so the plain note stays accurate.
+            expect(
+                getEscrowEmailSender(
+                    { tenantId: 'x', branding: { name: 'x.example' } },
+                    { ...sss, escrowSealEmailBrand: true }
+                )
+            ).toMatchObject({ mixed: false });
+        });
+
+        // A LearnCard user on a DID last written by VetPass gets VetPass-branded enclave
+        // emails ("last writer wins"), so LearnCard names its co-tenants once it seals.
+        it('names co-tenant brands for an app whose authority brand is its own', () => {
+            const tenant = { tenantId: 'learncard', branding: { name: 'LearnCard' } };
+            expect(
+                getEscrowEmailSender(tenant, {
+                    escrowSealEmailBrand: true,
+                    escrowSharedEmailBrands: ['VetPass'],
+                })
+            ).toEqual({ sender: 'VetPass', brand: 'LearnCard', mixed: true, shared: true });
+            // Sealing off: every blob carries the authority brand, LearnCard's own.
+            expect(
+                getEscrowEmailSender(tenant, {
+                    escrowSealEmailBrand: false,
+                    escrowSharedEmailBrands: ['VetPass'],
+                })
+            ).toBeUndefined();
+            // No co-tenants listed (or only itself): nothing else can seal a brand.
+            expect(getEscrowEmailSender(tenant, { escrowSealEmailBrand: true })).toBeUndefined();
+            expect(
+                getEscrowEmailSender(tenant, {
+                    escrowSealEmailBrand: true,
+                    escrowSharedEmailBrands: ['LearnCard', ' '],
+                })
+            ).toBeUndefined();
+            // The authority-brand note wins for VetPass (its list is not consulted).
+            expect(
+                getEscrowEmailSender(
+                    { tenantId: 'vetpass', branding: { name: 'VetPass' } },
+                    {
+                        escrowAuthorityTenant: 'learncard',
+                        escrowSealEmailBrand: true,
+                        escrowSharedEmailBrands: ['LearnCard'],
+                    }
+                )
+            ).toEqual({ sender: 'LearnCard', brand: 'VetPass', mixed: true });
+        });
+
+        it('reads escrowSharedEmailBrands from the tenant config', () => {
+            setAuthConfigOverrides({
+                tenantId: 'learncard',
+                providerConfig: { sss: { escrowSharedEmailBrands: ['VetPass'] } },
+            });
+            expect(getSSSConfig().escrowSharedEmailBrands).toEqual(['VetPass']);
+            setAuthConfigOverrides({ tenantId: 'learncard', providerConfig: { sss: {} } });
+            expect(getSSSConfig().escrowSharedEmailBrands).toEqual([]);
+        });
+
+        it('schema accepts the boolean flag and rejects other types', () => {
+            const withFlag = (escrowSealEmailBrand: unknown) =>
+                tenantConfigSchema.safeParse({
+                    ...DEFAULT_LEARNCARD_TENANT_CONFIG,
+                    auth: {
+                        ...DEFAULT_LEARNCARD_TENANT_CONFIG.auth,
+                        sss: { ...DEFAULT_LEARNCARD_TENANT_CONFIG.auth.sss, escrowSealEmailBrand },
+                    },
+                });
+            expect(withFlag(true).success).toBe(true);
+            expect(withFlag('yes').success).toBe(false);
+        });
+
+        it('schema accepts a valid authority tenant and rejects a malformed one', () => {
+            const withTenant = (escrowAuthorityTenant: string) =>
+                tenantConfigSchema.safeParse({
+                    ...DEFAULT_LEARNCARD_TENANT_CONFIG,
+                    auth: {
+                        ...DEFAULT_LEARNCARD_TENANT_CONFIG.auth,
+                        sss: { ...DEFAULT_LEARNCARD_TENANT_CONFIG.auth.sss, escrowAuthorityTenant },
+                    },
+                });
+            expect(withTenant('learncard').success).toBe(true);
+            expect(withTenant('').success).toBe(false);
+            expect(withTenant('learn.card').success).toBe(false);
+            expect(withTenant('x'.repeat(129)).success).toBe(false);
+        });
+    });
+
+    it('recognizes only known production tenants', () => {
+        expect(isProductionTenant('learncard')).toBe(true);
+        expect(isProductionTenant('vetpass')).toBe(true);
+        expect(isProductionTenant('scoutpass')).toBe(true);
+        expect(isProductionTenant('some-dev-tenant')).toBe(false);
+        expect(isProductionTenant(undefined)).toBe(false);
+    });
+
+    it('schema rejects nitro measurements with an invalid hex length', () => {
+        const result = tenantConfigSchema.safeParse({
+            ...DEFAULT_LEARNCARD_TENANT_CONFIG,
+            auth: {
+                ...DEFAULT_LEARNCARD_TENANT_CONFIG.auth,
+                sss: {
+                    ...DEFAULT_LEARNCARD_TENANT_CONFIG.auth.sss,
+                    escrowEnclaveMeasurements: [{ pcr0: 'too-short', pcr1: PCR1, pcr2: PCR2 }],
+                },
+            },
+        });
+
+        expect(result.success).toBe(false);
+    });
+
+    it('schema rejects an escrowEnclaveRootSha256 with an invalid hex length', () => {
+        const result = tenantConfigSchema.safeParse({
+            ...DEFAULT_LEARNCARD_TENANT_CONFIG,
+            auth: {
+                ...DEFAULT_LEARNCARD_TENANT_CONFIG.auth,
+                sss: {
+                    ...DEFAULT_LEARNCARD_TENANT_CONFIG.auth.sss,
+                    escrowEnclaveRootSha256: 'too-short',
+                },
+            },
+        });
+
+        expect(result.success).toBe(false);
     });
 
     it('uses explicit validated overrides without consulting environment variables', () => {
@@ -140,9 +548,11 @@ describe('authConfig', () => {
                     verifierId: 'tenant-verifier',
                     rpcTarget: 'https://rpc.example.com',
                 },
-                keycloak: {
-                    issuer: 'https://keycloak.example.com',
-                },
+                keycloak: tenantKeycloakConfigSchema.parse({
+                    serverUrl: 'https://keycloak.example.com',
+                    realm: 'learncard',
+                    clientId: 'app',
+                }),
             },
         });
 
@@ -150,6 +560,9 @@ describe('authConfig', () => {
 
         expect(config.authProvider).toBe('firebase');
         expect(config.keyDerivation).toBe('web3auth');
+        expect(config.tenantId).toBe('learncard');
+        expect(config.escrowRolloutPercent).toBe(0);
+        expect(config.escrowRolloutAllowlist).toEqual([]);
         expect(config.providerConfig.sss).toMatchObject({
             serverUrl: 'https://tenant.example.com/trpc',
             enableEmailBackupShare: false,
@@ -163,7 +576,32 @@ describe('authConfig', () => {
             rpcTarget: 'https://rpc.example.com',
         });
         expect(config.providerConfig.keycloak).toEqual({
-            issuer: 'https://keycloak.example.com',
+            serverUrl: 'https://keycloak.example.com',
+            realm: 'learncard',
+            clientId: 'app',
+            scopes: ['openid', 'profile', 'email', 'phone'],
+        });
+        expect(getKeycloakConfig()).toEqual(config.providerConfig.keycloak);
+    });
+
+    it('leaves Keycloak config absent for other tenants', () => {
+        expect(getKeycloakConfig()).toBeUndefined();
+    });
+
+    it('bridges a non-default escrow rollout percent and allowlist from tenant features', () => {
+        const allowlistHash = 'b'.repeat(64);
+        setAuthConfigFromTenant({
+            ...DEFAULT_LEARNCARD_TENANT_CONFIG,
+            features: {
+                ...DEFAULT_LEARNCARD_TENANT_CONFIG.features,
+                escrowRolloutPercent: 10,
+                escrowRolloutAllowlist: [allowlistHash],
+            },
+        });
+
+        expect(getAuthConfig()).toMatchObject({
+            escrowRolloutPercent: 10,
+            escrowRolloutAllowlist: [allowlistHash],
         });
     });
 

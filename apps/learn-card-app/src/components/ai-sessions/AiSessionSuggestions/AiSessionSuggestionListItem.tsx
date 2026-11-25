@@ -15,7 +15,7 @@ const AiSessionSuggestionsListItem: React.FC<{ topic: AiSessionTopic }> = ({ top
     };
 
     return (
-        <div className="w-full flex items-center justify-between border-solid border-b-[1px] border-grayscale-200">
+        <div className="w-full flex items-center justify-between border-solid border-b border-grayscale-200">
             <div className="w-full flex items-center justify-between rounded-[16px] max-w-[800px]">
                 <h1 className=" text-grayscale-900 font-semibold text-[17px] text-center flex">
                     {topic.title} |&nbsp;{' '}

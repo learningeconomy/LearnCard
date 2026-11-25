@@ -1,4 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
+import type { ContactMethodType } from '@learncard/types';
 import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
 import { useIonAlert } from '@ionic/react';
 import { getCurrentUserPrivateKey } from 'learn-card-base/helpers/privateKeyHelpers';
@@ -6,8 +7,9 @@ import { getCurrentUserPrivateKey } from 'learn-card-base/helpers/privateKeyHelp
 import { getLogger } from '../../logging/logger';
 const log = getLogger('firebase');
 
-export const useSendLoginVerificationCode = () => {
+export const useSendLoginVerificationCode = (opts?: { showAlert?: boolean }) => {
     const { initWallet } = useWallet();
+    const showAlert = opts?.showAlert ?? true;
 
     const { presentToast } = useToast();
     const [presentAlert] = useIonAlert();
@@ -29,6 +31,7 @@ export const useSendLoginVerificationCode = () => {
         },
         onSuccess: data => {
             if (!data?.success) {
+                if (!showAlert) return;
                 presentAlert({
                     header: 'Error',
                     message: data?.message || 'Failed to send login verification code',
@@ -50,13 +53,25 @@ export const useSendLoginVerificationCode = () => {
     });
 };
 
+export const useDeleteMyClassLinkData = () => {
+    const { initWallet } = useWallet();
+
+    return useMutation<{ deleted: number }, Error, void>({
+        mutationFn: async () => {
+            const wallet = await initWallet();
+            const result = await wallet?.invoke?.deleteMyClassLinkData();
+            return result ?? { deleted: 0 };
+        },
+    });
+};
+
 export const useVerifyContactMethodWithProofOfLogin = () => {
     const { initWallet } = useWallet();
     const [presentAlert] = useIonAlert();
     const { mutateAsync: getProofOfLoginVp } = useGetProofOfLoginVp();
 
     return useMutation<
-        { success: boolean; error?: string; contactMethod?: any },
+        { success: boolean; error?: string; contactMethod?: ContactMethodType },
         Error,
         { token: string }
     >({
@@ -141,9 +156,10 @@ export const useGetProofOfLoginVp = (opts?: { showAlert?: boolean }) => {
     );
 };
 
-export const useVerifyLoginVerificationCode = () => {
+export const useVerifyLoginVerificationCode = (opts?: { showAlert?: boolean }) => {
     const { initWallet } = useWallet();
     const [presentAlert] = useIonAlert();
+    const showAlert = opts?.showAlert ?? true;
 
     return useMutation<
         { success: boolean; token?: string; error?: string },
@@ -165,7 +181,7 @@ export const useVerifyLoginVerificationCode = () => {
                 log.error(data);
                 // Rate limit errors are shown inline in EmailForm, not as popup
                 const isRateLimitError = data?.error?.includes('Too many attempts');
-                if (!isRateLimitError) {
+                if (showAlert && !isRateLimitError) {
                     presentAlert({
                         header: 'Error',
                         message: data?.error || 'Failed to verify login verification code',
@@ -236,6 +252,54 @@ export const useVerifyNetworkHandoffToken = () => {
                 });
                 return;
             }
+        },
+    });
+};
+
+export const useClassLinkAuthorizeUrl = () => {
+    const { initWallet } = useWallet();
+
+    return useMutation<
+        { url: string },
+        Error,
+        { redirectUri: string; codeChallenge: string; state: string; nonce: string }
+    >({
+        mutationFn: async args => {
+            // Errors propagate unwrapped so callers keep the tRPC `data.code`.
+            const wallet = await initWallet('aaa');
+            return wallet.invoke.classlinkGetAuthorizeUrl(args);
+        },
+    });
+};
+
+export const useClassLinkConnect = () => {
+    const { initWallet } = useWallet();
+
+    return useMutation<
+        { isStudent: boolean; schoolName?: string },
+        Error,
+        { code: string; codeVerifier: string; redirectUri: string; nonce: string }
+    >({
+        mutationFn: async args => {
+            // Errors propagate unwrapped so callers keep the tRPC `data.code`.
+            const wallet = await initWallet();
+            return wallet.invoke.classlinkConnect(args);
+        },
+    });
+};
+
+export const useClassLinkExchangeCode = () => {
+    const { initWallet } = useWallet();
+
+    return useMutation<
+        { token: string; displayName?: string },
+        Error,
+        { code: string; codeVerifier: string; redirectUri: string; nonce: string }
+    >({
+        mutationFn: async args => {
+            // Errors propagate unwrapped so callers keep the tRPC `data.code`.
+            const wallet = await initWallet('aaa');
+            return wallet.invoke.classlinkExchangeCode(args);
         },
     });
 };

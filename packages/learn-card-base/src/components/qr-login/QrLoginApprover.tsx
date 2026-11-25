@@ -127,7 +127,7 @@ export const QrLoginApprover: React.FC<QrLoginApproverProps> = ({
                     Authorize another device to sign in to your account.
                 </p>
 
-                <div className="space-y-2">
+                <div className="space-y-v3-2">
                     {onScanQr && (
                         <button
                             aria-label="Scan QR code"
@@ -221,7 +221,7 @@ export const QrLoginApprover: React.FC<QrLoginApproverProps> = ({
                     value={codeInput}
                     onChange={e => setCodeInput(e.target.value.replace(/\D/g, '').slice(0, 8))}
                     placeholder="00000000"
-                    className="w-full text-center font-mono text-3xl tracking-[0.3em] py-3 px-4 border border-grayscale-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent mb-5 text-grayscale-900 placeholder:text-grayscale-300 bg-white"
+                    className="w-full text-center font-mono text-3xl tracking-[0.3em] py-3 px-4 border border-grayscale-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent mb-5 text-grayscale-900 placeholder:text-grayscale-300 bg-white"
                 />
 
                 <button

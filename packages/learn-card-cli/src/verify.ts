@@ -2,6 +2,8 @@ import fs from 'node:fs/promises';
 import { initLearnCard } from '@learncard/init';
 import { type VC, type VP, type VerificationCheck, type VerificationItem } from '@learncard/types';
 
+import { out } from './out';
+
 export type VerifyResult = VerificationCheck | VerificationItem[];
 
 export const isPresentation = (value: unknown): boolean => {
@@ -44,7 +46,15 @@ export const runVerify = async (
         for await (const chunk of process.stdin) chunks.push(Buffer.from(chunk));
         text = Buffer.concat(chunks).toString('utf8');
     } else text = await fs.readFile(file, 'utf8');
-    const input: unknown = JSON.parse(text);
+    let input: unknown;
+    try {
+        input = JSON.parse(text);
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        throw new Error(`Invalid JSON in ${file === '-' ? 'stdin' : file}: ${message}`, {
+            cause: error,
+        });
+    }
     if (!input || typeof input !== 'object' || !('type' in input))
         throw new Error('Expected a credential or presentation JSON object with a type.');
     const presentation = isPresentation(input);
@@ -57,10 +67,13 @@ export const runVerify = async (
         : options.json
           ? await learnCard.invoke.verifyCredential(input as VC)
           : await learnCard.invoke.verifyCredential(input as VC, {}, true);
-    if (options.json) console.log(JSON.stringify(result, null, 2));
+    const verified = !verificationFailed(result);
+    // --json: runCommand prints one line, {ok:true, command:'verify', verified, result}.
+    // `ok` means the command ran; `verified` is the verdict.
+    if (options.json) out.set({ verified, result });
     else {
         for (const line of formatVerification(result)) console.log(line);
         console.log('Next: review warnings and issuer trust before accepting this credential.');
     }
-    if (verificationFailed(result)) process.exitCode = 1;
+    if (!verified) process.exitCode = 1;
 };

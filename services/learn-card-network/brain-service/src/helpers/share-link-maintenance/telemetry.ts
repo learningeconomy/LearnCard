@@ -39,6 +39,9 @@ export const toMaintenanceLogEvent = (
         ...recoveryCounts(summary.recovery),
         ...cleanupCounts(summary.cleanup),
         receiptsPruned: summary.receiptPrune?.pruned ?? 0,
+        ...(summary.attachmentStages
+            ? { attachmentStagesQueued: summary.attachmentStages.queued }
+            : {}),
     },
     categories: {
         ...(summary.recovery?.categories ?? {}),

@@ -56,7 +56,7 @@ const EvidencePanel: React.FC<EvidencePanelProps> = ({ evidence }) => {
     if (evidence.length === 0) return null;
 
     return (
-        <ul className="space-y-1.5">
+        <ul className="space-y-v3-1.5">
             {evidence.map((artifact, i) => {
                 const isLink =
                     artifact.artifactType === 'link' ||
@@ -98,9 +98,7 @@ const EvidencePanel: React.FC<EvidencePanelProps> = ({ evidence }) => {
                         ) : (
                             <span className="flex-1 min-w-0 text-sm text-grayscale-800 truncate">
                                 {artifact.note || (
-                                    <span className="italic text-grayscale-400">
-                                        (no note)
-                                    </span>
+                                    <span className="italic text-grayscale-400">(no note)</span>
                                 )}
                             </span>
                         )}

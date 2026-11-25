@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { withCompetencyAdmin } from './withCompetencyAdmin';
 import * as m from '../../paraglide/messages.js';
 import {
     useModal,
@@ -56,12 +57,12 @@ const ManageFrameworkNetworksModal: React.FC<ManageFrameworkNetworksModalProps> 
         const ids: Array<{ boostId: string; credType: 'global' | 'national' }> = [];
 
         troopIds?.globalAdmin?.forEach(credential => {
-            const boostId = (credential as any)?.boostId;
+            const boostId = credential.boostId;
             if (boostId) ids.push({ boostId, credType: 'global' });
         });
 
         troopIds?.nationalAdmin?.forEach(credential => {
-            const boostId = (credential as any)?.boostId;
+            const boostId = credential.boostId;
             if (boostId) ids.push({ boostId, credType: 'national' });
         });
 
@@ -100,7 +101,7 @@ const ManageFrameworkNetworksModal: React.FC<ManageFrameworkNetworksModalProps> 
                     (credType === 'global'
                         ? m['skillFrameworks.globalNet']()
                         : m['skillFrameworks.regionalNet']()),
-                image: (boost.meta as any)?.image,
+                image: (boost.meta as { image?: string } | undefined)?.image,
                 type:
                     credType === 'global'
                         ? m['skillFrameworks.globalNet']()
@@ -248,4 +249,4 @@ const ManageFrameworkNetworksModal: React.FC<ManageFrameworkNetworksModalProps> 
     );
 };
 
-export default ManageFrameworkNetworksModal;
+export default withCompetencyAdmin(ManageFrameworkNetworksModal);

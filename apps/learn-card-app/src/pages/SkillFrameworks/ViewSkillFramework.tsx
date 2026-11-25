@@ -63,6 +63,7 @@ const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) =>
             xxs: gen(1),
         };
     };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const [layouts, setLayouts] = useState<any>(buildLayouts());
 
     // When skills or mode change, (re)measure card heights and adjust layout h to fit content exactly
@@ -77,7 +78,9 @@ const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) =>
                 return Math.max(CARD_MIN_ROWS, Math.ceil(px / GRID_ROW_HEIGHT));
             };
 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
             const update = (prev: any, cols: number) => {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                 return prev.map((item: any, idx: number) => {
                     const h = measureH(item.i);
                     // Keep x/y/w, only update h
@@ -85,6 +88,7 @@ const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) =>
                 });
             };
 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
             setLayouts((prev: any) => ({
                 lg: update(prev.lg || [], 6),
                 md: update(prev.md || [], 5),
@@ -107,7 +111,7 @@ const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) =>
                         <button
                             type="button"
                             onClick={() => setOpen(o => !o)}
-                            className="mt-[2px] h-5 w-5 shrink-0 flex items-center justify-center rounded border border-grayscale-300 bg-white text-grayscale-700 hover:bg-grayscale-50"
+                            className="mt-[2px] h-5 w-5 shrink-0 flex items-center justify-center rounded-sm border border-grayscale-300 bg-white text-grayscale-700 hover:bg-grayscale-50"
                             aria-label={open ? 'Collapse' : 'Expand'}
                         >
                             <span className="text-[12px] leading-none">{open ? '-' : '+'}</span>
@@ -257,7 +261,7 @@ const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) =>
                                                 <div className="flex items-center">
                                                     <div style={{ width: depth * 16 }} />
                                                     <input
-                                                        className="w-full bg-transparent border border-grayscale-200 rounded px-2 py-1 text-[14px] focus:outline-none focus:ring-2 focus:ring-emerald-200 text-grayscale-900"
+                                                        className="w-full bg-transparent border border-grayscale-200 rounded-sm px-2 py-1 text-[14px] focus:outline-hidden focus:ring-2 focus:ring-emerald-200 text-grayscale-900"
                                                         value={node.targetName || ''}
                                                         onChange={e =>
                                                             handleChange(
@@ -272,11 +276,12 @@ const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) =>
                                             </td>
                                             <td className="px-3 py-2">
                                                 <input
-                                                    className="w-full bg-transparent border border-grayscale-200 rounded px-2 py-1 text-[14px] focus:outline-none focus:ring-2 focus:ring-emerald-200 text-grayscale-900"
+                                                    className="w-full bg-transparent border border-grayscale-200 rounded-sm px-2 py-1 text-[14px] focus:outline-hidden focus:ring-2 focus:ring-emerald-200 text-grayscale-900"
                                                     value={node.targetFramework || ''}
                                                     onChange={e =>
                                                         handleChange(
                                                             path,
+                                                            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                                                             'targetFramework' as any,
                                                             e.target.value
                                                         )
@@ -286,11 +291,12 @@ const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) =>
                                             </td>
                                             <td className="px-3 py-2">
                                                 <input
-                                                    className="w-full bg-transparent border border-grayscale-200 rounded px-2 py-1 text-[14px] focus:outline-none focus:ring-2 focus:ring-emerald-200 text-grayscale-900"
+                                                    className="w-full bg-transparent border border-grayscale-200 rounded-sm px-2 py-1 text-[14px] focus:outline-hidden focus:ring-2 focus:ring-emerald-200 text-grayscale-900"
                                                     value={node.targetDescription || ''}
                                                     onChange={e =>
                                                         handleChange(
                                                             path,
+                                                            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                                                             'targetDescription' as any,
                                                             e.target.value
                                                         )
@@ -300,11 +306,12 @@ const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) =>
                                             </td>
                                             <td className="px-3 py-2">
                                                 <input
-                                                    className="w-full bg-transparent border border-grayscale-200 rounded px-2 py-1 text-[14px] focus:outline-none focus:ring-2 focus:ring-emerald-200 text-grayscale-900"
+                                                    className="w-full bg-transparent border border-grayscale-200 rounded-sm px-2 py-1 text-[14px] focus:outline-hidden focus:ring-2 focus:ring-emerald-200 text-grayscale-900"
                                                     value={node.targetCode || ''}
                                                     onChange={e =>
                                                         handleChange(
                                                             path,
+                                                            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                                                             'targetCode' as any,
                                                             e.target.value
                                                         )
@@ -314,11 +321,12 @@ const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) =>
                                             </td>
                                             <td className="px-3 py-2">
                                                 <input
-                                                    className="w-full bg-transparent border border-grayscale-200 rounded px-2 py-1 text-[14px] focus:outline-none focus:ring-2 focus:ring-emerald-200 text-grayscale-900"
+                                                    className="w-full bg-transparent border border-grayscale-200 rounded-sm px-2 py-1 text-[14px] focus:outline-hidden focus:ring-2 focus:ring-emerald-200 text-grayscale-900"
                                                     value={node.targetType || ''}
                                                     onChange={e =>
                                                         handleChange(
                                                             path,
+                                                            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                                                             'targetType' as any,
                                                             e.target.value
                                                         )
@@ -396,7 +404,7 @@ const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) =>
 
             <IonFooter
                 mode="ios"
-                className="w-full flex justify-center items-center bg-opacity-80 backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-grayscale-100 border-solid border-[1px] border-white"
+                className="w-full flex justify-center items-center  backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-grayscale-100/80 border-solid border border-white"
             >
                 <div className="w-full flex items-center justify-center gap-[10px] max-w-[600px]">
                     <button
@@ -407,7 +415,7 @@ const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) =>
                     </button>
                     <button
                         onClick={closeModal}
-                        className="px-[15px] py-[7px] bg-emerald-700 text-white rounded-[30px] text-[17px] font-[600] font-poppins leading-[24px] tracking-[0.25px] shadow-button-bottom h-[44px] flex-1"
+                        className="px-[15px] py-[7px] bg-emerald-700 text-white rounded-[30px] text-[17px] font-semibold font-poppins leading-[24px] tracking-[0.25px] shadow-button-bottom h-[44px] flex-1"
                     >
                         Import Skills
                     </button>

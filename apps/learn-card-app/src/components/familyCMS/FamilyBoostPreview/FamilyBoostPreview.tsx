@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 
-import { IonContent, IonPage, useIonModal } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
 import FamilyBoostFooter from './FamilyBoostFooter/FamilyBoostFooter';
 import FamilyBoostPreviewFrontFace from './FamilyBoostPreviewFrontFace';
 import FamilyBoostPreviewBackFace from './FamilyBoostPreviewBackFace';
 import ShareBoostLink from '../../boost/boost-options-menu/ShareBoostLink';
-import FamilyInviteGuardian from './FamilyBoostInviteModal/FamilyInviteGuardian';
 
 import { VC } from '@learncard/types';
 import { ModalTypes, useModal, BoostCategoryOptionsEnum } from 'learn-card-base';
@@ -32,17 +31,12 @@ export const FamilyPreview: React.FC<{
             handleClose: () => closeModal(),
             boost: credential,
             boostUri: boostUri,
+            credentialRecordUri: boostUri,
             categoryType: BoostCategoryOptionsEnum.family,
         };
 
         newModal(<ShareBoostLink {...shareBoostLinkModalProps} />);
     };
-
-    const [openInviteModal, dismissInviteModal] = useIonModal(FamilyInviteGuardian, {
-        boostUri: credential?.boostId,
-        credential: credential,
-        handleCloseModal: () => dismissInviteModal(),
-    });
 
     let backgroundStyles = {
         backgroundPosition: 'center',
@@ -105,7 +99,6 @@ export const FamilyPreview: React.FC<{
                 setIsFront={setIsFront}
                 handleCloseModal={handleCloseModal}
                 handleShareBoostLink={presentShareBoostLink}
-                handleInviteModal={openInviteModal}
             />
         </IonPage>
     );

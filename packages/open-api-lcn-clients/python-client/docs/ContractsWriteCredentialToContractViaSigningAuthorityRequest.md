@@ -2,12 +2,12 @@
 
 ## Properties
 
-| Name                  | Type                                                                                                                                                        | Description | Notes |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
-| **did**               | **str**                                                                                                                                                     |             |
-| **contract_uri**      | **str**                                                                                                                                                     |             |
-| **boost_uri**         | **str**                                                                                                                                                     |             |
-| **signing_authority** | [**ContractsCreateConsentFlowContractRequestAutoboostsInnerSigningAuthority**](ContractsCreateConsentFlowContractRequestAutoboostsInnerSigningAuthority.md) |             |
+| Name                  | Type                                                                                                                        | Description | Notes |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **did**               | **str**                                                                                                                     |             |
+| **contract_uri**      | **str**                                                                                                                     |             |
+| **boost_uri**         | **str**                                                                                                                     |             |
+| **signing_authority** | [**BoostSendBoostViaSigningAuthorityRequestSigningAuthority**](BoostSendBoostViaSigningAuthorityRequestSigningAuthority.md) |             |
 
 ## Example
 

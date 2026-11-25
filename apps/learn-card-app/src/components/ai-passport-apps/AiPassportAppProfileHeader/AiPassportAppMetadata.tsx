@@ -22,7 +22,7 @@ export const AiPassportAppMetadata: React.FC<{
 
     return (
         <div className="flex items-center justify-evenly">
-            <div className="flex flex-col items-center justify-center pl-4 pr-6 border-r-solid border-r-grayscale-200 border-r-[1px]">
+            <div className="flex flex-col items-center justify-center pl-4 pr-6 border-r-solid border-r-grayscale-200 border-r">
                 <p className="text-sm text-grayscale-400 text-center font-notoSans uppercase">
                     {count} Ratings
                 </p>
@@ -31,7 +31,7 @@ export const AiPassportAppMetadata: React.FC<{
                 </h6>
                 <StaticStarRating rating={avgRating} />
             </div>
-            <div className="flex flex-col items-center justify-center pl-4 pr-6 border-r-solid border-r-grayscale-200 border-r-[1px]">
+            <div className="flex flex-col items-center justify-center pl-4 pr-6 border-r-solid border-r-grayscale-200 border-r">
                 <p className="text-sm text-grayscale-400 text-center font-notoSans uppercase">
                     AGE
                 </p>

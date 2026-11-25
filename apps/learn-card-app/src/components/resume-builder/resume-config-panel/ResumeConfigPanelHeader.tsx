@@ -37,7 +37,7 @@ export const ResumeConfigPanelHeader: React.FC<{
 
             <button
                 onClick={handleClose}
-                className="text-grayscale-400 hover:text-grayscale-700 border-[1px] border-solid border-grayscale-200 rounded-full p-3"
+                className="text-grayscale-400 hover:text-grayscale-700 border border-solid border-grayscale-200 rounded-full p-3"
             >
                 <X className="w-5 h-5 text-grayscale-700" />
             </button>

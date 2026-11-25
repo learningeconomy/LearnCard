@@ -8,6 +8,7 @@ import { Capacitor } from '@capacitor/core';
 import { CapacitorSQLite, SQLiteConnection, SQLiteDBConnection } from '@capacitor-community/sqlite';
 import { sqliteStore } from '../stores/sqliteStore';
 import { markSQLiteReady } from 'learn-card-base/SQL/sqliteReady';
+import { markSQLiteReloadedOnOpen } from './connection';
 import { getLogger } from '../logging/logger';
 const log = getLogger('sqlite-init');
 // import { performSqliteMigrations } from './migrations';
@@ -70,6 +71,7 @@ export const initSQLiteStorageWeb = (initApp: () => void) => {
                         );
                     }
                     // await db.open();
+                    markSQLiteReloadedOnOpen(db);
                     await sqliteStore.set.db(db);
                     try {
                         markSQLiteReady();

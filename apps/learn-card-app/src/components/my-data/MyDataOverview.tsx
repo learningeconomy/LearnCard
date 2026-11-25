@@ -123,7 +123,7 @@ const MyDataOverview: React.FC<{
                                 className="flex w-full items-center justify-between text-grayscale-900 ion-padding font-poppins text-xl border-b-2 border-solid border-grayscale-100"
                             >
                                 Apps
-                                <CaretLeft className="rotate-[180deg] text-grayscale-500" />
+                                <CaretLeft className="rotate-180 text-grayscale-500" />
                             </button>
                         </IonCol>
                         <IonCol size="12" className="w-full bg-white rounded-[20px]">
@@ -132,7 +132,7 @@ const MyDataOverview: React.FC<{
                                 className="flex w-full items-center justify-between text-grayscale-900 ion-padding font-poppins text-xl border-b-2 border-solid border-grayscale-100"
                             >
                                 Schools
-                                <CaretLeft className="rotate-[180deg] text-grayscale-500" />
+                                <CaretLeft className="rotate-180 text-grayscale-500" />
                             </button>
                         </IonCol>
                         <IonCol size="12" className="w-full bg-white rounded-[20px]">
@@ -141,7 +141,7 @@ const MyDataOverview: React.FC<{
                                 className="flex w-full items-center justify-between text-grayscale-900 ion-padding font-poppins text-xl"
                             >
                                 Jobs
-                                <CaretLeft className="rotate-[180deg] text-grayscale-500" />
+                                <CaretLeft className="rotate-180 text-grayscale-500" />
                             </button>
                         </IonCol>
                     </IonRow>

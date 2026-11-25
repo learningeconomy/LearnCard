@@ -43,6 +43,7 @@ import { ProofJwtSigner } from './vci/types';
 import { selectCredentialsForDcql } from './dcql/select';
 import { buildDcqlPresentations, type DcqlChosenCredential } from './dcql/build';
 import { buildDcqlResponse } from './dcql/respond';
+import { createDcApiResponse, parseDcApiRequest } from './vp/dcApi';
 import type { ChosenForPresentation } from './types';
 
 /**
@@ -224,6 +225,17 @@ export const getOpenID4VCPlugin = (
 
             parseAuthorizationRequest: (_lc, input) => parseAuthorizationRequestUri(input),
 
+            createDcApiResponse: async (learnCard, input, verifiedOrigin, chosen, options) => {
+                const request = parseDcApiRequest(input, verifiedOrigin);
+                return createDcApiResponse(
+                    request,
+                    chosen,
+                    learnCard.id.did(),
+                    buildSdJwtPresenter(learnCard),
+                    options
+                );
+            },
+
             resolveAuthorizationRequest: async (_lc, input) =>
                 resolveAuthorizationRequestFn(input, fetchImpl, resolveOptions),
 
@@ -259,7 +271,6 @@ export const getOpenID4VCPlugin = (
                     selection: {
                         descriptors: [],
                         canSatisfy: true,
-                        reason: undefined,
                     },
                 };
             },
@@ -460,7 +471,7 @@ export const getOpenID4VCPlugin = (
                         dcqlBuilt,
                         dcqlSigned: dcqlResponse.presentations,
                         dcqlVpToken: dcqlResponse.vpToken,
-                        signedIdToken,
+                        ...(signedIdToken === undefined ? {} : { signedIdToken }),
                         submitted,
                     };
                 }
@@ -480,8 +491,8 @@ export const getOpenID4VCPlugin = (
                     prepared.vpFormat === 'jwt_vp_json'
                         ? { jwtSigner: await ensureSharedJwtSigner() }
                         : prepared.vpFormat === 'ldp_vp'
-                        ? { ldpVpSigner: buildLdpVpSigner(learnCard, request) }
-                        : { sdJwtPresenter: buildSdJwtPresenter(learnCard) };
+                          ? { ldpVpSigner: buildLdpVpSigner(learnCard, request) }
+                          : { sdJwtPresenter: buildSdJwtPresenter(learnCard) };
 
                 const signed = await signPresentationFn(
                     {
@@ -507,7 +518,13 @@ export const getOpenID4VCPlugin = (
                     ...buildJarmOptions(request, await maybeJarmSigner(learnCard, request)),
                 });
 
-                return { request, prepared, signed, signedIdToken, submitted };
+                return {
+                    request,
+                    prepared,
+                    signed,
+                    ...(signedIdToken === undefined ? {} : { signedIdToken }),
+                    submitted,
+                };
             },
         },
     };
@@ -616,8 +633,7 @@ const buildJarmOptions = (
     return {
         responseMode: 'direct_post.jwt',
         clientMetadata: request.client_metadata as
-            | import('./vp/encrypt').JarmClientMetadata
-            | undefined,
+            import('./vp/encrypt').JarmClientMetadata | undefined,
         nonce: request.nonce,
         signer,
     };

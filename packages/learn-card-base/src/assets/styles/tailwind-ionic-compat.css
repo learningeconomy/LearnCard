@@ -1,0 +1,8 @@
+/* V3 did not reset every element's padding/margin. V4's universal reset wins
+ * over Ionic's shadow-host defaults, collapsing header and credential gutters.
+ * Revert only that reset for grid hosts; classes and app styles still win.
+ * Keep this Ionic-only stylesheet out of the standalone React package reset. */
+:where(ion-grid, ion-col) {
+    padding: revert-layer;
+    margin: revert-layer;
+}

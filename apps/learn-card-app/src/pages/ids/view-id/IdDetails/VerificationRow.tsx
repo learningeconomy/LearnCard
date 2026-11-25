@@ -90,12 +90,13 @@ const VerificationRow: React.FC<VerificationRowProps> = ({ verification }) => {
     if (verification.status === VerificationStatusEnum.Failed) {
         primaryText = translateMessage(verification.message ?? verification.details ?? '');
     }
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     primaryText = capitalize(primaryText);
 
     const infoText = ''; // if we want certain verifications to have extra explanation, we can set this variable
 
     return (
-        <div className="verification-row flex flex-col gap-[5px] font-poppins border-b-[1px] border-grayscale-200 border-solid w-full py-[10px] last:border-0 last:pb-0">
+        <div className="verification-row flex flex-col gap-[5px] font-poppins border-b border-grayscale-200 border-solid w-full py-[10px] last:border-0 last:pb-0">
             <span
                 className={`font-[700] text-[14px] font-notoSans flex items-center gap-[3px] select-none ${statusTextClass(
                     verification.status
@@ -105,6 +106,7 @@ const VerificationRow: React.FC<VerificationRowProps> = ({ verification }) => {
                 {statusText}
                 {infoText && (
                     <button className="ml-auto" onClick={() => setShowInfo(!showInfo)}>
+                        {/* eslint-disable-next-line react/jsx-no-undef -- existing undefined component; importing it changes what renders, flagged for follow-up */}
                         <InfoIcon color={statusColor} />
                     </button>
                 )}

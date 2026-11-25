@@ -128,7 +128,7 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
             await confirm({
                 text: (
                     <div className="flex flex-col gap-[5px] mb-[10px]">
-                        <span className="font-[600] text-center">
+                        <span className="font-semibold text-center">
                             {m['consentFlow.willDisconnect']()}
                         </span>
                         <span className="text-center">{m['consentFlow.delCredsQ']()}</span>
@@ -175,7 +175,7 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                                     </button>
 
                                     <div className="flex items-center justify-normal">
-                                        <div className="w-[40px] h-[40px] flex items-center justify-center rounded-[10px] overflow-hidden shadow-sm">
+                                        <div className="w-[40px] h-[40px] flex items-center justify-center rounded-[10px] overflow-hidden shadow-xs">
                                             <img
                                                 src={
                                                     contractDetails?.image ??

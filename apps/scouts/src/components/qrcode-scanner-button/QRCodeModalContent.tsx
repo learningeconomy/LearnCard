@@ -29,7 +29,7 @@ const QRCodeModalContent: React.FC<QRCodeModalContentProps> = ({
                     <span className="flex items-center gap-[4px] font-notoSans text-[16px] text-grayscale-900 font-semibold">
                         <CredentialVerificationDisplay
                             credential={credential}
-                            iconClassName="!h-[20px] !w-[20px]"
+                            iconClassName="h-[20px]! w-[20px]!"
                         />
                         {credential?.name}
                     </span>

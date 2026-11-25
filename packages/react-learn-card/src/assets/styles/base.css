@@ -1,2 +1,18 @@
-@import 'tailwindcss/base';
-@import 'tailwindcss/components';
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/preflight.css';
+@import '../../../../learn-card-base/src/assets/styles/tailwind-v3-compat.css';
+@import '../../../../learn-card-base/src/assets/styles/tailwind-v3-colors.css'
+    theme(inline reference);
+
+/* The optional reset must not export palette tokens into a consumer's theme. */
+*,
+::before,
+::after,
+::backdrop,
+::file-selector-button {
+    border-color: #e5e7eb;
+}
+input::placeholder,
+textarea::placeholder {
+    color: #9ca3af;
+}

@@ -5,6 +5,17 @@ import { callbackLink } from './callbackLink';
 
 export type Client = TRPCClient<AppRouter>;
 
+/**
+ * Longest GET URL the client will send. Queries carry their input in the URL, and API Gateway
+ * answers HTTP 431 once the request line plus headers pass ~10KB (on staging a 9,376-byte URL
+ * passed and a 9,425-byte one failed). Without a cap, httpBatchLink happily merges concurrent
+ * queries into one URL past that limit, so batches are split to stay under this instead.
+ *
+ * Note that tRPC rejects a single operation that is longer than this on its own ("Input is too big
+ * for a single dispatch") rather than sending it.
+ */
+export const LCA_API_MAX_URL_LENGTH = 8192;
+
 export const getClient = async (
     url: string,
     didAuthFunction: (challenge?: string) => Promise<string>,
@@ -59,6 +70,7 @@ export const getClient = async (
             }),
             httpBatchLink({
                 url,
+                maxURLLength: LCA_API_MAX_URL_LENGTH,
                 headers: async () => ({
                     Authorization: `Bearer ${await didAuthFunction(await takeChallenge())}`,
                     ...extraHeaders,

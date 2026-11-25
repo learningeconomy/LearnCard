@@ -1,23 +1,30 @@
 name: E2E
 
 on:
+    # Report eligibility and skipped suite checks on PRs; full suites run in the queue.
     pull_request:
         types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
-    # Merge queue: GitHub creates a temporary branch with the PR(s) merged onto
-    # current main and runs this once per batch. This is what lets PRs stay
-    # mergeable without every author re-running E2E after main moves.
+    # Validate the combined revision containing current main and queued changes.
     merge_group:
         types: [checks_requested]
     workflow_dispatch:
         inputs:
             ref:
-                description: 'LearnCard ref to test'
+                description: 'LearnCard branch or commit SHA to test (use the PR head for an early full run)'
                 required: false
                 default: 'main'
             test_files:
                 description: 'Browser spec files, separated by spaces'
                 required: false
                 default: 'consent-flow-race.spec.ts app-store.spec.ts wallet-credentials.spec.ts'
+            use_sdk_cache:
+                description: 'Restore SDK outputs; false runs an identical cold-build baseline.'
+                type: boolean
+                default: true
+            verify_sdk_producer:
+                description: 'Also validate the SDK producer; feature refs never publish shared output.'
+                type: boolean
+                default: false
 
 permissions:
     contents: read
@@ -30,26 +37,32 @@ env:
     E2E_TESTED_REF: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.ref || github.sha }}
 
 jobs:
+    sdk_cache_probe:
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.verify_sdk_producer }}
+        uses: ./.github/workflows/sdk-build-cache.yml
+
     eligibility:
         name: Determine E2E eligibility
         runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            pull-requests: read
         outputs:
             run_e2e: ${{ steps.policy.outputs.run_e2e }}
             reason: ${{ steps.policy.outputs.reason }}
         steps:
             - name: Checkout for change detection
-              if: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
+              if: ${{ github.event_name == 'merge_group' }}
               uses: actions/checkout@v7
               with:
                   ref: ${{ env.E2E_TESTED_REF }}
                   fetch-depth: 0
 
-            - name: Evaluate PR policy
+            - name: Evaluate E2E policy
               id: policy
               env:
                   EVENT_NAME: ${{ github.event_name }}
-                  PR_DRAFT: ${{ github.event.pull_request.draft || false }}
-                  BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+                  BASE_SHA: ${{ github.event.merge_group.base_sha }}
               run: |
                   if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
                     echo 'run_e2e=true' >> "$GITHUB_OUTPUT"
@@ -57,10 +70,15 @@ jobs:
                     exit 0
                   fi
 
-                  if [[ "$EVENT_NAME" == "pull_request" && "$PR_DRAFT" == "true" ]]; then
+                  if [[ "$EVENT_NAME" == "pull_request" ]]; then
                     echo 'run_e2e=false' >> "$GITHUB_OUTPUT"
-                    echo 'reason=draft-pr' >> "$GITHUB_OUTPUT"
+                    echo 'reason=merge-queue-only' >> "$GITHUB_OUTPUT"
                     exit 0
+                  fi
+
+                  if [[ "$EVENT_NAME" != "merge_group" ]]; then
+                    echo "Unsupported E2E event: $EVENT_NAME" >&2
+                    exit 1
                   fi
 
                   if bash scripts/e2e-hosted/changes-are-docs-only.sh "$BASE_SHA" HEAD; then
@@ -72,6 +90,31 @@ jobs:
                   echo 'run_e2e=true' >> "$GITHUB_OUTPUT"
                   echo "reason=$EVENT_NAME" >> "$GITHUB_OUTPUT"
 
+            - name: Validate E2E eligibility
+              env:
+                  EVENT_NAME: ${{ github.event_name }}
+                  RUN_E2E: ${{ steps.policy.outputs.run_e2e }}
+                  REASON: ${{ steps.policy.outputs.reason }}
+              run: |
+                  case "$EVENT_NAME:$RUN_E2E:$REASON" in
+                    workflow_dispatch:true:manual-dispatch|merge_group:true:merge_group|merge_group:false:docs-only) ;;
+                    pull_request:false:merge-queue-only) ;;
+                    *) echo 'Invalid E2E eligibility decision' >&2; exit 1 ;;
+                  esac
+                  if [[ "$REASON" == "merge-queue-only" ]]; then
+                    echo 'Full E2E deferred to the merge queue. This PR check does not represent a test pass.' >> "$GITHUB_STEP_SUMMARY"
+                    echo 'To run full E2E before queuing, dispatch the E2E workflow with the PR branch or commit SHA as ref.' >> "$GITHUB_STEP_SUMMARY"
+                  fi
+                  printf '## E2E eligibility\n\nRun suites: `%s`\n\nReason: `%s`\n' "$RUN_E2E" "$REASON" >> "$GITHUB_STEP_SUMMARY"
+
+            - name: Observe queue batching candidates
+              if: ${{ github.event_name == 'merge_group' }}
+              continue-on-error: true
+              timeout-minutes: 1
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: node scripts/e2e-hosted/observe-queue-batch.mjs
+
     playwright_e2e:
         name: Playwright E2E
         needs: eligibility
@@ -80,6 +123,7 @@ jobs:
         timeout-minutes: 60
         env:
             E2E_ARTIFACT_DIR: /tmp/learncard-e2e-artifacts/browser
+            E2E_HOST_BROWSER_BUILD: 'true'
             E2E_TEST_FILES: ${{ github.event.inputs.test_files || 'consent-flow-race.spec.ts app-store.spec.ts wallet-credentials.spec.ts' }}
         steps:
             - name: Checkout tested revision
@@ -131,6 +175,12 @@ jobs:
             - name: Prepare runner storage
               run: bash scripts/e2e-hosted/prepare-storage.sh
 
+            - name: Authenticate Docker Hub pulls
+              uses: ./.github/actions/dockerhub-login
+              with:
+                  username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+                  token: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+
             - name: Setup Docker Buildx
               uses: docker/setup-buildx-action@v3
               with:
@@ -150,7 +200,13 @@ jobs:
               with:
                   save-cache: 'false'
 
+            - name: Prepare shared SDK build reuse
+              uses: ./.github/actions/sdk-build-cache
+              with:
+                  use-cache: ${{ github.event.inputs.use_sdk_cache != 'false' }}
+
             - name: Run Playwright and accessibility suites
+              # The preceding restore never represents test or app-build success.
               run: bash scripts/e2e-hosted/run-browser.sh
 
             - name: Publish browser diagnostic summary
@@ -171,26 +227,19 @@ jobs:
                   if-no-files-found: error
                   retention-days: 30
 
-    tests_e2e:
-        name: tests/e2e
+    tests_e2e_1:
+        name: tests/e2e (1)
         needs: eligibility
         if: ${{ needs.eligibility.outputs.run_e2e == 'true' }}
         runs-on: ${{ vars.E2E_HOSTED_RUNNER || 'ubuntu-latest' }}
         timeout-minutes: 60
-        # 45 spec files run strictly serially (serviceIntegrationPreset sets
-        # fileParallelism: false because they share one stack). Each file wipes every
-        # database in its beforeAll, so there is no cross-file ordering dependency and
-        # the files can be split across runners that each own a separate stack.
-        # fail-fast is off so one red shard still lets the others report.
-        strategy:
-            fail-fast: false
-            matrix:
-                shard: [1, 2, 3]
+        # Fixed job names remain present when eligibility skips the suites.
+        # Each shard owns its stack; failure does not cancel the other shards.
         env:
             E2E_ARTIFACT_DIR: /tmp/learncard-e2e-artifacts/service
-            E2E_SHARD: ${{ matrix.shard }}
-            E2E_SHARD_TOTAL: ${{ strategy.job-total }}
-        steps:
+            E2E_SHARD: '1'
+            E2E_SHARD_TOTAL: '3'
+        steps: &service_e2e_steps
             - name: Checkout tested revision
               id: checkout
               uses: actions/checkout@v7
@@ -240,6 +289,12 @@ jobs:
             - name: Prepare runner storage
               run: bash scripts/e2e-hosted/prepare-storage.sh
 
+            - name: Authenticate Docker Hub pulls
+              uses: ./.github/actions/dockerhub-login
+              with:
+                  username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+                  token: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+
             - name: Setup Docker Buildx
               uses: docker/setup-buildx-action@v3
               with:
@@ -258,7 +313,12 @@ jobs:
               uses: ./.github/actions/setup
               with:
                   # One writer per E2E run avoids sibling jobs compressing the same cache.
-                  save-cache: ${{ matrix.shard == 1 }}
+                  save-cache: ${{ env.E2E_SHARD == '1' }}
+
+            - name: Prepare shared SDK build reuse
+              uses: ./.github/actions/sdk-build-cache
+              with:
+                  use-cache: ${{ github.event.inputs.use_sdk_cache != 'false' }}
 
             - name: Run tests/e2e
               run: bash scripts/e2e-hosted/run-service.sh
@@ -277,42 +337,31 @@ jobs:
               if: always()
               uses: actions/upload-artifact@v4
               with:
-                  name: tests-e2e-${{ github.run_id }}-shard${{ matrix.shard }}
+                  name: tests-e2e-${{ github.run_id }}-shard${{ env.E2E_SHARD }}
                   path: ${{ env.E2E_ARTIFACT_DIR }}
                   if-no-files-found: error
                   retention-days: 30
 
-    e2e:
-        name: E2E
-        needs: [eligibility, playwright_e2e, tests_e2e]
-        if: ${{ always() }}
-        runs-on: ubuntu-latest
-        timeout-minutes: 5
-        steps:
-            - name: Evaluate E2E result
-              env:
-                  ELIGIBILITY_RESULT: ${{ needs.eligibility.result }}
-                  ELIGIBLE: ${{ needs.eligibility.outputs.run_e2e }}
-                  ELIGIBILITY_REASON: ${{ needs.eligibility.outputs.reason }}
-                  BROWSER_RESULT: ${{ needs.playwright_e2e.result }}
-                  SERVICE_RESULT: ${{ needs.tests_e2e.result }}
-              run: |
-                  if [[ "$ELIGIBILITY_RESULT" != "success" ]]; then
-                    echo "E2E eligibility did not succeed: $ELIGIBILITY_RESULT" >&2
-                    exit 1
-                  fi
+    tests_e2e_2:
+        name: tests/e2e (2)
+        needs: eligibility
+        if: ${{ needs.eligibility.outputs.run_e2e == 'true' }}
+        runs-on: ${{ vars.E2E_HOSTED_RUNNER || 'ubuntu-latest' }}
+        timeout-minutes: 60
+        env:
+            E2E_ARTIFACT_DIR: /tmp/learncard-e2e-artifacts/service
+            E2E_SHARD: '2'
+            E2E_SHARD_TOTAL: '3'
+        steps: *service_e2e_steps
 
-                  if [[ "$ELIGIBLE" == "false" ]]; then
-                    case "$ELIGIBILITY_REASON" in
-                      draft-pr)  echo 'E2E skipped: draft pull request.'; exit 0 ;;
-                      docs-only) echo 'E2E skipped: only documentation files changed.'; exit 0 ;;
-                    esac
-                  fi
-
-                  if [[ "$ELIGIBLE" == "true" && "$BROWSER_RESULT" == "success" && "$SERVICE_RESULT" == "success" ]]; then
-                    echo 'Both hosted E2E suites passed.'
-                    exit 0
-                  fi
-
-                  echo "E2E failed: eligibility=$ELIGIBLE reason=$ELIGIBILITY_REASON playwright=$BROWSER_RESULT tests_e2e=$SERVICE_RESULT" >&2
-                  exit 1
+    tests_e2e_3:
+        name: tests/e2e (3)
+        needs: eligibility
+        if: ${{ needs.eligibility.outputs.run_e2e == 'true' }}
+        runs-on: ${{ vars.E2E_HOSTED_RUNNER || 'ubuntu-latest' }}
+        timeout-minutes: 60
+        env:
+            E2E_ARTIFACT_DIR: /tmp/learncard-e2e-artifacts/service
+            E2E_SHARD: '3'
+            E2E_SHARD_TOTAL: '3'
+        steps: *service_e2e_steps

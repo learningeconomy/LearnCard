@@ -1,5 +1,109 @@
 # @learncard/openid4vc-plugin
 
+## 0.4.2
+
+### Patch Changes
+
+- [#2073](https://github.com/learningeconomy/LearnCard/pull/2073) [`9ea97f319158a461ec42b4256c63b81ed53afe97`](https://github.com/learningeconomy/LearnCard/commit/9ea97f319158a461ec42b4256c63b81ed53afe97) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Load the VCI / VP / SIOP implementation on the first async plugin call instead of at plugin init. The sync parsers stay eager. A failed load (for example a stale chunk after a deploy) is retried once and never cached: if the retry fails too, the call rejects with the original import error and the next call loads again.
+
+- Updated dependencies [[`261e0f46814595d06460dc617ba50800671f03b1`](https://github.com/learningeconomy/LearnCard/commit/261e0f46814595d06460dc617ba50800671f03b1), [`acda1d1bd362add238a7c6ff8096c295e844e586`](https://github.com/learningeconomy/LearnCard/commit/acda1d1bd362add238a7c6ff8096c295e844e586), [`6d5afc9c348c20ac6ac9c7b35651e5b850b13401`](https://github.com/learningeconomy/LearnCard/commit/6d5afc9c348c20ac6ac9c7b35651e5b850b13401), [`0bb92c2cc8047aa4bf307fd0952c1714219286a9`](https://github.com/learningeconomy/LearnCard/commit/0bb92c2cc8047aa4bf307fd0952c1714219286a9)]:
+    - @learncard/didkit-plugin@1.11.0
+    - @learncard/core@10.0.0
+    - @learncard/vc-plugin@1.7.3
+
+## 0.4.1
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/core@9.4.46
+    - @learncard/didkit-plugin@1.10.12
+    - @learncard/vc-plugin@1.7.2
+
+## 0.4.0
+
+### Minor Changes
+
+- [#1835](https://github.com/learningeconomy/LearnCard/pull/1835) [`3b23133f37568730dc3bc5274b36b18de84a6536`](https://github.com/learningeconomy/LearnCard/commit/3b23133f37568730dc3bc5274b36b18de84a6536) Thanks [@goblincore](https://github.com/goblincore)! - LC-2159: Add transport-neutral Digital Credentials API request parsing and response creation for the unsigned OpenID4VP SD-JWT profile. Responses enforce explicit request-bounded disclosures and bind holder proofs to the trusted origin and nonce without HTTP submission. Existing URI/direct-post transports are preserved.
+
+    Support portable Ed25519 signing and verification on older Android WebViews while retaining JWK operation restrictions. Preserve JOSE verification for other supported issuer curves, including Ed448.
+
+### Patch Changes
+
+- Updated dependencies [[`c245cba6fc162e6896c4f9439a8a8da42d4189c9`](https://github.com/learningeconomy/LearnCard/commit/c245cba6fc162e6896c4f9439a8a8da42d4189c9), [`6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480`](https://github.com/learningeconomy/LearnCard/commit/6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480)]:
+    - @learncard/didkit-plugin@1.10.11
+    - @learncard/core@9.4.45
+    - @learncard/vc-plugin@1.7.1
+
+## 0.3.17
+
+### Patch Changes
+
+- Updated dependencies [[`751579d9c14116dbf6d0e7f7d62f489c81c39db2`](https://github.com/learningeconomy/LearnCard/commit/751579d9c14116dbf6d0e7f7d62f489c81c39db2), [`2c60b1a760958cbfe2525bc951d2381332e1aa48`](https://github.com/learningeconomy/LearnCard/commit/2c60b1a760958cbfe2525bc951d2381332e1aa48)]:
+    - @learncard/vc-plugin@1.7.0
+    - @learncard/core@9.4.44
+    - @learncard/didkit-plugin@1.10.10
+
+## 0.3.16
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/core@9.4.43
+    - @learncard/didkit-plugin@1.10.9
+    - @learncard/vc-plugin@1.6.9
+
+## 0.3.15
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/core@9.4.42
+    - @learncard/didkit-plugin@1.10.8
+    - @learncard/vc-plugin@1.6.8
+
+## 0.3.14
+
+### Patch Changes
+
+- Updated dependencies [[`d93c1b15856f341b4bd36415bf39052de9b6b198`](https://github.com/learningeconomy/LearnCard/commit/d93c1b15856f341b4bd36415bf39052de9b6b198)]:
+    - @learncard/didkit-plugin@1.10.6
+    - @learncard/core@9.4.41
+    - @learncard/vc-plugin@1.6.7
+
+## 0.3.13
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/core@9.4.40
+    - @learncard/didkit-plugin@1.10.5
+    - @learncard/vc-plugin@1.6.6
+
+## 0.3.12
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/core@9.4.39
+    - @learncard/didkit-plugin@1.10.4
+    - @learncard/vc-plugin@1.6.5
+
+## 0.3.11
+
+### Patch Changes
+
+- [#1646](https://github.com/learningeconomy/LearnCard/pull/1646) [`880014a5c2c19df944e8e59d6998a1031d4e5a0b`](https://github.com/learningeconomy/LearnCard/commit/880014a5c2c19df944e8e59d6998a1031d4e5a0b) Thanks [@goblincore](https://github.com/goblincore)! - Add opt-in encrypted verifier history with recording controls, bounded retention and exact deletion. Keep receipts outside credential indexes and suppress capture before viewing private history.
+
+    OID4VP transport errors now expose stable codes and HTTP status without response URLs, fetch causes, verifier status text or response bodies. Consumers that previously inspected `VpSubmitError.body` or `.cause` must use `code` and `status`; successful submission responses still expose `body`.
+
+    Capture consent from an owner-encrypted local snapshot without pre-send Cloud reads. Quarantine unreadable history, allow exact-ID recovery Clear, preserve future-dated/recent other-generation receipts, and share live eligibility/cancellation guards across flows. Known JARM failures expose an allowlisted `jarmCode`; unexpected response preparation failures use `internal_error` without private causes.
+
+- Updated dependencies [[`590adf48867d6c6fd504e66a11c9827d5102122d`](https://github.com/learningeconomy/LearnCard/commit/590adf48867d6c6fd504e66a11c9827d5102122d)]:
+    - @learncard/didkit-plugin@1.10.3
+    - @learncard/core@9.4.38
+    - @learncard/vc-plugin@1.6.4
+
 ## 0.3.10
 
 ### Patch Changes

@@ -52,31 +52,7 @@ export const AiSessionsTabs: React.FC<AiSessionsTabsProps> = ({
     const { isMobile } = useDeviceTypeByWidth();
 
     const topicsCount = useMemo(() => {
-        if (activeTab === AiSessionsTabsEnum.chatGPT) {
-            const chatGPTProfile = aiPassportApps?.find(
-                app => app?.type === AiPassportAppsEnum.chatGPT
-            );
-            return (
-                aiTopics?.filter(topics => topics?.contractUri === chatGPTProfile?.contractUri)
-                    .length ?? 0
-            );
-        } else if (activeTab === AiSessionsTabsEnum.claude) {
-            const claudeProfile = aiPassportApps?.find(
-                app => app?.type === AiPassportAppsEnum.claude
-            );
-            return (
-                aiTopics?.filter(topics => topics?.contractUri === claudeProfile?.contractUri)
-                    .length ?? 0
-            );
-        } else if (activeTab === AiSessionsTabsEnum.gemini) {
-            const geminiProfile = aiPassportApps?.find(
-                app => app?.type === AiPassportAppsEnum.gemini
-            );
-            return (
-                aiTopics?.filter(topics => topics?.contractUri === geminiProfile?.contractUri)
-                    .length ?? 0
-            );
-        } else if (activeTab === AiSessionsTabsEnum.learnCard) {
+        if (activeTab === AiSessionsTabsEnum.learnCard) {
             const learncardappProfile = aiPassportApps?.find(
                 app => app?.type === AiPassportAppsEnum.learncardapp
             );
@@ -91,7 +67,7 @@ export const AiSessionsTabs: React.FC<AiSessionsTabsProps> = ({
     const handlePersonalizeMyAi = () => {
         newModal(
             <AiPassportPersonalizationContainer />,
-            { className: '!bg-transparent' },
+            { className: 'bg-transparent!' },
             { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
         );
     };
@@ -110,7 +86,7 @@ export const AiSessionsTabs: React.FC<AiSessionsTabsProps> = ({
                 {isMobile && (
                     <button
                         onClick={handlePersonalizeMyAi}
-                        className="bg-white text-grayscale-700 flex items-center justify-center p-3 py-[5px] rounded-[15px] font-semibold text-[14px] mr-4 border-[1px] border-solid border-grayscale-200"
+                        className="bg-white text-grayscale-700 flex items-center justify-center p-3 py-[5px] rounded-[15px] font-semibold text-[14px] mr-4 border border-solid border-grayscale-200"
                     >
                         <UnicornIcon className="w-[35px] h-auto mr-2" />
                         {m['ai.personalize']()}
@@ -128,7 +104,7 @@ export const AiSessionsTabs: React.FC<AiSessionsTabsProps> = ({
                             type="button"
                             className={`mr-2 border-solid  border-indigo-300 rounded-full px-4 py-[2px] font-semibold text-base ${
                                 isActive
-                                    ? 'text-indigo-500 border-[1px]'
+                                    ? 'text-indigo-500 border'
                                     : 'text-grayscale-600 border-0'
                             }`}
                         >

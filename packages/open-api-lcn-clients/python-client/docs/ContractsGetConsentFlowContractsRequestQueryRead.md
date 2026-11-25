@@ -2,11 +2,11 @@
 
 ## Properties
 
-| Name            | Type                                                                                                                                             | Description | Notes      |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- | ---------- |
-| **anonymize**   | **bool**                                                                                                                                         |             | [optional] |
-| **credentials** | [**ContractsGetConsentFlowContractsRequestQueryReadCredentials**](ContractsGetConsentFlowContractsRequestQueryReadCredentials.md)                |             | [optional] |
-| **personal**    | [**Dict[str, ContractsGetConsentFlowContractsRequestQueryReadPersonalValue]**](ContractsGetConsentFlowContractsRequestQueryReadPersonalValue.md) |             | [optional] |
+| Name            | Type                                                                                                                                                                       | Description | Notes      |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **anonymize**   | **bool**                                                                                                                                                                   |             | [optional] |
+| **credentials** | [**ContractsGetConsentFlowContractsRequestQueryReadCredentials**](ContractsGetConsentFlowContractsRequestQueryReadCredentials.md)                                          |             | [optional] |
+| **personal**    | [**Dict[str, ContractsGetConsentFlowContractsRequestQueryReadCredentialsCategoriesValue]**](ContractsGetConsentFlowContractsRequestQueryReadCredentialsCategoriesValue.md) |             | [optional] |
 
 ## Example
 

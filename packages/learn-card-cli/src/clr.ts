@@ -9,6 +9,8 @@ import {
     type ProjectOptions,
 } from './project';
 import { out } from './out';
+import { UsageError } from './errors';
+import type { RunCommand } from './doctor';
 import { validateClr, type ClrValidationProfile } from './clr/validate';
 
 export type ClrValidateOptions = ProjectOptions & {
@@ -22,7 +24,7 @@ const PROFILES: readonly ClrValidationProfile[] = ['provisional', 'official'];
 const parseProfile = (value?: string): ClrValidationProfile | undefined => {
     if (value === undefined) return undefined;
     if ((PROFILES as readonly string[]).includes(value)) return value as ClrValidationProfile;
-    throw new Error(`Unknown --profile "${value}". Use provisional or official.`);
+    throw new UsageError(`Unknown --profile "${value}". Use provisional or official.`);
 };
 
 /**
@@ -40,7 +42,24 @@ export const withIssuer = (
     return { ...credential, issuer: did };
 };
 
+/** The closing line of `clr validate`, so a passing run says so instead of printing nothing. */
+export const validationSummaryLine = (
+    file: string,
+    errorCount: number,
+    warningCount: number,
+    profile?: ClrValidationProfile
+): string => {
+    const plural = (n: number, word: string): string => `${n} ${word}${n === 1 ? '' : 's'}`;
+    const checks = profile ? ` (${profile} profile)` : '';
+    if (errorCount)
+        return `✖ ${file} is not a valid CLR 2.0 transcript${checks}: ${plural(errorCount, 'error')}, ${plural(warningCount, 'warning')}.`;
+    return `✓ ${file} is a valid CLR 2.0 transcript${checks}${
+        warningCount ? ` with ${plural(warningCount, 'warning')}` : ''
+    }.`;
+};
+
 export const runClrValidate = async (file: string, options: ClrValidateOptions): Promise<void> => {
+    const profile = parseProfile(options.profile);
     const text = await fs.readFile(file, 'utf8');
     let json: unknown;
     try {
@@ -50,7 +69,6 @@ export const runClrValidate = async (file: string, options: ClrValidateOptions):
         throw new Error(`Invalid JSON in ${file}: ${message}`, { cause: error });
     }
 
-    const profile = parseProfile(options.profile);
     const { errors, warnings, summary } = validateClr(json, { profile });
 
     for (const error of errors) out.log(`✖ ${error}`);
@@ -58,6 +76,7 @@ export const runClrValidate = async (file: string, options: ClrValidateOptions):
 
     const ok = errors.length === 0;
     if (!ok) process.exitCode = 1;
+    out.log(validationSummaryLine(file, errors.length, warnings.length, profile));
     let signOk = true;
 
     if (options.dryRunSign) {
@@ -71,7 +90,7 @@ export const runClrValidate = async (file: string, options: ClrValidateOptions):
                     'Refusing --dry-run-sign against production. Pass --network staging or --allow-production.'
                 );
             }
-            const learnCard = await connect(project, options);
+            const learnCard = await connect(project, { ...options, readOnly: true });
             const signed = await learnCard.invoke.issueCredential(
                 withIssuer(json as Record<string, unknown>, learnCard.id.did()) as never
             );
@@ -91,15 +110,7 @@ export const runClrValidate = async (file: string, options: ClrValidateOptions):
     out.set({ ok: ok && signOk, errors, warnings, summary });
 };
 
-export const registerClrCommand = (
-    program: Command,
-    run: (
-        command: string,
-        options: { json?: boolean },
-        action: (didkit: Promise<Buffer>) => Promise<void>,
-        wrap?: boolean
-    ) => Promise<void>
-): void => {
+export const registerClrCommand = (program: Command, run: RunCommand): void => {
     const clr = program.command('clr').description('CLR 2.0 transcript tools.');
     clr.command('validate <file>')
         .description('Validate a CLR 2.0 transcript file against schema and issuer-profile rules.')
@@ -109,7 +120,7 @@ export const registerClrCommand = (
             'sign + verify in memory to catch signing failures; never sends or stores'
         )
         .option('--allow-production', 'allow --dry-run-sign against the production network')
-        .option('--network <url>', 'network tRPC URL or staging (default: production)')
+        .option('--network <url>', 'production|staging|local or a tRPC URL (default: production)')
         .option('--json', 'print a single JSON result on stdout')
         .action((file, options) =>
             run('clr validate', options, async didkit => {

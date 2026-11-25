@@ -22,7 +22,7 @@ export const PrivacyAndDataHeader: React.FC<PrivacyAndDataHeaderProps> = ({
                 <div className="h-11 w-11 shrink-0">
                     {image ? (
                         <img
-                            className="w-full h-full object-cover bg-white rounded-[16px] overflow-hidden border-[1px] border-solid border-grayscale-200"
+                            className="w-full h-full object-cover bg-white rounded-[16px] overflow-hidden border border-solid border-grayscale-200"
                             alt={`${name} logo`}
                             src={image}
                         />
@@ -30,13 +30,13 @@ export const PrivacyAndDataHeader: React.FC<PrivacyAndDataHeaderProps> = ({
                         <img
                             src={EmptyImage}
                             alt="Contract Icon"
-                            className="h-full w-full object-contain p-2 rounded-[16px] overflow-hidden border-[1px] border-solid border-grayscale-200"
+                            className="h-full w-full object-contain p-2 rounded-[16px] overflow-hidden border border-solid border-grayscale-200"
                         />
                     )}
                 </div>
 
                 <div className="flex min-w-0 flex-col gap-1 items-start justify-center">
-                    <p className="text-base font-semibold text-grayscale-900 leading-snug break-words">
+                    <p className="text-base font-semibold text-grayscale-900 leading-snug wrap-break-word">
                         {name}
                     </p>
                     <p className="text-xs text-grayscale-600 font-medium">

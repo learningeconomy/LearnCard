@@ -1,0 +1,106 @@
+name: Keycloak Drift Check
+
+# Nightly `terraform plan` of the network and service roots against live AWS.
+# Any planned change (console edits, or merged-but-unapplied code) opens or
+# updates one `keycloak-drift` issue per environment; a clean run closes it.
+# The realm root is not checked here: it only runs inside the VPC (CodeBuild).
+on:
+    schedule:
+        - cron: '17 9 * * *'
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+jobs:
+    drift:
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - environment: staging
+                      plan_role_var: KEYCLOAK_STAGING_PLAN_ROLE_ARN
+                    - environment: production
+                      plan_role_var: KEYCLOAK_PRODUCTION_PLAN_ROLE_ARN
+        permissions:
+            contents: read
+            id-token: write
+            issues: write
+        concurrency:
+            group: keycloak-infra-${{ matrix.environment }}
+            cancel-in-progress: false
+        env:
+            DEPLOY_ENVIRONMENT: ${{ matrix.environment }}
+            AWS_REGION: us-east-1
+            # The plan role trusts ref:refs/heads/main, which scheduled runs use.
+            PLAN_ROLE_ARN: ${{ vars[matrix.plan_role_var] }}
+        steps:
+            - name: Skip environments without a plan role
+              id: gate
+              run: |
+                  if [ -z "$PLAN_ROLE_ARN" ]; then
+                      echo "No plan role configured for $DEPLOY_ENVIRONMENT; skipping." >> "$GITHUB_STEP_SUMMARY"
+                      echo "enabled=false" >> "$GITHUB_OUTPUT"
+                  else
+                      echo "enabled=true" >> "$GITHUB_OUTPUT"
+                  fi
+            - uses: actions/checkout@v7
+              if: steps.gate.outputs.enabled == 'true'
+              with:
+                  persist-credentials: false
+            - uses: hashicorp/setup-terraform@v3
+              if: steps.gate.outputs.enabled == 'true'
+              with:
+                  terraform_version: '1.15.8'
+                  terraform_wrapper: false
+            - uses: aws-actions/configure-aws-credentials@v5
+              if: steps.gate.outputs.enabled == 'true'
+              with:
+                  role-to-assume: ${{ env.PLAN_ROLE_ARN }}
+                  aws-region: us-east-1
+                  role-duration-seconds: 1800
+                  unset-current-credentials: true
+            - name: Plan network and service (summary only)
+              id: plan
+              if: steps.gate.outputs.enabled == 'true'
+              run: |
+                  name="learncard-keycloak-${DEPLOY_ENVIRONMENT}"
+                  export TF_STATE_BUCKET
+                  TF_STATE_BUCKET=$(aws ssm get-parameter --name "/learncard-keycloak/${DEPLOY_ENVIRONMENT}/bootstrap/state_bucket_name" --query Parameter.Value --output text)
+                  bash infra/keycloak/scripts/terraform-plan.sh network
+                  # Compare against the image and secret the running task uses, so a
+                  # deployed digest is not reported as drift.
+                  task=$(aws ecs describe-services --cluster "$name" --services "$name" --query 'services[0].taskDefinition' --output text)
+                  definition=$(aws ecs describe-task-definition --task-definition "$task")
+                  export TF_VAR_keycloak_image TF_VAR_bootstrap_admin_password_secret_arn
+                  TF_VAR_keycloak_image=$(jq -er '.taskDefinition.containerDefinitions[] | select(.name=="keycloak") | .image' <<< "$definition")
+                  TF_VAR_bootstrap_admin_password_secret_arn=$(jq -er '.taskDefinition.containerDefinitions[] | select(.name=="keycloak") | .secrets[] | select(.name=="KC_BOOTSTRAP_ADMIN_PASSWORD") | .valueFrom' <<< "$definition")
+                  bash infra/keycloak/scripts/terraform-plan.sh service
+            - name: Remove confidential local plans and logs
+              if: always()
+              run: rm -f infra/keycloak/terraform/{network,service}/{keycloak.tfplan,plan.json,plan.log,init.log}
+            - name: Open, update, or close the drift issue
+              if: steps.gate.outputs.enabled == 'true' && steps.plan.outcome == 'success'
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  GH_REPO: ${{ github.repository }}
+                  NETWORK_CHANGES: ${{ steps.plan.outputs.network_changes }}
+                  SERVICE_CHANGES: ${{ steps.plan.outputs.service_changes }}
+                  RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+              run: |
+                  title="Keycloak ${DEPLOY_ENVIRONMENT} infrastructure drift"
+                  existing=$(gh issue list --state open --label keycloak-drift --search "in:title \"$title\"" --json number --jq '.[0].number // empty')
+                  if [ "${NETWORK_CHANGES:-0}" -eq 0 ] && [ "${SERVICE_CHANGES:-0}" -eq 0 ]; then
+                      if [ -n "$existing" ]; then
+                          gh issue close "$existing" --comment "No drift as of [this run]($RUN_URL)."
+                      fi
+                      exit 0
+                  fi
+                  body=$(printf 'Planned changes against live AWS: network **%s**, service **%s**.\n\nEither someone changed resources outside Terraform, or the main branch has unapplied changes. Addresses are in the [run summary](%s); raw plans are never published.\n' "${NETWORK_CHANGES:-0}" "${SERVICE_CHANGES:-0}" "$RUN_URL")
+                  if [ -n "$existing" ]; then
+                      gh issue comment "$existing" --body "$body"
+                  else
+                      gh label create keycloak-drift --color B60205 --description "Keycloak Terraform drift" 2>/dev/null || true
+                      gh issue create --title "$title" --label keycloak-drift --body "$body"
+                  fi

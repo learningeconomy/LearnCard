@@ -20,7 +20,7 @@ interface PersonaPickerProps {
 }
 
 const PersonaPicker: React.FC<PersonaPickerProps> = ({ personas, onAdded }) => (
-    <div className="p-6 font-poppins space-y-5">
+    <div className="p-6 font-poppins space-y-v3-5">
         <div>
             <h2 className="text-xl font-semibold text-grayscale-900">
                 {m['passport.buildMyLearnCard.samplePersona.pickerTitle']()}
@@ -29,11 +29,11 @@ const PersonaPicker: React.FC<PersonaPickerProps> = ({ personas, onAdded }) => (
                 {m['passport.buildMyLearnCard.samplePersona.pickerDescription']()}
             </p>
         </div>
-        <div className="space-y-3">
+        <div className="space-y-v3-3">
             {personas.map(persona => (
                 <div
                     key={persona.id}
-                    className="rounded-2xl border border-grayscale-200 p-4 space-y-3"
+                    className="rounded-2xl border border-grayscale-200 p-4 space-y-v3-3"
                 >
                     <div>
                         <h3 className="text-sm font-semibold text-grayscale-900">
@@ -107,7 +107,7 @@ const SamplePersonaBoxContent: React.FC = () => {
             className="flex flex-col gap-5 p-6 rounded-[20px] font-poppins bg-white shadow-bottom-2-4"
             aria-label={m['passport.buildMyLearnCard.samplePersona.title']()}
         >
-            <div className="space-y-1">
+            <div className="space-y-v3-1">
                 <div className="flex items-center gap-2">
                     <h2 className="text-xl font-semibold text-grayscale-900">
                         {sampleDataExists
@@ -129,7 +129,7 @@ const SamplePersonaBoxContent: React.FC = () => {
                 <button
                     type="button"
                     disabled
-                    className={`py-[7px] px-[20px] rounded-[30px] bg-${primaryColor} font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-white w-full flex gap-[10px] items-center justify-center disabled:opacity-60 max-w-[650px]`}
+                    className={`py-[7px] px-[20px] rounded-[30px] bg-${primaryColor} font-notoSans text-[17px] font-semibold leading-[24px] tracking-[0.25px] text-white w-full flex gap-[10px] items-center justify-center disabled:opacity-60 max-w-[650px]`}
                 >
                     {m['passport.buildMyLearnCard.samplePersona.checking']()}
                     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -141,7 +141,7 @@ const SamplePersonaBoxContent: React.FC = () => {
                     disabled={isRemoving}
                     className={`py-[7px] px-[20px] rounded-[30px] ${
                         isRemoving ? 'bg-red-500' : 'bg-rose-500'
-                    } font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-white w-full flex gap-[10px] items-center justify-center disabled:opacity-60 max-w-[650px]`}
+                    } font-notoSans text-[17px] font-semibold leading-[24px] tracking-[0.25px] text-white w-full flex gap-[10px] items-center justify-center disabled:opacity-60 max-w-[650px]`}
                 >
                     {isRemoving
                         ? removalStatus === 'deleting'
@@ -166,7 +166,7 @@ const SamplePersonaBoxContent: React.FC = () => {
                 <button
                     type="button"
                     onClick={addSample}
-                    className={`py-[7px] px-[20px] rounded-[30px] bg-${primaryColor} font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-white w-full flex gap-[10px] items-center justify-center disabled:opacity-60 max-w-[650px]`}
+                    className={`py-[7px] px-[20px] rounded-[30px] bg-${primaryColor} font-notoSans text-[17px] font-semibold leading-[24px] tracking-[0.25px] text-white w-full flex gap-[10px] items-center justify-center disabled:opacity-60 max-w-[650px]`}
                 >
                     {m['passport.buildMyLearnCard.samplePersona.chooseAction']()}
                     <SyncCircleArrows />

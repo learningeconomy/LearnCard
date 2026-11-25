@@ -30,12 +30,12 @@ const CustomWalletContractData: React.FC<CustomWalletContractDataProps> = ({
             <header className="w-full bg-grayscale-800 p-8 border-b">
                 {data.length} Consent(s)
             </header>
-            <ol className="flex-grow">{list}</ol>
+            <ol className="grow">{list}</ol>
             <footer className="w-full flex items-center justify-center p-8">
                 <button
                     type="button"
                     onClick={handleDismissModal}
-                    className="px-4 py-2 border rounded bg-blue-700"
+                    className="px-4 py-2 border rounded-sm bg-blue-700"
                 >
                     Close
                 </button>

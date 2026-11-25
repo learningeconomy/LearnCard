@@ -116,6 +116,7 @@ const AddressBookConnections: React.FC<{
                     onError(error, variables, context) {
                         refetch();
                         presentToast(
+                            // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
                             // @ts-ignore
                             error?.message || m['contacts.removeContactError'](),
                             {
@@ -128,6 +129,7 @@ const AddressBookConnections: React.FC<{
             );
         } catch (err) {
             presentToast(
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
                 // @ts-ignore
                 err?.message || m['contacts.removeContactError'](),
                 {
@@ -217,6 +219,7 @@ const AddressBookConnections: React.FC<{
                     onError(error, variables, context) {
                         refetch();
                         presentToast(
+                            // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
                             // @ts-ignore
                             error?.message || m['contacts.blockUserError'](),
                             {
@@ -230,6 +233,7 @@ const AddressBookConnections: React.FC<{
         } catch (err) {
             log.info('blockProfile::error', err);
             presentToast(
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
                 // @ts-ignore
                 err?.message || m['contacts.blockUserError'](),
                 {

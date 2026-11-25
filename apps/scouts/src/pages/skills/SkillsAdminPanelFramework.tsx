@@ -7,7 +7,7 @@ import FrameworkSkillsCount from '../SkillFrameworks/FrameworkSkillsCount';
 import { SkillFramework } from '../../components/boost/boost';
 
 type SkillsAdminPanelFrameworkProps = {
-    framework: SkillFramework;
+    framework: Pick<SkillFramework, 'id' | 'name' | 'image'>;
     buttonClassName?: string;
     onClick?: () => void;
 };
@@ -35,7 +35,7 @@ const SkillsAdminPanelFramework: React.FC<SkillsAdminPanelFrameworkProps> = ({
                 <FrameworkSkillsCount
                     frameworkId={framework.id}
                     includeSkillWord
-                    className="text-[12px] !text-grayscale-700"
+                    className="text-[12px] text-grayscale-700!"
                 />
             </div>
 

@@ -8,9 +8,7 @@ import type {
 } from '@learncard/openid4vc-plugin';
 
 import { prettifyConfigurationId } from '../displayHelpers';
-import CredentialPreviewCard, {
-    type CredentialPreviewClaim,
-} from './CredentialPreviewCard';
+import CredentialPreviewCard, { type CredentialPreviewClaim } from './CredentialPreviewCard';
 import FlowSteps from './FlowSteps';
 import WhatIsACredential from './WhatIsACredential';
 
@@ -43,16 +41,8 @@ const PRE_AUTH_GRANT_KEY = 'urn:ietf:params:oauth:grant-type:pre-authorized_code
  * a transaction-code input. Only after the user explicitly clicks
  * "Accept and continue" does the parent kick off the issuance flow.
  */
-const OfferConsent: React.FC<OfferConsentProps> = ({
-    offer,
-    metadata,
-    onAccept,
-    onCancel,
-}) => {
-    const txCodeSpec = useMemo(
-        () => offer.grants?.[PRE_AUTH_GRANT_KEY]?.tx_code,
-        [offer]
-    );
+const OfferConsent: React.FC<OfferConsentProps> = ({ offer, metadata, onAccept, onCancel }) => {
+    const txCodeSpec = useMemo(() => offer.grants?.[PRE_AUTH_GRANT_KEY]?.tx_code, [offer]);
 
     const isAuthCodeOnly = useMemo(() => {
         const hasPreAuth = Boolean(offer.grants?.[PRE_AUTH_GRANT_KEY]);
@@ -63,9 +53,7 @@ const OfferConsent: React.FC<OfferConsentProps> = ({
     const [txCode, setTxCode] = useState('');
 
     const txCodeRequired = Boolean(txCodeSpec);
-    const txCodeValid = !txCodeRequired || txCode.trim().length > 0
-        ? true
-        : false;
+    const txCodeValid = !txCodeRequired || txCode.trim().length > 0 ? true : false;
 
     const issuerDisplay = useMemo(() => {
         const display = pickFirstDisplay(
@@ -86,10 +74,7 @@ const OfferConsent: React.FC<OfferConsentProps> = ({
             : undefined;
     }, [metadata]);
 
-    const credentialItems = useMemo(
-        () => describeCredentials(offer, metadata),
-        [offer, metadata]
-    );
+    const credentialItems = useMemo(() => describeCredentials(offer, metadata), [offer, metadata]);
 
     const issuerDisplayName = issuerDisplay?.name?.trim();
     const issuerHost = safeHost(offer.credential_issuer);
@@ -112,14 +97,14 @@ const OfferConsent: React.FC<OfferConsentProps> = ({
     const subhead = isAuthCodeOnly
         ? `From ${senderLabel}. Sign in with them to claim it — we'll bring you right back.`
         : isSingleCredential
-        ? `From ${senderLabel}. Claim it to keep it forever — share it whenever you need to prove what it says.`
-        : `From ${senderLabel}. Claim them to keep them forever — share them whenever you need to prove what they say.`;
+          ? `From ${senderLabel}. Claim it to keep it forever — share it whenever you need to prove what it says.`
+          : `From ${senderLabel}. Claim them to keep them forever — share them whenever you need to prove what they say.`;
 
     const primaryCtaLabel = isAuthCodeOnly
         ? 'Continue to sign in'
         : isSingleCredential
-        ? `Claim my ${singleTitle}`
-        : `Claim all ${credentialItems.length}`;
+          ? `Claim my ${singleTitle}`
+          : `Claim all ${credentialItems.length}`;
 
     return (
         <div
@@ -132,7 +117,7 @@ const OfferConsent: React.FC<OfferConsentProps> = ({
             }}
         >
             <div className="bg-white rounded-[20px] shadow-xl max-w-md w-full overflow-hidden animate-fade-in-up">
-                <div className="p-6 space-y-5">
+                <div className="p-6 space-y-v3-5">
                     <FlowSteps current={1} />
 
                     <div>
@@ -140,9 +125,7 @@ const OfferConsent: React.FC<OfferConsentProps> = ({
                             {headline}
                         </h1>
 
-                        <p className="text-sm text-grayscale-600 leading-relaxed mt-1">
-                            {subhead}
-                        </p>
+                        <p className="text-sm text-grayscale-600 leading-relaxed mt-1">{subhead}</p>
                     </div>
 
                     {/* Issuer identity is rendered inside
@@ -151,7 +134,7 @@ const OfferConsent: React.FC<OfferConsentProps> = ({
                         produced a duplicate "Issued by ..." line that
                         added clutter without adding signal. */}
 
-                    <div className="space-y-3">
+                    <div className="space-y-v3-3">
                         {credentialItems.slice(0, 3).map(item => (
                             <CredentialPreviewCard
                                 key={item.id}
@@ -173,11 +156,7 @@ const OfferConsent: React.FC<OfferConsentProps> = ({
                     </div>
 
                     {txCodeSpec && (
-                        <TxCodeField
-                            spec={txCodeSpec}
-                            value={txCode}
-                            onChange={setTxCode}
-                        />
+                        <TxCodeField spec={txCodeSpec} value={txCode} onChange={setTxCode} />
                     )}
 
                     {isAuthCodeOnly && (
@@ -185,12 +164,13 @@ const OfferConsent: React.FC<OfferConsentProps> = ({
                             <ShieldAlert className="text-amber-500 w-5 h-5 mt-0.5 shrink-0" />
 
                             <span className="text-xs text-amber-800 leading-relaxed">
-                                The issuer will ask you to sign in before issuing this credential. We&apos;ll bring you right back when they&apos;re done.
+                                The issuer will ask you to sign in before issuing this credential.
+                                We&apos;ll bring you right back when they&apos;re done.
                             </span>
                         </div>
                     )}
 
-                    <div className="space-y-3 pt-1">
+                    <div className="space-y-v3-3 pt-1">
                         <button
                             onClick={() => onAccept({ txCode: txCode.trim() || undefined })}
                             disabled={!txCodeValid}
@@ -224,9 +204,7 @@ interface TxCodeFieldProps {
 
 const TxCodeField: React.FC<TxCodeFieldProps> = ({ spec, value, onChange }) => {
     const inputMode = spec.input_mode === 'text' ? 'text' : 'numeric';
-    const placeholder = spec.length
-        ? `${spec.length}-digit code`
-        : 'Code from issuer';
+    const placeholder = spec.length ? `${spec.length}-digit code` : 'Code from issuer';
 
     return (
         <div>
@@ -243,10 +221,10 @@ const TxCodeField: React.FC<TxCodeFieldProps> = ({ spec, value, onChange }) => {
                 inputMode={inputMode}
                 autoComplete="one-time-code"
                 value={value}
-                onChange={(e) => onChange(e.target.value)}
+                onChange={e => onChange(e.target.value)}
                 placeholder={placeholder}
                 maxLength={spec.length}
-                className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
             />
 
             {spec.description && (
@@ -280,10 +258,12 @@ const describeCredentials = (
     offer: CredentialOffer,
     metadata?: CredentialIssuerMetadata
 ): CredentialItem[] => {
-    const configsSupported = (metadata?.credential_configurations_supported
-        ?? {}) as Record<string, unknown>;
+    const configsSupported = (metadata?.credential_configurations_supported ?? {}) as Record<
+        string,
+        unknown
+    >;
 
-    return offer.credential_configuration_ids.map((id) => {
+    return offer.credential_configuration_ids.map(id => {
         const config = configsSupported[id] as
             | {
                   format?: unknown;
@@ -300,9 +280,7 @@ const describeCredentials = (
         // prettifier as a safety net — some issuers ship snake_cased names
         // that should still be Title-Cased before render.
         const rawTitle =
-            (display && stringField(display, 'name'))
-            || stringField(config, 'scope')
-            || undefined;
+            (display && stringField(display, 'name')) || stringField(config, 'scope') || undefined;
         const title = prettifyConfigurationId(id, { displayName: rawTitle });
 
         const description =
@@ -369,18 +347,14 @@ const extractClaimLabels = (
     return [];
 };
 
-const flattenClaimRecord = (
-    record: Record<string, unknown>
-): CredentialPreviewClaim[] => {
+const flattenClaimRecord = (record: Record<string, unknown>): CredentialPreviewClaim[] => {
     const out: CredentialPreviewClaim[] = [];
     for (const [key, value] of Object.entries(record)) {
         if (!value || typeof value !== 'object') continue;
         const v = value as Record<string, unknown>;
         const display = Array.isArray(v.display) ? v.display[0] : undefined;
         const labelFromDisplay =
-            display && typeof display === 'object'
-                ? stringField(display, 'name')
-                : undefined;
+            display && typeof display === 'object' ? stringField(display, 'name') : undefined;
 
         // Use the displayed label when ship it, else humanize the key.
         const label = labelFromDisplay ?? humanizeKey(key);
@@ -400,18 +374,13 @@ const humanizeKey = (key: string): string => {
         .join(' ');
 };
 
-const pickFirstDisplay = (
-    display: unknown
-): Record<string, unknown> | undefined => {
+const pickFirstDisplay = (display: unknown): Record<string, unknown> | undefined => {
     if (!Array.isArray(display) || display.length === 0) return undefined;
     const first = display[0];
     return first && typeof first === 'object' ? (first as Record<string, unknown>) : undefined;
 };
 
-const stringField = (
-    obj: Record<string, unknown> | unknown,
-    key: string
-): string | undefined => {
+const stringField = (obj: Record<string, unknown> | unknown, key: string): string | undefined => {
     if (!obj || typeof obj !== 'object') return undefined;
     const v = (obj as Record<string, unknown>)[key];
     return typeof v === 'string' && v.length > 0 ? v : undefined;

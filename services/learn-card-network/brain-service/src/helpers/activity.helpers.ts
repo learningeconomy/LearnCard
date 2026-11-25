@@ -32,9 +32,9 @@ export const logCredentialSent = async (params: {
     listingId?: string;
     source: CredentialActivitySourceType;
     metadata?: Record<string, unknown>;
-    // LC-1644 Phase 1d: callers can pre-generate activityId upfront so
-    // logCredentialSent can run in parallel with dependent writes (e.g. sendBoost
-    // which stores activityId on the SentCredential relationship).
+    // Callers can supply a correlation ID for related graph writes. Finish
+    // activity writes before delivery writes touch the same profile/listing;
+    // sharing an ID does not make parallel auto-commit transactions independent.
     activityId?: string;
 }): Promise<string> => {
     const isInboxSend = params.recipientType === 'email' || params.recipientType === 'phone';

@@ -37,12 +37,7 @@
  * - `unknown`        Unhandled or fully generic. Triage path.
  */
 export type ExchangeErrorKind =
-    | 'format_gap'
-    | 'trust_gap'
-    | 'transport'
-    | 'request_invalid'
-    | 'wallet'
-    | 'unknown';
+    'format_gap' | 'trust_gap' | 'transport' | 'request_invalid' | 'wallet' | 'unknown';
 
 export interface FriendlyErrorInfo {
     /**
@@ -243,6 +238,12 @@ const OFFER_PARSE_ERROR_MAP: Record<string, FriendlyErrorInfo> = {
 // -----------------------------------------------------------------
 
 const VP_ERROR_MAP: Record<string, FriendlyErrorInfo> = {
+    internal_error: {
+        kind: 'wallet',
+        title: 'Couldn’t prepare response',
+        description: 'Your account couldn’t prepare a response to this request.',
+        suggestion: 'Try again. If this keeps happening, contact support.',
+    },
     invalid_uri: {
         kind: 'request_invalid',
         title: 'Invalid request link',

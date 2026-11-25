@@ -63,7 +63,7 @@ export const ResumeBuilderController: React.FC<{
                 </div>
 
                 <h5
-                    className={`text-[17px] leading-[130%] font-poppins font-[600] text-center ${
+                    className={`text-[17px] leading-[130%] font-poppins font-semibold text-center ${
                         featuredCardTextColor ?? 'text-grayscale-900'
                     }`}
                 >
@@ -110,7 +110,7 @@ export const ResumeBuilderController: React.FC<{
                 </div>
                 <div className="flex flex-col">
                     <h5
-                        className={`text-[17px] font-poppins font-[600] leading-[130%] ${
+                        className={`text-[17px] font-poppins font-semibold leading-[130%] ${
                             featuredCardTextColor ?? 'text-grayscale-900'
                         }`}
                     >

@@ -1,5 +1,99 @@
 # @learncard/app-store-demo-northstar-learning
 
+## 0.0.35
+
+### Patch Changes
+
+- Updated dependencies [[`acda1d1bd362add238a7c6ff8096c295e844e586`](https://github.com/learningeconomy/LearnCard/commit/acda1d1bd362add238a7c6ff8096c295e844e586)]:
+    - @learncard/init@3.0.0
+    - @learncard/partner-connect@0.6.9
+
+## 0.0.34
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/init@2.5.12
+    - @learncard/partner-connect@0.6.8
+
+## 0.0.33
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/init@2.5.11
+    - @learncard/partner-connect@0.6.7
+
+## 0.0.32
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/init@2.5.10
+    - @learncard/partner-connect@0.6.6
+
+## 0.0.31
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/init@2.5.9
+    - @learncard/partner-connect@0.6.5
+
+## 0.0.30
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/init@2.5.8
+    - @learncard/partner-connect@0.6.4
+
+## 0.0.29
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/init@2.5.7
+
+## 0.0.28
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/init@2.5.6
+    - @learncard/partner-connect@0.6.3
+
+## 0.0.27
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/init@2.5.5
+    - @learncard/partner-connect@0.6.2
+
+## 0.0.26
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/init@2.5.4
+    - @learncard/partner-connect@0.6.1
+
+## 0.0.25
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/init@2.5.3
+
+## 0.0.24
+
+### Patch Changes
+
+- Updated dependencies [[`1387cd0a08fa6b0a706c86a5a0376b6c7d706856`](https://github.com/learningeconomy/LearnCard/commit/1387cd0a08fa6b0a706c86a5a0376b6c7d706856)]:
+    - @learncard/partner-connect@0.6.0
+    - @learncard/init@2.5.2
+
 ## 0.0.23
 
 ### Patch Changes

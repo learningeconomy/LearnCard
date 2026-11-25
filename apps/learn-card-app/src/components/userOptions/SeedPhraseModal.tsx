@@ -9,6 +9,7 @@ import { ToastTypeEnum, useToast } from 'learn-card-base/hooks/useToast';
 import useTheme from '../../theme/hooks/useTheme';
 import * as m from '../../paraglide/messages.js';
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- existing empty props type; replacing it changes the accepted props type
 const SeedPhraseModal: React.FC<{}> = () => {
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
@@ -56,7 +57,7 @@ const SeedPhraseModal: React.FC<{}> = () => {
                     </button>
                 </div>
             </div>,
-            { sectionClassName: '!max-w-[450px]', hideButton: true }
+            { sectionClassName: 'max-w-[450px]!', hideButton: true }
         );
     };
 
@@ -70,10 +71,10 @@ const SeedPhraseModal: React.FC<{}> = () => {
                     <IonCol className="w-full flex items-center justify-between px-4 py-3 rounded-2xl">
                         <div className="w-[90%] flex justify-start items-center text-left">
                             <textarea
-                                className="flex items-center w-full resize-none bg-grayscale-100 rounded-[10px] px-[10px] text-[15px] text-grayscale-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                className="flex items-center w-full resize-none bg-grayscale-100 rounded-[10px] px-[10px] text-[15px] text-grayscale-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                                 value={
                                     revealed
-                                        ? currentUser?.privateKey ?? ''
+                                        ? (currentUser?.privateKey ?? '')
                                         : '•'.repeat(currentUser?.privateKey?.length || 0)
                                 }
                                 readOnly

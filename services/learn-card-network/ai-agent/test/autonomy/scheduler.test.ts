@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import * as Sentry from '@sentry/node';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { AgentProvider } from '../../src/agent/types';
 import {
@@ -9,6 +10,8 @@ import {
 } from '../../src/assistantFeed';
 import type { LearnCardAssistantProfileRuntime } from '../../src/assistantProfile';
 import type { RunChatResult } from '../../src/server';
+import { flushObservability, initializeObservability } from '../../src/observability';
+import { runScheduledAgentRequest } from '../../src/autonomy/runner';
 import {
     createAutonomousScheduler,
     type CreateAutonomousSchedulerOptions,
@@ -32,6 +35,7 @@ import type { ServiceConfig } from '../../src/config';
 import type { MongoRuntime } from '../../src/mongo';
 import type { AgentServiceRuntime } from '../../src/runtime';
 import type { SelfImprovementRuntime } from '../../src/selfImprovement';
+import { createSentryMemoryTransport, telemetryConfig } from '../helpers/sentryTransport';
 
 const NOW = new Date('2026-07-15T12:00:00.000Z');
 const OWNER_DID = 'did:key:owner';
@@ -673,6 +677,221 @@ describe('autonomous scheduler', () => {
         await expect(
             runRepository.findByOccurrence(OWNER_DID, 'succeeds', schedules[1]!.nextRunAt)
         ).resolves.toMatchObject({ status: 'succeeded' });
+    });
+
+    describe('failure telemetry ownership', () => {
+        const memory = createSentryMemoryTransport();
+        const failures = (component: string) =>
+            memory.events.filter(event => event.tags?.component === component);
+        const serviceErrorLogs = () =>
+            memory.events.filter(event => event.message === 'Application log: service.error');
+
+        beforeAll(() => initializeObservability(telemetryConfig, memory.transport));
+        beforeEach(() => {
+            memory.events.length = 0;
+        });
+        afterAll(() => Sentry.close());
+
+        it.each([
+            {
+                failure: new Error('Synthetic scheduled provider failure.'),
+                error: 'Error: Synthetic scheduled provider failure.',
+            },
+            { failure: undefined, error: 'undefined' },
+            { failure: Number.NaN, error: 'NaN' },
+        ])(
+            'persists provider failure $error without duplicate scheduler capture',
+            async ({ failure, error }) => {
+                const schedule = createSchedule('provider-failure');
+                const { runtime } = createRuntime([schedule]);
+                runtime.provider = {
+                    complete: async () => {
+                        throw failure;
+                    },
+                };
+                const runs = createInMemoryAutonomousRunRepository();
+                const scheduler = createScheduler({
+                    runtime,
+                    runRepository: runs,
+                    runScheduledRequest: runScheduledAgentRequest,
+                });
+
+                await expect(scheduler.runOnce('manual')).resolves.toMatchObject({
+                    results: [{ status: 'failed', runId: 'run-1' }],
+                });
+                await expect(
+                    runs.findByOccurrence(OWNER_DID, schedule.id, schedule.nextRunAt)
+                ).resolves.toMatchObject({ status: 'failed', error });
+                await flushObservability();
+
+                expect(failures('agent.run')).toHaveLength(1);
+                expect(failures('autonomy.occurrence')).toHaveLength(0);
+                expect(serviceErrorLogs()).toHaveLength(0);
+            }
+        );
+
+        it('persists an already-reported post-run failure without scheduler capture', async () => {
+            const schedule = createSchedule('post-run-failure');
+            const { runtime } = createRuntime([schedule]);
+            runtime.selfImprovementRuntime = {
+                ...selfImprovementRuntime,
+                runAfterResponse: async () => {
+                    throw new TypeError('Synthetic scheduled retro failure.');
+                },
+            };
+            const runs = createInMemoryAutonomousRunRepository();
+            const scheduler = createScheduler({
+                runtime,
+                runRepository: runs,
+                runScheduledRequest: runScheduledAgentRequest,
+            });
+
+            await expect(scheduler.runOnce('manual')).resolves.toMatchObject({
+                results: [{ status: 'failed' }],
+            });
+            await expect(
+                runs.findByOccurrence(OWNER_DID, schedule.id, schedule.nextRunAt)
+            ).resolves.toMatchObject({
+                status: 'failed',
+                error: 'TypeError: Synthetic scheduled retro failure.',
+            });
+            await flushObservability();
+
+            expect(failures('agent.post-run')).toHaveLength(1);
+            expect(failures('autonomy.occurrence')).toHaveLength(0);
+            expect(serviceErrorLogs()).toHaveLength(0);
+        });
+
+        it.each(['setup', 'fallback-card', 'feed-list', 'persistence'] as const)(
+            'captures a scheduler-only %s failure and persists it',
+            async boundary => {
+                const schedule = createSchedule(`scheduler-${boundary}`);
+                const { runtime } = createRuntime([schedule]);
+                const runs = createInMemoryAutonomousRunRepository();
+                const failure = new Error('Synthetic scheduler-only failure.');
+                if (boundary === 'setup') {
+                    vi.spyOn(runtime.assistantSchedulesRuntime, 'advanceNextRun').mockRejectedValue(
+                        failure
+                    );
+                } else if (boundary === 'fallback-card') {
+                    vi.spyOn(runtime.assistantFeedRuntime, 'recordItem').mockRejectedValue(failure);
+                } else if (boundary === 'feed-list') {
+                    vi.spyOn(runtime.assistantFeedRuntime, 'listLatest').mockRejectedValue(failure);
+                } else {
+                    vi.spyOn(runs, 'markSucceeded').mockRejectedValue(failure);
+                }
+                const scheduler = createScheduler({
+                    runtime,
+                    runRepository: runs,
+                    runScheduledRequest: runScheduledAgentRequest,
+                });
+
+                await expect(scheduler.runOnce('manual')).resolves.toMatchObject({
+                    results: [{ status: 'failed' }],
+                });
+                await expect(
+                    runs.findByOccurrence(OWNER_DID, schedule.id, schedule.nextRunAt)
+                ).resolves.toMatchObject({
+                    status: 'failed',
+                    error: 'Error: Synthetic scheduler-only failure.',
+                });
+                await flushObservability();
+
+                expect(failures('autonomy.occurrence')).toHaveLength(1);
+                expect(serviceErrorLogs()).toHaveLength(1);
+            }
+        );
+
+        it('does not suppress a scheduler failure reusing an error from a previous run', async () => {
+            const first = createSchedule('first');
+            const second = createSchedule('second');
+            const { runtime } = createRuntime([first, second]);
+            const failure = new Error('Synthetic shared error object.');
+            runtime.provider = {
+                complete: async () => {
+                    throw failure;
+                },
+            };
+            const runs = createInMemoryAutonomousRunRepository();
+            let runIndex = 0;
+            const scheduler = createScheduler({
+                runtime,
+                runRepository: runs,
+                createId: () => `run-${++runIndex}`,
+                runScheduledRequest: runScheduledAgentRequest,
+            });
+
+            await expect(scheduler.runOccurrence(first, 'manual')).resolves.toMatchObject({
+                status: 'failed',
+            });
+            runtime.provider = provider;
+            vi.spyOn(runtime.assistantFeedRuntime, 'listLatest').mockRejectedValue(failure);
+            await expect(scheduler.runOccurrence(second, 'manual')).resolves.toMatchObject({
+                status: 'failed',
+            });
+            await expect(
+                runs.findByOccurrence(OWNER_DID, second.id, second.nextRunAt)
+            ).resolves.toMatchObject({
+                status: 'failed',
+                error: 'Error: Synthetic shared error object.',
+            });
+            await flushObservability();
+
+            expect(failures('agent.run')).toHaveLength(1);
+            expect(failures('autonomy.occurrence')).toHaveLength(1);
+            expect(serviceErrorLogs()).toHaveLength(1);
+        });
+
+        it('captures heartbeat loss even when the agent reports the resulting abort', async () => {
+            vi.useFakeTimers();
+            const schedule = createSchedule('reported-abort');
+            const { runtime } = createRuntime([schedule]);
+            let notifyStarted!: () => void;
+            const started = new Promise<void>(resolve => {
+                notifyStarted = resolve;
+            });
+            runtime.provider = {
+                complete: async ({ signal }) => {
+                    if (!signal) throw new Error('Expected provider abort signal.');
+                    notifyStarted();
+                    await new Promise<never>((_resolve, reject) => {
+                        signal.addEventListener('abort', () => reject(signal.reason), {
+                            once: true,
+                        });
+                    });
+                    throw new Error('Unreachable provider result.');
+                },
+            };
+            const runs = createInMemoryAutonomousRunRepository();
+            const leases = createInMemoryAutonomousLeaseRepository(() => 'heartbeat-lease');
+            vi.spyOn(leases, 'renew').mockResolvedValue(false);
+            const scheduler = createScheduler({
+                runtime,
+                runRepository: runs,
+                leaseRepository: leases,
+                leaseMs: 3_000,
+                runScheduledRequest: runScheduledAgentRequest,
+            });
+            const cycle = scheduler.runOnce('manual');
+            await started;
+            await vi.advanceTimersByTimeAsync(1_000);
+
+            await expect(cycle).resolves.toMatchObject({ results: [{ status: 'failed' }] });
+            await expect(
+                runs.findByOccurrence(OWNER_DID, schedule.id, schedule.nextRunAt)
+            ).resolves.toMatchObject({
+                status: 'failed',
+                error: 'Error: Autonomous owner lease was lost during execution.',
+            });
+            expect(vi.getTimerCount()).toBe(0);
+            // Sentry.flush uses SDK timers; only the scheduler clock is simulated.
+            vi.useRealTimers();
+            await flushObservability();
+
+            expect(failures('agent.run')).toHaveLength(1);
+            expect(failures('autonomy.occurrence')).toHaveLength(1);
+            expect(serviceErrorLogs()).toHaveLength(1);
+        });
     });
 
     it('aborts the agent and fails the occurrence when heartbeat ownership is lost', async () => {

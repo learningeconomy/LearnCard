@@ -114,7 +114,7 @@ const MembershipPage: React.FC = () => {
             newCancelModal(
                 <TroopIDTypeSelectorModal
                     handleCloseModal={closeCancelModal}
-                    earnedBoostIDs={(earnedBoostIDs as any) ?? []}
+                    earnedBoostIDs={earnedBoostIDs?.map(({ vc }) => vc) ?? []}
                     isLoading={earnedBoostIDsLoading}
                     onSuccess={(boostUri?: string) => boostUri && handleShowTroops(boostUri)}
                 />

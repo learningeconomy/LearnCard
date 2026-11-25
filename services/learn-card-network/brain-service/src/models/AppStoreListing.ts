@@ -6,13 +6,16 @@ import { Integration, IntegrationInstance } from './Integration';
 import { Profile, ProfileInstance } from './Profile';
 import { Boost, BoostInstance } from './Boost';
 import { Credential, CredentialInstance } from './Credential';
+import { ConsentFlowContract, ConsentFlowInstance } from './ConsentFlowContract';
 import { SigningAuthority, SigningAuthorityInstance } from './SigningAuthority';
+import type { AppManifestVersion, AppManifestVersionInstance } from './AppManifestVersion';
 import {
     FlatAppStoreListingType,
     AppListingStatus,
     LaunchType,
     PromotionLevel,
     AgeRating,
+    PendingListingUpdateStatus,
 } from 'types/app-store-listing';
 
 export type AppStoreListingRelationships = {
@@ -73,6 +76,13 @@ export type AppStoreListingRelationships = {
         { name: string; did: string; isPrimary?: boolean },
         { name: string; did: string; isPrimary?: boolean }
     >;
+    hasConsentContract: ModelRelatedNodesI<
+        typeof ConsentFlowContract,
+        ConsentFlowInstance,
+        { scopeHash: string; createdAt: string },
+        { scopeHash: string; createdAt: string }
+    >;
+    usesManifestVersion: ModelRelatedNodesI<typeof AppManifestVersion, AppManifestVersionInstance>;
 };
 
 export type AppStoreListingInstance = NeogmaInstance<
@@ -114,6 +124,13 @@ export const AppStoreListing = ModelFactory<FlatAppStoreListingType, AppStoreLis
             min_age: { type: 'number', required: false },
             age_rating: { type: 'string', enum: AgeRating.options, required: false },
             contact_email: { type: 'string', required: false },
+            pending_update_json: { type: 'string', required: false },
+            pending_update_status: {
+                type: 'string',
+                enum: PendingListingUpdateStatus.options,
+                required: false,
+            },
+            pending_update_submitted_at: { type: 'string', required: false },
         } as any,
         relationships: {
             publishedBy: { model: Integration, direction: 'in', name: 'PUBLISHES_LISTING' },
@@ -201,6 +218,21 @@ export const AppStoreListing = ModelFactory<FlatAppStoreListingType, AppStoreLis
                     isPrimary: {
                         property: 'isPrimary',
                         schema: { type: 'boolean', required: false },
+                    },
+                },
+            },
+            hasConsentContract: {
+                model: ConsentFlowContract,
+                direction: 'out',
+                name: 'HAS_CONSENT_CONTRACT',
+                properties: {
+                    scopeHash: {
+                        property: 'scopeHash',
+                        schema: { type: 'string', required: true },
+                    },
+                    createdAt: {
+                        property: 'createdAt',
+                        schema: { type: 'string', required: true },
                     },
                 },
             },

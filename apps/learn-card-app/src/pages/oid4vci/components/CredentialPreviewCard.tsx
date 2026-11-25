@@ -77,7 +77,7 @@ const CredentialPreviewCard: React.FC<CredentialPreviewCardProps> = ({
     const displayedIssuerName = issuerName?.trim() || domain || issuerUrl;
 
     return (
-        <div className="rounded-2xl overflow-hidden border border-grayscale-200 shadow-sm bg-white">
+        <div className="rounded-2xl overflow-hidden border border-grayscale-200 shadow-xs bg-white">
             {/* Brand band \u2014 gradient keyed to issuer domain. The header
                 has a fixed height so cards line up across the consent
                 + finished screens, regardless of branding presence. */}
@@ -103,7 +103,7 @@ const CredentialPreviewCard: React.FC<CredentialPreviewCardProps> = ({
                 </div>
 
                 {showSaved ? (
-                    <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-white/20 backdrop-blur px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                    <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-white/20 backdrop-blur-sm px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
                         <ShieldCheck className="w-3 h-3" />
                         Saved
                     </span>
@@ -112,7 +112,7 @@ const CredentialPreviewCard: React.FC<CredentialPreviewCardProps> = ({
                 )}
             </div>
 
-            <div className="px-4 py-4 space-y-3">
+            <div className="px-4 py-4 space-y-v3-3">
                 <div>
                     <h2 className="text-base font-semibold text-grayscale-900 leading-snug">
                         {title}
@@ -175,7 +175,7 @@ const IssuerAvatar: React.FC<IssuerAvatarProps> = ({
 
     if (tier === 2) {
         return (
-            <div className="shrink-0 w-10 h-10 rounded-xl bg-white/90 backdrop-blur flex items-center justify-center">
+            <div className="shrink-0 w-10 h-10 rounded-xl bg-white/90 backdrop-blur-sm flex items-center justify-center">
                 <span className="text-sm font-bold text-grayscale-900">{initials}</span>
             </div>
         );
@@ -184,7 +184,7 @@ const IssuerAvatar: React.FC<IssuerAvatarProps> = ({
     const src = tier === 0 ? logoUri : fallbackFavicon;
     if (!src) {
         return (
-            <div className="shrink-0 w-10 h-10 rounded-xl bg-white/90 backdrop-blur flex items-center justify-center">
+            <div className="shrink-0 w-10 h-10 rounded-xl bg-white/90 backdrop-blur-sm flex items-center justify-center">
                 <span className="text-sm font-bold text-grayscale-900">{initials}</span>
             </div>
         );

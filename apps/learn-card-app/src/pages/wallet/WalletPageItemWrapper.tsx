@@ -7,7 +7,7 @@ import {
     newCredsStore,
     CredentialCategory,
     CredentialCategoryEnum,
-    useGetCredentialCount,
+    useVisibleCredentialCount,
     useGetCredentialsForSkills,
     useGetAllAiTopicCredentials,
     useAiInsightCredential,
@@ -34,7 +34,9 @@ const WalletPageItemWrapper: React.FC<WalletPageItemWrapperProps> = ({
     const { categoryId: categoryType } = walletPageItem;
     const viewMode = passportPageStore.use.viewMode();
 
-    let hasNewCredentials = newCredsStore.use.hasNewCredentials(categoryType as CredentialCategory);
+    const hasNewCredentials = newCredsStore.use.hasNewCredentials(
+        categoryType as CredentialCategory
+    );
 
     const enableCategoryCount =
         categoryType !== CredentialCategoryEnum.aiInsight &&
@@ -46,11 +48,10 @@ const WalletPageItemWrapper: React.FC<WalletPageItemWrapperProps> = ({
         categoryType === CredentialCategoryEnum.selfAssignedSkills;
     const enableAiInsightCount = categoryType === CredentialCategoryEnum.aiInsight;
 
-    // normal credential count
-    const { data, isLoading: loading } = useGetCredentialCount(
-        categoryType as CredentialCategory,
-        enableCategoryCount
-    );
+    const visibleCount = useVisibleCredentialCount(categoryType, {
+        enabled: enableCategoryCount,
+    });
+    const loading = enableCategoryCount && visibleCount.loading;
 
     // ai topic count
     const { data: aiTopicsCount, isLoading: aiTopicsLoading } =
@@ -64,7 +65,7 @@ const WalletPageItemWrapper: React.FC<WalletPageItemWrapperProps> = ({
 
     const { alignments } = useAlignments();
 
-    let categoryCount = data !== null && data !== undefined ? Number(data) : 0;
+    let categoryCount: number | null = visibleCount.count;
     if (enableAiCount) categoryCount = aiTopicsCount?.length ?? 0;
     if (enableSkillsCount) {
         categoryCount = alignments.length;

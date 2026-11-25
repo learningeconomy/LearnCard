@@ -15,15 +15,13 @@ const RequestLoading: React.FC = () => (
             paddingRight: 'max(1.5rem, env(safe-area-inset-right))',
         }}
     >
-        <div className="bg-white rounded-[20px] shadow-xl max-w-md w-full p-8 text-center space-y-5">
+        <div className="bg-white rounded-[20px] shadow-xl max-w-md w-full p-8 text-center space-y-v3-5">
             <div className="w-16 h-16 mx-auto rounded-2xl bg-grayscale-10 border border-grayscale-200 flex items-center justify-center">
                 <Loader2 className="w-8 h-8 text-grayscale-600 animate-spin" />
             </div>
 
-            <div className="space-y-1">
-                <h1 className="text-xl font-semibold text-grayscale-900">
-                    Reviewing request
-                </h1>
+            <div className="space-y-v3-1">
+                <h1 className="text-xl font-semibold text-grayscale-900">Reviewing request</h1>
 
                 <p className="text-sm text-grayscale-600 leading-relaxed">
                     We&apos;re checking which of your credentials match the verifier&apos;s request.

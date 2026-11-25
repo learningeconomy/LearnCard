@@ -98,7 +98,7 @@ export const registerOrgCommand = (
             '--profile-id <id>',
             'public handle for your issuer profile (default: from the spec)'
         )
-        .option('--network <url>', 'network tRPC URL or staging (default: production)')
+        .option('--network <url>', 'production|staging|local or a tRPC URL (default: production)')
         .option('--json', 'print a single JSON result on stdout')
         .option('--dry-run', 'preview changes without applying them')
         .option(

@@ -12,6 +12,7 @@ const useShortBoost = (
     boostCredential: VC | UnsignedVC,
     boostUri: string,
     profileId: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     boost: any,
     handleEditOnClick: () => void
 ) => {
@@ -33,10 +34,10 @@ const useShortBoost = (
                 handleEditOnClick={handleEditOnClick}
             />,
             {
-                sectionClassName: '!max-w-[500px]',
+                sectionClassName: 'max-w-[500px]!',
                 hideButton: true,
                 usePortal: true,
-                portalClassName: '!max-w-[500px]',
+                portalClassName: 'max-w-[500px]!',
             }
         );
     };

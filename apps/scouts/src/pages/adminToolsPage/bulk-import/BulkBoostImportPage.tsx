@@ -660,7 +660,7 @@ const BulkBoostImportPage: React.FC = () => {
                         {fileUploaded && (
                             <button
                                 onClick={clearFile}
-                                className="px-4 py-2 bg-red-500 text-white rounded flex items-center justify-center"
+                                className="px-4 py-2 bg-red-500 text-white rounded-sm flex items-center justify-center"
                             >
                                 <X className="h-[16px] w-[16px]" />
                             </button>
@@ -682,7 +682,7 @@ const BulkBoostImportPage: React.FC = () => {
                             {zipUploaded && (
                                 <button
                                     onClick={clearZip}
-                                    className="px-4 py-2 bg-red-500 text-white rounded flex items-center justify-center"
+                                    className="px-4 py-2 bg-red-500 text-white rounded-sm flex items-center justify-center"
                                 >
                                     <X className="h-[16px] w-[16px]" />
                                 </button>
@@ -719,7 +719,7 @@ const BulkBoostImportPage: React.FC = () => {
                             hasMissingImages
                         }
                         onClick={confirmImport}
-                        className="px-4 py-3 bg-sp-purple-base text-white text-[22px] rounded max-w-[400px] mx-auto disabled:opacity-60"
+                        className="px-4 py-3 bg-sp-purple-base text-white text-[22px] rounded-sm max-w-[400px] mx-auto disabled:opacity-60"
                     >
                         {m['adminTools.bulkImport.uploadButton']()}
                     </button>

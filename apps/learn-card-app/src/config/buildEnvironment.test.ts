@@ -52,6 +52,19 @@ describe('LearnCard App build environment', () => {
         ).toBe(false);
     });
 
+    it('accepts an optional LaunchDarkly client ID override', () => {
+        expect(
+            parseLearnCardAppEnvironment(
+                {
+                    MODE: 'development',
+                    VITE_LAUNCHDARKLY_CLIENT_ID: 'local-test-client',
+                },
+                'test',
+                'serve'
+            ).VITE_LAUNCHDARKLY_CLIENT_ID
+        ).toBe('local-test-client');
+    });
+
     it('defines application build constants under Vitest', () => {
         expect(buildEnvironment).toMatchObject({ MODE: 'test', DEV: true, PROD: false });
         expect(__APP_VERSION__).toBe('0.0.0-test');

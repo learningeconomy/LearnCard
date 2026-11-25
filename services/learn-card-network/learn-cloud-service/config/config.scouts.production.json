@@ -1,0 +1,4 @@
+{
+    "SENTRY_ENV": "scouts-learn-cloud-production",
+    "SERVER_URL": "https://cloud.learncard.com"
+}

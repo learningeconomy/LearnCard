@@ -100,7 +100,7 @@ export const EndorsementCard: React.FC<{
                         showBackgroundImage={false}
                         backgroundImage=""
                         backgroundColor=""
-                        badgeCircleCustomClass="!w-[90px] h-[90px]"
+                        badgeCircleCustomClass="w-[90px]! h-[90px]"
                         badgeContainerCustomClass="notification-cred-badge mt-[0px] mb-[0px]"
                         badgeRibbonContainerCustomClass="notification-cred-badge-ribbon my-[0px]"
                         displayType={displayType}

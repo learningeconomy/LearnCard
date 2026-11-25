@@ -66,5 +66,56 @@ connect_time=$(awk '/^--connect-timeout$/ {getline; print}' "$TEST_ROOT/curl-arg
 [[ "$max_time" =~ ^[1-4]$ ]] || fail 'curl request must fit remaining polling deadline'
 [[ "$connect_time" =~ ^[1-5]$ ]] || fail 'curl connection must be bounded'
 [[ ! -e "$TEST_ROOT/sleeps" ]] || fail 'polling slept after deadline'
+
+# The service suite must check LRS and its OIDC provider, not only brain.
+eval "$(sed -n '/^wait_for_service()/,/^e2e_timed service_readiness/{ /^e2e_timed service_readiness/d; p; }' "$REPO_ROOT/scripts/e2e-hosted/run-service.sh")"
+for failed_child in none brain cloud lrs; do
+    export E2E_ARTIFACT_DIR="$TEST_ROOT/service-$failed_child"
+    e2e_metrics_init service-readiness-test
+    (
+        wait_for_service() {
+            printf '%s %s\n' "$1" "$2" >> "$E2E_ARTIFACT_DIR/endpoints"
+            [[ "$1" != "$failed_child" ]]
+        }
+        wait() {
+            local status=0
+            builtin wait "$@" || status=$?
+            echo "$status" >> "$E2E_ARTIFACT_DIR/reaped"
+            return "$status"
+        }
+        e2e_timed readiness wait_for_service_stack
+    ) && status=0 || status=$?
+    if [[ "$failed_child" == none ]]; then
+        [[ "$status" -eq 0 ]] || fail 'healthy service stack rejected'
+    else
+        [[ "$status" -ne 0 ]] || fail "$failed_child service readiness failure swallowed"
+        grep -q $'readiness\tfailed' "$E2E_ARTIFACT_DIR/timings.tsv" || fail "$failed_child service failure not recorded"
+    fi
+    [[ "$(wc -l < "$E2E_ARTIFACT_DIR/reaped" | tr -d ' ')" == 3 ]] || fail 'not all service readiness children reaped'
+    grep -Fxq 'brain http://localhost:4000/api/health-check' "$E2E_ARTIFACT_DIR/endpoints" || fail 'service brain endpoint'
+    grep -Fxq 'cloud http://localhost:4100/.well-known/openid-configuration' "$E2E_ARTIFACT_DIR/endpoints" || fail 'OIDC discovery endpoint'
+    grep -Fxq 'lrs http://localhost:8080/admin/env' "$E2E_ARTIFACT_DIR/endpoints" || fail 'LRS readiness endpoint'
+done
+
+(
+    attempts=0
+    curl() { attempts=$((attempts + 1)); [[ "$attempts" -eq 2 ]]; }
+    sleep() { SECONDS=$((SECONDS + $1)); }
+    wait_for_service lrs http://localhost:8080/admin/env 300
+) || fail 'service readiness did not retry transient failure'
+(
+    curl() {
+        printf '%s\n' "$@" > "$TEST_ROOT/service-curl-args"
+        SECONDS=$((SECONDS + 4))
+        return 22
+    }
+    sleep() { echo "$1" >> "$TEST_ROOT/service-sleeps"; SECONDS=$((SECONDS + $1)); }
+    wait_for_service lrs http://localhost:8080/admin/env 4
+) && fail 'service polling deadline did not fail' || true
+max_time=$(awk '/^--max-time$/ {getline; print}' "$TEST_ROOT/service-curl-args")
+connect_time=$(awk '/^--connect-timeout$/ {getline; print}' "$TEST_ROOT/service-curl-args")
+[[ "$max_time" =~ ^[1-4]$ ]] || fail 'service request must fit remaining deadline'
+[[ "$connect_time" =~ ^[1-4]$ ]] || fail 'service connection must fit remaining deadline'
+[[ ! -e "$TEST_ROOT/service-sleeps" ]] || fail 'service polling slept after deadline'
 [[ "$failures" -eq 0 ]] || exit 1
-echo 'Hosted E2E readiness tests passed (endpoints, 4 child outcomes, request/deadline bounds)'
+echo 'Hosted E2E readiness tests passed (browser/service endpoints, child outcomes, transient recovery, deadline bounds)'

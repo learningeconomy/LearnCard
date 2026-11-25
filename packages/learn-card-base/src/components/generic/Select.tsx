@@ -41,7 +41,7 @@ const Select: React.FC<SelectProps> = ({
                     </button>
                 ))}
             </div>,
-            { sectionClassName: '!max-w-[300px]' }
+            { sectionClassName: 'max-w-[300px]!' }
         );
     };
 

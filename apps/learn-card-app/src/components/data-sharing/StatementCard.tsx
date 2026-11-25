@@ -88,7 +88,7 @@ const StatementCard: React.FC<StatementCardProps> = ({ statement }) => {
     const verbStyle = getVerbStyle(verbDisplay?.toLowerCase());
 
     return (
-        <div className="bg-white border border-grayscale-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white border border-grayscale-200 rounded-xl overflow-hidden shadow-xs hover:shadow-md transition-shadow">
             <div className="p-4">
                 <div className="flex items-center justify-between mb-3">
                     <span

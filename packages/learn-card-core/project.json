@@ -15,14 +15,15 @@
     "targets": {
         "build": {
             "executor": "nx:run-script",
-            "inputs": ["source", "scripts"],
+            "cache": true,
+            "inputs": ["sdkBuild", "^sdkBuild"],
             "options": {
                 "script": "build"
             }
         },
         "test": {
             "executor": "nx:run-script",
-            "inputs": ["source", "tests"],
+            "inputs": ["source", "tests", "ciTestConfig"],
             "options": {
                 "script": "test"
             }

@@ -1,5 +1,18 @@
 # Native regression checks
 
+## Sync with main — November 25, 2026
+
+Merged `origin/main` at `65e369b10` into the restored `codex/vesper-73` worktree. All 71 merge conflicts were outside `apps/learncard-native` and came from the branch’s older referral base. The resolved tree takes current upstream web, service, documentation and lockfile content. It carries the native app, its manual workflow and two shared contracts needed by the app. The extracted category map initializer is byte-identical to upstream and the public helper retains its exports. The shared age helper preserves the existing native Ireland threshold of 16 in both maps.
+
+- A fresh frozen install passed with Bun 1.4.4. SDK preparation validated 1,196 localization keys and generated the browser bundles from workspace source. The installed main-branch WASM file is 3,935,119 bytes versus 8,840,701 before the merge.
+- The first runtime run exposed 16 old contract fixtures missing the required response version. Updating the fixtures and checking version and retirement in native review produces **246 passing runtime cases**. The new cases reject a changed version and a retired agreement. An unauthenticated read of the configured staging sample returned HTTP 200, version 1, active status and 33 automatic credentials.
+- Native TypeScript source contracts pass. The checker reports 27 diagnostics in dependencies outside the native target. Scoped lint, **69 shared credential helper tests**, **13 shared age-policy tests**, and **241 Swift cases** pass. Xcode 27.1 built the Debug simulator app and test targets.
+- **Seven distinct simulator checks passed** across the initial run and focused reruns on iOS 27.1. The initial five cover tabs, email-only sign-in, credential claim, and both SDK checks. The Apps rerun verifies selecting a credential, installing the fixture app, and withdrawing access. XCTest now scrolls the credential clear of the approval footer and taps the withdrawal confirmation inside its sheet. The signup rerun opens the system’s toolbar search when needed and verifies that a 14-year-old selecting Ireland requires a guardian email before proceeding.
+- The iOS SDK interoperability check used the bundled WASM inside WebKit. The independent web SDK verified 10 iOS-issued credential signatures, encrypted data, presentation, DID-auth JWT and QR transfer. The `clr/westbridge-full` fixture retains the same full-verification exception on both clients. The separate bare JavaScriptCore probe compiled WASM and still reports the missing `TextDecoder` needed to load the SDK there.
+- The normal Debug app is installed on Native Lab. All **48 installed files** match the output, including the new upstream WASM. The app launched to email sign-in without fixture arguments. The focused UI run uses a separate simulator and synthetic accounts. The full UI suite, Release, live sign-in and hosted native CI are outside this run.
+
+Simulator results are under `artifacts/merge-main-2026-11-25*.xcresult`, including the two intermediate automation failures and their passing reruns.
+
 ## Elastic sky follow-up — October 23, 2026
 
 The sky now fills the whole unobscured elastic gap instead of stopping at `UIRefreshControl.bounds`. A noninteractive clipped host lives in its own scroll view; its lower edge follows the content anchor. The actual resting-control height sets artwork size and reveal fade, while the native scroll movement controls expansion, release, loading height and collapse. Visitors/clouds/sun/moon retain their size as positions spread through the extra sky. No gesture, scroll inset, custom spring, timer delay or refresh-operation ownership changes.

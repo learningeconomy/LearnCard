@@ -50,7 +50,7 @@ export const BoostFooter: React.FC<BoostFooterProps> = props => {
 
     return (
         <footer
-            className="w-full min-h-[85px] bg-white border-white border-t-1px bg-opacity-60 border-t-[1px] sticky bottom-0 px-[20px] pt-[20px] backdrop-blur-[10px]"
+            className="w-full min-h-[85px] bg-white/60 border-white border-t-1px  border-t sticky bottom-0 px-[20px] pt-[20px] backdrop-blur-[10px]"
             style={{
                 // Keep the frosted surface edge-to-edge while lifting its controls
                 // above gesture, two-button, and three-button system navigation.

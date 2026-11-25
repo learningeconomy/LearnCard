@@ -10,7 +10,7 @@ A checklist for the day you switch from test recipients to real ones. Each line 
 
 Staging and production are separate networks — nothing carries over automatically (see [What Carries Over](deploy-infrastructure/test-safely.md#what-carries-over)). Do these in order:
 
-- [ ] **1. Point the SDK/CLI at production** — pass `network: true` (or drop `--network` on the CLI's `send` command, which defaults to production). If you also set a `cloud: { url: '...staging...' }` override for staging testing, remove it too — `cloud.url` doesn't follow `network`, so it stays pointed at staging until you change it.
+- [ ] **1. Point the SDK/CLI at production** — in the SDK, pass `network: true`. If you also set a `cloud: { url: '...staging...' }` override for staging testing, remove it too — `cloud.url` doesn't follow `network`, so it stays pointed at staging until you change it. With the CLI, dropping `--network` is not enough: a staging folder's `.env` keeps `NETWORK_URL` pointed at staging. Run `npx @learncard/cli promote --from staging --to production --org ./org.yaml` (it creates a separate `.learncard/production/` folder), or start production in a fresh folder.
 - [ ] **2. Create your production profile** — the same seed produces the same `did:key` on every network, so `createProfile`/`createServiceProfile` with that seed and (if it's free) the same `profileId` keeps your identity consistent — [Network Profiles](../core-concepts/identities-and-keys/network-profiles.md).
 - [ ] **3. Create production API tokens** with the same scopes you used on staging — [Generate API Tokens](deploy-infrastructure/generate-api-tokens.md).
 - [ ] **4. Register your production signing authority**, if you send from templates or issue claim links — [Who Signs Your Credentials?](create-signing-authority.md).
@@ -36,7 +36,7 @@ Staging and production are separate networks — nothing carries over automatica
 
 A network error or timeout from `send()` doesn't tell you whether the credential was actually issued before the connection dropped. Before retrying:
 
-1. **Check the response first.** If you got a response back with `activityId`, it succeeded — don't retry. `learncard status <activityId>` (or [`getActivityChain`](../sdks/learncard-network/credential-activity.md)) shows where it got to.
+1. **Check the response first.** If you got a response back with `activityId`, it succeeded — don't retry. `npx @learncard/cli status <activityId>` (or [`getActivityChain`](../sdks/learncard-network/credential-activity.md)) shows where it got to.
 2. **If the call threw or timed out, look for an existing issuance before retrying:**
     - Profile/DID recipients — [`getPaginatedBoostRecipients(templateUri)`](send-credentials.md#who-has-a-template) and check whether your recipient is already in the list.
     - Email/phone recipients — `learnCard.invoke.getMySentInboxCredentials({ query: { boostUri: templateUri, currentStatus: 'PENDING' } })` and check whether an issuance already addresses that contact method.

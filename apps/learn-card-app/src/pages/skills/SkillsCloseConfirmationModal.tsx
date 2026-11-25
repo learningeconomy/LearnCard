@@ -4,8 +4,10 @@ import { useModal } from 'learn-card-base';
 import TrashBin from '../../components/svgs/TrashBin';
 import * as m from '../../paraglide/messages.js';
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- existing empty props type; replacing it changes the accepted props type
 type SkillsCloseConfirmationModalProps = {};
 
+// eslint-disable-next-line no-empty-pattern -- dropping the empty destructure removes the implicit non-null argument check
 const SkillsCloseConfirmationModal: React.FC<SkillsCloseConfirmationModalProps> = ({}) => {
     const { closeModal, closeAllModals } = useModal();
     return (

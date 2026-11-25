@@ -83,15 +83,15 @@ export const UnknownAppRequestModal: React.FC<UnknownAppRequestModalProps> = ({
                 </IonRow>
                 <IonRow className="flex items-center justify-center w-full">
                     <IonCol className="text-center font-poppins px-[16px]">
-                        <p className="text-[16px] font-[500] leading-[24px]">
+                        <p className="text-[16px] font-medium leading-[24px]">
                             An unknown application wants to connect with you.
                         </p>
                         <br />
 
                         <p className="text-[14px] leading-[21px]">
-                            <span className="font-[700]">Requesting access to:</span>
+                            <span className="font-bold">Requesting access to:</span>
                             <br />
-                            <span className="font-[400]">
+                            <span className="font-normal">
                                 View your profile photo and name, view and access credentials you
                                 select to share, and send credentials to you.
                             </span>
@@ -106,7 +106,7 @@ export const UnknownAppRequestModal: React.FC<UnknownAppRequestModalProps> = ({
                     </IonCol>
                 </IonRow>
                 <IonRow className="w-full flex items-center justify-center mt-6">
-                    <IonCol className="flex items-center flex-col max-w-[90%] border-b-[1px] border-grayscale-200">
+                    <IonCol className="flex items-center flex-col max-w-[90%] border-b border-grayscale-200">
                         <button
                             type="submit"
                             onClick={handleCloseModal}

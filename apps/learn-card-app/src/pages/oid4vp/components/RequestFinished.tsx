@@ -151,8 +151,8 @@ const RequestFinished: React.FC<RequestFinishedProps> = ({
             }}
         >
             <div className="bg-white rounded-[20px] shadow-xl max-w-md w-full overflow-hidden">
-                <div className="px-6 py-7 text-center bg-gradient-to-r from-emerald-500 to-emerald-600">
-                    <div className="w-16 h-16 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <div className="px-6 py-7 text-center bg-linear-to-r/srgb from-emerald-500 to-emerald-600">
+                    <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-3">
                         <CheckCircle2 className="w-9 h-9 text-white" />
                     </div>
 
@@ -161,7 +161,7 @@ const RequestFinished: React.FC<RequestFinishedProps> = ({
                     <p className="text-sm text-white/85 leading-relaxed px-2">{headlineSummary}</p>
                 </div>
 
-                <div className="p-6 space-y-5">
+                <div className="p-6 space-y-v3-5">
                     {clientId && (
                         <VerifierHeader
                             clientId={clientId}
@@ -188,7 +188,7 @@ const RequestFinished: React.FC<RequestFinishedProps> = ({
                                             boostPageViewMode={BoostPageViewMode.Card}
                                             useWrapper={false}
                                             hideOptionsMenu
-                                            className="!mt-0 shadow-md"
+                                            className="mt-0! shadow-md"
                                         />
                                     </div>
                                 ))}
@@ -201,7 +201,7 @@ const RequestFinished: React.FC<RequestFinishedProps> = ({
                             <p className="text-xs font-medium text-grayscale-700 mb-3 uppercase tracking-wide">
                                 Claims you shared
                             </p>
-                            <div className="space-y-3">
+                            <div className="space-y-v3-3">
                                 {sharedClaimsBreakdown.map((entry, idx) => (
                                     <SharedClaimsAccordion key={idx} entry={entry} />
                                 ))}
@@ -209,7 +209,7 @@ const RequestFinished: React.FC<RequestFinishedProps> = ({
                         </div>
                     )}
 
-                    <div className="space-y-3 pt-1">
+                    <div className="space-y-v3-3 pt-1">
                         {redirectUri && (
                             <button
                                 onClick={() => {
@@ -247,7 +247,7 @@ const SharedClaimsAccordion: React.FC<{ entry: SharedClaimsEntry }> = ({ entry }
         <div className="border border-grayscale-200 rounded-xl overflow-hidden">
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="w-full flex items-center justify-between p-4 bg-grayscale-10 hover:bg-grayscale-100 transition-colors focus:outline-none"
+                className="w-full flex items-center justify-between p-4 bg-grayscale-10 hover:bg-grayscale-100 transition-colors focus:outline-hidden"
             >
                 <span className="text-sm font-semibold text-grayscale-900 truncate pr-4">
                     {entry.credentialName || humanizeVct(entry.vct) || 'Credential'}
@@ -260,9 +260,9 @@ const SharedClaimsAccordion: React.FC<{ entry: SharedClaimsEntry }> = ({ entry }
             </button>
 
             {isOpen && (
-                <div className="p-4 bg-white border-t border-grayscale-200 space-y-3">
+                <div className="p-4 bg-white border-t border-grayscale-200 space-y-v3-3">
                     {disclosedKeys.length > 0 ? (
-                        <ul className="space-y-2">
+                        <ul className="space-y-v3-2">
                             {disclosedKeys.map(key => {
                                 const val = entry.disclosedClaims[key];
                                 return (

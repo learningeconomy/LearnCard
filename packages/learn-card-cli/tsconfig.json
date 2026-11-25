@@ -1,7 +1,7 @@
 {
     "extends": "../../tsconfig.library.json",
     "compilerOptions": {
-        "lib": ["es2022"],
+        "lib": ["es2022", "DOM"],
         "module": "esnext",
         "moduleResolution": "bundler",
         "resolveJsonModule": true,
@@ -26,7 +26,6 @@
         "declaration": true,
         "declarationMap": true,
         "sourceMap": true,
-        "baseUrl": ".",
 
         "esModuleInterop": true,
         "allowSyntheticDefaultImports": true,

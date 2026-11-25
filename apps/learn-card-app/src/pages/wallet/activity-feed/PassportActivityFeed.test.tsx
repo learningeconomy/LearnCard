@@ -4,6 +4,7 @@ import { render, waitFor } from '@testing-library/react';
 
 const { usePassportActivities, lcn } = vi.hoisted(() => ({
     usePassportActivities: vi.fn(),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     lcn: { currentLCNUser: { profileId: 'me' } as any, currentLCNUserLoading: false },
 }));
 vi.mock('./usePassportActivities', () => ({ usePassportActivities }));

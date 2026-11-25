@@ -59,7 +59,7 @@ const PreviewPane: React.FC<PreviewPaneProps> = ({ pathway, node, pathwayTitleBy
     if (!node) {
         return (
             <aside
-                className="space-y-3 font-poppins"
+                className="space-y-v3-3 font-poppins"
                 aria-label="Learner preview"
             >
                 <PreviewHeader />
@@ -79,7 +79,7 @@ const PreviewPane: React.FC<PreviewPaneProps> = ({ pathway, node, pathwayTitleBy
     const cta = ctaForPolicy(node.stage.policy);
 
     return (
-        <aside className="space-y-3 font-poppins" aria-label="Learner preview">
+        <aside className="space-y-v3-3 font-poppins" aria-label="Learner preview">
             <PreviewHeader />
 
             {/*
@@ -88,7 +88,7 @@ const PreviewPane: React.FC<PreviewPaneProps> = ({ pathway, node, pathwayTitleBy
                 + hairline border mimic the in-app NextActionCard
                 treatment without coupling to its internals.
             */}
-            <article className="rounded-[24px] border border-grayscale-200 bg-white shadow-sm overflow-hidden">
+            <article className="rounded-[24px] border border-grayscale-200 bg-white shadow-xs overflow-hidden">
                 {/* Hero band — destination steps get an emerald tint
                     mirroring the learner-facing badge for their
                     end-goal step. Non-destination steps use a
@@ -100,8 +100,8 @@ const PreviewPane: React.FC<PreviewPaneProps> = ({ pathway, node, pathwayTitleBy
                     aria-hidden
                 />
 
-                <div className="p-5 space-y-4">
-                    <div className="space-y-1">
+                <div className="p-5 space-y-v3-4">
+                    <div className="space-y-v3-1">
                         {isDestination && (
                             <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
                                 <IonIcon
@@ -128,7 +128,7 @@ const PreviewPane: React.FC<PreviewPaneProps> = ({ pathway, node, pathwayTitleBy
                         Identical phrasing to the outline subtitle, so
                         the author's mental model stays consistent
                         across surfaces. */}
-                    <dl className="space-y-2 text-sm">
+                    <dl className="space-y-v3-2 text-sm">
                         <div className="flex items-baseline gap-2">
                             <dt className="text-[11px] font-semibold uppercase tracking-wide text-grayscale-400 w-16 shrink-0">
                                 Do

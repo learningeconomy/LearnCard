@@ -4,6 +4,95 @@ The `E2E` workflow runs the browser job and three service-test shards concurrent
 Each job owns its Docker stack. Within the browser job, functional tests run before
 accessibility tests so legacy database resets cannot interrupt another suite.
 
+## Required checks without a summary runner
+
+The workflow reports the browser and each service shard directly. There is no
+final `E2E` job that waits for all suites and requests another runner just to
+combine their results. The three service jobs have explicit names and share the
+same steps through a YAML anchor. Their names therefore remain present when
+eligibility skips execution; job-level conditions run before matrix expansion.
+
+The recommended required-check set on `main` is:
+
+- `Test` (unchanged)
+- `Workflow validation` (unchanged)
+- `Typecheck ratchet` (unchanged)
+- `Determine E2E eligibility`
+- `Playwright E2E`
+- `tests/e2e (1)`
+- `tests/e2e (2)`
+- `tests/e2e (3)`
+
+Require eligibility as well as the four suite checks: a failed dependency can
+skip its children, and GitHub accepts skipped job checks. The eligibility job
+validates its decision before reporting success. GitHub's branch protection
+couples required PR and merge-queue check names, so these names must report in
+both places even though automatic full-suite execution is a merge-queue gate.
+
+On every PR update, including drafts, eligibility reports the deferral and all
+four suite checks report skipped; these statuses do not represent a test pass.
+A merge group runs the full suites on the combined revision, except for the
+existing documentation-only exemption. Manual dispatch always runs them and can
+provide earlier feedback. Failed or cancelled required jobs, and absent required
+check names, block merging. Unit tests, mock tests and Verification Catalog
+retain their existing triggers.
+
+### Coordinated settings rollout
+
+This workflow change does **not** update repository protection. Until the coordinated
+cutover, `main` requires `Test`, `Workflow validation`, `Typecheck ratchet` and the
+old aggregate `E2E`. This PR will wait for that removed aggregate status until
+the matching protection change.
+
+Before merging, confirm this PR’s current head reports the exact new check names
+and skipped suite states, confirm those names are available in repository settings,
+and run the full suite manually on that exact head SHA. Pause new queue admissions
+and drain the existing merge queue so candidates based on the old workflow are
+not left waiting for new check names. In one coordinated settings update, replace
+the old `E2E` requirement with **all five** E2E checks listed above. Preserve `Test`, `Workflow validation`,
+`Typecheck ratchet`, the merge queue and every other protection. Enqueue the
+approved workflow change normally, then verify that the actual `merge_group`
+revision runs the full suites and that all five required checks are accepted.
+A successful run does not establish failure or exemption behavior: use separate
+controlled queue candidates to verify that failed or cancelled eligibility and
+suite checks block merging and that a documentation-only change reports the
+expected skips. Record any cases not exercised as unverified. Do not remove the
+old requirement on its own. Avoid admitting unrelated candidates until this
+workflow lands or those candidates report the new check names; keep the cutover
+window short.
+
+If the cutover must be reversed before this workflow merges, restore the previous
+required-check set, including `E2E`, and use a candidate whose workflow still
+reports that aggregate. After this workflow merges, prepare and approve a revert
+PR that restores the aggregate job and confirm its PR revision reports `E2E`.
+Pause admissions and drain the queue, then replace the five new E2E requirements
+with `E2E` in one settings update, preserving all other protections. Enqueue the
+revert PR alone and verify its `merge_group` result. The revert cannot enter the
+queue while its missing five checks are required; conversely, changing settings
+without a candidate that reports `E2E` blocks merges. If the revert cannot land,
+restore the five-check set and investigate before retrying.
+
+### Run full E2E on a PR before queuing
+
+In **Actions → E2E → Run workflow**, select the PR branch and set **LearnCard branch
+or commit SHA to test** to that branch or its current head SHA. The input defaults
+to `main`, so set it explicitly when testing a PR. Leave browser spec files at their
+default to run the usual full set; all service shards run as well. Manual runs also
+work for draft and documentation-only PRs.
+
+With GitHub CLI, replace `1234` with the PR number (same-repository branches):
+
+```sh
+pr_branch=$(gh pr view 1234 --json headRefName --jq .headRefName)
+pr_sha=$(gh pr view 1234 --json headRefOid --jq .headRefOid)
+gh workflow run e2e.yml --ref "$pr_branch" -f ref="$pr_sha"
+```
+
+`--ref` selects the workflow revision; `-f ref=` selects the source revision tested
+by both suites. A commit SHA pins the tested source even if the PR is updated while
+the run waits. Inspect the manual run in Actions for its result and artifacts.
+Manual runs do not replace validation of the combined revision in the merge queue.
+
 ## Browser workers
 
 The default three specs use `playwright.parallel.config.ts`: two Firefox workers,
@@ -45,14 +134,44 @@ and its mocks belong to each browser context. Recording remains serial through
 manifests, patches, and installed dependencies. BuildKit reads the source through
 a temporary bind mount to collect manifests without creating a source image layer.
 
-The Bake groups export this stage through a cache-only target using `mode=min`.
-Browser and service base images import that shared dependency cache. Source and
-app image layers are loaded into Docker but never exported to the remote cache.
-This avoids uploading source layers that change on each commit. The new cache
-scope starts cold on its first CI run. Keep dependency versions aligned across
-stages when upgrading Bun.
+The browser job exports this stage through a cache-only target using `mode=min`
+and uses it to compile the SPA. This full source/build image is never loaded into
+Docker by hosted jobs. Source and app image layers are never exported to the remote
+cache, avoiding uploads of source layers that change on every commit.
+
+## Backend runtime
+
+Hosted browser and service jobs load the separate `backend` target, retaining the
+`learncard-monorepo-local` tag expected by Compose. It installs only production
+dependencies of Brain, LearnCloud, LCA API, and their transitive workspaces using
+Bun filters. All workspace manifests remain available for frozen-lockfile validation,
+but app source, NX, Serverless and test runners are excluded from the
+runtime image. Cloud explicitly owns its runtime Swagger assets and schema helper.
+
+`prepare-backend-source.mjs` follows dependencies, optional dependencies and peer
+workspace dependencies to copy required source and assets at their original paths.
+This preserves TypeScript entrypoints, `development` exports and service-test bind
+mounts without introducing a second bundling strategy. Required WASM and email
+assets are retained. Root TypeScript configuration files remain available for aliases.
+
+The backend dependency stage has its own `e2e-backend-dependencies` cache-only
+export with `mode=min`. Service shards never install the app's build dependencies
+inside Docker. The browser job uses both caches. The backend cache starts cold on
+its first CI run; compare a subsequent run before drawing conclusions about timings.
+
+Both dependency stages use Bun 1.4.4 for lockfile v3. Runtime stages inherit their
+installed dependency layers and copy only the Bun 1.3.14 executable to preserve
+`localhost:host-gateway` did:web resolution. Neither hosted Compose startup commands
+nor final runtime stages run `bun install`. The original full `source` target remains
+the default for existing local Docker build commands.
 
 ## Browser runtime
+
+Hosted browser and service prerequisite builds set `SENTRY_BUILD_TELEMETRY=false`. The three
+service esbuild configurations pass this through to Sentry's `telemetry` option:
+the older LearnCloud plugin can otherwise fail its build-start hook when the
+optional telemetry endpoint is unreachable. Release injection remains enabled;
+ordinary builds retain the plugin's default telemetry behavior.
 
 The hosted launcher derives the official Playwright `-noble` image tag from the
 installed package version. Browsers and OS dependencies are already in that image;
@@ -63,10 +182,63 @@ Both functional tests and accessibility/global setup run inside this image.
 
 The app Dockerfile builds with the monorepo image, then copies only the generated
 `build/` directory into Nginx. The runtime listens on port 3000, serves SPA routes
-through index.html, and returns 404 for missing assets. Backend containers continue
-to use the monorepo image.
+through index.html, and returns 404 for missing assets. Backend containers use the separate backend runtime described above.
+
+## Runner storage
+
+`prepare-storage.sh` requires 15 GiB free on `/` and 35 GiB for Docker. `ubuntu-latest`
+sometimes assigns a 72G copy-on-write VM with about 13G free instead of the usual
+145G disk. When a GitHub-hosted runner is short, the script deletes unused
+preinstalled toolchains (Android, .NET, GHC, CodeQL, Boost, Swift, PowerShell) and
+Docker images, measures again, and records `reclaim=` and `reclaimed_root_kib=` in
+`storage-plan.txt`. Runners large enough already, and persistent runners, are never
+touched. Override the list with `E2E_RECLAIM_PATHS`.
 
 ## Cache writers and cleanup
+
+### Shared SDK compilation (LC-2312 / CI-15a)
+
+`sdk-build-cache.yml` publishes an exact snapshot of the fixed browser/service SDK
+prerequisite union after successful compilation on `main`. E2E jobs only restore;
+they never publish SDK outputs. The app, Docker work, runtime readiness checks and
+all tests still execute. No Nx database or test result is shared.
+
+For example, changing an app button can reuse the SDK compiled on `main`, while
+Vite still compiles that button and Playwright still tests the changed app. SDK,
+compiler, lockfile, embedded CLI snippet or compiler-environment changes require
+a different snapshot. SDK release metadata uses this input identity; the fresh
+app build still uses the tested Git SHA.
+
+The plan audits both task graphs and every declared output directory. Unexpected
+prerequisite targets or unsupported inputs preserve the complete ordinary Nx
+graph. A miss, unavailable restore or rejected inventory rebuilds prerequisites;
+a compilation or test failure still fails the job. Hashes, file modes and a full
+inventory detect missing, changed, extra or linked snapshot entries. Only an
+accepted inventory or successful compilation permits skipping dependency tasks.
+
+The key deliberately hashes all tracked packages, services, tools, scripts,
+patches, root files, workspace manifests and `docs/snippets/`, plus the task plan,
+toolchain, platform and restricted compiler environment. It excludes app source
+and commit IDs. Absolute workspace/tool paths are included conservatively, so a
+different runner layout misses. Build-time environment additions require auditing
+`compilerEnvironment`; runtime test variables are unaffected.
+
+For a controlled manual baseline, dispatch E2E on the same ref with
+`use_sdk_cache=false`. This disables restore while retaining the same SDK phase,
+compiler environment and concurrency. Compare `sdk_dependency_build` against
+`sdk_output_restore`, then compare the complete required-job durations and test
+counts across several runs. Key/lookup overhead and a cold producer cost time too;
+an SDK phase win alone does not establish a faster complete workflow.
+
+`verify_sdk_producer=true` adds a producer probe to a manual E2E run; feature refs
+compile and snapshot without publishing. After merge, verify a successful `main`
+publication, reuse on a second app-only PR commit and merge-group reuse. These
+scope checks require the workflow on the default branch. A corrupt immutable
+cache remains a safe miss/rebuild until eviction or manual deletion. The broader
+Test Runner experiment in #1681 remains research; its affected-set keys and mixed
+timing results are not evidence of cross-PR reuse or a measured net speedup.
+
+### Dependency cache and builders
 
 The browser job and service shards 2/3 restore the Bun dependency cache without
 saving it. Service shard 1 is the sole writer within each E2E run. The shared setup
@@ -101,6 +273,7 @@ should be considered only after measuring this version.
 ## Local checks
 
 ```sh
+bash .github/tests/test-hosted-e2e-backend-source.test.sh
 bash .github/tests/test-hosted-e2e-script-contract.test.sh
 bash .github/tests/test-hosted-e2e-playwright.test.sh
 bash .github/tests/test-hosted-e2e-concurrency.test.sh
@@ -112,3 +285,12 @@ bunx playwright test --config=playwright.mock.config.ts --repeat-each=2
 # With the real stack already running:
 E2E_EXTERNAL_STACK=true bunx playwright test --config=playwright.parallel.config.ts
 ```
+
+## Bun installer/runtime compatibility
+
+The dependency stage uses Bun 1.4.4 for lockfile v3. The source stage inherits
+those layers and copies only the Bun 1.3.14 executable from the compatible runtime
+image. Both `bun` and its `bunx` link are checked during the build. This retains
+the cross-service localhost/DID workaround without copying the installed `/app`
+tree into a fresh runtime base. The hosted DID-resolution preflight and full
+service/browser suites verify compatibility.

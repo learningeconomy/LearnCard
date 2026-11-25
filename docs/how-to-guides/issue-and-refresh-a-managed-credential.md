@@ -34,6 +34,19 @@ Managed refresh is rolling out network by network. If any of these calls fails w
 
 ## Before you start
 
+### External status lists
+
+Managed credentials support external HTTPS Bitstring Status Lists. Keep the exact signed
+`credentialStatus` descriptor in every later version. Managed send results expose
+`statusManagement` (`network`, `external`, `mixed`, or `none`) outside the refresh receipt;
+preparation reports it when the entries are known.
+
+LearnCard cannot revoke an external entry. Revoke returns `PRECONDITION_FAILED` with:
+"This credential's public revocation is managed outside LearnCard. Revoke it with your status-list provider."
+Revoke with your provider instead. External suspension and unsuspension similarly return:
+"This credential's public suspension is managed outside LearnCard. Update it with your status-list provider."
+For mixed credentials, each action follows the provider of its corresponding status purpose.
+
 - A seed and profile from the [Quickstart](../quick-start/your-first-integration.md), in `.env` as `SECURE_SEED` and `PROFILE_ID`
 - The recipient's profile ID (they need a LearnCard account; refresh delivers to a specific person)
 
@@ -42,6 +55,18 @@ The scripts below use `node --env-file=.env`. Install `@learncard/init` in the f
 For an existing boost template, refresh uses the same issuance permissions as an ordinary send, including delegated issue roles. The issuing profile owns the refresh record and controls subsequent updates; creating the template alone does not grant access to another issuer’s refresh records.
 
 ## 1. Issue a credential that can be refreshed
+
+### Public metadata and privacy
+
+For inline managed sends, the stored Boost is a display-only anchor, not a reusable credential template. Pass optional top-level `display: { name, category, image }`. These fields are **public**; do not put private claims in them. Inline template names, skills, permissions, and credential claims are not copied to the anchor. The template's `category` is the one exception: it is copied onto the anchor when `display.category` is omitted, because consent-flow write authorization is keyed on a Boost's category and treats an absent category as unrestricted — silently dropping it would let a category the recipient never consented to pass as an unrestricted write. A minimal fixed credential-shaped placeholder keeps existing Boost readers compatible; its list label is `Credential` when `display.name` is absent. Refresh emails then use generic copy, and notifications never derive their text from claims.
+
+The SDK keeps the full issuance template locally during preparation. Server-side signing receives it transiently in the send request. Existing explicitly created reusable Boost templates retain their public storage behavior. Network mode still processes plaintext for signing, verification, and encryption; this is not holder-side encryption.
+
+Publishing accepts public `updateReason: 'corrected' | 'updated' | 'reissued'`. Legacy `updateSummary` remains public and is limited to 280 characters. Publication titles are never taken from the credential.
+
+Managed preparation fingerprints are now `v1:` server HMACs over public routing/display metadata, not claims or `templateData`. Keep the same original issuance input and prepared receipt on retry; a retry is not a way to update claims. Legacy unkeyed preparations cannot match the new digest and fail with `CONFLICT`. Before retrying across deployment, reconcile whether the original send delivered; do not blindly issue again with a new key. Finish pending preparations before deployment where possible. Secret rotation also requires draining outstanding preparations.
+
+Historical templates are not deleted by this change. Operators can run `bun scripts/report-send-template-exposure.ts <deployment-ISO-timestamp>` from brain-service with explicit Neo4j environment variables. It prints counts only: known managed anchors and unclassified send candidates. Historical signed-only sends have no unique marker, so the candidate count is an upper bound, not an exact signed-only inventory.
 
 One call does it. `send()` with `refresh: true` takes an ordinary credential template — no refresh fields, no hand-copied JSON-LD context — and handles the refresh setup, signing, and holder-only encrypted delivery. Profile/DID recipients use immediate issuance. Email and phone recipients use deferred Universal Inbox signing; see [Refresh through Universal Inbox](#refresh-through-universal-inbox) below.
 
@@ -89,9 +114,8 @@ const result = await issuer.invoke.send({
                 },
             },
         },
-        name: 'Provisional Transcript',
-        category: 'Achievement',
     },
+    display: { name: 'Academic credential', category: 'Achievement' },
     refresh: true,
 });
 
@@ -156,17 +180,18 @@ binding already prevents duplicate delivery. A key without prior preparation is 
 
 ### `sendBoost` also issues refreshable credentials
 
-For a guided demonstration without writing SDK code, the CLI offers `learncard demo refresh`.
+For a guided demonstration without writing SDK code, the CLI (`@learncard/cli` 3.6.0 or
+later) offers `npx @learncard/cli demo refresh`.
 It creates demo issuer and recipient accounts, sends a provisional certificate through
 `sendBoost`, publishes a final version, and refreshes the recipient's copy. Press Enter
 between steps to present the before and after. It defaults to the local network at
-`http://localhost:4000/trpc`; use `--network staging` for a staging network with managed
-refresh and LC-2198 deployed. Use a CLI build containing this command. The updated copy
+`http://localhost:4000/trpc`; use `--network staging` for a staging network that has managed
+refresh enabled. The updated copy
 is displayed in the terminal, not saved to the app. Demo records remain on the selected
 network; account keys stay in memory for the session.
 
 To demonstrate the recipient experience in the local LearnCard app, start its local
-development stack and run `learncard demo refresh --ui` (or, from this repository,
+development stack and run `npx @learncard/cli demo refresh --ui` (or, from this repository,
 `bun --cwd packages/learn-card-cli start demo refresh --ui`). Follow the printed demo
 sign-in link, then press Enter to send. In the app, open **Alerts → Claim → Accept**.
 Press Enter in the terminal to publish the update, then open the new update notification
@@ -388,7 +413,7 @@ Enter an address you can access. The demo school emails a provisional certificat
 
 This walkthrough deliberately publishes only after claim, so you can see the change. Publishing before the recipient creates an account also works; the recipient gets the latest pending version at claim, as described below.
 
-For an optional disposable-account demonstration with no actual email, run `learncard demo refresh --inbox --ui`. It demonstrates the pre-claim update separately. Omit `--ui` for terminal-only testing (add `--lca-url http://localhost:5200/trpc` for the E2E stack). The UI mode reads service URLs from the running app's tenant configuration.
+For an optional disposable-account demonstration with no actual email, run `npx @learncard/cli demo refresh --inbox --ui`. It demonstrates the pre-claim update separately. Omit `--ui` for terminal-only testing (add `--lca-url http://localhost:5200/trpc` for the E2E stack). The UI mode reads service URLs from the running app's tenant configuration.
 
 ```javascript
 const template = {
@@ -505,6 +530,7 @@ This uses the issuer's primary registered signing authority, including for seed-
 
 ## Next steps
 
+- [Send a Private, Refreshable Credential](send-a-private-refreshable-credential.md): encrypt the credential so only the recipient — never LearnCard's servers — can read it
 - [Credential Refresh](../core-concepts/credential-refresh.md): how the pieces fit and what the network can and can't see
 - [Revoke or Update a Credential](revoke-or-update-a-credential.md): for changes that don't need in-place refresh
 - [Who Signs Your Credentials?](create-signing-authority.md): to publish updates in signing-authority mode

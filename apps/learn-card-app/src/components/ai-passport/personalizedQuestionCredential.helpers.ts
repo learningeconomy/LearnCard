@@ -3,7 +3,7 @@ import {
     PersonalizedAnswersState,
     PersonalizedQuestionEnum,
 } from './personalizedQuestions.helpers';
-import _ from 'lodash-es';
+import { uniq } from 'lodash-es';
 
 export const DEFAULT_QA_CREDENTIAL_ID: string = '__qacredential__';
 
@@ -18,11 +18,12 @@ export const transformPersonalizedAnswersForVC = (
 
         return {
             question: question?.title ?? '',
-            answer: _.uniq(answerArray ?? []),
+            answer: uniq(answerArray ?? []),
         };
     });
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 export const transformQACredIntoState = (data: any): PersonalizedAnswersState => {
     const qaMap: PersonalizedAnswersState = {
         [PersonalizedQuestionEnum.iLearnBest]: [],

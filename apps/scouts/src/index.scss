@@ -4,17 +4,10 @@
 @import url('https://tetunori.github.io/fluent-emoji-webfont/dist/FluentEmojiFlat.css');
 
 * {
-    font-family: 'Rubik', 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande',
-        'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    font-family:
+        'Rubik', 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode',
+        Geneva, Verdana, sans-serif;
 }
-
-body.scanner-active > * {
-    display: none;
-}
-
-@import 'tailwindcss/base';
-@import 'tailwindcss/components';
-@import 'tailwindcss/utilities';
 
 @import './assets/sass/modals.scss';
 @import './assets/sass/header.scss';

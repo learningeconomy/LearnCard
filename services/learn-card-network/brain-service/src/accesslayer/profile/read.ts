@@ -3,6 +3,8 @@ import { Profile } from '@models';
 import { ProfileType, FlatProfileType } from 'types/profile';
 import { transformProfileId } from '@helpers/profile.helpers';
 import { inflateObject } from '@helpers/objects.helpers';
+import { environment } from '@environment';
+import { PROFILE_DISPLAY_NAME_LOWER_FIELD, normalizeProfileSearchText } from './search-fields';
 
 export const getProfileByProfileId = async (profileId: string): Promise<ProfileType | null> => {
     const result = await new QueryBuilder()
@@ -38,14 +40,39 @@ export const getProfilesByProfileIds = async (profileIds: string[]): Promise<Pro
     );
 };
 
+export const localUsersProfileId = (did: string): string | null => {
+    const match = /^did:web:(.+):users:([^:]+)$/.exec(did);
+    if (!match) return null;
+
+    const canonicalDomain = (domain: string): string => {
+        try {
+            return encodeURIComponent(decodeURIComponent(domain));
+        } catch {
+            return domain;
+        }
+    };
+    const localDomains = new Set(
+        [
+            environment.DOMAIN_NAME,
+            !environment.DOMAIN_NAME && environment.IS_OFFLINE && environment.PORT
+                ? `localhost%3A${environment.PORT}`
+                : undefined,
+        ]
+            .filter((domain): domain is string => Boolean(domain))
+            .map(canonicalDomain)
+    );
+
+    return localDomains.has(canonicalDomain(match[1]!)) ? match[2]! : null;
+};
+
 export const getProfileByDid = async (did: string): Promise<ProfileType | null> => {
-    const isNetworkProfile = did.startsWith('did:web');
+    const profileId = localUsersProfileId(did);
 
     const result = await new QueryBuilder()
         .match({
             model: Profile,
             identifier: 'profile',
-            where: isNetworkProfile ? { profileId: did.split(':').at(-1)! } : { did },
+            where: profileId ? { profileId } : { did },
         })
         .return('profile')
         .limit(1)
@@ -86,6 +113,15 @@ export const checkIfProfileExists = async ({
     return false;
 };
 
+/**
+ * Case-insensitive substring search over `profileId` and `displayName`.
+ *
+ * Each branch of the `UNION` is a single `CONTAINS` predicate so the planner can seek a TEXT
+ * index for it (`profileId_text_idx` and `profile_displayname_lower_text_idx`) instead of
+ * scanning every `Profile`. `UNION` (not `UNION ALL`) dedupes a profile that matches both.
+ * The visibility/private/service/blacklist filters, ordering and limit are applied to the
+ * merged set, same as before.
+ */
 export const searchProfiles = async (
     searchInput: string,
     {
@@ -100,15 +136,25 @@ export const searchProfiles = async (
 ): Promise<ProfileType[]> => {
     const result = await new QueryBuilder(
         new BindParam({
+            // profileId is stored lowercased by transformProfileId
             input: searchInput.toLowerCase(),
-            inputRegex: `(?i).*${searchInput}.*`,
+            // normalized in Cypher below with the same expression displayNameLower is written with
+            displayNameInput: searchInput,
             blacklist,
         })
     )
-        .match({ identifier: 'profile', model: Profile })
+        .raw(
+            `CALL {
+    MATCH (profile:Profile) WHERE profile.profileId CONTAINS $input RETURN profile
+    UNION
+    MATCH (profile:Profile) WHERE profile.${PROFILE_DISPLAY_NAME_LOWER_FIELD} CONTAINS ${normalizeProfileSearchText(
+        '$displayNameInput'
+    )} RETURN profile
+}`
+        )
+        .with('profile')
         .where(
             `
-(profile.profileId CONTAINS $input OR profile.displayName =~ $inputRegex) AND 
 (
     profile.profileVisibility IS NULL OR
     profile.profileVisibility = "public"

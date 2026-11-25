@@ -22,6 +22,7 @@ import ThemeSelector, { themeSelectorViewMode } from '../../theme/components/The
 import LanguagePicker from './LanguagePicker';
 import CheckListButton from '../learncard/checklist/CheckListButton';
 import useOpenMyLearnCard from '../learncard/useOpenMyLearnCard';
+import { myLearnCardIntentHandlers } from '../learncard/MyLearnCardModal';
 import GenericErrorBoundary from '../generic/GenericErrorBoundary';
 
 import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
@@ -36,6 +37,11 @@ import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
 import useBoostRecoveryCheck from '../../hooks/useBoostRecoveryCheck';
 
 import * as m from '../../paraglide/messages.js';
+
+// The Issue Credentials button is a no-op on the Boost CMS (`/boost`, `/boost/update`) so it
+// doesn't abandon an in-progress boost. `/boost-a-friend` shares the prefix but isn't the CMS.
+const isBoostCmsRoute = (pathname: string) =>
+    pathname === '/boost' || pathname.startsWith('/boost/');
 
 const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
     branding = BrandingEnum.learncard,
@@ -97,7 +103,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
     if (!isLoggedIn) return <IonMenu contentId="main" />;
 
     const handleBoost = async () => {
-        if (location.pathname.includes('/boost')) return;
+        if (isBoostCmsRoute(location.pathname)) return;
 
         const { prompted } = await gate();
         if (prompted) return;
@@ -108,12 +114,13 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
     return (
         <IonMenu contentId="main" swipeGesture menuId="appSideMenu" disabled={false}>
             <IonContent
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                 style={{ ['--background' as any]: '#ffffff' }}
                 className="lc-side-menu-content"
             >
                 <GenericErrorBoundary>
                     <div className="flex min-h-full flex-col">
-                        <div className="flex-shrink-0">
+                        <div className="shrink-0">
                             <div className="flex w-full flex-col items-center justify-center">
                                 <div className="side-menu-logo w-full flex items-center justify-between mt-8 mb-4 px-6">
                                     <IonMenuToggle autoHide={false} className="cursor-pointer">
@@ -159,7 +166,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                                         <button
                                             type="button"
                                             onClick={handleBoost}
-                                            className={`text-[17px] flex items-center justify-center gap-[10px] font-semibold py-[5px] rounded-full w-full h-[45px] max-h-[45px] shadow-soft-bottom focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${colors.secondaryButtonColor}`}
+                                            className={`text-[17px] flex items-center justify-center gap-[10px] font-semibold py-[5px] rounded-full w-full h-[45px] max-h-[45px] shadow-soft-bottom focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 ${colors.secondaryButtonColor}`}
                                         >
                                             {m['issue.title']()}
                                             <GearPlusIcon
@@ -196,6 +203,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                                 <button
                                     type="button"
                                     onClick={openMyLearnCard}
+                                    {...myLearnCardIntentHandlers}
                                     className="w-full flex items-center gap-[10px] px-[10px] py-[5px] rounded-[10px] text-grayscale-900 font-poppins text-[17px]"
                                 >
                                     <Settings className="h-[35px] w-[35px] text-grayscale-400" />

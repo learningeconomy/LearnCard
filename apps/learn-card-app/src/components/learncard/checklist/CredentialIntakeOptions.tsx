@@ -49,7 +49,7 @@ export const CredentialIntakeOptions: React.FC = () => {
             >
                 <LazyPasteOrUploadClaimModal mode={mode} />
             </Suspense>,
-            { hideButton: true, sectionClassName: '!max-w-[500px]' }
+            { hideButton: true, sectionClassName: 'max-w-[500px]!' }
         );
     };
 

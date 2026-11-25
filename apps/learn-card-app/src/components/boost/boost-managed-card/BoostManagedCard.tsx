@@ -11,6 +11,7 @@ import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinne
 import { BoostSmallCard } from '@learncard/react';
 import { ErrorBoundary } from 'react-error-boundary';
 import FamilyCard from '../../familyCMS/FamilyCard/FamilyCard';
+import { getClrCredentialDisplayTitle } from '../../clr-transcript/ClrTranscriptTitleDisplay';
 import { BoostIssuanceLoading } from '../boostLoader/BoostLoader';
 import CustomManagedBoostButton from './helpers/CustomManagedBoostButton';
 import BoostListItem from 'learn-card-base/components/boost/BoostListItem';
@@ -18,7 +19,10 @@ import BoostPreviewBody from '../../boost/boostCMS/BoostPreview/BoostPreviewBody
 import CustomBoostTitleDisplay from '../boost-earned-card/helpers/CustomBoostTitleDisplay';
 import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
 import BadgeSkeleton from 'learn-card-base/components/boost/boostSkeletonLoaders/BadgeSkeleton';
-import { getClrTranscriptKind, getClrTranscriptIssuerInfo } from '../../clr-transcript';
+import {
+    getClrTranscriptKind,
+    getClrTranscriptIssuerInfo,
+} from 'learn-card-base/helpers/credentials/clr/kind';
 
 import {
     useModal,
@@ -28,7 +32,7 @@ import {
     BoostPageViewModeType,
     CredentialCategoryEnum,
     resetIonicModalBackground,
-    categoryMetadata,
+    getCategoryMetadata,
     BoostCategoryOptionsEnum,
 } from 'learn-card-base';
 import { VC, Boost } from '@learncard/types';
@@ -129,8 +133,8 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
 
     const cardTitle = boost?.name || boostVC?.credentialSubject?.achievement?.name;
 
-    const type = categoryMetadata[categoryType].walletSubtype;
-    const { darkColor } = categoryMetadata[categoryType];
+    const type = getCategoryMetadata(categoryType).walletSubtype;
+    const { darkColor } = getCategoryMetadata(categoryType);
 
     const isAwardDisplay = boostVC?.display?.displayType === 'award';
 
@@ -138,6 +142,7 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
     const bgColors = {
         [CredentialCategoryEnum.socialBadge]: '#3B82F6', // blue-500 - color
         [CredentialCategoryEnum.achievement]: '#EC4899', // pink-500 - color
+        [CredentialCategoryEnum.qualifications]: '#C2410C', // orange-700
         [CredentialCategoryEnum.learningHistory]: '#40CBA6', // emerald-500 - subColor
         [CredentialCategoryEnum.accomplishment]: '#EAB308', // yellow-500 - none (color = yellow-400)
         [CredentialCategoryEnum.accommodation]: '#8B5CF6', // violet-500 - subColor
@@ -161,7 +166,7 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
         );
     }
 
-    let customButtonComponent = (
+    const customButtonComponent = (
         <CustomManagedBoostButton
             showSkeleton={showSkeleton}
             isDraft={isDraft}
@@ -215,7 +220,7 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
                 formattedDisplayType={formattedDisplayType}
                 textColor={darkColor}
                 credential={cred}
-                mediaTitleContainerClassName="!mt-[14px]"
+                mediaTitleContainerClassName="mt-[14px]!"
             />
         );
     }
@@ -283,7 +288,7 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
                                     backgroundImage={boostVC?.display?.backgroundImage}
                                     backgroundColor={cred?.display?.backgroundColor}
                                     badgeContainerCustomClass="mt-[0px] mb-[8px]"
-                                    badgeCircleCustomClass={`!w-[117px] h-[117px] mt-1 ${
+                                    badgeCircleCustomClass={`w-[117px]! h-[117px] mt-1 ${
                                         isAwardDisplay ? 'mt-[17px] mb-[-10px]' : 'shadow-3xl'
                                     }`}
                                     badgeRibbonContainerCustomClass="left-[38%] bottom-[-20%]"
@@ -308,7 +313,7 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
             )}
             {!isCardView && (
                 <BoostListItem
-                    title={cardTitle}
+                    title={getClrCredentialDisplayTitle(boostVC, cardTitle)}
                     onClick={innerOnClick}
                     onOptionsClick={handleOptionsMenu}
                     credential={cred}

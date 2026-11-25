@@ -46,7 +46,7 @@ export const AddGameConfirmationPrompt: React.FC<AddGamePromptConfirmationPrompt
 
     const history = useHistory();
     const { newModal, closeAllModals } = useModal();
-    const currentUser = useCurrentUser()!!!!!!!!!;
+    const currentUser = useCurrentUser()!;
 
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { handleSwitchAccount } = useSwitchProfile();
@@ -167,7 +167,9 @@ export const AddGameConfirmationPrompt: React.FC<AddGamePromptConfirmationPrompt
                 {!hasConsented && (
                     <button
                         className={`text-${primaryColor} font-[600] text-[17px] leading-[24px] tracking-[0.25px]`}
+                        disabled={!contractDetails}
                         onClick={() => {
+                            if (!contractDetails) return;
                             newModal(
                                 <ConsentFlowEditAccess
                                     contractDetails={contractDetails}

@@ -103,8 +103,8 @@ const renderCategoryPermissions = (
                             </div>
                         )}
 
-                        <div className="min-w-0 space-y-1">
-                            <p className="text-sm font-medium text-grayscale-900 break-words leading-snug">
+                        <div className="min-w-0 space-y-v3-1">
+                            <p className="text-sm font-medium text-grayscale-900 wrap-break-word leading-snug">
                                 {title}
                             </p>
                             <p className="text-xs text-grayscale-500 break-all">{key}</p>
@@ -326,7 +326,7 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
 
     const openShareContractModal = (contractToShare: ConsentFlowContractDetails) => {
         newModal(<ShareContractModal contract={contractToShare} />, {
-            sectionClassName: '!max-w-[500px]',
+            sectionClassName: 'max-w-[500px]!',
         });
     };
 
@@ -340,17 +340,17 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
                     onSuccess={onCreateSuccess}
                 />,
                 {
-                    sectionClassName: '!max-w-[500px] !max-h-[70vh]',
+                    sectionClassName: 'max-w-[500px]! max-h-[70vh]!',
                     usePortal: true,
                     hideButton: true,
-                    portalClassName: '!max-w-[500px]',
+                    portalClassName: 'max-w-[500px]!',
                 }
             );
         }, 0);
     };
 
     return (
-        <section className="text-grayscale-900 w-full px-[24px] py-[28px] min-h-[300px] space-y-5">
+        <section className="text-grayscale-900 w-full px-[24px] py-[28px] min-h-[300px] space-y-v3-5">
             <div className="flex flex-col gap-4">
                 <div className="flex items-start justify-between gap-3 min-w-0">
                     {image ? (
@@ -384,7 +384,7 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
                     </div>
                 </div>
 
-                <div className="min-w-0 space-y-1">
+                <div className="min-w-0 space-y-v3-1">
                     <h1 className="text-xl font-semibold text-grayscale-900 line-clamp-2">
                         {name}
                     </h1>
@@ -400,9 +400,9 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
             )}
 
             <div className="grid gap-4 md:grid-cols-2">
-                <article className="rounded-[20px] border border-grayscale-200 bg-grayscale-10 p-4 space-y-3">
+                <article className="rounded-[20px] border border-grayscale-200 bg-grayscale-10 p-4 space-y-v3-3">
                     <h2 className="text-lg font-semibold text-grayscale-900">Contract Details</h2>
-                    <div className="space-y-3 text-sm text-grayscale-700">
+                    <div className="space-y-v3-3 text-sm text-grayscale-700">
                         <div>
                             <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide">
                                 Owner
@@ -498,9 +498,9 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
                     </div>
                 </article>
 
-                <article className="rounded-[20px] border border-grayscale-200 bg-grayscale-10 p-4 space-y-3">
+                <article className="rounded-[20px] border border-grayscale-200 bg-grayscale-10 p-4 space-y-v3-3">
                     <h2 className="text-lg font-semibold text-grayscale-900">Sharing Metadata</h2>
-                    <div className="space-y-3 text-sm text-grayscale-700">
+                    <div className="space-y-v3-3 text-sm text-grayscale-700">
                         <div>
                             <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide">
                                 Anonymize read data
@@ -526,9 +526,9 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-                <article className="rounded-[20px] border border-grayscale-200 bg-white p-4 space-y-3">
+                <article className="rounded-[20px] border border-grayscale-200 bg-white p-4 space-y-v3-3">
                     <h2 className="text-lg font-semibold text-grayscale-900">Read permissions</h2>
-                    <div className="space-y-2">
+                    <div className="space-y-v3-2">
                         <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide">
                             Personal fields
                         </p>
@@ -537,7 +537,7 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
                             'No personal read fields defined'
                         )}
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-v3-2">
                         <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide">
                             Credential categories
                         </p>
@@ -548,10 +548,10 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
                     </div>
                 </article>
 
-                <article className="rounded-[20px] border border-grayscale-200 bg-white p-4 space-y-3">
+                <article className="rounded-[20px] border border-grayscale-200 bg-white p-4 space-y-v3-3">
                     <h2 className="text-lg font-semibold text-grayscale-900">Write permissions</h2>
                     {Object.keys(contractDefinition.write.personal).length > 0 && (
-                        <div className="space-y-2">
+                        <div className="space-y-v3-2">
                             <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide">
                                 Personal fields
                             </p>
@@ -561,7 +561,7 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
                             )}
                         </div>
                     )}
-                    <div className="space-y-2">
+                    <div className="space-y-v3-2">
                         <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide">
                             Credential categories
                         </p>
@@ -599,12 +599,12 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
                     </div>
                 </summary>
 
-                <div className="mt-4 max-h-[420px] overflow-y-auto space-y-3 pr-1 pb-2">
+                <div className="mt-4 max-h-[420px] overflow-y-auto space-y-v3-3 pr-1 pb-2">
                     <form
                         onSubmit={submitDidFilter}
-                        className="space-y-2 rounded-[20px] border border-grayscale-200 bg-white p-3"
+                        className="space-y-v3-2 rounded-[20px] border border-grayscale-200 bg-white p-3"
                     >
-                        <div className="space-y-1.5">
+                        <div className="space-y-v3-1.5">
                             <label className="text-xs font-medium text-grayscale-700">
                                 Filter by DID or profile ID
                             </label>
@@ -613,7 +613,7 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
                                 value={didInput}
                                 onChange={e => setDidInput(e.target.value)}
                                 placeholder="did:key:... or profile-id"
-                                className="w-full rounded-xl border border-grayscale-300 bg-white px-4 py-3 text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                className="w-full rounded-xl border border-grayscale-300 bg-white px-4 py-3 text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:border-transparent focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
                             />
                         </div>
 
@@ -658,7 +658,7 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
                     </form>
 
                     {!visibleConsentRecordsLoading && visibleConsentRecords.length > 0 && (
-                        <ol className="space-y-3">
+                        <ol className="space-y-v3-3">
                             {visibleConsentRecords.map(
                                 (terms: ConsentFlowContractData, index: number) => (
                                     <li

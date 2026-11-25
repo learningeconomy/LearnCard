@@ -120,7 +120,7 @@ const NewBoostSelectMenuCustomTypeButton: React.FC<ComponentProps> = ({
             className="flex justify-center items-center relative z-10 pt-5"
         >
             <div
-                className={`h-full rounded-xl flex flex-col items-center justify-start gap-2.5 w-40 bg-${color} bg-opacity-100 mt-0 pt-0 min-h-[220px]`}
+                className={`h-full rounded-xl flex flex-col items-center justify-start gap-2.5 w-40 bg-${color} mt-0 pt-0 min-h-[220px]`}
             >
                 <div className="relative w-full flex items-center justify-center p-2 h-[72%]">
                     <IonTextarea
@@ -149,7 +149,7 @@ const NewBoostSelectMenuCustomTypeButton: React.FC<ComponentProps> = ({
                     onClick={handleBoostCMSRedirect}
                     disabled={!isValid}
                     aria-disabled={!isValid}
-                    className={`bg-white rounded-full p-2 w-fit h-fit shadow-sm transition-opacity ${
+                    className={`bg-white rounded-full p-2 w-fit h-fit shadow-xs transition-opacity ${
                         isValid ? 'hover:shadow-md' : 'opacity-50 cursor-not-allowed'
                     }`}
                     style={{ color: color }}

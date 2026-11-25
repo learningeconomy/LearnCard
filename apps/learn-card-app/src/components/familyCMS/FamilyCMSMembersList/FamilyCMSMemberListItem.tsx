@@ -63,7 +63,7 @@ export const FamilyCMSMemberListItem: React.FC<FamilyCMSMemberListItemProps> = (
     return (
         <div
             key={user?.did}
-            className="flex items-center justify-between w-full bg-white border-t-grayscale-100 border-t-solid border-t-[2px] pb-[12px] pt-[12px]"
+            className="flex items-center justify-between w-full bg-white border-t-grayscale-100 border-t-solid border-t-2 pb-[12px] pt-[12px]"
         >
             <div className="flex items-center justify-start w-full">
                 <div className="flex items-center justify-start">

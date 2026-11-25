@@ -29,11 +29,14 @@ const EndorsementBadge: React.FC<{
     // - Get current user endorsement status
     const hasEndorsed = hasEndorsedCredential(existingEndorsements, currentLCNUser?.did);
     const endorsementCount =
-        existingEndorsements.length > 0 ? existingEndorsements.length : endorsements.length ?? 0;
+        existingEndorsements.length > 0 ? existingEndorsements.length : (endorsements.length ?? 0);
     const endorsementStatus = BoostEndorsementStatusEnum.Approved;
 
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let buttonStyles = '';
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let iconStyles = '';
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let fill = '';
 
     // badge styles

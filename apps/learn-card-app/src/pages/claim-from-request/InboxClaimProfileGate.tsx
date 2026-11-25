@@ -61,7 +61,7 @@ export const InboxClaimProfileGate: React.FC<InboxClaimProfileGateProps> = ({ vc
 
     return (
         <div className="min-h-full bg-grayscale-100 flex items-center justify-center p-4 font-poppins">
-            <div className="bg-white rounded-[20px] p-8 max-w-md w-full text-center space-y-5">
+            <div className="bg-white rounded-[20px] p-8 max-w-md w-full text-center space-y-v3-5">
                 <p
                     className="text-sm text-grayscale-600 leading-relaxed"
                     role={connectionIssue ? 'alert' : 'status'}

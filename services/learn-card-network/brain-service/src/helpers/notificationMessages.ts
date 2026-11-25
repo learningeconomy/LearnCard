@@ -42,6 +42,8 @@ export type NotificationMessageKey =
     | 'contractRequestAccepted'
     | 'contractRequestDenied'
     | 'contractRequestCancelled'
+    | 'contractRequestDeniedByInvitee'
+    | 'contractRequestCancelledByInvitee'
     | 'consentFlowViewRequest'
     | 'consentFlowInvite'
     | 'consentFlowShare'
@@ -168,6 +170,14 @@ const en: LocaleCatalog = {
     contractRequestCancelled: {
         title: 'Connection request cancelled',
         body: '{name} cancelled the request.',
+    },
+    contractRequestDeniedByInvitee: {
+        title: 'Connection request declined',
+        body: 'The invited person declined the request.',
+    },
+    contractRequestCancelledByInvitee: {
+        title: 'Connection request cancelled',
+        body: 'The invited person cancelled the request.',
     },
     consentFlowViewRequest: {
         title: 'AI Insights',
@@ -340,6 +350,14 @@ const es: LocaleCatalog = {
         title: 'Solicitud de conexión cancelada',
         body: '{name} canceló la solicitud.',
     },
+    contractRequestDeniedByInvitee: {
+        title: 'Solicitud de conexión rechazada',
+        body: 'La persona invitada rechazó la solicitud.',
+    },
+    contractRequestCancelledByInvitee: {
+        title: 'Solicitud de conexión cancelada',
+        body: 'La persona invitada canceló la solicitud.',
+    },
     consentFlowViewRequest: {
         title: 'AI Insights',
         body: '{name} ha solicitado ver tus análisis.',
@@ -511,6 +529,14 @@ const fr: LocaleCatalog = {
         title: 'Demande de connexion annulée',
         body: '{name} a annulé la demande.',
     },
+    contractRequestDeniedByInvitee: {
+        title: 'Demande de connexion refusée',
+        body: 'La personne invitée a refusé la demande.',
+    },
+    contractRequestCancelledByInvitee: {
+        title: 'Demande de connexion annulée',
+        body: 'La personne invitée a annulé la demande.',
+    },
     consentFlowViewRequest: {
         title: 'AI Insights',
         body: '{name} a demandé à consulter vos analyses.',
@@ -673,6 +699,14 @@ const ar: LocaleCatalog = {
     contractRequestAccepted: { title: 'تم قبول طلب الاتصال', body: 'قبل {name} الطلب.' },
     contractRequestDenied: { title: 'تم رفض طلب الاتصال', body: 'رفض {name} الطلب.' },
     contractRequestCancelled: { title: 'تم إلغاء طلب الاتصال', body: 'ألغى {name} الطلب.' },
+    contractRequestDeniedByInvitee: {
+        title: 'تم رفض طلب الاتصال',
+        body: 'رفض الشخص المدعو الطلب.',
+    },
+    contractRequestCancelledByInvitee: {
+        title: 'تم إلغاء طلب الاتصال',
+        body: 'ألغى الشخص المدعو الطلب.',
+    },
     consentFlowViewRequest: {
         title: 'رؤى الذكاء الاصطناعي',
         body: 'طلب {name} الاطلاع على رؤاك.',

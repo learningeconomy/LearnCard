@@ -1,17 +1,19 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { getLogger, type EscrowEmailSenderNote } from 'learn-card-base';
 import { IonIcon } from '@ionic/react';
 import {
     alertCircleOutline,
     timeOutline,
     checkmarkCircleOutline,
     shieldCheckmarkOutline,
+    mailOutline,
 } from 'ionicons/icons';
 import type { KeyDerivationStrategy } from '@learncard/types';
 import {
     EscrowHoldRestartThrottledError,
+    type EscrowRecoveryExpectations,
     type EscrowRecoveryStart,
 } from '@learncard/sss-key-manager';
-import { escrowPinMismatchMessage } from '@learncard/types';
 import {
     clearPendingEscrowRecovery,
     loadPendingEscrowRecovery,
@@ -21,6 +23,23 @@ import {
 import type { PendingEscrowRecovery } from './escrowRecoveryStorage';
 import { RecoveryPinInput } from './RecoveryPinInput';
 import * as m from '../../paraglide/messages.js';
+
+const log = getLogger('recovery-request');
+// Error messages/causes may contain response bodies or request credentials.
+const logRecoveryError = (event: string, cause: unknown): void => {
+    const errorType =
+        cause instanceof Error &&
+        [
+            'EscrowEvidenceError',
+            // Deployment misconfiguration (wrong escrowAuthorityTenant); the name is safe to log.
+            'EscrowAuthorityTenantMismatchError',
+            'EscrowRequestError',
+            'TypeError',
+        ].includes(cause.name)
+            ? cause.name
+            : 'Error';
+    log.error(event, { errorType });
+};
 
 export const formatTimeRemaining = (ms: number): string => {
     if (ms <= 0) return 'Ready';
@@ -39,32 +58,102 @@ export interface EscrowRecoveryPanelProps {
     view: 'status' | 'start';
     scope?: string;
     available: boolean;
+    /**
+     * The account has a usable recovery PIN. Read by RecoveryFlowModal, which offers
+     * PIN sign-in on its first screen; this panel only runs the 7-day hold.
+     */
     pinAvailable?: boolean;
+    /** Shown on the start view as "Use my recovery PIN instead" when PIN sign-in is offered. */
+    onUsePin?: () => void;
     canResumeCompleted?: () => boolean;
     onStart: (options?: { restart?: boolean }) => Promise<EscrowRecoveryStart>;
     onStatus: (proof: {
         holdId: string;
         resumeToken: string;
+        /** Retained from the hold's start response; required for a Nitro hold. */
+        expectations?: EscrowRecoveryExpectations;
     }) => ReturnType<NonNullable<KeyDerivationStrategy['getEscrowRecoveryStatus']>>;
     onRecover: (
         input:
             | (Omit<PendingEscrowRecovery, 'releaseAfter'> & { method: 'escrow' })
             | { method: 'escrow-pin'; pin: string }
     ) => Promise<void>;
+    /**
+     * Only meaningful when a hold's status reports `requiresConfirmation: true`.
+     * An optional `releaseAfter` is an immediate hint; the panel always
+     * follows up with an authoritative status fetch regardless.
+     */
+    onConfirmCode: (params: {
+        holdId: string;
+        resumeToken: string;
+        code: string;
+        /** Retained from the hold's start response; required for a Nitro hold. */
+        expectations?: EscrowRecoveryExpectations;
+    }) => Promise<{ success: true; releaseAfter?: string }>;
+    onResendCode: (params: { holdId: string; resumeToken: string }) => Promise<{ success: true }>;
+    /**
+     * Set when the escrow enclave's own emails carry another brand than this app (VetPass
+     * shares LearnCard's enclave): `sender` is the email brand, `brand` this app's name.
+     * `mixed` (D21): this app seals its own brand, but the stored blob may predate that or
+     * come from the other app, so the email may come from either brand. `shared`: `sender`
+     * is another app on the same account (LearnCard naming VetPass), not the securing service.
+     */
+    emailSender?: EscrowEmailSenderNote;
 }
+
+/** lca-api answers 403 when the code or resend was refused; anything else is transport/service. */
+const isEscrowRefusal = (error: unknown): boolean =>
+    typeof error === 'object' &&
+    error !== null &&
+    'status' in error &&
+    (error as { status: unknown }).status === 403;
 
 export const EscrowRecoveryPanel = ({
     scope = 'default',
     available,
-    pinAvailable = false,
+    onUsePin,
     onStart,
     onStatus,
     onRecover,
+    onConfirmCode,
+    onResendCode,
     canResumeCompleted,
     view,
+    emailSender,
 }: EscrowRecoveryPanelProps) => {
+    const emailSenderNote = (kind: 'code' | 'updates') =>
+        emailSender && (
+            <p className="text-xs text-grayscale-500 leading-relaxed">
+                {kind === 'code'
+                    ? emailSender.shared
+                        ? m['recovery.emailSender.codeShared'](emailSender)
+                        : emailSender.mixed
+                          ? m['recovery.emailSender.codeMixed'](emailSender)
+                          : m['recovery.emailSender.code'](emailSender)
+                    : emailSender.shared
+                      ? m['recovery.emailSender.updatesShared'](emailSender)
+                      : emailSender.mixed
+                        ? m['recovery.emailSender.updatesMixed'](emailSender)
+                        : m['recovery.emailSender.updates'](emailSender)}
+            </p>
+        );
     const active = useRef(true);
     const [pending, setPending] = useState<PendingEscrowRecovery>();
+    // [P2] Status reads (mount effect, checkStatus, and the confirmation
+    // flow) are async and can resolve out of order. `statusGenerationRef`
+    // increments on every new read -- and when confirmation starts -- so a
+    // response that's been superseded can be detected and ignored instead of
+    // clobbering fresher state (e.g. reverting `confirmed` back to false).
+    // `activeHoldIdRef` mirrors `pending?.holdId` on every render so even a
+    // stale closure can tell whether it's still talking about the hold
+    // currently on screen.
+    const statusGenerationRef = useRef(0);
+    const activeHoldIdRef = useRef(pending?.holdId);
+    activeHoldIdRef.current = pending?.holdId;
+    const beginStatusRead = () => {
+        statusGenerationRef.current += 1;
+        return statusGenerationRef.current;
+    };
     const [existingHold, setExistingHold] = useState<{
         holdId: string;
         requestedAt: string;
@@ -84,6 +173,18 @@ export const EscrowRecoveryPanel = ({
     const [now, setNow] = useState(Date.now());
     const storageAvailable = isEscrowRecoveryStorageAvailable();
 
+    // P9.1 (attack C): tracks whether this hold's emailed code has been
+    // confirmed. Reset on a fresh hold; refreshed from the server (never
+    // trusted purely from local storage) on load and on every status check.
+    const [confirmed, setConfirmed] = useState(false);
+    const [verifiedHoldId, setVerifiedHoldId] = useState<string>();
+    const [statusFailed, setStatusFailed] = useState(false);
+    const [codeInput, setCodeInput] = useState('');
+    const [codeError, setCodeError] = useState('');
+    const [confirming, setConfirming] = useState(false);
+    const [resending, setResending] = useState(false);
+    const [resendNotice, setResendNotice] = useState('');
+
     const handleStarted = async (result: EscrowRecoveryStart) => {
         if (!result.resumeToken) {
             if (!active.current) return;
@@ -100,9 +201,15 @@ export const EscrowRecoveryPanel = ({
             clientEphemeralPrivateKey: result.clientEphemeralPrivateKey,
             releaseAfter: result.releaseAfter,
             requestedAt: result.requestedAt,
+            requiresConfirmation: result.requiresConfirmation,
+            expectations: result.expectations,
         };
         if (active.current) {
             setPending(record);
+            setConfirmed(false);
+            setCodeInput('');
+            setCodeError('');
+            setResendNotice(result.codeSent === false ? m['recovery.confirmCode.notSent']() : '');
             setSaved(false);
             setExistingHold(null);
         }
@@ -110,16 +217,6 @@ export const EscrowRecoveryPanel = ({
         if (!active.current) return;
         setSaved(true);
     };
-
-    const [showPinFlow, setShowPinFlow] = useState(pinAvailable);
-    const [pinInput, setPinInput] = useState('');
-    const [pinError, setPinError] = useState('');
-    // Locked or unavailable PINs must not be offered again from the wait view.
-    const [pinBlocked, setPinBlocked] = useState(false);
-
-    useEffect(() => {
-        if (pinAvailable) setShowPinFlow(true);
-    }, [pinAvailable]);
 
     useEffect(() => {
         active.current = true;
@@ -132,11 +229,26 @@ export const EscrowRecoveryPanel = ({
         setLoaded(false);
         loadPendingEscrowRecovery(scope)
             .then(value => {
-                if (!cancelled) {
-                    setPending(value);
+                if (cancelled) return;
+                // A hold awaiting email confirmation only ever comes from
+                // authority (Nitro) mode, which always returns `expectations`
+                // alongside it (see EscrowRecoveryStart) -- status/confirm calls
+                // cannot prove this client started the hold without them. A
+                // record missing them predates this requirement and can never
+                // be completed: drop it and let the start view take over,
+                // rather than reconstructing bindings from a status response.
+                if (value?.requiresConfirmation !== undefined && !value.expectations) {
+                    setPending(undefined);
                     setLoaded(true);
-                    setError('');
+                    setError(m['recovery.invalidRequest']());
+                    void clearPendingEscrowRecovery(value.holdId, scope).catch(cause =>
+                        logRecoveryError('recovery.storage.clear.failed', cause)
+                    );
+                    return;
                 }
+                setPending(value);
+                setLoaded(true);
+                setError('');
             })
             .catch(() => {
                 if (!cancelled) setError('Recovery details could not be loaded. Please try again.');
@@ -147,6 +259,133 @@ export const EscrowRecoveryPanel = ({
             clearInterval(timer);
         };
     }, [scope, loadAttempt]);
+
+    // [B] `releaseAfter` can advance after the start-time estimate (a late
+    // release-warning send pushes the enclave's real release gate later, see
+    // EscrowHold.ts's `computeEffectiveReleaseAfter`) or move earlier (hold
+    // confirmation replaces the creation-time estimate) — both callers below
+    // must adopt the server's current value instead of keeping the one
+    // captured when the hold was started. `hold` is a status response and
+    // never carries `expectations`, so spreading `...pending` below always
+    // preserves the initiating-client bindings captured at start.
+    const refreshHoldStatus = async (
+        hold: { confirmed?: boolean; releaseAfter?: string } | null | undefined,
+        { generation, holdId }: { generation: number; holdId: string }
+    ): Promise<void> => {
+        if (!hold) return;
+        // [P2] Ignore a read superseded by a newer one (or by a confirmation
+        // that started after this read began): the mount-time status read
+        // stays alive for the whole life of a hold (it only re-runs if
+        // `holdId` changes), so a slow response can otherwise land after
+        // confirmation already moved the UI forward and drag it back.
+        if (generation !== statusGenerationRef.current || holdId !== activeHoldIdRef.current) {
+            return;
+        }
+        setVerifiedHoldId(holdId);
+        setStatusFailed(false);
+        setError('');
+        // Monotonic for a given hold: once confirmed locally, never let a
+        // stale confirmed: false revert it. Independent of the generation
+        // check above as a second guard on the field a race would most
+        // visibly break.
+        setConfirmed(prev => prev || Boolean(hold.confirmed));
+        // Guard against a missing/malformed value (e.g. a terminal-status
+        // response that omits it): never adopt a releaseAfter that would
+        // render as an invalid date.
+        if (
+            pending &&
+            hold.releaseAfter &&
+            !Number.isNaN(Date.parse(hold.releaseAfter)) &&
+            hold.releaseAfter !== pending.releaseAfter
+        ) {
+            const updated = { ...pending, releaseAfter: hold.releaseAfter };
+            setPending(updated);
+            await savePendingEscrowRecovery(updated, scope);
+        }
+    };
+
+    const handleStatusResult = async (
+        hold: Awaited<ReturnType<EscrowRecoveryPanelProps['onStatus']>>,
+        { generation, holdId }: { generation: number; holdId: string }
+    ): Promise<{ ok: boolean; ready: boolean }> => {
+        const isCurrent = () =>
+            active.current &&
+            generation === statusGenerationRef.current &&
+            holdId === activeHoldIdRef.current;
+        // Ignore superseded reads before cleanup or any state updates.
+        if (!pending || !isCurrent()) return { ok: false, ready: false };
+        if (
+            !hold ||
+            hold.status === 'cancelled' ||
+            hold.status === 'expired' ||
+            (hold.status === 'completed' && !canResumeCompleted?.())
+        ) {
+            try {
+                await clearPendingEscrowRecovery(holdId, scope);
+            } catch (cause) {
+                logRecoveryError('recovery.storage.clear.failed', cause);
+                if (isCurrent()) {
+                    setStatusFailed(true);
+                    setVerifiedHoldId(undefined);
+                }
+                // Keep the request so Try Again can retry cleanup, including after confirmation.
+                return { ok: false, ready: false };
+            }
+            if (!isCurrent()) return { ok: false, ready: false };
+            setStatusFailed(false);
+            setPending(undefined);
+            setError(
+                hold?.status === 'cancelled'
+                    ? 'This recovery request was cancelled.'
+                    : hold?.status === 'completed'
+                      ? 'This recovery request has already finished. Start a new one.'
+                      : 'This recovery request expired. Start a new one.'
+            );
+            return { ok: false, ready: false };
+        }
+        await refreshHoldStatus(hold, { generation, holdId });
+        if (!isCurrent()) return { ok: false, ready: false };
+        const effectiveReleaseAfter =
+            hold.releaseAfter && !Number.isNaN(Date.parse(hold.releaseAfter))
+                ? hold.releaseAfter
+                : pending.releaseAfter;
+        return { ok: true, ready: Date.parse(effectiveReleaseAfter) <= Date.now() };
+    };
+
+    // Confirmation state lives only on the server; a reload must re-derive it
+    // rather than trust whatever was last persisted locally. Must stay above
+    // every early return below so hook call order never varies between renders.
+    useEffect(() => {
+        if (!pending?.requiresConfirmation) return;
+        let cancelled = false;
+        const holdId = pending.holdId;
+        const generation = beginStatusRead();
+        setStatusFailed(false);
+        setVerifiedHoldId(undefined);
+        onStatus({
+            holdId: pending.holdId,
+            resumeToken: pending.resumeToken,
+            expectations: pending.expectations,
+        })
+            .then(async hold => {
+                if (!cancelled) await handleStatusResult(hold, { generation, holdId });
+            })
+            .catch(cause => {
+                logRecoveryError('recovery.status.load.failed', cause);
+                if (
+                    cancelled ||
+                    generation !== statusGenerationRef.current ||
+                    holdId !== activeHoldIdRef.current
+                )
+                    return;
+                setStatusFailed(true);
+            });
+        return () => {
+            cancelled = true;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pending?.holdId]);
+
     if (!available && !pending && !error) return null;
     const run = async (action: () => Promise<void>) => {
         setLoading(true);
@@ -154,6 +393,7 @@ export const EscrowRecoveryPanel = ({
         try {
             await action();
         } catch (cause) {
+            logRecoveryError('recovery.action.failed', cause);
             const message = cause instanceof Error ? cause.message.toLowerCase() : '';
             setError(
                 message.includes('cancelled')
@@ -167,44 +407,6 @@ export const EscrowRecoveryPanel = ({
         }
     };
 
-    const handlePinRecover = async (pin: string) => {
-        setLoading(true);
-        setPinError('');
-        try {
-            await onRecover({ method: 'escrow-pin', pin });
-        } catch (cause) {
-            const err = cause instanceof Error ? cause : new Error();
-            if (err.name === 'EscrowPinMismatchError') {
-                const attempts = 'attemptsRemaining' in err ? Number(err.attemptsRemaining) : 0;
-                setPinError(escrowPinMismatchMessage(attempts));
-                setPinInput('');
-            } else if (err.name === 'EscrowPinThrottledError') {
-                setPinError(m['recovery.pin.throttled']());
-                setPinInput('');
-            } else if (err.name === 'EscrowPinLockedError') {
-                setPinError('Too many attempts. You can still recover by waiting 7 days.');
-                setPinBlocked(true);
-                setShowPinFlow(false);
-            } else {
-                if (
-                    err.name === 'EscrowPinUnavailableError' ||
-                    (err.name === 'EscrowRequestError' && 'status' in err && err.status === 403)
-                ) {
-                    setPinError(
-                        "PIN sign-in isn't available for this account. Start a 7-day recovery instead."
-                    );
-                    setPinBlocked(true);
-                    setShowPinFlow(false);
-                } else {
-                    setPinError('Something went wrong. Please try again.');
-                }
-                setPinInput('');
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const button =
         'w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed';
     const spinner = (text: string) => (
@@ -213,39 +415,136 @@ export const EscrowRecoveryPanel = ({
             {text}
         </span>
     );
-    const checkStatus = async (): Promise<boolean> => {
-        if (!pending) return false;
-        const hold = await onStatus({ holdId: pending.holdId, resumeToken: pending.resumeToken });
-        if (
-            !hold ||
-            hold.status === 'cancelled' ||
-            hold.status === 'expired' ||
-            (hold.status === 'completed' && !canResumeCompleted?.())
-        ) {
-            await clearPendingEscrowRecovery(pending.holdId, scope);
-            setPending(undefined);
-            setError(
-                hold?.status === 'cancelled'
-                    ? 'This recovery request was cancelled.'
-                    : hold?.status === 'completed'
-                      ? 'This recovery request has already finished. Start a new one.'
-                      : 'This recovery request expired. Start a new one.'
-            );
-            return false;
+    // [P2] `ok` mirrors the old boolean (hold still valid / UI should keep
+    // showing it); `ready` is the *refreshed* availability. Restore must gate
+    // on the `hold` object's own releaseAfter here rather than re-read
+    // `pending` after this resolves: `refreshHoldStatus`'s `setPending` is a
+    // separate state update that hasn't flushed into this closure yet.
+    const checkStatus = async (): Promise<{ ok: boolean; ready: boolean }> => {
+        if (!pending) return { ok: false, ready: false };
+        const holdId = pending.holdId;
+        const generation = beginStatusRead();
+        let hold;
+        setError('');
+        setStatusFailed(false);
+        try {
+            hold = await onStatus({
+                holdId: pending.holdId,
+                resumeToken: pending.resumeToken,
+                expectations: pending.expectations,
+            });
+        } catch (cause) {
+            if (generation === statusGenerationRef.current && holdId === activeHoldIdRef.current) {
+                setStatusFailed(true);
+                setVerifiedHoldId(undefined);
+            }
+            throw cause;
         }
-        return true;
+        return handleStatusResult(hold, { generation, holdId });
+    };
+
+    const handleConfirmCode = async (code: string) => {
+        if (!pending) return;
+        setConfirming(true);
+        setCodeError('');
+        // [P2] Confirmation is about to become authoritative for this hold's
+        // confirmed/releaseAfter. Bump the generation before awaiting
+        // anything so a status read already in flight (e.g. the mount-time
+        // check above) is treated as superseded even if it resolves after
+        // this whole flow completes.
+        const holdId = pending.holdId;
+        const generation = beginStatusRead();
+        try {
+            const result = await onConfirmCode({
+                holdId: pending.holdId,
+                resumeToken: pending.resumeToken,
+                code,
+                expectations: pending.expectations,
+            });
+            setConfirmed(true);
+            setCodeInput('');
+            // [P2] Confirmation recomputes the deadline server-side, but the
+            // load effect above only re-runs when `holdId` changes (it never
+            // does here), so without this a delayed confirmation would keep
+            // showing the creation-time countdown until a manual "Check
+            // status" click or a remount. Adopt an immediate value if the
+            // confirm response carries one, then treat a status refresh as
+            // authoritative -- best-effort (like the load effect above), so
+            // a transient refresh failure doesn't surface as a confirmation
+            // error the user can't act on.
+            if (result.releaseAfter) {
+                await refreshHoldStatus(
+                    { confirmed: true, releaseAfter: result.releaseAfter },
+                    { generation, holdId }
+                );
+            }
+            const refresh = checkStatus();
+            const refreshGeneration = statusGenerationRef.current;
+            await refresh.catch(cause => {
+                logRecoveryError('recovery.status.confirm.failed', cause);
+                if (
+                    !active.current ||
+                    refreshGeneration !== statusGenerationRef.current ||
+                    holdId !== activeHoldIdRef.current
+                )
+                    return;
+                // Code acceptance remains authoritative if this best-effort read fails.
+                setStatusFailed(false);
+                setVerifiedHoldId(holdId);
+            });
+        } catch (e) {
+            const isRefusal = isEscrowRefusal(e);
+            const reason =
+                isRefusal && typeof e === 'object' && e !== null && 'reason' in e
+                    ? e.reason
+                    : undefined;
+            setCodeError(
+                reason === 'codeMismatch'
+                    ? m['recovery.confirmCode.mismatch']()
+                    : reason === 'codeExpired'
+                      ? m['recovery.confirmCode.expired']()
+                      : reason === 'codeLocked'
+                        ? m['recovery.confirmCode.locked']()
+                        : isRefusal
+                          ? m['recovery.confirmCode.error']()
+                          : m['recovery.confirmCode.failed']()
+            );
+            setCodeInput('');
+        } finally {
+            setConfirming(false);
+        }
+    };
+
+    const handleResendCode = async () => {
+        if (!pending) return;
+        setResending(true);
+        setResendNotice('');
+        setCodeError('');
+        try {
+            await onResendCode({ holdId: pending.holdId, resumeToken: pending.resumeToken });
+            setResendNotice(m['recovery.confirmCode.resent']());
+        } catch (e) {
+            const isRefusal = isEscrowRefusal(e);
+            setCodeError(
+                isRefusal
+                    ? m['recovery.confirmCode.resendError']()
+                    : m['recovery.confirmCode.resendFailed']()
+            );
+        } finally {
+            setResending(false);
+        }
     };
     // Screen 1 only surfaces a recovery already underway; starting one lives on Screen 2.
     if (view === 'status' && !pending && !existingHold && !error && !notice) return null;
     return (
-        <section className="font-poppins space-y-4 my-5" aria-label="Account recovery request">
+        <section className="font-poppins space-y-v3-4 my-5" aria-label="Account recovery request">
             {view === 'start' && !storageAvailable && (
                 <p role="alert" className="text-sm text-grayscale-600 leading-relaxed">
                     Use an up-to-date browser on a personal device, with public-computer mode off,
                     for a 7-day recovery.
                 </p>
             )}
-            {error && (
+            {(statusFailed || error) && (
                 <div
                     role="alert"
                     className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5"
@@ -254,7 +553,9 @@ export const EscrowRecoveryPanel = ({
                         icon={alertCircleOutline}
                         className="text-red-400 text-lg mt-0.5 shrink-0"
                     />
-                    <span className="text-sm text-red-700 leading-relaxed">{error}</span>
+                    <span className="text-sm text-red-700 leading-relaxed">
+                        {statusFailed ? m['recovery.status.failed']() : error}
+                    </span>
                 </div>
             )}
             {notice && !pending && (
@@ -264,8 +565,8 @@ export const EscrowRecoveryPanel = ({
             )}
 
             {existingHold && !pending && (
-                <div className="space-y-5 animate-fade-in-up">
-                    <div className="rounded-2xl border border-grayscale-200 bg-white p-5 space-y-4">
+                <div className="space-y-v3-5 animate-fade-in-up">
+                    <div className="rounded-2xl border border-grayscale-200 bg-white p-5 space-y-v3-4">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-amber-50 text-amber-600">
                                 <IonIcon icon={timeOutline} className="text-xl" />
@@ -296,7 +597,7 @@ export const EscrowRecoveryPanel = ({
 
                         <hr className="border-grayscale-200" />
 
-                        <div className="space-y-1">
+                        <div className="space-y-v3-1">
                             <p className="text-sm font-medium text-grayscale-900">
                                 Lost that browser?
                             </p>
@@ -368,6 +669,90 @@ export const EscrowRecoveryPanel = ({
             )}
             {pending
                 ? (() => {
+                      if (
+                          statusFailed ||
+                          ((pending.requiresConfirmation || loading) &&
+                              verifiedHoldId !== pending.holdId)
+                      ) {
+                          return (
+                              <button
+                                  className={button}
+                                  disabled={!statusFailed || loading}
+                                  onClick={() => {
+                                      setVerifiedHoldId(undefined);
+                                      void run(async () => {
+                                          await checkStatus();
+                                      });
+                                  }}
+                              >
+                                  {!statusFailed || loading ? spinner('Checking...') : 'Try Again'}
+                              </button>
+                          );
+                      }
+                      if (pending.requiresConfirmation && !confirmed) {
+                          return (
+                              <div className="space-y-v3-5 animate-fade-in-up">
+                                  <div className="rounded-2xl border border-grayscale-200 bg-white p-5 space-y-v3-5">
+                                      <div className="flex items-center gap-3">
+                                          <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-amber-50 text-amber-600">
+                                              <IonIcon icon={mailOutline} className="text-xl" />
+                                          </div>
+                                          <div>
+                                              <h3 className="text-base font-semibold text-grayscale-900">
+                                                  {m['recovery.confirmCode.title']()}
+                                              </h3>
+                                              <p className="text-sm text-grayscale-600">
+                                                  {m['recovery.confirmCode.description']()}
+                                              </p>
+                                          </div>
+                                      </div>
+
+                                      {emailSenderNote('code')}
+
+                                      <div className="flex justify-center py-2">
+                                          <RecoveryPinInput
+                                              length={8}
+                                              variant="code"
+                                              value={codeInput}
+                                              onChange={val => {
+                                                  setCodeInput(val);
+                                                  setCodeError('');
+                                              }}
+                                              onComplete={code => void handleConfirmCode(code)}
+                                              disabled={confirming}
+                                              error={!!codeError}
+                                          />
+                                      </div>
+
+                                      {codeError && (
+                                          <p className="text-sm text-red-600 text-center">
+                                              {codeError}
+                                          </p>
+                                      )}
+                                      {confirming && (
+                                          <div className="flex justify-center">
+                                              {spinner(m['recovery.confirmCode.confirming']())}
+                                          </div>
+                                      )}
+                                      {resendNotice && !codeError && (
+                                          <p className="text-sm text-emerald-600 text-center">
+                                              {resendNotice}
+                                          </p>
+                                      )}
+
+                                      <button
+                                          onClick={() => void handleResendCode()}
+                                          disabled={resending || confirming}
+                                          className="w-full py-2.5 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors disabled:opacity-40"
+                                      >
+                                          {resending
+                                              ? m['recovery.confirmCode.resending']()
+                                              : m['recovery.confirmCode.resend']()}
+                                      </button>
+                                  </div>
+                              </div>
+                          );
+                      }
                       const releaseTime = Date.parse(pending.releaseAfter);
                       const isReady = now >= releaseTime;
                       const timeRemaining = Math.max(0, releaseTime - now);
@@ -388,8 +773,8 @@ export const EscrowRecoveryPanel = ({
                       }
 
                       return (
-                          <div className="space-y-5 animate-fade-in-up">
-                              <div className="rounded-2xl border border-grayscale-200 bg-white p-5 space-y-5">
+                          <div className="space-y-v3-5 animate-fade-in-up">
+                              <div className="rounded-2xl border border-grayscale-200 bg-white p-5 space-y-v3-5">
                                   <div className="flex items-center gap-3">
                                       <div
                                           className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${isReady ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}
@@ -414,7 +799,7 @@ export const EscrowRecoveryPanel = ({
                                   </div>
 
                                   {!isReady && (
-                                      <div className="space-y-2" aria-live="polite">
+                                      <div className="space-y-v3-2" aria-live="polite">
                                           <p className="text-lg font-medium text-grayscale-900">
                                               {formatTimeRemaining(timeRemaining)}
                                           </p>
@@ -448,7 +833,7 @@ export const EscrowRecoveryPanel = ({
                                   )}
 
                                   {!saved && (
-                                      <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl space-y-3">
+                                      <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl space-y-v3-3">
                                           <div className="flex items-start gap-2.5">
                                               <IonIcon
                                                   icon={alertCircleOutline}
@@ -486,7 +871,13 @@ export const EscrowRecoveryPanel = ({
                                               disabled={loading}
                                               onClick={() =>
                                                   void run(async () => {
-                                                      if (!(await checkStatus())) return;
+                                                      // [P2] Gate on the freshly refreshed
+                                                      // availability, not the pre-click one:
+                                                      // confirmation or a release-warning send
+                                                      // can push releaseAfter into the future
+                                                      // between render and this click.
+                                                      const { ok, ready } = await checkStatus();
+                                                      if (!ok || !ready) return;
                                                       setFinishing(true);
                                                       try {
                                                           await onRecover({
@@ -495,6 +886,7 @@ export const EscrowRecoveryPanel = ({
                                                               resumeToken: pending.resumeToken,
                                                               clientEphemeralPrivateKey:
                                                                   pending.clientEphemeralPrivateKey,
+                                                              expectations: pending.expectations,
                                                           });
                                                       } finally {
                                                           setFinishing(false);
@@ -530,8 +922,8 @@ export const EscrowRecoveryPanel = ({
                                       disabled={loading}
                                       onClick={() =>
                                           void run(async () => {
-                                              if (await checkStatus())
-                                                  setNotice('Your request is on track.');
+                                              const { ok } = await checkStatus();
+                                              if (ok) setNotice('Your request is on track.');
                                           })
                                       }
                                   >
@@ -557,6 +949,11 @@ export const EscrowRecoveryPanel = ({
                                   Come back to this browser to finish. To cancel, use a device where
                                   you're already signed in.
                               </p>
+                              {emailSender && (
+                                  <div className="text-center px-4">
+                                      {emailSenderNote('updates')}
+                                  </div>
+                              )}
                           </div>
                       );
                   })()
@@ -564,96 +961,39 @@ export const EscrowRecoveryPanel = ({
                   !existingHold &&
                   view === 'start' && (
                       <>
-                          {showPinFlow ? (
-                              <div className="space-y-4">
-                                  <h3 className="text-xl font-semibold text-grayscale-900">
-                                      Enter my recovery PIN
-                                  </h3>
-                                  <p className="text-sm text-grayscale-600 leading-relaxed">
-                                      Enter your 6-digit PIN for instant recovery.
+                          <div className="p-4 bg-grayscale-10 border border-grayscale-200 rounded-2xl flex items-start gap-3 mb-5">
+                              <IonIcon
+                                  icon={shieldCheckmarkOutline}
+                                  className="text-grayscale-900 text-xl mt-0.5 shrink-0"
+                              />
+                              <div className="space-y-v3-2">
+                                  <p className="text-sm text-grayscale-700 leading-relaxed">
+                                      Wait 7 days, then return to this browser to restore your
+                                      account.
                                   </p>
-                                  <div className="flex justify-center py-2">
-                                      <RecoveryPinInput
-                                          value={pinInput}
-                                          onChange={val => {
-                                              setPinInput(val);
-                                              setPinError('');
-                                          }}
-                                          onComplete={handlePinRecover}
-                                          disabled={loading}
-                                          error={!!pinError}
-                                      />
-                                  </div>
-                                  {pinError && (
-                                      <p className="text-sm text-red-600 text-center">{pinError}</p>
-                                  )}
-                                  {loading && (
-                                      <div className="flex justify-center">
-                                          {spinner('Verifying...')}
-                                      </div>
-                                  )}
-                                  <button
-                                      onClick={() => setShowPinFlow(false)}
-                                      className="w-full py-2.5 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
-                                      disabled={loading}
-                                  >
-                                      I don't have a PIN
-                                  </button>
+                                  {emailSenderNote('code')}
                               </div>
-                          ) : (
-                              <>
-                                  {pinError && (
-                                      <div
-                                          role="alert"
-                                          className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5 mb-4"
-                                      >
-                                          <IonIcon
-                                              icon={alertCircleOutline}
-                                              className="text-red-400 text-lg mt-0.5 shrink-0"
-                                          />
-                                          <span className="text-sm text-red-700 leading-relaxed">
-                                              {pinError}
-                                          </span>
-                                      </div>
-                                  )}
-                                  <div className="p-4 bg-grayscale-10 border border-grayscale-200 rounded-2xl flex items-start gap-3 mb-5">
-                                      <IonIcon
-                                          icon={shieldCheckmarkOutline}
-                                          className="text-grayscale-900 text-xl mt-0.5 shrink-0"
-                                      />
-                                      <p className="text-sm text-grayscale-700 leading-relaxed">
-                                          Wait 7 days, then return to this browser to restore your
-                                          account.
-                                      </p>
-                                  </div>
-                                  <button
-                                      className={button}
-                                      disabled={!loaded || loading || !storageAvailable}
-                                      onClick={() =>
-                                          void run(async () => {
-                                              const result = await onStart();
-                                              await handleStarted(result);
-                                          })
-                                      }
-                                  >
-                                      {loading
-                                          ? spinner('Starting recovery...')
-                                          : 'Start a 7-day recovery'}
-                                  </button>
-                                  {pinAvailable && !pinBlocked && (
-                                      <button
-                                          onClick={() => {
-                                              setPinError('');
-                                              setPinInput('');
-                                              setShowPinFlow(true);
-                                          }}
-                                          disabled={loading}
-                                          className="w-full mt-1 py-2.5 min-h-[44px] text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors disabled:opacity-40"
-                                      >
-                                          {m['recovery.pin.useInstead']()}
-                                      </button>
-                                  )}
-                              </>
+                          </div>
+                          <button
+                              className={button}
+                              disabled={!loaded || loading || !storageAvailable}
+                              onClick={() =>
+                                  void run(async () => {
+                                      const result = await onStart();
+                                      await handleStarted(result);
+                                  })
+                              }
+                          >
+                              {loading ? spinner('Starting recovery...') : 'Start a 7-day recovery'}
+                          </button>
+                          {onUsePin && (
+                              <button
+                                  onClick={onUsePin}
+                                  disabled={loading}
+                                  className="w-full mt-1 py-2.5 min-h-[44px] text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors disabled:opacity-40"
+                              >
+                                  {m['recovery.pin.useInstead']()}
+                              </button>
                           )}
                       </>
                   )}

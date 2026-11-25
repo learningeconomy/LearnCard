@@ -42,7 +42,19 @@ const LOCAL_TEMPLATE_MAP: Record<string, TemplateId> = {
     'guardian-email-otp': 'guardian-email-otp',
     'guardian-rejected-credential': 'guardian-rejected-credential',
     'credential-updated': 'credential-updated',
+    'campaign-announcement': 'announcement',
+    'contract-request-invite': 'contract-request-invite',
 };
+
+/** Local templates with no legacy Postmark alias. A failure is thrown, never retried through an alias. */
+const LOCAL_ONLY_TEMPLATES = [
+    'credential-updated',
+    'campaign-announcement',
+    'contract-request-invite',
+];
+
+/** Templates whose errors are not logged, because the error text can contain the recipient address. */
+const QUIET_TEMPLATES = ['campaign-announcement', 'contract-request-invite'];
 
 export class PostmarkAdapter implements DeliveryService {
     private readonly client: ServerClient;
@@ -51,7 +63,65 @@ export class PostmarkAdapter implements DeliveryService {
         this.client = new ServerClient(apiKey);
     }
 
+    private readonly broadcastStreams = new Map<string, Promise<void>>();
+
+    /** Validate once per adapter/wave; failed checks are never cached. */
+    public async assertBroadcastStream(streamId?: string): Promise<void> {
+        if (!streamId || streamId.toLowerCase() === 'outbound')
+            throw new Error('Campaign email requires a broadcast stream');
+        let check = this.broadcastStreams.get(streamId);
+        if (!check) {
+            check = this.client.getMessageStream(streamId).then(stream => {
+                if (stream.MessageStreamType !== 'Broadcasts')
+                    throw new Error('Campaign email requires a Postmark Broadcast stream');
+            });
+            this.broadcastStreams.set(streamId, check);
+        }
+        try {
+            await check;
+        } catch {
+            this.broadcastStreams.delete(streamId);
+            throw new Error('Campaign Postmark Broadcast stream validation failed');
+        }
+    }
+
+    /** Prepare without sending, so callers can render before reserving a recipient. */
+    public async prepareCampaignEmail(notification: Notification): Promise<() => Promise<void>> {
+        await this.assertBroadcastStream(notification.messageStream);
+        const branding = resolveBranding(notification.branding);
+        const rendered = await renderEmail(
+            'announcement',
+            branding,
+            notification.templateModel as TemplateDataMap['announcement'],
+            notification.locale
+        );
+        const brandName =
+            notification.branding?.brandName || environment.POSTMARK_BRAND_NAME || 'LearnCard';
+        const from = notification.branding?.fromDomain
+            ? buildFromAddress(brandName, `support@${notification.branding.fromDomain}`)
+            : buildFromAddress(
+                  brandName,
+                  environment.POSTMARK_FROM_EMAIL || 'support@learningeconomy.io'
+              );
+        return async () => {
+            await this.client.sendEmail({
+                From: from,
+                To: notification.contactMethod.value,
+                Subject: notification.subject ?? rendered.subject,
+                HtmlBody: rendered.html,
+                TextBody: rendered.text,
+                MessageStream: notification.messageStream,
+                Headers: notification.headers,
+            });
+        };
+    }
+
     public async send(notification: Notification): Promise<void> {
+        if (notification.templateId === 'campaign-announcement') {
+            const deliver = await this.prepareCampaignEmail(notification);
+            await deliver();
+            return;
+        }
         const defaultFrom = environment.POSTMARK_FROM_EMAIL || 'support@learningeconomy.io';
         const defaultBrandName = environment.POSTMARK_BRAND_NAME || 'LearnCard';
 
@@ -82,12 +152,13 @@ export class PostmarkAdapter implements DeliveryService {
                     notification.locale
                 );
             } catch (renderError) {
-                console.error(
-                    `[PostmarkAdapter] Local render failed for "${notification.templateId}":`,
-                    renderError
-                );
+                if (!QUIET_TEMPLATES.includes(notification.templateId))
+                    console.error(
+                        `[PostmarkAdapter] Local render failed for "${notification.templateId}":`,
+                        renderError
+                    );
                 // This template is owned locally; there is no legacy provider alias.
-                if (notification.templateId === 'credential-updated') throw renderError;
+                if (LOCAL_ONLY_TEMPLATES.includes(notification.templateId)) throw renderError;
             }
 
             if (rendered) {
@@ -95,21 +166,23 @@ export class PostmarkAdapter implements DeliveryService {
                     await this.client.sendEmail({
                         From: from,
                         To: notification.contactMethod.value,
-                        Subject: rendered.subject,
+                        Subject: notification.subject ?? rendered.subject,
                         HtmlBody: rendered.html,
                         TextBody: rendered.text,
                         MessageStream: notification.messageStream,
+                        Headers: notification.headers,
                     });
 
                     return;
                 } catch (sendError) {
-                    console.error(
-                        `[PostmarkAdapter] sendEmail API failed for "${notification.templateId}":`,
-                        sendError
-                    );
+                    if (!QUIET_TEMPLATES.includes(notification.templateId))
+                        console.error(
+                            `[PostmarkAdapter] sendEmail API failed for "${notification.templateId}":`,
+                            sendError
+                        );
                     // A lost provider acknowledgement may already have sent the email.
                     // Do not bypass the refresh delivery claim with a second attempt.
-                    if (notification.templateId === 'credential-updated') throw sendError;
+                    if (LOCAL_ONLY_TEMPLATES.includes(notification.templateId)) throw sendError;
                 }
             }
         }
@@ -122,6 +195,7 @@ export class PostmarkAdapter implements DeliveryService {
                 TemplateAlias: notification.templateId,
                 TemplateModel: notification.templateModel,
                 MessageStream: notification.messageStream,
+                Headers: notification.headers,
             });
         } catch (error) {
             const detail = error instanceof Error ? error.message : String(error);
@@ -230,6 +304,13 @@ export class PostmarkAdapter implements DeliveryService {
                 return {
                     issuer: model.issuer,
                     credential: model.credential,
+                };
+
+            case 'contract-request-invite':
+                return {
+                    inviteUrl: model.inviteUrl,
+                    referrer: model.referrer,
+                    contractOwner: model.contractOwner,
                 };
 
             default:

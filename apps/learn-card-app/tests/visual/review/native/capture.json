@@ -1,0 +1,42 @@
+{
+    "capturedOn": "2026-10-19",
+    "sourceParentCommit": "59fcd78633d4d1fd9324beeac3be2252e1612611",
+    "application": "LearnCard Capacitor app (normal production Vite bundle, Debug simulator shell)",
+    "bundleId": "com.learncard.app",
+    "nativeVersion": "8.3",
+    "device": "iPhone 17 Pro simulator",
+    "os": "iOS 26.4",
+    "xcode": "26.4.1 (17E202)",
+    "account": "Existing public demo account",
+    "durationSeconds": 37.695131,
+    "localOverrides": {
+        "CapacitorUpdater.autoUpdate": false,
+        "server.url": null
+    },
+    "verified": [
+        "Passport navigation and header",
+        "Achievement credential grid with restored row gutters",
+        "My Apps with profile/alerts controls",
+        "Search and clearing search",
+        "Open/close side menu"
+    ],
+    "notVerified": [
+        "Physical devices",
+        "iOS 16.4 minimum runtime",
+        "Android",
+        "Camera/push integrations",
+        "Credential issuance",
+        "Profile/account writes"
+    ],
+    "assetsSha256": {
+        "ios-grid-before-spacing-fix.png": "d50929921c6f27cb769ac53f2c2c7cad42cff4d7e71ed5b43aa67e840ed86413",
+        "ios-passport-tailwind4.png": "47b7bfb65b36b2fd395b709b670b0a5f661f7fd545ae9fab77d9ee44f711764c",
+        "ios-grid-tailwind4.png": "058d10d535d0d09024aa1deae847b86a5aaa275cd76e9524956089176456f01b",
+        "ios-tailwind4.mp4": "6ccd5850605479c4e82907cd12341df6e368b3530ce9307862adf21fc420ae04",
+        "ios-launchpad-tailwind4.png": "480c61805cbdbb1d9f2078257385290e2c4dc5ce6d15120d62aa89e5edaa04d9"
+    },
+    "productionCssSourceSha256": {
+        "apps/learn-card-app/src/tailwind.css": "6f2ea493a92ea243986f665ba2b9e98fe4f69a777064143902799deeeb08ace2",
+        "packages/learn-card-base/src/assets/styles/tailwind-ionic-compat.css": "d9c7fd55253d117daf7c7cbf4b95c4cba15d133e9715dce45f84acfe3b6dbe7e"
+    }
+}

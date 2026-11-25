@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, StrictBool
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_terms_write_credentials import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWriteCredentials
 from typing import Optional, Set
 from typing_extensions import Self
@@ -29,7 +29,7 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWrite(
     CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWrite
     """ # noqa: E501
     credentials: CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWriteCredentials
-    personal: Dict[str, Optional[StrictBool]]
+    personal: Dict[str, StrictBool]
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["credentials", "personal"]
 
@@ -60,9 +60,8 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWrite(
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([

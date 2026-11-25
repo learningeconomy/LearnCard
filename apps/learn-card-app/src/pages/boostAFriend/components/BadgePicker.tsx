@@ -161,7 +161,7 @@ export const BadgePicker: React.FC<BadgePickerProps> = ({
                                 value={search}
                                 onChange={e => setSearch(e.target.value)}
                                 placeholder={m['boostAFriend.pick.search']()}
-                                className="w-full py-3.5 pl-12 pr-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white/80 transition-all"
+                                className="w-full py-3.5 pl-12 pr-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white/80 transition-all"
                             />
                         </div>
                     </div>
@@ -215,9 +215,9 @@ export const BadgePicker: React.FC<BadgePickerProps> = ({
                             )}
                         </div>
                     ) : (
-                        <div className="space-y-8">
+                        <div className="space-y-v3-8">
                             {groupedPresets?.map((groupData, groupIndex) => (
-                                <div key={groupData.group.id} className="space-y-3">
+                                <div key={groupData.group.id} className="space-y-v3-3">
                                     <div className="px-6 sm:px-1">
                                         <h2 className="text-lg sm:text-xl font-semibold text-grayscale-900">
                                             {groupData.group.id === 'more'
@@ -285,7 +285,7 @@ const BadgeTile: React.FC<{
         <button
             type="button"
             onClick={onSelect}
-            className="group w-full aspect-square relative overflow-hidden rounded-2xl sm:rounded-3xl border border-grayscale-200 shadow-sm hover:shadow-md transition-all duration-300 text-left motion-safe:hover:-translate-y-0.5 active:scale-[0.97] motion-safe:animate-pop-in"
+            className="group w-full aspect-square relative overflow-hidden rounded-2xl sm:rounded-3xl border border-grayscale-200 shadow-xs hover:shadow-md transition-all duration-300 text-left motion-safe:hover:-translate-y-0.5 active:scale-[0.97] motion-safe:animate-pop-in"
             style={{ animationDelay: `${Math.min(index * 50, 500)}ms` }}
         >
             {isRealImage ? (
@@ -304,7 +304,9 @@ const BadgeTile: React.FC<{
 
             <div
                 className={`absolute inset-x-0 bottom-0 pt-12 pb-3 px-3 sm:px-4 flex items-end ${
-                    isRealImage ? 'bg-gradient-to-t from-black/80 via-black/30 to-transparent' : ''
+                    isRealImage
+                        ? 'bg-linear-to-t/srgb from-black/80 via-black/30 to-transparent'
+                        : ''
                 }`}
             >
                 <span

@@ -67,7 +67,7 @@ const BoostCMSTitleForm: React.FC<{
                 onIonInput={e => handleStateChange('name', e?.detail?.value)}
                 placeholder={placeHolder}
                 className={`relative bg-grayscale-900 text-grayscale-400 rounded-[15px] px-[16px] py-[4px] font-medium text-base ${
-                    _disabled ? '!opacity-70' : ''
+                    _disabled ? 'opacity-70!' : ''
                 }`}
                 disabled={_disabled}
                 rows={3}

@@ -90,7 +90,7 @@ const SkillDetails: React.FC<SkillDetailsProps> = ({ frameworkId, skillId, crede
                         />
                     </div>
 
-                    <div className="pt-[20px] pb-[10px] border-t-[1px] border-grayscale-200 border-solid">
+                    <div className="pt-[20px] pb-[10px] border-t border-grayscale-200 border-solid">
                         <button
                             onClick={openBrowseFrameworkModal}
                             className="text-grayscale-900 font-poppins text-[17px] leading-[130%] flex items-center gap-[5px] w-full"
@@ -100,7 +100,7 @@ const SkillDetails: React.FC<SkillDetailsProps> = ({ frameworkId, skillId, crede
                                 <FrameworkSkillsCount
                                     frameworkId={frameworkId}
                                     sourceURI={frameworkData?.framework?.sourceURI}
-                                    className="!text-grayscale-700"
+                                    className="text-grayscale-700!"
                                     includeSkillWord
                                 />
                                 <SlimCaretRight className="text-grayscale-700" />

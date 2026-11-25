@@ -38,6 +38,7 @@ const ModalLayout: React.FC<{
     allowScroll?: boolean;
     buttonText?: string;
     handleOnClick: () => void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     children: any;
 }> = ({ allowScroll = false, buttonText, handleOnClick, children }) => {
     const width = useScreenWidth(true);

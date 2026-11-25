@@ -1,11 +1,13 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { setLocale } from '../../paraglide/runtime.js';
+import * as m from '../../paraglide/messages.js';
 
 import { clrAchievementIdAssociations } from '../../../../../packages/credential-library/src/fixtures/clr/achievement-id-associations';
-import { normalizeClrTranscriptDisplayModel } from '../../helpers/clrRenderer.helpers';
+import { normalizeClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 
-import type { ResultDisplayModel } from '../../helpers/clrRenderer.helpers';
+import type { ResultDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 import ClrResultWithScaleList from './ClrResultWithScaleList';
 
 const model = normalizeClrTranscriptDisplayModel(
@@ -20,6 +22,61 @@ const resultFor = (recordName: string) => {
 };
 
 describe('ClrResultWithScaleList', () => {
+    it('localizes the numeric scale description for screen readers', () => {
+        setLocale('ar', { reload: false });
+        try {
+            render(<ClrResultWithScaleList results={resultFor('Applied Systems Design')} />);
+            expect(
+                screen.getByRole('img', {
+                    name: m['clrRenderer.numericScaleWithPassing']({
+                        min: '0',
+                        max: '100',
+                        value: '86',
+                        required: '70',
+                    }),
+                })
+            ).toBeInTheDocument();
+        } finally {
+            setLocale('en', { reload: false });
+        }
+    });
+    it('renders rubric-only and status-only results without inventing numeric values', () => {
+        const normalized = normalizeClrTranscriptDisplayModel({
+            type: ['ClrCredential'],
+            credentialSubject: {
+                verifiableCredential: [
+                    {
+                        id: 'assessment',
+                        credentialSubject: {
+                            achievement: {
+                                achievementType: 'Assessment',
+                                resultDescription: [
+                                    {
+                                        id: 'rubric',
+                                        name: 'Practice',
+                                        rubricCriterionLevel: [
+                                            { id: 'advanced', name: 'Advanced' },
+                                        ],
+                                    },
+                                ],
+                            },
+                            result: [
+                                { resultDescription: 'rubric', achievedLevel: 'advanced' },
+                                { status: 'Completed' },
+                            ],
+                        },
+                    },
+                ],
+            },
+        });
+        const results = normalized.assessments[0].results;
+        expect(results.every(result => result.value === undefined)).toBe(true);
+        render(<ClrResultWithScaleList results={results} />);
+        expect(screen.getByRole('list', { name: 'Rubric scale' })).toHaveTextContent('Advanced');
+        expect(screen.getByText('Completed')).toBeInTheDocument();
+        expect(screen.queryByText('undefined')).not.toBeInTheDocument();
+    });
+
     it('positions ordinal and numeric values with passing markers', () => {
         const { rerender } = render(
             <ClrResultWithScaleList results={resultFor('Foundations of Systems Thinking')} />

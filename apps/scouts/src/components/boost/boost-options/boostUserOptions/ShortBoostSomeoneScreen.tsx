@@ -71,8 +71,8 @@ const ShortBoostSomeoneScreen: React.FC<ShortBoostSomeoneScreenProps> = ({
                 ignoreBoostSearchRestriction={ignoreBoostSearchRestriction}
             />,
             {
-                className: '!p-0',
-                sectionClassName: '!p-0',
+                className: 'p-0!',
+                sectionClassName: 'p-0!',
             },
             { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
         );
@@ -101,10 +101,10 @@ const ShortBoostSomeoneScreen: React.FC<ShortBoostSomeoneScreenProps> = ({
                     <div className="boost-issue-container w-full flex items-center justify-between mx-[20px] text-grayscale-900">
                         <p className="boost-issue-to-text text-[25px]">{m['boost.addSomeone']()}</p>
                         <div
-                            className="flex-shrink-0 cursor-pointer"
+                            className="shrink-0 cursor-pointer"
                             onClick={() => presentBoostSomeoneModal()}
                         >
-                            <Plus className="w-8 h-auto round-bottom-shadow-btn w-[50px] h-[50px] flex-shrink-0 p-[8px] flex justify-center items-center" />
+                            <Plus className="w-8 h-auto round-bottom-shadow-btn w-[50px] h-[50px] shrink-0 p-[8px] flex justify-center items-center" />
                         </div>
                     </div>
                 </IonCol>
@@ -112,7 +112,7 @@ const ShortBoostSomeoneScreen: React.FC<ShortBoostSomeoneScreenProps> = ({
                 <IonCol className="w-full flex flex-col items-center justify-center mt-[20px]">
                     <button
                         onClick={() => handleBoostSomeone(localState)}
-                        className="flex items-center justify-center bg-sp-purple-base rounded-full px-[18px] py-[12px] font-medium text-white text-2xl w-full shadow-lg disabled:opacity-[50%]"
+                        className="flex items-center justify-center bg-sp-purple-base rounded-full px-[18px] py-[12px] font-medium text-white text-2xl w-full shadow-lg disabled:opacity-50"
                         disabled={localState?.issueTo.length === 0}
                     >
                         <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}

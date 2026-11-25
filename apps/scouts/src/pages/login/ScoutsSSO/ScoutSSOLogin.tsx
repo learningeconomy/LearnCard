@@ -84,7 +84,7 @@ export const ScoutsSSOLogin: React.FC = () => {
             <IonCol size="12">
                 <IonInput
                     autocapitalize="on"
-                    className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] !px-4 !py-2 font-medium font-notoSans tracking-wide text-base ${
+                    className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] px-4! py-2! font-medium font-notoSans tracking-wide text-base ${
                         errors.username ? 'login-input-email-error' : ''
                     }`}
                     placeholder={m['login.usernamePlaceholder']()}
@@ -97,7 +97,7 @@ export const ScoutsSSOLogin: React.FC = () => {
             <IonCol size="12">
                 <IonInput
                     autocapitalize="on"
-                    className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] !px-4 !py-2 font-medium font-notoSans tracking-wide text-base ${
+                    className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] px-4! py-2! font-medium font-notoSans tracking-wide text-base ${
                         errors.password ? 'login-input-email-error' : ''
                     }`}
                     placeholder={m['common.password']()}

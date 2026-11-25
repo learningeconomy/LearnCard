@@ -103,7 +103,7 @@ const TroopPageMembersBox: React.FC<TroopPageMembersBoxProps> = ({
                     type={typeOverride || scoutNoun}
                 />,
                 {
-                    sectionClassName: '!max-w-[450px]',
+                    sectionClassName: 'max-w-[450px]!',
                 },
                 { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
             );
@@ -132,7 +132,7 @@ const TroopPageMembersBox: React.FC<TroopPageMembersBoxProps> = ({
                     leaderImage={leaderImage}
                     scoutImage={scoutImage}
                 />,
-                { sectionClassName: '!max-w-[450px]' },
+                { sectionClassName: 'max-w-[450px]!' },
                 { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
             );
         } else if (canInviteScout) {
@@ -171,7 +171,7 @@ const TroopPageMembersBox: React.FC<TroopPageMembersBoxProps> = ({
                     boostUri={member.boostUri}
                     type={member?.type}
                 />,
-                { sectionClassName: '!max-w-[400px]' }
+                { sectionClassName: 'max-w-[400px]!' }
             );
         },
         [newModal, credential, handleShare]
@@ -263,7 +263,7 @@ const TroopPageMembersBox: React.FC<TroopPageMembersBoxProps> = ({
                             autocapitalize="on"
                             placeholder={m['troops.members.searchPlh']()}
                             value={searchQuery}
-                            className="!pl-10 text-gray-800 text-[17px] font-notoSans !py-1 w-full"
+                            className="pl-10! text-gray-800 text-[17px] font-notoSans py-1! w-full"
                             onIonInput={e => handleSearch(e.detail.value ?? '')}
                             type="text"
                             clearInput

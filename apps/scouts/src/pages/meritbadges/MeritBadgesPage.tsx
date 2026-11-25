@@ -54,8 +54,8 @@ const MeritBadgesPage: React.FC = () => {
         () =>
             Boolean(
                 myTroopIds?.isNationalAdmin ||
-                    myTroopIds?.isScoutGlobalAdmin ||
-                    myTroopIds?.isTroopLeader
+                myTroopIds?.isScoutGlobalAdmin ||
+                myTroopIds?.isTroopLeader
             ),
         [myTroopIds]
     );
@@ -101,7 +101,7 @@ const MeritBadgesPage: React.FC = () => {
                 handleCloseModal={closeModal}
                 category={CredentialCategoryEnum.meritBadge}
             />,
-            { className: '!p-0', sectionClassName: '!p-0' }
+            { className: 'p-0!', sectionClassName: 'p-0!' }
         );
     }, [newModal, closeModal]);
 
@@ -150,7 +150,7 @@ const MeritBadgesPage: React.FC = () => {
             defaultImg: imgSrc,
             category: BoostCategoryOptionsEnum.meritBadge,
             title: m['meritBadges.title'](),
-            bgFillerColor: '!bg-sp-purple-light-medium',
+            bgFillerColor: 'bg-sp-purple-light-medium!',
             emptyImg: EmptyMeritBadgeIcon,
             emptyMessage: m['meritBadges.emptyMsg'](),
             emptyMessageStyle: 'text-[#4D006E]',

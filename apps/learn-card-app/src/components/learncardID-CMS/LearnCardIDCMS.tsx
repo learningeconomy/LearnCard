@@ -56,6 +56,7 @@ export const LearnCardIDCMS: React.FC<{
         }
     }, []);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const handleSetState = (key: string, value: any) => {
         _setLearnCardID(prevState => {
             return {
@@ -87,10 +88,10 @@ export const LearnCardIDCMS: React.FC<{
         <IonPage>
             <LearnCardIDCMSLayout
                 learnCardID={_learnCardID}
-                layoutClassName="!max-w-[375px] mt-[var(--ion-safe-area-top,0px)]"
+                layoutClassName="max-w-[375px]! mt-[var(--ion-safe-area-top,0px)]"
             >
                 <div className="rounded-t-[20px] shadow-box-bottom flex flex-col">
-                    <div className="w-full flex items-center justify-center flex-col bg-white bg-opacity-70 backdrop-blur-[10px] rounded-t-[20px]">
+                    <div className="w-full flex items-center justify-center flex-col bg-white/70  backdrop-blur-[10px] rounded-t-[20px]">
                         <div className="w-full py-4 max-w-[335px]">
                             <LearnCardID
                                 user={user}
@@ -107,7 +108,7 @@ export const LearnCardIDCMS: React.FC<{
 
                 <div className="bg-white rounded-b-[20px] shadow-soft-bottom">
                     <div className="ion-padding ">
-                        <div className="w-full flex items-center justify-end border-b-solid border-b-grayscale-100 border-b-[2px] pb-2">
+                        <div className="w-full flex items-center justify-end border-b-solid border-b-grayscale-100 border-b-2 pb-2">
                             <p className="font-poppins text-grayscale-600 font-semibold">
                                 {m['learnCardId.display']()}
                             </p>
@@ -208,7 +209,7 @@ export const LearnCardIDCMS: React.FC<{
                         )}
                     </div>
 
-                    <div className="h-[2px] w-full border-b-solid border-b-grayscale-100 border-b-[2px] mt-4" />
+                    <div className="h-[2px] w-full border-b-solid border-b-grayscale-100 border-b-2 mt-4" />
 
                     <div className="ion-padding ">
                         <div className="w-full flex items-end justify-between mb-2 mt-4">

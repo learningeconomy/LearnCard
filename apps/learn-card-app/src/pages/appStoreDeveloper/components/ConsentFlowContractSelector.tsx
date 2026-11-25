@@ -111,10 +111,10 @@ export const ConsentFlowContractSelector: React.FC<ConsentFlowContractSelectorPr
                                     <img
                                         src={selectedContract.image}
                                         alt={selectedContract.name}
-                                        className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                                        className="w-8 h-8 rounded-full object-cover shrink-0"
                                     />
                                 ) : (
-                                    <div className="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center flex-shrink-0">
+                                    <div className="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center shrink-0">
                                         <FileText className="w-4 h-4 text-cyan-600" />
                                     </div>
                                 )}
@@ -133,12 +133,12 @@ export const ConsentFlowContractSelector: React.FC<ConsentFlowContractSelectorPr
                             </>
                         ) : value ? (
                             <>
-                                <FileText className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                                <FileText className="w-5 h-5 text-gray-400 shrink-0" />
                                 <span className="text-sm text-gray-500 truncate">{value}</span>
                             </>
                         ) : (
                             <>
-                                <FileText className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                                <FileText className="w-5 h-5 text-gray-400 shrink-0" />
                                 <span className="text-sm text-gray-400">
                                     {m[
                                         'developerPortal.components.consentFlowContractSelector.selectOrCreate'
@@ -149,7 +149,7 @@ export const ConsentFlowContractSelector: React.FC<ConsentFlowContractSelectorPr
                     </div>
 
                     <ChevronDown
-                        className={`w-5 h-5 text-gray-400 flex-shrink-0 transition-transform ${
+                        className={`w-5 h-5 text-gray-400 shrink-0 transition-transform ${
                             isOpen ? 'rotate-180' : ''
                         }`}
                     />
@@ -183,7 +183,7 @@ export const ConsentFlowContractSelector: React.FC<ConsentFlowContractSelectorPr
                         onClick={openCreateContractModal}
                         className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-100"
                     >
-                        <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                        <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
                             <Plus className="w-4 h-4 text-emerald-600" />
                         </div>
 
@@ -217,7 +217,7 @@ export const ConsentFlowContractSelector: React.FC<ConsentFlowContractSelectorPr
                             placeholder={m[
                                 'developerPortal.components.consentFlowContractSelector.uriPlaceholder'
                             ]()}
-                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                             onClick={e => e.stopPropagation()}
                         />
                     </div>
@@ -242,10 +242,10 @@ export const ConsentFlowContractSelector: React.FC<ConsentFlowContractSelectorPr
                                         <img
                                             src={contract.image}
                                             alt={contract.name}
-                                            className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                                            className="w-8 h-8 rounded-full object-cover shrink-0"
                                         />
                                     ) : (
-                                        <div className="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center flex-shrink-0">
+                                        <div className="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center shrink-0">
                                             <FileText className="w-4 h-4 text-cyan-600" />
                                         </div>
                                     )}
@@ -263,7 +263,7 @@ export const ConsentFlowContractSelector: React.FC<ConsentFlowContractSelectorPr
                                     </div>
 
                                     {contract.uri === value && (
-                                        <Check className="w-5 h-5 text-cyan-500 flex-shrink-0" />
+                                        <Check className="w-5 h-5 text-cyan-500 shrink-0" />
                                     )}
                                 </button>
                             ))}

@@ -1,4 +1,11 @@
 import { z } from 'zod';
+import { escrowBlobIdentity } from '../services/escrow-enclave/blobIdentity';
+import {
+    AuthorityCommitValidator,
+    AuthorityRecordValidator,
+    type AuthorityMutationResult,
+    type AuthorityRecord,
+} from '../services/escrow-enclave/authorityContract';
 import type { Filter } from 'mongodb';
 import { ESCROW_PIN_MAX_ATTEMPTS } from '@learncard/sss-key-manager';
 import { EscrowPinStatusValidator as SharedEscrowPinStatusValidator } from '@learncard/types';
@@ -63,6 +70,14 @@ export const EscrowEnvelopeValidator = z
     .strict();
 
 export const EscrowBlobValidator = z.object({
+    authorityGeneration: z.string().min(1).max(128).optional(),
+    enrollmentVersion: z.number().int().positive().max(Number.MAX_SAFE_INTEGER).optional(),
+    commitReceipt: AuthorityCommitValidator.optional(),
+    authorityStateProof: AuthorityRecordValidator.extend({
+        kind: z.literal('snapshot'),
+    }).optional(),
+    enrollmentEpoch: z.number().int().positive(),
+    blobHash: z.string().regex(/^[0-9a-f]{64}$/),
     envelope: EscrowEnvelopeValidator,
     enclaveKeyId: z.string().regex(/^[A-Za-z0-9._-]{1,128}$/),
     enclaveMode: z.enum(['software', 'nitro']),
@@ -95,9 +110,73 @@ export const EscrowPinValidator = z.object({
     disabledAt: z.date().optional(),
     shareVersion: z.number().int().positive(),
 });
+
+/**
+ * PIN-operation lease TTL. A lease is held across exactly one authority call
+ * (`applyEnrollmentIntent`), which the remote transport bounds at
+ * `ESCROW_ENCLAVE_REMOTE_TIMEOUT_MS` (15 s default, 30 s max). Four times the maximum
+ * leaves room for the Mongo writes around it, so a live request never outlives its
+ * lease; an expired lease means a crash or a lost response, and is settled against
+ * the authority's state by the next request that touches the account.
+ */
+export const ESCROW_ENROLLMENT_LEASE_TTL_MS = 120_000;
+/** Same bound for a PIN compare: one `releaseEscrow` authority call per reservation. */
+export const ESCROW_PIN_COMPARE_TTL_MS = 120_000;
+
+/**
+ * Per-account PIN-operation lease (remote/authority mode). Claimed before an
+ * owner-signed enrollment intent is sent to the authority, and records what lca-api
+ * must persist if the authority commits, so the result can be adopted even when the
+ * request that sent it never finishes its own write. A security rotation (revoke,
+ * wiping rebind) drops it with the escrow it guards; see `buildSecurityRotationUpdate`.
+ */
+export const EscrowEnrollmentLeaseValidator = z.object({
+    id: z.string().min(1).max(128),
+    expiresAt: z.date(),
+    /** An owner-signed intent's action, or the delegated background `rewrap`. */
+    action: z.enum(['enroll', 'replace', 'carry', 'disable', 'rewrap']),
+    /** The signed intent's PIN action: anything but `keep` starts a new PIN generation. */
+    pinAction: z.enum(['set', 'change', 'clear', 'keep']),
+    /** `fresh`: new PIN record from `pinSalt`; `keep`: the current record; `clear`: none. */
+    pin: z.enum(['fresh', 'keep', 'clear']),
+    pinSalt: EscrowPinSaltValidator.optional(),
+    optOut: z.boolean().optional(),
+    shareVersion: z.number().int().positive(),
+    authorityGeneration: z.string().min(1).max(128),
+    /** Authority state read before the call; a commit advances both by exactly one. */
+    expectedEnrollmentVersion: z.number().int().nonnegative(),
+    /** Absent when the caller did not read the authority first (disable). */
+    expectedPinGeneration: z.number().int().nonnegative().optional(),
+    enrollmentEpoch: z.number().int().positive(),
+    /** The Mongo blob identity the operation replaces (null: none). */
+    sourceBlobHash: z.string().nullable(),
+    measurements: EscrowBlobValidator.shape.measurements,
+});
+export type EscrowEnrollmentLease = z.infer<typeof EscrowEnrollmentLeaseValidator>;
+
+/** One in-flight PIN compare: from its reservation until the authority answers. */
+export const EscrowPinCompareValidator = z.object({
+    id: z.string().min(1).max(128),
+    expiresAt: z.date(),
+});
+
 export const EscrowPinStatusValidator = SharedEscrowPinStatusValidator.extend({
     salt: EscrowPinSaltValidator.optional(),
 });
+
+/**
+ * Verified wrong entries only. `failedAttempts` is the charged budget (it also counts
+ * successful releases and unresolved reservations), so it is used only when it is 0,
+ * which proves no wrong entry. A legacy record with charges but no verified counter
+ * omits the field rather than guessing.
+ */
+const getVerifiedWrongPinAttempts = (
+    pin: NonNullable<MongoUserKeyType['escrowPin']>
+): { wrongAttempts?: number } => {
+    if (pin.verifiedFailedAttempts !== undefined)
+        return { wrongAttempts: pin.verifiedFailedAttempts };
+    return pin.failedAttempts === 0 ? { wrongAttempts: 0 } : {};
+};
 
 export const getEscrowPinStatus = (
     userKey: MongoUserKeyType
@@ -115,6 +194,7 @@ export const getEscrowPinStatus = (
         enabled,
         attemptsRemaining: pin ? Math.max(0, ESCROW_PIN_MAX_ATTEMPTS - pin.failedAttempts) : 0,
         ...(enabled ? { salt: pin.salt } : {}),
+        ...(pin ? getVerifiedWrongPinAttempts(pin) : {}),
     };
 };
 
@@ -122,6 +202,10 @@ const MongoUserKeyBaseValidator = z.object({
     escrowBlob: EscrowBlobValidator.optional(),
     escrowPin: EscrowPinValidator.optional(),
     escrowOptedOutAt: z.date().optional(),
+    // Authority mode only: the PIN-operation lease and the in-flight PIN compares it
+    // excludes (see claimEscrowEnrollmentLease).
+    escrowEnrollmentLease: EscrowEnrollmentLeaseValidator.optional(),
+    escrowPinCompares: z.array(EscrowPinCompareValidator).optional(),
     _id: z.string().optional(),
 
     contactMethod: ContactMethodValidator,
@@ -157,9 +241,24 @@ const MongoUserKeyBaseValidator = z.object({
 
     migratedFromWeb3Auth: z.boolean().default(false),
     migratedAt: z.date().optional(),
+    /**
+     * The login whose Web3Auth key this account was migrated from, recorded by
+     * `/keys/migrate` only when that login is the account's sole login at security
+     * epoch 0. Web3Auth derives a key from the login alone, so only this login
+     * still derives the account's key: a Web3Auth-mode client may sign in an SSS
+     * account only through it (see `isWeb3AuthLogin`). Absent means no login is
+     * known to be safe; migrations from before this field was added have none.
+     */
+    web3AuthLogin: AuthProviderMappingValidator.optional(),
 
     sssActivationState: z.enum(['provisional', 'active']).optional(),
     provisionalCreatedAt: z.date().optional(),
+
+    // Security epoch: incremented by every wiping rotation (identity rebind and
+    // "Secure my account"). Every recovery-session token records it at mint, and the
+    // rebind/re-link writes only land while it still matches, so a revoke or rebind
+    // invalidates every older token. Absent on legacy records; read as 0.
+    securityEpoch: z.number().int().nonnegative().optional(),
 
     createdAt: z.date(),
     updatedAt: z.date(),
@@ -321,6 +420,11 @@ export const createUserKeysIndexes = async (): Promise<void> => {
 
     await runIndexMigrationOperation('create primary DID index', () =>
         collection.createIndex({ primaryDid: 1 })
+    );
+    // findUserKeyByDid ORs primaryDid with linkedDids; Mongo only uses indexes for an $or when
+    // every clause is indexed, so without this the hot preferences lock lookup scans the collection.
+    await runIndexMigrationOperation('create linked DID index', () =>
+        collection.createIndex({ linkedDids: 1 }, { name: 'linked_dids_lookup' })
     );
     await runIndexMigrationOperation('create verified recovery email index', () =>
         collection.createIndex(
@@ -729,35 +833,156 @@ const getAuthProviderFilter = (authProvider: AuthProviderMapping): Filter<MongoU
     authProviders: { $elemMatch: authProvider },
 });
 
+/**
+ * Whether Web3Auth, signing in through `authProvider`, derives this account's key.
+ * Web3Auth derives a key from the login alone, so this holds only for the login
+ * the account's key came from; any other login (added by PIN sign-in, recovery or
+ * a revoke) derives a different, empty identity. Web3Auth-mode clients stop every
+ * existing account for which this is false.
+ *
+ * - A recorded `web3AuthLogin` decides it: true only for that login, on a record
+ *   that is still Web3Auth (mid-migration) or finished migrating from it.
+ * - Without one, only a still-Web3Auth record (e.g. a migration that started
+ *   before logins were recorded) qualifies, and only through its sole login at
+ *   security epoch 0: the same evidence `/keys/migrate` requires to record it.
+ *   A migrated or SSS-native record without one is never confirmed.
+ */
+export const isWeb3AuthLogin = (
+    userKey: Pick<
+        MongoUserKeyType,
+        'keyProvider' | 'migratedFromWeb3Auth' | 'web3AuthLogin' | 'authProviders' | 'securityEpoch'
+    >,
+    authProvider: AuthProviderMapping
+): boolean => {
+    const isThisLogin = (login: AuthProviderMapping | undefined): boolean =>
+        login?.type === authProvider.type && login?.id === authProvider.id;
+    const stillWeb3Auth = (userKey.keyProvider ?? 'sss') === 'web3auth';
+
+    if (userKey.web3AuthLogin) {
+        return (
+            isThisLogin(userKey.web3AuthLogin) &&
+            (stillWeb3Auth || userKey.migratedFromWeb3Auth === true)
+        );
+    }
+
+    const logins = userKey.authProviders ?? [];
+    return (
+        stillWeb3Auth &&
+        logins.length === 1 &&
+        isThisLogin(logins[0]) &&
+        getSecurityEpoch(userKey) === 0
+    );
+};
+
+/** The account's security epoch; a legacy record without the field is at epoch 0. */
+export const getSecurityEpoch = (userKey: Pick<MongoUserKeyType, 'securityEpoch'>): number =>
+    userKey.securityEpoch ?? 0;
+
+/**
+ * Match only while the account is still at `epoch`. Epoch 0 also matches a legacy
+ * record without the field (`$not: {$gt: 0}` matches 0 and a missing field). A
+ * field-level condition, so it composes with any other filter, including `$or`.
+ */
+const getSecurityEpochFilter = (epoch: number): Filter<MongoUserKeyType> =>
+    epoch === 0 ? { securityEpoch: { $not: { $gt: 0 } } } : { securityEpoch: epoch };
+
+/** Pipeline expression: every non-escrow method, plus one confirmed escrow method. */
+const confirmedEscrowMethodExpression = (now: Date, shareVersion: number) => ({
+    $concatArrays: [
+        {
+            $filter: {
+                input: { $ifNull: ['$recoveryMethods', []] },
+                as: 'm',
+                cond: { $ne: ['$$m.type', 'escrow'] },
+            },
+        },
+        [
+            {
+                type: 'escrow',
+                createdAt: now,
+                confirmationStatus: 'confirmed',
+                confirmedAt: now,
+                shareVersion,
+            },
+        ],
+    ],
+});
+
 /** Persist verified escrow and its confirmed descriptor atomically. */
 export const setEscrowBlobByAuthProvider = async (
     authProvider: AuthProviderMapping,
-    blob: EscrowBlob,
+    blob: Omit<EscrowBlob, 'enrollmentEpoch' | 'blobHash'>,
     expectedShareVersion: number,
     pin?: { salt: string },
-    carryFrom?: { blob: EscrowBlob; pin: NonNullable<MongoUserKeyType['escrowPin']> }
+    carryFrom?: { blob: EscrowBlob; pin: NonNullable<MongoUserKeyType['escrowPin']> },
+    authority?: {
+        enrollmentEpoch: number;
+        expectedBlob?: EscrowBlob;
+        expectedPin?: MongoUserKeyType['escrowPin'];
+    },
+    /**
+     * Same-PIN budget refresh after a PIN sign-in (E): write only while the current PIN
+     * still shows exactly these charges, so a guess reserved or resolved after the
+     * client's check is never wiped by the fresh PIN generation.
+     */
+    expectedPinCharges?: { failedAttempts: number; verifiedFailedAttempts: number }
 ): Promise<MongoUserKeyType | null> => {
     const now = new Date();
-    const parsed = EscrowBlobValidator.safeParse(blob);
+    const parsed = EscrowBlobValidator.omit({ enrollmentEpoch: true, blobHash: true }).safeParse(
+        blob
+    );
     if (!parsed.success) throw new Error('Invalid escrow payload');
-    const validated = parsed.data;
+    const blobHash = escrowBlobIdentity(parsed.data.envelope);
+    const assembled = EscrowBlobValidator.safeParse({
+        ...parsed.data,
+        blobHash,
+        enrollmentEpoch: authority?.enrollmentEpoch ?? 1,
+    });
+    if (!assembled.success) throw new Error('Invalid escrow payload');
+    const { enrollmentEpoch: _initialEpoch, ...validated } = assembled.data;
     if (
         validated.shareVersion !== expectedShareVersion ||
         validated.enclaveKeyId !== validated.envelope.keyId
-    ) {
+    )
         return null;
-    }
     return getUserKeysCollection().findOneAndUpdate(
         {
             ...getAuthProviderFilter(authProvider),
             shareVersion: expectedShareVersion,
             escrowOptedOutAt: { $exists: false },
             ...(carryFrom ? { escrowBlob: carryFrom.blob, escrowPin: carryFrom.pin } : {}),
+            ...(expectedPinCharges
+                ? {
+                      'escrowPin.failedAttempts': expectedPinCharges.failedAttempts,
+                      'escrowPin.verifiedFailedAttempts': expectedPinCharges.verifiedFailedAttempts,
+                      'escrowPin.disabledAt': { $exists: false },
+                  }
+                : {}),
+            ...(authority
+                ? {
+                      escrowBlob: authority.expectedBlob ?? { $exists: false },
+                      escrowPin: authority.expectedPin ?? { $exists: false },
+                  }
+                : {}),
         },
         [
             {
                 $set: {
-                    escrowBlob: { $literal: validated },
+                    escrowBlob: {
+                        $mergeObjects: [
+                            { $literal: validated },
+                            {
+                                enrollmentEpoch: authority
+                                    ? authority.enrollmentEpoch
+                                    : {
+                                          $add: [
+                                              { $ifNull: ['$escrowBlob.enrollmentEpoch', 0] },
+                                              1,
+                                          ],
+                                      },
+                            },
+                        ],
+                    },
                     escrowPin: carryFrom
                         ? { $literal: { ...carryFrom.pin, shareVersion: expectedShareVersion } }
                         : pin
@@ -771,26 +996,7 @@ export const setEscrowBlobByAuthProvider = async (
                             }
                           : '$$REMOVE',
                     updatedAt: now,
-                    recoveryMethods: {
-                        $concatArrays: [
-                            {
-                                $filter: {
-                                    input: { $ifNull: ['$recoveryMethods', []] },
-                                    as: 'm',
-                                    cond: { $ne: ['$$m.type', 'escrow'] },
-                                },
-                            },
-                            [
-                                {
-                                    type: 'escrow',
-                                    createdAt: now,
-                                    confirmationStatus: 'confirmed',
-                                    confirmedAt: now,
-                                    shareVersion: expectedShareVersion,
-                                },
-                            ],
-                        ],
-                    },
+                    recoveryMethods: confirmedEscrowMethodExpression(now, expectedShareVersion),
                 },
             },
         ],
@@ -798,13 +1004,276 @@ export const setEscrowBlobByAuthProvider = async (
     );
 };
 
+/** No PIN compare reserved within its TTL (missing or all-expired markers). */
+const noLiveEscrowPinCompare = (now: Date): Filter<MongoUserKeyType> => ({
+    escrowPinCompares: { $not: { $elemMatch: { expiresAt: { $gt: now } } } },
+});
+
+export interface ClaimEscrowEnrollmentLeaseInput {
+    lease: EscrowEnrollmentLease;
+    /** The blob and PIN the caller read; any change since (a compare's charge) misses. */
+    expectedBlob?: EscrowBlob;
+    expectedPin?: MongoUserKeyType['escrowPin'];
+    /** Enroll paths only: an opted-out account never gets a lease. */
+    requireOptedIn: boolean;
+}
+
+/**
+ * Claim the account's PIN-operation lease before an enrollment intent goes to the
+ * authority. One atomic write, conditioned on: no other lease (an expired one must be
+ * settled first, see the escrow router), no PIN compare in flight, and the exact blob
+ * and PIN (so its charges) the caller validated. Returns null, with nothing sent to
+ * the authority, when any of those changed. While the lease is held,
+ * `reserveEscrowPinAttempt` refuses new compares, so the authority's operation
+ * revision cannot move under the intent.
+ */
+export const claimEscrowEnrollmentLease = async (
+    authProvider: AuthProviderMapping,
+    input: ClaimEscrowEnrollmentLeaseInput
+): Promise<MongoUserKeyType | null> => {
+    const lease = EscrowEnrollmentLeaseValidator.parse(input.lease);
+    const now = new Date();
+    if (lease.expiresAt <= now) return null;
+    return getUserKeysCollection().findOneAndUpdate(
+        {
+            ...getAuthProviderFilter(authProvider),
+            shareVersion: lease.shareVersion,
+            ...(input.requireOptedIn ? { escrowOptedOutAt: { $exists: false } } : {}),
+            escrowBlob: input.expectedBlob ?? { $exists: false },
+            escrowPin: input.expectedPin ?? { $exists: false },
+            escrowEnrollmentLease: { $exists: false },
+            ...noLiveEscrowPinCompare(now),
+        },
+        { $set: { escrowEnrollmentLease: lease, updatedAt: now } },
+        { returnDocument: 'after' }
+    );
+};
+
+/** Drop a lease the authority provably did not commit (or that cannot be adopted). */
+export const releaseEscrowEnrollmentLease = async (
+    authProvider: AuthProviderMapping,
+    leaseId: string
+): Promise<void> => {
+    await getUserKeysCollection().updateOne(
+        { ...getAuthProviderFilter(authProvider), 'escrowEnrollmentLease.id': leaseId },
+        { $unset: { escrowEnrollmentLease: '' }, $set: { updatedAt: new Date() } }
+    );
+};
+
+export interface EscrowAuthorityCommit {
+    /** The authority's committed envelope; null for a disable. */
+    envelope: EscrowBlob['envelope'] | null;
+    authorityGeneration: string;
+    enrollmentVersion: number;
+    enrollmentEpoch: number;
+    receipt?: AuthorityRecord;
+    stateProof?: AuthorityRecord;
+}
+
+/**
+ * Persist an authority commit made under `lease` and release the lease in the same
+ * update. Conditioned on holding the lease (not on PIN charges: no compare can start
+ * while it is held) and on the blob identity it replaced, so a concurrent compare can
+ * no longer make the write miss after the authority committed. `adoptWithoutLease`
+ * also accepts a lease that is already gone; only callers that verified the commit
+ * against the authority's current state may set it.
+ */
+export const commitEscrowEnrollmentLease = async (
+    authProvider: AuthProviderMapping,
+    lease: EscrowEnrollmentLease,
+    commit: EscrowAuthorityCommit,
+    { adoptWithoutLease = false }: { adoptWithoutLease?: boolean } = {}
+): Promise<MongoUserKeyType | null> => {
+    const now = new Date();
+    const filter: Filter<MongoUserKeyType> = {
+        ...getAuthProviderFilter(authProvider),
+        shareVersion: lease.shareVersion,
+        ...(lease.sourceBlobHash
+            ? { 'escrowBlob.blobHash': lease.sourceBlobHash }
+            : { escrowBlob: { $exists: false } }),
+        ...(adoptWithoutLease
+            ? {
+                  $or: [
+                      { 'escrowEnrollmentLease.id': lease.id },
+                      { escrowEnrollmentLease: { $exists: false } },
+                  ],
+              }
+            : { 'escrowEnrollmentLease.id': lease.id }),
+    };
+    if (lease.action === 'disable') {
+        if (commit.envelope) return null;
+        return getUserKeysCollection().findOneAndUpdate(
+            filter,
+            {
+                $unset: { escrowBlob: '', escrowPin: '', escrowEnrollmentLease: '' },
+                $pull: { recoveryMethods: { type: 'escrow' } },
+                $set: { updatedAt: now, ...(lease.optOut ? { escrowOptedOutAt: now } : {}) },
+            },
+            { returnDocument: 'after' }
+        );
+    }
+    if (!commit.envelope) return null;
+    const blob = EscrowBlobValidator.safeParse({
+        envelope: commit.envelope,
+        enclaveKeyId: commit.envelope.keyId,
+        enclaveMode: 'nitro',
+        measurements: lease.measurements,
+        shareVersion: lease.shareVersion,
+        createdAt: now,
+        authorityGeneration: commit.authorityGeneration,
+        enrollmentVersion: commit.enrollmentVersion,
+        enrollmentEpoch: commit.enrollmentEpoch,
+        blobHash: escrowBlobIdentity(commit.envelope),
+        ...(commit.receipt ? { commitReceipt: commit.receipt } : {}),
+        ...(commit.stateProof ? { authorityStateProof: commit.stateProof } : {}),
+    });
+    if (!blob.success) throw new Error('Invalid escrow payload');
+    if (lease.pin === 'fresh' && !lease.pinSalt) throw new Error('Invalid escrow payload');
+    return getUserKeysCollection().findOneAndUpdate(
+        { ...filter, escrowOptedOutAt: { $exists: false } },
+        [
+            {
+                $set: {
+                    escrowBlob: { $literal: blob.data },
+                    escrowPin:
+                        lease.pin === 'fresh'
+                            ? {
+                                  $literal: EscrowPinValidator.parse({
+                                      salt: lease.pinSalt,
+                                      failedAttempts: 0,
+                                      enabledAt: now,
+                                      shareVersion: lease.shareVersion,
+                                  }),
+                              }
+                            : lease.pin === 'keep'
+                              ? {
+                                    $cond: [
+                                        { $eq: [{ $type: '$escrowPin' }, 'object'] },
+                                        {
+                                            $mergeObjects: [
+                                                '$escrowPin',
+                                                { shareVersion: lease.shareVersion },
+                                            ],
+                                        },
+                                        '$$REMOVE',
+                                    ],
+                                }
+                              : '$$REMOVE',
+                    escrowEnrollmentLease: '$$REMOVE',
+                    updatedAt: now,
+                    // A rewrap only re-seals the confirmed copy: its descriptor stands.
+                    ...(lease.action === 'rewrap'
+                        ? {}
+                        : {
+                              recoveryMethods: confirmedEscrowMethodExpression(
+                                  now,
+                                  lease.shareVersion
+                              ),
+                          }),
+                },
+            },
+        ],
+        { returnDocument: 'after' }
+    );
+};
+
+/**
+ * P9.3: migrates an escrow blob sealed under a previous enclave key onto the
+ * current one. Atomic compare-and-swap against the OLD envelope/blob object
+ * AND the unchanged `escrowPin` (read at the same time as `oldBlob`, so ANY
+ * concurrent write to this account since — a re-enroll, a PIN change, an
+ * opt-out — loses the race safely rather than overwriting a stale
+ * assumption), even though this write never touches `escrowPin` itself.
+ * Writes the new envelope under the CURRENT `enclaveKeyId`, a fresh
+ * Rust-order `blobHash` (identical algorithm to `setEscrowBlobByAuthProvider`),
+ * the SAME `enrollmentEpoch` and `shareVersion` — `escrowPin` is left
+ * exactly as read. Lost race (version bump, opt-out, or any other change
+ * since `oldBlob`/`oldPin` were read) -> null, no-op; callers retry on a
+ * later job run rather than treating this as an error.
+ */
+export const rewrapEscrowBlobByAuthProvider = async (
+    authProvider: AuthProviderMapping,
+    oldBlob: EscrowBlob,
+    oldPin: MongoUserKeyType['escrowPin'],
+    newEnvelope: EscrowBlob['envelope'],
+    identity: Pick<EscrowBlob, 'enclaveKeyId' | 'enclaveMode' | 'measurements'>,
+    authority?: Pick<AuthorityMutationResult, 'authorityGeneration' | 'enrollmentVersion'> & {
+        receipt?: AuthorityRecord;
+        stateProof?: AuthorityRecord;
+    }
+): Promise<MongoUserKeyType | null> => {
+    const now = new Date();
+    const blobHash = escrowBlobIdentity(newEnvelope);
+    const parsed = EscrowBlobValidator.safeParse({
+        envelope: newEnvelope,
+        enclaveKeyId: identity.enclaveKeyId,
+        enclaveMode: identity.enclaveMode,
+        measurements: identity.measurements,
+        shareVersion: oldBlob.shareVersion,
+        blobHash,
+        enrollmentEpoch: oldBlob.enrollmentEpoch,
+        createdAt: now,
+        ...(authority
+            ? {
+                  authorityGeneration: authority.authorityGeneration,
+                  enrollmentVersion: authority.enrollmentVersion,
+                  commitReceipt: authority.receipt,
+                  authorityStateProof: authority.stateProof,
+              }
+            : {}),
+    });
+    if (!parsed.success || parsed.data.enclaveKeyId !== parsed.data.envelope.keyId) return null;
+    const filter: Filter<MongoUserKeyType> = {
+        ...getAuthProviderFilter(authProvider),
+        escrowBlob: oldBlob,
+        escrowOptedOutAt: { $exists: false },
+        ...(oldPin ? { escrowPin: oldPin } : { escrowPin: { $exists: false } }),
+        // Never under a PIN-operation lease: its intent replaces this blob.
+        escrowEnrollmentLease: { $exists: false },
+    };
+    return getUserKeysCollection().findOneAndUpdate(
+        filter,
+        { $set: { escrowBlob: parsed.data, updatedAt: now } },
+        { returnDocument: 'after' }
+    );
+};
+
+/**
+ * P9.3 migration job candidates: escrow blobs still sealed under any of the
+ * given (previous) enclave keys. Never returns opted-out accounts — escrow
+ * is fully disabled for them, so there is nothing to migrate. Bounded by
+ * `limit`, mirroring `findEscrowHoldsDueForReminder`'s own batch shape.
+ */
+export const findUserKeysWithEscrowBlobKeyId = async (
+    keyIds: string[],
+    limit: number
+): Promise<MongoUserKeyType[]> =>
+    getUserKeysCollection()
+        .find({
+            'escrowBlob.enclaveKeyId': { $in: keyIds },
+            escrowOptedOutAt: { $exists: false },
+        })
+        .limit(limit)
+        .toArray();
+
 export const clearEscrowByAuthProvider = async (
     authProvider: AuthProviderMapping,
-    { optOut }: { optOut: boolean }
+    {
+        optOut,
+        expected,
+    }: { optOut: boolean; expected?: { blob?: EscrowBlob; pin?: MongoUserKeyType['escrowPin'] } }
 ): Promise<MongoUserKeyType | null> => {
     const now = new Date();
     return getUserKeysCollection().findOneAndUpdate(
-        getAuthProviderFilter(authProvider),
+        {
+            ...getAuthProviderFilter(authProvider),
+            ...(expected
+                ? {
+                      escrowBlob: expected.blob ?? { $exists: false },
+                      escrowPin: expected.pin ?? { $exists: false },
+                  }
+                : {}),
+        },
         {
             $unset: { escrowBlob: '', escrowPin: '' },
             $pull: { recoveryMethods: { type: 'escrow' } },
@@ -823,19 +1292,27 @@ export const setEscrowOptInByAuthProvider = async (
         { returnDocument: 'after' }
     );
 
-/** Reserve before claiming a hold or invoking the enclave; never read-then-increment. */
+/**
+ * Reserve before claiming a hold or invoking the enclave; never read-then-increment.
+ * Refused while a PIN-operation lease is held (an expired one too: the router settles
+ * it first). With `compareId`, also records the compare as in flight until
+ * `releaseEscrowPinCompare` (or its TTL), so no lease can be claimed under it.
+ */
 export const reserveEscrowPinAttempt = async (
     authProvider: AuthProviderMapping,
     shareVersion: number,
-    expectedCiphertext?: string
-): Promise<MongoUserKeyType | null> =>
-    getUserKeysCollection().findOneAndUpdate(
+    expectedCiphertext?: string,
+    compareId?: string
+): Promise<MongoUserKeyType | null> => {
+    const now = new Date();
+    return getUserKeysCollection().findOneAndUpdate(
         {
             ...getAuthProviderFilter(authProvider),
             shareVersion,
             'escrowPin.shareVersion': shareVersion,
             'escrowPin.failedAttempts': { $lt: ESCROW_PIN_MAX_ATTEMPTS },
             'escrowPin.disabledAt': { $exists: false },
+            escrowEnrollmentLease: { $exists: false },
             ...(expectedCiphertext === undefined
                 ? {}
                 : { 'escrowBlob.envelope.ciphertext': expectedCiphertext }),
@@ -849,12 +1326,46 @@ export const reserveEscrowPinAttempt = async (
                         $ifNull: ['$escrowPin.verifiedFailedAttempts', 0],
                     },
                     'escrowPin.failedAttempts': { $add: ['$escrowPin.failedAttempts', 1] },
-                    updatedAt: new Date(),
+                    ...(compareId === undefined
+                        ? {}
+                        : {
+                              escrowPinCompares: {
+                                  $concatArrays: [
+                                      {
+                                          $filter: {
+                                              input: { $ifNull: ['$escrowPinCompares', []] },
+                                              as: 'c',
+                                              cond: { $gt: ['$$c.expiresAt', now] },
+                                          },
+                                      },
+                                      [
+                                          {
+                                              id: compareId,
+                                              expiresAt: new Date(
+                                                  now.getTime() + ESCROW_PIN_COMPARE_TTL_MS
+                                              ),
+                                          },
+                                      ],
+                                  ],
+                              },
+                          }),
+                    updatedAt: now,
                 },
             },
         ],
         { returnDocument: 'after' }
     );
+};
+
+/** The authority answered this compare (or it never reached it); it no longer blocks a lease. */
+export const releaseEscrowPinCompare = async (
+    authProvider: AuthProviderMapping,
+    compareId: string
+): Promise<void> => {
+    await getUserKeysCollection().updateOne(getAuthProviderFilter(authProvider), {
+        $pull: { escrowPinCompares: { id: compareId } },
+    });
+};
 
 /** Refund infrastructure/claim failures without modifying a replacement PIN enrollment. */
 export const refundEscrowPinAttempt = async (
@@ -1125,8 +1636,26 @@ export const markUserKeyMigrationProvisionalByAuthProvider = async (
             },
         }
     );
+    const marked = result.modifiedCount > 0 || result.matchedCount > 0;
 
-    return result.modifiedCount > 0 || result.matchedCount > 0;
+    if (marked) {
+        // Record the login that derived the legacy key, but only when it provably
+        // did: it is the account's sole login and no rebind/revoke has happened. A
+        // second login (PIN sign-in) holding the account key could otherwise claim
+        // it. Never replace a recorded login; when unsure, record nothing (Web3Auth
+        // clients then stop the account: a false negative, never a split).
+        await getUserKeysCollection().updateOne(
+            {
+                ...getAuthProviderFilter(authProvider),
+                authProviders: { $size: 1, $elemMatch: authProvider },
+                web3AuthLogin: { $exists: false },
+                ...getSecurityEpochFilter(0),
+            },
+            { $set: { web3AuthLogin: authProvider } }
+        );
+    }
+
+    return marked;
 };
 
 /**
@@ -1165,6 +1694,12 @@ export const activateUserKeyByAuthProvider = async (
 /**
  * Lazily discard abandoned migration shares after the P0-1 TTL. New-user
  * provisional records are excluded because their keyProvider is already SSS.
+ *
+ * A migration with a confirmed escrow enrollment is not abandoned: the user
+ * skipped the PIN, but escrow can recover them, and staying provisional keeps
+ * the faster Web3Auth re-derive on new devices. Such records stay until the
+ * user activates (e.g. sets a PIN) or operators activate them before Web3Auth
+ * is retired (Confluence LC: "Production Web3Auth SSS migration runbook").
  */
 export const purgeExpiredProvisionalMigrationByAuthProvider = async (
     authProvider: AuthProviderMapping,
@@ -1177,6 +1712,14 @@ export const purgeExpiredProvisionalMigrationByAuthProvider = async (
             keyProvider: 'web3auth',
             sssActivationState: 'provisional',
             provisionalCreatedAt: { $lte: cutoff },
+            $nor: [
+                {
+                    escrowBlob: { $exists: true },
+                    recoveryMethods: {
+                        $elemMatch: { type: 'escrow', confirmationStatus: 'confirmed' },
+                    },
+                },
+            ],
         },
         {
             $set: {
@@ -1307,7 +1850,79 @@ export interface CompleteIdentityRebindInput {
     newContactMethod: ContactMethod;
     primaryDid: string;
     authShare: ServerEncryptedShare;
+    /**
+     * Only commit if the account is still at this share version. Set for tokens minted
+     * by a PIN release, so a stale token cannot undo a later "Secure my account".
+     */
+    expectedShareVersion?: number;
+    /**
+     * The security epoch the recovery token was minted at. Required: the write only
+     * lands while the account is still at this epoch, so any token minted before a
+     * revoke or another wiping rebind is rejected atomically.
+     */
+    expectedSecurityEpoch: number;
 }
+
+/**
+ * The security rotation shared by identity rebind and "Secure my account": a new
+ * auth share at `shareVersion + 1`, every historical auth share purged (so device
+ * shares from the old split stop working), every recovery method kept only as an
+ * unconfirmed descriptor (their external shares belong to the old split), and
+ * escrow cleared (the client re-enrolls on the new split).
+ */
+const buildSecurityRotationUpdate = (
+    existing: MongoUserKeyType,
+    authShare: ServerEncryptedShare,
+    now: Date
+): {
+    shareVersion: number;
+    recoveryMethods: RecoveryMethod[];
+    $set: Record<string, unknown>;
+    $unset: Record<string, ''>;
+    $inc: { securityEpoch: 1 };
+} => {
+    const shareVersion = (existing.shareVersion ?? 1) + 1;
+    const recoveryMethods = (existing.recoveryMethods ?? []).map(method => ({
+        type: method.type,
+        createdAt: now,
+        confirmationStatus: 'pending' as const,
+        credentialId: method.credentialId,
+        shareVersion,
+    }));
+
+    return {
+        shareVersion,
+        recoveryMethods,
+        $set: {
+            authShare,
+            shareVersion,
+            shareUpdatedAt: now,
+            previousAuthShares: [],
+            recoveryMethods,
+            keyProvider: 'sss',
+            // The new split has no confirmed recovery method yet. SSS records
+            // are excluded from provisional migration cleanup (Web3Auth only).
+            sssActivationState: 'provisional',
+            updatedAt: now,
+        },
+        // The PIN-operation lease and compare markers go with the escrow they guard,
+        // so the client's immediate re-enrollment on the new split is not refused as
+        // busy. Nothing they cover can land here any more: every lease commit, settle
+        // adoption and compare write is conditioned on the old `shareVersion` (bumped
+        // above), and at the authority the re-enrollment's intent is a Replace of its
+        // current copy at its current enrollment version, so a superseded intent that
+        // lands first only makes it refuse and re-read, never diverge.
+        $unset: {
+            provisionalCreatedAt: '',
+            escrowBlob: '',
+            escrowPin: '',
+            escrowEnrollmentLease: '',
+            escrowPinCompares: '',
+        },
+        // Every wiping rotation retires every recovery token minted before it.
+        $inc: { securityEpoch: 1 },
+    };
+};
 
 /**
  * Atomically bind a replacement login identity and commit a security rotation.
@@ -1327,6 +1942,13 @@ export const completeIdentityRebind = async (
     });
 
     if (!existing) return null;
+    if (
+        input.expectedShareVersion !== undefined &&
+        (existing.shareVersion ?? 1) !== input.expectedShareVersion
+    ) {
+        return null;
+    }
+    if (getSecurityEpoch(existing) !== input.expectedSecurityEpoch) return null;
 
     const providerConflict = await collection.findOne({
         ...getAuthProviderFilter(input.newAuthProvider),
@@ -1336,7 +1958,6 @@ export const completeIdentityRebind = async (
     if (providerConflict) return null;
 
     const now = new Date();
-    const shareVersion = (existing.shareVersion ?? 1) + 1;
     const remainingAuthProviders = (existing.authProviders ?? []).filter(
         provider =>
             provider.type !== input.oldAuthProvider.type || provider.id !== input.oldAuthProvider.id
@@ -1347,35 +1968,22 @@ export const completeIdentityRebind = async (
     )
         ? remainingAuthProviders
         : [...remainingAuthProviders, input.newAuthProvider];
-    const recoveryMethods = (existing.recoveryMethods ?? []).map(method => ({
-        type: method.type,
-        createdAt: now,
-        confirmationStatus: 'pending' as const,
-        credentialId: method.credentialId,
-        shareVersion,
-    }));
+    const rotation = buildSecurityRotationUpdate(existing, input.authShare, now);
     const result = await collection.findOneAndUpdate(
         {
             ...getAuthProviderFilter(input.oldAuthProvider),
             primaryDid: input.primaryDid,
             shareVersion: existing.shareVersion ?? 1,
+            ...getSecurityEpochFilter(input.expectedSecurityEpoch),
         },
         {
             $set: {
+                ...rotation.$set,
                 authProviders,
                 contactMethod: input.newContactMethod,
-                authShare: input.authShare,
-                shareVersion,
-                shareUpdatedAt: now,
-                previousAuthShares: [],
-                recoveryMethods,
-                keyProvider: 'sss',
-                // The new split has no confirmed recovery method yet. SSS records
-                // are excluded from provisional migration cleanup (Web3Auth only).
-                sssActivationState: 'provisional',
-                updatedAt: now,
             },
-            $unset: { provisionalCreatedAt: '', escrowBlob: '', escrowPin: '' },
+            $unset: rotation.$unset,
+            $inc: rotation.$inc,
         },
         { returnDocument: 'after' }
     );
@@ -1383,7 +1991,127 @@ export const completeIdentityRebind = async (
     if (!result) return null;
 
     return {
-        shareVersion,
-        methodsRequiringConfirmation: recoveryMethods.map(method => method.type),
+        shareVersion: rotation.shareVersion,
+        methodsRequiringConfirmation: rotation.recoveryMethods.map(method => method.type),
+    };
+};
+
+export interface LinkAuthProviderKeepingSharesInput {
+    oldAuthProvider: AuthProviderMapping;
+    newAuthProvider: AuthProviderMapping;
+    primaryDid: string;
+    /** The share version the PIN release unlocked; the link only lands at that version. */
+    shareVersion: number;
+    /** The security epoch the PIN-release token was minted at; enforced in the write. */
+    securityEpoch: number;
+}
+
+/**
+ * PIN sign-in with a different login (keep mode): add the new login to the account
+ * without rotating. Shares, history, recovery methods, escrow, activation state and
+ * the contact method are untouched, and the old login stays linked. Returns null
+ * when the new login belongs to another account or the account moved past
+ * `shareVersion` (a concurrent rotation or revoke), so a revoke is never undone.
+ */
+export const linkAuthProviderKeepingShares = async (
+    input: LinkAuthProviderKeepingSharesInput
+): Promise<{ shareVersion: number } | null> => {
+    const collection = getUserKeysCollection();
+    const existing = await collection.findOne({
+        ...getAuthProviderFilter(input.oldAuthProvider),
+        primaryDid: input.primaryDid,
+    });
+
+    if (!existing) return null;
+    if (getSecurityEpoch(existing) !== input.securityEpoch) return null;
+
+    const providerConflict = await collection.findOne({
+        ...getAuthProviderFilter(input.newAuthProvider),
+        ...(existing._id ? { _id: { $ne: existing._id } } : {}),
+    });
+
+    if (providerConflict) return null;
+
+    const result = await collection.findOneAndUpdate(
+        {
+            ...getAuthProviderFilter(input.oldAuthProvider),
+            primaryDid: input.primaryDid,
+            shareVersion: input.shareVersion,
+            ...getSecurityEpochFilter(input.securityEpoch),
+        },
+        {
+            $addToSet: { authProviders: input.newAuthProvider },
+            $set: { updatedAt: new Date() },
+        },
+        { returnDocument: 'after' }
+    );
+
+    return result ? { shareVersion: input.shareVersion } : null;
+};
+
+export interface RevokeOtherDeviceSharesInput {
+    authProvider: AuthProviderMapping;
+    primaryDid: string;
+    /** The version the caller split from; any concurrent rotation makes the revoke miss. */
+    expectedShareVersion: number;
+    authShare: ServerEncryptedShare;
+    /**
+     * The exact login list the caller read (as stored). When set, a login linked or removed
+     * concurrently makes the revoke miss instead of unlinking a login the caller never saw.
+     */
+    expectedAuthProviders?: AuthProviderMapping[];
+}
+
+/**
+ * "Secure my account" / "Sign out of all other devices": the same security rotation
+ * as an identity rebind, and every login except the caller's is unlinked (a login
+ * added by a lost-login PIN sign-in must not survive the revoke). The contact method
+ * is unchanged. One CAS document update on `{provider, primaryDid,
+ * expectedShareVersion}`, so it either lands whole or not at all. Returns null on a
+ * version miss.
+ *
+ * This rotates shares, not the key: a device that already holds the private key is
+ * not evicted (SECURITY.md D19).
+ */
+export const revokeOtherDeviceShares = async (
+    input: RevokeOtherDeviceSharesInput
+): Promise<{
+    shareVersion: number;
+    methodsRequiringConfirmation: RecoveryMethod['type'][];
+} | null> => {
+    const collection = getUserKeysCollection();
+    const filter = {
+        $and: [
+            getAuthProviderFilter(input.authProvider),
+            { primaryDid: input.primaryDid, shareVersion: input.expectedShareVersion },
+            // When the caller acted on a specific set of logins (e.g. pinned ClassLink
+            // identities to them), only commit while that set is unchanged: a login linked in
+            // between would otherwise be unlinked without that work. The miss surfaces as
+            // CONFLICT; retry. Added to, never replacing, the caller-login check above.
+            ...(input.expectedAuthProviders
+                ? [{ authProviders: input.expectedAuthProviders }]
+                : []),
+        ],
+    };
+    const existing = await collection.findOne(filter);
+
+    if (!existing) return null;
+
+    const rotation = buildSecurityRotationUpdate(existing, input.authShare, new Date());
+    const result = await collection.findOneAndUpdate(
+        filter,
+        {
+            $set: { ...rotation.$set, authProviders: [input.authProvider] },
+            $unset: rotation.$unset,
+            $inc: rotation.$inc,
+        },
+        { returnDocument: 'after' }
+    );
+
+    if (!result) return null;
+
+    return {
+        shareVersion: rotation.shareVersion,
+        methodsRequiringConfirmation: rotation.recoveryMethods.map(method => method.type),
     };
 };

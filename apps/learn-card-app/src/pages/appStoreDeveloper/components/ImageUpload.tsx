@@ -109,14 +109,14 @@ export const ScreenshotUpload: React.FC<ScreenshotUploadProps> = ({
 
     return (
         <div className="flex gap-2 items-start">
-            <div className="flex-1 space-y-2">
+            <div className="flex-1 space-y-v3-2">
                 <div className="flex gap-2">
                     <input
                         type="url"
                         value={value}
                         onChange={e => onChange(e.target.value)}
                         placeholder="https://example.com/screenshot.png"
-                        className="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                        className="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                         disabled={isLoading}
                     />
 

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useHistory } from 'react-router-dom';
 import { PendingContractRequests } from '../contract-requests/ContractRequest';
 import { ContractAudience } from '../contract-requests/ContractAudience';
 import { getLogger } from 'learn-card-base';
@@ -22,7 +23,7 @@ import {
     useModal,
     ModalTypes,
     useWithdrawConsent,
-    LEARNCARD_AI_PASSPORT_CONTRACT_URI,
+    isLearnCardAiPassportContractUri,
     contractCategoryNameToCategoryMetadata,
     useWallet,
 } from 'learn-card-base';
@@ -30,11 +31,12 @@ import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import ConsentFlowPrivacyAndData from '../../pages/consentFlow/ConsentFlowPrivacyAndData';
 import XApiDataFeedModal from './XApiDataFeedModal';
+import * as m from '../../paraglide/messages.js';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import { useAiConsentToggle } from '../../hooks/useAiConsentToggle';
-import * as m from '../../paraglide/messages.js';
 import TransP from '../../i18n/TransP';
 import { buildPermissionText } from './consentSummary';
+import { hasOpenNewOptionsWindow } from '@learncard/helpers';
 
 type ManageDataSharingModalProps = {
     onClose?: () => void;
@@ -159,7 +161,7 @@ const ManageDataSharingModal: React.FC<ManageDataSharingModalProps> = ({ onClose
     }
 
     const contracts = [...(consentedContracts ?? [])]
-        .filter(contract => contract?.status !== 'withdrawn')
+        .filter(contract => contract?.status !== 'withdrawn' && contract?.status !== 'consumed')
         .sort((a, b) => {
             const aUpdatedAt = new Date(a.terms?.updatedAt ?? a.contract?.updatedAt ?? 0).getTime();
             const bUpdatedAt = new Date(b.terms?.updatedAt ?? b.contract?.updatedAt ?? 0).getTime();
@@ -242,10 +244,13 @@ export const ConsentedContractRow: React.FC<ConsentedContractRowProps> = ({
     contract,
     onUpdate,
 }) => {
-    const { newModal, closeModal } = useModal();
+    const { closeModal, newModal } = useModal();
+    const history = useHistory();
     // Contract details are already in the record
     const contractDetails = contract.contract;
 
+    const hasPendingUpdate =
+        contract.status === 'needs_reconsent' || contract.status === 'suspended';
     const handleOpenDetails = () => {
         void (async () => {
             try {
@@ -256,11 +261,16 @@ export const ConsentedContractRow: React.FC<ConsentedContractRowProps> = ({
             }
         })();
 
+        if (hasPendingUpdate) {
+            closeModal();
+            history.push(`/consent-flow/review?uri=${encodeURIComponent(contractDetails.uri)}`);
+            return;
+        }
         newModal(
             <ContractDetailView contract={contract} onUpdate={onUpdate} />,
             {
                 sectionClassName:
-                    '!bg-transparent !shadow-none !max-w-[450px] !h-[80vh] !max-h-[80vh] !overflow-hidden',
+                    'bg-transparent! shadow-none! max-w-[450px]! h-[80vh]! max-h-[80vh]! overflow-hidden!',
             },
             { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
         );
@@ -274,7 +284,7 @@ export const ConsentedContractRow: React.FC<ConsentedContractRowProps> = ({
     return (
         <button
             onClick={handleOpenDetails}
-            className="flex items-center gap-3 p-3 min-h-[64px] rounded-xl hover:bg-grayscale-10 transition-all duration-100 motion-safe:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 text-left w-full"
+            className="flex items-center gap-3 p-3 min-h-[64px] rounded-xl hover:bg-grayscale-10 transition-all duration-100 motion-safe:active:scale-[0.98] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 text-left w-full"
         >
             {image ? (
                 <img src={image} alt={name} className="w-10 h-10 rounded-lg object-cover" />
@@ -286,7 +296,21 @@ export const ConsentedContractRow: React.FC<ConsentedContractRowProps> = ({
 
             <div className="flex-1 min-w-0">
                 <p className="font-medium text-grayscale-900 truncate">{name}</p>
-                <p className="text-sm text-grayscale-500 truncate">{permissionText}</p>
+                <p
+                    className={`flex items-center gap-2 text-sm truncate ${hasPendingUpdate ? 'font-medium text-amber-700' : 'text-grayscale-500'}`}
+                >
+                    {hasPendingUpdate && (
+                        <span
+                            aria-label={m['consentUpdate.needsReview']()}
+                            className="h-2 w-2 shrink-0 rounded-full bg-amber-500"
+                        />
+                    )}
+                    {hasPendingUpdate
+                        ? m['consentUpdate.needsReview']()
+                        : hasOpenNewOptionsWindow(contract.newOptionsUntil)
+                          ? m['consentUpdate.newOption']()
+                          : permissionText}
+                </p>
             </div>
 
             <ChevronRight className="w-5 h-5 text-grayscale-400 shrink-0" />
@@ -322,7 +346,7 @@ export const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract
         contract.uri
     );
     const [isOpening, setIsOpening] = useState(false);
-    const isLearnCardAiContract = contractUri === LEARNCARD_AI_PASSPORT_CONTRACT_URI;
+    const isLearnCardAiContract = isLearnCardAiPassportContractUri(contractUri);
 
     const name = contractDetails?.name ?? m['dataSharing.unknownApp']();
     const image = contractDetails?.image;
@@ -404,7 +428,7 @@ export const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract
             />,
             {
                 sectionClassName:
-                    '!bg-transparent !shadow-none !max-w-[400px] !w-[400px] !overflow-hidden',
+                    'bg-transparent! shadow-none! max-w-[400px]! w-[400px]! overflow-hidden!',
             },
             { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
         );
@@ -423,7 +447,7 @@ export const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract
                 <button
                     onClick={handleBack}
                     aria-label={m['common.back']()}
-                    className="flex h-11 w-11 shrink-0 items-center justify-center -ms-2 rounded-[20px] hover:bg-grayscale-10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center -ms-2 rounded-[20px] hover:bg-grayscale-10 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
                     <ChevronLeft className="w-6 h-6 text-grayscale-700 rtl:rotate-180" />
                 </button>
@@ -441,10 +465,10 @@ export const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract
                 )}
 
                 <div className="min-w-0">
-                    <h2 className="text-base font-semibold text-grayscale-900 leading-snug break-words">
+                    <h2 className="text-base font-semibold text-grayscale-900 leading-snug wrap-break-word">
                         {stepTitle}
                     </h2>
-                    <p className="text-xs text-grayscale-600 break-words">{name}</p>
+                    <p className="text-xs text-grayscale-600 wrap-break-word">{name}</p>
                 </div>
             </div>
 

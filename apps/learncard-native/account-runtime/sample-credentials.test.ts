@@ -11,6 +11,7 @@ function fixture() {
         name: 'Sample student',
         createdAt: '2026-10-01',
         updatedAt: '2026-10-01',
+        version: 1,
         owner: { did: 'did:example:school', profileId: 'school' },
         autoBoosts: ['boost-1', 'boost-2'],
         contract: {

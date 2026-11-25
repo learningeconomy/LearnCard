@@ -19,7 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_statement import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement
+from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_id import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -28,9 +28,9 @@ class AuthGrantsGetAuthGrantsRequestQuery(BaseModel):
     """
     AuthGrantsGetAuthGrantsRequestQuery
     """ # noqa: E501
-    id: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = None
-    name: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = None
-    description: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = None
+    id: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = None
+    name: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = None
+    description: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = None
     status: Optional[StrictStr] = None
     __properties: ClassVar[List[str]] = ["id", "name", "description", "status"]
 
@@ -71,9 +71,8 @@ class AuthGrantsGetAuthGrantsRequestQuery(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -104,9 +103,9 @@ class AuthGrantsGetAuthGrantsRequestQuery(BaseModel):
             return cls.model_validate(obj)
 
         _values = {
-            "id": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["id"]) if obj.get("id") is not None else None,
-            "name": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["name"]) if obj.get("name") is not None else None,
-            "description": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["description"]) if obj.get("description") is not None else None,
+            "id": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["id"]) if obj.get("id") is not None else None,
+            "name": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["name"]) if obj.get("name") is not None else None,
+            "description": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["description"]) if obj.get("description") is not None else None,
             "status": obj.get("status")
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.

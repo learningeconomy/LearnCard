@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Shield } from 'lucide-react';
 
-import { SearchInput, LEARNCARD_AI_PASSPORT_CONTRACT_URI } from 'learn-card-base';
+import { SearchInput, isLearnCardAiPassportContractUri } from 'learn-card-base';
 import {
     ConsentedContractRow,
     type ConsentedContract,
@@ -39,7 +39,7 @@ const classifyContract = (contract: ConsentedContract): GroupKey => {
     const uri = contract.contract?.uri ?? contract.uri;
     const name = (contract.contract?.name ?? '').toLowerCase();
 
-    if (uri === LEARNCARD_AI_PASSPORT_CONTRACT_URI || AI_PATTERN.test(name)) return 'ai';
+    if (isLearnCardAiPassportContractUri(uri) || AI_PATTERN.test(name)) return 'ai';
     if (SCHOOL_PATTERN.test(name)) return 'school';
     return 'app';
 };
@@ -90,7 +90,7 @@ const ConnectedAppsSection: React.FC<ConnectedAppsSectionProps> = ({
                         value={query}
                         onChange={setQuery}
                         placeholder={m['dataShareCenter.connectedApps.searchPlaceholder']()}
-                        className="!bg-white border border-grayscale-300 rounded-[14px] shadow-[0_2px_10px_rgba(24,34,78,0.06)]"
+                        className="bg-white! border border-grayscale-300 rounded-[14px] shadow-[0_2px_10px_rgba(24,34,78,0.06)]"
                     />
                 </div>
             )}

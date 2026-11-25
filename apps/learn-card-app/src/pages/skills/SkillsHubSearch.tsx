@@ -49,7 +49,7 @@ const SkillsHubSearch: React.FC<SkillsHubSearchProps> = ({
                             value={searchInput}
                             placeholder={m['common.search']()}
                             onIonInput={e => setSearchInput(e.detail.value)}
-                            className="bg-grayscale-200 text-grayscale-800 rounded-[10px] !py-[4px] font-normal !font-notoSans text-[17px] !pl-[44px] !text-left !pr-[36px]"
+                            className="bg-grayscale-200 text-grayscale-800 rounded-[10px] py-[4px]! font-normal !font-notoSans text-[17px] pl-[44px]! text-left! pr-[36px]!"
                         />
                         {searchInput && (
                             <button

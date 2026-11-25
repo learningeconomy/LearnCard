@@ -115,7 +115,7 @@ After setup, `send()` with a template returns normally — no signing details in
 ```javascript
 const result = await learnCard.invoke.send({
     type: 'boost',
-    recipient: 'you@example.com',
+    recipient: 'you@yourdomain.com',
     templateUri: 'lc:network:network.learncard.com/trpc:boost:…',
 });
 console.log(result.inbox?.status); // 'PENDING' or 'ISSUED'

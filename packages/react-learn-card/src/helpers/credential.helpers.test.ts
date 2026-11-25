@@ -106,3 +106,99 @@ describe('Credential Helpers', () => {
         });
     });
 });
+
+describe('award-date formatting', () => {
+    it.each(['awarded', 'issuance'] as const)(
+        'falls back safely for a large malformed award date in %s mode',
+        dateType => {
+            const options = { uppercaseDate: false, dateType } as const;
+            const malformed = ' '.repeat(100_000);
+            expect(
+                getInfoFromCredential(
+                    { ...VC2CredentialWithValidFrom, awardedDate: malformed } as never,
+                    'MMM dd, yyyy',
+                    options
+                ).createdAt
+            ).toBe(
+                getInfoFromCredential(VC2CredentialWithValidFrom as never, 'MMM dd, yyyy', options)
+                    .createdAt
+            );
+        }
+    );
+    it.each(['2027-10-01T00:30+02', '2027-10-01T00:30+0200', '2027-10-01T00:30+02:00'])(
+        'recognizes an explicit award timezone in %s',
+        awardedDate => {
+            expect(
+                getInfoFromCredential(
+                    { ...VC2CredentialWithValidFrom, awardedDate } as never,
+                    'MMM dd, yyyy',
+                    { uppercaseDate: false, dateType: 'awarded' }
+                ).createdAt
+            ).toBe('Sep 30, 2027');
+        }
+    );
+    it.each(['20271001', '2027-10-01T00:00', '2027-10-01T00:00:00', '2027-10-01T20:00:00'])(
+        'shows a consistent calendar award day for %s',
+        awardedDate => {
+            expect(
+                getInfoFromCredential(
+                    { ...VC2CredentialWithValidFrom, awardedDate } as never,
+                    'MMM dd, yyyy',
+                    { uppercaseDate: false, dateType: 'awarded' }
+                ).createdAt
+            ).toBe('Oct 01, 2027');
+        }
+    );
+    it('uses the standard award date only when requested and retains issuance metadata', () => {
+        const credential = { ...VC2CredentialWithValidFrom, awardedDate: '2027-10-01T00:00:00Z' };
+        expect(
+            getInfoFromCredential(credential as never, 'MMM dd, yyyy', {
+                uppercaseDate: false,
+                dateType: 'awarded',
+            }).createdAt
+        ).toBe('Oct 01, 2027');
+        expect(getInfoFromCredential(credential as never).createdAt).toBe(
+            getInfoFromCredential(VC2CredentialWithValidFrom as never).createdAt
+        );
+    });
+    it('falls back for missing or invalid award dates without inventing a date for an undated draft', () => {
+        expect(
+            getInfoFromCredential(
+                { ...VC2CredentialWithValidFrom, awardedDate: 'not-a-date' } as never,
+                'MMM dd, yyyy',
+                { uppercaseDate: false, dateType: 'awarded' }
+            ).createdAt
+        ).toBe(
+            getInfoFromCredential(VC2CredentialWithValidFrom as never, 'MMM dd, yyyy', {
+                uppercaseDate: false,
+            }).createdAt
+        );
+        expect(
+            getInfoFromCredential(VC2CredentialNoDate as never, 'MMM dd, yyyy', {
+                dateType: 'awarded',
+            }).createdAt
+        ).toBe('');
+    });
+    it('keeps the UTC award day stable at a timezone boundary', () => {
+        expect(
+            getInfoFromCredential(
+                {
+                    ...VC2CredentialWithValidFrom,
+                    awardedDate: '2027-10-01T23:30:00-02:00',
+                } as never,
+                'MMM dd, yyyy',
+                { uppercaseDate: false, dateType: 'awarded' }
+            ).createdAt
+        ).toBe('Oct 02, 2027');
+    });
+});
+
+it('treats a date-only award as a UTC calendar day', () => {
+    expect(
+        getInfoFromCredential(
+            { ...VC2CredentialWithValidFrom, awardedDate: '2027-10-01' } as never,
+            'MMM dd, yyyy',
+            { uppercaseDate: false, dateType: 'awarded' }
+        ).createdAt
+    ).toBe('Oct 01, 2027');
+});

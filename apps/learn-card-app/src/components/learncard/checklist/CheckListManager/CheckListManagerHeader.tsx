@@ -7,12 +7,13 @@ import { TransP } from '../../../../i18n/TransP';
 import BuildColorBlocksIcon from 'learn-card-base/svgs/BuildColorBlocksIcon';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type, no-empty-pattern -- existing empty props type; replacing it changes the accepted props type; dropping the empty destructure removes the implicit non-null argument check
 export const CheckListManagerHeader: React.FC<{}> = ({}) => {
     const brandingConfig = useBrandingConfig();
 
     return (
         <IonHeader color="light" className="rounded-b-[30px] overflow-hidden shadow-md">
-            <IonToolbar color="light" className="text-white px-4 !py-4">
+            <IonToolbar color="light" className="text-white px-4 py-4!">
                 <div className="flex items-center justify-normal p-2">
                     <div className="flex items-center">
                         <div className="bg-white rounded-[15px] p-2 w-[60px] flex items-center justify-center mr-2">

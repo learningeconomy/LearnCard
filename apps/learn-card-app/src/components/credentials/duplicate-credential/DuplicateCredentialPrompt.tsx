@@ -90,7 +90,7 @@ export const DuplicateCredentialPrompt: React.FC<DuplicateCredentialPromptProps>
                     </div>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-v3-3">
                     <button
                         ref={skipButtonRef}
                         type="button"

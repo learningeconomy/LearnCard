@@ -80,7 +80,7 @@ const TextArea: React.FC<TextAreaProps> = ({
                     onIonInput={e => onChange(e.detail.value)}
                     onIonFocus={onFocus}
                     onIonBlur={onBlur}
-                    className={`text-grayscale-900 font-poppins text-[14px] leading-[130%] w-full !px-[15px] ${inputClassName}`}
+                    className={`text-grayscale-900 font-poppins text-[14px] leading-[130%] w-full px-[15px]! ${inputClassName}`}
                 />
             </div>
             {error && (

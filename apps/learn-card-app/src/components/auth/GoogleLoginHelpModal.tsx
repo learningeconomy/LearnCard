@@ -15,7 +15,7 @@ const GoogleLoginHelpModal: React.FC<Props> = ({ message }) => {
     return (
         <section className="px-5 py-5 text-grayscale-900">
             <h3 className="text-xl font-semibold mb-3">Having trouble signing in?</h3>
-            {message && <p className="text-sm mb-4 break-words">{message}</p>}
+            {message && <p className="text-sm mb-4 wrap-break-word">{message}</p>}
             <p className="text-sm mb-3">
                 You can also download {appName} on your smartphone or tablet:
             </p>

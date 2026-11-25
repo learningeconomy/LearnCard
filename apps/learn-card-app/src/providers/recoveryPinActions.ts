@@ -16,8 +16,18 @@ interface PinAttempt {
 // callers cannot lose replacement detection or bypass the removal guard.
 const attempts = new WeakMap<PinCoordinator['runRecoverySetup'], PinAttempt>();
 
-/** Session-scoped PIN actions shared by prompts, onboarding, and settings. */
-export const createRecoveryPinActions = (coordinator: PinCoordinator, did?: string) => {
+/**
+ * Session-scoped PIN actions shared by prompts, onboarding, and settings.
+ *
+ * `onPinChange` runs before every user-initiated PIN mutation, letting the
+ * caller retire state (such as a pending post-recovery prompt) that a
+ * deliberate PIN change makes irrelevant.
+ */
+export const createRecoveryPinActions = (
+    coordinator: PinCoordinator,
+    did?: string,
+    onPinChange?: () => void
+) => {
     // Retained only while an attempt is incomplete, never persisted or logged.
     // A different PIN starts a replacement rather than retrying the previous save.
     const attempt = attempts.get(coordinator.runRecoverySetup) ?? { clearing: false };
@@ -29,6 +39,7 @@ export const createRecoveryPinActions = (coordinator: PinCoordinator, did?: stri
             if (attempt.pendingPin !== undefined && attempt.pendingPin !== pin) {
                 coordinator.resetRecoverySetup('pin');
             }
+            onPinChange?.();
             attempt.pendingPin = pin;
             await coordinator.runRecoverySetup('pin', () => coordinator.setEscrowPin(pin));
             attempt.pendingPin = undefined;
@@ -39,6 +50,7 @@ export const createRecoveryPinActions = (coordinator: PinCoordinator, did?: stri
             // Reject clearing during setup, and discard any activation-only retry.
             // Removing a PIN must never activate the account.
             coordinator.resetRecoverySetup('pin');
+            onPinChange?.();
             attempt.clearing = true;
             try {
                 await coordinator.clearEscrowPin();

@@ -206,14 +206,14 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
             />,
             {
                 sectionClassName:
-                    'desktop:!h-[85vh] desktop:!max-h-[85vh] desktop:!overflow-hidden',
+                    'desktop:h-[85vh]! desktop:max-h-[85vh]! desktop:overflow-hidden!',
             },
             { mobile: ModalTypes.BottomSheet, desktop: ModalTypes.Center }
         );
     }, [newModal, closeModal, selectedSkills, handleAddSkill, handleRemoveSkill]);
 
     return (
-        <section className={`${CARD_CLASS} space-y-4`}>
+        <section className={`${CARD_CLASS} space-y-v3-4`}>
             <div>
                 <h3 className="text-base font-semibold text-grayscale-900">
                     {m['issueFlow.skillsTitle']()}
@@ -268,7 +268,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
                     value={query}
                     onChange={e => setQuery(e.target.value)}
                     placeholder={m['skills.search.searchPlaceholder']()}
-                    className="w-full py-3 pl-10 pr-10 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                    className="w-full py-3 pl-10 pr-10 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                 />
                 {query && (
                     <button
@@ -288,7 +288,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
                     {m['issueFlow.searching']()}
                 </div>
             ) : suggestions.length > 0 ? (
-                <div className="space-y-2">
+                <div className="space-y-v3-2">
                     {!hasQuery && (
                         <p className="text-xs font-medium text-grayscale-500">
                             {m['issueFlow.suggested']()}

@@ -63,7 +63,7 @@ export const StylePackCategoryModal: React.FC<StylePackCategoryModalProps> = ({
                     {/* All option */}
                     <button
                         onClick={() => handleSelectCategory(StylePackCategories.all)}
-                        className={`w-full flex items-center justify-between rounded-full p-2 mt-4 shadow-sm hover:shadow-md transition-shadow ${
+                        className={`w-full flex items-center justify-between rounded-full p-2 mt-4 shadow-xs hover:shadow-md transition-shadow ${
                             activeStylePackCategory === StylePackCategories.all
                                 ? 'border-2 border-emerald-700 bg-emerald-50'
                                 : 'bg-white border-2 border-transparent'
@@ -99,7 +99,7 @@ export const StylePackCategoryModal: React.FC<StylePackCategoryModalProps> = ({
                                     onClick={() =>
                                         handleSelectCategory(type as unknown as StylePackCategories)
                                     }
-                                    className={`w-full flex items-center justify-between rounded-full p-2 mt-4 shadow-sm hover:shadow-md transition-shadow ${
+                                    className={`w-full flex items-center justify-between rounded-full p-2 mt-4 shadow-xs hover:shadow-md transition-shadow ${
                                         isActive
                                             ? 'border-2 border-emerald-700 bg-emerald-50'
                                             : 'bg-white border-2 border-transparent'

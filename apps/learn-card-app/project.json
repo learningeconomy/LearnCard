@@ -40,7 +40,7 @@
         },
         "test": {
             "executor": "nx:run-script",
-            "inputs": ["source", "tests"],
+            "inputs": ["source", "tests", "ciTestConfig"],
             "options": {
                 "script": "test"
             }
@@ -56,6 +56,24 @@
             ],
             "options": {
                 "script": "test-mock"
+            }
+        },
+        "test-visual": {
+            "executor": "nx:run-script",
+            "inputs": [
+                "source",
+                "tests",
+                "{projectRoot}/playwright.visual.config.ts",
+                "{projectRoot}/tests/visual/tailwind-regression.html"
+            ],
+            "dependsOn": [
+                {
+                    "projects": ["helpers"],
+                    "target": "build"
+                }
+            ],
+            "options": {
+                "script": "test:visual"
             }
         }
     }

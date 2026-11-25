@@ -44,7 +44,7 @@ export const BecomeTrustedIssuerForm: React.FC<BecomeTrustedIssuerFormProps> = (
                     <button
                         onClick={closeModal}
                         aria-label="Close"
-                        className="shrink-0 w-[50px] h-[50px] flex items-center justify-center rounded-full text-grayscale-600 bg-white border-solid border-grayscale-100 border-[2px]"
+                        className="shrink-0 w-[50px] h-[50px] flex items-center justify-center rounded-full text-grayscale-600 bg-white border-solid border-grayscale-100 border-2"
                     >
                         <X className="w-6 h-6" />
                     </button>

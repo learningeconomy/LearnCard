@@ -7,6 +7,7 @@ export const test = base.extend<{ forEachTest: void; context: BrowserContext }>(
         // Intercept DIDKit WASM requests to serve local file instead of CDN
         // This significantly speeds up test startup by avoiding ~9MB network fetch
         await mockDidKitWasmForContext(context);
+        // eslint-disable-next-line react-hooks/rules-of-hooks -- existing conditional hook call; restructuring it changes render behavior
         await use(context);
     },
 

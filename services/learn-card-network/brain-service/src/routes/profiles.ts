@@ -95,6 +95,7 @@ import {
 } from '@helpers/profile-privacy.helpers';
 import { verifyAuthToken } from '@helpers/oidc-jwt.helpers';
 import { claimPendingGuardianLinksForProfile } from '@helpers/guardian-links.helpers';
+import { attachContractRequestInvitesForProfile } from '@helpers/contract-request-invites.helpers';
 import { createContactMethod } from '@accesslayer/contact-method/create';
 import { getContactMethodByValue } from '@accesslayer/contact-method/read';
 import { verifyContactMethod } from '@accesslayer/contact-method/update';
@@ -113,6 +114,7 @@ const UpdateProfileInputValidator = z.object({
     image: z.string().optional(),
     heroImage: z.string().optional(),
     websiteLink: z.string().optional(),
+    linkedInOrganizationId: z.string().regex(/^\d*$/).optional(),
     type: z.string().optional(),
     email: z.string().optional(),
     notificationsWebhook: z.string().optional(),
@@ -219,6 +221,10 @@ export const profilesRouter = t.router({
                                     err
                                 );
                             }
+
+                            // Turn pending contract request invites for this email into
+                            // requests. Never throws; a failure leaves the invite pending.
+                            await attachContractRequestInvitesForProfile(profile, ctx.domain);
                         }
                     } catch (e) {
                         console.error('Auto-verify email failed (non-fatal):', e);
@@ -574,6 +580,18 @@ export const profilesRouter = t.router({
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
             const { profile } = ctx.user;
+            if (
+                profile.isServiceProfile === true &&
+                profile.type === 'child' &&
+                typeof input.type === 'string' &&
+                input.type !== 'child'
+            ) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message:
+                        'A service profile explicitly typed as a child cannot change profile type.',
+                });
+            }
 
             const {
                 profileId,
@@ -587,6 +605,7 @@ export const profilesRouter = t.router({
                 image,
                 heroImage,
                 websiteLink,
+                linkedInOrganizationId,
                 type,
                 email,
                 notificationsWebhook,
@@ -650,6 +669,11 @@ export const profilesRouter = t.router({
             if (typeof bio === 'string') actualUpdates.bio = bio;
             if (typeof heroImage === 'string') actualUpdates.heroImage = heroImage;
             if (typeof websiteLink === 'string') actualUpdates.websiteLink = websiteLink;
+            if (typeof linkedInOrganizationId === 'string') {
+                // Neo4j removes a property when SET += receives null.
+                (actualUpdates as Record<string, unknown>).linkedInOrganizationId =
+                    linkedInOrganizationId || null;
+            }
             if (typeof type === 'string') actualUpdates.type = type;
             if (typeof notificationsWebhook === 'string')
                 actualUpdates.notificationsWebhook = notificationsWebhook;

@@ -2,7 +2,6 @@ import { useWallet } from 'learn-card-base';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import React, { useState } from 'react';
 import CustomWalletMain from './CustomWalletMain';
-import { IonLoading } from '@ionic/react';
 
 const randomKey = Array.from(crypto.getRandomValues(new Uint8Array(32)), dec =>
     dec.toString(16).padStart(2, '0')
@@ -17,8 +16,11 @@ const CustomWallet: React.FC = () => {
 
     const createWallet = async () => {
         setLoading(true);
-        setWallet(await initWallet(seed));
-        setLoading(false);
+        try {
+            setWallet(await initWallet(seed));
+        } finally {
+            setLoading(false);
+        }
     };
 
     if (wallet) return <CustomWalletMain wallet={wallet} />;
@@ -26,12 +28,13 @@ const CustomWallet: React.FC = () => {
     return (
         <main className="h-full w-full flex flex-col items-center justify-center max-w-[600px] mx-auto">
             <form
-                className="flex flex-col p-8 gap-4 border rounded shadow w-full max-w-screen-mobile text-black"
+                className="flex flex-col p-8 gap-4 border rounded-sm shadow-sm w-full max-w-(--breakpoint-mobile) text-black"
                 onSubmit={e => e.preventDefault()}
             >
                 <fieldset className="flex flex-col gap-2">
-                    <span>Hello, please enter a seed lol</span>
+                    <label htmlFor="custom-wallet-seed">Hello, please enter a seed lol</label>
                     <input
+                        id="custom-wallet-seed"
                         className="bg-white border"
                         type="text"
                         value={seed}
@@ -39,15 +42,18 @@ const CustomWallet: React.FC = () => {
                     />
                 </fieldset>
 
+                {/* Inline loading state: an IonLoading overlay here can be dismissed
+                    before its present finishes, leaving aria-hidden on the router outlet. */}
                 <button
                     onClick={createWallet}
-                    className="w-full py-2 rounded border border-solid border-emerald-700 text-emerald-800"
+                    disabled={loading}
+                    aria-busy={loading}
+                    className="w-full py-2 rounded-[20px] border border-solid border-grayscale-300 text-grayscale-900 disabled:opacity-40 disabled:cursor-not-allowed"
                     type="button"
                 >
-                    Create Wallet
+                    {loading ? 'Creating wallet...' : 'Create Wallet'}
                 </button>
             </form>
-            <IonLoading isOpen={loading} message="Creating wallet..." mode="ios" />
         </main>
     );
 };

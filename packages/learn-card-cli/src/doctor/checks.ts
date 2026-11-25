@@ -3,6 +3,7 @@ import {
     PRODUCTION_NETWORK,
     STAGING_NETWORK,
     resolveServices,
+    signingServiceUrl,
     type NetworkCard,
     type Project,
 } from '../project';
@@ -188,7 +189,8 @@ export const signingServiceCheck: Check = {
     id: 'signing-service',
     title: 'Signing service',
     run: async ({ services, fetch: doFetch }): Promise<CheckResult> => {
-        if (!services.lcaAPI) {
+        const lcaAPI = signingServiceUrl(services);
+        if (!lcaAPI) {
             return {
                 status: 'skip',
                 detail: 'No LCA_API_URL configured; hosted signing (setup-signing, org apply) is unavailable on this network.',
@@ -196,8 +198,8 @@ export const signingServiceCheck: Check = {
         }
         return healthCheck(
             doFetch,
-            services.lcaAPI,
-            `signing service ${services.lcaAPI}`,
+            lcaAPI,
+            `signing service ${lcaAPI}`,
             'Check LCA_API_URL in .env. If it is a local container, `docker logs` it — a port that accepts and immediately closes connections usually means the service failed env validation on boot.'
         );
     },

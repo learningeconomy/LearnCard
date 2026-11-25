@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from openapi_client.models.inbox_get_my_inbox_deliveries200_response_records_inner_credential import InboxGetMyInboxDeliveries200ResponseRecordsInnerCredential
 from typing import Optional, Set
 from typing_extensions import Self
@@ -28,9 +28,9 @@ class InboxGetMyInboxDeliveries200ResponseRecordsInner(BaseModel):
     """
     InboxGetMyInboxDeliveries200ResponseRecordsInner
     """ # noqa: E501
-    id: Optional[StrictStr]
+    id: StrictStr
     credential: InboxGetMyInboxDeliveries200ResponseRecordsInnerCredential
-    expires_at: Optional[StrictStr] = Field(alias="expiresAt")
+    expires_at: StrictStr = Field(alias="expiresAt")
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["id", "credential", "expiresAt"]
 
@@ -61,9 +61,8 @@ class InboxGetMyInboxDeliveries200ResponseRecordsInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -82,16 +81,6 @@ class InboxGetMyInboxDeliveries200ResponseRecordsInner(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
-            _dict['id'] = None
-
-        # set to None if expires_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.expires_at is None and "expires_at" in self.model_fields_set:
-            _dict['expiresAt'] = None
 
         return _dict
 

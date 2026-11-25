@@ -154,7 +154,7 @@ const SkillSearchFrameworkSection: React.FC<SkillSearchFrameworkSectionProps> = 
     };
 
     return (
-        <div className="relative py-[10px] border-t-[1px] border-solid border-grayscale-200 flex flex-col gap-[10px]">
+        <div className="relative py-[10px] border-t border-solid border-grayscale-200 flex flex-col gap-[10px]">
             {isSavingSkills && (
                 <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/70 rounded-[10px]">
                     <IonSpinner color="dark" name="crescent" />

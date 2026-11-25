@@ -94,11 +94,10 @@ export const openAttachmentUrl = async (
         }
 
         return true;
-    } catch (error) {
-        log.error('Failed to open attachment', error, {
+    } catch {
+        log.error('attachment.open.failed', {
             isInlineDataUri: inlineDataUri,
             isNativePlatform: Capacitor.isNativePlatform(),
-            fileName,
         });
         showAlert(getAlertMessage(inlineDataUri));
         return false;

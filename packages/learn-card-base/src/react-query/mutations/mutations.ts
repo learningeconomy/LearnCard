@@ -1,4 +1,5 @@
 import { InfiniteData, useMutation, useQueryClient } from '@tanstack/react-query';
+import { invalidateVisibleCredentialCounts } from '../visibleCredentialCountKeys';
 import { useWallet } from 'learn-card-base';
 import { switchedProfileStore } from '../../stores/walletStore';
 import { LCR } from '../../types/credential-records';
@@ -9,6 +10,8 @@ import { useSyncAllCredentialsToContractsMutation } from './syncAllCredentials';
 import { ToastTypeEnum, useToast } from '../../hooks/useToast';
 import { getLogger } from '../../logging/logger';
 import { connectionPromptKeys } from '../connectionPrompts';
+import { invalidateBoostRecipientQueries } from '../queries/queries';
+import { invalidateCredentialIndexQueries } from '../queries/credentialIndexCache';
 const log = getLogger('mutations');
 
 export const getDeletedUrisForCredentialRecord = (record: LCR): string[] => {
@@ -147,6 +150,8 @@ export const useBlockProfileMutation = () => {
 };
 
 // ** CREDENTIAL MUTATIONS **
+import { verifyManagedDeliveryBeforeAccept } from '../../helpers/ingestManagedCredential';
+
 export const useAcceptCredentialMutation = () => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
@@ -160,6 +165,7 @@ export const useAcceptCredentialMutation = () => {
             metadata?: Record<string, unknown>;
         }) => {
             const wallet = await initWallet();
+            await verifyManagedDeliveryBeforeAccept(wallet, uri);
             const data = await wallet?.invoke?.acceptCredential(uri, {
                 ...(metadata ? { metadata } : {}),
             });
@@ -170,6 +176,9 @@ export const useAcceptCredentialMutation = () => {
             await Promise.all([
                 queryClient.invalidateQueries({ queryKey: connectionPromptKeys.all }),
                 queryClient.invalidateQueries({ queryKey: ['contactCredentialHistory'] }),
+                // Accepting moves the viewer from pending to claimed on that boost's
+                // recipient lists, which are now cached for a few minutes.
+                invalidateBoostRecipientQueries(queryClient),
             ]);
         },
     });
@@ -236,6 +245,8 @@ export const useDeleteCredentialRecord = () => {
         oldStaleTime?: unknown;
         oldListStaleTime?: unknown;
         category?: string;
+        // Profile the optimistic edit and stale-time pin belong to; rollback and unpin use it (LC-2355).
+        didWeb?: string;
         uri: string;
         skipPostDeleteCleanup?: boolean;
     };
@@ -341,6 +352,7 @@ export const useDeleteCredentialRecord = () => {
             }
 
             const didWeb = switchedProfileStore.get.switchedDid();
+            const readerDid = (await initWallet()).id.did();
 
             if (!category) {
                 return { uri } satisfies DeleteCredentialContext;
@@ -369,7 +381,7 @@ export const useDeleteCredentialRecord = () => {
                     hasMore: boolean;
                     records: LCR[];
                 }>
-            >(['useGetCredentialList', didWeb ?? '', category]);
+            >(['useGetCredentialList', didWeb ?? '', category, readerDid]);
 
             log.debug('optimistic update');
 
@@ -417,7 +429,7 @@ export const useDeleteCredentialRecord = () => {
 
                 log.debug('setting list', updatedQueryList);
                 queryClient.setQueryData(
-                    ['useGetCredentialList', didWeb ?? '', category],
+                    ['useGetCredentialList', didWeb ?? '', category, readerDid],
                     updatedQueryList
                 );
 
@@ -427,6 +439,7 @@ export const useDeleteCredentialRecord = () => {
                     ...(currentQuery ? { currentQuery } : {}),
                     oldStaleTime,
                     oldListStaleTime,
+                    didWeb: didWeb ?? '',
                     skipPostDeleteCleanup: Boolean(record.skipPostDeleteCleanup),
                 };
 
@@ -436,6 +449,7 @@ export const useDeleteCredentialRecord = () => {
             return {
                 uri,
                 ...(category ? { category } : {}),
+                didWeb: didWeb ?? '',
             };
         },
         onError: (_, __, context) => {
@@ -445,7 +459,8 @@ export const useDeleteCredentialRecord = () => {
 
             // On error, restore previous query data if it exists
             if (context?.category && context?.currentQuery) {
-                const didWeb = switchedProfileStore.get.switchedDid();
+                // Roll back under the profile that was edited, not whichever is active now.
+                const didWeb = context.didWeb;
 
                 // Restore original queries
                 queryClient.setQueryData(
@@ -558,14 +573,10 @@ export const useDeleteCredentialRecord = () => {
             if (category) {
                 // Invalidate related queries to refresh data
                 queryClient.invalidateQueries({
-                    queryKey: ['useGetCredentials', didWeb ?? '', category],
+                    queryKey: ['useGetCredentialList', didWeb ?? ''],
                 });
-                queryClient.invalidateQueries({
-                    queryKey: ['useGetCredentialList', didWeb ?? '', category],
-                });
-                queryClient.invalidateQueries({
-                    queryKey: ['useGetCredentialCount', didWeb ?? '', category],
-                });
+                void invalidateVisibleCredentialCounts(queryClient, didWeb ?? '');
+                void invalidateCredentialIndexQueries(queryClient, didWeb);
             }
 
             if (result.deferPostDeleteCleanup) {
@@ -578,7 +589,7 @@ export const useDeleteCredentialRecord = () => {
         onSettled: (_, __, ___, context) => {
             // Reset stale times to original values when mutation is complete
             if (context?.category) {
-                const didWeb = switchedProfileStore.get.switchedDid();
+                const didWeb = context.didWeb;
 
                 // Reset stale times to their original values
                 if (context.oldStaleTime !== undefined) {
@@ -601,14 +612,13 @@ export const useDeleteCredentialRecord = () => {
 
                 // Invalidate affected queries to refresh the data
                 queryClient.invalidateQueries({
-                    queryKey: ['useGetCredentials', didWeb ?? '', context.category],
+                    queryKey: ['useGetCredentialList', didWeb ?? ''],
                 });
-                queryClient.invalidateQueries({
-                    queryKey: ['useGetCredentialList', didWeb ?? '', context.category],
-                });
+                void invalidateVisibleCredentialCounts(queryClient, didWeb ?? '');
                 queryClient.invalidateQueries({
                     queryKey: ['boosts'],
                 });
+                void invalidateCredentialIndexQueries(queryClient, didWeb);
             }
         },
     });
@@ -648,9 +658,8 @@ export const useRevokeBoostRecipient = () => {
         },
         onSuccess: (_, { boostUri }) => {
             // Invalidate boost recipients queries to refresh the data
-            queryClient.invalidateQueries({
-                queryKey: ['boostRecipients', boostUri],
-            });
+            // Covers boostRecipients, useCountBoostRecipients and paginatedBoostRecipients
+            invalidateBoostRecipientQueries(queryClient, boostUri);
             queryClient.invalidateQueries({
                 queryKey: ['getPaginatedBoostRecipients'],
             });
@@ -700,9 +709,8 @@ export const useSuspendBoostRecipient = () => {
             }
         },
         onSuccess: (_, { boostUri }) => {
-            queryClient.invalidateQueries({
-                queryKey: ['boostRecipients', boostUri],
-            });
+            // Covers boostRecipients, useCountBoostRecipients and paginatedBoostRecipients
+            invalidateBoostRecipientQueries(queryClient, boostUri);
             queryClient.invalidateQueries({
                 queryKey: ['getPaginatedBoostRecipients'],
             });
@@ -748,9 +756,8 @@ export const useUnsuspendBoostRecipient = () => {
             }
         },
         onSuccess: (_, { boostUri }) => {
-            queryClient.invalidateQueries({
-                queryKey: ['boostRecipients', boostUri],
-            });
+            // Covers boostRecipients, useCountBoostRecipients and paginatedBoostRecipients
+            invalidateBoostRecipientQueries(queryClient, boostUri);
             queryClient.invalidateQueries({
                 queryKey: ['getPaginatedBoostRecipients'],
             });

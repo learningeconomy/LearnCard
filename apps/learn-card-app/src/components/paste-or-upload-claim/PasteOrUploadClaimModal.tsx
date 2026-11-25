@@ -274,7 +274,7 @@ export const PasteOrUploadClaimModal: React.FC<{ mode?: PasteOrUploadClaimMode }
     return (
         <div className="h-full relative bg-grayscale-100">
             <IonHeader color="light" className="rounded-b-[30px] overflow-hidden shadow-md ">
-                <IonToolbar color="light" className="text-white px-4 !py-4">
+                <IonToolbar color="light" className="text-white px-4 py-4!">
                     <div className="flex items-center justify-normal p-2">
                         <div className="flex items-center">
                             <div className="bg-white rounded-[15px] p-2 w-[60px] h-[60px] flex items-center justify-center mr-2 shrink-0">
@@ -338,7 +338,7 @@ export const PasteOrUploadClaimModal: React.FC<{ mode?: PasteOrUploadClaimMode }
                                 setErrorCopy(null);
                             }}
                             placeholder="https://… or openid-credential-offer://…"
-                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                             disabled={isProcessing}
                         />
 
@@ -423,7 +423,7 @@ export const PasteOrUploadClaimModal: React.FC<{ mode?: PasteOrUploadClaimMode }
 
             <IonFooter
                 mode="ios"
-                className="lc-content-owns-bottom w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] py-4 absolute bottom-0 left-0 bg-white"
+                className="lc-content-owns-bottom w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 left-0 bg-white/60"
                 style={{
                     bottom: 0,
                     paddingBottom:
@@ -437,7 +437,7 @@ export const PasteOrUploadClaimModal: React.FC<{ mode?: PasteOrUploadClaimMode }
                         <button
                             type="button"
                             onClick={closeModal}
-                            className="py-[9px] pl-[20px] pr-[15px] bg-white rounded-[30px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-grayscale-900 w-full shadow-button-bottom flex gap-[5px] justify-center"
+                            className="py-[9px] pl-[20px] pr-[15px] bg-white rounded-[30px] font-notoSans text-[17px] font-semibold leading-[24px] tracking-[0.25px] text-grayscale-900 w-full shadow-button-bottom flex gap-[5px] justify-center"
                         >
                             {m['common.back']()}
                         </button>

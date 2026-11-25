@@ -12,7 +12,7 @@ const BoostCMSAppearanceBadgeSelector: React.FC<{
     setState: React.Dispatch<React.SetStateAction<BoostCMSState>>;
     handleCloseModal: () => void;
     showCloseButton?: boolean;
-    title?: String | React.ReactNode;
+    title?: string | React.ReactNode;
 }> = ({ state, setState, handleCloseModal, showCloseButton = true, title }) => {
     return (
         <IonPage id="user-options-modal">

@@ -1,0 +1,164 @@
+@import './tailwind-v3-colors.css' theme(static);
+
+/* Preserve the existing design while the compiler moves to Tailwind 4. */
+@theme static {
+    --text-xs: 0.75rem;
+    --text-xs--line-height: 1rem;
+    --text-sm: 0.875rem;
+    --text-sm--line-height: 1.25rem;
+    --text-base: 1rem;
+    --text-base--line-height: 1.5rem;
+    --text-lg: 1.125rem;
+    --text-lg--line-height: 1.75rem;
+    --text-xl: 1.25rem;
+    --text-xl--line-height: 1.75rem;
+    --text-2xl: 1.5rem;
+    --text-2xl--line-height: 2rem;
+    --text-3xl: 1.875rem;
+    --text-3xl--line-height: 2.25rem;
+    --text-4xl: 2.25rem;
+    --text-4xl--line-height: 2.5rem;
+    --text-5xl: 3rem;
+    --text-5xl--line-height: 1;
+    --text-6xl: 3.75rem;
+    --text-6xl--line-height: 1;
+    --text-7xl: 4.5rem;
+    --text-7xl--line-height: 1;
+    --text-8xl: 6rem;
+    --text-8xl--line-height: 1;
+    --text-9xl: 8rem;
+    --text-9xl--line-height: 1;
+    --default-ring-width: 3px;
+    --default-ring-color: #3b82f6;
+    --default-font-family:
+        ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+@utility text-xs {
+    font-size: var(--text-xs);
+    --tw-leading: var(--text-xs--line-height);
+    line-height: var(--tw-leading);
+}
+@utility text-sm {
+    font-size: var(--text-sm);
+    --tw-leading: var(--text-sm--line-height);
+    line-height: var(--tw-leading);
+}
+@utility text-base {
+    font-size: var(--text-base);
+    --tw-leading: var(--text-base--line-height);
+    line-height: var(--tw-leading);
+}
+@utility text-lg {
+    font-size: var(--text-lg);
+    --tw-leading: var(--text-lg--line-height);
+    line-height: var(--tw-leading);
+}
+@utility text-xl {
+    font-size: var(--text-xl);
+    --tw-leading: var(--text-xl--line-height);
+    line-height: var(--tw-leading);
+}
+@utility text-2xl {
+    font-size: var(--text-2xl);
+    --tw-leading: var(--text-2xl--line-height);
+    line-height: var(--tw-leading);
+}
+@utility text-3xl {
+    font-size: var(--text-3xl);
+    --tw-leading: var(--text-3xl--line-height);
+    line-height: var(--tw-leading);
+}
+@utility text-4xl {
+    font-size: var(--text-4xl);
+    --tw-leading: var(--text-4xl--line-height);
+    line-height: var(--tw-leading);
+}
+@utility text-5xl {
+    font-size: var(--text-5xl);
+    --tw-leading: var(--text-5xl--line-height);
+    line-height: var(--tw-leading);
+}
+@utility text-6xl {
+    font-size: var(--text-6xl);
+    --tw-leading: var(--text-6xl--line-height);
+    line-height: var(--tw-leading);
+}
+@utility text-7xl {
+    font-size: var(--text-7xl);
+    --tw-leading: var(--text-7xl--line-height);
+    line-height: var(--tw-leading);
+}
+@utility text-8xl {
+    font-size: var(--text-8xl);
+    --tw-leading: var(--text-8xl--line-height);
+    line-height: var(--tw-leading);
+}
+@utility text-9xl {
+    font-size: var(--text-9xl);
+    --tw-leading: var(--text-9xl--line-height);
+    line-height: var(--tw-leading);
+}
+
+/* Explicit compatibility names preserve V3 sibling margins and RTL behavior. */
+@utility space-x-v3-* {
+    & > :not([hidden]) ~ :not([hidden]) {
+        --tw-space-x-reverse: 0;
+        --lc-space-x: --spacing(--value(number));
+        --lc-space-x: --value([length], [percentage], [*]);
+        margin-left: calc(var(--lc-space-x) * (1 - var(--tw-space-x-reverse)));
+        margin-right: calc(var(--lc-space-x) * var(--tw-space-x-reverse));
+    }
+}
+@utility -space-x-v3-* {
+    & > :not([hidden]) ~ :not([hidden]) {
+        --tw-space-x-reverse: 0;
+        --lc-space-x: calc(--spacing(--value(number)) * -1);
+        --lc-space-x: calc(--value([length], [percentage], [*]) * -1);
+        margin-left: calc(var(--lc-space-x) * (1 - var(--tw-space-x-reverse)));
+        margin-right: calc(var(--lc-space-x) * var(--tw-space-x-reverse));
+    }
+}
+@utility space-x-v3-px {
+    & > :not([hidden]) ~ :not([hidden]) {
+        --tw-space-x-reverse: 0;
+        margin-left: calc(1px * (1 - var(--tw-space-x-reverse)));
+        margin-right: calc(1px * var(--tw-space-x-reverse));
+    }
+}
+@utility space-x-v3-reverse {
+    & > :not([hidden]) ~ :not([hidden]) {
+        --tw-space-x-reverse: 1;
+    }
+}
+@utility space-y-v3-* {
+    & > :not([hidden]) ~ :not([hidden]) {
+        --tw-space-y-reverse: 0;
+        --lc-space-y: --spacing(--value(number));
+        --lc-space-y: --value([length], [percentage], [*]);
+        margin-top: calc(var(--lc-space-y) * (1 - var(--tw-space-y-reverse)));
+        margin-bottom: calc(var(--lc-space-y) * var(--tw-space-y-reverse));
+    }
+}
+@utility -space-y-v3-* {
+    & > :not([hidden]) ~ :not([hidden]) {
+        --tw-space-y-reverse: 0;
+        --lc-space-y: calc(--spacing(--value(number)) * -1);
+        --lc-space-y: calc(--value([length], [percentage], [*]) * -1);
+        margin-top: calc(var(--lc-space-y) * (1 - var(--tw-space-y-reverse)));
+        margin-bottom: calc(var(--lc-space-y) * var(--tw-space-y-reverse));
+    }
+}
+@utility space-y-v3-px {
+    & > :not([hidden]) ~ :not([hidden]) {
+        --tw-space-y-reverse: 0;
+        margin-top: calc(1px * (1 - var(--tw-space-y-reverse)));
+        margin-bottom: calc(1px * var(--tw-space-y-reverse));
+    }
+}
+@utility space-y-v3-reverse {
+    & > :not([hidden]) ~ :not([hidden]) {
+        --tw-space-y-reverse: 1;
+    }
+}

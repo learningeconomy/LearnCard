@@ -1,6 +1,6 @@
 {
     "name": "@learncard/types",
-    "version": "5.22.0",
+    "version": "6.2.0",
     "description": "Shared types for learn card",
     "type": "module",
     "main": "./dist/index.cjs",
@@ -25,6 +25,7 @@
     "scripts": {
         "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && tsc --p tsconfig.json && shx cp ./dist/index.d.ts ./dist/index.d.cts",
         "typecheck": "tsc --noEmit -p tsconfig.json",
+        "test": "vitest run",
         "start": "aqu watch"
     },
     "author": "Learning Economy Foundation (www.learningeconomy.io)",
@@ -38,7 +39,8 @@
         "url": "https://github.com/learningeconomy/LearnCard/issues"
     },
     "dependencies": {
-        "zod": "^4.1.13"
+        "zod": "^4.1.13",
+        "zod-openapi": "^5.4.5"
     },
     "devDependencies": {
         "@esbuild-plugins/node-resolve": "^0.2.2",

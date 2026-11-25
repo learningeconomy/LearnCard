@@ -108,3 +108,36 @@ export const interpolate = (template: string, params: Record<string, string | un
         const value = params[key];
         return value === undefined ? match : value;
     });
+
+/**
+ * `{ locale }` when set, `{}` otherwise — spread into props whose `locale` is optional
+ * so an absent locale is omitted rather than passed as `undefined`
+ * (safe under `exactOptionalPropertyTypes`).
+ */
+export const localeProp = (locale: string | null | undefined): { locale?: string } =>
+    locale === undefined || locale === null ? {} : { locale };
+
+/**
+ * lca-api passes ISO timestamps for security notices; show them as a readable date in
+ * the recipient's language. The recipient's time zone is unknown, so the time is shown
+ * in UTC and labelled as such. Anything that is not an ISO timestamp (previews,
+ * pre-formatted text) is shown as is.
+ */
+export const formatNoticeTimestamp = (value: string, locale: NotificationLocale): string => {
+    if (!/^\d{4}-\d{2}-\d{2}T/.test(value)) return value;
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+
+    try {
+        return new Intl.DateTimeFormat(locale, {
+            dateStyle: 'long',
+            timeStyle: 'short',
+            timeZone: 'UTC',
+        })
+            .format(date)
+            .concat(' UTC');
+    } catch {
+        return value;
+    }
+};

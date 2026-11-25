@@ -108,7 +108,7 @@ export const AiInsightsInlineConsentFlowRequest: React.FC<{
                                 toastStore.set.setOptions({ zIndex: 99999 });
                                 handleOpenPrivacyAndData();
                             }}
-                            className={`mt-2 flex gap-[5px] items-center w-full text-grayscale-900 font-notoSans text-[20px] py-[10px] px-2 border-[1px] border-solid rounded-[15px] ${borderColor}`}
+                            className={`mt-2 flex gap-[5px] items-center w-full text-grayscale-900 font-notoSans text-[20px] py-[10px] px-2 border border-solid rounded-[15px] ${borderColor}`}
                         >
                             <LockBroken />
                             {m['consentFlow.privacyAndData']()}

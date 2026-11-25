@@ -1,6 +1,10 @@
 import { environment } from '@environment';
 import { Agent, fetch as undiciFetch, type Response as UndiciResponse } from 'undici';
-import { getDidWebLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
+import {
+    createDagJweForRecipients,
+    getDidWebLearnCard,
+    getLearnCard,
+} from '@helpers/learnCard.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
 import { VCValidator, JWEValidator } from '@learncard/types';
 import type { UnsignedVC, VC, JWE } from '@learncard/types';
@@ -113,9 +117,17 @@ const getSaAgent = (): Agent => {
     return _saAgent;
 };
 
-const _mockIssueCredentialWithSigningAuthority = async (credential: UnsignedVC): Promise<VC> => {
+const _mockIssueCredentialWithSigningAuthority = async (
+    credential: UnsignedVC,
+    recipients?: string[]
+): Promise<VC | JWE> => {
     const learnCard = await getLearnCard();
-    return learnCard.invoke.issueCredential({ ...credential, issuer: learnCard.id.did() });
+    const signedCredential = await learnCard.invoke.issueCredential({
+        ...credential,
+        issuer: learnCard.id.did(),
+    });
+
+    return recipients ? createDagJweForRecipients(signedCredential, recipients) : signedCredential;
 };
 
 export async function issueCredentialWithSigningAuthority(
@@ -151,6 +163,10 @@ export async function issueCredentialWithSigningAuthority(
             retryable: false,
         });
     }
+    // The validation above excludes undefined subject IDs on the encrypted path.
+    const encryptionRecipients = encrypt
+        ? [...new Set([...(subjectIds as string[]), ownerDid, ...additionalEncryptionRecipients])]
+        : undefined;
     const credentialToIssue = appendCredentialStatus
         ? await appendBitstringStatusListEntries(credential, ownerProfile.profileId, domain)
         : credential;
@@ -177,7 +193,8 @@ export async function issueCredentialWithSigningAuthority(
             try {
                 if (IS_TEST_ENVIRONMENT) {
                     return await _mockIssueCredentialWithSigningAuthority(
-                        JSON.parse(serializedCredential)
+                        JSON.parse(serializedCredential),
+                        encryptionRecipients
                     );
                 }
 
@@ -189,16 +206,8 @@ export async function issueCredentialWithSigningAuthority(
                 perf.mark('initDid');
 
                 // Brain authenticates the request but must not be able to decrypt the response.
-                const encryption = encrypt
-                    ? {
-                          recipients: [
-                              ...new Set([
-                                  ...subjectIds,
-                                  ownerDid,
-                                  ...additionalEncryptionRecipients,
-                              ]),
-                          ],
-                      }
+                const encryption = encryptionRecipients
+                    ? { recipients: encryptionRecipients }
                     : undefined;
 
                 const didJwt = await traceCrypto('getDidAuthVp', () =>

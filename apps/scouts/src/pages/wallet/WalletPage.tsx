@@ -93,7 +93,7 @@ const WalletPage: React.FC = () => {
                             updateVersion={res?.bundle?.version}
                         />,
                         {
-                            sectionClassName: '!max-w-[400px]',
+                            sectionClassName: 'max-w-[400px]!',
                             cancelButtonTextOverride: m['launchPad.maybeLater'](),
                         }
                     );

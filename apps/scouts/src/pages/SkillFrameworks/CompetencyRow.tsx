@@ -148,7 +148,7 @@ const CompetencyRow: React.FC<CompetencyRowProps> = ({
                             <div className="w-[40px] h-[40px] rounded-full bg-grayscale-300" />
                         )}
                         <button
-                            className="ml-auto pl-[10px] border-l-[1px] border-grayscale-200 border-solid text-grayscale-500 h-full"
+                            className="ml-auto pl-[10px] border-l border-grayscale-200 border-solid text-grayscale-500 h-full"
                             onClick={e => {
                                 e.stopPropagation();
                                 newModal(

@@ -2,17 +2,42 @@
 <html lang="en">
     <head>
         <meta charset="utf-8" />
+        <!-- Ionic currently inserts runtime styles before the first style element.
+             Keep them before app styles without depending on SQLite initialization.
+             This runtime detail is guarded by tests/ionic-style-order.mocked.spec.ts;
+             recheck the production CSS contract when upgrading Ionic. -->
+        <style id="ionic-runtime-style-anchor"></style>
         <title>LearnCard</title>
 
         <base href="/" />
 
         <meta name="color-scheme" content="light dark" />
-        <meta
-            name="viewport"
-            content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"
-        />
+        <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0" />
         <meta name="format-detection" content="telephone=no" />
         <meta name="msapplication-tap-highlight" content="no" />
+
+        <!-- The first screen (login) renders Poppins 400/500/700 latin; fetch them with the CSS. -->
+        <link
+            rel="preload"
+            as="font"
+            type="font/woff2"
+            crossorigin
+            href="/src/assets/fonts/self-hosted/poppins-latin-400-normal.woff2"
+        />
+        <link
+            rel="preload"
+            as="font"
+            type="font/woff2"
+            crossorigin
+            href="/src/assets/fonts/self-hosted/poppins-latin-500-normal.woff2"
+        />
+        <link
+            rel="preload"
+            as="font"
+            type="font/woff2"
+            crossorigin
+            href="/src/assets/fonts/self-hosted/poppins-latin-700-normal.woff2"
+        />
 
         <link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials" />
 
@@ -33,11 +58,6 @@
             window.process = process;
             window.global = globalThis;
         </script>
-
-        <script
-            type="module"
-            src="https://cdn.jsdelivr.net/npm/jeep-sqlite@2.5.8/dist/jeep-sqlite/jeep-sqlite.esm.js"
-        ></script>
 
         <script>
             (function () {

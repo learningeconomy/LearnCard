@@ -14,18 +14,14 @@ import { useTheme } from '../../theme/hooks/useTheme';
 const RouteTransitionLoader: React.FC = () => {
     const { theme } = useTheme();
     const spinnerColor = theme.colors.defaults.loaders?.[0] ?? '#8B5CF6';
-    const bgColor =
-        theme.colors.defaults.passportBgColor ?? 'var(--ion-background-color, #ffffff)';
+    const bgColor = theme.colors.defaults.passportBgColor ?? 'var(--ion-background-color, #ffffff)';
 
     return (
         <div
             className="fixed inset-0 flex items-center justify-center z-[1000]"
             style={{ backgroundColor: bgColor }}
         >
-            <IonSpinner
-                name="crescent"
-                style={{ color: spinnerColor, width: 36, height: 36 }}
-            />
+            <IonSpinner name="crescent" style={{ color: spinnerColor, width: 36, height: 36 }} />
         </div>
     );
 };

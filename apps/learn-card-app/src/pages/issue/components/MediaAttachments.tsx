@@ -23,7 +23,7 @@ interface MediaAttachmentsProps {
 
 const CARD_CLASS = 'bg-white border border-grayscale-200 rounded-[20px] p-5';
 const INPUT_CLASS =
-    'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all';
+    'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all';
 
 const TYPE_META: Record<
     SimpleMediaType,
@@ -159,7 +159,7 @@ export const MediaAttachments: React.FC<MediaAttachmentsProps> = ({
                 <UploadButton type="video" onUploaded={addAttachment} />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-v3-2">
                 <div className="flex gap-2">
                     <input
                         type="url"
@@ -190,7 +190,7 @@ export const MediaAttachments: React.FC<MediaAttachmentsProps> = ({
             </div>
 
             {attachments.length > 0 ? (
-                <div className="space-y-2 pt-1">
+                <div className="space-y-v3-2 pt-1">
                     {attachments.map(attachment => (
                         <AttachmentPreview
                             key={attachment.id}
@@ -208,10 +208,10 @@ export const MediaAttachments: React.FC<MediaAttachmentsProps> = ({
         </>
     );
 
-    if (bare) return <div className="space-y-4">{body}</div>;
+    if (bare) return <div className="space-y-v3-4">{body}</div>;
 
     return (
-        <section className={`${CARD_CLASS} space-y-4`}>
+        <section className={`${CARD_CLASS} space-y-v3-4`}>
             <div>
                 <h3 className="text-base font-semibold text-grayscale-900">
                     {m['issueFlow.media.title']()}

@@ -82,6 +82,81 @@ Set `NETLIFY_SITE_ID` per environment (`learn-card-app-staging`, `learn-card-app
 auto-publishing from git branches (`main`, `production`, `production-scouts`) so CI is the only
 publisher; Deploy Previews may still be built by Netlify's git integration.
 
+## AI Passport Backend (Fly) Deploys
+
+AI Passport backend deploys run from `.github/workflows/deploy.yml` (`deploy-ai-passport-backend`
+job). Automatic legs run when the repo variable `AIP_DEPLOY_ENABLED` is `true`. Manual
+dispatch (`deploy-ai-passport-backend`, environment `staging` or `production`) works
+regardless. The Astro AI Passport frontend (`apps/ai-passport`) has been removed from the
+monorepo, so there is no app deploy job.
+
+The Fly app `ai-passport` is retired and is no longer a production deploy target. Production
+deploys go only to `lca-backend` (`claude-ai-passport` was already retired). A release that
+still included the retired leg failed while listing that app's secrets (`unauthorized`), and
+the check reported it as missing secrets:
+https://github.com/learningeconomy/LearnCard/actions/runs/44586993630/job/135783405007
+
+| Trigger                     | Backend (Fly)                                                                  |
+| --------------------------- | ------------------------------------------------------------------------------ |
+| Push to `main`              | staging, when Nx marks `ai-passport-backend` affected                          |
+| Release (`chore(release):`) | production (`lca-backend`), when `services/ai-passport-backend` version bumped |
+| Manual dispatch             | staging, or production (`lca-backend` only)                                    |
+
+| Environment                          | Deploys                         |
+| ------------------------------------ | ------------------------------- |
+| `ai-passport-api-staging`            | Fly app named by `FLY_APP_NAME` |
+| `ai-passport-lca-backend-production` | Fly app `lca-backend` (pinned)  |
+
+The `ai-passport-api-production` GitHub Environment is no longer in the deploy matrix. Staging
+still needs the `ai-passport-api-staging` Environment, its Fly app, and the data stores /
+Bedrock role / Guardrail described below; CI only deploys into them.
+
+### Backend environments
+
+| Key             | Type   | Purpose                                                                                                                               |
+| --------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `FLY_API_TOKEN` | secret | App-scoped Fly deploy token for that environment's app: `fly tokens create deploy -a <app>`. One per environment, never an org token. |
+| `FLY_APP_NAME`  | var    | Required for staging. Optional for production; if set it must match the pinned app.                                                   |
+
+Production deploys exactly what AI-Passport did: `fly.toml` plus the app's existing Fly
+secrets, no overrides. Runtime secrets (`SEED`, `JWT_SECRET`, `AI_PRIVACY_KEY`, `MONGO_URI`,
+`REDIS_*`, `QDRANT_*`, `OPENAI_API_KEY`, `SENTRY_DSN`, ...) stay as Fly secrets on each app
+(`fly secrets set -a <app>`), not GitHub secrets.
+
+**Staging** would otherwise inherit production values: `fly.toml` hardcodes the production
+`AWS_ROLE_ARN`, and the backend defaults `LEARNCARD_DID_WEB` / `LEARNCARD_CONTRACT_URI` to the
+production DID and consent contract. So `ai-passport-api-staging` must set these vars, which CI
+passes as `flyctl deploy --env` overrides. The job fails if one is missing or equals the
+production value, or if `FLY_APP_NAME` is a production app.
+
+| Var                             | Overrides                   | Value                                                                                          |
+| ------------------------------- | --------------------------- | ---------------------------------------------------------------------------------------------- |
+| `AIP_LEARNCARD_DID_WEB`         | `LEARNCARD_DID_WEB`         | `did:web:staging.network.learncard.com:users:learn-cloud` (must resolve to the staging `SEED`) |
+| `AIP_LEARNCARD_CONTRACT_URI`    | `LEARNCARD_CONTRACT_URI`    | `lc:network:staging.network.learncard.com/trpc:contract:9eade6a7-7181-4509-b805-d26e30a8f7f1`  |
+| `AIP_AWS_ROLE_ARN`              | `AWS_ROLE_ARN`              | `arn:aws:iam::<account>:role/<staging-privacy-runtime>` (placeholder)                          |
+| `AIP_BEDROCK_GUARDRAIL_ID`      | `BEDROCK_GUARDRAIL_ID`      | Staging Guardrail ID (placeholder)                                                             |
+| `AIP_BEDROCK_GUARDRAIL_VERSION` | `BEDROCK_GUARDRAIL_VERSION` | Published numeric version (not `DRAFT`) (placeholder)                                          |
+| `AIP_DOMAIN`                    | `DOMAIN`                    | Staging app origin                                                                             |
+| `AIP_CORS_ORIGINS`              | `CORS_ORIGINS`              | Staging app origin(s)                                                                          |
+| `AIP_LEARNCARD_NETWORK_URL`     | `LEARNCARD_NETWORK_URL`     | Optional; staging LearnCard Network tRPC URL (`https://staging.network.learncard.com/trpc`)    |
+| `AIP_LEARNCARD_CLOUD_URL`       | `LEARNCARD_CLOUD_URL`       | Optional; staging LearnCloud URL (`https://staging.cloud.learncard.com/trpc`)                  |
+| `AIP_LCA_URL`                   | `LCA_URL`                   | Optional; staging LearnCard app URL                                                            |
+
+The staging `SEED` is a Fly secret on the staging app (`fly secrets set SEED=... -a <app>`),
+never the production seed; its `did:web` is what goes in `AIP_LEARNCARD_DID_WEB`. The staging
+consent contract (`9eade6a7-…`) was created on the staging network by `learn-cloud`, so the
+staging `SEED` must be the one behind `did:web:staging.network.learncard.com:users:learn-cloud`.
+The LearnCard app picks the matching contract from its network URL
+(`packages/learn-card-base/src/constants/aiPassport.ts`), so staging builds need no extra var. Don't also set the Guardrail or role values as Fly secrets on the
+staging app: a Fly secret with the same name takes precedence over `--env`, so the guard here would check one value while the app
+ran another. The staging role's trust policy must allow the staging Fly app's OIDC identity.
+
+Automatic production deploys from this repo run when `AIP_DEPLOY_ENABLED` is `true` and
+ship to `lca-backend` only.
+
+`fly.mcp.toml` (the MCP server) is deployed by the separate `deploy-ai-passport-mcp` job,
+not this backend job.
+
 ## Environment Variables
 
 For the shared Infisical workflow and generated `.env` files, see [environment-variables.md](./environment-variables.md).

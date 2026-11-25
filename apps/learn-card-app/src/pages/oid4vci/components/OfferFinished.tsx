@@ -102,18 +102,18 @@ const OfferFinished: React.FC<OfferFinishedProps> = ({
     const headline = fullFailure
         ? 'Couldn’t claim credentials'
         : partialSuccess
-        ? 'Claimed with some warnings'
-        : isSingleCredential
-        ? `${featuredTitle ?? 'Credential'} claimed`
-        : `${stored.length} credentials claimed`;
+          ? 'Claimed with some warnings'
+          : isSingleCredential
+            ? `${featuredTitle ?? 'Credential'} claimed`
+            : `${stored.length} credentials claimed`;
 
     const subhead = fullFailure
         ? 'None of the credentials could be claimed.'
         : partialSuccess
-        ? `${stored.length} of ${totalAttempted} claimed — the rest had problems.`
-        : isSingleCredential
-        ? "It's yours to keep. Share it whenever you need to prove what it says."
-        : 'They’re yours to keep. Share them whenever you need to prove what they say.';
+          ? `${stored.length} of ${totalAttempted} claimed — the rest had problems.`
+          : isSingleCredential
+            ? "It's yours to keep. Share it whenever you need to prove what it says."
+            : 'They’re yours to keep. Share them whenever you need to prove what they say.';
 
     return (
         <div
@@ -129,11 +129,11 @@ const OfferFinished: React.FC<OfferFinishedProps> = ({
                 <div
                     className={`px-6 py-7 text-center ${
                         fullFailure
-                            ? 'bg-gradient-to-r from-red-500 to-red-600'
-                            : 'bg-gradient-to-r from-emerald-500 to-emerald-600'
+                            ? 'bg-linear-to-r/srgb from-red-500 to-red-600'
+                            : 'bg-linear-to-r/srgb from-emerald-500 to-emerald-600'
                     }`}
                 >
-                    <div className="w-16 h-16 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-3">
+                    <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-3">
                         {fullFailure ? (
                             <AlertCircle className="w-9 h-9 text-white" />
                         ) : (
@@ -150,7 +150,7 @@ const OfferFinished: React.FC<OfferFinishedProps> = ({
                     </p>
                 </div>
 
-                <div className="p-6 space-y-5">
+                <div className="p-6 space-y-v3-5">
                     {!fullFailure && <FlowSteps current={3} />}
 
                     {/* Single-credential success: render the *actual*
@@ -199,7 +199,7 @@ const OfferFinished: React.FC<OfferFinishedProps> = ({
                         ))}
 
                     {!isSingleCredential && stored.length > 0 && (
-                        <ul className="space-y-2">
+                        <ul className="space-y-v3-2">
                             {stored.map(entry => {
                                 const title = prettifyConfigurationId(entry.configurationId, {
                                     displayName: entry.title,
@@ -231,14 +231,14 @@ const OfferFinished: React.FC<OfferFinishedProps> = ({
                     )}
 
                     {failures.length > 0 && (
-                        <div className="p-3 bg-amber-50 border border-amber-100 rounded-2xl space-y-1.5">
+                        <div className="p-3 bg-amber-50 border border-amber-100 rounded-2xl space-y-v3-1.5">
                             <p className="text-xs font-medium text-amber-700">
                                 {failures.length === 1
                                     ? '1 credential could not be saved'
                                     : `${failures.length} credentials could not be saved`}
                             </p>
 
-                            <ul className="text-xs text-amber-800 space-y-0.5">
+                            <ul className="text-xs text-amber-800 space-y-v3-0.5">
                                 {failures.map((entry, i) => {
                                     const title = prettifyConfigurationId(entry.configurationId);
                                     return (
@@ -263,7 +263,7 @@ const OfferFinished: React.FC<OfferFinishedProps> = ({
                                 What you can do
                             </p>
 
-                            <ul className="space-y-1.5 text-xs text-grayscale-600 leading-relaxed">
+                            <ul className="space-y-v3-1.5 text-xs text-grayscale-600 leading-relaxed">
                                 <li className="flex gap-2">
                                     <span className="text-grayscale-400 shrink-0">•</span>
                                     Share it with anyone who asks for proof.
@@ -280,7 +280,7 @@ const OfferFinished: React.FC<OfferFinishedProps> = ({
                         </div>
                     )}
 
-                    <div className="space-y-3 pt-1">
+                    <div className="space-y-v3-3 pt-1">
                         {!fullFailure && (
                             <button
                                 onClick={onViewWallet}

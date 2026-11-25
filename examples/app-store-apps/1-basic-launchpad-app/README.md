@@ -1,13 +1,17 @@
 # LearnCard App Store Demo: Basic Launchpad App
 
-This is a demonstration application showing how to build an embeddable web page for the LearnCard app store. It showcases the Partner Connect SDK including:
+This is a demonstration application showing how to build an embeddable web page for the LearnCard app store. It showcases the newest zero-config Partner Connect SDK flows including:
 
--   **SSO/Identity**: Authenticating users via `requestIdentity()`
--   **Issuing Credentials**: Sending credentials to the user's wallet via `sendCredential()`
--   **Launching Features**: Opening LearnCard features (e.g., AI Tutor) via `launchFeature()`
--   **Requesting Credentials**: Asking users to share credentials via `askCredentialSearch()`
--   **App Notifications**: Sending in-app notifications via `sendNotification()`
--   **App Counters**: Incrementing and reading per-user counters via `incrementCounter()`, `getCounter()`, `getCounters()`
+- **SSO/Identity**: Authenticating users via `requestIdentity()`
+- **Inline Credential Templates**: Sending credentials with `sendCredential({ alias, template, templateData })`
+- **Offline Template Validation**: Validating inline templates locally with `validateCredentialTemplate()`
+- **Scoped Consent**: Requesting permissions with `requestConsent({ read, reason })`
+- **Launching Features**: Opening LearnCard features (e.g., AI Tutor) via `launchFeature()`
+- **Requesting Credentials**: Asking users to share credentials via `askCredentialSearch()`
+- **Learner Context**: Reading learner context via `requestLearnerContext()`
+- **App Notifications**: Sending in-app notifications via `sendNotification()`
+- **App Counters**: Incrementing and reading per-user counters via `incrementCounter()`, `getCounter()`, `getCounters()`
+- **Publish Flow**: Inspecting `getCapturedManifest()` and `getPublishUrl()` in mock mode
 
 ## Quick Start (Full Local Testing)
 
@@ -74,25 +78,49 @@ bun run build
 bun run preview
 ```
 
+### Server-side issuance and service endpoints
+
+The `issueCredential` server action requires `LEARNCARD_ISSUER_SEED`. Generate a
+fresh 32-byte hex seed (`openssl rand -hex 32`) and keep it server-side. Ordinary
+development loads this app's `.env` files and, unless overridden, uses the
+LearnCard SDK's production network and cloud defaults. Standalone Partner Connect
+mock mode does **not** make this server action offline.
+
+For local issuance, set **both** `LEARNCARD_NETWORK_URL` (Brain tRPC URL) and
+`LEARNCARD_CLOUD_URL` (LearnCloud tRPC URL). `PUBLIC_LEARNCARD_ORIGIN` controls the
+browser host/publish target separately; it does not configure server services.
+
+The repository's `lc verify` runner supplies the owned stack's two service URLs
+and a disposable seed in a sanitized child environment, with `LC_VERIFICATION=1`.
+That mode requires explicit loopback HTTP endpoints and a 32-byte hex seed, and
+disables Astro/Vite `.env` loading so a developer's issuer identity or service
+configuration cannot leak into the local proof. This mode is runner-controlled,
+not a replacement for configuring an ordinary deployment.
+
 ## Integration Notes
 
--   Update `LEARNCARD_HOST_ORIGIN` to match your production LearnCard host domain
--   The demo uses the `LEARNCARD_V1` postMessage protocol
--   All postMessage communication is origin-verified for security
--   SSO tokens should be validated on your backend before creating sessions
+- No pre-created contract URI or boost URI is required for the happy path
+- Standalone local development auto-uses SDK mock mode, so the demo works without embedding
+- When embedded or previewed inside LearnCard, the same calls use the real host automatically
+- The optional boost URI field is only for inspecting an existing host boost/template
+- All postMessage communication is origin-verified for security
+- SSO tokens should be validated on your backend before creating sessions
 
 ## Features Demonstrated
 
 1. **Single Sign-On (SSO)**: User identity via JWT token
-2. **Credential Issuance**: Issue credentials with user consent
-3. **Feature Launch**: Trigger LearnCard features from your app
-4. **Credential Request**: Request credentials with search criteria
-5. **App Notifications**: Send notifications to the current user's inbox
-6. **App Counters**: Increment, read, and list per-user/per-app counters
+2. **Inline Template Credential Issuance**: Zero-config credential creation, validation, issuance, status, and recipients
+3. **Scoped Consent**: Declarative consent flow without a contract URI
+4. **Feature Launch**: Trigger LearnCard features from your app
+5. **Credential Request**: Request credentials with search criteria
+6. **Learner Context**: Inspect a structured learner-context response
+7. **App Notifications**: Send notifications to the current user's inbox
+8. **App Counters**: Increment, read, and list per-user/per-app counters
+9. **Publish**: Preview the mock-captured manifest and publish URL
 
 ## Architecture
 
--   Built with Astro for fast, static site generation
--   Uses Tailwind CSS via CDN for styling
--   Client-side Partner Connect SDK for LearnCard communication
--   Promise-based API for async request/response flows
+- Built with Astro for fast, static site generation
+- Uses Tailwind CSS via CDN for styling
+- Client-side Partner Connect SDK for LearnCard communication
+- Promise-based API for async request/response flows

@@ -65,8 +65,8 @@ export const AiPathwayCareerItem: React.FC<{
             role="button"
             className={
                 isCardVariant
-                    ? 'w-full flex flex-col items-start justify-start p-4 gap-2 border-solid border-[1px] border-grayscale-200 border-b-[3px] border-b-cyan-501 rounded-[20px] bg-white shadow-bottom-1-5'
-                    : 'w-full flex flex-col items-start justify-start pt-2 pb-4 gap-1 border-solid border-b-[1px] border-grayscale-200 last:border-b-0'
+                    ? 'w-full flex flex-col items-start justify-start p-4 gap-2 border-solid border border-grayscale-200 border-b-[3px] border-b-cyan-501 rounded-[20px] bg-white shadow-bottom-1-5'
+                    : 'w-full flex flex-col items-start justify-start pt-2 pb-4 gap-1 border-solid border-b border-grayscale-200 last:border-b-0'
             }
             onClick={openCareerDetailsModal}
         >

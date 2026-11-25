@@ -53,8 +53,10 @@ const AddressBookPendingConnections: React.FC<{
 
                     queryClient.setQueryData(
                         ['getPendingConnections'],
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                         (prevPendingConnections: any) => {
                             const updatedPendingConnections = prevPendingConnections?.filter(
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                                 (connection: any) => connection.profileId !== profileId
                             );
                             setConnectionCount(updatedPendingConnections?.length);
@@ -65,6 +67,7 @@ const AddressBookPendingConnections: React.FC<{
                 onError(error, variables, context) {
                     refetch();
                     presentToast(
+                        // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
                         // @ts-ignore
                         error?.message || 'An error occurred, unable to cancel request',
                         {
@@ -75,10 +78,12 @@ const AddressBookPendingConnections: React.FC<{
                 },
             }
         );
+        // eslint-disable-next-line no-empty -- existing intentionally empty block
         try {
         } catch (err) {
             log.info('canceledConnectionReq::error', err);
             presentToast(
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
                 // @ts-ignore
                 err?.message || 'An error occurred, unable to cancel request',
                 {
@@ -105,6 +110,7 @@ const AddressBookPendingConnections: React.FC<{
                     onError(error, variables, context) {
                         refetch();
                         presentToast(
+                            // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
                             // @ts-ignore
                             error?.message || 'An error occurred, unable to block user',
                             {
@@ -118,6 +124,7 @@ const AddressBookPendingConnections: React.FC<{
         } catch (err) {
             log.info('blockProfile::error', err);
             presentToast(
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
                 // @ts-ignore
                 err?.message || 'An error occurred, unable to block user',
                 {

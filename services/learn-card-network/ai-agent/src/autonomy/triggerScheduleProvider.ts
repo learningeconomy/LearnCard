@@ -4,6 +4,14 @@ import type { AgentAutonomySchedule, LearnCardAssistantSchedulesRuntime } from '
 
 export const TRIGGER_AUTONOMOUS_SCHEDULE_TASK_ID = 'learncard-autonomous-schedule-dispatch';
 
+/**
+ * Trigger.dev gives new schedules a 60-minute window by default and starts each run at a stable
+ * offset inside it, so a 07:30 schedule could fire as late as 08:30. "0m" makes it fire at the
+ * cron minute. @trigger.dev/sdk 4.5.9 doesn't declare `window` yet (core 4.5.11 adds it), but
+ * schedules.create sends its options as-is, so the field still reaches the API.
+ */
+export const TRIGGER_AUTONOMOUS_SCHEDULE_WINDOW = '0m';
+
 export class AutonomousExecutionNotEnabledError extends Error {
     constructor() {
         super('The schedule owner is not enabled for autonomous execution.');
@@ -23,6 +31,7 @@ export interface TriggerScheduleClient {
         timezone: string;
         externalId: string;
         deduplicationKey: string;
+        window: string;
     }): Promise<{ id: string }>;
     activate(scheduleId: string): Promise<unknown>;
     deactivate(scheduleId: string): Promise<unknown>;
@@ -60,6 +69,7 @@ export const createTriggerAgentAutonomyScheduleProvider = ({
                 timezone: schedule.timezone,
                 externalId: schedule.ownerDid,
                 deduplicationKey: getTriggerScheduleDeduplicationKey(environmentKey, schedule),
+                window: TRIGGER_AUTONOMOUS_SCHEDULE_WINDOW,
             });
 
             if (schedule.enabled) await client.activate(triggerSchedule.id);

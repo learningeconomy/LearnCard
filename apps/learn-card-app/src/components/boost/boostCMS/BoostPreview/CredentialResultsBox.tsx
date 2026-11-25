@@ -93,7 +93,7 @@ const CredentialResultsBox: React.FC<CredentialResultsBoxProps> = ({
                                     </p>
                                 )}
                             </div>
-                            <p className="text-grayscale-900 text-[13px] font-bold shrink-0 bg-white rounded-[10px] px-[10px] py-[6px] border border-grayscale-200 shadow-sm">
+                            <p className="text-grayscale-900 text-[13px] font-bold shrink-0 bg-white rounded-[10px] px-[10px] py-[6px] border border-grayscale-200 shadow-xs">
                                 {formatResultValue(result)}
                             </p>
                         </div>
@@ -104,7 +104,7 @@ const CredentialResultsBox: React.FC<CredentialResultsBoxProps> = ({
                         <p className="text-grayscale-900 text-[13px] font-semibold leading-[17px]">
                             Credits Earned
                         </p>
-                        <p className="text-grayscale-900 text-[13px] font-bold shrink-0 bg-white rounded-[10px] px-[10px] py-[6px] border border-grayscale-200 shadow-sm">
+                        <p className="text-grayscale-900 text-[13px] font-bold shrink-0 bg-white rounded-[10px] px-[10px] py-[6px] border border-grayscale-200 shadow-xs">
                             {formatNumberValue(creditsEarned)}
                         </p>
                     </div>

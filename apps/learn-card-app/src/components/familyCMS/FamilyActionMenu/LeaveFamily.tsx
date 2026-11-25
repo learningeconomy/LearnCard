@@ -44,7 +44,7 @@ export const LeaveFamily: React.FC<{ credential: VC; boostUri?: string }> = ({
                 </div>
             </>,
             {
-                sectionClassName: '!bg-transparent !border-none !shadow-none !rounded-none',
+                sectionClassName: 'bg-transparent! border-none! shadow-none! rounded-none!',
                 hideButton: true,
             }
         );

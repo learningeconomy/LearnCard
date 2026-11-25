@@ -54,7 +54,8 @@ export const useRefreshLearnCloudCredentialMutation = (
                     queryClient.invalidateQueries({ queryKey: ['useGetCredentials'] }),
                     queryClient.invalidateQueries({ queryKey: ['useGetIDs'] }),
                     queryClient.invalidateQueries({ queryKey: ['useGetResolvedCredential'] }),
-                    queryClient.invalidateQueries({ queryKey: ['useGetResolvedCredentials'] }),
+                    queryClient.invalidateQueries({ queryKey: ['useResolveManyCredentials'] }),
+                    queryClient.invalidateQueries({ queryKey: ['useGetSkills'] }),
                 ]);
             }
 

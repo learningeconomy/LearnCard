@@ -2,29 +2,30 @@
 
 ## Properties
 
-| Name                          | Type                                                                                          | Description                                  | Notes      |
-| ----------------------------- | --------------------------------------------------------------------------------------------- | -------------------------------------------- | ---------- |
-| **profile_id**                | **str**                                                                                       | Unique, URL-safe identifier for the profile. | [optional] |
-| **display_name**              | **str**                                                                                       |                                              | [optional] |
-| **short_bio**                 | **str**                                                                                       |                                              | [optional] |
-| **bio**                       | **str**                                                                                       |                                              | [optional] |
-| **is_private**                | **bool**                                                                                      |                                              | [optional] |
-| **profile_visibility**        | **str**                                                                                       |                                              | [optional] |
-| **show_email**                | **bool**                                                                                      |                                              | [optional] |
-| **allow_connection_requests** | **str**                                                                                       |                                              | [optional] |
-| **image**                     | **str**                                                                                       |                                              | [optional] |
-| **hero_image**                | **str**                                                                                       |                                              | [optional] |
-| **website_link**              | **str**                                                                                       |                                              | [optional] |
-| **type**                      | **str**                                                                                       |                                              | [optional] |
-| **email**                     | **str**                                                                                       |                                              | [optional] |
-| **notifications_webhook**     | **str**                                                                                       |                                              | [optional] |
-| **display**                   | [**ProfileCreateServiceProfileRequestDisplay**](ProfileCreateServiceProfileRequestDisplay.md) |                                              | [optional] |
-| **role**                      | **str**                                                                                       |                                              | [optional] |
-| **dob**                       | **str**                                                                                       |                                              | [optional] |
-| **country**                   | **str**                                                                                       |                                              | [optional] |
-| **locale**                    | **str**                                                                                       |                                              | [optional] |
-| **highlighted_credentials**   | **List[str]**                                                                                 |                                              | [optional] |
-| **approved**                  | **bool**                                                                                      |                                              | [optional] |
+| Name                          | Type                                                                            | Description                                  | Notes      |
+| ----------------------------- | ------------------------------------------------------------------------------- | -------------------------------------------- | ---------- |
+| **profile_id**                | **str**                                                                         | Unique, URL-safe identifier for the profile. | [optional] |
+| **display_name**              | **str**                                                                         |                                              | [optional] |
+| **short_bio**                 | **str**                                                                         |                                              | [optional] |
+| **bio**                       | **str**                                                                         |                                              | [optional] |
+| **is_private**                | **bool**                                                                        |                                              | [optional] |
+| **profile_visibility**        | **str**                                                                         |                                              | [optional] |
+| **show_email**                | **bool**                                                                        |                                              | [optional] |
+| **allow_connection_requests** | **str**                                                                         |                                              | [optional] |
+| **image**                     | **str**                                                                         |                                              | [optional] |
+| **hero_image**                | **str**                                                                         |                                              | [optional] |
+| **website_link**              | **str**                                                                         |                                              | [optional] |
+| **linked_in_organization_id** | **str**                                                                         |                                              | [optional] |
+| **type**                      | **str**                                                                         |                                              | [optional] |
+| **email**                     | **str**                                                                         |                                              | [optional] |
+| **notifications_webhook**     | **str**                                                                         |                                              | [optional] |
+| **display**                   | [**ProfileCreateProfileRequestDisplay**](ProfileCreateProfileRequestDisplay.md) |                                              | [optional] |
+| **role**                      | **str**                                                                         |                                              | [optional] |
+| **dob**                       | **str**                                                                         |                                              | [optional] |
+| **country**                   | **str**                                                                         |                                              | [optional] |
+| **locale**                    | **str**                                                                         |                                              | [optional] |
+| **highlighted_credentials**   | **List[str]**                                                                   |                                              | [optional] |
+| **approved**                  | **bool**                                                                        |                                              | [optional] |
 
 ## Example
 

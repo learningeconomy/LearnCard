@@ -2,10 +2,10 @@
 
 ## Properties
 
-| Name             | Type                                                                                                                          | Description | Notes |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
-| **contract_uri** | **str**                                                                                                                       |             |
-| **autoboosts**   | [**List[ContractsAddAutoBoostsToContractRequestAutoboostsInner]**](ContractsAddAutoBoostsToContractRequestAutoboostsInner.md) |             |
+| Name             | Type                                                                                                                              | Description | Notes |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **contract_uri** | **str**                                                                                                                           |             |
+| **autoboosts**   | [**List[ContractsCreateConsentFlowContractRequestAutoboostsInner]**](ContractsCreateConsentFlowContractRequestAutoboostsInner.md) |             |
 
 ## Example
 

@@ -89,7 +89,8 @@ const GuardianAccountApprovalPage: React.FC = () => {
         <IonPage>
             <IonContent
                 fullscreen
-                className="flex flex-col flex-grow"
+                className="flex flex-col grow"
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                 style={{ ['--background' as any]: bgColor }}
             >
                 <div

@@ -1,4 +1,5 @@
 import React from 'react';
+import { withCompetencyAdmin } from './withCompetencyAdmin';
 import { useModal } from 'learn-card-base';
 import TrashBin from '../../components/svgs/TrashBin';
 import * as m from '../../paraglide/messages.js';
@@ -40,4 +41,4 @@ const DeleteFrameworkConfirmationModal: React.FC<DeleteFrameworkConfirmationModa
     );
 };
 
-export default DeleteFrameworkConfirmationModal;
+export default withCompetencyAdmin(DeleteFrameworkConfirmationModal);

@@ -21,7 +21,7 @@ type IssueHistory = {
 
 type BoostPreviewProps = {
     credential: VC;
-    verificationItems: VerificationItem[];
+    verificationItems?: VerificationItem[];
     categoryType: BoostCategoryOptionsEnum;
     customThumbComponent: React.ReactNode;
     customBodyCardComponent: React.ReactNode;
@@ -155,7 +155,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                     className={`flex flex-col items-center justify-center overflow-x-auto pb-32 ${boostPreviewWrapperCustomClass} ${
                         shouldUseHostCardPadding ? 'px-1' : ''
                     } ${isCertificate ? 'pt-14 md:pt-20' : ''} ${
-                        isID ? '!px-0 mt-[calc(20px+var(--ion-safe-area-top,0px))]' : ''
+                        isID ? 'px-0! mt-[calc(20px+var(--ion-safe-area-top,0px))]' : ''
                     }`}
                 >
                     <section
@@ -168,7 +168,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                             issueeOverride={issueeOverride}
                             issuerOverride={issuerOverride}
                             issueHistory={issueHistory}
-                            categoryType={categoryType as any}
+                            categoryType={categoryType}
                             verificationItems={vcVerifications}
                             customThumbComponent={customThumbComponent}
                             customBodyCardComponent={customBodyCardComponent}

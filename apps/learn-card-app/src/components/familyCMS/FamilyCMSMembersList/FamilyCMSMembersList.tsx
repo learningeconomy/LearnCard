@@ -265,7 +265,7 @@ export const FamilyCMSMemberList: React.FC<FamilyCMSMemberListProps> = ({
                     })}
 
                 {filteredList.length === 0 && search.length > 0 && (
-                    <div className="w-full text-left flex flex-col items-start justify-center border-t-[2px] border-solid border-grayscale-100 pt-2 mt-2">
+                    <div className="w-full text-left flex flex-col items-start justify-center border-t-2 border-solid border-grayscale-100 pt-2 mt-2">
                         <p className="text-grayscale-600 text-base font-normal font-notoSans">
                             <TransP
                                 m={m['common.searchResults.noResultsFor']}

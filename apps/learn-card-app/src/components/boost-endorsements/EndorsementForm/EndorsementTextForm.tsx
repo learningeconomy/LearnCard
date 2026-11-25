@@ -39,6 +39,7 @@ export const EndorsementTextForm: React.FC<{
                 <TransP
                     m={m['endorsement.form.text.prompt']}
                     values={{ title }}
+                    // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                     components={[<span className="font-semibold" />]}
                 />
             </p>

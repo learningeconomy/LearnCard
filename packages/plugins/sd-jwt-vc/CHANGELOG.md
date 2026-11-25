@@ -1,5 +1,101 @@
 # @learncard/sd-jwt-vc-plugin
 
+## 0.2.25
+
+### Patch Changes
+
+- [#2073](https://github.com/learningeconomy/LearnCard/pull/2073) [`9ea97f319158a461ec42b4256c63b81ed53afe97`](https://github.com/learningeconomy/LearnCard/commit/9ea97f319158a461ec42b4256c63b81ed53afe97) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Load @sd-jwt/sd-jwt-vc (and its status-list decoder) on the first SD-JWT verify or present instead of at plugin import.
+
+- Updated dependencies [[`261e0f46814595d06460dc617ba50800671f03b1`](https://github.com/learningeconomy/LearnCard/commit/261e0f46814595d06460dc617ba50800671f03b1), [`acda1d1bd362add238a7c6ff8096c295e844e586`](https://github.com/learningeconomy/LearnCard/commit/acda1d1bd362add238a7c6ff8096c295e844e586), [`6d5afc9c348c20ac6ac9c7b35651e5b850b13401`](https://github.com/learningeconomy/LearnCard/commit/6d5afc9c348c20ac6ac9c7b35651e5b850b13401), [`0bb92c2cc8047aa4bf307fd0952c1714219286a9`](https://github.com/learningeconomy/LearnCard/commit/0bb92c2cc8047aa4bf307fd0952c1714219286a9)]:
+    - @learncard/didkit-plugin@1.11.0
+    - @learncard/core@10.0.0
+    - @learncard/vc-plugin@1.7.3
+
+## 0.2.24
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/core@9.4.46
+    - @learncard/didkit-plugin@1.10.12
+    - @learncard/vc-plugin@1.7.2
+
+## 0.2.23
+
+### Patch Changes
+
+- [#1835](https://github.com/learningeconomy/LearnCard/pull/1835) [`3b23133f37568730dc3bc5274b36b18de84a6536`](https://github.com/learningeconomy/LearnCard/commit/3b23133f37568730dc3bc5274b36b18de84a6536) Thanks [@goblincore](https://github.com/goblincore)! - LC-2159: Add transport-neutral Digital Credentials API request parsing and response creation for the unsigned OpenID4VP SD-JWT profile. Responses enforce explicit request-bounded disclosures and bind holder proofs to the trusted origin and nonce without HTTP submission. Existing URI/direct-post transports are preserved.
+
+    Support portable Ed25519 signing and verification on older Android WebViews while retaining JWK operation restrictions. Preserve JOSE verification for other supported issuer curves, including Ed448.
+
+- Updated dependencies [[`c245cba6fc162e6896c4f9439a8a8da42d4189c9`](https://github.com/learningeconomy/LearnCard/commit/c245cba6fc162e6896c4f9439a8a8da42d4189c9), [`6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480`](https://github.com/learningeconomy/LearnCard/commit/6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480)]:
+    - @learncard/didkit-plugin@1.10.11
+    - @learncard/core@9.4.45
+    - @learncard/vc-plugin@1.7.1
+
+## 0.2.22
+
+### Patch Changes
+
+- Updated dependencies [[`751579d9c14116dbf6d0e7f7d62f489c81c39db2`](https://github.com/learningeconomy/LearnCard/commit/751579d9c14116dbf6d0e7f7d62f489c81c39db2), [`2c60b1a760958cbfe2525bc951d2381332e1aa48`](https://github.com/learningeconomy/LearnCard/commit/2c60b1a760958cbfe2525bc951d2381332e1aa48)]:
+    - @learncard/vc-plugin@1.7.0
+    - @learncard/core@9.4.44
+    - @learncard/didkit-plugin@1.10.10
+
+## 0.2.21
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/core@9.4.43
+    - @learncard/didkit-plugin@1.10.9
+    - @learncard/vc-plugin@1.6.9
+
+## 0.2.20
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/core@9.4.42
+    - @learncard/didkit-plugin@1.10.8
+    - @learncard/vc-plugin@1.6.8
+
+## 0.2.19
+
+### Patch Changes
+
+- Updated dependencies [[`d93c1b15856f341b4bd36415bf39052de9b6b198`](https://github.com/learningeconomy/LearnCard/commit/d93c1b15856f341b4bd36415bf39052de9b6b198)]:
+    - @learncard/didkit-plugin@1.10.6
+    - @learncard/core@9.4.41
+    - @learncard/vc-plugin@1.6.7
+
+## 0.2.18
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/core@9.4.40
+    - @learncard/didkit-plugin@1.10.5
+    - @learncard/vc-plugin@1.6.6
+
+## 0.2.17
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/core@9.4.39
+    - @learncard/didkit-plugin@1.10.4
+    - @learncard/vc-plugin@1.6.5
+
+## 0.2.16
+
+### Patch Changes
+
+- Updated dependencies [[`590adf48867d6c6fd504e66a11c9827d5102122d`](https://github.com/learningeconomy/LearnCard/commit/590adf48867d6c6fd504e66a11c9827d5102122d)]:
+    - @learncard/didkit-plugin@1.10.3
+    - @learncard/core@9.4.38
+    - @learncard/vc-plugin@1.6.4
+
 ## 0.2.15
 
 ### Patch Changes

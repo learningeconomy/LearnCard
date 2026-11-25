@@ -46,7 +46,7 @@ const LaunchPadContractListItem: React.FC<LaunchPadContractListItemProps> = ({
     return (
         <IonItem
             lines="none"
-            className="w-full max-w-[600px] ion-no-border px-[12px] py-[12px] max-h-[76px] border-gray-200 border-b-2 last:border-b-0 flex  bg-white items-center justify-between notificaion-list-item overflow-visible rounded-[12px] mt-2 first:mt-4 shadow-sm"
+            className="w-full max-w-[600px] ion-no-border px-[12px] py-[12px] max-h-[76px] border-gray-200 border-b-2 last:border-b-0 flex  bg-white items-center justify-between notificaion-list-item overflow-visible rounded-[12px] mt-2 first:mt-4 shadow-xs"
         >
             <div className="flex items-center justify-start w-full bg-white">
                 <div className="rounded-lg shadow-3xl w-[50px] h-[50px] mr-3 min-w-[50px] min-h-[50px]">
@@ -57,7 +57,7 @@ const LaunchPadContractListItem: React.FC<LaunchPadContractListItemProps> = ({
                             className={
                                 hasImage
                                     ? 'w-full h-full object-cover bg-white rounded-lg'
-                                    : 'w-full h-full object-contain overflow-hidden border-[1px] p-1'
+                                    : 'w-full h-full object-contain overflow-hidden border p-1'
                             }
                             src={hasImage ? image : EmptyImage}
                             alt={contract?.name ?? contract?.owner?.displayName}

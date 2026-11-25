@@ -48,7 +48,7 @@ export const ShareCredentialThumbnail = ({
                 <IonIcon icon={documentTextOutline} className="h-6 w-6 text-grayscale-600" />
             )}
             {showImage && CategoryIcon && (
-                <span className="absolute -bottom-1 -end-1 flex h-6 w-6 items-center justify-center rounded-full bg-white ring-2 ring-white">
+                <span className="absolute -bottom-1 -inset-e-1 flex h-6 w-6 items-center justify-center rounded-full bg-white ring-2 ring-white">
                     <CategoryIcon className="h-5 w-5" />
                 </span>
             )}

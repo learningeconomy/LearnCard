@@ -73,9 +73,8 @@ class SkillFrameworksUpdateRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -85,21 +84,6 @@ class SkillFrameworksUpdateRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if description (nullable) is None
-        # and model_fields_set contains the field
-        if self.description is None and "description" in self.model_fields_set:
-            _dict['description'] = None
-
-        # set to None if image (nullable) is None
-        # and model_fields_set contains the field
-        if self.image is None and "image" in self.model_fields_set:
-            _dict['image'] = None
-
-        # set to None if is_public (nullable) is None
-        # and model_fields_set contains the field
-        if self.is_public is None and "is_public" in self.model_fields_set:
-            _dict['isPublic'] = None
-
         return _dict
 
     @classmethod

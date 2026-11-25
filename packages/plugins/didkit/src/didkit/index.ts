@@ -11,30 +11,23 @@ export * from './pkg/didkit_wasm';
  * how Prettier wraps the `init` signature. Do not inline it back into the parameter list.
  */
 export const DEFAULT_DIDKIT_WASM_URL =
-    'https://assets.learncard.ai/didkit/sha256-fe1d254186130480a3ae831fe1b17c58ea732adc39cad16f895aa58e03f1bd62/didkit_wasm_bg.wasm';
+    'https://assets.learncard.ai/didkit/sha256-ded761c91910068261077c0e2e0c574b6c8c6ba638c8805ad9550a4b90e4138e/didkit_wasm_bg.wasm';
 
-let initialized = false;
-let generating = false; // Mutex flag to allow first init call to acquire a lock
+// One shared WASM init. Concurrent and repeated callers await the same promise; a failed
+// init clears it so the next caller can retry instead of inheriting a poisoned rejection.
+let initPromise: Promise<void> | undefined;
 
-export const init = async (arg: InitInput | Promise<InitInput> = DEFAULT_DIDKIT_WASM_URL) => {
-    // Do not return until we are done generating!
-    while (generating) await new Promise(res => setTimeout(res, 250));
+export const init = (arg: InitInput | Promise<InitInput> = DEFAULT_DIDKIT_WASM_URL) => {
+    initPromise ??= _init({ module_or_path: arg }).then(
+        () => undefined,
+        error => {
+            initPromise = undefined;
 
-    // allow calling multiple times without reinitializing
-    if (initialized) return;
+            throw error;
+        }
+    );
 
-    try {
-        generating = true;
-
-        await _init({ module_or_path: arg });
-
-        generating = false;
-        initialized = true;
-    } catch (error) {
-        generating = false;
-
-        throw error;
-    }
+    return initPromise;
 };
 
 export default init;

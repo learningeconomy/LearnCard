@@ -13,6 +13,12 @@ export const PublicProfileIdValidator = LCNProfileValidator.shape.profileId.refi
     { message: 'Profile IDs beginning with "sample-" are reserved.' }
 );
 
+/** Legacy service flags never override an explicit child classification. */
+export const isServiceProfileExemptFromGuardianship = (
+    isServiceProfile: unknown,
+    profileType: unknown
+): boolean => isServiceProfile === true && profileType !== 'child';
+
 /**
  * Gets or creates a federated profile for cross-instance credential sending.
  * Federated profiles use email-like format: profileId@service-domain to avoid collisions.

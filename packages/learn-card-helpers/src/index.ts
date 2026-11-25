@@ -15,6 +15,9 @@ export const isEncrypted = (item: unknown): item is JWE => {
 
 /**
  * tRPC data transformer that handles RegExp serialization/deserialization
+ *
+ * The managed-boost exclusion fields deliberately preserve exact strings and
+ * list entries. Existing routes keep decoding the legacy slash-delimited wire format.
  */
 export const RegExpTransformer: DataTransformer = {
     serialize(object) {
@@ -30,8 +33,14 @@ export const RegExpTransformer: DataTransformer = {
         // backwards compat
         if (typeof object !== 'string') return object;
 
-        return JSON.parse(object, (_key, value) => {
+        const deserializeValue = (value: unknown, path: string[]): unknown => {
             if (typeof value === 'string') {
+                const isLiteralExclusion =
+                    path[0] === 'exclude' &&
+                    (path[1] === 'name' || path[1] === 'category') &&
+                    (path.length === 2 || (path.length === 4 && path[2] === '$in'));
+                if (isLiteralExclusion) return value;
+
                 const match = value.match(/^\/(.*)\/([gimsuy]*)$/);
 
                 if (match) {
@@ -43,8 +52,24 @@ export const RegExpTransformer: DataTransformer = {
                     }
                 }
             }
+
+            if (Array.isArray(value)) {
+                return value.map((item, index) => deserializeValue(item, [...path, String(index)]));
+            }
+
+            if (value !== null && typeof value === 'object') {
+                for (const [key, item] of Object.entries(value)) {
+                    (value as Record<string, unknown>)[key] = deserializeValue(item, [
+                        ...path,
+                        key,
+                    ]);
+                }
+            }
+
             return value;
-        });
+        };
+
+        return deserializeValue(JSON.parse(object), []);
     },
 };
 
@@ -60,6 +85,22 @@ export const isVC2Format = (credential: unknown): boolean => {
         ? context.some(value => value === 'https://www.w3.org/ns/credentials/v2')
         : context === 'https://www.w3.org/ns/credentials/v2';
 };
+
+/**
+ * The marker field on the placeholder credential JSON of a "display-only anchor"
+ * Boost (one created by a managed/signed-only send that had no explicit credential).
+ * `'display' in boost` is NOT a safe way to detect this: ordinary Boosts commonly have
+ * their own top-level `display` object too (e.g. the LearnCard app's appearance fields —
+ * backgroundImage, backgroundColor, displayType), so that check produces false
+ * positives on real credentials.
+ */
+export const DISPLAY_ONLY_ANCHOR_MARKER = 'displayOnlyAnchor' as const;
+
+/** Detects a display-only anchor via its dedicated marker (see `DISPLAY_ONLY_ANCHOR_MARKER`). */
+export const isDisplayOnlyAnchorTemplate = (credential: unknown): boolean =>
+    !!credential &&
+    typeof credential === 'object' &&
+    (credential as Record<string, unknown>)[DISPLAY_ONLY_ANCHOR_MARKER] === true;
 
 /** Unwraps a boost credential from a CertifiedBoostCredential, if it is one */
 export const unwrapBoostCredential = (vc?: VC | UnsignedVC) => {
@@ -108,3 +149,7 @@ export const isAppDidWeb = (did?: string): boolean => {
 };
 
 export * from './share-content-canonical';
+export * from './consent-flow-contract-updates';
+
+export * from './credential-materialization';
+export * from './age-policy';

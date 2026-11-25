@@ -39,10 +39,10 @@ export const FamilyPin: React.FC<{
             />,
             {
                 sectionClassName:
-                    '!bg-transparent !border-none !shadow-none !rounded-none mb-[-10px]',
+                    'bg-transparent! border-none! shadow-none! rounded-none! mb-[-10px]',
                 hideButton: true,
                 usePortal: true,
-                portalClassName: '!max-w-[400px] !mb-[-70px] h-[150px] ',
+                portalClassName: 'max-w-[400px]! mb-[-70px]! h-[150px] ',
             },
             { mobile: ModalTypes.FullScreen, desktop: ModalTypes.Cancel }
         );
@@ -74,7 +74,7 @@ export const FamilyPin: React.FC<{
                             setPinError('');
                         }}
                         title={pinExists ? m['family.pin.editPin']() : m['family.pin.setPin']()}
-                        className="!border-0 !p-0 !m-0"
+                        className="border-0! p-0! m-0!"
                         pinExists={pinExists}
                     />
                 </div>

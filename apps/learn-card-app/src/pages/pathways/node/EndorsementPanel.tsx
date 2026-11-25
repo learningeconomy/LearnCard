@@ -117,7 +117,7 @@ const EndorsementPanel: React.FC<EndorsementPanelProps> = ({
     const hasAny = endorsements.length > 0;
 
     return (
-        <section className="space-y-2">
+        <section className="space-y-v3-2">
             {/*
                 Demoted from a full labeled section to a compact chip
                 list + footer line. Most nodes don't need endorsements
@@ -125,7 +125,7 @@ const EndorsementPanel: React.FC<EndorsementPanelProps> = ({
                 flow stay the primary act.
             */}
             {hasAny && (
-                <ul className="space-y-1.5">
+                <ul className="space-y-v3-1.5">
                     {endorsements.map(e => {
                         const isPending = e.endorsementId.startsWith('pending-');
 
@@ -163,9 +163,9 @@ const EndorsementPanel: React.FC<EndorsementPanelProps> = ({
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -4 }}
                         transition={{ duration: 0.2, ease: 'easeOut' }}
-                        className="p-4 rounded-2xl border border-grayscale-200 bg-grayscale-10 space-y-3"
+                        className="p-4 rounded-2xl border border-grayscale-200 bg-grayscale-10 space-y-v3-3"
                     >
-                        <div className="space-y-1.5">
+                        <div className="space-y-v3-1.5">
                             <label
                                 htmlFor="endorsement-relationship"
                                 className="text-xs font-medium text-grayscale-700"
@@ -182,7 +182,7 @@ const EndorsementPanel: React.FC<EndorsementPanelProps> = ({
                                     )
                                 }
                                 className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm
-                                           text-grayscale-900 bg-white focus:outline-none focus:ring-2
+                                           text-grayscale-900 bg-white focus:outline-hidden focus:ring-2
                                            focus:ring-emerald-500 focus:border-transparent font-poppins"
                             >
                                 {getRelationshipOptions().map(o => (
@@ -193,7 +193,7 @@ const EndorsementPanel: React.FC<EndorsementPanelProps> = ({
                             </select>
                         </div>
 
-                        <div className="space-y-1.5">
+                        <div className="space-y-v3-1.5">
                             <label
                                 htmlFor="endorsement-contact"
                                 className="text-xs font-medium text-grayscale-700"
@@ -209,7 +209,7 @@ const EndorsementPanel: React.FC<EndorsementPanelProps> = ({
                                 placeholder="alex@example.com"
                                 className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm
                                            text-grayscale-900 placeholder:text-grayscale-400 bg-white
-                                           focus:outline-none focus:ring-2 focus:ring-emerald-500
+                                           focus:outline-hidden focus:ring-2 focus:ring-emerald-500
                                            focus:border-transparent font-poppins"
                             />
                         </div>

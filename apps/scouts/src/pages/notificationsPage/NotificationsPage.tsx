@@ -123,7 +123,7 @@ const NotificationsPage: React.FC = () => {
                 />
             </MainHeader>
             <IonContent fullscreen className="bg-white h-full w-full">
-                <IonCol className="flex mx-auto relative items-start flex-wrap w-full h-auto min-h-[100%] notifications-list-container bg-white px-[20px]">
+                <IonCol className="flex mx-auto relative items-start flex-wrap w-full h-auto min-h-full notifications-list-container bg-white px-[20px]">
                     <NotificationNavTabsContainer
                         isEmptyState={isEmptyState}
                         setIsEmptyState={setIsEmptyState}

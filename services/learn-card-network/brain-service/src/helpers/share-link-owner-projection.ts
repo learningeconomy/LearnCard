@@ -31,6 +31,8 @@ export const toOwnerShareLink = (
         selectedCount: record.selectedCount,
         version: record.version,
         contentVersion: record.contentVersion,
+        attachmentId: record.attachmentId ?? null,
+        attachmentChunkCount: record.attachmentChunkCount ?? null,
         status: record.status,
         contentState: record.contentState,
         createdAt: record.createdAt,

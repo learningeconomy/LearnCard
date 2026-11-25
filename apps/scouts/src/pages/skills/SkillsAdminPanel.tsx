@@ -1,4 +1,5 @@
 import React from 'react';
+import { withCompetencyAdmin } from '../SkillFrameworks/withCompetencyAdmin';
 
 import Plus from 'learn-card-base/svgs/Plus';
 import Pencil from '../../components/svgs/Pencil';
@@ -26,7 +27,7 @@ const SkillsAdminPanel: React.FC<SkillsAdminPanelProps> = ({ setFrameworkToBrows
         newModal(
             <CreateFrameworkModal />,
             {
-                sectionClassName: '!bg-transparent !shadow-none',
+                sectionClassName: 'bg-transparent! shadow-none!',
             },
             { desktop: ModalTypes.Right, mobile: ModalTypes.FullScreen }
         );
@@ -36,7 +37,7 @@ const SkillsAdminPanel: React.FC<SkillsAdminPanelProps> = ({ setFrameworkToBrows
         newModal(
             <SelectFrameworkToManageModal />,
             {
-                sectionClassName: '!bg-transparent !shadow-none !overflow-visible',
+                sectionClassName: 'bg-transparent! shadow-none! overflow-visible!',
             },
             { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
         );
@@ -78,8 +79,7 @@ const SkillsAdminPanel: React.FC<SkillsAdminPanelProps> = ({ setFrameworkToBrows
                     </div>
 
                     {frameworksExist && (
-                        <div className="flex flex-col gap-[15px] border-t-[1px] border-violet-300 border-solid pt-[15px]">
-                            {/* @ts-ignore */}
+                        <div className="flex flex-col gap-[15px] border-t border-violet-300 border-solid pt-[15px]">
                             {frameworks?.map((framework, index) => (
                                 <SkillsAdminPanelFramework
                                     key={index}
@@ -109,4 +109,4 @@ const SkillsAdminPanel: React.FC<SkillsAdminPanelProps> = ({ setFrameworkToBrows
     );
 };
 
-export default SkillsAdminPanel;
+export default withCompetencyAdmin(SkillsAdminPanel);

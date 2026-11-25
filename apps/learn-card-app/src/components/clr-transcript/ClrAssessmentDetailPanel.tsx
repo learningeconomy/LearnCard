@@ -1,6 +1,7 @@
 import React from 'react';
 
 import X from '../svgs/X';
+import { ClrRecordDetails } from './ClrRecordDetails';
 import { ClipboardCheck } from 'lucide-react';
 import { FlatIcon } from 'learn-card-base/components/FlatIcon';
 import ClrAlignmentList from './ClrAlignmentList';
@@ -13,13 +14,13 @@ import ClrCourseCredentialCollapsible from './ClrCourseCredentialCollapsible';
 
 import { useModal } from 'learn-card-base';
 
-import { formatClrDate, getRelationshipsForRecord } from '../../helpers/clrRenderer.helpers';
-import { summarizeAssessment } from './clr.helpers';
+import { getRelationshipsForRecord } from 'learn-card-base/helpers/credentials/clr/renderer';
+import { summarizeAssessment } from 'learn-card-base/helpers/credentials/clr/helpers';
 
 import type {
     AssessmentDisplayModel,
     ClrTranscriptDisplayModel,
-} from '../../helpers/clrRenderer.helpers';
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 import type { VC } from '@learncard/types';
 
 const ClrAssessmentDetailPanel: React.FC<{
@@ -41,6 +42,7 @@ const ClrAssessmentDetailPanel: React.FC<{
     issuerLogo,
     showCloseButton = true,
 }) => {
+    const record = model.records.find(candidate => candidate.id === assessment.sourceCredentialId);
     const { closeModal } = useModal();
     const summary = summarizeAssessment(assessment);
     const relationships = getRelationshipsForRecord(
@@ -52,14 +54,11 @@ const ClrAssessmentDetailPanel: React.FC<{
         [assessment.sourceCredentialId]: {
             kind: 'assessment',
             title: assessment.name?.value ?? 'Assessment',
-            dateLabel: assessment.earnedAt?.value
-                ? `Added ${formatClrDate(assessment.earnedAt.value)}`
-                : undefined,
         },
     };
 
     return (
-        <div className="space-y-5 pb-[100px] h-full bg-grayscale-100 overflow-y-auto">
+        <div className="space-y-v3-5 pb-[100px] h-full bg-grayscale-100 overflow-y-auto">
             <div className="bg-white rounded-b-[30px] overflow-hidden shadow-md px-6 py-5">
                 <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
@@ -75,21 +74,13 @@ const ClrAssessmentDetailPanel: React.FC<{
                             <p className="text-sm text-grayscale-600">
                                 {assessment.achievementType.value}
                             </p>
-                            {assessment.earnedAt?.value && (
-                                <>
-                                    <span className="text-xs text-grayscale-300">•</span>
-                                    <p className="text-xs text-grayscale-500">
-                                        {formatClrDate(assessment.earnedAt.value)}
-                                    </p>
-                                </>
-                            )}
                         </div>
                     </div>
                     {showCloseButton && (
                         <button
                             type="button"
                             onClick={closeModal}
-                            className="shrink-0 w-[50px] h-[50px] flex items-center justify-center rounded-full text-grayscale-600 bg-white border-solid border-grayscale-100 border-[2px] mt-0.5"
+                            className="shrink-0 w-[50px] h-[50px] flex items-center justify-center rounded-full text-grayscale-600 bg-white border-solid border-grayscale-100 border-2 mt-0.5"
                         >
                             <X className="w-6 h-6" />
                         </button>
@@ -97,8 +88,8 @@ const ClrAssessmentDetailPanel: React.FC<{
                 </div>
             </div>
 
-            <div className="px-5 space-y-5">
-                <div className="bg-white shadow-box-bottom rounded-2xl overflow-hidden w-full p-4 space-y-4">
+            <div className="px-5 space-y-v3-5">
+                <div className="bg-white shadow-box-bottom rounded-2xl overflow-hidden w-full p-4 space-y-v3-4">
                     <div className="flex gap-3">
                         <div className="bg-grayscale-50 flex flex-col items-center border border-grayscale-200 rounded-2xl px-6 py-4 w-[50%]">
                             <p className="text-2xl font-semibold text-emerald-700 leading-none text-center">
@@ -128,24 +119,6 @@ const ClrAssessmentDetailPanel: React.FC<{
                             </p>
                         </div>
                     )}
-
-                    {assessment.earnedAt?.value && (
-                        <p className="text-base text-grayscale-600">
-                            Completed on{' '}
-                            <span className="font-semibold text-grayscale-600">
-                                {formatClrDate(assessment.earnedAt.value)}
-                            </span>
-                            {issuerName && (
-                                <>
-                                    {' '}
-                                    at{' '}
-                                    <span className="font-semibold text-grayscale-600">
-                                        {issuerName}
-                                    </span>
-                                </>
-                            )}
-                        </p>
-                    )}
                 </div>
 
                 {relationships.length > 0 && (
@@ -158,6 +131,8 @@ const ClrAssessmentDetailPanel: React.FC<{
                 )}
 
                 <ClrResultWithScaleList results={assessment.results} showResultType={adminMode} />
+
+                <ClrRecordDetails record={record} />
 
                 {assessment.alignments.length > 0 && (
                     <ClrAlignmentList alignments={assessment.alignments} />
@@ -178,6 +153,7 @@ const ClrAssessmentDetailPanel: React.FC<{
                     issuerLogo={issuerLogo}
                     skillCount={assessment.alignments.length}
                     credential={boost}
+                    record={record}
                 />
             </div>
         </div>

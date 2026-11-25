@@ -1,5 +1,169 @@
 # @learncard/network-brain-client
 
+## 2.8.0
+
+### Minor Changes
+
+- [#2045](https://github.com/learningeconomy/LearnCard/pull/2045) [`acda1d1bd362add238a7c6ff8096c295e844e586`](https://github.com/learningeconomy/LearnCard/commit/acda1d1bd362add238a7c6ff8096c295e844e586) Thanks [@goblincore](https://github.com/goblincore)! - Stop installing the backend services and React Native tooling with the SDK.
+
+    - `@learncard/network-brain-client` and `@learncard/learn-cloud-client` no longer depend on `@learncard/network-brain-service` / `@learncard/learn-cloud-service`. Workspace development continues to resolve their source without a build. Release manifest preparation removes that source-only development condition, so published entry points use built JavaScript and bundled declarations under both default and development conditions. The brain client bundles its helper runtime dependencies in ESM and CommonJS. The declarations contain the router types they need, so consumers type-check without the server packages. `@learncard/learn-cloud-client` also exports `Filter`, which `@learncard/learn-cloud-plugin` now imports from there.
+    - `@learncard/core`, `@learncard/crypto-plugin` and `@learncard/lca-api-plugin` no longer depend on `isomorphic-webcrypto`, which pulled in Expo and React Native through its optional dependencies. They use the platform's `globalThis.crypto` (Node.js 20+, every current browser). **Breaking for environments without WebCrypto** (React Native, Node.js 18 and older): they must now load a WebCrypto polyfill before initializing LearnCard; `learnCard.invoke.crypto()` throws a clear error if it is missing.
+    - `@learncard/types` declares the `zod-openapi` type augmentation imported by its published development sources, so client types also resolve with the development condition enabled.
+    - The service packages publish only `dist`, `README.md` and `CHANGELOG.md`.
+
+    The WebCrypto requirement is a major release for `core`, `crypto-plugin`, and the public entry points that initialize LearnCard: `init`, `lca-api-plugin`, `react`, `holder-continuity`, and `create-http-bridge`. Changesets otherwise propagates internal dependency updates as patches; explicit majors prevent existing compatible ranges from silently losing the polyfill. The CLI already requires Node.js 20+. Plugins that call WebCrypto directly, including `sd-jwt-vc`, `openid4vc`, `linked-claims`, and `learn-cloud`, also require the platform API or a consumer-provided polyfill before use; loading core no longer supplies it. Only callers of `learnCard.invoke.crypto()` receive the explicit missing-WebCrypto error; direct callers can fail with a native error. Packages that only reference core/plugin types do not acquire a new runtime requirement.
+
+### Patch Changes
+
+- [#2095](https://github.com/learningeconomy/LearnCard/pull/2095) [`e096512e4291bcaa5e424b7abbfc0932ca2a2317`](https://github.com/learningeconomy/LearnCard/commit/e096512e4291bcaa5e424b7abbfc0932ca2a2317) Thanks [@goblincore](https://github.com/goblincore)! - `sendContractRequest` accepts `targetEmail` as an alternative to `targetProfileId`. An email-addressed request is stored as an invite, always answers `{ requestId, status: 'pending' }`, and becomes an ordinary request when a profile verifies that email. The sender sees only the email, never the profile or DID, until the request is accepted.
+
+    Add the `contract-request-invite` email template, sent when the address has no account (at most 3 per contract and address per day). Invites expire after 30 days through the daily maintenance job; `getContractRequest`, `getContractSentRequests` and `cancelContractRequest` cover invites that are not attached to a profile yet.
+
+- [#2094](https://github.com/learningeconomy/LearnCard/pull/2094) [`ff6f013bdedc9aee84e9849fa5736a8ad4a90c81`](https://github.com/learningeconomy/LearnCard/commit/ff6f013bdedc9aee84e9849fa5736a8ad4a90c81) Thanks [@goblincore](https://github.com/goblincore)! - **Breaking:** `sendContractRequest` now returns `{ requestId, status }` instead of `true`.
+
+    Add `getContractRequest(contractUri, requestId)` to read one contract request by its request ID, and let `cancelContractRequest` take `{ requestId }` instead of a target profile ID. `getContractSentRequests` rows gain `target` and may omit `profile`.
+
+    Prepare for requests addressed to an email: a request marked `addressedByEmail` shows only the email to other parties until it is accepted, in `getContractRequest`, `getContractSentRequests`, `getRequestStatusForProfile` and the decision notifications. Request status gains `expired`.
+
+- [#2069](https://github.com/learningeconomy/LearnCard/pull/2069) [`154941805bd8e2aa626afe3582e7794921debd27`](https://github.com/learningeconomy/LearnCard/commit/154941805bd8e2aa626afe3582e7794921debd27) Thanks [@goblincore](https://github.com/goblincore)! - Add the Integration change feed. Consent and request events are fanned out to one thin, ordered `IntegrationEvent` record per subscribed Integration (owner, writers, data recipients and the requester), with a per-Integration sequence number. The new `getIntegrationEvents` route (`GET /integration/{id}/events`) pages the feed with an opaque cursor and returns `latestCursor`. Records are kept for 30 days; an older cursor is rejected with `CURSOR_EXPIRED` (HTTP 409). Fan-out runs inline and in the contract-events worker; retention runs in the daily maintenance job (Lambda and Docker).
+
+- [#2070](https://github.com/learningeconomy/LearnCard/pull/2070) [`cad95b60227e1b99ffaaad07406ccc0366b08555`](https://github.com/learningeconomy/LearnCard/commit/cad95b60227e1b99ffaaad07406ccc0366b08555) Thanks [@goblincore](https://github.com/goblincore)! - Add the state-change events and the connections snapshot that a feed-only Integration needs. New integration-only events (no profile notifications): `contract_retired` and one `consent_withdrawn` with reason `contract_retired` per withdrawn terms when a contract is retired; `consent_paused` with reason `needs_reconsent` per terms paused by a contract update; `consent_suspended` when a re-consent deadline passes; and `consent_expired` when a consent's own `expiresAt` passes or the `expiresAt` of the contract version the consenter accepted passes, the same rule `getConsentedDataForDid` applies (found by a new index-backed scan in the consentFlowDeadline job, Lambda and Docker; the terms status is not changed). Each expiry instant emits once (event id `<termsId>:expired:<expiresAt>`), so a consent that is renewed and expires again emits `consent_expired` again. A contract's pending events are now fanned out oldest first so its feed keeps the order things happened. The new `getContractConnections` route (`GET /consent-flow-contracts/connections`, scope `contracts-data:read`, owner or data recipient) pages the current connections of a contract — identifiers, status and referral reference only, with the same expiry rule — so a client can snapshot, follow the feed from `latestCursor`, and re-snapshot on `CURSOR_EXPIRED`.
+
+- [#2069](https://github.com/learningeconomy/LearnCard/pull/2069) [`154941805bd8e2aa626afe3582e7794921debd27`](https://github.com/learningeconomy/LearnCard/commit/154941805bd8e2aa626afe3582e7794921debd27) Thanks [@goblincore](https://github.com/goblincore)! - Add contract-event webhook configuration to Integrations. The new `setIntegrationWebhook` route (`POST /integration/{id}/webhook`) sets, replaces or removes (`null`) the webhook URL, which must be an `http` or `https` URL, and returns the signing secret once, when the first URL is set. `updateIntegration` accepts `contractEventsEnabled`; setting it to `false` stops both new feed records and delivery of records that are already queued. Integrations expose `webhookUrl`, `hasWebhookSecret` and `contractEventsEnabledAt`. The new `rotateIntegrationWebhookSecret` route replaces the signing secret, returns the new one once and keeps the previous secret valid for 24 hours. Secrets are stored encrypted and are never returned by a read route. Adds the `IntegrationEvent` validators used by the upcoming change feed.
+
+- [#2081](https://github.com/learningeconomy/LearnCard/pull/2081) [`1e4a9e97b825c18300ae0f00c2b9324120be196f`](https://github.com/learningeconomy/LearnCard/commit/1e4a9e97b825c18300ae0f00c2b9324120be196f) Thanks [@goblincore](https://github.com/goblincore)! - Tell integrations when a consent category's `shareUntil` date passes. The consentFlowDeadline job now emits an integration-only `consent_updated` event with `reason: "share_until_passed"` (event id `<termsId>:share_until:<category>:<shareUntil>`, one per category and date, no profile notification). The record carries the category name in a new optional `category` field. The consent stays live; only that category's shared data stops being returned by the data reads. Terms now carry a derived `nextShareUntil` (earliest future `shareUntil` among shared categories, indexed), set by every terms write and filled for existing consents by a one-off, resumable backfill in the same job, so the job never scans all consents.
+
+- [#2069](https://github.com/learningeconomy/LearnCard/pull/2069) [`154941805bd8e2aa626afe3582e7794921debd27`](https://github.com/learningeconomy/LearnCard/commit/154941805bd8e2aa626afe3582e7794921debd27) Thanks [@goblincore](https://github.com/goblincore)! - Deliver Integration change-feed records to the Integration's webhook URL. Each POST body is the feed record and carries `X-LearnCard-Signature: t=<unix seconds>,v1=<hex HMAC-SHA256(secret, t + "." + body)>` (a second `v1` for the previous secret during rotation), plus `X-LearnCard-Event-Id` and `X-LearnCard-Delivery`. Delivery runs in the contract-events worker with leases and the outbox retry policy (12 attempts within 24 hours; 4xx other than 408, 425, 429 is final) and never removes a record from the feed. The new `sendIntegrationTestEvent` route sends a signed `integration.test` event and reports the result.
+
+- [#2075](https://github.com/learningeconomy/LearnCard/pull/2075) [`bd450e7b0467a94bbd30573fa0aebfcd6333db22`](https://github.com/learningeconomy/LearnCard/commit/bd450e7b0467a94bbd30573fa0aebfcd6333db22) Thanks [@goblincore](https://github.com/goblincore)! - Let a client that holds only an API token set up and check an Integration's webhook. New route `getIntegrationWebhook` (`GET /integration/{id}/webhook`, scope `integrations:read`, owner only) returns `IntegrationWebhookStatus`: the URL, its `state` (`active`, `failing` or `disabled`), `lastSuccessAt`, `lastFailureAt` and `lastFailureReason` (a fixed code such as `http_401`, `timeout`, `network_error`, or `invalid_webhook` for a redirect or an unsafe address — never a URL or a response body), `pendingDeliveries` and `retryingDeliveries`, `hasSecret`, `secretVersion` (0 without a secret, 1 for the first, plus 1 per rotation) and `previousSecretExpiresAt`; never a secret. Webhook delivery and test pings record the outcome of every attempt for this read, and replacing the webhook URL starts with empty health. `sendIntegrationTestEvent` now returns `{ delivered, httpStatus, latencyMs, error }` (`status` was renamed to `httpStatus`) and is limited to 10 test events per Integration per minute (`TOO_MANY_REQUESTS` beyond that).
+
+- Updated dependencies [[`e096512e4291bcaa5e424b7abbfc0932ca2a2317`](https://github.com/learningeconomy/LearnCard/commit/e096512e4291bcaa5e424b7abbfc0932ca2a2317), [`ff6f013bdedc9aee84e9849fa5736a8ad4a90c81`](https://github.com/learningeconomy/LearnCard/commit/ff6f013bdedc9aee84e9849fa5736a8ad4a90c81), [`e096512e4291bcaa5e424b7abbfc0932ca2a2317`](https://github.com/learningeconomy/LearnCard/commit/e096512e4291bcaa5e424b7abbfc0932ca2a2317), [`154941805bd8e2aa626afe3582e7794921debd27`](https://github.com/learningeconomy/LearnCard/commit/154941805bd8e2aa626afe3582e7794921debd27), [`1e4a9e97b825c18300ae0f00c2b9324120be196f`](https://github.com/learningeconomy/LearnCard/commit/1e4a9e97b825c18300ae0f00c2b9324120be196f), [`bd450e7b0467a94bbd30573fa0aebfcd6333db22`](https://github.com/learningeconomy/LearnCard/commit/bd450e7b0467a94bbd30573fa0aebfcd6333db22), [`acda1d1bd362add238a7c6ff8096c295e844e586`](https://github.com/learningeconomy/LearnCard/commit/acda1d1bd362add238a7c6ff8096c295e844e586)]:
+    - @learncard/types@6.2.0
+
+## 2.7.2
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/network-brain-service@5.1.1
+
+## 2.7.1
+
+### Patch Changes
+
+- Updated dependencies [[`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c), [`f086c95870f57896331b2bbbdd97a94f6ddc3339`](https://github.com/learningeconomy/LearnCard/commit/f086c95870f57896331b2bbbdd97a94f6ddc3339), [`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c)]:
+    - @learncard/network-brain-service@5.1.0
+
+## 2.7.0
+
+### Minor Changes
+
+- [#1839](https://github.com/learningeconomy/LearnCard/pull/1839) [`0caa0e478bce246793893e488f37ee90c9b00a1a`](https://github.com/learningeconomy/LearnCard/commit/0caa0e478bce246793893e488f37ee90c9b00a1a) Thanks [@gerardopar](https://github.com/gerardopar)! - Add campaign test-to-me and paced audience notification dispatch, ANNOUNCEMENT metadata, delivery acknowledgement bookkeeping, and retry-safe inbox deduplication.
+
+    Deploy lca-api's enum and campaign deduplication support before enabling brain-service dispatch. Push retains the existing best-effort delivery behavior.
+
+### Patch Changes
+
+- Updated dependencies [[`3505f004376543ff4c723921868e17c400142884`](https://github.com/learningeconomy/LearnCard/commit/3505f004376543ff4c723921868e17c400142884), [`69b80366c48e0f458b3bb50f25166c90ecaa2d6d`](https://github.com/learningeconomy/LearnCard/commit/69b80366c48e0f458b3bb50f25166c90ecaa2d6d), [`0caa0e478bce246793893e488f37ee90c9b00a1a`](https://github.com/learningeconomy/LearnCard/commit/0caa0e478bce246793893e488f37ee90c9b00a1a), [`bde3fe0f15a780d9fafc699096a9a0307502f529`](https://github.com/learningeconomy/LearnCard/commit/bde3fe0f15a780d9fafc699096a9a0307502f529), [`784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3`](https://github.com/learningeconomy/LearnCard/commit/784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3), [`751579d9c14116dbf6d0e7f7d62f489c81c39db2`](https://github.com/learningeconomy/LearnCard/commit/751579d9c14116dbf6d0e7f7d62f489c81c39db2), [`2c60b1a760958cbfe2525bc951d2381332e1aa48`](https://github.com/learningeconomy/LearnCard/commit/2c60b1a760958cbfe2525bc951d2381332e1aa48)]:
+    - @learncard/network-brain-service@5.0.0
+
+## 2.6.3
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/network-brain-service@4.1.3
+
+## 2.6.2
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/network-brain-service@4.1.2
+
+## 2.6.1
+
+### Patch Changes
+
+- Updated dependencies [[`decc065dcc7ecf3a5aacd06850ed23356f528153`](https://github.com/learningeconomy/LearnCard/commit/decc065dcc7ecf3a5aacd06850ed23356f528153), [`9bca968ad4da81ce98674d0e1a3959956d7521ca`](https://github.com/learningeconomy/LearnCard/commit/9bca968ad4da81ce98674d0e1a3959956d7521ca)]:
+    - @learncard/network-brain-service@4.1.1
+
+## 2.6.0
+
+### Minor Changes
+
+- [#1785](https://github.com/learningeconomy/LearnCard/pull/1785) [`4fae096473fd0824be1dd6aefb4a783062377104`](https://github.com/learningeconomy/LearnCard/commit/4fae096473fd0824be1dd6aefb4a783062377104) Thanks [@gerardopar](https://github.com/gerardopar)! - Add campaign definitions, admin-managed metadata audiences, age-aware self-enrollment and shared engagement state. Expose typed campaign APIs and network plugin methods without enabling notification delivery or app rendering.
+
+    Campaign audiences always exclude profiles with missing, empty, or malformed birthdays. Self-enrollment requires a known adult birthday.
+
+    Require live or paused campaigns to be archived before deletion. Rejected campaign events leave profile properties unchanged, and audience metadata filters are limited to 20 keys.
+
+- [#1777](https://github.com/learningeconomy/LearnCard/pull/1777) [`d1708a1ce43f052862fedda2cf0d922a71ad1762`](https://github.com/learningeconomy/LearnCard/commit/d1708a1ce43f052862fedda2cf0d922a71ad1762) Thanks [@smurflo2](https://github.com/smurflo2)! - feat: [LC-2245] Add issuer LinkedIn organization IDs, stable certification IDs, and opt-in localized social previews. Keep each preview bound to one encrypted presentation so a new share does not replace an earlier card; refresh metadata in place and recreate deleted references. Audit publisher and creation/update times, support owner/profile cleanup, preserve decryptable card URLs, and isolate private updates to their exact share record.
+
+    Extract stable UUIDs from recognized LearnCard credential addresses to fit LinkedIn's certification ID field, retain other complete IDs only within the 80-character limit, and preserve family record identity independently of loaded pages. Use only eligible credential/achievement artwork for public previews, never recipient-photo fallbacks. Enable posting only after explicit preview publication succeeds and associate the disabled action with its consent explanation. Keep unresolved issuer placeholders out of LinkedIn organization names.
+
+    Keep the share-preview request type in a type-only network-plugin import so consumers using `verbatimModuleSyntax` can typecheck.
+
+### Patch Changes
+
+- Updated dependencies [[`4fae096473fd0824be1dd6aefb4a783062377104`](https://github.com/learningeconomy/LearnCard/commit/4fae096473fd0824be1dd6aefb4a783062377104), [`e0f4188b93fba5747f21cd50e0bd4a62fdf88d37`](https://github.com/learningeconomy/LearnCard/commit/e0f4188b93fba5747f21cd50e0bd4a62fdf88d37), [`4fae096473fd0824be1dd6aefb4a783062377104`](https://github.com/learningeconomy/LearnCard/commit/4fae096473fd0824be1dd6aefb4a783062377104), [`d1708a1ce43f052862fedda2cf0d922a71ad1762`](https://github.com/learningeconomy/LearnCard/commit/d1708a1ce43f052862fedda2cf0d922a71ad1762), [`11f18bde5808075df401e17d2b3cc40a0cdbdac7`](https://github.com/learningeconomy/LearnCard/commit/11f18bde5808075df401e17d2b3cc40a0cdbdac7)]:
+    - @learncard/network-brain-service@4.1.0
+
+## 2.5.63
+
+### Patch Changes
+
+- [#1718](https://github.com/learningeconomy/LearnCard/pull/1718) [`d40cb07be34fbd7fcb078eadd84b0c0df97a937a`](https://github.com/learningeconomy/LearnCard/commit/d40cb07be34fbd7fcb078eadd84b0c0df97a937a) Thanks [@goblincore](https://github.com/goblincore)! - Import and edit spreadsheet recipients on the Issue page, issue through durable inbox batches, and recover interrupted runs from IndexedDB without resending successful or unconfirmed rows. Support standard Open Badges Evidence without requiring LearnCard extension contexts.
+
+    All sends to specific people now require local IndexedDB recovery and Web Locks, including picker-only profile sends. Signing out clears local recovery records for privacy; accepted server work can continue. Restore issue lifecycle analytics, add dismissible saved-run reminders and receipt-only delivery checks, and reject edits to submitted rows with a clear message. Import XLSX content without counting formatting-only trailing ranges against row limits.
+
+    Evidence attachments retain standard names and URLs but omit unsupported EvidenceFile, fileName, and fileType extensions in every issuance mode, including single sends. Changing credential type keeps recipient values for review instead of clearing imported data.
+
+- Updated dependencies [[`d40cb07be34fbd7fcb078eadd84b0c0df97a937a`](https://github.com/learningeconomy/LearnCard/commit/d40cb07be34fbd7fcb078eadd84b0c0df97a937a), [`c742ccf1bc1d28bd347b1a5cf2a2c6d69ba1d910`](https://github.com/learningeconomy/LearnCard/commit/c742ccf1bc1d28bd347b1a5cf2a2c6d69ba1d910), [`3231ed0b37d9af8c8e49c17f89b62778aec34f5c`](https://github.com/learningeconomy/LearnCard/commit/3231ed0b37d9af8c8e49c17f89b62778aec34f5c)]:
+    - @learncard/network-brain-service@4.0.4
+
+## 2.5.62
+
+### Patch Changes
+
+- Updated dependencies [[`cb54286a0d2bce596a3981f5e8c5f413d46493e4`](https://github.com/learningeconomy/LearnCard/commit/cb54286a0d2bce596a3981f5e8c5f413d46493e4), [`f7f37e3195f35a63f86fcbe44d2e314679f0924d`](https://github.com/learningeconomy/LearnCard/commit/f7f37e3195f35a63f86fcbe44d2e314679f0924d), [`43bcd912c30b108bb4cee41691eedb87300cf8eb`](https://github.com/learningeconomy/LearnCard/commit/43bcd912c30b108bb4cee41691eedb87300cf8eb), [`2c3a865d79f9b98e6eda0ffe8a9146f7f1f14f2f`](https://github.com/learningeconomy/LearnCard/commit/2c3a865d79f9b98e6eda0ffe8a9146f7f1f14f2f), [`a36ca5dbfc61276e5da533ee40c3d20d86026742`](https://github.com/learningeconomy/LearnCard/commit/a36ca5dbfc61276e5da533ee40c3d20d86026742)]:
+    - @learncard/network-brain-service@4.0.3
+
+## 2.5.61
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/network-brain-service@4.0.2
+
+## 2.5.60
+
+### Patch Changes
+
+- Updated dependencies [[`cb23aae65e6c481768f57094619ff7059af04518`](https://github.com/learningeconomy/LearnCard/commit/cb23aae65e6c481768f57094619ff7059af04518), [`63ded61d2b1b81ce1c8ad7b9415510da5e4c24ae`](https://github.com/learningeconomy/LearnCard/commit/63ded61d2b1b81ce1c8ad7b9415510da5e4c24ae)]:
+    - @learncard/network-brain-service@4.0.1
+
+## 2.5.59
+
+### Patch Changes
+
+- [#1632](https://github.com/learningeconomy/LearnCard/pull/1632) [`6209da80c52ac056a7644dab14669192740c9dad`](https://github.com/learningeconomy/LearnCard/commit/6209da80c52ac056a7644dab14669192740c9dad) Thanks [@goblincore](https://github.com/goblincore)! - Add explicit consent contract data recipients and audience version acknowledgements. Enforce current consent status, expiry, category sharing, and recipient membership on consented data reads. Recipient additions freeze after first consent; removals immediately revoke API access and invalidate stale consent/update/sync acknowledgements.
+
+    Update existing app consent paths to review the current data audience, encrypt for all recipients, and cache copies by the full audience. Background synchronization reloads recipients and acknowledges the current version.
+
+- [#1634](https://github.com/learningeconomy/LearnCard/pull/1634) [`5890451789b18afee45dc5ecbab3fa30aa90f085`](https://github.com/learningeconomy/LearnCard/commit/5890451789b18afee45dc5ecbab3fa30aa90f085) Thanks [@goblincore](https://github.com/goblincore)! - Add attributed generic contract requests, target-only denial, retained cancellation history, and optional referral identity on consent history and exports. Preserve legacy AI request payloads and owner-only consent behavior.
+
+    Persist correlated notification intents with consent mutations and retry via a leased Lambda/Docker worker. Fan out to the owner and current data recipients; give a requester outside that audience only a minimal decision. Recheck audience membership and current consent permissions before delivery, including queued notifications, and expose stable event and delivery IDs for downstream deduplication.
+
+    Keep app request hooks and legacy AI component props aligned with the shared request status type, including retained generic cancellations.
+
+- [#1651](https://github.com/learningeconomy/LearnCard/pull/1651) [`267cf40291b3a63caf178857be0e57feaf5e0948`](https://github.com/learningeconomy/LearnCard/commit/267cf40291b3a63caf178857be0e57feaf5e0948) Thanks [@goblincore](https://github.com/goblincore)! - Publish Resume Builder PDFs through version-bound encrypted managed attachments. Add owner chunk staging/cleanup and guarded recipient retrieval, preserve atomic share lifecycle and passcode protection, and keep original selected credential contexts and proofs intact inside LER-RS records.
+
+    LER-RS `verifications` now uses JSON-LD `@json` so embedded original credentials retain their contexts and proofs. This changes canonicalization for newly issued LER-RS credentials; it does not rewrite or re-sign embedded source credentials.
+
+- Updated dependencies [[`7656a57d30c6d80b8a25a8bb14bcd3b08b3648c2`](https://github.com/learningeconomy/LearnCard/commit/7656a57d30c6d80b8a25a8bb14bcd3b08b3648c2), [`6209da80c52ac056a7644dab14669192740c9dad`](https://github.com/learningeconomy/LearnCard/commit/6209da80c52ac056a7644dab14669192740c9dad), [`5890451789b18afee45dc5ecbab3fa30aa90f085`](https://github.com/learningeconomy/LearnCard/commit/5890451789b18afee45dc5ecbab3fa30aa90f085), [`1387cd0a08fa6b0a706c86a5a0376b6c7d706856`](https://github.com/learningeconomy/LearnCard/commit/1387cd0a08fa6b0a706c86a5a0376b6c7d706856), [`a55332b1652567bc7f3d60064a446365c134cf24`](https://github.com/learningeconomy/LearnCard/commit/a55332b1652567bc7f3d60064a446365c134cf24), [`1387cd0a08fa6b0a706c86a5a0376b6c7d706856`](https://github.com/learningeconomy/LearnCard/commit/1387cd0a08fa6b0a706c86a5a0376b6c7d706856), [`267cf40291b3a63caf178857be0e57feaf5e0948`](https://github.com/learningeconomy/LearnCard/commit/267cf40291b3a63caf178857be0e57feaf5e0948), [`37a3db8ff98a35c8e9e140569a693c9e0ed00165`](https://github.com/learningeconomy/LearnCard/commit/37a3db8ff98a35c8e9e140569a693c9e0ed00165), [`1387cd0a08fa6b0a706c86a5a0376b6c7d706856`](https://github.com/learningeconomy/LearnCard/commit/1387cd0a08fa6b0a706c86a5a0376b6c7d706856), [`544d50fddf3fd93a37e4f87fd741038168f94e17`](https://github.com/learningeconomy/LearnCard/commit/544d50fddf3fd93a37e4f87fd741038168f94e17), [`ec321885908bab179acac7fec910bf61c42deb5f`](https://github.com/learningeconomy/LearnCard/commit/ec321885908bab179acac7fec910bf61c42deb5f), [`7656a57d30c6d80b8a25a8bb14bcd3b08b3648c2`](https://github.com/learningeconomy/LearnCard/commit/7656a57d30c6d80b8a25a8bb14bcd3b08b3648c2), [`37a3db8ff98a35c8e9e140569a693c9e0ed00165`](https://github.com/learningeconomy/LearnCard/commit/37a3db8ff98a35c8e9e140569a693c9e0ed00165)]:
+    - @learncard/network-brain-service@4.0.0
+
 ## 2.5.58
 
 ### Patch Changes

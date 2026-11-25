@@ -23,13 +23,13 @@ const ConsentFlowErrorFooter: React.FC<ConsentFlowErrorFooterProps> = ({
     return (
         <IonFooter
             mode="ios"
-            className="w-full bg-white border-white border-t-1px bg-opacity-60 border-t-[1px] sticky bottom-0 p-[20px] backdrop-blur-[10px] h-[85px]"
+            className="w-full bg-white/60 border-white border-t-1px  border-t sticky bottom-0 p-[20px] backdrop-blur-[10px] h-[85px]"
         >
             <div className="flex items-center justify-between max-w-[600px] mx-auto gap-[10px]">
                 {hideRetry ? (
                     <button
                         onClick={closeModal}
-                        className={`py-[9px] pl-[20px] pr-[15px] bg-${primaryColor} text-white rounded-[35px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] w-[450px] m-auto shadow-button-bottom flex gap-[5px] justify-center`}
+                        className={`py-[9px] pl-[20px] pr-[15px] bg-${primaryColor} text-white rounded-[35px] font-notoSans text-[17px] font-semibold leading-[24px] tracking-[0.25px] w-[450px] m-auto shadow-button-bottom flex gap-[5px] justify-center`}
                     >
                         {m['common.back']()}
                     </button>

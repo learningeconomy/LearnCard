@@ -12,6 +12,7 @@ const AppDiagnosticsCard: React.FC<AppDiagnosticsCardProps> = ({
     analyticsEnabled,
     bugReportsEnabled,
     disabled = false,
+    saving = false,
     lockedNote,
     onToggleAnalytics,
     onToggleBugReports,
@@ -45,6 +46,11 @@ const AppDiagnosticsCard: React.FC<AppDiagnosticsCardProps> = ({
                 lockedNote={lockedNote}
                 onChange={onToggleBugReports}
             />
+            {saving && (
+                <p role="status" className="px-5 py-3 text-sm text-grayscale-600">
+                    {m['profile.saving']()}
+                </p>
+            )}
         </GlassCard>
     </div>
 );

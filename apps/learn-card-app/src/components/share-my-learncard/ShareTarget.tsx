@@ -36,7 +36,7 @@ const ShareTarget: React.FC<ShareTargetProps> = ({
                     if (comingSoon) {
                         newModal(
                             <ConsentFlowComingSoon contract={contract} contractUri={contractUri} />,
-                            { sectionClassName: '!max-w-[350px]' }
+                            { sectionClassName: 'max-w-[350px]!' }
                         );
                     } else if (consentedContract) {
                         newModal(
@@ -45,7 +45,7 @@ const ShareTarget: React.FC<ShareTargetProps> = ({
                                 showSyncNewData
                             />,
                             {
-                                sectionClassName: '!max-w-[400px]',
+                                sectionClassName: 'max-w-[400px]!',
                             }
                         );
                     } else {
@@ -55,7 +55,7 @@ const ShareTarget: React.FC<ShareTargetProps> = ({
                                 contractUri={contractUri}
                                 showSyncNewData
                             />,
-                            { sectionClassName: '!max-w-[400px] !bg-transparent !shadow-none' },
+                            { sectionClassName: 'max-w-[400px]! bg-transparent! shadow-none!' },
                             { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
                         );
                     }

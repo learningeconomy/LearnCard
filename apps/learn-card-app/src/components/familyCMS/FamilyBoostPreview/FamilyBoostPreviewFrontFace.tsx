@@ -87,10 +87,10 @@ export const FamilyBoostPreviewFrontFace: React.FC<{
             />,
             {
                 sectionClassName:
-                    '!bg-transparent !border-none !shadow-none !rounded-none mb-[-10px]',
+                    'bg-transparent! border-none! shadow-none! rounded-none! mb-[-10px]',
                 hideButton: true,
                 usePortal: true,
-                portalClassName: '!max-w-[400px] !mb-[-70px] h-[150px] ',
+                portalClassName: 'max-w-[400px]! mb-[-70px]! h-[150px] ',
             },
             { mobile: ModalTypes.FullScreen, desktop: ModalTypes.Cancel }
         );
@@ -116,6 +116,7 @@ export const FamilyBoostPreviewFrontFace: React.FC<{
     const getDependents = async () => {
         const wallet = await initWallet();
         const _dependents =
+            // eslint-disable-next-line no-unsafe-optional-chaining -- existing expression; guarding it changes what this returns or throws
             (await wallet?.invoke?.getBoostChildrenProfileManagers(credential?.boostId)).records ??
             [];
 

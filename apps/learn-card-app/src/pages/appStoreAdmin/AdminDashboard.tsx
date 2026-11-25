@@ -14,8 +14,13 @@ import { ListingSidebar, ListingDetail, type FilterStatus } from './components';
 import * as m from '../../paraglide/messages.js';
 
 const AdminDashboard: React.FC = () => {
-    const { useIsAdmin, useAdminListings, useAdminUpdateStatus, useAdminUpdatePromotion } =
-        useDeveloperPortal();
+    const {
+        useIsAdmin,
+        useAdminListings,
+        useAdminUpdateStatus,
+        useAdminUpdatePromotion,
+        useAdminReviewUpdate,
+    } = useDeveloperPortal();
 
     const { data: isAdmin, isLoading: isCheckingAdmin } = useIsAdmin();
 
@@ -27,9 +32,24 @@ const AdminDashboard: React.FC = () => {
         data: listings,
         isLoading: isLoadingListings,
         refetch: refetchListings,
-    } = useAdminListings(filterStatus === 'ALL' ? undefined : (filterStatus as AppListingStatus));
+    } = useAdminListings(
+        filterStatus === 'ALL' || filterStatus === 'UPDATES'
+            ? undefined
+            : (filterStatus as AppListingStatus),
+        filterStatus === 'UPDATES'
+    );
 
     const updateStatusMutation = useAdminUpdateStatus();
+    const reviewUpdateMutation = useAdminReviewUpdate();
+
+    const handleReviewUpdate = async (listingId: string, approve: boolean) => {
+        await reviewUpdateMutation.mutateAsync({ listingId, approve });
+        const refreshed = await refetchListings();
+        setSelectedListing(
+            (refreshed.data?.find(l => l.listing_id === listingId) as
+                ExtendedAppStoreListing | undefined) ?? null
+        );
+    };
     const updatePromotionMutation = useAdminUpdatePromotion();
 
     const pendingCount = (listings || []).filter(
@@ -123,6 +143,7 @@ const AdminDashboard: React.FC = () => {
                                     updatePromotionMutation.isPending
                                 }
                                 onBack={() => setSelectedListing(null)}
+                                onReviewUpdate={handleReviewUpdate}
                             />
                         ) : (
                             <div className="h-full flex items-center justify-center">

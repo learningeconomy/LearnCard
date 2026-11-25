@@ -1,4 +1,5 @@
 import { QueryBuilder } from 'neogma';
+import type { Transaction } from 'neo4j-driver';
 
 import { CredentialInstance, Credential, Boost, Profile, ClaimHook, Role } from '@models';
 import { ProfileType } from 'types/profile';
@@ -8,7 +9,8 @@ import { getAdminRole } from '@accesslayer/role/read';
 
 const processPermissionsClaimHooks = async (
     profile: ProfileType,
-    credential: CredentialInstance
+    credential: CredentialInstance,
+    transaction?: Transaction
 ): Promise<void> => {
     await new QueryBuilder()
         .match({
@@ -43,12 +45,13 @@ const processPermissionsClaimHooks = async (
                 { identifier: 'targetBoost' },
             ],
         })
-        .run();
+        .run(transaction);
 };
 
 const processAutoConnectClaimHooks = async (
     profile: ProfileType,
-    credential: CredentialInstance
+    credential: CredentialInstance,
+    transaction?: Transaction
 ): Promise<void> => {
     // For any AUTO_CONNECT claim hooks attached to the boost this credential is an instance of,
     // create an explicit AUTO_CONNECT_RECIPIENT relationship from the target boost to the claiming profile.
@@ -76,12 +79,13 @@ const processAutoConnectClaimHooks = async (
                 Boost.getRelationshipByAlias('autoConnectRecipient').name
             }]->(profile)`
         )
-        .run();
+        .run(transaction);
 };
 
 const processAdminClaimHooks = async (
     profile: ProfileType,
-    credential: CredentialInstance
+    credential: CredentialInstance,
+    transaction?: Transaction
 ): Promise<void> => {
     const adminRole = await getAdminRole();
     await new QueryBuilder()
@@ -115,13 +119,22 @@ const processAdminClaimHooks = async (
                 { identifier: 'targetBoost' },
             ],
         })
-        .run();
+        .run(transaction);
 };
 
 export const processClaimHooks = async (
     profile: ProfileType,
-    credential: CredentialInstance
+    credential: CredentialInstance,
+    transaction?: Transaction
 ): Promise<void> => {
+    if (transaction) {
+        // Keep graph effects in the caller's transaction; cache invalidation follows commit.
+        await processPermissionsClaimHooks(profile, credential, transaction);
+        await processAdminClaimHooks(profile, credential, transaction);
+        await processAutoConnectClaimHooks(profile, credential, transaction);
+        return;
+    }
+
     await Promise.all([
         processPermissionsClaimHooks(profile, credential),
         processAdminClaimHooks(profile, credential),

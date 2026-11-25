@@ -112,7 +112,168 @@ Example `config.local.json` — only the diffs:
 
 If no `--stage` is specified, **production** is assumed (no overlay applied).
 
+## Web deployments
+
+Tenant web apps deploy from CI (`.github/workflows/deploy.yml`, `deploy-frontend`),
+one Netlify site per GitHub Environment. The Environment's `TENANT` and `STAGE`
+variables pick the baked config (`public/tenant-config.json`) and pin the edge
+overlay; `NETLIFY_SITE_ID` picks the site. `NETLIFY_AUTH_TOKEN` is a repository
+secret, so Environments inherit it.
+
+- **Automatic:** staging legs deploy on `main` pushes that affect `learn-card-app`.
+  Production legs deploy on release commits that bump `learn-card-app`, and VetPass
+  ships alongside LearnCard.
+- **Manual dispatch:** choose one app per run. `staging`/`production` deploy
+  LearnCard, `vetpass-staging`/`vetpass` deploy VetPass only, and
+  `scouts-staging`/`scouts` deploy ScoutPass. VetPass has no services of its own, so
+  service checkboxes are rejected for the VetPass targets.
+
+| Tenant    | Staging Environment → host                        | Production Environment → host                 |
+| --------- | ------------------------------------------------- | --------------------------------------------- |
+| learncard | `learn-card-app-staging` → `staging.learncard.ai` | `learn-card-app-production` → `learncard.app` |
+| vetpass   | `vetpass-app-staging` → `staging.vetpass.app`     | `vetpass-app-production` → `vetpass.app`      |
+
+On automatic runs the VetPass legs set `"tenant_leg": true` (continue-on-error). A
+failed VetPass deploy therefore doesn't fail the job result that gates LearnCard native
+publishing. Instead, the failing leg posts its own alert to the deploy-errors Slack
+channel. Manual VetPass dispatches use the plain legs, so a failure fails the run.
+
+To add a tenant:
+
+1. Create a Netlify site per stage. Attach each hostname to its site and turn off
+   Netlify's own git builds (`stop_builds`), so CI is the only publisher.
+2. Create both GitHub Environments: copy the variables from an existing pair, then
+   set `TENANT`, `STAGE=staging` (staging only) and `NETLIFY_SITE_ID`.
+3. Add the tenant's legs and dispatch targets in `deploy.yml`, following
+   `VETPASS_FE_*` and the `vetpass`/`vetpass-staging` options.
+
 ## Switching tenants
+
+### Opt-in local Keycloak
+
+From the repository root, run
+`STAGE=keycloak-local docker compose -f apps/learn-card-app/compose-local.yaml up -d`.
+This selects `learncard/config.keycloak-local.json`; the shared `local` stage and
+all production defaults remain Firebase. For a host-run frontend, use
+`bun scripts/prepare-native-config.ts learncard --stage keycloak-local` from the app directory.
+Stage overlays merge onto `config.json`, not onto `config.local.json`, so this
+opt-in overlay explicitly includes the local API endpoints.
+
+The callback is `http://localhost:3000/login` (an existing route, allowed by the
+realm fixture). The app completes the callback at router boot, then uses its
+normal signed-in/onboarding routing. Ticket exchanges use the unauthenticated
+lca-api tRPC routes with tenant headers; they do not initialize a dummy wallet.
+Email code issuance still uses `firebase.sendLoginVerificationCode`: despite its
+namespace it writes lca-api's `login-code:<email>:<code>` Redis store. Do not use
+Firebase's custom-token verification to consume a Keycloak login code.
+
+### Native (Capacitor)
+
+Native sign-in opens the Keycloak authorize URL in a system auth sheet instead
+of redirecting the webview: iOS uses an ephemeral `ASWebAuthenticationSession`
+(local plugin `WebAuthSessionPlugin.swift` / `WebAuthSession` in JS); Android
+(and iOS as a fallback) opens `@capacitor/browser` (Chrome Custom Tabs /
+`SFSafariViewController`) and listens for the callback via `appUrlOpen`.
+
+- **authBridgeUrl**: To prevent a blank white screen during the redirect chain,
+  production tenants set `authBridgeUrl: "https://<domain>/auth/continue.html"`.
+  The sheet opens this static page first, which shows a branded loader and then
+  redirects to the Keycloak authorize URL (validated against the exact Keycloak
+  authorize origin+path from the same-origin tenant config).
+- **Redirect URI**: `<bundleId>://login` (e.g. `com.learncard.app://login`),
+  read from the tenant config's `native.bundleId`. The Keycloak client's
+  **Valid Redirect URIs** must include it, and `prepare-native-config.ts`
+  always registers the bundle ID as a URL scheme / intent-filter (see
+  `native.customSchemes` handling) so the OS routes the callback back to the
+  app.
+- **Web Origins**: the token exchange is a `fetch` from the WebView, whose
+  origin is `capacitor://localhost` on iOS and `https://localhost` on Android
+  (Capacitor's default `androidScheme`).
+  Keycloak's `+` wildcard only derives http(s) origins from redirect URIs, so
+  the client's **Web Origins** must list both literally or the token endpoint
+  answers `403` with no CORS header (surfaces in the app as `Load failed`).
+- **Sheet never appears / stuck on "Verifying…"**: `ASWebAuthenticationSession`
+  can accept `start()` and silently not present (non-key presentation anchor,
+  previous sheet still dismissing). The plugin anchors on the scene's key
+  window and reports `PRESENTATION_BUSY` when no session can start. The JS side
+  retries only that presentation failure every 100 ms for up to 5 s, allowing
+  the native Apple sign-in sheet to finish dismissing after returning its
+  credential. It reuses the same authorize URL without repeating Apple sign-in
+  or the ticket exchange; cancellation and other failures are not retried.
+  Once started, the JS side cancels natively and fails with "Sign-in expired"
+  after the overall 60 s timeout so the form
+  recovers. On the iOS **Simulator** the usual cause is macOS reporting
+  "SafariViewService quit unexpectedly" — the out-of-process host for the
+  sheet crashed, so the completion handler can never fire; this is a simulator
+  flake, not app code. The iOS 18 Simulator also renders the sheet **blank for
+  every page** (even `https://example.com`), so the branded bridge page
+  (`authBridgeUrl`) cannot be evaluated there — sign-in still completes. Judge
+  the sheet's look on a physical device or an iOS 17 simulator runtime. Local dev also logs an iOS deprecation warning about
+  `http` scheme authorize URLs — harmless; staging/production Keycloak is HTTPS.
+- **Android emulator + local stages**: `localhost` inside the emulator is the
+  emulator itself. `bun run lc native open android …` and `native run android`
+  forward every `localhost` port in the generated tenant config via
+  `adb reverse` (applied once an emulator connects; skip with
+  `--no-adb-reverse`). Forwards reset on emulator restart — re-run
+  `bun run lc native reverse`. A fresh emulator's Chrome shows its first-run
+  screen once inside the Custom Tab; tap "Use without an account".
+- **Live-reload (`lc native dev`) cannot exercise Keycloak sign-in**: the
+  WebView origin becomes `http://<LAN-IP>:5173`, which is not a secure context,
+  so `crypto.subtle` (PKCE) is unavailable. Use the bundled flow instead:
+  `bun run lc native open ios <tenant> <stage>`.
+- **`prompt=login` on every native authorize request**: Android Custom Tabs
+  and iOS's shared system browser both carry Keycloak's SSO cookie. Without
+  forcing a fresh login prompt, a second account's sign-in (or a reauth ticket
+  hop) could silently resolve against whichever session the browser already
+  holds.
+- **Sign-out**: native never redirects to Keycloak's `end_session` endpoint
+  (there's no page to redirect), so `signOut()` best-effort revokes the
+  refresh token via the token-revocation endpoint before clearing local state.
+- **Native Google/Apple audiences**: native social sign-in acquires a Google
+  or Apple ID token directly through `@capacitor-firebase/authentication`
+  (`skipNativeAuth: true`, no Firebase session created) and exchanges it for
+  an lca-api login ticket exactly like the web OIDC-credential path. The
+  backend's audience allowlists must include the native client IDs:
+  `GOOGLE_OAUTH_CLIENT_IDS` needs the iOS and Android OAuth client IDs (in
+  addition to the web one), and `APPLE_OAUTH_CLIENT_IDS` needs the app's
+  bundle ID (Sign in with Apple uses the bundle ID as the audience for native
+  clients).
+- **Known limitation**: if the OS kills the app process while the auth sheet
+  is open (cold start), the in-flight sign-in is not resumed — the user
+  returns to a logged-out app and simply retries.
+
+#### Native auth audiences
+
+`bun run lc auth-audiences [tenant…] [stage]` derives the Google/Apple
+audiences and Keycloak native-client requirements described above from files
+that already exist — no new tenant config fields. Per tenant, it reads
+`native.bundleId` from the merged `config.json` (+ stage overlay) and the
+iOS/Android OAuth client IDs from `environments/<tenant>/assets/config/`
+(`GoogleService-Info.plist` / `google-services.json`). Run it with no
+arguments for every tenant; add a stage (e.g. `keycloak-local`) to apply that
+stage's overlay first.
+
+It prints, per tenant, the bundle ID, the iOS + Android-web Google client
+IDs, the Apple audience, and the Keycloak redirect URI + Web Origins, then a
+combined, deduped CSV ready to paste into a deployment:
+
+```
+GOOGLE_OAUTH_CLIENT_IDS=...
+APPLE_OAUTH_CLIENT_IDS=...
+```
+
+Set lca-api's `GOOGLE_OAUTH_CLIENT_IDS` / `APPLE_OAUTH_CLIENT_IDS` from that
+output for every real deployment — union the values across every tenant that
+shares the same lca-api instance. These stay strictly **server-controlled**:
+lca-api reads them once from the environment at startup
+(`services/learn-card-network/lca-api/src/helpers/social-token.helpers.ts`),
+never from a client-claimed tenant config, so a compromised or malicious
+client can't add its own audience to the allowlist.
+
+`bun run lc dev` calls this automatically for the selected tenant/stage when
+starting Docker (full or services mode) and injects both env vars into the
+`api` service — see `compose-local.yaml` — so local native sign-in testing
+needs no manual setup.
 
 ```bash
 # Production vetpass

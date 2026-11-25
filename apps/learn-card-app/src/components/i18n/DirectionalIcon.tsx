@@ -2,5 +2,5 @@ export const DirectionalIcon: React.FC<{ children: React.ReactNode; className?: 
     children,
     className,
 }) => (
-    <span className={`inline-block rtl:[transform:scaleX(-1)] ${className ?? ''}`}>{children}</span>
+    <span className={`inline-block rtl:transform-[scaleX(-1)] ${className ?? ''}`}>{children}</span>
 );

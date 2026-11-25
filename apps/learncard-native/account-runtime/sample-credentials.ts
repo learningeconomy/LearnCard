@@ -90,7 +90,7 @@ export const createSampleCredentialCommands = (
                         id,
                         title: contract.name,
                         expected: contract.autoBoosts?.length ?? 0,
-                        connected: live(terms, uri).length > 0,
+                        connected: contract.status !== 'retired' && live(terms, uri).length > 0,
                     };
                 })
             );
@@ -109,6 +109,7 @@ export const createSampleCredentialCommands = (
                     await lc.invoke.getContract(uri)
                 );
                 check(lc);
+                if (contract.status === 'retired') throw new ConsumerFailure('inactive');
                 if (contract.needsGuardianConsent) throw new ConsumerFailure('guardian');
                 if (contract.frontDoorBoostUri || !contract.autoBoosts?.length)
                     throw new ConsumerFailure('unsupported');

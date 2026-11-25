@@ -62,6 +62,8 @@ export type DashboardHeaderViewModel = {
     shortBio?: string;
     professionalTitle?: string;
     onAvatarClick: () => void;
+    /** Hover, focus, or press start on the avatar, before the click: a chance to prefetch. */
+    onAvatarIntent?: () => void;
     onScanQrTopRight: () => void;
     onNotificationsClick: () => void;
     unreadCount: number;
@@ -107,7 +109,7 @@ export type DashboardProfileSkill = {
 export type DashboardLearningProfileViewModel = {
     state: DashboardLearningProfileState;
     strength?: { title: string; summary?: string } | null;
-    verifiedRecords: number;
+    verifiedRecords: number | null;
     skills: DashboardProfileSkill[];
     updatedAt?: string;
     onViewInsights: () => void;
@@ -133,7 +135,7 @@ export type DashboardRecoveryPromptViewModel = {
     recoverySupported: boolean;
     recoveryMethodCount: number | null;
     activationPending: boolean;
-    totalCredentialCount: number;
+    totalCredentialCount: number | null;
     escrowEnrolled?: boolean;
     pinEnabled?: boolean | null;
     onSetupPin?: () => void;
@@ -146,6 +148,11 @@ export type DashboardRecoveryPromptViewModel = {
 
 export type DashboardViewModel = {
     brandName: string;
+    collection?: {
+        isError: boolean;
+        isFetching: boolean;
+        retry: () => unknown;
+    };
     header: DashboardHeaderViewModel;
     heroSlot: DashboardHeroSlot;
     checklistItems: DashboardChecklistItem[];
@@ -158,6 +165,8 @@ export type DashboardViewModel = {
     primaryButtonClass?: string;
     slots: DashboardSlots;
     recoveryPrompt: DashboardRecoveryPromptViewModel;
+    /** When true, the guardian approval banner replaces the recovery banner. */
+    pendingGuardianApproval?: boolean;
     dataTrust: DashboardDataTrustViewModel;
     activity: DashboardActivityViewModel;
     learningProfile: DashboardLearningProfileViewModel;

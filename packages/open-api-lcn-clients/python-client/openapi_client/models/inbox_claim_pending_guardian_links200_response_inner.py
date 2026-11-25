@@ -27,8 +27,8 @@ class InboxClaimPendingGuardianLinks200ResponseInner(BaseModel):
     """
     InboxClaimPendingGuardianLinks200ResponseInner
     """ # noqa: E501
-    child_profile_id: Optional[StrictStr] = Field(alias="childProfileId")
-    child_display_name: Optional[StrictStr] = Field(alias="childDisplayName")
+    child_profile_id: StrictStr = Field(alias="childProfileId")
+    child_display_name: StrictStr = Field(alias="childDisplayName")
     manager_id: Optional[StrictStr] = Field(alias="managerId")
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["childProfileId", "childDisplayName", "managerId"]
@@ -60,9 +60,8 @@ class InboxClaimPendingGuardianLinks200ResponseInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -79,19 +78,8 @@ class InboxClaimPendingGuardianLinks200ResponseInner(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if child_profile_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.child_profile_id is None and "child_profile_id" in self.model_fields_set:
-            _dict['childProfileId'] = None
-
-        # set to None if child_display_name (nullable) is None
-        # and model_fields_set contains the field
-        if self.child_display_name is None and "child_display_name" in self.model_fields_set:
-            _dict['childDisplayName'] = None
-
-        # set to None if manager_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.manager_id is None and "manager_id" in self.model_fields_set:
+        # Preserve a supplied nullable value.
+        if self.manager_id is None and "manager_id" in self.model_fields_set and "manager_id" not in excluded_fields:
             _dict['managerId'] = None
 
         return _dict

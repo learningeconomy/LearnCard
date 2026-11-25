@@ -87,7 +87,7 @@ export const ShowcaseCard: React.FC<ShowcaseCardProps> = ({
             onClick={onPick}
             disabled={loading || disabled}
             className="w-full text-left p-4 rounded-2xl
-                       bg-gradient-to-br from-emerald-50 via-white to-emerald-50
+                       bg-linear-to-br/srgb from-emerald-50 via-white to-emerald-50
                        border border-emerald-200 hover:border-emerald-400
                        hover:shadow-md transition-all duration-150
                        flex gap-3 items-center group
@@ -103,9 +103,9 @@ export const ShowcaseCard: React.FC<ShowcaseCardProps> = ({
             <div
                 aria-hidden
                 className="shrink-0 w-12 h-12 rounded-xl
-                           bg-gradient-to-br from-emerald-500 to-emerald-700
+                           bg-linear-to-br/srgb from-emerald-500 to-emerald-700
                            text-white flex items-center justify-center
-                           shadow-sm shadow-emerald-700/20
+                           shadow-xs shadow-emerald-700/20
                            group-hover:shadow-md group-hover:shadow-emerald-700/30
                            transition-shadow"
             >
@@ -116,7 +116,7 @@ export const ShowcaseCard: React.FC<ShowcaseCardProps> = ({
                 )}
             </div>
 
-            <div className="flex-1 min-w-0 space-y-1">
+            <div className="flex-1 min-w-0 space-y-v3-1">
                 {/*
                     Audience-only eyebrow. The legacy
                     "Demo · Try everything" label was internal

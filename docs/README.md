@@ -40,6 +40,7 @@ LearnCard is used to:
 - **Send your first credential** → [Quickstart](quick-start/your-first-integration.md)
 - **Choose what to build** → [What Do You Want to Build?](introduction/what-do-you-want-to-build.md)
 - **How LearnCard works** → [How LearnCard Works](introduction/how-learncard-works.md)
+- **Working from an AI agent or script** → [Use LearnCard from an AI Agent](introduction/for-ai-agents.md)
 
 The sidebar has the full directory.
 

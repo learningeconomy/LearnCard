@@ -15,6 +15,9 @@ const makeMockClient = (learnCloudDid = 'did:key:z6MkLearnCloud') => ({
     storage: {
         batchResolve: { query: vi.fn() },
     },
+    index: {
+        get: { query: vi.fn().mockResolvedValue({ records: [], hasMore: false }) },
+    },
 });
 
 const mockClient = makeMockClient();
@@ -58,11 +61,65 @@ describe('LearnCloud Plugin', () => {
         mockGetClient.mockResolvedValue(mockClient);
     });
 
+    it.each([undefined, { category: 'Achievement' }])(
+        'normalizes a restored null cursor before querying the index with %j',
+        async query => {
+            const learnCard = makeLearnCard();
+            const plugin = await getLearnCloudPlugin(
+                learnCard as never,
+                'https://cloud.example',
+                [],
+                [],
+                false
+            );
+            // Persisted infinite-query page parameters can restore undefined as null.
+            const pagination = JSON.parse('{"cursor":null,"limit":12}');
+            await plugin.index.getPage!(learnCard as never, query, pagination);
+
+            expect(mockClient.index.get.query).toHaveBeenCalledWith(
+                expect.objectContaining({ cursor: undefined, limit: 12 })
+            );
+        }
+    );
+
     it('defers remote identity requests until a method needs them', async () => {
         await getLearnCloudPlugin(makeLearnCard() as never, 'https://cloud.example');
 
         expect(mockClient.user.getDids.query).not.toHaveBeenCalled();
         expect(mockClient.utilities.getDid.query).not.toHaveBeenCalled();
+    });
+
+    it('shares discovery in flight, but allows an index read to recover after discovery fails', async () => {
+        let rejectDiscovery!: (reason: Error) => void;
+        const discovery = new Promise<string>((_resolve, reject) => {
+            rejectDiscovery = reject;
+        });
+        const getDid = vi
+            .fn()
+            .mockReturnValueOnce(discovery)
+            .mockResolvedValue('did:key:z6MkLearnCloud');
+        const getPage = vi.fn().mockResolvedValue({ records: [], hasMore: false });
+        mockGetClient.mockResolvedValue({
+            ...mockClient,
+            utilities: { getDid: { query: getDid } },
+            index: { get: { query: getPage } },
+        });
+        const learnCard = makeLearnCard();
+        const plugin = await getLearnCloudPlugin(learnCard as never, 'https://cloud.example');
+        const first = plugin.index!.getPage!(learnCard as never, { category: 'Social Badge' });
+        const second = plugin.index!.getPage!(learnCard as never, { category: 'Achievement' });
+        const failures = Promise.allSettled([first, second]);
+        await vi.waitFor(() => expect(getDid).toHaveBeenCalledTimes(1));
+        rejectDiscovery(new Error('Temporarily offline'));
+        expect((await failures).map(result => result.status)).toEqual(['rejected', 'rejected']);
+        await expect(
+            plugin.index!.getPage!(learnCard as never, { category: 'Social Badge' })
+        ).resolves.toEqual({ records: [], hasMore: false });
+        await expect(
+            plugin.index!.getPage!(learnCard as never, { category: 'Achievement' })
+        ).resolves.toEqual({ records: [], hasMore: false });
+        expect(getDid).toHaveBeenCalledTimes(2);
+        expect(getPage).toHaveBeenCalledTimes(2);
     });
 
     it('does not load associated DIDs when automatic association is disabled', async () => {

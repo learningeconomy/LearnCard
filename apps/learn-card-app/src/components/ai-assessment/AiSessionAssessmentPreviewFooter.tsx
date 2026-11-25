@@ -27,7 +27,7 @@ export const AiAssessmentPreviewFooter: React.FC<{
         return (
             <IonFooter
                 mode="ios"
-                className="w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] py-4 left-0 absolute bottom-0 bg-white !max-h-[100px]"
+                className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 left-0 absolute bottom-0 bg-white/60 max-h-[100px]!"
             >
                 <div className="w-full flex items-center justify-center">
                     <div className="w-full flex items-center justify-between max-w-[600px] ion-padding">
@@ -49,7 +49,7 @@ export const AiAssessmentPreviewFooter: React.FC<{
         return (
             <IonFooter
                 mode="ios"
-                className="w-full flex justify-center items-center ion-no-border !bg-transparent py-4 left-0 absolute bottom-0 bg-white !max-h-[100px] pb-[50px]"
+                className="w-full flex justify-center items-center ion-no-border bg-transparent! py-4 left-0 absolute bottom-0 bg-white max-h-[100px]! pb-[50px]"
             >
                 <div className="w-full flex items-center justify-center max-w-[600px] bg-white rounded-[20px]">
                     <div className="w-full flex items-center justify-between ion-padding">
@@ -61,7 +61,7 @@ export const AiAssessmentPreviewFooter: React.FC<{
                         </button>
                         {/* <button
                             onClick={closeModal}
-                            className="flex items-center justify-center py-[8px] pl-[20px] pr-[15px] bg-white rounded-[30px] font-notoSans text-[17px] leading-[24px] tracking-[0.25px] text-indigo-500 w-full shadow-button-bottom gap-[5px] mr-4 font-semibold border-[2px] border-solid border-indigo-500"
+                            className="flex items-center justify-center py-[8px] pl-[20px] pr-[15px] bg-white rounded-[30px] font-notoSans text-[17px] leading-[24px] tracking-[0.25px] text-indigo-500 w-full shadow-button-bottom gap-[5px] mr-4 font-semibold border-2 border-solid border-indigo-500"
                         >
                             Keep Going <RevisitIcon className="text-indigo-500" version="2" />
                         </button>
@@ -77,7 +77,7 @@ export const AiAssessmentPreviewFooter: React.FC<{
     return (
         <IonFooter
             mode="ios"
-            className="w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] py-4 left-0 absolute bottom-0 bg-white !max-h-[100px]"
+            className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 left-0 absolute bottom-0 bg-white/60 max-h-[100px]!"
         >
             <div className="w-full flex items-center justify-center">
                 <div className="w-full flex items-center justify-between max-w-[600px] ion-padding">
@@ -94,13 +94,13 @@ export const AiAssessmentPreviewFooter: React.FC<{
 
                             <button
                                 onClick={() => setIsFront?.(!isFront)}
-                                className="bg-white text-grayscale-800 py-[9px] pl-[20px] pr-[15px] rounded-[30px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] w-full shadow-button-bottom flex gap-[5px] items-center justify-center mr-2"
+                                className="bg-white text-grayscale-800 py-[9px] pl-[20px] pr-[15px] rounded-[30px] font-notoSans text-[17px] font-semibold leading-[24px] tracking-[0.25px] w-full shadow-button-bottom flex gap-[5px] items-center justify-center mr-2"
                             >
                                 {m['common.details']()}
                             </button>
                             <button
                                 onClick={() => handleShare?.()}
-                                className={`bg-${primaryColor} py-[9px] pl-[20px] pr-[15px] rounded-[30px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-white w-full shadow-button-bottom flex gap-[5px] items-center justify-center mr-2`}
+                                className={`bg-${primaryColor} py-[9px] pl-[20px] pr-[15px] rounded-[30px] font-notoSans text-[17px] font-semibold leading-[24px] tracking-[0.25px] text-white w-full shadow-button-bottom flex gap-[5px] items-center justify-center mr-2`}
                             >
                                 {m['common.share']()}
                             </button>

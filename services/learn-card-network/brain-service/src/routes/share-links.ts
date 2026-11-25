@@ -11,6 +11,10 @@ import {
     ShareLinkOperationKeyInputValidator,
     ShareOwnerRecoveryValidator,
     UpdateShareLinkInputValidator,
+    PutShareLinkAttachmentChunkInputValidator,
+    PutShareLinkAttachmentChunkOutputValidator,
+    DeleteShareLinkAttachmentChunksInputValidator,
+    DeleteShareLinkAttachmentChunksOutputValidator,
 } from '@learncard/types';
 
 import { t, profileRouteWithoutInputCapture } from '@routes';
@@ -37,6 +41,7 @@ import type {
     ShareLinkCoordinatorErrorCode,
 } from '@helpers/share-link-coordinator';
 import { decodeShareLinkListCursor } from '@accesslayer/share-link/list';
+import type { ShareLinkAttachmentOwnerApi } from '@helpers/share-link-attachment';
 import type {
     ListShareLinksInput,
     ListShareLinksResult,
@@ -57,6 +62,8 @@ export type ShareLinkRouterDependencies = {
     readonly namespace: string;
     readonly coordinator: ShareLinkCoordinator;
     readonly recovery: RecoveryRunnerDependencies;
+    readonly attachments?: ShareLinkAttachmentOwnerApi;
+    readonly enforceAttachmentWriteRateLimit?: (ownerProfileId: string) => Promise<void>;
     /**
      * Bounded, namespace+owner-scoped keyset listing over the immutable
      * `(createdAt, id)` key. Receives only trusted scope; the route decodes and
@@ -206,6 +213,56 @@ export const createShareLinksRouter = (
     };
 
     return t.router({
+        putAttachmentChunk: profileRouteWithoutInputCapture
+            .meta({
+                openapi: openapi(
+                    'POST',
+                    '/share-links/attachment-chunk/put',
+                    'Stage encrypted share attachment chunk'
+                ),
+                requiredScope: AUTH_GRANT_SHARE_LINKS_WRITE_SCOPE,
+            })
+            .input(PutShareLinkAttachmentChunkInputValidator)
+            .output(PutShareLinkAttachmentChunkOutputValidator)
+            .mutation(async ({ ctx, input }) => {
+                const dependencies = await resolve();
+                if (!dependencies.attachments) notFound();
+                await (
+                    dependencies.enforceAttachmentWriteRateLimit ??
+                    dependencies.enforceOwnerWriteRateLimit
+                )(ctx.user.profile.profileId);
+                return runCoordinated(() =>
+                    dependencies.attachments!.put(input, {
+                        namespace: dependencies.namespace,
+                        ownerProfileId: ctx.user.profile.profileId,
+                    })
+                );
+            }),
+        deleteAttachmentChunks: profileRouteWithoutInputCapture
+            .meta({
+                openapi: openapi(
+                    'POST',
+                    '/share-links/attachment-chunks/delete',
+                    'Delete unreferenced encrypted attachment'
+                ),
+                requiredScope: AUTH_GRANT_SHARE_LINKS_WRITE_SCOPE,
+            })
+            .input(DeleteShareLinkAttachmentChunksInputValidator)
+            .output(DeleteShareLinkAttachmentChunksOutputValidator)
+            .mutation(async ({ ctx, input }) => {
+                const dependencies = await resolve();
+                if (!dependencies.attachments) notFound();
+                await (
+                    dependencies.enforceAttachmentWriteRateLimit ??
+                    dependencies.enforceOwnerWriteRateLimit
+                )(ctx.user.profile.profileId);
+                return runCoordinated(() =>
+                    dependencies.attachments!.delete(input, {
+                        namespace: dependencies.namespace,
+                        ownerProfileId: ctx.user.profile.profileId,
+                    })
+                );
+            }),
         create: profileRouteWithoutInputCapture
             .meta({
                 openapi: openapi('POST', '/share-links/create', 'Create an owner share link'),
@@ -629,6 +686,18 @@ const buildProductionDependencies = async (
         namespace: config.namespace,
         coordinator,
         recovery,
+        attachments: (
+            await import('@helpers/share-link-attachment')
+        ).createShareLinkAttachmentOwnerApi(client),
+        enforceAttachmentWriteRateLimit: ownerProfileId =>
+            enforceRateLimits([
+                {
+                    key: `share-link-attachment-write:${config.namespace}:${ownerProfileId}`,
+                    limit: 120,
+                    windowSeconds: 60 * 60,
+                    description: 'owner share-link attachment writes',
+                },
+            ]),
         listShareLinks: listRepository.listShareLinks,
         enforceOwnerWriteRateLimit: ownerProfileId =>
             enforceOwnerShareWriteRateLimit(config.namespace, ownerProfileId),

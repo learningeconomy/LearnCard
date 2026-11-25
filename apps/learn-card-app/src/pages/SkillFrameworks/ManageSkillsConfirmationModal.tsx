@@ -48,7 +48,7 @@ const ManageSkillsConfirmationModal: React.FC<ManageSkillsConfirmationModalProps
                 )}
 
                 {changeCounts && (
-                    <div className="text-center text-[20px] font-poppins text-grayscale-900 space-y-[4px]">
+                    <div className="text-center text-[20px] font-poppins text-grayscale-900 space-y-v3-[4px]">
                         {(skillsCreated > 0 || tiersCreated > 0) && (
                             <p>
                                 {skillsCreated > 0 && (

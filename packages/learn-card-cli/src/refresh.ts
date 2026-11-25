@@ -1,8 +1,15 @@
 import type { Command } from 'commander';
 import type { CredentialRefreshVersionMetadata } from '@learncard/types';
 
-import { connect, loadProject, resolveServices, type ProjectOptions } from './project';
+import {
+    connect,
+    loadProject,
+    requireIdentity,
+    resolveServices,
+    type ProjectOptions,
+} from './project';
 import { out } from './out';
+import type { RunCommand } from './doctor';
 import { parseLimit } from './inbox';
 
 export type RefreshHistoryOptions = ProjectOptions & { limit?: string };
@@ -30,8 +37,9 @@ export const runRefreshHistory = async (
 ): Promise<void> => {
     const limit = options.limit === undefined ? undefined : parseLimit(options.limit);
     const project = await loadProject(process.cwd());
+    requireIdentity(project);
     const services = resolveServices(project.env, options.network);
-    const learnCard = await connect(project, options);
+    const learnCard = await connect(project, { ...options, readOnly: true });
 
     let records: CredentialRefreshVersionMetadata[];
     let hasMore: boolean;
@@ -67,15 +75,7 @@ export const runRefreshHistory = async (
     });
 };
 
-export const registerRefreshCommand = (
-    program: Command,
-    run: (
-        command: string,
-        options: { json?: boolean },
-        action: (didkit: Promise<Buffer>) => Promise<void>,
-        wrap?: boolean
-    ) => Promise<void>
-): void => {
+export const registerRefreshCommand = (program: Command, run: RunCommand): void => {
     const refresh = program
         .command('refresh')
         .description('Managed credential refresh: audit published versions of a transcript.');
@@ -83,7 +83,7 @@ export const registerRefreshCommand = (
         .command('history <refreshId>')
         .description('List the published version history for a managed refresh.')
         .option('--limit <n>', 'how many versions to list')
-        .option('--network <url>', 'network tRPC URL or staging (default: production)')
+        .option('--network <url>', 'production|staging|local or a tRPC URL (default: production)')
         .option('--json', 'print a single JSON result on stdout')
         .action((refreshId, options) =>
             run('refresh history', options, async didkit => {

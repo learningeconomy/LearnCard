@@ -15,7 +15,9 @@ const BoostCMSIDAppearanceController: React.FC<{
     state: BoostCMSState;
     setState?: React.Dispatch<React.SetStateAction<BoostCMSState>>;
     boostUserType?: BoostUserTypeEnum;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     customTypes?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     setCustomTypes?: React.Dispatch<any>;
     disabled?: boolean;
     handleCategoryAndTypeChange?: (
@@ -83,7 +85,7 @@ const BoostCMSIDAppearanceController: React.FC<{
                                     disabled={disabled}
                                     handleCategoryAndTypeChange={handleCategoryAndTypeChange}
                                 />,
-                                { sectionClassName: '!max-w-[500px]', hideButton: true }
+                                { sectionClassName: 'max-w-[500px]!', hideButton: true }
                             );
                         }}
                         className="absolute bg-white h-[65px] w-12 z-15 right-[4px] top-[-40px] pt-[5px] rounded-tr-full rounded-tl-full flex items-start justify-center z-10"

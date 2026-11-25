@@ -131,6 +131,7 @@ test.describe('Dashboard recovery prompt @mocked', () => {
         await installNetwork(page);
         await waitForAuthenticatedState(page, {
             path: '/launchpad/browse?tab=All',
+            nextPath: '/launchpad/browse?tab=All',
             profileId: TEST_USER_PROFILE_ID,
         });
 

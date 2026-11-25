@@ -4,7 +4,7 @@ import { getAttachmentTypeIcon, BoostMediaOptionsEnum } from 'learn-card-base';
 import { getAttachmentSource } from 'learn-card-base/helpers/attachment.helpers';
 
 import useTheme from '../../../../theme/hooks/useTheme';
-import { openAttachmentUrl } from '../../../../components/clr-transcript/clr.helpers';
+import { openAttachmentUrl } from 'learn-card-base/helpers/credentials/clr/helpers';
 
 export const BoostSideMenuMediaDetails: React.FC<{ credential: VC }> = ({ credential }) => {
     const { colors } = useTheme();
@@ -45,7 +45,7 @@ export const BoostSideMenuMediaDetails: React.FC<{ credential: VC }> = ({ creden
                                 key={idx}
                                 type="button"
                                 onClick={() => handleClick(img?.url, img?.fileName || img?.title)}
-                                className="hover:underline focus:outline-none text-left break-words"
+                                className="hover:underline focus:outline-hidden text-left wrap-break-word"
                             >
                                 {img?.fileName || img?.url}
                                 {idx < imageAttachments.length - 1 && ','}

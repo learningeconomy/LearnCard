@@ -29,6 +29,7 @@ export type ShareLinkMaintenanceRunnerDependencies = {
      * never load the Neo4j `@instance`; production passes the real repository.
      */
     pruneReceipts: (input: PruneShareViewReceiptsInput) => Promise<number>;
+    expireAttachmentStages?: typeof import('../../accesslayer/share-link/attachment').expireShareAttachmentStages;
     client: Pick<ShareContentClient, 'stat' | 'delete'>;
     logger: ShareLinkMaintenanceLogger;
     /** Monotonic clock for the cooperative budget; injectable for tests. */
@@ -124,6 +125,8 @@ export const runShareLinkMaintenancePass = async (
     let budgetStoppedRecovery = false;
     let budgetStoppedCleanup = false;
     let budgetStoppedReceiptPrune = false;
+    let attachmentStages: ShareLinkMaintenanceRunSummary['attachmentStages'];
+    let stageFailed = false;
 
     if (budgetAllows(budget, recoveryDiscoveryCostMs(config))) {
         recoveryAttempted = true;
@@ -147,6 +150,27 @@ export const runShareLinkMaintenancePass = async (
         }
     } else {
         budgetStoppedRecovery = true;
+    }
+
+    if (dependencies.expireAttachmentStages) {
+        if (budgetAllows(budget, config.graphTimeoutMs)) {
+            try {
+                attachmentStages = {
+                    queued: await dependencies.expireAttachmentStages({
+                        namespace: config.namespace,
+                        limit: 10,
+                        now: dependencies.now?.(),
+                        transaction: { timeoutMs: config.graphTimeoutMs, noInlineRetry: true },
+                    }),
+                };
+            } catch {
+                attachmentStages = null;
+                stageFailed = true;
+                categories.share_link_maintenance_attachment_stage_failed = 1;
+            }
+        } else {
+            budgetStoppedCleanup = true;
+        }
     }
 
     if (budgetAllows(budget, cleanupUnitCostMs(config))) {
@@ -196,6 +220,7 @@ export const runShareLinkMaintenancePass = async (
     }
 
     const failed =
+        stageFailed ||
         (recoveryAttempted && recovery === null) ||
         (cleanupAttempted && cleanup === null) ||
         (receiptPruneAttempted && receiptPrune === null);
@@ -214,6 +239,9 @@ export const runShareLinkMaintenancePass = async (
         recovery,
         cleanup,
         receiptPrune,
+        ...(dependencies.expireAttachmentStages
+            ? { attachmentStages: attachmentStages ?? null }
+            : {}),
         categories,
     };
 

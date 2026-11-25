@@ -102,18 +102,18 @@ const ShortBoostSomeoneScreen: React.FC<ShortBoostSomeoneScreenProps> = ({
                     onClick={() => handleOpenModal()}
                 >
                     {m['boost.shortBoost.selectRecipients']()}
-                    <CredentialGeneralPlus className="w-[44px] h-[44px] flex-shrink-0 ml-auto" />
+                    <CredentialGeneralPlus className="w-[44px] h-[44px] shrink-0 ml-auto" />
                 </button>
                 {renderIssuedTo.length > 0 && <div className="mt-[10px]">{renderIssuedTo}</div>}
             </div>
             {sectionPortal &&
                 createPortal(
-                    <div className="flex flex-col justify-center items-center relative !border-none max-w-[500px]">
+                    <div className="flex flex-col justify-center items-center relative border-none! max-w-[500px]">
                         <button
                             onClick={handleBoostSomeone}
                             className={`flex gap-[5px] items-center justify-center bg-${
                                 color || 'grayscale-900'
-                            } disabled:bg-grayscale-400 text-white font-poppins text-[17px] font-[600] leading-[130%] tracking-[-0.25px] py-[10px] px-[20px] w-full rounded-[30px] shadow-bottom-4-4`}
+                            } disabled:bg-grayscale-400 text-white font-poppins text-[17px] font-semibold leading-[130%] tracking-[-0.25px] py-[10px] px-[20px] w-full rounded-[30px] shadow-bottom-4-4`}
                             disabled={issueButtonDisabled}
                         >
                             {issuedTo.length === 0 && 'Issue'}

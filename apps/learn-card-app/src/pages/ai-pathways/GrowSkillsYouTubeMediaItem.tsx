@@ -78,7 +78,7 @@ const GrowSkillsYouTubeMediaItem: React.FC<GrowSkillsYouTubeMediaItemProps> = ({
             onClickCapture={handleClickCapture}
             role="button"
         >
-            <div className="relative h-[162px] overflow-hidden flex-shrink-0 bg-grayscale-200">
+            <div className="relative h-[162px] overflow-hidden shrink-0 bg-grayscale-200">
                 {video.thumbnailUrl && (
                     <div
                         aria-hidden="true"
@@ -94,7 +94,7 @@ const GrowSkillsYouTubeMediaItem: React.FC<GrowSkillsYouTubeMediaItemProps> = ({
                         <Play className="h-[25px] w-[25px] text-grayscale-800 fill-current stroke-current" />
                     </span>
                 </div>
-                <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black to-transparent"></div>
+                <div className="absolute bottom-0 left-0 w-full h-1/2 bg-linear-to-t/srgb from-black to-transparent"></div>
             </div>
             <div className="p-[10px] flex flex-col h-full gap-[10px] min-h-[92px]">
                 <div className="flex gap-[10px] items-start">

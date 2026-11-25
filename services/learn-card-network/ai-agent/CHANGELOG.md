@@ -1,5 +1,144 @@
 # @learncard/ai-agent-service
 
+## 0.0.19
+
+### Patch Changes
+
+- Updated dependencies [[`e096512e4291bcaa5e424b7abbfc0932ca2a2317`](https://github.com/learningeconomy/LearnCard/commit/e096512e4291bcaa5e424b7abbfc0932ca2a2317), [`ff6f013bdedc9aee84e9849fa5736a8ad4a90c81`](https://github.com/learningeconomy/LearnCard/commit/ff6f013bdedc9aee84e9849fa5736a8ad4a90c81), [`154941805bd8e2aa626afe3582e7794921debd27`](https://github.com/learningeconomy/LearnCard/commit/154941805bd8e2aa626afe3582e7794921debd27), [`cad95b60227e1b99ffaaad07406ccc0366b08555`](https://github.com/learningeconomy/LearnCard/commit/cad95b60227e1b99ffaaad07406ccc0366b08555), [`154941805bd8e2aa626afe3582e7794921debd27`](https://github.com/learningeconomy/LearnCard/commit/154941805bd8e2aa626afe3582e7794921debd27), [`1e4a9e97b825c18300ae0f00c2b9324120be196f`](https://github.com/learningeconomy/LearnCard/commit/1e4a9e97b825c18300ae0f00c2b9324120be196f), [`154941805bd8e2aa626afe3582e7794921debd27`](https://github.com/learningeconomy/LearnCard/commit/154941805bd8e2aa626afe3582e7794921debd27), [`bd450e7b0467a94bbd30573fa0aebfcd6333db22`](https://github.com/learningeconomy/LearnCard/commit/bd450e7b0467a94bbd30573fa0aebfcd6333db22), [`261e0f46814595d06460dc617ba50800671f03b1`](https://github.com/learningeconomy/LearnCard/commit/261e0f46814595d06460dc617ba50800671f03b1), [`acda1d1bd362add238a7c6ff8096c295e844e586`](https://github.com/learningeconomy/LearnCard/commit/acda1d1bd362add238a7c6ff8096c295e844e586), [`6d5afc9c348c20ac6ac9c7b35651e5b850b13401`](https://github.com/learningeconomy/LearnCard/commit/6d5afc9c348c20ac6ac9c7b35651e5b850b13401), [`0bb92c2cc8047aa4bf307fd0952c1714219286a9`](https://github.com/learningeconomy/LearnCard/commit/0bb92c2cc8047aa4bf307fd0952c1714219286a9)]:
+    - @learncard/network-brain-client@2.8.0
+    - @learncard/didkit-plugin@1.11.0
+    - @learncard/init@3.0.0
+    - @learncard/didkit-plugin-node@0.3.13
+
+## 0.0.18
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/init@2.5.12
+    - @learncard/network-brain-client@2.7.2
+    - @learncard/didkit-plugin@1.10.12
+    - @learncard/didkit-plugin-node@0.3.12
+
+## 0.0.17
+
+### Patch Changes
+
+- Updated dependencies [[`c245cba6fc162e6896c4f9439a8a8da42d4189c9`](https://github.com/learningeconomy/LearnCard/commit/c245cba6fc162e6896c4f9439a8a8da42d4189c9), [`6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480`](https://github.com/learningeconomy/LearnCard/commit/6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480)]:
+    - @learncard/didkit-plugin@1.10.11
+    - @learncard/init@2.5.11
+    - @learncard/didkit-plugin-node@0.3.11
+    - @learncard/network-brain-client@2.7.1
+
+## 0.0.16
+
+### Patch Changes
+
+- Updated dependencies [[`0caa0e478bce246793893e488f37ee90c9b00a1a`](https://github.com/learningeconomy/LearnCard/commit/0caa0e478bce246793893e488f37ee90c9b00a1a)]:
+    - @learncard/network-brain-client@2.7.0
+    - @learncard/init@2.5.10
+    - @learncard/didkit-plugin@1.10.10
+    - @learncard/didkit-plugin-node@0.3.10
+
+## 0.0.15
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/init@2.5.9
+    - @learncard/network-brain-client@2.6.3
+    - @learncard/didkit-plugin@1.10.9
+    - @learncard/didkit-plugin-node@0.3.9
+
+## 0.0.14
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/init@2.5.8
+    - @learncard/network-brain-client@2.6.2
+    - @learncard/didkit-plugin@1.10.8
+    - @learncard/didkit-plugin-node@0.3.8
+
+## 0.0.13
+
+### Patch Changes
+
+- Updated dependencies [[`4ec92c41442b56341c1205e6ddd6ae784aecc990`](https://github.com/learningeconomy/LearnCard/commit/4ec92c41442b56341c1205e6ddd6ae784aecc990)]:
+    - @learncard/didkit-plugin@1.10.7
+    - @learncard/network-brain-client@2.6.1
+    - @learncard/init@2.5.7
+    - @learncard/didkit-plugin-node@0.3.7
+
+## 0.0.12
+
+### Patch Changes
+
+- Updated dependencies [[`4fae096473fd0824be1dd6aefb4a783062377104`](https://github.com/learningeconomy/LearnCard/commit/4fae096473fd0824be1dd6aefb4a783062377104), [`d93c1b15856f341b4bd36415bf39052de9b6b198`](https://github.com/learningeconomy/LearnCard/commit/d93c1b15856f341b4bd36415bf39052de9b6b198), [`d1708a1ce43f052862fedda2cf0d922a71ad1762`](https://github.com/learningeconomy/LearnCard/commit/d1708a1ce43f052862fedda2cf0d922a71ad1762)]:
+    - @learncard/network-brain-client@2.6.0
+    - @learncard/didkit-plugin@1.10.6
+    - @learncard/init@2.5.6
+    - @learncard/didkit-plugin-node@0.3.6
+
+## 0.0.11
+
+### Patch Changes
+
+- Updated dependencies [[`d40cb07be34fbd7fcb078eadd84b0c0df97a937a`](https://github.com/learningeconomy/LearnCard/commit/d40cb07be34fbd7fcb078eadd84b0c0df97a937a)]:
+    - @learncard/network-brain-client@2.5.63
+    - @learncard/init@2.5.5
+    - @learncard/didkit-plugin@1.10.5
+    - @learncard/didkit-plugin-node@0.3.5
+
+## 0.0.10
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/network-brain-client@2.5.62
+
+## 0.0.9
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/init@2.5.4
+    - @learncard/network-brain-client@2.5.61
+    - @learncard/didkit-plugin@1.10.4
+    - @learncard/didkit-plugin-node@0.3.4
+
+## 0.0.8
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/network-brain-client@2.5.60
+    - @learncard/init@2.5.3
+
+## 0.0.7
+
+### Patch Changes
+
+- [#1649](https://github.com/learningeconomy/LearnCard/pull/1649) [`f08cf44e859c202f8e8b11329da58a2171fc6b0f`](https://github.com/learningeconomy/LearnCard/commit/f08cf44e859c202f8e8b11329da58a2171fc6b0f) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Resolve the AI Agent Docker smoke's DIDKit WASM beside the service bundle and disable runtime package auto-install to keep the bundled glue paired with the copied artifact.
+
+- [#1629](https://github.com/learningeconomy/LearnCard/pull/1629) [`e81e098a6d923d77e2df4f3394d0141e7a5a7478`](https://github.com/learningeconomy/LearnCard/commit/e81e098a6d923d77e2df4f3394d0141e7a5a7478) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Persist assistant feedback timestamps as ISO strings before DAG-JWE encryption and validate them when reading. Missing or corrupted legacy feedback times are represented as `null` in the API instead of breaking the entire assistant feed; the frontend contract now matches. No historical timestamp is fabricated and no data backfill is added.
+
+    Emit unsampled privacy-safe run, model, tool, and post-run Sentry events independently of trace sampling. Preserve sanitized original error types, diagnostic messages, bounded causes, and stack frames with safe lifecycle, budget, usage, and outcome metadata. Hash external correlation/provider IDs and custom error-class log metadata; register raw provider content before parsing can fail; keep approved snapshots private from SDK processors and reject unapproved events.
+
+    Forward every existing sanitized per-run application log record to Sentry as a bounded structured event alongside lifecycle/errors, even at trace sample rate zero. Retain contextual service/autonomy records and CloudWatch logfmt, without global console/stdout capture or added HTTP run-ID propagation. Index only approved bounded run metadata in log-event tags; retain all sanitized fields in the structured record. Register configured LaunchDarkly/Mongo credentials and decoded URI userinfo explicitly. Preserve conservative common-word masking when private fragments overlap external diagnostics. Document exact destinations and unsampled event volume: a basic completed run adds four log events to five lifecycle events, for both HTTP and direct invocation.
+
+    Keep ordinary conversations' diagnostics beyond 256 distinct words while retaining bounded, fail-closed content registration. Hash custom error types and frame identifiers independently, replace model argument parse failures with a fixed preview-free error, and withhold oversized diagnostics before regex processing. Avoid duplicate scheduler captures for already-reported run/post-run failures while retaining scheduler-only and heartbeat failures. Restore workflow/runtime pin audits with only the final monorepo Bun 1.3.14 execution-stage exception.
+
+    Sanitize malformed retrospective JSON at its parsing boundary with a fixed cause-free error. Prevent wallet wrappers from flattening arbitrary backend properties and raw stack previews into approved diagnostics while retaining sanitized cause/frame evidence. Register own string dictionary keys alongside values within the existing getter-free traversal and fail-closed character budgets; cover real agent recovery and final in-memory Sentry envelopes with synthetic regressions.
+
+    Pin the AI Agent's local and CI Node runtime to 24.18.0, select Trigger's stable `node-24` runtime using SDK/build/CLI 4.5.7, and align repository CI and Docker dependency installation to Bun 1.4.2 so every lockfile consumer reads format version 3. Run the shared local services on Bun 1.3.14 separately to preserve localhost host-gateway DID resolution and notification delivery, with a real Cloud DID-fetch smoke in both E2E runners. Add offline real-WASM feed and actual-Sentry-SDK regression commands to CI and document the nullable feedback timestamp and telemetry privacy contracts.
+
+- Updated dependencies [[`6209da80c52ac056a7644dab14669192740c9dad`](https://github.com/learningeconomy/LearnCard/commit/6209da80c52ac056a7644dab14669192740c9dad), [`5890451789b18afee45dc5ecbab3fa30aa90f085`](https://github.com/learningeconomy/LearnCard/commit/5890451789b18afee45dc5ecbab3fa30aa90f085), [`267cf40291b3a63caf178857be0e57feaf5e0948`](https://github.com/learningeconomy/LearnCard/commit/267cf40291b3a63caf178857be0e57feaf5e0948), [`590adf48867d6c6fd504e66a11c9827d5102122d`](https://github.com/learningeconomy/LearnCard/commit/590adf48867d6c6fd504e66a11c9827d5102122d)]:
+    - @learncard/network-brain-client@2.5.59
+    - @learncard/didkit-plugin@1.10.3
+    - @learncard/init@2.5.2
+    - @learncard/didkit-plugin-node@0.3.3
+
 ## 0.0.6
 
 ### Patch Changes

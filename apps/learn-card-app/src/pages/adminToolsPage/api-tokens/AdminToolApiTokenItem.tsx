@@ -96,7 +96,7 @@ export const AdminToolApiTokenItem: React.FC<{
     const handleMoreOptions = () => {
         newModal(
             <ul className="w-full flex flex-col items-center justify-center ion-padding text-grayscale-900">
-                <li className="w-full border-b-grayscale-100 border-b-solid border-b-[2px] last:border-0">
+                <li className="w-full border-b-grayscale-100 border-b-solid border-b-2 last:border-0">
                     <button
                         onClick={() => {
                             closeModal();
@@ -108,10 +108,10 @@ export const AdminToolApiTokenItem: React.FC<{
                                     onUpdate={fetchAuthGrants}
                                 />,
                                 {
-                                    sectionClassName: '!max-w-[500px]',
+                                    sectionClassName: 'max-w-[500px]!',
                                     usePortal: true,
                                     hideButton: true,
-                                    portalClassName: '!max-w-[500px]',
+                                    portalClassName: 'max-w-[500px]!',
                                 }
                             );
                         }}
@@ -121,7 +121,7 @@ export const AdminToolApiTokenItem: React.FC<{
                         Edit
                     </button>
                 </li>
-                <li className="w-full border-b-grayscale-100 border-b-solid border-b-[2px] last:border-0">
+                <li className="w-full border-b-grayscale-100 border-b-solid border-b-2 last:border-0">
                     <button
                         onClick={() => copyAPIToken(grant.id)}
                         className="text-[17px] font-poppins w-full flex items-center justify-start py-3 px-2"
@@ -130,7 +130,7 @@ export const AdminToolApiTokenItem: React.FC<{
                         Token
                     </button>
                 </li>
-                <li className="w-full border-b-grayscale-100 border-b-solid border-b-[2px] last:border-0">
+                <li className="w-full border-b-grayscale-100 border-b-solid border-b-2 last:border-0">
                     <button
                         onClick={() => handleTokenRemoval(grant.id, grant.status, grant.name)}
                         className="text-[17px] font-poppins w-full flex items-center justify-start py-3 px-2"
@@ -144,14 +144,14 @@ export const AdminToolApiTokenItem: React.FC<{
                     </button>
                 </li>
             </ul>,
-            { sectionClassName: '!max-w-[400px]' }
+            { sectionClassName: 'max-w-[400px]!' }
         );
     };
 
     return (
-        <div className="w-full p-4 border-b-grayscale-100 border-b-solid border-b-[2px]">
+        <div className="w-full p-4 border-b-grayscale-100 border-b-solid border-b-2">
             <div className="w-full flex items-center justify-between ">
-                <div className="w-full flex flex-col justify-start flex-grow items-stretch">
+                <div className="w-full flex flex-col justify-start grow items-stretch">
                     <p className="text-grayscale-900 font-semibold text-[17px]">{grant?.name}</p>
                     {grant?.description && (
                         <p className="text-grayscale-600 font-semibold text-base">
@@ -195,7 +195,7 @@ export const AdminToolApiTokenItem: React.FC<{
             <div className="w-full mt-2">
                 <button
                     onClick={() => setShowMoreDetails(!showMoreDetails)}
-                    className={`text-${primaryColor} font-semibold text-[17px] border-solid border-b-[1px] border-${primaryColor}`}
+                    className={`text-${primaryColor} font-semibold text-[17px] border-solid border-b border-${primaryColor}`}
                 >
                     {showMoreDetails ? 'Less Details' : 'More Details'}
                 </button>

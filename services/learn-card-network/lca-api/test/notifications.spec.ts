@@ -46,6 +46,56 @@ describe('Notifications', () => {
     });
 
     describe('Send Notification', () => {
+        it('deduplicates concurrent campaign delivery and retries after a lost storage response', async () => {
+            const notification: LCNNotification = {
+                type: 'ANNOUNCEMENT',
+                to: { did: userA.learnCard.id.did() },
+                from: userB.learnCard.id.did(),
+                message: { title: 'Explore', body: 'Find your next step' },
+                data: {
+                    metadata: {
+                        campaignId: 'pilot-clr',
+                        campaignCreatedAt: '2026-01-01T00:00:00Z',
+                    },
+                },
+            };
+            const push = vi
+                .spyOn(PushNotifications, 'sendPushNotification')
+                .mockResolvedValue({ successCount: 1, failureCount: 0, failedTokens: [] });
+            try {
+                const send = () =>
+                    userA.clients.authorizedDidAuth.notifications.sendNotification(notification);
+                const results = await Promise.all(Array.from({ length: 10 }, send));
+                expect(results.every(Boolean)).toBe(true);
+                expect(await Notifications.countDocuments({ type: 'ANNOUNCEMENT' })).toBe(1);
+                expect(push).toHaveBeenCalledTimes(1);
+                await Notifications.updateOne(
+                    { type: 'ANNOUNCEMENT' },
+                    { $set: { read: true, archived: true } }
+                );
+                // A retry after storage succeeded but its HTTP response was lost.
+                await expect(send()).resolves.toBe(true);
+                expect(push).toHaveBeenCalledTimes(1);
+                expect(await Notifications.findOne({ type: 'ANNOUNCEMENT' })).toMatchObject({
+                    read: true,
+                    archived: true,
+                });
+                await userA.clients.authorizedDidAuth.notifications.sendNotification({
+                    ...notification,
+                    data: {
+                        metadata: {
+                            ...notification.data!.metadata!,
+                            campaignTestId: 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa',
+                        },
+                    },
+                });
+                expect(await Notifications.countDocuments({ type: 'ANNOUNCEMENT' })).toBe(2);
+                expect(push).toHaveBeenCalledTimes(2);
+            } finally {
+                push.mockRestore();
+            }
+        });
+
         it('should allow an authorized service to send a notification to a user', async () => {
             await expect(
                 userA.clients.authorizedDidAuth.notifications.sendNotification(
@@ -62,6 +112,58 @@ describe('Notifications', () => {
                 ],
             });
         });
+        it.each([
+            ['relaxed', true, false],
+            ['expanded_optional', true, false],
+            ['requires_consent', false, true],
+        ] as const)(
+            'stores %s contract updates with the right feed and push policy',
+            async (kind, read, shouldPush) => {
+                const pushSpy = vi
+                    .spyOn(PushNotifications, 'sendPushNotification')
+                    .mockResolvedValue({ failureCount: 0, successCount: 0, failedTokens: [] });
+                const notification = getTestNotification(
+                    userA.learnCard.id.did(),
+                    userB.learnCard.id.did(),
+                    LCNNotificationTypeEnumValidator.enum.CONSENT_FLOW_CONTRACT_UPDATED,
+                    undefined,
+                    {
+                        contractUri: 'lc:network:contract:policy-test',
+                        fromVersion: 1,
+                        toVersion: 2,
+                        kind,
+                        diff: { added: [], removed: [], changed: [] },
+                        reviewUrl:
+                            'https://learncard.app/consent-flow/review?uri=lc%3Anetwork%3Acontract%3Apolicy-test',
+                    }
+                );
+
+                try {
+                    await expect(
+                        userA.clients.authorizedDidAuth.notifications.sendNotification(notification)
+                    ).resolves.toBe(true);
+                    await expect(
+                        userA.clients.authorizedDidAuth.notifications.sendNotification(notification)
+                    ).resolves.toBe(true);
+
+                    expect(
+                        await Notifications.findOne({
+                            type: LCNNotificationTypeEnumValidator.enum
+                                .CONSENT_FLOW_CONTRACT_UPDATED,
+                        })
+                    ).toMatchObject({ read });
+                    await expect(
+                        Notifications.countDocuments({
+                            type: LCNNotificationTypeEnumValidator.enum
+                                .CONSENT_FLOW_CONTRACT_UPDATED,
+                        })
+                    ).resolves.toBe(1);
+                    expect(pushSpy).toHaveBeenCalledTimes(shouldPush ? 1 : 0);
+                } finally {
+                    pushSpy.mockRestore();
+                }
+            }
+        );
         it('should prevent an unauthorized service to send a notification to a user', async () => {
             await expect(
                 userA.clients.fullAuth.notifications.sendNotification(
@@ -390,6 +492,10 @@ describe('Notifications', () => {
 
         it('records exactly one E2E push attempt per delivery window', async () => {
             vi.stubEnv('IS_E2E_TEST', 'true');
+            // Earlier notification cases also write E2E attempts into this cache.
+            // Isolate this window-count assertion just as we clean up afterward.
+            const previousKeys = await cache.keys('e2e:push-attempt:*');
+            if (previousKeys?.length) await cache.delete(previousKeys);
 
             try {
                 await expect(sendRefresh('window-1', 1)).resolves.toBe(true);

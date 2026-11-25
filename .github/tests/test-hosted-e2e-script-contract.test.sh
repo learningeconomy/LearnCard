@@ -46,22 +46,33 @@ grep -Fq 'docker compose down --remove-orphans -v' "$SERVICE_SCRIPT"
 BAKE_JSON="$(docker buildx bake --file "$BAKE_FILE" --print browser service)"
 ruby -rjson -e '
   bake = JSON.parse(STDIN.read)
-  required = %w[dependency-cache browser-base browser-app browser-delete service-base]
+  required = %w[dependency-cache backend-dependency-cache browser-build-source browser-base browser-app browser-delete service-base]
   abort "Bake targets missing" unless (required - bake.fetch("target").keys).empty?
   dependency_cache = bake.fetch("target").fetch("dependency-cache")
   abort "dependency cache must stop before source COPY" unless dependency_cache.fetch("target") == "dependencies"
   abort "dependency cache must not load another image" unless dependency_cache.fetch("output") == [{"type" => "cacheonly"}]
   abort "dependency cache must exclude intermediate source layers" unless dependency_cache.fetch("cache-to").all? { |cache| cache["type"] == "gha" && cache["mode"] == "min" }
-  scope = dependency_cache.fetch("cache-to").fetch(0).fetch("scope")
+  backend_cache = bake.fetch("target").fetch("backend-dependency-cache")
+  abort "backend cache must stop before source" unless backend_cache.fetch("target") == "backend-dependencies"
+  abort "backend cache must not load another image" unless backend_cache.fetch("output") == [{"type" => "cacheonly"}]
+  abort "backend cache must exclude intermediate source layers" unless backend_cache.fetch("cache-to").all? { |cache| cache["type"] == "gha" && cache["mode"] == "min" }
+  backend_scope = backend_cache.fetch("cache-to").fetch(0).fetch("scope")
   %w[browser-base service-base].each do |name|
     target = bake.fetch("target").fetch(name)
-    abort "#{name} must import the dependency cache" unless target.fetch("cache-from").any? { |cache| cache["type"] == "gha" && cache["scope"] == scope }
+    abort "#{name} must build the slim backend" unless target.fetch("target") == "backend"
+    abort "#{name} must import backend dependencies" unless target.fetch("cache-from").any? { |cache| cache["type"] == "gha" && cache["scope"] == backend_scope }
     abort "#{name} must not export source layers" if target.key?("cache-to")
   end
+  build_source = bake.fetch("target").fetch("browser-build-source")
+  abort "app requires full source" unless build_source.fetch("target") == "source"
+  abort "full build image must not be tagged or exported" if build_source.key?("tags") || build_source.key?("cache-to")
+  abort "app must use the full build environment" unless bake.dig("target", "browser-app", "contexts", "learncard-monorepo-local") == "target:browser-build-source"
   abort "app must not export source layers" if bake.fetch("target").fetch("browser-app").key?("cache-to")
   %w[browser service].each do |group|
-    abort "#{group} must export dependency cache" unless bake.fetch("group").fetch(group).fetch("targets").include?("dependency-cache")
+    abort "#{group} must export backend dependency cache" unless bake.fetch("group").fetch(group).fetch("targets").include?("backend-dependency-cache")
   end
+  abort "browser must export build dependencies" unless bake.dig("group", "browser", "targets").include?("dependency-cache")
+  abort "services must skip app build dependencies" if bake.dig("group", "service", "targets").include?("dependency-cache")
   browser_base_tags = bake.fetch("target").fetch("browser-base").fetch("tags")
   abort "browser base tag must match Compose" unless browser_base_tags.include?("learncard-monorepo-local")
 ' <<< "$BAKE_JSON"

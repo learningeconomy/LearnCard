@@ -78,7 +78,7 @@ export const EndorsementDraftRequestSuccess: React.FC<{
 
     const handleEndorsementPreview = () => {
         newModal(
-            <div className="w-full h-full flex flex-col items-start justify-start bg-grayscale-500 bg-opacity-10 px-4 overflow-y-scroll pt-8 pb-[100px]">
+            <div className="w-full h-full flex flex-col items-start justify-start bg-grayscale-500/10  px-4 overflow-y-scroll pt-8 pb-[100px]">
                 <EndorsementFormBoostPreviewCard
                     credential={credential}
                     categoryType={categoryType}
@@ -281,7 +281,7 @@ export const EndorsementDraftRequestSuccess: React.FC<{
     }
 
     return (
-        <div className="w-full h-full flex flex-col items-center justify-center bg-white bg-opacity-10 px-4">
+        <div className="w-full h-full flex flex-col items-center justify-center bg-white/10  px-4">
             <div className="w-full flex flex-col items-center justify-center  bg-white rounded-[20px] px-4 py-8 gap-2 max-w-[375px]">
                 {sendFailed ? (
                     <IonIcon icon={alertCircleOutline} className="text-red-400 text-[50px]" />

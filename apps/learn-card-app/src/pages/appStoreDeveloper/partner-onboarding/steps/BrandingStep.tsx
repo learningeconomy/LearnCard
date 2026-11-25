@@ -213,9 +213,9 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             {/* Profile Image */}
-            <div className="space-y-4">
+            <div className="space-y-v3-4">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-pink-100 rounded-xl flex items-center justify-center">
                         <ImageIcon className="w-5 h-5 text-pink-600" />
@@ -274,7 +274,7 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
             </div>
 
             {/* Profile Info */}
-            <div className="space-y-4">
+            <div className="space-y-v3-4">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
                         <User className="w-5 h-5 text-emerald-600" />
@@ -290,7 +290,7 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
                     </div>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-v3-3">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             {m['developerPortal.onboarding.branding.displayName']()}{' '}
@@ -302,7 +302,7 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
                             value={displayName}
                             onChange={e => setDisplayName(e.target.value)}
                             placeholder="e.g., AARP Skills Builder"
-                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
+                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-hidden"
                         />
                     </div>
 
@@ -318,7 +318,7 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
                             placeholder={m[
                                 'developerPortal.onboarding.branding.shortBioPlaceholder'
                             ]()}
-                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
+                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-hidden"
                         />
                     </div>
 
@@ -334,14 +334,14 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
                                 'developerPortal.onboarding.branding.fullBioPlaceholder'
                             ]()}
                             rows={3}
-                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none resize-none"
+                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-hidden resize-none"
                         />
                     </div>
                 </div>
             </div>
 
             {/* Card Colors */}
-            <div className="space-y-4">
+            <div className="space-y-v3-4">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-violet-100 rounded-xl flex items-center justify-center">
                         <Palette className="w-5 h-5 text-violet-600" />
@@ -396,7 +396,7 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
                                         idBackgroundColor: e.target.value,
                                     }))
                                 }
-                                className="w-10 h-10 rounded cursor-pointer"
+                                className="w-10 h-10 rounded-sm cursor-pointer"
                             />
 
                             <input
@@ -425,7 +425,7 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
                                 onChange={e =>
                                     setDisplay(prev => ({ ...prev, accentColor: e.target.value }))
                                 }
-                                className="w-10 h-10 rounded cursor-pointer"
+                                className="w-10 h-10 rounded-sm cursor-pointer"
                             />
 
                             <input
@@ -442,7 +442,7 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
             </div>
 
             {/* Card Background Image */}
-            <div className="space-y-4">
+            <div className="space-y-v3-4">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-cyan-100 rounded-xl flex items-center justify-center">
                         <CreditCard className="w-5 h-5 text-cyan-600" />

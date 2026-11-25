@@ -231,6 +231,29 @@ export const createDagJweForRecipients = async <T>(
     return wallet.invoke.createDagJwe(cleartext, recipients);
 };
 
+/**
+ * Resolves `did`'s key-agreement verification-method id — the exact `kid` DIDKit
+ * assigns that recipient in a DAG-JWE (see `createDagJweForRecipients`). Used to
+ * publish the expected holder-mode encryption recipient set (LC-2345) without ever
+ * performing the encryption itself.
+ */
+export const getKeyAgreementKeyId = async (
+    did: string,
+    seed = environment.SEED
+): Promise<string> => {
+    const learnCard = await getLearnCard(seed);
+    const doc = await learnCard.invoke.resolveDid(did);
+    const [agreement] = doc.keyAgreement ?? [];
+
+    if (!agreement) {
+        throw new Error(`No key-agreement verification method found for DID: ${did}`);
+    }
+
+    const id = typeof agreement === 'string' ? agreement : agreement.id;
+
+    return id.startsWith('#') ? `${doc.id}${id}` : id;
+};
+
 export const getServerDidWebDID = (): string => {
     const domainName = environment.DOMAIN_NAME;
     const isOffline = !!environment.IS_OFFLINE;

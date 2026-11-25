@@ -181,7 +181,7 @@ export function useBoostRecoveryCheck() {
                     discardButtonText="Create New Credential"
                     icon={defaultImage}
                 />,
-                { sectionClassName: '!max-w-[400px]' },
+                { sectionClassName: 'max-w-[400px]!' },
                 { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
             );
         },

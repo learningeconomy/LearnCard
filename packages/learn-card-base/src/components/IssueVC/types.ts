@@ -13,6 +13,7 @@ export type GenericVCInputFields = {
 //   all references to that constant outside of @learncard/react have been replaced with this
 export enum WalletCategoryTypes {
     achievements = 'achievements',
+    qualifications = 'qualifications',
     accommodations = 'accommodations',
     accomplishments = 'accomplishments',
     learningHistory = 'learningHistory',

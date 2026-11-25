@@ -41,7 +41,7 @@ export const AiSessionAssessmentPreviewContainer: React.FC<{
 
     if (isLoading) {
         return (
-            <div className="h-[100vh] w-full flex items-center justify-center bg-grayscale-200">
+            <div className="h-screen w-full flex items-center justify-center bg-grayscale-200">
                 <AiSessionLoader overrideText={m['common.loadingSessionSummary']()} />
             </div>
         );

@@ -42,9 +42,9 @@ const formatLabels = (labels: string[]): string =>
         : m['contractRequests.none']();
 
 const primary =
-    'min-h-11 py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm leading-5 hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2';
+    'min-h-11 py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm leading-5 hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2';
 const secondary =
-    'min-h-11 py-3 px-4 rounded-[20px] border border-solid border-grayscale-300 bg-white text-grayscale-700 font-medium text-sm leading-5 hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2';
+    'min-h-11 py-3 px-4 rounded-[20px] border border-solid border-grayscale-300 bg-white text-grayscale-700 font-medium text-sm leading-5 hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2';
 
 type RequestProps = {
     contractUri: string;
@@ -272,7 +272,7 @@ export const ContractRequest: React.FC<RequestProps> = ({
                         aria-label={details ? m['common.close']() : m['contractRequests.dismiss']()}
                         disabled={busy}
                         onClick={() => (details ? closeModal() : void run(onDismiss!, 'dismiss'))}
-                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[20px] text-grayscale-600 hover:bg-grayscale-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-40"
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[20px] text-grayscale-600 hover:bg-grayscale-100 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-40"
                     >
                         {busyAction === 'dismiss' ? (
                             <span
@@ -288,7 +288,9 @@ export const ContractRequest: React.FC<RequestProps> = ({
             </header>
             <div
                 className={
-                    details ? 'min-h-0 flex-1 overflow-y-auto px-6 py-6 space-y-5' : 'space-y-3'
+                    details
+                        ? 'min-h-0 flex-1 overflow-y-auto px-6 py-6 space-y-v3-5'
+                        : 'space-y-v3-3'
                 }
             >
                 {request.isPending ? (
@@ -304,7 +306,7 @@ export const ContractRequest: React.FC<RequestProps> = ({
                     </div>
                 ) : (
                     <>
-                        <h3 className="text-lg font-semibold leading-snug text-grayscale-900 break-words">
+                        <h3 className="text-lg font-semibold leading-snug text-grayscale-900 wrap-break-word">
                             {unavailable
                                 ? m['contractRequests.unavailable']()
                                 : request.isError && !contract
@@ -319,7 +321,7 @@ export const ContractRequest: React.FC<RequestProps> = ({
                         {details && contract && (
                             <>
                                 {(contract.reasonForAccessing || status?.message) && (
-                                    <div className="space-y-3 border-s-2 border-emerald-200 ps-4 text-sm text-grayscale-600 leading-relaxed">
+                                    <div className="space-y-v3-3 border-s-2 border-emerald-200 ps-4 text-sm text-grayscale-600 leading-relaxed">
                                         {contract.reasonForAccessing && (
                                             <p>{contract.reasonForAccessing}</p>
                                         )}
@@ -331,7 +333,7 @@ export const ContractRequest: React.FC<RequestProps> = ({
                                     testId="contract-request-shared-with"
                                     alwaysShowOwner
                                 />
-                                <dl className="space-y-4 rounded-2xl border border-grayscale-200 p-4 text-sm leading-relaxed">
+                                <dl className="space-y-v3-4 rounded-2xl border border-grayscale-200 p-4 text-sm leading-relaxed">
                                     <div>
                                         <dt className="font-medium text-grayscale-900">
                                             {m['contractRequests.dataRequested']()}
@@ -415,7 +417,7 @@ export const ContractRequest: React.FC<RequestProps> = ({
                 <footer
                     className={
                         details
-                            ? 'shrink-0 border-t border-grayscale-200 bg-white px-6 py-4 space-y-3'
+                            ? 'shrink-0 border-t border-grayscale-200 bg-white px-6 py-4 space-y-v3-3'
                             : 'mt-5'
                     }
                 >
@@ -483,7 +485,7 @@ export const ContractRequest: React.FC<RequestProps> = ({
                     {details && (
                         <button
                             type="button"
-                            className="w-full py-2 text-sm font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors rounded-[20px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-40"
+                            className="w-full py-2 text-sm font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors rounded-[20px] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-40"
                             disabled={busy}
                             onClick={closeModal}
                         >
@@ -505,7 +507,7 @@ const PendingRequests: React.FC = () => {
     return (
         <section
             data-testid="pending-contract-requests"
-            className="font-poppins p-4 space-y-3 shrink-0 max-h-[40vh] overflow-y-auto"
+            className="font-poppins p-4 space-y-v3-3 shrink-0 max-h-[40vh] overflow-y-auto"
         >
             <h3 className="text-sm font-semibold text-grayscale-900">
                 {m['contractRequests.pending']()}

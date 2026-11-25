@@ -15,40 +15,45 @@ export enum MyDataStepsEnum {
     jobs = 'jobs',
 }
 
-const APPS = [{
-    name: 'Khan Academy',
-    image: KhanAcademyLogo,
-    settings: {
-        read: [],
-        write: []
-    }
-}, {
-    name: 'Coursera',
-    image: CourseraLogo,
-    settings: {
-        read: [],
-        write: []
-    }
-}, 
-{
-    name: 'Super Skills!',
-    image: SuperSkillsLogo,
-    settings: {
-        read: [],
-        write: []
-    }
-}, {
-    name: 'Brookings',
-    image: BrookingsLogo,
-    settings: {
-        read: [],
-        write: []
-    }
-}];
+const APPS = [
+    {
+        name: 'Khan Academy',
+        image: KhanAcademyLogo,
+        settings: {
+            read: [],
+            write: [],
+        },
+    },
+    {
+        name: 'Coursera',
+        image: CourseraLogo,
+        settings: {
+            read: [],
+            write: [],
+        },
+    },
+    {
+        name: 'Super Skills!',
+        image: SuperSkillsLogo,
+        settings: {
+            read: [],
+            write: [],
+        },
+    },
+    {
+        name: 'Brookings',
+        image: BrookingsLogo,
+        settings: {
+            read: [],
+            write: [],
+        },
+    },
+];
 
 const MyData: React.FC<{ handleCloseModal: () => void }> = ({ handleCloseModal }) => {
     const [activeStep, setActiveStep] = useState<MyDataStepsEnum>(MyDataStepsEnum.overview);
 
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let activeStepEl = null;
 
     switch (activeStep) {

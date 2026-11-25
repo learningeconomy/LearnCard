@@ -40,7 +40,15 @@ fi
     optimized_wasm="$(mktemp "${SOURCE_PKG_DIR}/didkit_wasm_bg.wasm.XXXXXX")"
     trap 'rm -f "${optimized_wasm}"' EXIT
 
-    wasm-opt -Oz -o "${optimized_wasm}" "${SOURCE_PKG_DIR}/didkit_wasm_bg.wasm"
+    # Stripped DIDKit release builds (strip = true) have no target_features section, so
+    # Binaryen cannot infer the enabled features and fails validation. Pass the feature set
+    # DIDKit documents for wasm-opt. Avoid --all-features, which can enable proposals that
+    # target browsers do not support.
+    wasm-opt -Oz \
+        --enable-mutable-globals --enable-nontrapping-float-to-int \
+        --enable-bulk-memory --enable-sign-ext \
+        --enable-reference-types --enable-multivalue \
+        -o "${optimized_wasm}" "${SOURCE_PKG_DIR}/didkit_wasm_bg.wasm"
     mv "${optimized_wasm}" "${SOURCE_PKG_DIR}/didkit_wasm_bg.wasm"
 
     trap - EXIT

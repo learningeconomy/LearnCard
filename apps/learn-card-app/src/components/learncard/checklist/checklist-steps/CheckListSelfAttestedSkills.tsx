@@ -35,7 +35,7 @@ export const CheckListSelfAttestedSkills: React.FC = () => {
                     </p>
 
                     <button
-                        className={`w-full flex rounded-[30px] items-center justify-center py-2 font-semibold text-[17px] border-[2px] border-solid border-grayscale-200 text-grayscale-500`}
+                        className={`w-full flex rounded-[30px] items-center justify-center py-2 font-semibold text-[17px] border-2 border-solid border-grayscale-200 text-grayscale-500`}
                     >
                         {m['passport.buildMyLearnCard.managers.selfAttested.addSkill']()}{' '}
                         <Plus className="w-[20px] h-auto text-grayscale-500 ml-2" />

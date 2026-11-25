@@ -1,5 +1,114 @@
 # @learncard/sss-key-manager
 
+## 0.3.3
+
+### Patch Changes
+
+- [#2073](https://github.com/learningeconomy/LearnCard/pull/2073) [`9ea97f319158a461ec42b4256c63b81ed53afe97`](https://github.com/learningeconomy/LearnCard/commit/9ea97f319158a461ec42b4256c63b81ed53afe97) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Load the Nitro attestation verifier (X.509, ASN.1, CBOR) on first use instead of at import time.
+
+- [#2073](https://github.com/learningeconomy/LearnCard/pull/2073) [`9ea97f319158a461ec42b4256c63b81ed53afe97`](https://github.com/learningeconomy/LearnCard/commit/9ea97f319158a461ec42b4256c63b81ed53afe97) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Mark the package side-effect free so bundlers can drop unused modules (for example the SSS strategy when an app only imports a constant).
+
+- Updated dependencies [[`e096512e4291bcaa5e424b7abbfc0932ca2a2317`](https://github.com/learningeconomy/LearnCard/commit/e096512e4291bcaa5e424b7abbfc0932ca2a2317), [`ff6f013bdedc9aee84e9849fa5736a8ad4a90c81`](https://github.com/learningeconomy/LearnCard/commit/ff6f013bdedc9aee84e9849fa5736a8ad4a90c81), [`e096512e4291bcaa5e424b7abbfc0932ca2a2317`](https://github.com/learningeconomy/LearnCard/commit/e096512e4291bcaa5e424b7abbfc0932ca2a2317), [`154941805bd8e2aa626afe3582e7794921debd27`](https://github.com/learningeconomy/LearnCard/commit/154941805bd8e2aa626afe3582e7794921debd27), [`1e4a9e97b825c18300ae0f00c2b9324120be196f`](https://github.com/learningeconomy/LearnCard/commit/1e4a9e97b825c18300ae0f00c2b9324120be196f), [`bd450e7b0467a94bbd30573fa0aebfcd6333db22`](https://github.com/learningeconomy/LearnCard/commit/bd450e7b0467a94bbd30573fa0aebfcd6333db22), [`acda1d1bd362add238a7c6ff8096c295e844e586`](https://github.com/learningeconomy/LearnCard/commit/acda1d1bd362add238a7c6ff8096c295e844e586)]:
+    - @learncard/types@6.2.0
+
+## 0.3.2
+
+### Patch Changes
+
+- [#2007](https://github.com/learningeconomy/LearnCard/pull/2007) [`f3f3d678156b46a67a2f916b62789aeef4e40bc7`](https://github.com/learningeconomy/LearnCard/commit/f3f3d678156b46a67a2f916b62789aeef4e40bc7) Thanks [@Custard7](https://github.com/Custard7)! - Add optional `KeyDerivationStrategy.fetchArchivedKey()`, implemented by the SSS strategy against `POST /keys/archived-key`. It returns `null` on any failure or unavailable response, so callers can fall back to legacy key derivation.
+
+- Updated dependencies [[`f3f3d678156b46a67a2f916b62789aeef4e40bc7`](https://github.com/learningeconomy/LearnCard/commit/f3f3d678156b46a67a2f916b62789aeef4e40bc7)]:
+    - @learncard/types@6.1.1
+
+## 0.3.1
+
+### Patch Changes
+
+- Updated dependencies [[`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c), [`f086c95870f57896331b2bbbdd97a94f6ddc3339`](https://github.com/learningeconomy/LearnCard/commit/f086c95870f57896331b2bbbdd97a94f6ddc3339), [`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c)]:
+    - @learncard/types@6.1.0
+
+## 0.3.0
+
+### Minor Changes
+
+- [#1925](https://github.com/learningeconomy/LearnCard/pull/1925) [`13e0809239cd73c5153a3ff82b268afb21b665b2`](https://github.com/learningeconomy/LearnCard/commit/13e0809239cd73c5153a3ff82b268afb21b665b2) Thanks [@Custard7](https://github.com/Custard7)! - Let the escrow enclave's own recovery emails (code, recovery started, release warning) carry the app's brand. The owner's device seals a display name into the escrow blob at enrollment (`recoveryBrand`), the same way it seals the recovery email and language. This needs the brand-aware enclave image, and stays off until a tenant turns it on (SECURITY.md D21).
+
+    - **sss-key-manager:** new optional `escrow.emailBrand`. It is sealed as `recoveryBrand` only when the recovery contact is sealed (nitro enroll/replace), never on a carry. `createSSSStrategy` throws if the value is invalid. New export `canonicalEscrowEmailBrand` (ASCII letters, digits, space, `-`, `'`, `&`; 1-32 characters, starting with a letter; at most 3 digits in total and no `http`/`www`), plus `MAX_ESCROW_EMAIL_BRAND_LENGTH` and `MAX_ESCROW_EMAIL_BRAND_DIGITS`. `EscrowBlobPlaintext` gains `recoveryBrand?`. The blob and release parsers keep a valid brand and drop an invalid one without failing; before this change they dropped the field entirely. `violatesCarryContactRule` also flags a target that claims a brand.
+    - **learn-card-base:** new tenant config flag `auth.sss.escrowSealEmailBrand` (default false). When it is on, `getEscrowStrategyConfig(sss, { appBrandName })` forwards the canonical app name as `emailBrand`. An invalid name is logged and omitted, and escrow stays enabled. `getEscrowEmailSender` now returns `mixed`, which is true when this app seals its brand. New optional `auth.sss.escrowSharedEmailBrands` (the other apps sharing this app's DIDs): with sealing on, an app whose fallback brand is its own (LearnCard) gets a `shared` note naming them, since a shared DID's brand is "last writer wins". New `getTenantEscrowStrategyConfig(sss, tenant)`, used by both apps' `sss` factories, forwards `branding.name`.
+    - **learn-card-app:** passes `branding.name` through `getTenantEscrowStrategyConfig`. While sealing is on, the recovery screens say the code and updates may come from either brand, or, in LearnCard, from VetPass if the user also uses it (4 new keys in each of the 4 locales).
+    - **lca-api:** no code change. The software enclave now keeps the sealed brand through carry and rewrap because it uses the updated parser (covered by a test).
+
+- [#1925](https://github.com/learningeconomy/LearnCard/pull/1925) [`13e0809239cd73c5153a3ff82b268afb21b665b2`](https://github.com/learningeconomy/LearnCard/commit/13e0809239cd73c5153a3ff82b268afb21b665b2) Thanks [@Custard7](https://github.com/Custard7)! - Prepare VetPass to use escrow recovery on LearnCard's escrow enclave. The enclave serves one tenant: it signs and checks its own authority tenant label (`learncard`). Before this change VetPass sent its app tenant (`vetpass`) instead, so its first authority-state read failed.
+
+    - **sss-key-manager:** new optional `escrow.authorityTenant`, used for everything the enclave signs or checks (intent tenant, authority state, hold and code-delivery records, persisted recovery expectations). `tenantId` is still sent as `X-Tenant-Id` and used for branding. It defaults to `tenantId`, so LearnCard and ScoutPass behave as before. If signed evidence carries another label, the client throws the new `EscrowAuthorityTenantMismatchError` (a subclass of `EscrowEvidenceError` that names both labels) before rotating shares or taking any recovery step. A malformed label throws in `createSSSStrategy`.
+    - **learn-card-base:** new tenant config field `auth.sss.escrowAuthorityTenant` (validated), forwarded with the escrow trust policy by `getEscrowStrategyConfig`. Also adds the helpers `getEscrowAuthorityTenant`, `escrowAuthorityBrandName`, `getEscrowEmailSenderBrand` and `getEscrowEmailSender` (compares the app's `branding.name` with the enclave brand).
+    - **lca-api:** checks escrow intents and authority state against the new `ESCROW_AUTHORITY_TENANT` setting (default `learncard`, so no infrastructure change), not the client-supplied `X-Tenant-Id`. It also refuses an enroll when the authority state it reads carries a different tenant. Holds, emails and links still use the app tenant. The default is global, so the ScoutPass deployment (escrow off) must set its own value before it turns escrow on.
+    - **learn-card-app:** no VetPass config change: VetPass escrow stays off at every stage until the SSS switch turns it on together with LearnCard production. A new test keeps it off until then, and afterwards fails if VetPass and LearnCard differ in key derivation, escrow mode, pins or authority tenant at any deployed stage. When the enclave's email brand differs from the app's, the recovery screens explain that the code and some other emails come from LearnCard (4 locales).
+    - **escrow-canary:** tier 3 reports any `EscrowEvidenceError` subclass, including the new tenant mismatch, as `evidence` rather than `unexpected`.
+
+### Patch Changes
+
+- Updated dependencies [[`e9d738eea3b477dbd82bde171d3c5f8ffa2efbc5`](https://github.com/learningeconomy/LearnCard/commit/e9d738eea3b477dbd82bde171d3c5f8ffa2efbc5), [`69b80366c48e0f458b3bb50f25166c90ecaa2d6d`](https://github.com/learningeconomy/LearnCard/commit/69b80366c48e0f458b3bb50f25166c90ecaa2d6d), [`0caa0e478bce246793893e488f37ee90c9b00a1a`](https://github.com/learningeconomy/LearnCard/commit/0caa0e478bce246793893e488f37ee90c9b00a1a), [`bde3fe0f15a780d9fafc699096a9a0307502f529`](https://github.com/learningeconomy/LearnCard/commit/bde3fe0f15a780d9fafc699096a9a0307502f529), [`784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3`](https://github.com/learningeconomy/LearnCard/commit/784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3), [`751579d9c14116dbf6d0e7f7d62f489c81c39db2`](https://github.com/learningeconomy/LearnCard/commit/751579d9c14116dbf6d0e7f7d62f489c81c39db2), [`2c60b1a760958cbfe2525bc951d2381332e1aa48`](https://github.com/learningeconomy/LearnCard/commit/2c60b1a760958cbfe2525bc951d2381332e1aa48)]:
+    - @learncard/types@6.0.0
+
+## 0.2.7
+
+### Patch Changes
+
+- [#1923](https://github.com/learningeconomy/LearnCard/pull/1923) [`27be1a449118c3c9b69f1fd961cf0b7fe3cbcdb6`](https://github.com/learningeconomy/LearnCard/commit/27be1a449118c3c9b69f1fd961cf0b7fe3cbcdb6) Thanks [@Custard7](https://github.com/Custard7)! - PIN sign-in: wrong PIN entries made during the same sign-in on the same device are now treated as the user's own typos (own-typos rule, approved). They no longer trigger the "someone may have tried your PIN" warning, and they no longer block the same-PIN budget refresh. Only wrong entries recorded before the sign-in started, or entries from anywhere else during it, still count. The coordinator records the PIN status when the flow starts, counts its own mismatch responses, and passes both to the strategy (`input.pinAttempts`). The strategy refreshes the PIN only when nothing was recorded before the flow and every status read shows exactly the flow's own entries. lca-api now accepts a non-zero `expectedPinCharges.wrongAttempts`, but still writes only while the PIN shows exactly those charges, so a foreign entry that lands at any point still blocks the refresh. A flow is bound to one PIN generation and ends at any sign-in, and lca-api answers "Incorrect PIN." only for a wrong entry it actually recorded (otherwise CONFLICT). Sign-up now requires a recovery PIN ("Create your PIN": "You'll use it to sign in on new devices."), but it fails open. The step is skipped when escrow is not confirmed available in time. A save that errors or hangs (30s deadline) shows the error and allows a retry, and "Skip for now" appears from the second failed save (the announced error then says so, and focus returns to the PIN boxes); that skip writes no prompt flag, so the first-time PIN prompt asks again on a later start.
+
+    App copy and layout: the new-device PIN screen is now "Confirm it's you" ("Enter your 6-digit PIN to finish signing in."), without the tinted panel behind the PIN boxes, with "Other ways to confirm", "Approve from another device", "Show N more", and one quiet "Trouble signing in?" link to the 7-day path (accounts without a PIN keep their existing screen). The post-PIN-sign-in sheet replaces its yes/no question with "You're signed in" / "Done" plus a quiet "Lost a device? Secure your account" link, or, when wrong entries other than the user's own typos are recorded, an amber "Someone may have tried your PIN" warning leading with "Choose a new PIN" (with "Not now"). Account Recovery settings replace the boxed "Signed in somewhere you don't recognize?" card with a quiet "Sign out of other devices" row under "Security" at the end, marked with an amber dot while wrong PIN entries other than the user's excused own typos are recorded against the current PIN (`ready.escrowPinAttention`); the secure flow's confirm screen keeps the full explanation, now uses a red destructive button, and focuses Cancel first. Translated into es, fr and ar.
+
+- Updated dependencies [[`27be1a449118c3c9b69f1fd961cf0b7fe3cbcdb6`](https://github.com/learningeconomy/LearnCard/commit/27be1a449118c3c9b69f1fd961cf0b7fe3cbcdb6)]:
+    - @learncard/types@5.24.2
+
+## 0.2.6
+
+### Patch Changes
+
+- [#1897](https://github.com/learningeconomy/LearnCard/pull/1897) [`372c1431e78a9708454f9c4c2f2c99dd5486b8e9`](https://github.com/learningeconomy/LearnCard/commit/372c1431e78a9708454f9c4c2f2c99dd5486b8e9) Thanks [@Custard7](https://github.com/Custard7)! - Keep the user's recovery PIN after a PIN recovery: the post-recovery re-enrollment now re-sets the PIN the user just entered (fresh attempt budget) instead of clearing it. Hold recovery, resumed recoveries and failed re-enrollment still clear the PIN, and the app only asks for a new PIN when it was cleared.
+
+- [#1905](https://github.com/learningeconomy/LearnCard/pull/1905) [`c20460f6fef685272227f506f536b6811f90b8a0`](https://github.com/learningeconomy/LearnCard/commit/c20460f6fef685272227f506f536b6811f90b8a0) Thanks [@Custard7](https://github.com/Custard7)! - Make the recovery PIN the main way to sign in on a new device, without resetting the account. A PIN sign-in now keeps the account's shares, history, recovery methods and escrow: the device stores the released recovery piece at the current version and re-sets the same PIN for a fresh attempt budget only when no wrong entry is recorded against it; otherwise the PIN keeps its reduced budget and the app asks for a new, different PIN (refusing the PIN just used, also after a restart on that device, via a tag keyed by the account key), asking again on each app start until one is chosen; the same-PIN refresh is skipped when another charge landed during the release, and lca-api writes it only while the PIN still shows the charges the client saw (`expectedPinCharges`) (a lost login is linked with the new `POST /keys/recovery-session/pin-sign-in`, accepted only after a PIN release). The server emails the account's verified addresses on every PIN sign-in ("New device signed in with your PIN. Not you? Secure your account."), and the PIN status reports earlier wrong entries. The app leads its recovery screen with PIN entry (no sign-out warnings on that path; the 7-day hold keeps them), asks once after signing in whether a device was lost or the PIN is known to someone else (warning about earlier wrong entries), and adds "Secure my account" / "Sign out of all other devices" (`POST /keys/revoke-other-devices`), reachable from that question, Account Recovery settings and the email link `/account/secure`. That action re-splits the key, purges older versions and unlinks every login except the current one; it does not change the key itself, so a device that is already signed in may keep working until it signs out (the app says so). The revoke emails the account's contact and verified recovery addresses (new `account-secured` template, written for an owner who did not do it and may have lost their login: it says the recovery methods were reset and points to the tenant's support address, or to the organization when there is none). Every recovery token (recovery-email code, phrase, passkey, backup, waiting-period hold and PIN) is now bound to an account security epoch that every revoke and wiping rebind advances, so no token minted before one can rebind or re-link after it. Recovery is one-at-a-time: the coordinator rejects a second recovery while one is pending (`RecoveryInProgressError`; after a cancel, a new recovery-email code can be requested at once) and the app disables switching methods while a PIN sign-in is in flight. `@learncard/email-templates` omits an absent `locale` rather than passing `undefined` (`exactOptionalPropertyTypes`-safe) and exports each template from one declaration.
+
+- Updated dependencies [[`c20460f6fef685272227f506f536b6811f90b8a0`](https://github.com/learningeconomy/LearnCard/commit/c20460f6fef685272227f506f536b6811f90b8a0)]:
+    - @learncard/types@5.24.1
+
+## 0.2.5
+
+### Patch Changes
+
+- [#1860](https://github.com/learningeconomy/LearnCard/pull/1860) [`b0c7891371fa621a1c2c4a419a1d4f330ed2993a`](https://github.com/learningeconomy/LearnCard/commit/b0c7891371fa621a1c2c4a419a1d4f330ed2993a) Thanks [@goblincore](https://github.com/goblincore)! - Reconcile stale account shares that reuse the same share coordinate instead of stopping sign-in with an error. Preserve pending writes for a delayed server commit and retain existing handling for unrelated failures.
+
+## 0.2.4
+
+### Patch Changes
+
+- Updated dependencies [[`4fae096473fd0824be1dd6aefb4a783062377104`](https://github.com/learningeconomy/LearnCard/commit/4fae096473fd0824be1dd6aefb4a783062377104), [`4fae096473fd0824be1dd6aefb4a783062377104`](https://github.com/learningeconomy/LearnCard/commit/4fae096473fd0824be1dd6aefb4a783062377104), [`d1708a1ce43f052862fedda2cf0d922a71ad1762`](https://github.com/learningeconomy/LearnCard/commit/d1708a1ce43f052862fedda2cf0d922a71ad1762)]:
+    - @learncard/types@5.24.0
+
+## 0.2.3
+
+### Patch Changes
+
+- Updated dependencies [[`bf329d9fb188f32fa715bfc7200397030ec9b385`](https://github.com/learningeconomy/LearnCard/commit/bf329d9fb188f32fa715bfc7200397030ec9b385), [`3231ed0b37d9af8c8e49c17f89b62778aec34f5c`](https://github.com/learningeconomy/LearnCard/commit/3231ed0b37d9af8c8e49c17f89b62778aec34f5c)]:
+    - @learncard/types@5.23.2
+
+## 0.2.2
+
+### Patch Changes
+
+- Updated dependencies [[`9018e3173393f2ec9645286edd99bb80aa3b2c6c`](https://github.com/learningeconomy/LearnCard/commit/9018e3173393f2ec9645286edd99bb80aa3b2c6c)]:
+    - @learncard/types@5.23.1
+
+## 0.2.1
+
+### Patch Changes
+
+- [#1621](https://github.com/learningeconomy/LearnCard/pull/1621) [`d7ca528898d988c65f0dc7084cfdcd41767648c5`](https://github.com/learningeconomy/LearnCard/commit/d7ca528898d988c65f0dc7084cfdcd41767648c5) Thanks [@Custard7](https://github.com/Custard7)! - Add Nitro attestation verification and stale re-enrollment support for escrow recovery.
+
+- Updated dependencies [[`6209da80c52ac056a7644dab14669192740c9dad`](https://github.com/learningeconomy/LearnCard/commit/6209da80c52ac056a7644dab14669192740c9dad), [`5890451789b18afee45dc5ecbab3fa30aa90f085`](https://github.com/learningeconomy/LearnCard/commit/5890451789b18afee45dc5ecbab3fa30aa90f085), [`1387cd0a08fa6b0a706c86a5a0376b6c7d706856`](https://github.com/learningeconomy/LearnCard/commit/1387cd0a08fa6b0a706c86a5a0376b6c7d706856), [`d7ca528898d988c65f0dc7084cfdcd41767648c5`](https://github.com/learningeconomy/LearnCard/commit/d7ca528898d988c65f0dc7084cfdcd41767648c5), [`8f3bc66ab3d3e5e1edb3fbf5f362025875a914ba`](https://github.com/learningeconomy/LearnCard/commit/8f3bc66ab3d3e5e1edb3fbf5f362025875a914ba), [`1387cd0a08fa6b0a706c86a5a0376b6c7d706856`](https://github.com/learningeconomy/LearnCard/commit/1387cd0a08fa6b0a706c86a5a0376b6c7d706856), [`267cf40291b3a63caf178857be0e57feaf5e0948`](https://github.com/learningeconomy/LearnCard/commit/267cf40291b3a63caf178857be0e57feaf5e0948), [`c78c982f9f4911f1ca2973380f19d80db775e012`](https://github.com/learningeconomy/LearnCard/commit/c78c982f9f4911f1ca2973380f19d80db775e012)]:
+    - @learncard/types@5.23.0
+
 ## 0.2.0
 
 ### Minor Changes

@@ -2,9 +2,9 @@
 
 ## Properties
 
-| Name       | Type                    | Description | Notes |
-| ---------- | ----------------------- | ----------- | ----- |
-| **var_in** | **List[Optional[str]]** |             |
+| Name       | Type          | Description | Notes |
+| ---------- | ------------- | ----------- | ----- |
+| **var_in** | **List[str]** |             |
 
 ## Example
 

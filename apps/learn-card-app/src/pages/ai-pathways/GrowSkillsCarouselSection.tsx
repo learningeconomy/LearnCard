@@ -29,7 +29,7 @@ const GrowSkillsCarouselSection = <T,>({
     onViewAll,
     viewAllLabel = m['skills.search.viewAll'](),
     className = '',
-    slideClassName = 'flex !h-auto overflow-visible',
+    slideClassName = 'flex h-auto! overflow-visible',
 }: GrowSkillsCarouselSectionProps<T>) => {
     const carouselItems = items ?? [];
 
@@ -134,7 +134,7 @@ const GrowSkillsCarouselSection = <T,>({
                             className={slideClassName}
                             style={{ width: slideWidth }}
                         >
-                            <div className="flex h-full w-full [&>*]:h-full">
+                            <div className="flex h-full w-full *:h-full">
                                 {renderItem(item, index)}
                             </div>
                         </SwiperSlide>

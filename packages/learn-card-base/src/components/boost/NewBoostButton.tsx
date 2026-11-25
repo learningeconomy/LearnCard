@@ -1,3 +1,4 @@
+import { tailwindColorWithOpacity } from 'learn-card-base/helpers/colorHelpers';
 import React from 'react';
 
 import { IonCol, IonRow } from '@ionic/react';
@@ -98,7 +99,8 @@ const NewBoostButton: React.FC<NewBoostButtonProps> = ({
             >
                 <button
                     onClick={onClick}
-                    className={`h-full pt-[15px] bg-opacity-30 rounded-[20px] flex flex-col items-center justify-center gap-[10px] w-[160px] min-h-[280px] bg-${color}`}
+                    style={{ backgroundColor: tailwindColorWithOpacity(color, 30) }}
+                    className="h-full pt-[15px] rounded-[20px] flex flex-col items-center justify-center gap-[10px] w-[160px] min-h-[280px]"
                 >
                     <div
                         className={`bg-white rounded-full p-[8px] text-${color} w-fit h-fit shadow-soft-bottom`}
@@ -117,10 +119,11 @@ const NewBoostButton: React.FC<NewBoostButtonProps> = ({
         // List View
         return (
             <IonRow
-                className={`rounded-[15px] w-full flex gap-[10px] items-center w-full z-[2] bg-${color} bg-opacity-30 ${
+                className={`rounded-[15px] w-full flex gap-[10px] items-center w-full z-[2] ${
                     isId ? 'px-[8px] py-[17px]' : 'p-[8px]'
                 }`}
                 onClick={onClick}
+                style={{ backgroundColor: tailwindColorWithOpacity(color, 30) }}
                 role="button"
             >
                 <div

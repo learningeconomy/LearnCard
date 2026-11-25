@@ -17,7 +17,7 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
@@ -27,9 +27,10 @@ class ContractsCreateConsentFlowContractRequestContractReadCredentialsCategories
     """
     ContractsCreateConsentFlowContractRequestContractReadCredentialsCategoriesValue
     """ # noqa: E501
-    required: Optional[StrictBool]
+    required: StrictBool
     default_enabled: Optional[StrictBool] = Field(default=None, alias="defaultEnabled")
-    __properties: ClassVar[List[str]] = ["required", "defaultEnabled"]
+    reason: Optional[StrictStr] = None
+    __properties: ClassVar[List[str]] = ["required", "defaultEnabled", "reason"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -58,9 +59,8 @@ class ContractsCreateConsentFlowContractRequestContractReadCredentialsCategories
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -70,16 +70,6 @@ class ContractsCreateConsentFlowContractRequestContractReadCredentialsCategories
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if required (nullable) is None
-        # and model_fields_set contains the field
-        if self.required is None and "required" in self.model_fields_set:
-            _dict['required'] = None
-
-        # set to None if default_enabled (nullable) is None
-        # and model_fields_set contains the field
-        if self.default_enabled is None and "default_enabled" in self.model_fields_set:
-            _dict['defaultEnabled'] = None
-
         return _dict
 
     @classmethod
@@ -93,7 +83,8 @@ class ContractsCreateConsentFlowContractRequestContractReadCredentialsCategories
 
         _values = {
             "required": obj.get("required"),
-            "defaultEnabled": obj.get("defaultEnabled")
+            "defaultEnabled": obj.get("defaultEnabled"),
+            "reason": obj.get("reason")
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

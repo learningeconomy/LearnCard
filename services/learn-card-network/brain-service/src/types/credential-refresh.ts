@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import {
     CredentialRefreshSigningModeValidator,
+    CredentialRefreshUpdateReasonValidator,
     PublishCredentialRefreshNotificationValidator,
 } from '@learncard/types';
 
@@ -45,6 +46,12 @@ export const CredentialRefreshRecordValidator = z.object({
     rootMaterialDigest: z.string().optional(),
     /** Server-keyed fingerprint of the original credentialStatus descriptor */
     credentialStatusDigest: z.string().optional(),
+    /** Exact public status descriptor, including object/array shape. JSON null means absent. */
+    credentialStatusBinding: z.string().optional(),
+    /** Exact signed refresh-service descriptor, including additional services and array order. */
+    refreshServiceBinding: z.string().optional(),
+    encryptionMode: z.enum(['network', 'holder']).optional(),
+    statusEntries: z.string().optional(),
     /** Keyed fingerprint of version 1 subject identifiers; no extra subject DIDs persisted. */
     credentialSubjectDigest: z.string().optional(),
     /** Optional boost permanently associated with the initial credential bind. */
@@ -54,6 +61,7 @@ export const CredentialRefreshRecordValidator = z.object({
     idempotencyKey: z.string().optional(),
     /** Issuer-authored, privacy-safe update summary */
     updateSummary: z.string().optional(),
+    updateReason: CredentialRefreshUpdateReasonValidator.optional(),
     /**
      * Bounded, normalized credential display title used only for the email update
      * notice. Never rendered in in-app/push payloads. Sourced from the unsigned
@@ -108,6 +116,7 @@ export const CredentialRefreshVersionNodeValidator = z.object({
     etag: z.string().optional(),
     signingMode: CredentialRefreshSigningModeValidator,
     updateSummary: z.string().optional(),
+    updateReason: CredentialRefreshUpdateReasonValidator.optional(),
     /** Bounded credential display title for the email update notice only. */
     credentialDisplayName: z.string().optional(),
     /** Caller-provided key for replaying this exact historical publication */
@@ -148,7 +157,8 @@ export const AdvanceCredentialRefreshHeadParamsValidator = z.object({
     etag: z.string().optional(),
     materialDigest: z.string().optional(),
     signingMode: CredentialRefreshSigningModeValidator,
-    updateSummary: z.string().optional(),
+    updateSummary: z.string().max(280).optional(),
+    updateReason: CredentialRefreshUpdateReasonValidator.optional(),
     /** Bounded credential display title persisted for the email update notice only. */
     credentialDisplayName: z.string().optional(),
     idempotencyKey: z.string().optional(),

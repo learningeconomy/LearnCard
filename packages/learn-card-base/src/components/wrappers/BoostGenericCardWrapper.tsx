@@ -95,6 +95,7 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
             <BoostListItem
                 credential={credential}
                 title={title}
+                issuerName={issuerName}
                 categoryType={categoryType}
                 onClick={innerOnClick}
                 onOptionsClick={optionsTriggerOnClick}
@@ -122,7 +123,7 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
             showChecked={showChecked}
             checkStatus={checkStatus}
             optionsTriggerOnClick={optionsTriggerOnClick}
-            className={`${className} !h-[275px] !shadow-[0px_2px_4px_0px_rgba(0,0,0,0.25)]`}
+            className={`${className} h-[275px]! shadow-box-bottom!`}
             customHeaderClass={customHeaderClass}
             customThumbClass={customThumbClass}
             thumbImgSrc={thumbImgSrc}
@@ -140,7 +141,7 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
                 loading || isCLR ? null : (
                     <CredentialVerificationDisplay
                         credential={credential}
-                        iconClassName="!w-[15px] !h-[15px]"
+                        iconClassName="w-[15px]! h-[15px]!"
                         showText={!!unknownVerifierTitle}
                         unknownVerifierTitle={unknownVerifierTitle}
                         lifecycleStatus={lifecycleStatus}

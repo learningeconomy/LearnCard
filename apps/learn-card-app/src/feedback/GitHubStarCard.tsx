@@ -38,7 +38,7 @@ export const GitHubStarCard: React.FC<GitHubStarCardProps> = ({
             type="button"
             onClick={onDismiss}
             aria-label={m['feedback.github.dismiss']()}
-            className="absolute top-2 end-2 p-1.5 rounded-full text-grayscale-400 hover:text-grayscale-700 hover:bg-grayscale-100 transition-colors"
+            className="absolute top-2 inset-e-2 p-1.5 rounded-full text-grayscale-400 hover:text-grayscale-700 hover:bg-grayscale-100 transition-colors"
             data-testid="github-star-dismiss"
         >
             <X className="w-3.5 h-3.5" />

@@ -95,7 +95,7 @@ export const FeedbackComposer: React.FC<FeedbackComposerProps> = ({
             // image bytes, so only web results should use metadata.format.
             const rawFormat = selected.uri
                 ? 'jpeg'
-                : selected.metadata?.format?.toLowerCase() ?? 'jpeg';
+                : (selected.metadata?.format?.toLowerCase() ?? 'jpeg');
             const format = rawFormat === 'jpg' ? 'jpeg' : rawFormat;
             const supportedFormat = ['jpeg', 'png', 'webp', 'gif'].includes(format)
                 ? format
@@ -203,7 +203,7 @@ export const FeedbackComposer: React.FC<FeedbackComposerProps> = ({
                         }
                         rows={5}
                         disabled={isSubmitting}
-                        className="w-full rounded-xl border border-grayscale-300 bg-white py-3 px-4 text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
+                        className="w-full rounded-xl border border-grayscale-300 bg-white py-3 px-4 text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:border-transparent focus:outline-hidden focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
                     />
                 </div>
 
@@ -270,8 +270,8 @@ export const FeedbackComposer: React.FC<FeedbackComposerProps> = ({
                         {isBug
                             ? m['feedback.reporting.bugDisclosure']()
                             : canAttachScreenshot
-                            ? m['feedback.reporting.ideaDisclosure']()
-                            : m['feedback.reporting.ideaDisclosureWithoutScreenshot']()}
+                              ? m['feedback.reporting.ideaDisclosure']()
+                              : m['feedback.reporting.ideaDisclosureWithoutScreenshot']()}
                     </p>
                 </details>
             </div>

@@ -23,7 +23,7 @@ const OnboardingHeader: React.FC<{
                         <br />
                         <HeaderBranding
                             branding={BrandingEnum.learncard}
-                            className="!text-grayscale-900 !text-2xl"
+                            className="text-grayscale-900! text-2xl!"
                             disableClick
                         />
                     </h6>

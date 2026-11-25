@@ -1,0 +1,83 @@
+.batch-delivery-illustration {
+    // Brand accents stay in the decorative sky; controls retain the app palette.
+    background-color: #e5f4fc;
+
+    .batch-delivery-flight {
+        transform: translateX(calc(var(--delivery-position) - 20px));
+    }
+    .batch-delivery-credential {
+        width: 36px;
+        height: 48px;
+        transform: translateY(var(--delivery-rest-y));
+    }
+    .batch-delivery-cloud--0 {
+        inset-inline-start: 4%;
+        top: 5px;
+    }
+    .batch-delivery-cloud--1 {
+        inset-inline-start: 47%;
+        top: 43px;
+        opacity: 0.7;
+    }
+    .batch-delivery-cloud--2 {
+        inset-inline-start: 82%;
+        top: 16px;
+    }
+
+    &--active {
+        .batch-delivery-flight {
+            animation: batch-delivery-crossing 12s linear infinite;
+            animation-delay: var(--delivery-delay);
+        }
+        .batch-delivery-credential {
+            animation: batch-delivery-wave 6s ease-in-out infinite;
+            animation-delay: var(--delivery-delay);
+        }
+        .batch-delivery-cloud {
+            animation: batch-delivery-cloud-drift 18s ease-in-out infinite alternate;
+        }
+        .batch-delivery-cloud--1 {
+            animation-delay: -8s;
+            animation-duration: 24s;
+        }
+        .batch-delivery-cloud--2 {
+            animation-delay: -13s;
+            animation-duration: 21s;
+        }
+    }
+}
+
+@keyframes batch-delivery-crossing {
+    from {
+        transform: translateX(-40px);
+    }
+    to {
+        transform: translateX(100%);
+    }
+}
+@keyframes batch-delivery-wave {
+    0%,
+    100% {
+        transform: translateY(8px) rotate(-4deg);
+    }
+    50% {
+        transform: translateY(32px) rotate(4deg);
+    }
+}
+@keyframes batch-delivery-cloud-drift {
+    from {
+        transform: translate(-12px, 2px);
+    }
+    to {
+        transform: translate(18px, -2px);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .batch-delivery-illustration--active {
+        .batch-delivery-flight,
+        .batch-delivery-credential,
+        .batch-delivery-cloud {
+            animation: none;
+        }
+    }
+}

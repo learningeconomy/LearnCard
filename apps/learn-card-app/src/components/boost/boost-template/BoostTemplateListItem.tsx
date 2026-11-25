@@ -8,7 +8,7 @@ import { IonSkeletonText } from '@ionic/react';
 import { BoostIssuanceLoading } from '../boostLoader/BoostLoader';
 import CredentialGeneralPlus from '../../svgs/CredentialGeneralPlus';
 
-import { useModal, ModalTypes, CredentialCategory, categoryMetadata } from 'learn-card-base';
+import { useModal, ModalTypes, CredentialCategory, getCategoryMetadata } from 'learn-card-base';
 
 import { closeAll } from 'apps/learn-card-app/src/helpers/uiHelpers';
 import { getAchievementTypeDisplayText } from 'learn-card-base/helpers/credentialHelpers';
@@ -81,10 +81,10 @@ export const BoostTemplateListItem: React.FC<BoostTemplateListItemProps> = ({
 
     const type = getAchievementTypeDisplayText(
         boostVC?.credentialSubject?.achievement?.achievementType,
-        categoryMetadata[categoryType].value
+        getCategoryMetadata(categoryType).value
     );
 
-    const { color } = categoryMetadata[categoryType];
+    const { color } = getCategoryMetadata(categoryType);
 
     if (showSkeleton) {
         return (

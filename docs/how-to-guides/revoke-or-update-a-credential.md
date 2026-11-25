@@ -12,7 +12,7 @@ A signed credential can't be edited. To correct one, revoke it and issue a repla
 npx @learncard/cli revoke lc:network:network.learncard.com/trpc:credential:…
 ```
 
-Takes the `credentialUri` from the `send()` response (or a recipient list), finds the template and recipient, and revokes. `--suspend` pauses instead. Then `npx @learncard/cli verify` on the credential shows `✗ status: Status: Revoked`.
+Takes the `credentialUri` from the `send()` response (or a recipient list), finds the template and recipient, and revokes. `--suspend` pauses instead. Then `npx @learncard/cli verify credential.json` on the saved credential shows `✗ status: Status: Revoked`.
 
 ## Revoke a credential
 

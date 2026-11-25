@@ -1,5 +1,6 @@
 import tsconfigPaths from 'vite-tsconfig-paths';
-import { defineConfig, mergeConfig, type UserConfig } from 'vitest/config';
+import { defineConfig, mergeConfig, type ViteUserConfig as UserConfig } from 'vitest/config';
+import { CiTestRetryReporter } from './scripts/ci-test-retries/reporter';
 
 process.env.TZ ??= 'UTC';
 
@@ -48,5 +49,27 @@ export const serviceIntegrationPreset = mergeConfig(
     })
 );
 
-export const createVitestConfig = (preset: UserConfig, overrides: UserConfig = {}): UserConfig =>
-    mergeConfig(preset, defineConfig(overrides));
+export const createVitestConfig = (preset: UserConfig, overrides: UserConfig = {}): UserConfig => {
+    const config = mergeConfig(preset, defineConfig(overrides));
+    if (process.env.LC_CI_TEST_RETRY !== '1') return config;
+    const directory = process.env.LC_CI_TEST_REPORT_DIR;
+    if (!directory) throw new Error('CI test retries require a report directory.');
+    const configuredReporters = config.test?.reporters;
+    const reporters = configuredReporters
+        ? Array.isArray(configuredReporters)
+            ? configuredReporters
+            : [configuredReporters]
+        : [];
+    return {
+        ...config,
+        test: {
+            ...config.test,
+            retry: config.test?.retry ?? 1,
+            includeTaskLocation: true,
+            reporters: [
+                ...(reporters.length ? reporters : ['default']),
+                new CiTestRetryReporter(directory, __dirname),
+            ],
+        },
+    };
+};

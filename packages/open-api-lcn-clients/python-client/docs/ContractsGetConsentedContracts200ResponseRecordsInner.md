@@ -2,15 +2,21 @@
 
 ## Properties
 
-| Name           | Type                                                                                                      | Description | Notes      |
-| -------------- | --------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
-| **expires_at** | **str**                                                                                                   |             | [optional] |
-| **one_time**   | **bool**                                                                                                  |             | [optional] |
-| **terms**      | [**StorageResolve200ResponseAnyOf1**](StorageResolve200ResponseAnyOf1.md)                                 |             |
-| **contract**   | [**ContractsGetConsentFlowContract200Response**](ContractsGetConsentFlowContract200Response.md)           |             |
-| **uri**        | **str**                                                                                                   |             |
-| **consenter**  | [**BoostGetBoostRecipients200ResponseInnerToAnyOf3**](BoostGetBoostRecipients200ResponseInnerToAnyOf3.md) |             |
-| **status**     | **str**                                                                                                   |             |
+| Name                      | Type                                                                                                                                                                                        | Description | Notes      |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **expires_at**            | **str**                                                                                                                                                                                     |             | [optional] |
+| **one_time**              | **bool**                                                                                                                                                                                    |             | [optional] |
+| **terms**                 | [**StorageResolve200ResponseAnyOf1**](StorageResolve200ResponseAnyOf1.md)                                                                                                                   |             |
+| **referral**              | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerReferral**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerReferral.md) |             | [optional] |
+| **contract**              | [**ContractsGetConsentFlowContract200Response**](ContractsGetConsentFlowContract200Response.md)                                                                                             |             |
+| **uri**                   | **str**                                                                                                                                                                                     |             |
+| **consenter**             | [**BoostGetBoostRecipients200ResponseInnerToAnyOf3**](BoostGetBoostRecipients200ResponseInnerToAnyOf3.md)                                                                                   |             |
+| **status**                | **str**                                                                                                                                                                                     |             |
+| **consented_version**     | **int**                                                                                                                                                                                     |             |
+| **last_reviewed_version** | **int**                                                                                                                                                                                     |             | [optional] |
+| **reconsent_deadline**    | **str**                                                                                                                                                                                     |             | [optional] |
+| **new_options_until**     | **str**                                                                                                                                                                                     |             | [optional] |
+| **cumulative_update**     | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerCumulativeUpdate**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerCumulativeUpdate.md)                   |             | [optional] |
 
 ## Example
 

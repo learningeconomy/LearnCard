@@ -1,5 +1,85 @@
 # learn-card-core
 
+## 1.1.47
+
+### Patch Changes
+
+- Updated dependencies [[`261e0f46814595d06460dc617ba50800671f03b1`](https://github.com/learningeconomy/LearnCard/commit/261e0f46814595d06460dc617ba50800671f03b1), [`acda1d1bd362add238a7c6ff8096c295e844e586`](https://github.com/learningeconomy/LearnCard/commit/acda1d1bd362add238a7c6ff8096c295e844e586), [`6d5afc9c348c20ac6ac9c7b35651e5b850b13401`](https://github.com/learningeconomy/LearnCard/commit/6d5afc9c348c20ac6ac9c7b35651e5b850b13401), [`0bb92c2cc8047aa4bf307fd0952c1714219286a9`](https://github.com/learningeconomy/LearnCard/commit/0bb92c2cc8047aa4bf307fd0952c1714219286a9)]:
+    - @learncard/didkit-plugin@1.11.0
+    - @learncard/core@10.0.0
+
+## 1.1.46
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/core@9.4.46
+    - @learncard/didkit-plugin@1.10.12
+
+## 1.1.45
+
+### Patch Changes
+
+- Updated dependencies [[`c245cba6fc162e6896c4f9439a8a8da42d4189c9`](https://github.com/learningeconomy/LearnCard/commit/c245cba6fc162e6896c4f9439a8a8da42d4189c9), [`6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480`](https://github.com/learningeconomy/LearnCard/commit/6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480)]:
+    - @learncard/didkit-plugin@1.10.11
+    - @learncard/core@9.4.45
+
+## 1.1.44
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/core@9.4.44
+    - @learncard/didkit-plugin@1.10.10
+
+## 1.1.43
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/core@9.4.43
+    - @learncard/didkit-plugin@1.10.9
+
+## 1.1.42
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/core@9.4.42
+    - @learncard/didkit-plugin@1.10.8
+
+## 1.1.41
+
+### Patch Changes
+
+- Updated dependencies [[`d93c1b15856f341b4bd36415bf39052de9b6b198`](https://github.com/learningeconomy/LearnCard/commit/d93c1b15856f341b4bd36415bf39052de9b6b198)]:
+    - @learncard/didkit-plugin@1.10.6
+    - @learncard/core@9.4.41
+
+## 1.1.40
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/core@9.4.40
+    - @learncard/didkit-plugin@1.10.5
+
+## 1.1.39
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/core@9.4.39
+    - @learncard/didkit-plugin@1.10.4
+
+## 1.1.38
+
+### Patch Changes
+
+- Updated dependencies [[`590adf48867d6c6fd504e66a11c9827d5102122d`](https://github.com/learningeconomy/LearnCard/commit/590adf48867d6c6fd504e66a11c9827d5102122d)]:
+    - @learncard/didkit-plugin@1.10.3
+    - @learncard/core@9.4.38
+
 ## 1.1.37
 
 ### Patch Changes

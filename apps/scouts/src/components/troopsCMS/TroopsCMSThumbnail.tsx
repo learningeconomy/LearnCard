@@ -14,7 +14,7 @@ export const TroopsCMSThumbnail: React.FC<TroopsCMSThumbnailProps> = ({ viewMode
 
     return (
         <div className="w-full flex items-center justify-center mt-4 mb-4">
-            <div className="overflow-hidden flex items-center justify-center max-w-[100px] max-h-[100px] h-[100px] w-[100px] object-contain rounded-full bg-white border-solid border-white border-[1px]">
+            <div className="overflow-hidden flex items-center justify-center max-w-[100px] max-h-[100px] h-[100px] w-[100px] object-contain rounded-full bg-white border-solid border-white border">
                 {thumbnail ? (
                     <img src={thumbnail} alt="" className="w-full h-full object-cover" />
                 ) : (

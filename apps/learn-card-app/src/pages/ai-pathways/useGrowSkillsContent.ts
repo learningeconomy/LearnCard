@@ -74,6 +74,7 @@ export type GrowSkillsContentResult = {
     allKeywords: string[] | null;
     learningPathwaysData: GrowSkillsPathway[];
     schoolPrograms: GrowSkillsCourseProgram[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     courses: any[];
     occupations: OccupationDetailsResponse[] | undefined;
     youtubeVideos: YouTubeVideo[];
@@ -251,6 +252,7 @@ export const useGrowSkillsContent = ({
         return trainingPrograms?.length ? normalizeSchoolPrograms(trainingPrograms) : [];
     }, [trainingPrograms]);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const courses = useMemo<any[]>(() => {
         return schoolPrograms?.length
             ? filterCoursesByFieldOfStudy(schoolPrograms, fieldOfStudy)

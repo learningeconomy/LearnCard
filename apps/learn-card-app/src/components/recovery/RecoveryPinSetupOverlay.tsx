@@ -1,12 +1,23 @@
 import React, { useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import { checkmarkCircleOutline } from 'ionicons/icons';
-import { Overlay } from 'learn-card-base';
+import { Overlay, isSameEscrowPinError } from 'learn-card-base';
 import { validatePin } from '@learncard/sss-key-manager';
 import { RecoveryPinInput } from './RecoveryPinInput';
+import { EscrowPinNotice } from './EscrowPinNotice';
 import { m } from '../../paraglide/messages.js';
 
-export type RecoveryPinSetupReason = 'first-time' | 'after-recovery' | 'after-hold-recovery';
+export type RecoveryPinSetupReason =
+    | 'first-time'
+    | 'after-recovery'
+    | 'after-hold-recovery'
+    | 'pin-reset-required'
+    /**
+     * The current PIN has recorded wrong entries, so it never gets a fresh attempt
+     * budget again; only a different PIN does (the coordinator rejects the PIN just
+     * used with SameEscrowPinError). Skipping keeps the PIN with its reduced budget.
+     */
+    | 'new-pin-required';
 
 interface RecoveryPinSetupOverlayProps {
     setPin: (pin: string) => Promise<void>;
@@ -23,6 +34,8 @@ export const RecoveryPinSetupOverlay: React.FC<RecoveryPinSetupOverlayProps> = (
 }) => {
     const afterRecovery = reason === 'after-recovery';
     const afterHoldRecovery = reason === 'after-hold-recovery';
+    const pinResetRequired = reason === 'pin-reset-required';
+    const newPinRequired = reason === 'new-pin-required';
     const [step, setStep] = useState<'enter' | 'confirm' | 'saving' | 'success'>('enter');
     const [pin, setPin] = useState('');
     const [confirmPin, setConfirmPin] = useState('');
@@ -52,6 +65,13 @@ export const RecoveryPinSetupOverlay: React.FC<RecoveryPinSetupOverlayProps> = (
             await savePin(p);
             setStep('success');
         } catch (e) {
+            if (isSameEscrowPinError(e)) {
+                setError(m['recovery.pin.samePin']());
+                setStep('enter');
+                setPin('');
+                setConfirmPin('');
+                return;
+            }
             const message = e instanceof Error ? e.message : '';
             setError(
                 [
@@ -69,7 +89,7 @@ export const RecoveryPinSetupOverlay: React.FC<RecoveryPinSetupOverlayProps> = (
 
     return (
         <Overlay>
-            <div className="p-8 text-center space-y-5">
+            <div className="p-8 text-center space-y-v3-5">
                 {step === 'enter' && (
                     <>
                         {afterRecovery && (
@@ -85,14 +105,22 @@ export const RecoveryPinSetupOverlay: React.FC<RecoveryPinSetupOverlayProps> = (
                                 ? m['recovery.pin.afterRecovery.title']()
                                 : afterHoldRecovery
                                   ? m['recovery.pin.afterHoldRecovery.title']()
-                                  : m['recovery.pin.setPin']()}
+                                  : pinResetRequired
+                                    ? m['recovery.pin.pinResetRequired.title']()
+                                    : newPinRequired
+                                      ? m['recovery.pin.newPinRequired.title']()
+                                      : m['recovery.pin.setPin']()}
                         </h2>
                         <p className="text-sm text-grayscale-600 leading-relaxed">
                             {afterRecovery
                                 ? m['recovery.pin.afterRecovery.body']()
                                 : afterHoldRecovery
                                   ? m['recovery.pin.afterHoldRecovery.body']()
-                                  : m['recovery.pin.setPinDesc']()}
+                                  : pinResetRequired
+                                    ? m['recovery.pin.pinResetRequired.body']()
+                                    : newPinRequired
+                                      ? m['recovery.pin.newPinRequired.body']()
+                                      : m['recovery.pin.setPinDesc']()}
                         </p>
                         {afterRecovery && (
                             <p className="text-xs text-grayscale-500 leading-relaxed">
@@ -117,6 +145,13 @@ export const RecoveryPinSetupOverlay: React.FC<RecoveryPinSetupOverlayProps> = (
                         >
                             {m['common.skipForNow']()}
                         </button>
+                        {newPinRequired && (
+                            <p className="text-xs text-grayscale-500 leading-relaxed">
+                                {m['recovery.pin.newPinRequired.skipNote']()}
+                            </p>
+                        )}
+                        {/* Every reason sets the PIN that guards escrow, so all of them say so. */}
+                        <EscrowPinNotice />
                     </>
                 )}
 

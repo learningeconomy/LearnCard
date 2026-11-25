@@ -39,6 +39,7 @@ const SdJwtVcClaimsBoxContent: React.FC<SdJwtVcClaimsBoxProps> = ({ credential }
     const proof = credential.proof;
     const proofs = Array.isArray(proof) ? proof : proof ? [proof] : [];
     const sdJwtProof = proofs.find(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         (p: any) => p?.type === 'SdJwtCompactProof' && typeof p?.jwt === 'string'
     );
     const compact = typeof sdJwtProof?.jwt === 'string' ? sdJwtProof.jwt : undefined;
@@ -69,20 +70,20 @@ const SdJwtVcClaimsBoxContent: React.FC<SdJwtVcClaimsBoxProps> = ({ credential }
         return (
             <div className="bg-white flex flex-col items-start gap-[12px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full animate-pulse">
                 <div className="w-full flex items-center justify-between gap-[8px]">
-                    <div className="h-5 bg-grayscale-100 rounded w-1/2"></div>
+                    <div className="h-5 bg-grayscale-100 rounded-sm w-1/2"></div>
                     <div className="h-5 bg-grayscale-100 rounded-full w-16"></div>
                 </div>
-                <div className="h-3 bg-grayscale-100 rounded w-full mt-2"></div>
-                <div className="h-3 bg-grayscale-100 rounded w-5/6"></div>
+                <div className="h-3 bg-grayscale-100 rounded-sm w-full mt-2"></div>
+                <div className="h-3 bg-grayscale-100 rounded-sm w-5/6"></div>
                 <div className="w-full border-t border-grayscale-100 my-2"></div>
                 <div className="w-full flex flex-col gap-3">
                     <div className="flex items-start py-2">
-                        <div className="h-4 bg-grayscale-100 rounded w-24 min-w-[140px]"></div>
-                        <div className="h-4 bg-grayscale-100 rounded w-32"></div>
+                        <div className="h-4 bg-grayscale-100 rounded-sm w-24 min-w-[140px]"></div>
+                        <div className="h-4 bg-grayscale-100 rounded-sm w-32"></div>
                     </div>
                     <div className="flex items-start py-2">
-                        <div className="h-4 bg-grayscale-100 rounded w-20 min-w-[140px]"></div>
-                        <div className="h-4 bg-grayscale-100 rounded w-40"></div>
+                        <div className="h-4 bg-grayscale-100 rounded-sm w-20 min-w-[140px]"></div>
+                        <div className="h-4 bg-grayscale-100 rounded-sm w-40"></div>
                     </div>
                 </div>
             </div>
@@ -160,7 +161,7 @@ const SdJwtVcClaimsBoxContent: React.FC<SdJwtVcClaimsBoxProps> = ({ credential }
                         <div className="text-xs font-medium text-grayscale-700 min-w-[140px] pr-4">
                             {humanizeClaimLabel(key)}
                         </div>
-                        <div className="text-sm text-grayscale-900 flex-1 break-words">
+                        <div className="text-sm text-grayscale-900 flex-1 wrap-break-word">
                             {formatClaimValue(value)}
                         </div>
                     </div>

@@ -40,6 +40,7 @@ const ConsentFlowCredentialReadAccessToggles = ({
             {Object.entries(contract).map(([key, value]) => {
                 const { IconComponent, title, iconClassName, iconCircleClass } =
                     getInfoFromContractKey(key);
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                 const toggleState = terms[key as any]?.sharing ?? false;
 
                 return (

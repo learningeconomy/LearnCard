@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
 import { capitalize } from 'lodash-es';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
@@ -21,7 +21,7 @@ import {
 import { formatDid } from 'learn-card-base/helpers/didHelpers';
 
 import {
-    useGetResolvedCredential,
+    useGetClaimCredential,
     useAcceptCredentialMutation,
     useUpdateNotification,
     usePathQuery,
@@ -31,6 +31,9 @@ import {
     BoostCategoryOptionsEnum,
     getBoostMetadata,
     useGetCredentialWithEdits,
+    useGetBoost,
+    useWallet,
+    contractCategoryNameToCategoryMetadata,
 } from 'learn-card-base';
 
 import { ErrorBoundary } from 'react-error-boundary';
@@ -44,6 +47,26 @@ import { NOTIFICATION_TYPES } from './NotificationCardContainer';
 import { useGetVCInfo } from 'learn-card-base';
 import * as m from '../../../paraglide/messages.js';
 import { getNotificationDuplicateLookup } from './notificationDuplicateLookup';
+import {
+    getTranscriptPendingReceivedKey,
+    isMatchingTranscript,
+} from '../../../hooks/useTranscriptArrival';
+import { claimTranscriptOnce } from '../../../hooks/transcriptClaim';
+import { ensureTranscriptInWallet } from '../../../hooks/ensureTranscriptInWallet';
+import {
+    useTranscriptStatus,
+    claimIncomingCredential,
+    useFeatureConfig,
+    useToast,
+    ToastTypeEnum,
+    getLogger,
+} from 'learn-card-base';
+import { useQueryClient } from '@tanstack/react-query';
+
+const log = getLogger('notification-boost-card');
+
+/** Upper bound on waiting for transcript status/credential before opening the claim modal. */
+const TRANSCRIPT_CLAIM_DECISION_TIMEOUT_MS = 5_000;
 
 type NotificationBoostCardProps = {
     notification: NotificationType;
@@ -74,7 +97,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     const [claimModalOpen, setClaimModalOpen] = useState<boolean>(false);
 
     // Ref for the element that we want to detect whether on screen
-    const ref: any = useRef<HTMLDivElement>();
+    const ref = useRef<HTMLDivElement>(null);
     // Call the hook passing in ref and root margin
     // In this case it would only be considered onScreen if more ...
     // ... than 300px of element is visible.
@@ -90,7 +113,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     // unsure what the situation is when there are multiple uris to resolved
     // eg current component is not built to handle displaying multiple resolved vcs as such....
     // so it seeems like some kind of future use case
-    const { data, isLoading } = useGetResolvedCredential(notification?.data?.vcUris?.[0]);
+    const { data, isLoading, isError } = useGetClaimCredential(notification?.data?.vcUris?.[0]);
     const { mutate, isLoading: acceptCredentialLoading } = useAcceptCredentialMutation();
     const { mutate: updateNotification } = useUpdateNotification();
 
@@ -107,7 +130,15 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     const { credentialWithEdits } = useGetCredentialWithEdits(unwrappedCred);
     unwrappedCred = credentialWithEdits ?? unwrappedCred;
 
-    const credCategory = boostVc && getDefaultCategoryForCredential(unwrappedCred);
+    const boostUri = boostVc?.boostId ?? unwrappedCred?.boostId;
+    const { data: boost } = useGetBoost(boostUri ?? '');
+    const credCategory =
+        boostVc &&
+        ((boost?.category
+            ? ((contractCategoryNameToCategoryMetadata(boost.category)?.credentialType ??
+                  boost.category) as CredentialCategoryEnum)
+            : undefined) ??
+            getDefaultCategoryForCredential(unwrappedCred));
     const isEndorsementCredentialType = isEndorsementCredential(unwrappedCred);
 
     const credImgUrl = boostVc && getImageUrlFromCredential(unwrappedCred, credCategory);
@@ -150,8 +181,8 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     const badgeScaleClass = isCertDisplayType
         ? 'w-[120px] min-w-[120px] scale-[0.7]'
         : isMeritStyleBadge
-        ? 'w-[138px] min-w-[138px] scale-[0.8]'
-        : 'w-full';
+          ? 'w-[138px] min-w-[138px] scale-[0.8]'
+          : 'w-full';
 
     // Compact circular fallback (matching the ID treatment) for display types
     // whose full art can't fit the notification slot, e.g. media/portfolio.
@@ -197,48 +228,238 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
         setIsClaimed(true);
     };
 
-    useEffect(() => {
-        if (_uri === credentialUri && _claim && !claimModalOpen && !isClaimed) {
-            setClaimModalOpen(true);
-            const claimModalEl = document.querySelector('.notification-claim-boost-modal-open');
-            if (!claimModalEl) {
-                newModal(
-                    <BoostClaimCard
-                        credential={unwrappedCred}
-                        credentialUri={credentialUri}
-                        duplicateLookup={duplicateLookup}
-                        showFooter={false}
-                        showBoostFooter={true}
-                        handleClaimBoostCredential={handleClaimOnClick}
-                        isLoading={isLoading}
-                        acceptCredentialLoading={acceptCredentialLoading}
-                        acceptCredentialCompleted={isClaimed}
-                        successCallback={async () => {
-                            await handleSuccess();
-                            setClaimModalOpen(false);
-                            history.replace('/notifications');
-                        }}
-                        onDismiss={async () => {
-                            handleReadStatus();
-                            setClaimModalOpen(false);
-                            history.replace('/notifications');
-                        }}
-                        notification={notification}
-                        hideEndorsementRequestCard
-                    />,
-                    {
-                        className: 'notification-claim-boost-modal-open',
-                        backgroundImage:
-                            isCertDisplayType || isID || isAwardDisplayType || isFamily
-                                ? unwrappedCred?.display?.backgroundImage
-                                : undefined,
-                    },
-                    modalDisplayType
-                );
-            }
-        }
-    }, []);
+    // ── Claim deep link (`?uri=…&claim=true`, e.g. from a push tap) ─────────────
+    // Without the ClassLink transcript feature this behaves exactly as before: the
+    // generic claim modal opens once, on mount. With it, the decision waits (bounded)
+    // for the transcript status so a requested transcript is auto-accepted instead.
+    const features = useFeatureConfig();
+    const isTranscriptFeatureOn = Boolean(features.classlinkTranscriptOptIn);
+    const isClaimDeepLink = Boolean(_uri && _uri === credentialUri && _claim);
+    const transcriptStatusQuery = useTranscriptStatus(isTranscriptFeatureOn && isClaimDeepLink);
+    const queryClient = useQueryClient();
+    const { addVCtoWallet, initWallet } = useWallet();
+    const { presentToast } = useToast();
+    const claimDecisionMadeRef = useRef(false);
+    const [claimDecisionTimedOut, setClaimDecisionTimedOut] = useState(false);
 
+    const openClaimModalFromDeepLink = (): void => {
+        if (claimModalOpen || isClaimed) return;
+        setClaimModalOpen(true);
+        const claimModalEl = document.querySelector('.notification-claim-boost-modal-open');
+        if (!claimModalEl) {
+            newModal(
+                <BoostClaimCard
+                    credential={unwrappedCred}
+                    credentialUri={credentialUri}
+                    duplicateLookup={duplicateLookup}
+                    showFooter={false}
+                    showBoostFooter={true}
+                    handleClaimBoostCredential={handleClaimOnClick}
+                    isLoading={isLoading}
+                    acceptCredentialLoading={acceptCredentialLoading}
+                    acceptCredentialCompleted={isClaimed}
+                    successCallback={async () => {
+                        await handleSuccess();
+                        setClaimModalOpen(false);
+                        history.replace('/notifications');
+                    }}
+                    onDismiss={async () => {
+                        handleReadStatus();
+                        setClaimModalOpen(false);
+                        history.replace('/notifications');
+                    }}
+                    notification={notification}
+                    hideEndorsementRequestCard
+                />,
+                {
+                    className: 'notification-claim-boost-modal-open',
+                    backgroundImage:
+                        isCertDisplayType || isID || isAwardDisplayType || isFamily
+                            ? unwrappedCred?.display?.backgroundImage
+                            : undefined,
+                },
+                modalDisplayType
+            );
+        }
+    };
+    const openClaimModalRef = useRef(openClaimModalFromDeepLink);
+    openClaimModalRef.current = openClaimModalFromDeepLink;
+
+    // Generic path — same as without the transcript feature: open once the credential has
+    // resolved and verified (a managed delivery that fails verification never opens it).
+    useEffect(() => {
+        if (isTranscriptFeatureOn || claimDecisionMadeRef.current) return;
+        if (data && !isError && _uri === credentialUri && _claim && !claimModalOpen && !isClaimed) {
+            claimDecisionMadeRef.current = true;
+            openClaimModalRef.current();
+        }
+    }, [
+        isTranscriptFeatureOn,
+        data,
+        isError,
+        _uri,
+        _claim,
+        credentialUri,
+        claimModalOpen,
+        isClaimed,
+    ]);
+
+    // Transcript path: never wait forever for the status or the credential.
+    useEffect(() => {
+        if (!isTranscriptFeatureOn || !isClaimDeepLink) return;
+        const timer = setTimeout(
+            () => setClaimDecisionTimedOut(true),
+            TRANSCRIPT_CLAIM_DECISION_TIMEOUT_MS
+        );
+        return () => clearTimeout(timer);
+    }, [isTranscriptFeatureOn, isClaimDeepLink]);
+
+    const transcriptStatus = transcriptStatusQuery.data;
+    const isTranscriptStatusSettled =
+        transcriptStatusQuery.isFetched || transcriptStatusQuery.isError;
+    const resolvedCred = unwrappedCred && !Array.isArray(unwrappedCred) ? unwrappedCred : undefined;
+
+    useEffect(() => {
+        if (!isTranscriptFeatureOn || !isClaimDeepLink || claimDecisionMadeRef.current) return;
+        if (claimModalOpen || isClaimed) return;
+        // Never decide on an unverified credential: wait for it to resolve and verify. A
+        // failed verification renders the error state instead of any claim path.
+        if (isError) {
+            claimDecisionMadeRef.current = true;
+            return;
+        }
+        if (!data) return;
+        if (!isTranscriptStatusSettled && !claimDecisionTimedOut) return;
+
+        const issuerDid = transcriptStatus?.issuerDid;
+        const issuerProfileId = transcriptStatus?.issuerProfileId;
+        const latest = transcriptStatus?.latest;
+        const hasOutstandingRequest = Boolean(
+            issuerDid &&
+            issuerProfileId &&
+            latest?.requestId &&
+            latest.requestedAt &&
+            latest.status === 'requested' &&
+            !latest.receivedAt
+        );
+        // `from.profileId` is set by the network from the authenticated sender. Its
+        // `from.did` is always rewritten to the network's own did:web for that profile,
+        // so it can never equal the issuer's signing DID and is not compared.
+        const senderProfileId = notification?.from?.profileId;
+
+        if (
+            !hasOutstandingRequest ||
+            !issuerDid ||
+            !issuerProfileId ||
+            !latest ||
+            senderProfileId !== issuerProfileId
+        ) {
+            claimDecisionMadeRef.current = true;
+            openClaimModalRef.current();
+            return;
+        }
+
+        if (!resolvedCred) {
+            if (!claimDecisionTimedOut && isLoading) return;
+            claimDecisionMadeRef.current = true;
+            openClaimModalRef.current();
+            return;
+        }
+
+        claimDecisionMadeRef.current = true;
+        const requestId = latest.requestId;
+
+        const autoClaimTranscript = async (): Promise<void> => {
+            let claimed = false;
+            try {
+                const wallet = await initWallet();
+                const userDid = wallet.id.did();
+                const isMatch = await isMatchingTranscript({
+                    vc: resolvedCred,
+                    senderProfileId,
+                    expectedSenderProfileId: issuerProfileId,
+                    expectedIssuerDid: issuerDid,
+                    userDid,
+                    requestedAt: latest.requestedAt,
+                    expectedRequestId: requestId,
+                    wallet,
+                });
+                if (!isMatch) {
+                    openClaimModalRef.current();
+                    return;
+                }
+
+                // Shared with useTranscriptArrival so a mounted card polling the same
+                // request can never claim it a second time.
+                const claimedHere = await claimTranscriptOnce(requestId, async () => {
+                    const { added } = await claimIncomingCredential({
+                        uri: credentialUri,
+                        wallet,
+                        addVCtoWallet,
+                        queryClient,
+                    });
+                    // The network may have accepted it while the wallet write resolved false.
+                    // Restore the entry before anything is acknowledged; a failure throws, so
+                    // the request is not marked received and useTranscriptArrival recovers it.
+                    if (!added)
+                        await ensureTranscriptInWallet(wallet, credentialUri, addVCtoWallet);
+                });
+                claimed = true;
+                setIsClaimed(true);
+
+                if (claimedHere) {
+                    try {
+                        await wallet.invoke.transcriptsMarkReceived({ requestId });
+                    } catch (error) {
+                        // Claimed but not acknowledged: let useTranscriptArrival retry it.
+                        log.warn('transcript.mark-received.deferred', error);
+                        try {
+                            localStorage.setItem(
+                                getTranscriptPendingReceivedKey(userDid, requestId),
+                                'true'
+                            );
+                        } catch (storageError) {
+                            log.warn('transcript.pending-storage.failed', storageError);
+                        }
+                    }
+                }
+                await Promise.all([
+                    queryClient.invalidateQueries({ queryKey: ['incomingCredentials'] }),
+                    queryClient.invalidateQueries({ queryKey: ['transcriptStatus'] }),
+                    queryClient.invalidateQueries({ queryKey: ['useGetCredentials'] }),
+                ]);
+                history.replace('/school-connect?view=transcript');
+            } catch (error) {
+                log.error('transcript.auto-claim.failed', error);
+                presentToast(m['transcriptOptIn.autoAcceptFailed'](), {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
+                // Leave a recoverable path: the user can still claim it by hand.
+                if (!claimed) openClaimModalRef.current();
+            }
+        };
+        void autoClaimTranscript();
+    }, [
+        isTranscriptFeatureOn,
+        isClaimDeepLink,
+        claimModalOpen,
+        isClaimed,
+        isTranscriptStatusSettled,
+        claimDecisionTimedOut,
+        transcriptStatus,
+        resolvedCred,
+        isLoading,
+        data,
+        isError,
+        notification,
+        credentialUri,
+        initWallet,
+        addVCtoWallet,
+        queryClient,
+        history,
+        presentToast,
+    ]);
     let buttonText: string = '';
 
     if (isClaimed) {
@@ -255,6 +476,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     };
 
     const handleCardClick = () => {
+        if (!data || isError || isLoading) return;
         handleMarkRead();
         newModal(
             <BoostClaimCard
@@ -354,6 +576,14 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                   ?.achievement?.achievementType
             : unwrappedCred?.credentialSubject?.achievement?.achievementType;
 
+    if (isError) {
+        return (
+            <div role="alert" className="p-4 text-sm text-red-700">
+                {m['claim.modal.verificationFailed']()}
+            </div>
+        );
+    }
+
     return (
         <>
             <ErrorBoundary
@@ -443,7 +673,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                                             showBackgroundImage={false}
                                             backgroundImage=""
                                             backgroundColor=""
-                                            badgeCircleCustomClass="!w-[90px] h-[90px]"
+                                            badgeCircleCustomClass="w-[90px]! h-[90px]"
                                             badgeContainerCustomClass="notification-cred-badge mt-[0px] mb-[0px]"
                                             badgeRibbonContainerCustomClass="notification-cred-badge-ribbon my-[0px]"
                                             displayType={displayType}

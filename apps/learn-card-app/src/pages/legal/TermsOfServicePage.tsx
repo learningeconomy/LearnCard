@@ -15,7 +15,7 @@ const TermsOfServicePage: React.FC = () => {
             </p>
 
             <Section heading="Table of Contents">
-                <ol className="list-decimal pl-5 space-y-1">
+                <ol className="list-decimal pl-5 space-y-v3-1">
                     <li>Agreement to These Terms</li>
                     <li>Our Mission and Role</li>
                     <li>Eligibility and Account Responsibility</li>
@@ -102,7 +102,7 @@ const TermsOfServicePage: React.FC = () => {
                 </p>
 
                 <p>{name} and LearnCloud are designed as public-good infrastructure to:</p>
-                <ul className="list-disc pl-5 space-y-1">
+                <ul className="list-disc pl-5 space-y-v3-1">
                     <li>
                         Enable individuals to hold and share their learning and employment records
                     </li>
@@ -112,7 +112,7 @@ const TermsOfServicePage: React.FC = () => {
                 </ul>
 
                 <p>We act as a technical steward and service provider, not as:</p>
-                <ul className="list-disc pl-5 space-y-1">
+                <ul className="list-disc pl-5 space-y-v3-1">
                     <li>An employer</li>
                     <li>A school</li>
                     <li>A credentialing authority</li>
@@ -129,7 +129,7 @@ const TermsOfServicePage: React.FC = () => {
 
             <Section heading="3. Eligibility and Account Responsibility">
                 <p>{name} may be used by:</p>
-                <ul className="list-disc pl-5 space-y-1">
+                <ul className="list-disc pl-5 space-y-v3-1">
                     <li>Adults</li>
                     <li>Minors with verified guardian or school authorization</li>
                     <li>Schools, districts, and organizations under agreement</li>
@@ -141,7 +141,7 @@ const TermsOfServicePage: React.FC = () => {
                 </p>
 
                 <p>You agree to:</p>
-                <ul className="list-disc pl-5 space-y-1">
+                <ul className="list-disc pl-5 space-y-v3-1">
                     <li>Provide accurate information</li>
                     <li>Safeguard access credentials</li>
                     <li>Use the Services lawfully and responsibly</li>
@@ -156,7 +156,7 @@ const TermsOfServicePage: React.FC = () => {
                 </p>
 
                 <p>Together, they function similarly to:</p>
-                <ul className="list-disc pl-5 space-y-1">
+                <ul className="list-disc pl-5 space-y-v3-1">
                     <li>A bank account + budgeting apps (for financial data), or</li>
                     <li>A payments platform + connected services (for transactions)</li>
                 </ul>
@@ -166,7 +166,7 @@ const TermsOfServicePage: React.FC = () => {
             <Section heading="5. Learner Data, Credentials, and Ownership">
                 <h4 className="font-semibold text-grayscale-800 mt-4">5.1 Learner Ownership</h4>
                 <p>Learners (or their guardians) retain ownership of:</p>
-                <ul className="list-disc pl-5 space-y-1">
+                <ul className="list-disc pl-5 space-y-v3-1">
                     <li>Their credentials</li>
                     <li>Their profile information</li>
                     <li>Their consent decisions</li>
@@ -185,7 +185,7 @@ const TermsOfServicePage: React.FC = () => {
             <Section heading="6. Consent, Data Connections, and Portability">
                 <p>{name} is built around explicit, revocable consent.</p>
                 <p>You control:</p>
-                <ul className="list-disc pl-5 space-y-1">
+                <ul className="list-disc pl-5 space-y-v3-1">
                     <li>Which data is shared</li>
                     <li>With which applications or systems</li>
                     <li>For what purpose</li>
@@ -205,7 +205,7 @@ const TermsOfServicePage: React.FC = () => {
                     {name} and LearnCloud may enable you to connect your data to third-party
                     applications and services, including:
                 </p>
-                <ul className="list-disc pl-5 space-y-1">
+                <ul className="list-disc pl-5 space-y-v3-1">
                     <li>Learning management systems</li>
                     <li>Workforce and HR systems</li>
                     <li>Job platforms</li>
@@ -213,7 +213,7 @@ const TermsOfServicePage: React.FC = () => {
                     <li>Educational and training applications</li>
                 </ul>
                 <p>These connections are:</p>
-                <ul className="list-disc pl-5 space-y-1">
+                <ul className="list-disc pl-5 space-y-v3-1">
                     <li>Initiated by you (or your guardian or school)</li>
                     <li>Governed by your consent</li>
                     <li>Subject to the third party&apos;s own terms and policies</li>
@@ -226,14 +226,14 @@ const TermsOfServicePage: React.FC = () => {
 
             <Section heading="8. AI-Assisted Learning and Training Features">
                 <p>{name} may offer optional AI-assisted features to help users:</p>
-                <ul className="list-disc pl-5 space-y-1">
+                <ul className="list-disc pl-5 space-y-v3-1">
                     <li>Explore skills and competencies</li>
                     <li>Practice learning and training</li>
                     <li>Navigate educational and career pathways</li>
                 </ul>
 
                 <h4 className="font-semibold text-grayscale-800 mt-4">Important Clarifications</h4>
-                <ul className="list-disc pl-5 space-y-1">
+                <ul className="list-disc pl-5 space-y-v3-1">
                     <li>AI features are assistive and educational, not authoritative</li>
                     <li>
                         AI outputs do not constitute professional, legal, hiring, or certification
@@ -265,7 +265,7 @@ const TermsOfServicePage: React.FC = () => {
                     organizations or individuals.
                 </p>
                 <p>Learning Economy:</p>
-                <ul className="list-disc pl-5 space-y-1">
+                <ul className="list-disc pl-5 space-y-v3-1">
                     <li>
                         Does not independently verify credential accuracy beyond cryptographic
                         checks
@@ -280,7 +280,7 @@ const TermsOfServicePage: React.FC = () => {
 
             <Section heading="10. Acceptable Use">
                 <p>You agree not to:</p>
-                <ul className="list-disc pl-5 space-y-1">
+                <ul className="list-disc pl-5 space-y-v3-1">
                     <li>Misuse the Services to harm others</li>
                     <li>Circumvent security or consent controls</li>
                     <li>Impersonate another person</li>
@@ -304,7 +304,7 @@ const TermsOfServicePage: React.FC = () => {
 
             <Section heading="12. Suspension and Termination">
                 <p>We may suspend or terminate access if:</p>
-                <ul className="list-disc pl-5 space-y-1">
+                <ul className="list-disc pl-5 space-y-v3-1">
                     <li>These Terms are violated</li>
                     <li>Use poses a security, safety, or legal risk</li>
                     <li>Required by law</li>
@@ -326,13 +326,13 @@ const TermsOfServicePage: React.FC = () => {
 
             <Section heading="14. Data Retention and Deletion">
                 <p>Deletion removes, to the extent technically feasible:</p>
-                <ul className="list-disc pl-5 space-y-1">
+                <ul className="list-disc pl-5 space-y-v3-1">
                     <li>Profile data</li>
                     <li>Credential metadata</li>
                     <li>Consent records</li>
                 </ul>
                 <p>Residual data may persist in:</p>
-                <ul className="list-disc pl-5 space-y-1">
+                <ul className="list-disc pl-5 space-y-v3-1">
                     <li>Encrypted system backups</li>
                     <li>Operational logs and analytics retained by third-party providers</li>
                     <li>Credentials previously shared with third parties</li>
@@ -413,14 +413,14 @@ const Section: React.FC<{ heading: string; children: React.ReactNode }> = ({
     heading,
     children,
 }) => (
-    <section className="space-y-3">
+    <section className="space-y-v3-3">
         <h2 className="text-lg font-semibold text-grayscale-900">{heading}</h2>
         {children}
     </section>
 );
 
 const DefinitionList: React.FC<{ items: { term: string; definition: string }[] }> = ({ items }) => (
-    <dl className="space-y-2">
+    <dl className="space-y-v3-2">
         {items.map(({ term, definition }) => (
             <div key={term} className="flex gap-2">
                 <dt className="font-semibold text-grayscale-800 min-w-[140px] shrink-0">{term}</dt>

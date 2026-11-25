@@ -1,4 +1,4 @@
-import _ from 'lodash';
+import { shuffle } from 'lodash';
 
 import { TrainingProgram } from 'learn-card-base';
 
@@ -16,21 +16,24 @@ const decodeTextToken = (token?: string) => {
     return TEXT_TOKEN_MAP[token.toLowerCase()] ?? ' ';
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 const getProgramCoursesCount = (program: any) =>
     Array.isArray(program?.courses)
         ? program.courses.length
         : Array.isArray(program?.syllabusCourses)
-        ? program.syllabusCourses.length
-        : 0;
+          ? program.syllabusCourses.length
+          : 0;
 
 export const normalizeSchoolPrograms = (trainingPrograms: TrainingProgram[]) => {
-    const randomSchoolPrograms = _.shuffle([...trainingPrograms]);
+    const randomSchoolPrograms = shuffle([...trainingPrograms]);
 
     const selectedSchoolPrograms = randomSchoolPrograms;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const schoolPrograms: any[] = [];
     const programIndexes = new Map<string, number>();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     selectedSchoolPrograms.forEach((program: any) => {
         const courses = program?.courses ?? program?.syllabusCourses ?? [];
 
@@ -72,7 +75,9 @@ export const filterCoursesByFieldOfStudy = (
     fieldOfStudy?: string
 ) => {
     // Extract all courses from all training programs
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const allCourses = trainingPrograms?.flatMap((program: any) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         return (program?.courses || []).map((course: any) => ({
             ...course,
             occupationDetails: program?.occupationDetails,
@@ -81,14 +86,16 @@ export const filterCoursesByFieldOfStudy = (
     });
 
     // Filter courses by field of study
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const filteredCourses = allCourses.filter((course: any) => {
         return fieldOfStudy ? course?.field?.field === fieldOfStudy : true;
     });
 
     // Randomize the filtered courses before returning
-    return _.shuffle(filteredCourses);
+    return shuffle(filteredCourses);
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 export const getOccupationTags = (occupationDetails: any) => {
     const tags = occupationDetails?.AlternateTitles || [];
     const occupationTitle = occupationDetails?.OnetTitle || '';

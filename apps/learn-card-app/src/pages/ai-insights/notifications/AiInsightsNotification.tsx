@@ -40,6 +40,7 @@ import { LCNProfile } from '@learncard/types';
 import { useGetAiInsightsServicesContract } from '../learner-insights/learner-insights.helpers';
 
 type AiInsightsNotificationProps = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     notification: any;
     claimStatus?: boolean;
     handleArchive?: () => void;
@@ -65,6 +66,7 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
     // current user contract (student -> teacher) -> (teacher -> student)
     // teacher sends request to student after accepting shared insights request
     const { contractUri: currentUserContractUri } = useGetAiInsightsServicesContract(
+        // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain -- removing the assertion widens the type and needs a real null check
         currentLCNUser?.did!,
         true
     );
@@ -106,6 +108,7 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
     );
 
     // Ref for the element that we want to detect whether on screen
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const ref: any = useRef<HTMLDivElement>();
     // Call the hook passing in ref and root margin
     // In this case it would only be considered onScreen if more ...
@@ -144,10 +147,11 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
     } = NotificationTypeStyles[NotificationTypeEnum.consentFlowTransaction ?? 'loading'];
 
     let claimButtonStyles = isClaimed
-        ? `${claimedButtonStyles} !bg-emerald-600/50`
-        : `${unclaimedButtonStyles} !bg-emerald-600`;
+        ? `${claimedButtonStyles} bg-emerald-600/50!`
+        : `${unclaimedButtonStyles} bg-emerald-600!`;
 
     const issueDate = moment(notification?.sent).format('MMMM DD YYYY');
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let buttonText: string = '';
 
     const expiredRequest =
@@ -161,16 +165,16 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
         buttonText = m['aiInsights.viewInsights']();
     } else if (expiredRequest) {
         buttonText = m['aiInsights.expired']();
-        claimButtonStyles = `${claimedButtonStyles} !bg-grayscale-200`;
+        claimButtonStyles = `${claimedButtonStyles} bg-grayscale-200!`;
     } else {
         buttonText = m['aiInsights.viewRequest']();
     }
 
     if (isShareRequest && !insightsRequest?.status) {
-        claimButtonStyles = `${claimedButtonStyles} !bg-emerald-600`;
+        claimButtonStyles = `${claimedButtonStyles} bg-emerald-600!`;
         buttonText = m['aiInsights.viewRequest']();
     } else if (isShareRequest && !!insightsRequest?.status) {
-        claimButtonStyles = `${claimedButtonStyles} !bg-emerald-600/50`;
+        claimButtonStyles = `${claimedButtonStyles} bg-emerald-600/50!`;
         buttonText = m['aiInsights.accepted']();
     }
 
@@ -178,26 +182,26 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
     const isForwardedRequest = notification?.data?.metadata?.subtype === 'forwarded-share';
     if (isForwardedRequest) {
         buttonText = m['aiInsights.viewRequest']();
-        claimButtonStyles = `${claimedButtonStyles} !bg-emerald-600`;
+        claimButtonStyles = `${claimedButtonStyles} bg-emerald-600!`;
     }
 
     if (isChild) {
         buttonText = m['aiInsights.getPermission']();
-        claimButtonStyles = `${claimedButtonStyles} !bg-emerald-600`;
+        claimButtonStyles = `${claimedButtonStyles} bg-emerald-600!`;
 
         if (hasConsented) {
             buttonText = m['aiInsights.approved']();
-            claimButtonStyles = `${claimedButtonStyles} !bg-emerald-600/50`;
+            claimButtonStyles = `${claimedButtonStyles} bg-emerald-600/50!`;
         }
 
         if (expiredRequest) {
             buttonText = m['aiInsights.expired']();
-            claimButtonStyles = `${claimedButtonStyles} !bg-grayscale-200`;
+            claimButtonStyles = `${claimedButtonStyles} bg-grayscale-200!`;
         }
     }
 
     const isArchived = false;
-    let title = notification?.message?.body || notification?.message?.title;
+    const title = notification?.message?.body || notification?.message?.title;
 
     const handleArchiveAction = () => {
         handleArchive?.();
@@ -232,7 +236,7 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
                         targetProfile={notification?.data?.metadata?.targetProfileId as string}
                         childProfileId={notification?.from?.profileId as string}
                     />,
-                    { className: '!bg-transparent' },
+                    { className: 'bg-transparent!' },
                     { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
                 );
                 return;
@@ -242,7 +246,7 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
         if (isChild && !hasConsented) {
             newModal(
                 <AiInsightsParentConsent targetProfile={notification?.from as LCNProfile} />,
-                { className: '!bg-transparent' },
+                { className: 'bg-transparent!' },
                 { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
             );
             return;
@@ -264,7 +268,7 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
                 <RequestInsightsFromUserModalWrapper
                     profileId={notification?.from?.profileId as string}
                 />,
-                { className: '!bg-transparent' },
+                { className: 'bg-transparent!' },
                 { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
             );
         } else {

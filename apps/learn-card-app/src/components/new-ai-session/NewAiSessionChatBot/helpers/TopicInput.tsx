@@ -46,25 +46,25 @@ export const TopicInput: React.FC<{
                 isDesktop ? 'bg-white rounded-[20px] shadow-box-bottom mt-4' : 'bg-grayscale-50'
             }`}
         >
-            <div className="flex-shrink-0 pb-[6px]">
+            <div className="shrink-0 pb-[6px]">
                 <ProfilePicture
                     customContainerClass="h-[40px] w-[40px] min-h-[40px] min-w-[40px]"
                     customImageClass="w-full h-full object-cover rounded-full"
                 />
             </div>
-            <div className="flex-1 min-w-0 flex rounded-[15px] overflow-hidden items-center border-[1px] border-grayscale-200 border-solid bg-white">
+            <div className="flex-1 min-w-0 flex rounded-[15px] overflow-hidden items-center border border-grayscale-200 border-solid bg-white">
                 <input
                     type="text"
                     value={topic}
                     onChange={e => setTopic(e.target.value)}
-                    className="flex-1 min-w-0 bg-white text-grayscale-900 placeholder-grayscale-600 text-[17px] font-poppins px-[15px] py-[12px] focus:outline-none"
+                    className="flex-1 min-w-0 bg-white text-grayscale-900 placeholder-grayscale-600 text-[17px] font-poppins px-[15px] py-[12px] focus:outline-hidden"
                     placeholder={m['aiSession.somethingElse']()}
                     autoComplete="off"
                 />
                 <button
                     type="submit"
                     disabled={isEmpty}
-                    className={`flex-shrink-0 mr-[8px] p-[7px] sm:p-[10px] rounded-full disabled:opacity-50 disabled:hover:cursor-not-allowed hover:cursor-pointer ${
+                    className={`shrink-0 mr-[8px] p-[7px] sm:p-[10px] rounded-full disabled:opacity-50 disabled:hover:cursor-not-allowed hover:cursor-pointer ${
                         isEmpty ? 'bg-grayscale-400' : `bg-${primaryColor}`
                     }`}
                 >

@@ -2,9 +2,9 @@
 
 ## Properties
 
-| Name           | Type                          | Description | Notes |
-| -------------- | ----------------------------- | ----------- | ----- |
-| **categories** | **Dict[str, Optional[bool]]** |             |
+| Name           | Type                | Description | Notes |
+| -------------- | ------------------- | ----------- | ----- |
+| **categories** | **Dict[str, bool]** |             |
 
 ## Example
 

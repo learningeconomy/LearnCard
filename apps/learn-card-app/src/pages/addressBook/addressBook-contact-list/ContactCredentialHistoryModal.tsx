@@ -87,14 +87,14 @@ const ContactCredentialHistoryModal: React.FC<ContactCredentialHistoryModalProps
                     type="button"
                     onClick={onClose}
                     aria-label={m['contacts.credentialHistory.close']()}
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-grayscale-200 bg-white text-grayscale-700 shadow-box-bottom transition-colors hover:bg-grayscale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-grayscale-200 bg-white text-grayscale-700 shadow-box-bottom transition-colors hover:bg-grayscale-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
                     <X className="h-5 w-5" />
                 </button>
             </header>
 
             <div className="shrink-0 bg-white px-3 pt-[10px]">
-                <div className="flex items-center justify-start overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <div className="flex items-center justify-start overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden">
                     {tabs.map(tab => {
                         const isActive = tab.id === activeTab;
 
@@ -105,7 +105,7 @@ const ContactCredentialHistoryModal: React.FC<ContactCredentialHistoryModalProps
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`z-10 shrink-0 py-[5px] pl-[15px] pr-4 text-grayscale-600 subpixel-antialiased ${
                                     isActive
-                                        ? 'rounded-[10px] border-[1px] border-solid border-[rgba(99,102,241,0.4)] font-semibold text-indigo-600'
+                                        ? 'rounded-[10px] border border-solid border-[rgba(99,102,241,0.4)] font-semibold text-indigo-600'
                                         : ''
                                 }`}
                                 aria-pressed={isActive}

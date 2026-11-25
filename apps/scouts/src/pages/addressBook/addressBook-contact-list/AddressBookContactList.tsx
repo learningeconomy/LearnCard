@@ -83,14 +83,14 @@ export const AddressBookContactList: React.FC<{
 
     if (!pages) {
         return (
-            <IonList lines="none" className="flex flex-col items-center justify-center w-[100%]">
+            <IonList lines="none" className="flex flex-col items-center justify-center w-full">
                 {contactItems}
             </IonList>
         );
     }
 
     return (
-        <IonList lines="none" className="flex flex-col items-center justify-center w-[100%]">
+        <IonList lines="none" className="flex flex-col items-center justify-center w-full">
             {pages?.flatMap(page => (
                 <>
                     {page?.records?.map((record, index) => (

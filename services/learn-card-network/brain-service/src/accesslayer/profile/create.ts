@@ -5,6 +5,7 @@ import { LCNProfile } from '@learncard/types';
 import { Profile } from '@models';
 import { BindParam, QueryBuilder } from 'neogma';
 import { ProfileType } from 'types/profile';
+import { syncProfileDisplayNameLower } from './search-fields';
 
 export const createProfile = async (input: LCNProfile): Promise<ProfileType> => {
     const result = await new QueryBuilder(
@@ -13,7 +14,7 @@ export const createProfile = async (input: LCNProfile): Promise<ProfileType> => 
         })
     )
         .create({ model: Profile, identifier: 'profile' })
-        .set('profile += $params')
+        .set(`profile += $params, ${syncProfileDisplayNameLower('profile')}`)
         .return('profile')
         .limit(1)
         .run();

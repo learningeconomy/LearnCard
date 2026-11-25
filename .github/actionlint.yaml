@@ -1,0 +1,10 @@
+# actionlint 1.7.12's bundled v3 signature predates client-id. The action itself
+# supports it: https://github.com/actions/create-github-app-token/blob/v3/action.yml
+# Keep the working Claude credentials. check.cjs independently requires an app
+# identifier and private key, so these two exceptions cannot hide missing inputs.
+# Remove these exact, file-scoped exceptions when updating actionlint metadata.
+paths:
+    .github/workflows/claude.yml:
+        ignore:
+            - '^missing input "app-id" which is required by action "actions/create-github-app-token@v3"\.'
+            - '^input "client-id" is not defined in action "actions/create-github-app-token@v3"\.'

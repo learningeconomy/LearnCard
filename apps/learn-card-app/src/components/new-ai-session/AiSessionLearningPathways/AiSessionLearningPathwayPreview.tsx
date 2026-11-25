@@ -35,23 +35,31 @@ export const AiSessionLearningPathwayPreview: React.FC<{
     const app = getAiPassportAppByContractUri(topicRecord?.contractUri || '');
     const appStyles = getAiAppBackgroundStylesForApp(app as LaunchPadAppListItem);
 
+    // LearnCard AI resumes in the modal. Any other app needs a URL to send the
+    // user to. Retired apps (ChatGPT, Claude) no longer resolve, so their
+    // historical pathways stay readable but can't be started.
+    const opensInModal = app?.type === AiPassportAppsEnum.learncardapp;
+    const externalAppUrl = opensInModal ? undefined : app?.url;
+    const canStartSession = opensInModal || Boolean(externalAppUrl);
+
     const handleStartAiSession = async () => {
         // For LearnCard's internal chat keep the user inside the existing right
         // modal — same pattern as the New Topic flow's startInternalAiChatBot
         // and the topic-detail "New Session" gate. Avoids history-pushing to
         // /chats which on desktop replaces the topic-detail page with a full
         // width chat.
-        if (app?.type === AiPassportAppsEnum.learncardapp) {
+        if (opensInModal) {
             setShowInModalChat(true);
             return;
         }
 
+        if (!externalAppUrl) return;
+
         setShowLoader(true);
         closeAllModals();
-        const url = app?.url;
-        window.location.href = `${url}/chats?topicUri=${encodeURIComponent(topicBoost?.uri || '')}${
-            pathwayBoost ? `&pathwayUri=${encodeURIComponent(pathwayBoost?.uri || '')}` : ''
-        }`;
+        window.location.href = `${externalAppUrl}/chats?topicUri=${encodeURIComponent(
+            topicBoost?.uri || ''
+        )}${pathwayBoost ? `&pathwayUri=${encodeURIComponent(pathwayBoost?.uri || '')}` : ''}`;
     };
 
     if (showInModalChat) {
@@ -80,6 +88,17 @@ export const AiSessionLearningPathwayPreview: React.FC<{
                     topicVc={topicVc}
                     learningPathway={learningPathway}
                 />
+
+                {!canStartSession && (
+                    <div role="status" className="rounded-[20px] bg-white mt-4 w-full ion-padding">
+                        <h3 className="text-xl text-gray-900 font-notoSans">Session unavailable</h3>
+                        <p className="text-grayscale-700 text-sm font-notoSans mt-2">
+                            The AI tutor for this pathway has been retired, so it can’t start or
+                            resume a session. Your topic, pathway, and session history are still
+                            here to review.
+                        </p>
+                    </div>
+                )}
 
                 <div className="rounded-[20px] bg-white mt-4 w-full ion-padding">
                     <h3 className="text-xl text-gray-900 font-notoSans">What You’ll Learn</h3>
@@ -114,7 +133,10 @@ export const AiSessionLearningPathwayPreview: React.FC<{
                 </div>
             </div>
 
-            <AiSessionLearningPathwayPreviewFooter handleStartAiSession={handleStartAiSession} />
+            <AiSessionLearningPathwayPreviewFooter
+                handleStartAiSession={canStartSession ? handleStartAiSession : undefined}
+                startDisabled={!canStartSession}
+            />
         </div>
     );
 };

@@ -7,6 +7,9 @@ import type { VC } from '@learncard/types';
 type CardWrapperProps = {
     innerOnClick?: () => void;
     optionsTriggerOnClick?: () => void;
+    dateDisplay?: string;
+    title?: string;
+    issuerName?: string;
 };
 
 type PreviewProps = {
@@ -64,12 +67,21 @@ vi.mock('learn-card-base', () => ({
             darkColor: 'emerald-700',
         },
     },
-    BoostPageViewMode: { Card: 'card' },
-    BoostGenericCardWrapper: ({ innerOnClick, optionsTriggerOnClick }: CardWrapperProps) => (
+    BoostPageViewMode: { Card: 'card', List: 'list' },
+    BoostGenericCardWrapper: ({
+        innerOnClick,
+        optionsTriggerOnClick,
+        dateDisplay,
+        title,
+        issuerName,
+    }: CardWrapperProps) => (
         <div>
             <button type="button" onClick={innerOnClick}>
                 Open credential
             </button>
+            <div>{dateDisplay}</div>
+            <h3>{title}</h3>
+            <span>{issuerName}</span>
             {optionsTriggerOnClick && (
                 <button type="button" onClick={optionsTriggerOnClick}>
                     Card options
@@ -109,11 +121,16 @@ vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
 vi.mock('learn-card-base/components/CredentialBadge/CredentialVerificationDisplay', () => ({
     getInfoFromCredential: () => ({ createdAt: '2026-08-06' }),
 }));
-vi.mock('../../clr-transcript', () => ({
+vi.mock('learn-card-base/helpers/credentials/clr/kind', async importOriginal => ({
+    ...(await importOriginal<typeof import('learn-card-base/helpers/credentials/clr/kind')>()),
     getClrTranscriptKind: () => 'unknown',
     getClrTranscriptIssuerInfo: () => ({}),
 }));
-vi.mock('../boostHelpers', () => ({ getDefaultDisplayType: () => 'badge' }));
+vi.mock('../boostHelpers', () => ({
+    getDefaultDisplayType: () => 'badge',
+    isCredentialExpired: (value?: VC) =>
+        !!value?.expirationDate && new Date(value.expirationDate) < new Date(),
+}));
 vi.mock('../boostCMS/BoostPreview/BoostPreview', () => ({
     default: mocks.boostPreview,
 }));
@@ -171,6 +188,73 @@ describe('BoostEarnedCard', () => {
         mocks.nonBoostPreview.mockClear();
         mocks.resetIonicModalBackground.mockClear();
         mocks.unwrapBoostCredential.mockImplementation(value => value);
+    });
+
+    it.each([
+        'Social Badge',
+        'Work History',
+        'Learning History',
+        'Accommodation',
+        'Accomplishment',
+        'Achievement',
+        'Qualifications',
+        'ID',
+    ] as const)(
+        'uses the same resolved title and issuer in earned %s list and tile views',
+        category => {
+            const { rerender } = render(
+                <BoostEarnedCard
+                    credential={credential}
+                    categoryType={category}
+                    useWrapper={false}
+                />
+            );
+            expect(screen.getByRole('heading').textContent).toBe('Example Achievement');
+            rerender(
+                <BoostEarnedCard
+                    credential={credential}
+                    categoryType={category}
+                    useWrapper={false}
+                    boostPageViewMode="list"
+                />
+            );
+            expect(screen.getByRole('heading').textContent).toBe('Example Achievement');
+            expect(screen.getByText('Example University')).toBeTruthy();
+        }
+    );
+
+    it('uses the CLR course title instead of a school-level fallback in earned lists', () => {
+        const clr = {
+            ...credential,
+            type: ['VerifiableCredential', 'ClrCredential'],
+            name: 'School Academic Record',
+            credentialSubject: {
+                id: 'did:example:learner',
+                verifiableCredential: [
+                    {
+                        ...credential,
+                        type: ['VerifiableCredential', 'AchievementCredential'],
+                        credentialSubject: {
+                            id: 'did:example:learner',
+                            achievement: {
+                                id: 'course:animation',
+                                achievementType: 'Course',
+                                name: 'Animation 101',
+                            },
+                        },
+                    },
+                ],
+            },
+        } as VC;
+        render(
+            <BoostEarnedCard
+                credential={clr}
+                categoryType="Achievement"
+                useWrapper={false}
+                boostPageViewMode="list"
+            />
+        );
+        expect(screen.getByRole('heading').textContent).toBe('Animation 101');
     });
 
     it('does not expose card options while the credential is loading', () => {

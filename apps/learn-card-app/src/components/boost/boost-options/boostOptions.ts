@@ -4,10 +4,18 @@ import { z } from 'zod';
 import ExperienceIcon from 'learn-card-base/svgs/ExperienceIcon';
 import AccommodationsIcon from 'learn-card-base/svgs/AccommodationsIcon';
 
-import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
+import {
+    AchievementTypes,
+    CATEGORY_TO_TEMPLATE_LIST,
+    ACHIEVEMENT_CATEGORIES,
+} from 'learn-card-base/components/IssueVC/constants';
 import BoostsIcon from 'learn-card-base/svgs/wallet/BoostsIcon';
 import AllBoostsIcon from 'learn-card-base/svgs/wallet/AllBoostsIcon';
 import AchievementsIcon from 'learn-card-base/svgs/wallet/AchievementsIcon';
+import {
+    QualificationsIcon,
+    QualificationsIconWallet,
+} from 'learn-card-base/svgs/wallet/QualificationsIcon';
 import PortfolioIcon from 'learn-card-base/svgs/wallet/PortfolioIcon';
 import StudiesIcon from 'learn-card-base/svgs/wallet/StudiesIcon';
 import AssistanceIcon from 'learn-card-base/svgs/wallet/AssistanceIcon';
@@ -25,6 +33,7 @@ export const availableBoostCategories = [
     BoostCategoryOptionsEnum.accomplishment,
     BoostCategoryOptionsEnum.accommodation,
     BoostCategoryOptionsEnum.workHistory,
+    BoostCategoryOptionsEnum.qualifications,
     BoostCategoryOptionsEnum.id,
 ];
 
@@ -92,6 +101,14 @@ export const boostVCTypeOptions = {
             iconClassName: 'text-white',
             iconCircleClass: 'bg-blue-600',
             type: BoostCategoryOptionsEnum.workHistory,
+        },
+        {
+            id: 10,
+            title: 'Qualifications',
+            IconComponent: QualificationsIcon,
+            iconClassName: 'text-white',
+            iconCircleClass: 'bg-orange-300',
+            type: BoostCategoryOptionsEnum.qualifications,
         },
         {
             id: 5,
@@ -207,7 +224,7 @@ export const boostVCTypeOptions = {
             ShapeIcon: Circle,
             shapeColor: 'text-cyan-400 w-[35px] h-[35px]',
             WalletIcon: ExperiencesIcon,
-            iconStyles: 'h-[35px] w-[35px] !top-[46%]',
+            iconStyles: 'h-[35px] w-[35px] top-[46%]!',
         },
         // {
         //     id: 7,
@@ -226,6 +243,18 @@ export const boostVCTypeOptions = {
         //     type: BoostCategoryOptionsEnum.family,
         // },
         {
+            id: 10,
+            title: 'Qualifications',
+            IconComponent: QualificationsIcon,
+            iconClassName: 'text-white',
+            iconCircleClass: 'bg-orange-300',
+            type: BoostCategoryOptionsEnum.qualifications,
+            ShapeIcon: Diamond,
+            shapeColor: 'text-orange-300 w-[35px] h-[35px]',
+            WalletIcon: QualificationsIconWallet,
+            iconStyles: 'h-[35px] w-[35px]',
+        },
+        {
             id: 5,
             title: 'ID',
             IconComponent: IDsIcon,
@@ -234,7 +263,7 @@ export const boostVCTypeOptions = {
             type: BoostCategoryOptionsEnum.id,
             ShapeIcon: Hexagon,
             shapeColor: 'text-blue-400 w-[45px] h-[45px]',
-            iconStyles: 'h-[33px] w-[33px] !top-[55%]',
+            iconStyles: 'h-[33px] w-[33px] top-[55%]!',
             WalletIcon: IDsIcon,
         },
     ],
@@ -243,6 +272,7 @@ export const boostVCTypeOptions = {
 export const CATEGORY_TO_SUBCATEGORY_LIST: {
     [key: BoostCategoryOptionsEnum | string]: {
         title: string;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         type: any;
     }[];
 } = {
@@ -319,6 +349,8 @@ export const CATEGORY_TO_SUBCATEGORY_LIST: {
         //     type: AchievementTypes.Upskilling,
         // },
     ],
+    [BoostCategoryOptionsEnum.qualifications]:
+        CATEGORY_TO_TEMPLATE_LIST[ACHIEVEMENT_CATEGORIES.Qualifications],
     [BoostCategoryOptionsEnum.id]: [
         // {
         //     title: 'License',
@@ -1012,31 +1044,11 @@ export const CATEGORY_TO_SUBCATEGORY_LIST: {
 export const defaultIDCardImage =
     'https://cdn.filestackcontent.com/rotate=deg:exif/resize=width:600/auto_image/CH8dyPGwSyChmczTdIY4';
 
-export const defaultCategoryThumbImages = [
-    // social badge
-    'https://cdn.filestackcontent.com/hnnK9FFQL6XjlKdkd8Hs',
-    // achievement trophy
-    'https://cdn.filestackcontent.com/P9zICsCHQP2NJs1EzYj5',
-    // courses ladder
-    'https://cdn.filestackcontent.com/zBtHw5EqTJDb5r6Pw7cg',
-    // experience mountain
-    'https://cdn.filestackcontent.com/qCnVK8dReWkRjoQCSH6Q',
-    // user id tag
-    'https://cdn.filestackcontent.com/9z6i0x3hSlG43paNZHag',
-    // skill puzzle piece
-    'https://cdn.filestackcontent.com/9lKwrJdoRPmv9chLFJQv',
-    // membership key
-    'https://cdn.filestackcontent.com/EwXi4MnoT6eDgM6cmJuH',
-    // accommodation hands
-    'https://cdn.filestackcontent.com/I4T9X90XQGSlk1YpcGGc',
-    // family cats
-    'https://cdn.filestackcontent.com/yfeWgdSWQ7Ckl4sVuGLc',
-];
-
 export const BOOST_CATEGORY_TO_WALLET_ROUTE = {
     ['ID']: 'ids',
     ['Learning History']: 'learninghistory',
     ['Achievement']: 'achievements',
+    ['Qualifications']: 'qualifications',
     ['Work History']: 'workhistory',
     ['Skill']: 'skills',
     ['Social Badge']: 'socialBadges',

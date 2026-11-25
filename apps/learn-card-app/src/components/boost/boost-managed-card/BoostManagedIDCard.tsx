@@ -29,7 +29,7 @@ import {
     useCountBoostRecipients,
     useModal,
     ModalTypes,
-    categoryMetadata,
+    getCategoryMetadata,
     CredentialCategory,
 } from 'learn-card-base';
 import { useGetBoostRecipients } from 'learn-card-base';
@@ -161,7 +161,7 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
 
     const formattedDisplayType = getAchievementTypeDisplayText(boost?.type, categoryType);
 
-    const type = categoryMetadata[categoryType].walletSubtype;
+    const type = getCategoryMetadata(categoryType).walletSubtype;
     const isID = categoryType === BoostCategoryOptionsEnum.id;
     const isMembership = categoryType === BoostCategoryOptionsEnum.membership;
 
@@ -169,11 +169,11 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
     let idSleeveFooterClass = '';
 
     if (isID) {
-        idDisplayContainerClass = '!border-white';
-        idSleeveFooterClass = '!bg-teal-300';
+        idDisplayContainerClass = 'border-white!';
+        idSleeveFooterClass = 'bg-teal-300!';
     } else if (isMembership) {
-        idDisplayContainerClass = '!border-teal-400';
-        idSleeveFooterClass = '!bg-teal-300';
+        idDisplayContainerClass = 'border-teal-400!';
+        idSleeveFooterClass = 'bg-teal-300!';
     }
 
     const handleEditOnClick = () => {
@@ -186,7 +186,7 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
         history.push(`${link}${linkQueryParams}&issue=true`);
     };
 
-    let issueHistory: {
+    const issueHistory: {
         id: number;
         name: string;
         thumb: string;
@@ -264,16 +264,13 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
                 />
             ),
             customIssueHistoryComponent: (
-                <IonList
-                    lines="none"
-                    className="flex flex-col items-center justify-center w-[100%]"
-                >
+                <IonList lines="none" className="flex flex-col items-center justify-center w-full">
                     {recipients?.map((recipient, index) => {
                         return (
                             <IonItem
                                 key={recipient?.recieved || index}
                                 lines="none"
-                                className={`w-[100%] max-w-[600px] ion-no-border px-[4px] flex items-center justify-between notificaion-list-item py-[8px] border-b-2`}
+                                className={`w-full max-w-[600px] ion-no-border px-[4px] flex items-center justify-between notificaion-list-item py-[8px] border-b-2`}
                             >
                                 <div className="flex items-center justify-start w-full">
                                     <div className="flex items-center justify-start">

@@ -25,7 +25,10 @@ const sdk = vi.hoisted(() => ({
     ensureRecaptcha: vi.fn(),
     destroyRecaptcha: vi.fn(),
     getPlatform: vi.fn(),
+    verifySignOut: vi.fn(),
+    updateProfile: vi.fn(),
 }));
+vi.mock('../verifyFirebaseSignOut', () => ({ verifyFirebaseSignOut: sdk.verifySignOut }));
 vi.mock('firebase/auth', () => ({
     ...sdk,
     OAuthProvider: class {
@@ -51,7 +54,7 @@ const user = {
     uid: 'user-1',
     email: 'test@example.org',
     phoneNumber: null,
-    displayName: null,
+    displayName: null as string | null,
     photoURL: null,
     metadata: { creationTime: '2024-01-01' },
     getIdToken: vi.fn(),
@@ -85,7 +88,12 @@ const create = (
 
 beforeEach(() => {
     vi.clearAllMocks();
+    user.displayName = null;
+    sdk.updateProfile.mockImplementation(async (target, profile) => {
+        Object.assign(target, profile);
+    });
     auth = { currentUser: user, signOut: vi.fn() };
+    sdk.verifySignOut.mockResolvedValue(undefined);
     const storage = new Map<string, string>();
     vi.stubGlobal('window', {
         location: { origin: 'https://app.example.org' },
@@ -127,6 +135,23 @@ beforeEach(() => {
     phoneFailed = undefined;
 });
 afterEach(() => vi.unstubAllGlobals());
+
+describe('Firebase sign-out ordering', () => {
+    it('verifies persistence after SDK sign-out and still signs out native auth', async () => {
+        await create({ isNativePlatform: () => true }).signOut();
+        expect(sdk.verifySignOut).toHaveBeenCalledExactlyOnceWith(auth);
+        expect(vi.mocked(auth.signOut).mock.invocationCallOrder[0]).toBeLessThan(
+            sdk.verifySignOut.mock.invocationCallOrder[0]!
+        );
+        expect(native.signOut).toHaveBeenCalledOnce();
+    });
+
+    it('does not report persisted sign-out when SDK sign-out failed', async () => {
+        vi.mocked(auth.signOut).mockRejectedValueOnce(new Error('sign-out failed'));
+        await expect(create().signOut()).rejects.toThrow('sign-out failed');
+        expect(sdk.verifySignOut).not.toHaveBeenCalled();
+    });
+});
 
 describe('Firebase sign-in adapter', () => {
     it('declares immutable capabilities including server-backed email OTP', () => {
@@ -403,6 +428,148 @@ describe('Firebase sign-in adapter', () => {
         await expect(create().checkRedirectResult?.()).resolves.toMatchObject({ id: user.uid });
         sdk.credentialFromResult.mockReturnValueOnce(null);
         await expect(create().checkRedirectResult?.()).resolves.toBeNull();
+    });
+
+    it('preserves the name-only native Apple result in the Firebase profile', async () => {
+        // skipNativeAuth can return just displayName without a native Firebase user.
+        vi.mocked(native.signInWithApple).mockResolvedValue({
+            user: { displayName: 'Apple User' } as typeof nativeUser,
+            credential: { idToken: 'apple-token', nonce: 'nonce' },
+        });
+        const adapter = create({ isNativePlatform: () => true });
+
+        await expect(adapter.signInWithApple()).resolves.toMatchObject({
+            displayName: 'Apple User',
+        });
+        expect(sdk.updateProfile).toHaveBeenCalledWith(user, { displayName: 'Apple User' });
+        expect(adapter.getCurrentUser()?.displayName).toBe('Apple User');
+    });
+
+    it('publishes delayed Apple enrichment and returns the live replacement user', async () => {
+        vi.mocked(native.signInWithApple).mockResolvedValue({
+            user: { ...nativeUser, displayName: 'Apple User' },
+            credential: { idToken: 'apple-token', nonce: 'nonce' },
+        });
+        const adapter = create({ isNativePlatform: () => true });
+        const listener = vi.fn();
+        const removedListener = vi.fn();
+        const unsubscribe = adapter.subscribe(listener);
+        adapter.subscribe(removedListener)();
+        await vi.waitFor(() => expect(sdk.onAuthStateChanged).toHaveBeenCalled());
+        const publishAuth = sdk.onAuthStateChanged.mock.calls.at(-1)![1];
+        sdk.signInWithCredential.mockImplementationOnce(async () => {
+            publishAuth(user);
+            return { user };
+        });
+        let finishUpdate!: () => void;
+        sdk.updateProfile.mockImplementationOnce(
+            () =>
+                new Promise<void>(resolve => {
+                    finishUpdate = () => {
+                        // Do not mutate the object captured before the profile save.
+                        auth.currentUser = { ...user, displayName: 'Apple User' };
+                        resolve();
+                    };
+                })
+        );
+        const signIn = adapter.signInWithApple();
+        await vi.waitFor(() => expect(sdk.updateProfile).toHaveBeenCalled());
+        expect(listener).toHaveBeenLastCalledWith(
+            expect.objectContaining({ displayName: undefined })
+        );
+        finishUpdate();
+        await expect(signIn).resolves.toMatchObject({ displayName: 'Apple User' });
+        expect(user.displayName).toBeNull();
+        expect(listener).toHaveBeenLastCalledWith(
+            expect.objectContaining({ displayName: 'Apple User' })
+        );
+        expect(adapter.getCurrentUser()?.displayName).toBe('Apple User');
+        expect(removedListener).not.toHaveBeenCalled();
+        unsubscribe();
+    });
+
+    it('keeps duplicate callback subscriptions independent during enrichment', async () => {
+        vi.mocked(native.signInWithApple).mockResolvedValue({
+            user: { ...nativeUser, displayName: 'Apple User' },
+            credential: { idToken: 'apple-token', nonce: 'nonce' },
+        });
+        const adapter = create({ isNativePlatform: () => true });
+        const listener = vi.fn();
+        const first = adapter.subscribe(listener);
+        const second = adapter.subscribe(listener);
+        first();
+        first(); // Cleanup is idempotent and must not remove the second subscription.
+        await adapter.signInWithApple();
+        expect(listener).toHaveBeenCalledOnce();
+        second();
+        user.displayName = null;
+        await adapter.signInWithApple();
+        expect(listener).toHaveBeenCalledOnce();
+    });
+
+    it('cleans up fresh inline callbacks across Strict Mode style resubscriptions', async () => {
+        vi.mocked(native.signInWithApple).mockResolvedValue({
+            user: { ...nativeUser, displayName: 'Apple User' },
+            credential: { idToken: 'apple-token', nonce: 'nonce' },
+        });
+        const adapter = create({ isNativePlatform: () => true });
+        const stale = vi.fn();
+        for (let index = 0; index < 3; index += 1) {
+            adapter.subscribe(profile => stale(profile))();
+        }
+        const active = vi.fn();
+        const unsubscribe = adapter.subscribe(profile => active(profile));
+        await adapter.signInWithApple();
+        expect(stale).not.toHaveBeenCalled();
+        expect(active).toHaveBeenCalledOnce();
+        unsubscribe();
+        user.displayName = null;
+        await adapter.signInWithApple();
+        expect(active).toHaveBeenCalledOnce();
+    });
+
+    it('keeps the saved name when Apple does not return it again', async () => {
+        user.displayName = 'Saved Name';
+        vi.mocked(native.signInWithApple).mockResolvedValue({
+            user: null,
+            credential: { idToken: 'apple-token', nonce: 'nonce' },
+        });
+
+        await expect(
+            create({ isNativePlatform: () => true }).signInWithApple()
+        ).resolves.toMatchObject({
+            displayName: 'Saved Name',
+        });
+        expect(sdk.updateProfile).not.toHaveBeenCalled();
+    });
+
+    it('does not overwrite an existing name with Apple profile data', async () => {
+        user.displayName = 'Chosen Name';
+        vi.mocked(native.signInWithApple).mockResolvedValue({
+            user: { ...nativeUser, displayName: 'Apple Name' },
+            credential: { idToken: 'apple-token', nonce: 'nonce' },
+        });
+
+        await expect(
+            create({ isNativePlatform: () => true }).signInWithApple()
+        ).resolves.toMatchObject({
+            displayName: 'Chosen Name',
+        });
+        expect(sdk.updateProfile).not.toHaveBeenCalled();
+    });
+
+    it('still signs in if saving the Apple name fails', async () => {
+        vi.mocked(native.signInWithApple).mockResolvedValue({
+            user: { ...nativeUser, displayName: 'Apple User' },
+            credential: { idToken: 'apple-token', nonce: 'nonce' },
+        });
+        sdk.updateProfile.mockRejectedValueOnce(new Error('Network unavailable'));
+
+        await expect(
+            create({ isNativePlatform: () => true }).signInWithApple()
+        ).resolves.toMatchObject({
+            id: user.uid,
+        });
     });
 
     it('exchanges custom/OIDC tokens and deletes the current SDK user', async () => {

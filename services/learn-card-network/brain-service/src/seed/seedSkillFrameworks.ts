@@ -10,9 +10,22 @@ import {
     type SeedSkillNode,
 } from './skill-frameworks.fixtures';
 import {
-    upsertSkillEmbeddings,
+    getSkillEmbeddingGeneration,
+    isLegacySkillEmbeddingEnabled,
+    isSkillEmbeddingEnabled,
+    isSkillEmbeddingError,
+    upsertLegacySkillEmbeddings,
+    upsertNovaSkillEmbeddings,
+    type UpdateLegacySkillEmbeddingFn,
     type UpdateSkillEmbeddingFn,
 } from '@helpers/skill-embedding.helpers';
+import {
+    LEGACY_GOOGLE_SKILL_EMBEDDING_PROPERTY,
+    buildSkillEmbeddingUpdateParams,
+    buildSkillEmbeddingUpdateQuery,
+} from '../config/skillEmbedding';
+import { syncProfileDisplayNameLower } from '../accesslayer/profile/search-fields';
+
 // Inlined from @helpers/profile.helpers to avoid importing the access/model layer
 // (it transitively pulls in @models, which hits a circular-dependency TDZ under tsx).
 const transformProfileId = (rawInput: string): string =>
@@ -363,6 +376,20 @@ export const addSkillFrameworkAdmin = async (
 };
 
 const buildSeedSkillEmbeddingUpdater = (run: QueryRunnerLike['run']): UpdateSkillEmbeddingFn => {
+    return async update => {
+        const result = await run(
+            buildSkillEmbeddingUpdateQuery(update.generation, Boolean(update.frameworkId)),
+            buildSkillEmbeddingUpdateParams(update)
+        );
+
+        return Number(result.records[0]?.get('count') ?? 0) > 0;
+    };
+};
+
+/** LC-2206 legacy write (main's Cypher), kept while search can still read the legacy index. */
+const buildSeedLegacySkillEmbeddingUpdater = (
+    run: QueryRunnerLike['run']
+): UpdateLegacySkillEmbeddingFn => {
     return async (skillId, embedding, frameworkId) => {
         if (frameworkId) {
             const result = await run(
@@ -388,7 +415,8 @@ const buildSeedSkillEmbeddingUpdater = (run: QueryRunnerLike['run']): UpdateSkil
 
 const getSeedSkillsMissingEmbedding = async (
     run: QueryRunnerLike['run'],
-    frameworkId: string
+    frameworkId: string,
+    vectorProperty: string
 ): Promise<
     Array<{
         id: string;
@@ -398,9 +426,10 @@ const getSeedSkillsMissingEmbedding = async (
         code?: string;
     }>
 > => {
+    // Property names come from resolveSkillEmbeddingGeneration or the legacy constant ([a-z0-9_] only).
     const result = await run(
         `MATCH (f:SkillFramework {id: $frameworkId})-[:CONTAINS]->(s:Skill)
-         WHERE s.embedding IS NULL
+         WHERE s.${vectorProperty} IS NULL
          OPTIONAL MATCH (s)-[:IS_CHILD_OF]->(parent:Skill)
          RETURN s AS s, parent.id AS parentId
          ORDER BY s.id`,
@@ -421,19 +450,18 @@ const getSeedSkillsMissingEmbedding = async (
     });
 };
 
-const describeEmbeddingBackfillFailure = (error: unknown): string => {
-    const message = error instanceof Error ? error.message : String(error);
-    const normalized = message.toLowerCase();
+export const describeEmbeddingBackfillFailure = (error: unknown): string => {
+    const code = isSkillEmbeddingError(error) ? error.code : undefined;
 
-    if (normalized.includes('quota exceeded') || normalized.includes('resource_exhausted')) {
-        return '\nEmbedding quota was reached. \nThe frameworks were seeded, but semantic search will stay limited until the Google embedding quota resets or you switch to a paid key.\n';
+    if (code === 'throttled') {
+        return 'Bedrock embedding requests were throttled. The frameworks were seeded, but some semantic search embeddings were skipped for now; the startup backfill will fill them in.';
     }
 
-    if (normalized.includes('rate limits') || normalized.includes('too many requests')) {
-        return 'Google embedding requests were rate-limited. The frameworks were seeded, but some semantic search embeddings were skipped for now.';
+    if (code === 'access_denied') {
+        return 'Bedrock denied the embedding request. Check model access for Nova 2 Multimodal Embeddings and the bedrock:InvokeModel grant for your AWS credentials.';
     }
 
-    return `${message}\nUse \`bun run skill-frameworks add-admin\` to add admins.`;
+    return `Skill embedding failed (${code ?? 'unknown'}).\nUse \`bun run skill-frameworks add-admin\` to add admins.`;
 };
 
 const upsertSkillNode = async (
@@ -519,7 +547,8 @@ export const ensureSeedProfile = async (
                        p.shortBio = coalesce(p.shortBio, $shortBio),
                        p.profileVisibility = coalesce(p.profileVisibility, $profileVisibility),
                        p.approved = coalesce(p.approved, $approved),
-                       p.isServiceProfile = coalesce(p.isServiceProfile, $isServiceProfile)`,
+                       p.isServiceProfile = coalesce(p.isServiceProfile, $isServiceProfile)
+         SET ${syncProfileDisplayNameLower('p')}`,
         {
             profileId: normalizedProfileId,
             displayName: DEFAULT_OWNER_DISPLAY_NAME,
@@ -544,7 +573,12 @@ export const seedSkillFrameworkFixtures = async (
     await ensureSeedProfile(run, ownerProfileId);
 
     const seededFrameworkIds: string[] = [];
-    let embeddingBackfillFailureSummary: string | null = null;
+    // Each provider tracks its own failure, so a Nova failure never skips the legacy Google
+    // pass that semantic search may still be reading (and vice versa).
+    const embeddingFailures: { nova: string | null; legacy: string | null } = {
+        nova: null,
+        legacy: null,
+    };
 
     for (const framework of fixtures) {
         const now = new Date().toISOString();
@@ -589,17 +623,42 @@ export const seedSkillFrameworkFixtures = async (
             await upsertSkillNode(run, framework, rootSkill);
         }
 
-        if (!embeddingBackfillFailureSummary) {
-            const missingEmbeddingSkills = await getSeedSkillsMissingEmbedding(run, framework.id);
+        // LC-2206: Nova vectors whenever Nova is enabled (independent of the read flag), plus
+        // the legacy Google vectors main writes while a Google key is configured.
+        if (!embeddingFailures.nova && isSkillEmbeddingEnabled()) {
+            const missingEmbeddingSkills = await getSeedSkillsMissingEmbedding(
+                run,
+                framework.id,
+                getSkillEmbeddingGeneration().vectorProperty
+            );
 
             if (missingEmbeddingSkills.length > 0) {
                 try {
-                    await upsertSkillEmbeddings(
+                    await upsertNovaSkillEmbeddings(
                         missingEmbeddingSkills,
                         buildSeedSkillEmbeddingUpdater(run)
                     );
                 } catch (error) {
-                    embeddingBackfillFailureSummary = describeEmbeddingBackfillFailure(error);
+                    embeddingFailures.nova = describeEmbeddingBackfillFailure(error);
+                }
+            }
+        }
+
+        if (!embeddingFailures.legacy && isLegacySkillEmbeddingEnabled()) {
+            const missingLegacySkills = await getSeedSkillsMissingEmbedding(
+                run,
+                framework.id,
+                LEGACY_GOOGLE_SKILL_EMBEDDING_PROPERTY
+            );
+
+            if (missingLegacySkills.length > 0) {
+                try {
+                    await upsertLegacySkillEmbeddings(
+                        missingLegacySkills,
+                        buildSeedLegacySkillEmbeddingUpdater(run)
+                    );
+                } catch (error) {
+                    embeddingFailures.legacy = describeEmbeddingBackfillFailure(error);
                 }
             }
         }
@@ -607,10 +666,19 @@ export const seedSkillFrameworkFixtures = async (
         seededFrameworkIds.push(framework.id);
     }
 
-    if (embeddingBackfillFailureSummary) {
+    if (embeddingFailures.nova) {
         options.log?.warn?.(
-            `Embedding backfill was skipped after the first framework because Google rejected the request: ${embeddingBackfillFailureSummary}`
+            `Nova embedding backfill was skipped for the remaining frameworks: ${embeddingFailures.nova}`
         );
+    }
+
+    if (embeddingFailures.legacy) {
+        options.log?.warn?.(
+            `Legacy Google embedding backfill was skipped for the remaining frameworks: ${embeddingFailures.legacy}`
+        );
+    }
+
+    if (embeddingFailures.nova || embeddingFailures.legacy) {
         options.log?.warn?.(
             'The frameworks were still seeded. Use `bun run skill-frameworks add-admin` to add admins. Semantic search will keep using whichever embeddings already exist.'
         );

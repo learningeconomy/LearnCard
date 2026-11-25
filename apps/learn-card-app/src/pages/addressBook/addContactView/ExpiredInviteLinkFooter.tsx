@@ -5,7 +5,9 @@ import X from 'learn-card-base/svgs/X';
 
 type ExpiredInviteLinkFooterProps = {
     buttonText?: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     icon?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     buttonAction?: (...args: any[]) => void;
     buttonClassName?: string;
 };
@@ -22,7 +24,7 @@ const ExpiredInviteLinkFooter: React.FC<ExpiredInviteLinkFooterProps> = ({
     return (
         <IonFooter
             mode="ios"
-            className="w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] py-4 absolute bottom-0 bg-white !max-h-[100px] safe-area-bottom"
+            className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 bg-white/60 max-h-[100px]! safe-area-bottom"
         >
             <div className="w-full flex items-center justify-center">
                 <div className="w-full flex items-center justify-between max-w-[600px] ion-padding">

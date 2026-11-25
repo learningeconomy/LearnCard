@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Capacitor } from '@capacitor/core';
 import {
     JobRegistryEntry,
     RegistryEntry,
@@ -6,8 +7,10 @@ import {
     LCAStylesPackRegistryEntry,
 } from 'learn-card-base';
 
-import { RegistryClient } from '@digitalcredentials/issuer-registry-client';
+import { knownDIDRegistryQueryOptions } from '../react-query/queries/issuerRegistry';
 import { isProductionEnvironment } from '../config/isProduction';
+import { useOptionalTenantConfig } from '../config/TenantConfigProvider';
+import { getRegistryProxyBaseUrl } from '../registry-proxy/registryProxy';
 
 export const useRegistry = () => {
     return useQuery<RegistryEntry[]>({
@@ -75,46 +78,14 @@ export const useTrustedAppsRegistry = (profileId?: string) => {
 };
 
 export const useKnownDIDRegistry = (profileId?: string) => {
-    return useQuery({
-        queryKey: [profileId],
-        queryFn: async () => {
-            const trustedRegistryClient = new RegistryClient();
-            const untrustedRegistryClient = new RegistryClient();
-
-            const trustedResponse = await fetch(
-                'https://registries.learncard.com/known-did-registries.json'
-            );
-            const untrustedResponse = await fetch(
-                'https://registries.learncard.com/untrusted-did-registries.json'
-            );
-
-            const knownRegistries = await trustedResponse.json();
-            const unknownRegistries = await untrustedResponse.json();
-
-            await trustedRegistryClient.use({ registries: knownRegistries });
-            await untrustedRegistryClient.use({ registries: unknownRegistries });
-
-            const trustedResults = await trustedRegistryClient.lookupIssuersFor(profileId);
-            const untrustedResults = await untrustedRegistryClient.lookupIssuersFor(profileId);
-
-            if (trustedResults?.matchingIssuers.length > 0) {
-                return {
-                    source: 'trusted',
-                    results: trustedResults,
-                };
-            } else if (untrustedResults?.matchingIssuers.length > 0) {
-                return {
-                    source: 'untrusted',
-                    results: untrustedResults,
-                };
-            } else {
-                return {
-                    source: 'unknown',
-                    results: {},
-                };
-            }
-        },
-    });
+    const queryClient = useQueryClient();
+    const tenantConfig = useOptionalTenantConfig();
+    const proxyBaseUrl = getRegistryProxyBaseUrl(
+        Capacitor.isNativePlatform(),
+        tenantConfig?.domain,
+        typeof window === 'undefined' ? undefined : window.location.origin
+    );
+    return useQuery(knownDIDRegistryQueryOptions(queryClient, profileId, proxyBaseUrl));
 };
 
 export const useLCAStylesPackRegistry = () => {

@@ -30,7 +30,7 @@ export const ChatBotAppListItem: React.FC<{
         currentIndex: number
     ) => void;
 }> = ({ app, index, handleChatBotAnswer }) => {
-    const currentUser = useCurrentUser()!!!!!!!!!;
+    const currentUser = useCurrentUser()!;
     const { presentToast } = useToast();
     const aiAppsAvailable = areAiPassportAppsAvailable();
     const contractUri = aiAppsAvailable ? app.contractUri : undefined;

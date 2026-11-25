@@ -1,0 +1,52 @@
+name: Firebase logout storage
+
+on:
+    pull_request:
+        types: [opened, synchronize, reopened, ready_for_review]
+        paths:
+            - '.github/workflows/firebase-logout-storage.yml'
+            - 'apps/scouts/playwright.auth.config.ts'
+            - 'apps/scouts/tests/auth/**'
+            - 'apps/scouts/src/firebase/**'
+            - 'apps/learn-card-app/src/firebase/**'
+            - 'apps/scouts/src/providers/AuthCoordinatorProvider.tsx'
+            - 'apps/learn-card-app/src/providers/AuthCoordinatorProvider.tsx'
+            - 'packages/learn-card-base/src/helpers/indexedDBHelpers.ts'
+            - 'packages/learn-card-base/src/auth-adapters/**'
+            - 'packages/learn-card-base/src/auth-coordinator/**'
+            - 'packages/learn-card-base/src/key-derivation/**'
+            - 'package.json'
+            - 'apps/scouts/package.json'
+            - 'packages/learn-card-base/package.json'
+            - 'bun.lock'
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: firebase-logout-storage-${{ github.head_ref || github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    browser-regression:
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v7
+            - name: Install dependencies
+              uses: ./.github/actions/setup
+            - name: Install Chromium
+              working-directory: apps/scouts
+              run: bunx playwright install --with-deps chromium
+            - name: Verify multi-tab Firebase logout
+              working-directory: apps/scouts
+              run: bunx playwright test --config playwright.auth.config.ts
+            - name: Upload failure traces
+              if: failure()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: firebase-logout-storage-traces
+                  path: apps/scouts/coverage/playwright-auth/
+                  retention-days: 7

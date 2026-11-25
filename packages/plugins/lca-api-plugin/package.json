@@ -1,7 +1,7 @@
 {
     "name": "@learncard/lca-api-plugin",
-    "version": "2.0.7",
-    "description": "",
+    "version": "3.0.0",
+    "description": "Connects a LearnCard to the LearnCard App (LCA) API.",
     "type": "module",
     "main": "./dist/index.cjs",
     "module": "./dist/lca-api-plugin.esm.js",
@@ -55,7 +55,6 @@
         "@learncard/types": "workspace:*",
         "hex-lite": "^1.5.0",
         "isomorphic-fetch": "^3.0.0",
-        "isomorphic-webcrypto": "^2.3.8",
         "pbkdf2-hmac": "^1.2.1"
     },
     "sideEffects": false

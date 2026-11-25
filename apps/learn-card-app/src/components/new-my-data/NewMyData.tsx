@@ -22,7 +22,7 @@ const NewMyData: React.FC = () => {
 
     return (
         <section className="w-full flex flex-col gap-[20px] items-center px-[20px] py-[30px] bg-white rounded-[24px]">
-            <header className="flex items-center flex-col gap-[10px] border-solid border-b-[1px] border-grayscale-200 pb-[20px] w-full">
+            <header className="flex items-center flex-col gap-[10px] border-solid border-b border-grayscale-200 pb-[20px] w-full">
                 <span className="text-grayscale-900 uppercase text-[14px] font-montserrat normal font-[700] tracking-[7px] text-center">
                     {brandingConfig?.name}
                 </span>

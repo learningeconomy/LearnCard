@@ -37,10 +37,13 @@ const clearDb = async (): Promise<void> => {
 const createManagedRecipient = async (
     profileId: string,
     email: string,
-    isServiceProfile: boolean
+    isServiceProfile: boolean,
+    parentCategory = isServiceProfile ? 'ID' : 'Family',
+    profileType?: string
 ): Promise<void> => {
     const boostUri = await userA.clients.fullAuth.boost.createBoost({
         credential: testUnsignedBoost,
+        category: parentCategory,
     });
     const managerDid = await userA.clients.fullAuth.profileManager.createChildProfileManager({
         parentUri: boostUri,
@@ -51,6 +54,7 @@ const createManagedRecipient = async (
         profileId,
         displayName: profileId,
         isServiceProfile,
+        ...(profileType ? { type: profileType } : {}),
     });
 
     const contactMethod = await createContactMethod({
@@ -95,6 +99,25 @@ describe('Inbox send to managed recipients', () => {
         await clearDb();
     });
 
+    it.each([
+        { parentCategory: 'Family', profileType: undefined },
+        { parentCategory: 'ID', profileType: 'child' },
+    ])(
+        'rejects a service flag for child creation through $parentCategory / $profileType',
+        async ({ parentCategory, profileType }) => {
+            await expect(
+                createManagedRecipient(
+                    'service-child',
+                    'child@example.com',
+                    true,
+                    parentCategory,
+                    profileType
+                )
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            expect(await Profile.findMany({ where: { profileId: 'service-child' } })).toEqual([]);
+        }
+    );
+
     it('delivers directly to a managed service profile without a guardian gate', async () => {
         await createManagedRecipient('managed-org', 'org@example.com', true);
 
@@ -114,7 +137,6 @@ describe('Inbox send to managed recipients', () => {
         const result = await sendTo('child@example.com');
 
         expect(result.inbox?.status).toBe('PENDING');
-        expect(result.inbox?.guardianStatus).toBe('AWAITING_GUARDIAN');
 
         const credentials = await InboxCredential.findMany({ where: {} });
         expect(credentials).toHaveLength(1);

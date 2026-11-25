@@ -24,7 +24,7 @@ export const ShareChildInsightsCard: React.FC<{
                             image,
                         }}
                         customContainerClass="flex w-[70px] min-w-[70px] h-[70px] min-h-[70px] items-center justify-center rounded-full overflow-hidden object-cover text-white"
-                        customImageClass="w-full h-full object-cover flex-shrink-0"
+                        customImageClass="w-full h-full object-cover shrink-0"
                         customSize={120}
                     />
 

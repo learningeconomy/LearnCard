@@ -1,11 +1,14 @@
 import * as m from '../../../../paraglide/messages.js';
 import { useLocale } from '../../../../i18n';
 import React, { useState, useMemo } from 'react';
-import { FileText, Copy, Check, Shield, Send, Info } from 'lucide-react';
+import { FileText, Copy, Check, Shield, Send, Info, FilePenLine } from 'lucide-react';
 import { Clipboard } from '@capacitor/clipboard';
 import type { LCNIntegration } from '@learncard/types';
 
 import { useToast } from 'learn-card-base/hooks/useToast';
+import { ModalTypes, useModal } from 'learn-card-base';
+import ContractUpdateModal from '../../components/ContractUpdateModal';
+import { mDynamic } from '../../../../i18n/mDynamic';
 import type { EmbedAppGuideConfig, GuideState } from '../../guides/types';
 
 interface ConfiguredContract {
@@ -22,6 +25,10 @@ interface ContractsTabProps {
 
 export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
     const { presentToast } = useToast();
+    const { newModal } = useModal({
+        desktop: ModalTypes.Center,
+        mobile: ModalTypes.Center,
+    });
     const [copiedId, setCopiedId] = useState<string | null>(null);
 
     // ============================================================
@@ -111,7 +118,7 @@ export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div>
                 <h2 className="text-lg font-semibold text-gray-800">
                     {m['developerPortal.dashboards.tabs.contracts.title']()}
@@ -137,7 +144,7 @@ export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
                                 {m['developerPortal.dashboards.tabs.contracts.howToAddTitle']()}
                             </strong>
                         </p>
-                        <ol className="text-xs text-gray-400 mt-1 space-y-1 list-decimal list-inside">
+                        <ol className="text-xs text-gray-400 mt-1 space-y-v3-1 list-decimal list-inside">
                             <li>
                                 {m['developerPortal.dashboards.tabs.contracts.howToAddStep1']()}
                             </li>
@@ -151,10 +158,11 @@ export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
                     </div>
                 </div>
             ) : (
-                <div className="space-y-4">
+                <div className="space-y-v3-4">
                     {configuredContracts.map(contract => (
-                        <div
+                        <section
                             key={contract.uri}
+                            aria-label={contract.name}
                             className="p-4 border border-gray-200 rounded-xl bg-white hover:border-gray-300 transition-colors"
                         >
                             <div className="flex items-start justify-between gap-4">
@@ -162,7 +170,7 @@ export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
                                     <div
                                         className={`w-10 h-10 ${getContractColor(
                                             contract.type
-                                        )} rounded-lg flex items-center justify-center flex-shrink-0`}
+                                        )} rounded-lg flex items-center justify-center shrink-0`}
                                     >
                                         {getContractIcon(contract.type)}
                                     </div>
@@ -176,7 +184,7 @@ export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
                                         </p>
 
                                         <div className="mt-2 flex items-center gap-2">
-                                            <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
+                                            <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-sm">
                                                 {contract.feature}
                                             </span>
                                         </div>
@@ -196,7 +204,7 @@ export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
 
                                 <button
                                     onClick={() => copyContractUri(contract.uri)}
-                                    className="p-2 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors flex-shrink-0"
+                                    className="p-2 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors shrink-0"
                                     title={m['developerPortal.dashboards.tabs.contracts.copyUri']()}
                                 >
                                     {copiedId === contract.uri ? (
@@ -206,11 +214,34 @@ export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
                                     )}
                                 </button>
                             </div>
-                        </div>
+                            <div className="mt-4 flex justify-end border-t border-grayscale-200 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        newModal(
+                                            <ContractUpdateModal contractUri={contract.uri} />,
+                                            {
+                                                hideButton: true,
+                                                sectionClassName:
+                                                    'max-w-[720px]! flex! flex-col! overflow-hidden!',
+                                            },
+                                            {
+                                                desktop: ModalTypes.Center,
+                                                mobile: ModalTypes.Center,
+                                            }
+                                        )
+                                    }
+                                    className="inline-flex w-full items-center justify-center gap-2 rounded-[20px] bg-grayscale-900 px-4 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 sm:w-auto"
+                                >
+                                    <FilePenLine aria-hidden className="h-4 w-4" />
+                                    {mDynamic('consentUpdate.editor.title')}
+                                </button>
+                            </div>
+                        </section>
                     ))}
 
                     <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">
-                        <Info className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                        <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
                         <p className="text-sm text-blue-700">
                             {m['developerPortal.dashboards.tabs.contracts.infoBanner']()}
                         </p>

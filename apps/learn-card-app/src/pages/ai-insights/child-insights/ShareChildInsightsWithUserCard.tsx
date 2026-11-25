@@ -63,7 +63,7 @@ export const ShareChildInsightsWithUserCard: React.FC<{
                     childProfileId={childProfile.profileId}
                     bypassParentConsent
                 />,
-                { className: '!bg-transparent' },
+                { className: 'bg-transparent!' },
                 { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
             );
         }

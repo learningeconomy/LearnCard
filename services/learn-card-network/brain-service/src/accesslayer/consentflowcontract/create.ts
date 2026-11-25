@@ -83,7 +83,14 @@ export const createConsentFlowContract = async ({
                 updatedAt: createdAt,
                 audienceVersion: uniqueRecipientIds.length,
                 expiresAt,
+                currentVersion: 1,
+                status: 'active',
             }),
+            versionId: uuid(),
+            version: 1,
+            contractSnapshot: JSON.stringify(contract),
+            autoboostSnapshot: JSON.stringify(uniqueAutoBoosts),
+            writerSnapshot: JSON.stringify(uniqueWriterIds),
         })
     )
         // Resolve every target before writing; a missing target produces no writes.
@@ -106,6 +113,16 @@ export const createConsentFlowContract = async ({
         .set('contract += $params')
         .raw(
             `
+            CREATE (version:ConsentFlowContractVersion {
+                id: $versionId, version: $version, contract: $contractSnapshot,
+                autoboosts: $autoboostSnapshot, writers: $writerSnapshot,
+                name: $params.name, subtitle: $params.subtitle, description: $params.description,
+                reasonForAccessing: $params.reasonForAccessing, image: $params.image,
+                needsGuardianConsent: $params.needsGuardianConsent, redirectUrl: $params.redirectUrl,
+                frontDoorBoostUri: $params.frontDoorBoostUri, expiresAt: $params.expiresAt,
+                createdAt: $createdAt
+            })
+            CREATE (contract)-[:HAS_VERSION]->(version)
             CREATE (contract)-[:CREATED_BY]->(owner)
             FOREACH (recipient IN recipients |
                 CREATE (contract)-[:SHARES_DATA_WITH {addedAt: $createdAt}]->(recipient))
@@ -129,5 +146,7 @@ export const createConsentFlowContract = async ({
             message: 'Could not find all contract configuration targets',
         });
     }
-    return inflateObject<DbContractType>(created.properties);
+    const createdContract = inflateObject<DbContractType>(created.properties);
+    createdContract.contract = contract;
+    return createdContract;
 };

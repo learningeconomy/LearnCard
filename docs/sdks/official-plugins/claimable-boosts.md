@@ -1,6 +1,6 @@
 # Claimable Boosts
 
-## @learncard/claimable-boosts-plugi
+## @learncard/claimable-boosts-plugin
 
 This plugin for LearnCard enables the creation of "Claimable Boosts," which are credentials that users can claim via a unique link or QR code. It allows external partners or systems to easily generate and distribute credentials (boosts) without needing direct interaction with the end-user's wallet initially.
 
@@ -25,9 +25,9 @@ This example shows the minimum setup to generate your first claimable boost link
 
 #### Prerequisites:
 
--   Node.js (v14 or later) installed.
--   A secure seed phrase for initializing LearnCard. Never hardcode your seed in production code. Use environment variables or a secure secrets management system. For this example, we'll use an environment variable `SECURE_SEED`.
--   A unique ID for your issuer profile (e.g., `my-awesome-org-profile`).
+- Node.js 20 or later installed.
+- A secure seed phrase for initializing LearnCard. Never hardcode your seed in production code. Use environment variables or a secure secrets management system. For this example, we'll use an environment variable `SECURE_SEED`.
+- A unique ID for your issuer profile (e.g., `my-awesome-org-profile`).
 
 #### Steps:
 
@@ -77,8 +77,10 @@ async function quickstartBoost() {
             });
             console.log(`Profile "${profileId}" created successfully.`);
         } catch (error) {
-            if (error.message?.includes('Profile ID already exists')) {
-                console.log(`Profile "${profileId}" already exists, continuing.`);
+            // The SDK throws 'Account already exists!' when this seed already has a profile.
+            // 'Profile already exists!' from the network means the profileId is taken.
+            if (error.message?.includes('Account already exists')) {
+                console.log('This seed already has a profile, continuing.');
             } else {
                 throw new Error(`Failed to create profile: ${error.message}`);
             }
@@ -149,10 +151,10 @@ This section provides a comprehensive walkthrough of creating and managing Claim
 
 #### Prerequisites:
 
--   Node.js (v14 or later)
--   npm, yarn, or Bun
--   A LearnCard Network account (implied by using the plugin with `network: true`)
--   A secure seed phrase for your issuer identity.
+- Node.js 20 or later
+- npm, yarn, or Bun
+- A LearnCard Network account (implied by using the plugin with `network: true`)
+- A secure seed phrase for your issuer identity.
 
 #### Setup Process
 
@@ -274,9 +276,9 @@ console.log('Limited Use Claim Link:', claimLinkWithOptions);
 
 **Use Cases for Options:**
 
--   **Limited-time offers**: Set `ttlSeconds` for time-sensitive campaigns or events.
--   **Limited quantity**: Set `totalUses` for exclusive rewards or limited-enrollment programs.
--   **Unique links per user**: Set `totalUses: 1`. You would generate a unique link for each intended recipient.
+- **Limited-time offers**: Set `ttlSeconds` for time-sensitive campaigns or events.
+- **Limited quantity**: Set `totalUses` for exclusive rewards or limited-enrollment programs.
+- **Unique links per user**: Set `totalUses: 1`. You would generate a unique link for each intended recipient.
 
 #### QR Code Generation
 
@@ -309,11 +311,11 @@ QRCode.toString(qrCodeDataWithOptions, { type: 'svg' }, (err, svgString) => {
 
 ### Common Issues & Troubleshooting
 
--   **"Profile ID already exists"**: This error occurs during `createProfile` if the profileId is already registered on the network. You can either choose a different unique profileId or safely ignore this error if you intend to use the existing profile (as shown in the Quickstart and Setup examples). Ensure the learnCard instance you're using is the controller of the existing profile if you intend to manage it.
--   **"Invalid credential format"**: Double-check that your boostTemplate conforms to the expected structure. Refer to LearnCard documentation for specific schema requirements.
--   **"Network error" / "Failed to fetch"**: Verify your internet connection. Ensure the LearnCard API endpoint (https://api.learncard.app/trpc by default) is accessible. Check for any network proxies or firewalls that might be blocking the connection.
--   **"Authentication Error" / "Unauthorized"**: Ensure your seed is correct and corresponds to the DID that controls the profileId you are trying to manage (especially when creating boosts under an existing profile).
--   **Seed Security**: Remember to handle your seed phrase securely using environment variables or a dedicated secrets manager. Avoid hardcoding it directly in your source code.
+- **"Profile ID already exists"**: This error occurs during `createProfile` if the profileId is already registered on the network. You can either choose a different unique profileId or safely ignore this error if you intend to use the existing profile (as shown in the Quickstart and Setup examples). Ensure the learnCard instance you're using is the controller of the existing profile if you intend to manage it.
+- **"Invalid credential format"**: Double-check that your boostTemplate conforms to the expected structure. Refer to LearnCard documentation for specific schema requirements.
+- **"Network error" / "Failed to fetch"**: Verify your internet connection. Ensure the LearnCard API endpoint (https://api.learncard.app/trpc by default) is accessible. Check for any network proxies or firewalls that might be blocking the connection.
+- **"Authentication Error" / "Unauthorized"**: Ensure your seed is correct and corresponds to the DID that controls the profileId you are trying to manage (especially when creating boosts under an existing profile).
+- **Seed Security**: Remember to handle your seed phrase securely using environment variables or a dedicated secrets manager. Avoid hardcoding it directly in your source code.
 
 ### Complete Example Script
 

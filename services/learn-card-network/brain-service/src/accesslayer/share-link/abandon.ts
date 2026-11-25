@@ -1,5 +1,6 @@
 import { ensureShareLinkConstraints } from '../../models/share-link-constraints';
 import { failShareLink } from './errors';
+import { queueShareAttachmentCleanup } from './attachment';
 import {
     deleteReservation,
     enqueueCleanupJob,
@@ -70,6 +71,25 @@ export const abandonReservation = async (
         }
 
         let cleanupQueuedFor: string | null = null;
+        if (
+            reservation.attachmentId &&
+            reservation.attachmentChunkCount &&
+            reservation.contentVersion
+        ) {
+            await queueShareAttachmentCleanup(
+                tx,
+                {
+                    namespace: reservation.namespace,
+                    ownerProfileId: reservation.ownerProfileId,
+                    shareId: reservation.shareId,
+                    contentVersion: reservation.contentVersion,
+                    attachmentId: reservation.attachmentId,
+                    chunkCount: reservation.attachmentChunkCount,
+                },
+                'abandoned',
+                nowIso
+            );
+        }
 
         if (reservation.objectRef) {
             await enqueueCleanupJob(tx, {

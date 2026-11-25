@@ -8,11 +8,12 @@ import { useErrorBoundary } from 'react-error-boundary';
 import { m } from '../../../paraglide/messages.js';
 
 import { CredentialCategoryEnum } from 'learn-card-base';
+import type { CredentialCategory } from 'learn-card-base/types/credentials';
 
 import useTheme from '../../../theme/hooks/useTheme';
 import { ColorSetEnum } from '../../../theme/colors/index';
 
-type CategoryType = keyof typeof CredentialCategoryEnum | 'Hidden' | 'Course';
+type CategoryType = CredentialCategory | 'Hidden';
 
 const BoostErrorsDisplay: React.FC<{
     errorMessage?: string;
@@ -53,6 +54,7 @@ const BoostErrorsDisplay: React.FC<{
 export default BoostErrorsDisplay;
 
 export const ErrorBoundaryFallback: React.FC<{
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     error?: any;
 }> = ({ error }) => {
     const { colors } = useTheme();

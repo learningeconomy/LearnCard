@@ -86,7 +86,7 @@ import XCTest
         XCTAssertFalse(app.buttons["app-remove"].exists, "Opening/cancelling consent must not install an app")
     }
     func testDiscoverConsentInstallAndNativeDataSharing() {
-        let app = launch()
+        let app = launch(extra: ["--standard-type"])
         app.buttons["Discover"].tap()
         let discoverShot = XCTAttachment(screenshot: app.screenshot()); discoverShot.name = "Drawn Apps discovery with actual sample metadata"; discoverShot.lifetime = .keepAlways; add(discoverShot)
         let studio = app.buttons["app-sample-studio"]
@@ -101,15 +101,32 @@ import XCTest
         XCTAssertFalse(app.switches["consent-permission-Achievement"].exists)
         capture(app, "Rendered access optional off before agreement")
         optional.tap()
-        app.buttons["consent-choice-design"].tap()
-        app.buttons["consent-agree"].tap()
+        let choice = app.buttons["consent-choice-design"]
+        let agree = app.buttons["consent-agree"]
+        XCTAssertTrue(choice.waitForExistence(timeout: 5))
+        // XCTest can see rows underneath the fixed approval footer. Scroll
+        // them clear so selecting a credential never taps approval instead.
+        let scroll = app.scrollViews.firstMatch
+        for _ in 0..<4 {
+            if choice.isHittable && choice.frame.maxY < agree.frame.minY - 20 { break }
+            scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.64))
+                .press(forDuration: 0.05, thenDragTo: scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.35)))
+        }
+        XCTAssertTrue(choice.isHittable)
+        XCTAssertLessThan(choice.frame.maxY, agree.frame.minY - 20)
+        choice.tap()
+        XCTAssertTrue(choice.isSelected)
+        XCTAssertTrue(agree.isHittable)
+        agree.tap()
         XCTAssertTrue(app.buttons["app-remove"].waitForExistence(timeout: 5), app.debugDescription)
         reveal(app.buttons["Data Sharing"], in: app)
         app.buttons["Data Sharing"].tap()
         XCTAssertTrue(app.buttons["sharing-connection-sample-terms"].waitForExistence(timeout: 5))
         app.buttons["sharing-connection-sample-terms"].tap()
         app.buttons["connection-stop"].tap()
-        app.buttons["Stop sharing"].firstMatch.tap()
+        let confirmation = app.sheets.buttons["Stop sharing"]
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 5))
+        confirmation.tap()
         XCTAssertTrue(app.staticTexts["Sharing stopped"].waitForExistence(timeout: 5), app.debugDescription)
         XCTAssertFalse(app.buttons["connection-stop"].exists)
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "Native agreement recipients and withdrawal"; shot.lifetime = .keepAlways; add(shot)

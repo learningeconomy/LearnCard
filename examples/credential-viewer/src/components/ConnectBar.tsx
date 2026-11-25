@@ -18,7 +18,7 @@ const EnvSelector: React.FC = () => {
     );
     const [customCloud, setCustomCloud] = useState(envKey === 'custom' ? envConfig.cloud : '');
     const [customLcaApi, setCustomLcaApi] = useState(
-        envKey === 'custom' ? envConfig.lcaApi ?? '' : ''
+        envKey === 'custom' ? (envConfig.lcaApi ?? '') : ''
     );
 
     const isConnected = status === 'connected';
@@ -86,7 +86,7 @@ const EnvSelector: React.FC = () => {
                         onChange={e => setCustomNetwork(e.target.value)}
                         onBlur={handleCustomBlur}
                         placeholder="Network URL"
-                        className="w-44 px-2 py-1 bg-gray-800 border border-gray-700 rounded text-[11px] font-mono text-gray-300 placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-purple-500/50"
+                        className="w-44 px-2 py-1 bg-gray-800 border border-gray-700 rounded text-[11px] font-mono text-gray-300 placeholder-gray-600 focus:outline-hidden focus:ring-1 focus:ring-purple-500/50"
                     />
 
                     <input
@@ -95,7 +95,7 @@ const EnvSelector: React.FC = () => {
                         onChange={e => setCustomCloud(e.target.value)}
                         onBlur={handleCustomBlur}
                         placeholder="Cloud URL"
-                        className="w-44 px-2 py-1 bg-gray-800 border border-gray-700 rounded text-[11px] font-mono text-gray-300 placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-purple-500/50"
+                        className="w-44 px-2 py-1 bg-gray-800 border border-gray-700 rounded text-[11px] font-mono text-gray-300 placeholder-gray-600 focus:outline-hidden focus:ring-1 focus:ring-purple-500/50"
                     />
 
                     <input
@@ -104,7 +104,7 @@ const EnvSelector: React.FC = () => {
                         onChange={e => setCustomLcaApi(e.target.value)}
                         onBlur={handleCustomBlur}
                         placeholder="LCA API URL"
-                        className="w-44 px-2 py-1 bg-gray-800 border border-gray-700 rounded text-[11px] font-mono text-gray-300 placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-purple-500/50"
+                        className="w-44 px-2 py-1 bg-gray-800 border border-gray-700 rounded text-[11px] font-mono text-gray-300 placeholder-gray-600 focus:outline-hidden focus:ring-1 focus:ring-purple-500/50"
                     />
                 </div>
             )}
@@ -235,7 +235,7 @@ const ProfileSection: React.FC = () => {
                 value={displayName}
                 onChange={e => setDisplayName(e.target.value)}
                 placeholder="Display Name"
-                className="w-32 px-2 py-1 bg-gray-800 border border-gray-700 rounded text-[11px] text-gray-200 placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                className="w-32 px-2 py-1 bg-gray-800 border border-gray-700 rounded text-[11px] text-gray-200 placeholder-gray-600 focus:outline-hidden focus:ring-1 focus:ring-blue-500/50"
                 autoFocus
             />
 
@@ -246,7 +246,7 @@ const ProfileSection: React.FC = () => {
                     setProfileId(e.target.value.toLowerCase().replace(/[^a-z0-9-_]/g, ''))
                 }
                 placeholder="profile-id"
-                className="w-28 px-2 py-1 bg-gray-800 border border-gray-700 rounded text-[11px] font-mono text-gray-200 placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                className="w-28 px-2 py-1 bg-gray-800 border border-gray-700 rounded text-[11px] font-mono text-gray-200 placeholder-gray-600 focus:outline-hidden focus:ring-1 focus:ring-blue-500/50"
             />
 
             <button
@@ -565,7 +565,7 @@ export const ConnectBar: React.FC = () => {
                         onChange={e => setInputSeed(e.target.value)}
                         onKeyDown={handleKeyDown}
                         placeholder="64-char hex seed..."
-                        className="w-64 px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-xs font-mono text-gray-200 placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                        className="w-64 px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-xs font-mono text-gray-200 placeholder-gray-600 focus:outline-hidden focus:ring-1 focus:ring-blue-500/50"
                         autoFocus
                     />
 

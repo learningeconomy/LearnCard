@@ -81,10 +81,11 @@ const makeCleanupRepository = (
 
 const makeDeleteClient = (
     result: unknown = { ok: true, value: {} }
-): CleanupRunnerDependencies['client'] =>
+): Parameters<typeof runShareLinkMaintenancePass>[0]['client'] =>
     ({
         delete: vi.fn().mockResolvedValue(result),
-    }) as unknown as CleanupRunnerDependencies['client'];
+        stat: vi.fn().mockResolvedValue({ ok: false, error: 'NOT_FOUND' }),
+    }) as Parameters<typeof runShareLinkMaintenancePass>[0]['client'];
 
 const makeRecoveryRepository = (): RecoveryRunnerDependencies['repository'] =>
     ({
@@ -305,6 +306,31 @@ describe('share-link maintenance pass', () => {
         });
         expect(summary.receiptPrune).toEqual({ pruned: 4 });
         expect(summary.categories).toEqual({});
+    });
+
+    it('runs bounded attachment stage collection and reports a safe failure for retry', async () => {
+        const config = enabledConfig();
+        const now = new Date(NOW_ISO);
+        const expireAttachmentStages = vi.fn().mockResolvedValue(3);
+        const dependencies = {
+            ...runnerDependencies(config, { expireAttachmentStages, now: () => now }),
+            client: makeDeleteClient(),
+        };
+        const summary = await runShareLinkMaintenancePass(dependencies);
+        expect(expireAttachmentStages).toHaveBeenCalledWith({
+            namespace: NAMESPACE,
+            limit: 10,
+            now,
+            transaction: { timeoutMs: config.graphTimeoutMs, noInlineRetry: true },
+        });
+        expect(summary.attachmentStages).toEqual({ queued: 3 });
+        expireAttachmentStages.mockRejectedValueOnce(new Error('raw private detail'));
+        const failed = await runShareLinkMaintenancePass(dependencies);
+        expect(failed.status).toBe('failed');
+        expect(failed.categories).toMatchObject({
+            share_link_maintenance_attachment_stage_failed: 1,
+        });
+        expect(JSON.stringify(toMaintenanceLogEvent(failed))).not.toContain('raw private detail');
     });
 
     it('does not start receipt pruning when the graph budget is exhausted', async () => {
@@ -727,6 +753,7 @@ describe('C7 independent review regressions', () => {
             client,
             logger: silentLogger,
             remainingTimeMs: () => 6_000,
+            pruneReceipts: vi.fn().mockResolvedValue(0),
         });
         expect(summary.status).toBe('deadline_exhausted');
         expect(cleanupRepository.claimCleanupJobs).not.toHaveBeenCalled();
@@ -1034,14 +1061,14 @@ describe('C7a dependency setup caching', () => {
 
 describe('C7a scheduler terminal stop and synchronous failure', () => {
     it('does not run a queued timer callback after stop', async () => {
-        let queued: (() => void) | null = null;
+        const timer: { queued: (() => void) | null } = { queued: null };
         const runOnce = vi.fn().mockResolvedValue(undefined);
         const scheduler = createShareLinkMaintenanceScheduler({
             runOnce,
             intervalMs: 1_000,
             logger: silentLogger,
             setTimeoutFn: handler => {
-                queued = handler;
+                timer.queued = handler;
                 return 1;
             },
             clearTimeoutFn: () => undefined,
@@ -1051,7 +1078,7 @@ describe('C7a scheduler terminal stop and synchronous failure', () => {
         await scheduler.stop();
 
         // Simulate a timer callback that was already queued when stop ran.
-        queued?.();
+        timer.queued?.();
         await Promise.resolve();
         await Promise.resolve();
 

@@ -9,7 +9,7 @@ import {
     usePathQuery,
     useCountBoosts,
     useGetCredentialList,
-    useGetCredentialCount,
+    useCredentialCollection,
     useIsCurrentUserLCNUser,
     useGetPaginatedManagedBoosts,
     CredentialCategoryEnum,
@@ -102,6 +102,15 @@ const getCategoryToConfig = (): Record<string, CategoryConfig> => ({
         searchInputColor: 'pink-500',
         tabBackgroundColor: 'pink-400',
     },
+    [CredentialCategoryEnum.qualifications]: {
+        boostCategory: CredentialCategoryEnum.qualifications,
+        subheaderType: SubheaderTypeEnum.Qualifications,
+        title: m['wallet.categories.qualifications'](),
+        iconColor: 'text-orange-700',
+        dividerLineColor: 'orange-400',
+        searchInputColor: 'orange-300',
+        tabBackgroundColor: 'orange-300',
+    },
     [CredentialCategoryEnum.id]: {
         boostCategory: CredentialCategoryEnum.id, // category
         subheaderType: SubheaderTypeEnum.ID, // header type
@@ -115,10 +124,14 @@ const getCategoryToConfig = (): Record<string, CategoryConfig> => ({
 });
 
 type CredentialPageProps = {
-    category: keyof typeof CredentialCategoryEnum;
+    category: CredentialCategoryEnum;
 };
 
 const CredentialPage: React.FC<CredentialPageProps> = ({ category }) => {
+    // The search store is shared across categories; discard it when this
+    // category route leaves the React Router switch.
+    useEffect(() => () => credentialSearchStore.set.reset(), []);
+
     const { getThemedCategoryColors } = useTheme();
     const colors = getThemedCategoryColors(category as CredentialCategoryEnum);
 
@@ -149,10 +162,13 @@ const CredentialPage: React.FC<CredentialPageProps> = ({ category }) => {
     const viewMode = passportPageStore.use.credentialViewMode();
     const setViewMode = passportPageStore.set.credentialViewMode;
 
-    const { data: credentialCount, isLoading: countLoading } = useGetCredentialCount(
-        category as any
-    );
+    const categoryCollection = useCredentialCollection(config.boostCategory, { mode: 'complete' });
+    const credentialCount = categoryCollection.isComplete
+        ? categoryCollection.records.length
+        : undefined;
+    const countLoading = !categoryCollection.isComplete && !categoryCollection.isError;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const { data: managedBoostData = 0 } = useCountBoosts(category as any);
     const managedBoostCount = typeof managedBoostData === 'number' ? managedBoostData : 0;
 
@@ -160,12 +176,14 @@ const CredentialPage: React.FC<CredentialPageProps> = ({ category }) => {
         data: records,
         isLoading: credentialsLoading,
         isFetching: credentialsFetching,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     } = useGetCredentialList(category as any);
 
     const {
         data: managedBoosts,
         isLoading: managedBoostsLoading,
         isFetching: managedBoostsFetching,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     } = useGetPaginatedManagedBoosts(category as any, { limit: 12 });
 
     const credentialsBackgroundFetching =

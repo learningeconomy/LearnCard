@@ -15,14 +15,14 @@ npx @learncard/cli send                    # you sign; writes send.mjs
 npx @learncard/cli send --template         # LearnCard signs from a reusable template; writes send-from-template.mjs
 ```
 
-Both prompt for the recipient (or take it as an argument: `send you@yourdomain.com`) and reuse the `.env` the Quickstart created. Everything below is what those scripts do, and the options `send()` takes beyond them.
+Both prompt for the recipient (or take it as an argument: `send you@yourdomain.com`) and reuse the `.env` the Quickstart created. Once the folder has a registered signing authority (from `setup-signing`, `org apply`, or an earlier `send --template`), plain `send` also signs through it from the template; pass `--no-template` to sign with your local key and write `send.mjs` instead. Everything below is what those scripts do, and the options `send()` takes beyond them.
 
 ## `send()` in one picture
 
 ```typescript
 const result = await learnCard.invoke.send({
     type: 'boost',
-    recipient: 'jane@example.com', // email, phone, profile ID, or DID — detected automatically
+    recipient: 'jane@yourdomain.com', // email, phone, profile ID, or DID — detected automatically
     signedCredential, //             ← you signed it       (or)
     templateUri, //                  ← LearnCard signs from a template you created
     refresh: true, //                ← optional: issue it refreshable (email/phone uses deferred inbox signing)
@@ -33,7 +33,7 @@ You choose **who the recipient is** and **who signs**. Everything else — deliv
 
 | Recipient looks like          | What happens                                                                                                                                                                                                   |
 | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `jane@example.com`            | Goes to the [Universal Inbox](../core-concepts/network-and-interactions/universal-inbox.md); Jane gets a claim email. If that email is already verified on a LearnCard account, it's delivered straight there. |
+| `jane@yourdomain.com`         | Goes to the [Universal Inbox](../core-concepts/network-and-interactions/universal-inbox.md); Jane gets a claim email. If that email is already verified on a LearnCard account, it's delivered straight there. |
 | `+15551234567`                | Same, by SMS. Phone delivery is limited to issuers on the [trusted registry](verify-my-issuer.md).                                                                                                             |
 | `jane-doe` (profile ID)       | Delivered directly to that account.                                                                                                                                                                            |
 | `did:key:z6Mk…` / `did:web:…` | Delivered directly to that DID.                                                                                                                                                                                |
@@ -46,7 +46,7 @@ You choose **who the recipient is** and **who signs**. Everything else — deliv
 
 Template URIs look like `lc:network:<host>/trpc:boost:<id>`. Always use the value returned by `createBoost` or `send` (`result.uri`) — never build one.
 
-You need a network profile before you send — `createServiceProfile` for an organization or bot, `createProfile` for a person. The Quickstart and `learncard init` do this for you. [Network Profiles](../core-concepts/identities-and-keys/network-profiles.md).
+You need a network profile before you send — `createServiceProfile` for an organization or bot, `createProfile` for a person. The Quickstart and `npx @learncard/cli init` do this for you. [Network Profiles](../core-concepts/identities-and-keys/network-profiles.md).
 
 ## Examples
 
@@ -74,12 +74,12 @@ const signedCredential = await learnCard.invoke.issueCredential({
 
 const result = await learnCard.invoke.send({
     type: 'boost',
-    recipient: 'jane@example.com',
+    recipient: 'jane@yourdomain.com',
     signedCredential,
 });
 ```
 
-Your proof is kept as-is all the way to the recipient. `send()` also saves the credential as a template (`result.uri`) so you can send the same badge again with `templateUri`.
+Your proof is kept as-is all the way to the recipient. Signed-only sends create a display-only anchor (`result.uri`), not a reusable copy of your credential. Pass optional top-level `display: { name, category, image }` for public metadata. Without a public name, the anchor is labeled "Credential" and update notices use generic copy. To issue again, supply your credential again or explicitly create a reusable public Boost template.
 
 {% endtab %}
 {% tab title="LearnCard signs (template)" %}
@@ -173,7 +173,7 @@ const result = await learnCard.invoke.send({
     type: 'boost',
     recipient: 'student@school.edu',
     templateUri,
-    options: { guardianEmail: 'parent@example.com' },
+    options: { guardianEmail: 'parent@yourdomain.com' },
 });
 console.log(result.inbox?.guardianStatus); // 'AWAITING_GUARDIAN'
 ```
@@ -229,7 +229,7 @@ Once someone claims by email, that address is verified on their account, so your
 curl -X POST https://network.learncard.com/api/send \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{ "type": "boost", "recipient": "jane@example.com", "templateUri": "lc:network:network.learncard.com/trpc:boost:…" }'
+  -d '{ "type": "boost", "recipient": "jane@yourdomain.com", "templateUri": "lc:network:network.learncard.com/trpc:boost:…" }'
 ```
 
 ### Sign locally, send over HTTP
@@ -386,7 +386,7 @@ Provide `templateData` when sending to fill in the variables:
 ```javascript
 const result = await learnCard.invoke.send({
     type: 'boost',
-    recipient: 'student@example.com',
+    recipient: 'student@yourdomain.com',
     templateUri: dynamicBoostUri,
     templateData: {
         courseName: 'Web Development 101',

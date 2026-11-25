@@ -104,6 +104,24 @@ describe('CLI: one folder, every command', () => {
     });
 
     test('every command, one folder, one .env', async () => {
+        // Read-only commands refuse in an empty folder instead of creating an identity.
+        {
+            for (const args of [['whoami'], ['token', '--list'], ['status']]) {
+                let failure: { stdout?: string; status?: number } = {};
+                try {
+                    cli(...args, '--json');
+                } catch (err) {
+                    failure = err as { stdout?: string; status?: number };
+                }
+                expect(failure.status).toBe(1);
+                expect(JSON.parse(String(failure.stdout))).toMatchObject({
+                    ok: false,
+                    code: 'NO_IDENTITY',
+                });
+            }
+            expect(existsSync(join(dir, '.env'))).toBe(false);
+        }
+
         // init creates the identity without sending; a typo is caught, not swallowed by the REPL
         {
             const init = JSON.parse(cli('init', '--json'));
@@ -232,13 +250,20 @@ describe('CLI: one folder, every command', () => {
                 inbox: { status: 'PENDING' },
             });
 
+            // --json keeps the raw token off stdout: it is only in .env unless --show-secret.
             const json = JSON.parse(cli('token', '--json'));
             expect(json.ok).toBe(true);
             expect(json.command).toBe('token');
-            expect(json.token.split('.')).toHaveLength(3);
+            expect(json.token).toBeUndefined();
+            expect(json.tokenSavedTo).toMatch(/[/\\]\.env$/);
+            expect(env().API_TOKEN!.split('.')).toHaveLength(3);
             expect(json.scope).toBe('boosts:write');
             expect(json.grantId).toBeTruthy();
             expect(json.files).toEqual([]); // send.sh already exists from the call above
+
+            const shown = JSON.parse(cli('token', '--json', '--show-secret'));
+            expect(shown.token.split('.')).toHaveLength(3);
+            expect(env().API_TOKEN).toBe(shown.token);
         }
 
         // verify: valid passes, tampered fails, revoke flips status
@@ -264,10 +289,24 @@ describe('CLI: one folder, every command', () => {
                 })
             ).toMatch(/✓ proof/);
 
-            // verify --json keeps its pre-existing meaning: the raw verification result, unwrapped.
+            // verify --json prints one envelope line: ok = the command ran, verified = the verdict.
             const verifyJson = JSON.parse(cliRaw('verify', 'vc.json', '--json'));
-            expect(verifyJson.errors).toEqual([]);
-            expect(verifyJson.ok).toBeUndefined(); // not wrapped like other --json commands
+            expect(verifyJson.ok).toBe(true);
+            expect(verifyJson.command).toBe('verify');
+            expect(verifyJson.verified).toBe(true);
+            expect(verifyJson.result.errors).toEqual([]);
+            let badVerify: { stdout?: string; status?: number } = {};
+            try {
+                cliRaw('verify', 'bad.json', '--json');
+            } catch (err) {
+                badVerify = err as { stdout?: string; status?: number };
+            }
+            expect(badVerify.status).toBe(1); // unverified still exits 1
+            expect(JSON.parse(String(badVerify.stdout))).toMatchObject({
+                ok: true,
+                command: 'verify',
+                verified: false,
+            });
 
             const bProfile = await recipient.invoke.getProfile();
             const sent = await issuer.invoke.send({
@@ -440,6 +479,9 @@ describe('CLI: one folder, every command', () => {
                     WEBHOOK_URL,
                     '--port',
                     String(WEBHOOK_PORT),
+                    // stdin is not a TTY here, so human mode stops after --timeout (default 60s).
+                    '--timeout',
+                    '600',
                 ],
                 { cwd: dir, env: { ...process.env, LCA_API_URL } }
             );
@@ -481,8 +523,28 @@ describe('CLI: one folder, every command', () => {
             expect(json.command).toBe('open');
             expect(json.url).toContain('https://example.com/developer/sign-in');
             expect(json.next).toBe('/app-store/developer');
-            // Headless CI may lack a clipboard utility entirely; either delivery is a pass.
-            expect(['clipboard', 'none']).toContain(json.seedDelivery);
+            // --json never copies the seed to a clipboard.
+            expect(json.seedDelivery).toBe('none');
+
+            // --url-fragment keeps the seed out of the printed URL unless --show-secret.
+            const fragment = JSON.parse(
+                cli('open', '--json', '--url-fragment', '--app-url', 'https://example.com')
+            );
+            expect(fragment.seedDelivery).toBe('fragment');
+            expect(fragment.seedInFragment).toBe(true);
+            expect(fragment.url).not.toContain('#seed=');
+            expect(fragment.url).not.toContain(env().SECURE_SEED!);
+            const secret = JSON.parse(
+                cli(
+                    'open',
+                    '--json',
+                    '--url-fragment',
+                    '--show-secret',
+                    '--app-url',
+                    'https://example.com'
+                )
+            );
+            expect(secret.url).toContain(`#seed=${env().SECURE_SEED}`);
         }
 
         // .env accumulated every key across the run

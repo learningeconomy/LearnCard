@@ -140,7 +140,7 @@ const ExternalConsentFlowDoor: React.FC = () => {
                         </>
                     ) : (
                         <>
-                            <h1 className="text-grayscale-900 text-[20px] font-[600] leading-[160%] text-center font-poppins">
+                            <h1 className="text-grayscale-900 text-[20px] font-semibold leading-[160%] text-center font-poppins">
                                 {contractDetails?.name}
                             </h1>
                             <div className="text-grayscale-800 text-[17px] text-center font-poppins">
@@ -180,7 +180,7 @@ const ExternalConsentFlowDoor: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={handleLogout}
-                                className="text-indigo-500 font-[600]"
+                                className="text-indigo-500 font-semibold"
                             >
                                 {m['consentFlow.logout']()}
                             </button>
@@ -202,7 +202,7 @@ const ExternalConsentFlowDoor: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={redirectToLogin}
-                                className="text-indigo-500 font-[600]"
+                                className="text-indigo-500 font-semibold"
                             >
                                 {m['consentFlow.login']()}
                             </button>
@@ -210,8 +210,8 @@ const ExternalConsentFlowDoor: React.FC = () => {
                     </div>
                 )}
 
-                <div className="pt-[20px] border-solid border-t-[1px] border-grayscale-200 w-full flex flex-col items-center gap-[10px]">
-                    <span className="text-grayscale-900 text-[14px] font-montserrat normal font-[700] tracking-[7px] uppercase">
+                <div className="pt-[20px] border-solid border-t border-grayscale-200 w-full flex flex-col items-center gap-[10px]">
+                    <span className="text-grayscale-900 text-[14px] font-montserrat normal font-bold tracking-[7px] uppercase">
                         LearnCard
                     </span>
                     <span className="text-grayscale-700 text-[14px] font-notoSans">
@@ -221,7 +221,7 @@ const ExternalConsentFlowDoor: React.FC = () => {
                         <IonCol className="flex items-center justify-center font-notoSans">
                             <button
                                 onClick={openPP}
-                                className="text-indigo-500 font-[600] text-[12px]"
+                                className="text-indigo-500 font-semibold text-[12px]"
                             >
                                 {m['consentFlow.privacyPolicy']()}
                             </button>
@@ -230,7 +230,7 @@ const ExternalConsentFlowDoor: React.FC = () => {
                             </span>
                             <button
                                 onClick={openToS}
-                                className="text-indigo-500 font-[600] text-[12px]"
+                                className="text-indigo-500 font-semibold text-[12px]"
                             >
                                 {m['consentFlow.termsOfService']()}
                             </button>

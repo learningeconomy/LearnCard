@@ -76,8 +76,8 @@ const ExchangeDidAuth: React.FC<ExchangeDidAuthProps> = ({
                 <div className="min-h-full bg-grayscale-100 flex items-center justify-center p-4 font-poppins">
                     <div className="bg-white rounded-[20px] shadow-xl max-w-md w-full overflow-hidden safe-area-top-margin animate-fade-in-up">
                         {/* Header with icon */}
-                        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 px-6 py-8 text-center">
-                            <div className="w-16 h-16 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-5">
+                        <div className="bg-linear-to-br/srgb from-emerald-500 to-emerald-600 px-6 py-8 text-center">
+                            <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-5">
                                 <Gift className="w-8 h-8 text-white" />
                             </div>
 
@@ -92,8 +92,8 @@ const ExchangeDidAuth: React.FC<ExchangeDidAuthProps> = ({
 
                         {/* Content */}
                         <div className="p-6">
-                            <div className="space-y-5 mb-6">
-                                <div className="space-y-1">
+                            <div className="space-y-v3-5 mb-6">
+                                <div className="space-y-v3-1">
                                     <h2 className="text-lg font-semibold text-grayscale-900 text-center">
                                         {m['claim.didAuth.ready']()}
                                     </h2>
@@ -104,13 +104,13 @@ const ExchangeDidAuth: React.FC<ExchangeDidAuthProps> = ({
                                 </div>
 
                                 {/* What happens section */}
-                                <div className="bg-grayscale-10 rounded-2xl p-5 space-y-4 border border-grayscale-200">
+                                <div className="bg-grayscale-10 rounded-2xl p-5 space-y-v3-4 border border-grayscale-200">
                                     <p className="text-xs font-medium text-grayscale-700 uppercase tracking-wide">
                                         {m['claim.didAuth.whatHappens']()}
                                     </p>
 
                                     <div className="flex items-start gap-3">
-                                        <div className="w-6 h-6 bg-emerald-50 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                        <div className="w-6 h-6 bg-emerald-50 rounded-full flex items-center justify-center shrink-0 mt-0.5">
                                             <CheckCircle className="w-4 h-4 text-emerald-600" />
                                         </div>
 
@@ -120,7 +120,7 @@ const ExchangeDidAuth: React.FC<ExchangeDidAuthProps> = ({
                                     </div>
 
                                     <div className="flex items-start gap-3">
-                                        <div className="w-6 h-6 bg-emerald-50 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                        <div className="w-6 h-6 bg-emerald-50 rounded-full flex items-center justify-center shrink-0 mt-0.5">
                                             <CheckCircle className="w-4 h-4 text-emerald-600" />
                                         </div>
 
@@ -130,7 +130,7 @@ const ExchangeDidAuth: React.FC<ExchangeDidAuthProps> = ({
                                     </div>
 
                                     <div className="flex items-start gap-3">
-                                        <div className="w-6 h-6 bg-emerald-50 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                        <div className="w-6 h-6 bg-emerald-50 rounded-full flex items-center justify-center shrink-0 mt-0.5">
                                             <CheckCircle className="w-4 h-4 text-emerald-600" />
                                         </div>
 
@@ -144,7 +144,7 @@ const ExchangeDidAuth: React.FC<ExchangeDidAuthProps> = ({
                                 <div className="flex items-start gap-2.5 text-xs text-grayscale-600">
                                     <Shield
                                         aria-hidden="true"
-                                        className="w-4 h-4 flex-shrink-0 mt-0.5 text-grayscale-400"
+                                        className="w-4 h-4 shrink-0 mt-0.5 text-grayscale-400"
                                     />
 
                                     <p className="leading-relaxed">
@@ -164,7 +164,7 @@ const ExchangeDidAuth: React.FC<ExchangeDidAuthProps> = ({
                             )}
 
                             {/* Action buttons */}
-                            <div className="space-y-3">
+                            <div className="space-y-v3-3">
                                 <button
                                     onClick={handleAccept}
                                     disabled={isLoading}

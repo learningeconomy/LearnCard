@@ -39,6 +39,11 @@ const StateValidator = z.object({
 });
 
 import { getLogger } from 'learn-card-base';
+import {
+    getClassLinkProfileDefaults,
+    isClassLinkLogin,
+} from '../../auth/classlink/classlinkProfileDefaults';
+import { generateRandomSuffix } from '../onboarding/v2/handleGenerator';
 const log = getLogger('join-network-prompt');
 
 export const JoinNetworkPrompt: React.FC<{
@@ -59,7 +64,10 @@ export const JoinNetworkPrompt: React.FC<{
     const brandingConfig = useBrandingConfig();
 
     const [step, setStep] = useState<number>(1);
-    const [profileId, setProfileId] = useState<string | null | undefined>('');
+    const classlink = isClassLinkLogin();
+    const [profileId, setProfileId] = useState<string | null | undefined>(() =>
+        classlink ? `learner-${generateRandomSuffix()}` : ''
+    );
     const [error, setError] = useState<string>('');
     const [errors, setErrors] = useState<Record<string, string[]>>({});
     const [loading, setLoading] = useState<boolean>(false);
@@ -70,7 +78,7 @@ export const JoinNetworkPrompt: React.FC<{
     const openRejectPrompt = () => {
         newModal(
             <RejectNetworkPrompt handleCloseModal={closeModal} />,
-            { hideButton: true, sectionClassName: '!max-w-[400px]' },
+            { hideButton: true, sectionClassName: 'max-w-[400px]!' },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
         );
     };
@@ -78,7 +86,7 @@ export const JoinNetworkPrompt: React.FC<{
     const openNotificationPrompt = () => {
         newModal(
             <PushNotificationsPrompt handleCloseModal={closeModal} />,
-            { hideButton: true, sectionClassName: '!max-w-[400px]' },
+            { hideButton: true, sectionClassName: 'max-w-[400px]!' },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
         );
     };
@@ -113,6 +121,7 @@ export const JoinNetworkPrompt: React.FC<{
                     bio: '',
                     image: currentUser?.profileImage ?? '',
                     notificationsWebhook: getNotificationsEndpoint(),
+                    ...(await getClassLinkProfileDefaults()),
                 });
 
                 if (didWeb) {
@@ -211,6 +220,7 @@ export const JoinNetworkPrompt: React.FC<{
                                     }`}
                                     onIonInput={e => setProfileId(e.detail.value)}
                                     value={profileId}
+                                    readonly={classlink}
                                     placeholder="User ID"
                                     type="text"
                                 />
@@ -231,7 +241,7 @@ export const JoinNetworkPrompt: React.FC<{
                 </div>
             </div>
             <div className="w-full flex items-center justify-center mt-6">
-                <div className="flex items-center flex-col max-w-[90%] border-b-[1px] border-grayscale-200">
+                <div className="flex items-center flex-col max-w-[90%] border-b border-grayscale-200">
                     {step === 1 ? (
                         <button
                             onClick={handleNextStep}

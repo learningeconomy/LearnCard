@@ -1,11 +1,15 @@
 import React, { Suspense } from 'react';
 import { Redirect, Route, Switch, matchPath, useLocation } from 'react-router-dom';
+import type { RouteComponentProps, RouteProps } from 'react-router-dom';
+import type { Location } from 'history';
 import {
     DIDAuthModal,
     VCClaimModalController,
     useIsLoggedIn,
     lazyWithRetry,
     ChunkBoundary,
+    InAppMessageDeepLinkRoute,
+    getInAppMessageEntryPath,
 } from 'learn-card-base';
 
 import { createBrowserHistory } from 'history';
@@ -66,9 +70,8 @@ const SentryRoute = Sentry.withSentryRouting(Route);
 
 const history = createBrowserHistory();
 
-type PrivateRouteProps = {
-    component: React.ComponentType<any>;
-    [key: string]: any;
+type PrivateRouteProps = Omit<RouteProps, 'component'> & {
+    component: React.ComponentType<RouteComponentProps>;
 };
 
 const PrivateRoute = ({ component: Component, ...rest }: PrivateRouteProps) => {
@@ -88,13 +91,19 @@ const PrivateRoute = ({ component: Component, ...rest }: PrivateRouteProps) => {
     return isLoggedIn ? (
         <SentryRoute {...rest} render={props => <Component {...props} {...rest} />} />
     ) : (
-        <Redirect to="/login" />
+        <Redirect
+            to={
+                rest.path === '/m/:messageId'
+                    ? `/login?redirectTo=${encodeURIComponent(getInAppMessageEntryPath(location.pathname))}`
+                    : '/login'
+            }
+        />
     );
 };
 
 export const Routes: React.FC = () => {
     const isLoggedIn = useIsLoggedIn();
-    const location = useLocation<{ background: any }>();
+    const location = useLocation<{ background: Location }>();
 
     // The `backgroundLocation` state is the location that we were at when one of
     // it's what is displayed in the background when we open the modal route
@@ -149,6 +158,11 @@ export const Routes: React.FC = () => {
                         />
                         <PrivateRoute exact path="/memberships" component={MembershipPage} />
                         <PrivateRoute exact path="/troops" component={MembershipPage} />
+                        <PrivateRoute
+                            exact
+                            path="/m/:messageId"
+                            component={InAppMessageDeepLinkRoute}
+                        />
                         <PrivateRoute exact path="/boost" component={BoostCMS} />
                         <PrivateRoute exact path="/boost/update" component={UpdateBoostCMS} />
 
@@ -156,7 +170,9 @@ export const Routes: React.FC = () => {
                         <PrivateRoute exact path="/store" component={CredentialStorage} />
                         <PrivateRoute exact path="/get" component={CredentialStorageGet} />
 
-                        <SentryRoute path="/waitingsofa" children={<LoadingPage2 />} />
+                        <SentryRoute path="/waitingsofa">
+                            <LoadingPage2 />
+                        </SentryRoute>
                         <PrivateRoute exact path="/admin-tools" component={AdminToolsPage} />
                         <PrivateRoute
                             exact
@@ -169,13 +185,12 @@ export const Routes: React.FC = () => {
                             component={BulkBoostImportPage}
                         />
 
-                        <SentryRoute path="/waitingsofa" children={<LoadingPage2 />} />
-
-                        <SentryRoute
-                            path="/claim-credential/:uri"
-                            children={<VCClaimModalController />}
-                        />
-                        <SentryRoute path="/did-auth/:challenge" children={<DIDAuthModal />} />
+                        <SentryRoute path="/claim-credential/:uri">
+                            <VCClaimModalController />
+                        </SentryRoute>
+                        <SentryRoute path="/did-auth/:challenge">
+                            <DIDAuthModal />
+                        </SentryRoute>
 
                         <SentryRoute exact path="/connect" component={ConnectPage} />
                         <SentryRoute exact path="/connect/:profileId" component={ConnectPage} />

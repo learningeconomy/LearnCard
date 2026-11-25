@@ -49,7 +49,9 @@ import { renderParts, type MessagePart } from './index';
  * that need to splice React elements into the message.
  */
 export type ParaglideMessage = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     (...args: any[]): string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     parts: (...args: any[]) => MessagePart[];
 };
 

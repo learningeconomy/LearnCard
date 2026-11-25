@@ -116,8 +116,7 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
 
     // Read persisted config from integration guideState
     const guideState = integration.guideState as
-        | { config?: { embedClaimConfig?: EmbedClaimConfig } }
-        | undefined;
+        { config?: { embedClaimConfig?: EmbedClaimConfig } } | undefined;
     const config = guideState?.config?.embedClaimConfig;
 
     const publishableKey = integration.publishableKey || 'YOUR_PUBLISHABLE_KEY';
@@ -190,7 +189,7 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div>
                 <h2 className="text-lg font-semibold text-gray-800">
                     {m['developerPortal.dashboards.tabs.embedCode.title']()}
@@ -306,7 +305,7 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
                     </button>
                 </div>
                 <div className="mb-2">
-                    <code className="px-2 py-1 bg-gray-100 rounded text-sm">{npmCode}</code>
+                    <code className="px-2 py-1 bg-gray-100 rounded-sm text-sm">{npmCode}</code>
                 </div>
                 <pre className="p-4 bg-gray-900 text-gray-100 rounded-xl text-sm overflow-x-auto">
                     <code>{currentSnippet.reactCode}</code>
@@ -388,10 +387,15 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
                                             ]
                                         }
                                         components={[
+                                            // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                             <code />,
+                                            // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                             <code />,
+                                            // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                             <code />,
+                                            // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                             <code />,
+                                            // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                             <code />,
                                         ]}
                                     />
@@ -418,6 +422,7 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
                                                 'developerPortal.dashboards.tabs.embedCode.sdkOnSuccessDesc'
                                             ]
                                         }
+                                        // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                         components={[<code />, <code />, <code />]}
                                     />
                                 </td>
@@ -435,6 +440,7 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
                                         values={{
                                             url: getResolvedTenantConfig().apis.brainServiceApi,
                                         }}
+                                        // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                         components={[<code />]}
                                     />
                                 </td>

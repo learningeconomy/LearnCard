@@ -60,7 +60,7 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
 
             newModal(
                 <ShareTroopIdModal credential={troopCredential} uri={troopUri} />,
-                { sectionClassName: '!bg-transparent !shadow-none !max-w-[355px]' },
+                { sectionClassName: 'bg-transparent! shadow-none! max-w-[355px]!' },
                 { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
             );
             return;
@@ -99,7 +99,7 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
 
     const presentViewJsonModal = () => {
         newModal(<ViewJsonModal boost={boost} />, {
-            sectionClassName: '!max-h-[90%] !mx-[20px]',
+            sectionClassName: 'max-h-[90%]! mx-[20px]!',
         });
     };
 
@@ -143,7 +143,7 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
                     <li
                         key={id}
                         onClick={() => onClick?.()}
-                        className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2 border-b-grayscale-100 border-b-solid border-b-[2px] last:border-0"
+                        className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2 border-b-grayscale-100 border-b-solid border-b-2 last:border-0"
                     >
                         <p className="text-grayscale-900">{title}</p>
                         {icon}

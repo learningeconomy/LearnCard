@@ -31,7 +31,7 @@ const NotificationProfileApprovalCard: React.FC<NotificationProfileApprovalCardP
         >
             <div
                 onClick={handleMarkRead}
-                className={`${notificationCardStyles.shell} min-h-[120px] gap-3 !items-center`}
+                className={`${notificationCardStyles.shell} min-h-[120px] gap-3 items-center!`}
             >
                 <div className="notification-card-left-side px-[0px] flex cursor-pointer shrink-0">
                     <UserProfilePicture

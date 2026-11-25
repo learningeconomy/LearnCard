@@ -1,0 +1,12 @@
+chats.db
+/privacy/model/
+/privacy/__pycache__/
+
+# Local synthetic/live operator smoke summaries (safe metadata, never source).
+tmp/bedrock-responses-smoke-*.json
+
+# Offline admin browser artifacts.
+/test-results/
+
+# Build output (bun build + admin bundle).
+/dist/

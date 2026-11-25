@@ -119,7 +119,7 @@ export const NotificationsSubHeader: React.FC<{
     };
 
     return (
-        <div className="backdrop-blur-[5px] border-b-[1px] border-solid border-white">
+        <div className="backdrop-blur-[5px] border-b border-solid border-white">
             <IonGrid className="w-full flex items-center justify-center px-3">
                 <IonRow className="w-full max-w-[600px]">
                     <button
@@ -143,7 +143,7 @@ export const NotificationsSubHeader: React.FC<{
                 {!isEmptyState && (
                     <button
                         onClick={handleMarkAllRead}
-                        className="text-[14px] text-grayscale-800 flex items-center justify-center font-semibold min-w-[140px] rounded-[36px] border-solid border-[1px] border-grayscale-200 py-[7px] px-[20px]"
+                        className="text-[14px] text-grayscale-800 flex items-center justify-center font-semibold min-w-[140px] rounded-[36px] border-solid border border-grayscale-200 py-[7px] px-[20px]"
                     >
                         {m['alerts.archive']()} <X className="ml-[5px] w-[15px] h-[15px]" />
                     </button>
@@ -158,7 +158,7 @@ export const NotificationsSubHeader: React.FC<{
                             }}
                             className={`pr-4  text-[14px] font-semibold ${
                                 tab === 'active'
-                                    ? `text-${primaryColor} text-center ${borderRadius} px-[15px] py-[5px] border-solid border-[1px] border-${primaryColor} mr-[15px]`
+                                    ? `text-${primaryColor} text-center ${borderRadius} px-[15px] py-[5px] border-solid border border-${primaryColor} mr-[15px]`
                                     : 'text-grayscale-600'
                             }`}
                         >
@@ -170,7 +170,7 @@ export const NotificationsSubHeader: React.FC<{
                             }}
                             className={`pr-4  text-[14px] font-semibold ${
                                 tab === 'archived'
-                                    ? `text-${primaryColor} text-center ${borderRadius} px-[15px] py-[5px] border-solid border-[1px] border-${primaryColor}`
+                                    ? `text-${primaryColor} text-center ${borderRadius} px-[15px] py-[5px] border-solid border border-${primaryColor}`
                                     : 'text-grayscale-600'
                             }`}
                         >

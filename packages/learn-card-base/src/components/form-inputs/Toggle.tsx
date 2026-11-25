@@ -50,7 +50,7 @@ const Toggle: React.FC<ToggleProps> = ({
             aria-label={ariaLabel ?? label}
             aria-describedby={ariaDescribedBy}
             onClick={() => !disabled && onChange(!checked)}
-            className={`relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2
+            className={`relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2
                 ${sizes.track}
                 ${checked ? 'bg-emerald-500' : 'bg-grayscale-300'}
                 ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}

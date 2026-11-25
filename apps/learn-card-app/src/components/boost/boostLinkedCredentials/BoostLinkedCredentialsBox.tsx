@@ -40,7 +40,7 @@ export const BoostLinkedCredentialsBox: React.FC<{
                     categoryType={categoryType}
                     defaultImg={defaultImg}
                 />,
-                { className: '!bg-transparent' }
+                { className: 'bg-transparent!' }
             );
         }, 300);
     };

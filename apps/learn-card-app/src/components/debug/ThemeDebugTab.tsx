@@ -25,7 +25,7 @@ import {
 const ColorSwatch: React.FC<{ label: string; color: string }> = ({ label, color }) => (
     <div className="flex items-center gap-1.5 text-[10px] py-[2px]">
         <div
-            className="w-3 h-3 rounded-sm border border-gray-600 shrink-0"
+            className="w-3 h-3 rounded-xs border border-gray-600 shrink-0"
             style={{ backgroundColor: color }}
             title={color}
         />
@@ -150,7 +150,7 @@ export const ThemeDebugTab: React.FC = () => {
     }, [theme, setCopied]);
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-v3-2">
             {/* ── Active theme headline ── */}
             <div className="rounded-lg p-3 bg-purple-950/40 ring-1 ring-purple-700">
                 <div className="flex items-center gap-2 mb-1.5">
@@ -238,13 +238,13 @@ export const ThemeDebugTab: React.FC = () => {
 
                             <div className="flex items-center gap-1">
                                 {isActive && (
-                                    <span className="text-[8px] px-1 py-0.5 rounded bg-purple-500/20 text-purple-400 font-medium">
+                                    <span className="text-[8px] px-1 py-0.5 rounded-sm bg-purple-500/20 text-purple-400 font-medium">
                                         active
                                     </span>
                                 )}
 
                                 {!isAllowed && (
-                                    <span className="text-[8px] px-1 py-0.5 rounded bg-red-500/20 text-red-400 font-medium">
+                                    <span className="text-[8px] px-1 py-0.5 rounded-sm bg-red-500/20 text-red-400 font-medium">
                                         not allowed
                                     </span>
                                 )}
@@ -438,7 +438,7 @@ export const ThemeDebugTab: React.FC = () => {
                                 e.stopPropagation();
                                 handleCopyThemeJson();
                             }}
-                            className="p-1 rounded hover:bg-gray-600 transition-colors"
+                            className="p-1 rounded-sm hover:bg-gray-600 transition-colors"
                             title="Copy full theme JSON"
                         >
                             {copied === 'theme-json' ? (
@@ -452,7 +452,7 @@ export const ThemeDebugTab: React.FC = () => {
 
                 {showRawJson && (
                     <div className="px-3 pb-2">
-                        <pre className="text-[8px] text-gray-500 bg-gray-950 rounded p-2 overflow-x-auto max-h-64 overflow-y-auto whitespace-pre-wrap break-words">
+                        <pre className="text-[8px] text-gray-500 bg-gray-950 rounded-sm p-2 overflow-x-auto max-h-64 overflow-y-auto whitespace-pre-wrap wrap-break-word">
                             {JSON.stringify(theme, null, 2)}
                         </pre>
                     </div>

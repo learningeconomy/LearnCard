@@ -5,6 +5,7 @@ import { ProfilePicture, useModal } from 'learn-card-base';
 import useLogout from '../../../../hooks/useLogout';
 import { m } from '../../../../paraglide/messages.js';
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- existing empty props type; replacing it changes the accepted props type
 export const ForgotPinConfirmation: React.FC<{}> = () => {
     const { closeAllModals } = useModal();
     const { handleLogout } = useLogout();

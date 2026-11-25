@@ -38,7 +38,9 @@ export const ShareCredentialMetadata = ({
                 <span className="block mt-0.5 text-xs text-grayscale-500">{categoryLabel}</span>
             )}
             {details && (
-                <span className="block mt-1 text-xs text-grayscale-600 break-words">{details}</span>
+                <span className="block mt-1 text-xs text-grayscale-600 wrap-break-word">
+                    {details}
+                </span>
             )}
         </>
     );

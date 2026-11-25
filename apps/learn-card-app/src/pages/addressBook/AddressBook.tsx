@@ -77,6 +77,7 @@ const AddressBook: React.FC = () => {
 
     useEffect(() => {
         updateDebouncedSearch();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         return () => (updateDebouncedSearch as any).cancel?.();
     }, [search, updateDebouncedSearch]);
 
@@ -105,6 +106,7 @@ const AddressBook: React.FC = () => {
                         onSuccess: async () => {
                             await refetch();
                         },
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                         onError: (error: any) => {
                             refetch();
                             presentToast(
@@ -117,6 +119,7 @@ const AddressBook: React.FC = () => {
                         },
                     }
                 );
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
             } catch (err: any) {
                 log.info('blockProfile::error', err);
                 presentToast(err?.message || 'An error occurred, unable to block user', {
@@ -173,7 +176,7 @@ const AddressBook: React.FC = () => {
     return (
         <IonPage className="bg-grayscale-100">
             <MainHeader
-                customClassName="bg-gradient-to-b from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-grayscale-100 md:border-none md:bg-none md:backdrop-blur-none"
+                customClassName="bg-linear-to-b/srgb from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-grayscale-100 md:border-none md:bg-none md:backdrop-blur-none"
                 branding={BrandingEnum.learncard}
                 customHeaderClass="px-0"
             />

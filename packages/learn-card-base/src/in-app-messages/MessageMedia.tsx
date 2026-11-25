@@ -47,7 +47,7 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({ media }) => {
 
         return (
             <div
-                className="w-full overflow-hidden rounded-[20px] border border-white/60 shadow-sm"
+                className="w-full overflow-hidden rounded-[20px] border border-white/60 shadow-xs"
                 style={{ aspectRatio: getAspectRatio(media.aspect) }}
             >
                 {!canEmbedVideoIframe() ? (
@@ -74,7 +74,7 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({ media }) => {
 
     return (
         <div
-            className="w-full overflow-hidden rounded-[20px] border border-white/60 shadow-sm"
+            className="w-full overflow-hidden rounded-[20px] border border-white/60 shadow-xs"
             style={{ aspectRatio: getAspectRatio(media.aspect) }}
         >
             <img src={media.url} alt={media.alt ?? ''} className="w-full h-full object-cover" />

@@ -4,16 +4,18 @@ All URIs are relative to _/api_
 
 | Method                                                                                                                                           | HTTP request                                                         | Description                                                                  |
 | ------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| [**contracts_add_auto_boosts_to_contract**](ContractsApi.md#contracts_add_auto_boosts_to_contract)                                               | **POST** /consent-flow-contracts/autoboosts/add                      | Add autoboosts to a contract                                                 |
+| [**contracts_add_auto_boosts_to_contract**](ContractsApi.md#contracts_add_auto_boosts_to_contract)                                               | **POST** /consent-flow-contracts/autoboosts/add                      | Deprecated: add autoboosts to a contract                                     |
+| [**contracts_add_contract_recipient**](ContractsApi.md#contracts_add_contract_recipient)                                                         | **POST** /consent-flow-contract/recipient/add                        | Add a data recipient before first consent                                    |
 | [**contracts_cancel_contract_request**](ContractsApi.md#contracts_cancel_contract_request)                                                       | **POST** /consent-flow-contracts/cancel-request                      | Cancels/removes a contract request                                           |
 | [**contracts_consent_to_contract**](ContractsApi.md#contracts_consent_to_contract)                                                               | **POST** /consent-flow-contract/consent                              | Consent To Contract                                                          |
 | [**contracts_create_consent_flow_contract**](ContractsApi.md#contracts_create_consent_flow_contract)                                             | **POST** /consent-flow-contract                                      | Create Consent Flow Contract                                                 |
 | [**contracts_delete_consent_flow_contract**](ContractsApi.md#contracts_delete_consent_flow_contract)                                             | **DELETE** /consent-flow-contract                                    | Delete a Consent Flow Contract                                               |
 | [**contracts_delete_credential_from_all_contracts**](ContractsApi.md#contracts_delete_credential_from_all_contracts)                             | **POST** /consent-flow-contract/consent/prune-deleted-uris           | Delete credential references from all consent terms                          |
+| [**contracts_deny_contract_request**](ContractsApi.md#contracts_deny_contract_request)                                                           | **POST** /consent-flow-contracts/deny-request                        | Deny a pending contract request as its target                                |
 | [**contracts_forward_contract_request_to_profile**](ContractsApi.md#contracts_forward_contract_request_to_profile)                               | **POST** /consent-flow-contracts/forward-request-to-profile          | Forward a contract request                                                   |
 | [**contracts_get_all_contract_requests_for_profile**](ContractsApi.md#contracts_get_all_contract_requests_for_profile)                           | **GET** /consent-flow-contracts/all-requests-for-profile             | Get all contract requests for a target profile                               |
 | [**contracts_get_all_credentials_for_terms**](ContractsApi.md#contracts_get_all_credentials_for_terms)                                           | **POST** /consent-flow-contracts/credentials                         | Get all credentials written to any terms                                     |
-| [**contracts_get_consent_flow_contract**](ContractsApi.md#contracts_get_consent_flow_contract)                                                   | **GET** /consent-flow-contract                                       | Get Consent Flow Contracts                                                   |
+| [**contracts_get_consent_flow_contract**](ContractsApi.md#contracts_get_consent_flow_contract)                                                   | **GET** /consent-flow-contract                                       | Get Consent Flow Contract                                                    |
 | [**contracts_get_consent_flow_contracts**](ContractsApi.md#contracts_get_consent_flow_contracts)                                                 | **POST** /consent-flow-contracts                                     | Get Consent Flow Contracts                                                   |
 | [**contracts_get_consented_contracts**](ContractsApi.md#contracts_get_consented_contracts)                                                       | **POST** /consent-flow-contracts/consent                             | Gets Consented Contracts                                                     |
 | [**contracts_get_consented_data**](ContractsApi.md#contracts_get_consented_data)                                                                 | **POST** /consent-flow-contract/data                                 | Get the data that has been consented for all of your contracts               |
@@ -26,9 +28,12 @@ All URIs are relative to _/api_
 | [**contracts_get_terms_transaction_history**](ContractsApi.md#contracts_get_terms_transaction_history)                                           | **POST** /consent-flow-contract/consent/history                      | Gets Transaction History                                                     |
 | [**contracts_mark_contract_request_as_seen**](ContractsApi.md#contracts_mark_contract_request_as_seen)                                           | **POST** /consent-flow-contracts/mark-request-as-seen                | Marks a contract request as seen                                             |
 | [**contracts_remove_auto_boosts_from_contract**](ContractsApi.md#contracts_remove_auto_boosts_from_contract)                                     | **POST** /consent-flow-contracts/autoboosts/remove                   | Remove autoboosts from a contract                                            |
+| [**contracts_remove_contract_recipient**](ContractsApi.md#contracts_remove_contract_recipient)                                                   | **POST** /consent-flow-contract/recipient/remove                     | Remove a data recipient                                                      |
 | [**contracts_send_ai_insight_share_request**](ContractsApi.md#contracts_send_ai_insight_share_request)                                           | **POST** /consent-flow-contracts/ai-insights/share-request           | AI Insights, consent flow share-notifcation request                          |
 | [**contracts_send_ai_insights_contract_request**](ContractsApi.md#contracts_send_ai_insights_contract_request)                                   | **POST** /consent-flow-contracts/ai-insights/request                 | AI Insights, consent flow notifcation request                                |
+| [**contracts_send_contract_request**](ContractsApi.md#contracts_send_contract_request)                                                           | **POST** /consent-flow-contracts/request                             | Send an attributed contract request                                          |
 | [**contracts_sync_credentials_to_contract**](ContractsApi.md#contracts_sync_credentials_to_contract)                                             | **POST** /consent-flow-contract/sync                                 | Sync credentials to a contract                                               |
+| [**contracts_update_consent_flow_contract**](ContractsApi.md#contracts_update_consent_flow_contract)                                             | **POST** /consent-flow-contract/update                               | Update Consent Flow Contract                                                 |
 | [**contracts_update_consented_contract_terms**](ContractsApi.md#contracts_update_consented_contract_terms)                                       | **POST** /consent-flow-contract/consent/update                       | Updates Contract Terms                                                       |
 | [**contracts_verify_consent**](ContractsApi.md#contracts_verify_consent)                                                                         | **GET** /consent-flow-contract/verify                                | Verifies that a profile has consented to a contract                          |
 | [**contracts_withdraw_consent**](ContractsApi.md#contracts_withdraw_consent)                                                                     | **DELETE** /consent-flow-contract/consent/withdraw                   | Deletes Contract Terms                                                       |
@@ -39,9 +44,9 @@ All URIs are relative to _/api_
 
 > bool contracts_add_auto_boosts_to_contract(contracts_add_auto_boosts_to_contract_request)
 
-Add autoboosts to a contract
+Deprecated: add autoboosts to a contract
 
-Adds one or more autoboost configurations to an existing consent flow contract. The caller must be the contract owner or a designated writer. The signing authority for each autoboost must be registered to the caller.
+Deprecated compatibility route. Only the contract owner can add autoboosts through a versioned update; additions require reapproval.
 
 ### Example
 
@@ -76,7 +81,7 @@ with openapi_client.ApiClient(configuration) as api_client:
     contracts_add_auto_boosts_to_contract_request = openapi_client.ContractsAddAutoBoostsToContractRequest() # ContractsAddAutoBoostsToContractRequest |
 
     try:
-        # Add autoboosts to a contract
+        # Deprecated: add autoboosts to a contract
         api_response = api_instance.contracts_add_auto_boosts_to_contract(contracts_add_auto_boosts_to_contract_request)
         print("The response of ContractsApi->contracts_add_auto_boosts_to_contract:\n")
         pprint(api_response)
@@ -115,13 +120,11 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **contracts_cancel_contract_request**
+# **contracts_add_contract_recipient**
 
-> bool contracts_cancel_contract_request(contracts_cancel_contract_request_request)
+> bool contracts_add_contract_recipient(contracts_add_contract_recipient_request)
 
-Cancels/removes a contract request
-
-Removes a REQUESTED_FOR relationship, cancelling the request sent to the specified target profile. Only contract writers are authorized to perform this action.
+Add a data recipient before first consent
 
 ### Example
 
@@ -129,7 +132,7 @@ Removes a REQUESTED_FOR relationship, cancelling the request sent to the specifi
 
 ```python
 import openapi_client
-from openapi_client.models.contracts_cancel_contract_request_request import ContractsCancelContractRequestRequest
+from openapi_client.models.contracts_add_contract_recipient_request import ContractsAddContractRecipientRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -153,11 +156,91 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ContractsApi(api_client)
-    contracts_cancel_contract_request_request = openapi_client.ContractsCancelContractRequestRequest() # ContractsCancelContractRequestRequest |
+    contracts_add_contract_recipient_request = openapi_client.ContractsAddContractRecipientRequest() # ContractsAddContractRecipientRequest |
+
+    try:
+        # Add a data recipient before first consent
+        api_response = api_instance.contracts_add_contract_recipient(contracts_add_contract_recipient_request)
+        print("The response of ContractsApi->contracts_add_contract_recipient:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ContractsApi->contracts_add_contract_recipient: %s\n" % e)
+```
+
+### Parameters
+
+| Name                                         | Type                                                                                | Description | Notes |
+| -------------------------------------------- | ----------------------------------------------------------------------------------- | ----------- | ----- |
+| **contracts_add_contract_recipient_request** | [**ContractsAddContractRecipientRequest**](ContractsAddContractRecipientRequest.md) |             |
+
+### Return type
+
+**bool**
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **contracts_cancel_contract_request**
+
+> bool contracts_cancel_contract_request(contracts_mark_contract_request_as_seen_request)
+
+Cancels/removes a contract request
+
+Cancels a pending generic request while retaining its history. Owner/writers, the requesting recipient, or the target may cancel. Legacy requests retain deletion behavior.
+
+### Example
+
+- Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.contracts_mark_contract_request_as_seen_request import ContractsMarkContractRequestAsSeenRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.ContractsApi(api_client)
+    contracts_mark_contract_request_as_seen_request = openapi_client.ContractsMarkContractRequestAsSeenRequest() # ContractsMarkContractRequestAsSeenRequest |
 
     try:
         # Cancels/removes a contract request
-        api_response = api_instance.contracts_cancel_contract_request(contracts_cancel_contract_request_request)
+        api_response = api_instance.contracts_cancel_contract_request(contracts_mark_contract_request_as_seen_request)
         print("The response of ContractsApi->contracts_cancel_contract_request:\n")
         pprint(api_response)
     except Exception as e:
@@ -166,9 +249,9 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-| Name                                          | Type                                                                                  | Description | Notes |
-| --------------------------------------------- | ------------------------------------------------------------------------------------- | ----------- | ----- |
-| **contracts_cancel_contract_request_request** | [**ContractsCancelContractRequestRequest**](ContractsCancelContractRequestRequest.md) |             |
+| Name                                                | Type                                                                                          | Description | Notes |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **contracts_mark_contract_request_as_seen_request** | [**ContractsMarkContractRequestAsSeenRequest**](ContractsMarkContractRequestAsSeenRequest.md) |             |
 
 ### Return type
 
@@ -517,6 +600,84 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **contracts_deny_contract_request**
+
+> bool contracts_deny_contract_request(contracts_deny_contract_request_request)
+
+Deny a pending contract request as its target
+
+### Example
+
+- Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.contracts_deny_contract_request_request import ContractsDenyContractRequestRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.ContractsApi(api_client)
+    contracts_deny_contract_request_request = openapi_client.ContractsDenyContractRequestRequest() # ContractsDenyContractRequestRequest |
+
+    try:
+        # Deny a pending contract request as its target
+        api_response = api_instance.contracts_deny_contract_request(contracts_deny_contract_request_request)
+        print("The response of ContractsApi->contracts_deny_contract_request:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ContractsApi->contracts_deny_contract_request: %s\n" % e)
+```
+
+### Parameters
+
+| Name                                        | Type                                                                              | Description | Notes |
+| ------------------------------------------- | --------------------------------------------------------------------------------- | ----------- | ----- |
+| **contracts_deny_contract_request_request** | [**ContractsDenyContractRequestRequest**](ContractsDenyContractRequestRequest.md) |             |
+
+### Return type
+
+**bool**
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **contracts_forward_contract_request_to_profile**
 
 > bool contracts_forward_contract_request_to_profile(contracts_forward_contract_request_to_profile_request)
@@ -763,7 +924,7 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 > ContractsGetConsentFlowContract200Response contracts_get_consent_flow_contract(uri)
 
-Get Consent Flow Contracts
+Get Consent Flow Contract
 
 Gets Consent Flow Contract Details
 
@@ -800,7 +961,7 @@ with openapi_client.ApiClient(configuration) as api_client:
     uri = 'uri_example' # str |
 
     try:
-        # Get Consent Flow Contracts
+        # Get Consent Flow Contract
         api_response = api_instance.contracts_get_consent_flow_contract(uri)
         print("The response of ContractsApi->contracts_get_consent_flow_contract:\n")
         pprint(api_response)
@@ -1660,7 +1821,7 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 Marks a contract request as seen
 
-Updates the read status of a contract request to "seen" for the specified target profile. Only contract writers are authorized to perform this action.
+Updates the read status of a contract request to "seen" for the specified target profile. Targets can mark their existing requests seen. Legacy writer behavior is retained for legacy requests.
 
 ### Example
 
@@ -1740,7 +1901,7 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 Remove autoboosts from a contract
 
-Removes one or more autoboosts from an existing consent flow contract, identified by their boost URIs. The caller must be the contract owner or a designated writer.
+Removes one or more autoboosts from an existing consent flow contract, identified by their boost URIs. Only the contract owner may change this configuration.
 
 ### Example
 
@@ -1788,6 +1949,84 @@ with openapi_client.ApiClient(configuration) as api_client:
 | Name                                                   | Type                                                                                                | Description | Notes |
 | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------- | ----------- | ----- |
 | **contracts_remove_auto_boosts_from_contract_request** | [**ContractsRemoveAutoBoostsFromContractRequest**](ContractsRemoveAutoBoostsFromContractRequest.md) |             |
+
+### Return type
+
+**bool**
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **contracts_remove_contract_recipient**
+
+> bool contracts_remove_contract_recipient(contracts_add_contract_recipient_request)
+
+Remove a data recipient
+
+### Example
+
+- Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.contracts_add_contract_recipient_request import ContractsAddContractRecipientRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.ContractsApi(api_client)
+    contracts_add_contract_recipient_request = openapi_client.ContractsAddContractRecipientRequest() # ContractsAddContractRecipientRequest |
+
+    try:
+        # Remove a data recipient
+        api_response = api_instance.contracts_remove_contract_recipient(contracts_add_contract_recipient_request)
+        print("The response of ContractsApi->contracts_remove_contract_recipient:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ContractsApi->contracts_remove_contract_recipient: %s\n" % e)
+```
+
+### Parameters
+
+| Name                                         | Type                                                                                | Description | Notes |
+| -------------------------------------------- | ----------------------------------------------------------------------------------- | ----------- | ----- |
+| **contracts_add_contract_recipient_request** | [**ContractsAddContractRecipientRequest**](ContractsAddContractRecipientRequest.md) |             |
 
 ### Return type
 
@@ -1974,6 +2213,84 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **contracts_send_contract_request**
+
+> bool contracts_send_contract_request(contracts_send_contract_request_request)
+
+Send an attributed contract request
+
+### Example
+
+- Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.contracts_send_contract_request_request import ContractsSendContractRequestRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.ContractsApi(api_client)
+    contracts_send_contract_request_request = openapi_client.ContractsSendContractRequestRequest() # ContractsSendContractRequestRequest |
+
+    try:
+        # Send an attributed contract request
+        api_response = api_instance.contracts_send_contract_request(contracts_send_contract_request_request)
+        print("The response of ContractsApi->contracts_send_contract_request:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ContractsApi->contracts_send_contract_request: %s\n" % e)
+```
+
+### Parameters
+
+| Name                                        | Type                                                                              | Description | Notes |
+| ------------------------------------------- | --------------------------------------------------------------------------------- | ----------- | ----- |
+| **contracts_send_contract_request_request** | [**ContractsSendContractRequestRequest**](ContractsSendContractRequestRequest.md) |             |
+
+### Return type
+
+**bool**
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **contracts_sync_credentials_to_contract**
 
 > bool contracts_sync_credentials_to_contract(contracts_sync_credentials_to_contract_request)
@@ -2032,6 +2349,87 @@ with openapi_client.ApiClient(configuration) as api_client:
 ### Return type
 
 **bool**
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **contracts_update_consent_flow_contract**
+
+> ContractsUpdateConsentFlowContract200Response contracts_update_consent_flow_contract(contracts_update_consent_flow_contract_request)
+
+Update Consent Flow Contract
+
+Creates a versioned update to an owned consent flow contract
+
+### Example
+
+- Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.contracts_update_consent_flow_contract200_response import ContractsUpdateConsentFlowContract200Response
+from openapi_client.models.contracts_update_consent_flow_contract_request import ContractsUpdateConsentFlowContractRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.ContractsApi(api_client)
+    contracts_update_consent_flow_contract_request = openapi_client.ContractsUpdateConsentFlowContractRequest() # ContractsUpdateConsentFlowContractRequest |
+
+    try:
+        # Update Consent Flow Contract
+        api_response = api_instance.contracts_update_consent_flow_contract(contracts_update_consent_flow_contract_request)
+        print("The response of ContractsApi->contracts_update_consent_flow_contract:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ContractsApi->contracts_update_consent_flow_contract: %s\n" % e)
+```
+
+### Parameters
+
+| Name                                               | Type                                                                                          | Description | Notes |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **contracts_update_consent_flow_contract_request** | [**ContractsUpdateConsentFlowContractRequest**](ContractsUpdateConsentFlowContractRequest.md) |             |
+
+### Return type
+
+[**ContractsUpdateConsentFlowContract200Response**](ContractsUpdateConsentFlowContract200Response.md)
 
 ### Authorization
 

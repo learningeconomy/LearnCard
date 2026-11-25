@@ -4,9 +4,6 @@ import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers
 
 export enum AiSessionsTabsEnum {
     learnCard = 'learnCard',
-    chatGPT = 'chatGPT',
-    claude = 'claude',
-    gemini = 'gemini',
     all = 'all',
 }
 
@@ -26,21 +23,6 @@ export const aiSessiontTabs: AiSessionTab[] = [
         id: 2,
         title: 'LearnCard',
         type: AiSessionsTabsEnum.learnCard,
-    },
-    {
-        id: 3,
-        title: 'ChatGPT',
-        type: AiSessionsTabsEnum.chatGPT,
-    },
-    {
-        id: 4,
-        title: 'Claude',
-        type: AiSessionsTabsEnum.claude,
-    },
-    {
-        id: 5,
-        title: 'Gemini',
-        type: AiSessionsTabsEnum.gemini,
     },
 ];
 

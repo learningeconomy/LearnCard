@@ -68,7 +68,7 @@ const LearnCardID: React.FC<{
             </div>
 
             <div
-                className={`rounded-full overflow-hidden h-[54px] w-[54px] absolute end-[10px] bottom-[10px] flex items-center justify-center`}
+                className={`rounded-full overflow-hidden h-[54px] w-[54px] absolute inset-e-[10px] bottom-[10px] flex items-center justify-center`}
                 style={{ backgroundColor: learnCardID?.accentColor }}
             >
                 <img

@@ -82,17 +82,13 @@ const AiTopicCard: React.FC<AiTopicCardProps> = ({ record, isNew, index }) => {
             disabled={!topicBoostUri}
             aria-label={`View AI topic: ${title}`}
             className={`
-                group relative w-full text-left bg-white rounded-xl shadow-sm overflow-hidden
+                group relative w-full text-left bg-white rounded-xl shadow-xs overflow-hidden
                 border border-emerald-100/70
                 hover:border-emerald-300 hover:shadow-md
                 transition-all duration-300 ease-out
-                focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-1
-                disabled:opacity-70 disabled:cursor-default disabled:hover:shadow-sm disabled:hover:border-emerald-100/70
-                ${
-                    isAnimating
-                        ? 'animate-slide-in-right ring-2 ring-emerald-400 ring-opacity-50'
-                        : ''
-                }
+                focus:outline-hidden focus:ring-2 focus:ring-emerald-400 focus:ring-offset-1
+                disabled:opacity-70 disabled:cursor-default disabled:hover:shadow-xs disabled:hover:border-emerald-100/70
+                ${isAnimating ? 'animate-slide-in-right ring-2 ring-emerald-400/50 ' : ''}
             `}
             style={{
                 animationDelay: isNew ? '0ms' : `${index * 50}ms`,
@@ -107,12 +103,12 @@ const AiTopicCard: React.FC<AiTopicCardProps> = ({ record, isNew, index }) => {
             )}
 
             {/* Gradient accent strip */}
-            <div className="h-1 w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500" />
+            <div className="h-1 w-full bg-linear-to-r/srgb from-emerald-500 via-teal-500 to-cyan-500" />
 
             <div className="p-4">
                 <div className="flex items-start gap-3">
                     {/* AI Topic icon badge */}
-                    <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-sm">
+                    <div className="shrink-0 w-11 h-11 rounded-xl bg-linear-to-br/srgb from-emerald-500 to-teal-600 flex items-center justify-center shadow-xs">
                         <Compass className="w-5 h-5 text-white" />
                     </div>
 

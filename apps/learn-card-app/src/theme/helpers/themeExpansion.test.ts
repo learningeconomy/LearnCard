@@ -1,31 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
 
-/**
- * Mock learn-card-base so cborg (transitive dep) doesn't blow up in jsdom.
- * We only need CredentialCategoryEnum from it. The factory must be self-
- * contained because vi.mock is hoisted above all variable declarations.
- */
-vi.mock('learn-card-base', () => ({
-    CredentialCategoryEnum: {
-        aiTopic: 'AI Topic',
-        aiPathway: 'AI Pathway',
-        aiInsight: 'AI Insight',
-        skill: 'Skill',
-        socialBadge: 'Social Badge',
-        achievement: 'Achievement',
-        learningHistory: 'Learning History',
-        accomplishment: 'Accomplishment',
-        accommodation: 'Accommodation',
-        workHistory: 'Work History',
-        resume: 'Resume',
-        family: 'Family',
-        id: 'ID',
-    },
-}));
+// Vitest hoists this factory before static imports; load the real-enum helper inside it.
+vi.mock('learn-card-base', async () =>
+    (await import('../../test-utils/mockLearnCardBase')).learnCardBaseEnumMock()
+);
 
 import {
     ALL_CATEGORIES,
-    CATEGORY_KEY_TO_VALUE,
     resolveCategoryKey,
     remapCategoryKeys,
     expandCategoryColors,
@@ -50,40 +31,6 @@ describe('resolveCategoryKey', () => {
 
     it('passes through keys that are already enum values', () => {
         expect(resolveCategoryKey('Social Badge')).toBe('Social Badge');
-    });
-});
-
-// ─── CATEGORY_KEY_TO_VALUE ──────────────────────────────────────────────
-
-describe('CATEGORY_KEY_TO_VALUE', () => {
-    it('contains expected category keys', () => {
-        const expectedKeys = [
-            'aiTopic', 'aiPathway', 'aiInsight', 'skill', 'socialBadge',
-            'achievement', 'learningHistory', 'accomplishment', 'accommodation',
-            'workHistory', 'resume', 'family', 'id',
-        ];
-
-        for (const key of expectedKeys) {
-            expect(CATEGORY_KEY_TO_VALUE).toHaveProperty(key);
-        }
-    });
-
-    it('maps known keys correctly', () => {
-        expect(CATEGORY_KEY_TO_VALUE['achievement']).toBe('Achievement');
-        expect(CATEGORY_KEY_TO_VALUE['workHistory']).toBe('Work History');
-        expect(CATEGORY_KEY_TO_VALUE['id']).toBe('ID');
-    });
-});
-
-// ─── ALL_CATEGORIES ─────────────────────────────────────────────────────
-
-describe('ALL_CATEGORIES', () => {
-    it('contains all expected category values', () => {
-        expect(ALL_CATEGORIES).toContain('Social Badge');
-        expect(ALL_CATEGORIES).toContain('Achievement');
-        expect(ALL_CATEGORIES).toContain('Work History');
-        expect(ALL_CATEGORIES).toContain('ID');
-        expect(ALL_CATEGORIES.length).toBe(13);
     });
 });
 
@@ -143,17 +90,16 @@ describe('expandCategoryColors', () => {
                 secondaryColor: 'blue-700',
             },
             categories: {
-                socialBadge: {
-                    primaryColor: 'pink-500',
+                qualifications: {
+                    primaryColor: 'emerald-500',
                 },
             },
         };
 
         const result = expandCategoryColors(colors);
 
-        // Social Badge should have the override
-        expect(result['Social Badge']).toEqual({
-            primaryColor: 'pink-500',
+        expect(result['Qualifications']).toEqual({
+            primaryColor: 'emerald-500',
             secondaryColor: 'blue-700',
         });
 

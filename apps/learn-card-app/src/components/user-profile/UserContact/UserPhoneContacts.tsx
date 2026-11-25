@@ -110,7 +110,7 @@ export const UserPhoneContacts: React.FC = () => {
                     <input
                         id="contact-phone"
                         autoCapitalize="on"
-                        className="w-full bg-grayscale-100 text-grayscale-900 placeholder:text-grayscale-400 rounded-[15px] px-4 py-3 font-medium tracking-widest text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-transparent"
+                        className="w-full bg-grayscale-100 text-grayscale-900 placeholder:text-grayscale-400 rounded-[15px] px-4 py-3 font-medium tracking-widest text-base focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-transparent"
                         onChange={event => setPhone(event.target.value)}
                         value={phone ?? ''}
                         placeholder={m['profile.phone.placeholder']()}
@@ -138,7 +138,7 @@ export const UserPhoneContacts: React.FC = () => {
                 {phones.map(phoneItem => (
                     <div
                         key={phoneItem.id}
-                        className="w-full flex flex-col items-center justify-start border-b-solid border-b-[1px] border-grayscale-200 pb-2"
+                        className="w-full flex flex-col items-center justify-start border-b-solid border-b border-grayscale-200 pb-2"
                     >
                         <div className="w-full flex items-center justify-between">
                             <p className="text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base flex-1 w-full">

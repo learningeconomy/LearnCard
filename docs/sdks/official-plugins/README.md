@@ -42,6 +42,12 @@ Not bundled with `@learncard/init` — `bun add` the package and `addPlugin` it 
 | [Ceramic](ceramic.md)                   | `@learncard/ceramic-plugin`          | Stores/reads credentials on Ceramic, with optional JWE encryption.                                                                                                               |
 | IDX                                     | `@learncard/idx-plugin`              | Manages a `CredentialRecord` list on IDX/Ceramic; implements the Index Control Plane.                                                                                            |
 
+## OpenID4VC submission errors
+
+The `@learncard/openid4vc-plugin` throws `VpSubmitError` from `submitPresentation` and `presentCredentials`. Transport failures expose a stable `code` and optional numeric HTTP `status`. Recognized response-encryption failures also expose `jarmCode`, an allowlisted value such as `unsupported_alg` or `no_encryption_key`. Unexpected response preparation failures use `internal_error`.
+
+Errors deliberately omit verifier response bodies, URLs, status text and nested causes. Consumers that inspected `body` or `cause` must use the safe codes instead. Deprecated constructor arguments remain accepted but their private values are discarded. Successful `SubmitPresentationResult.body` is unchanged and should be treated as private verifier data.
+
 ## Write your own
 
 See [Build a Plugin](https://github.com/learningeconomy/LearnCard/blob/main/packages/learn-card-core/PLUGINS.md) for a step-by-step guide to writing your own plugin.

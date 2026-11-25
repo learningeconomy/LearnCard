@@ -9,10 +9,13 @@ import {
     connect,
     connectAsManaged,
     loadProject,
+    requireIdentity,
     type NetworkCard,
     type ProjectOptions,
 } from './project';
 import { out } from './out';
+import { UsageError } from './errors';
+import type { RunCommand } from './doctor';
 
 export interface InboxRecipient {
     type?: string;
@@ -46,7 +49,7 @@ export const parseStatus = (value: string | undefined): InboxStatus | undefined 
     if (value === undefined) return undefined;
     const upper = value.toUpperCase();
     if (!isInboxStatus(upper))
-        throw new Error(
+        throw new UsageError(
             `Unknown --status "${value}". Use PENDING, ISSUED, or EXPIRED (DELIVERED and CLAIMED are deprecated aliases).`
         );
     return upper;
@@ -56,7 +59,7 @@ export const parseLimit = (value: string | undefined): number => {
     if (value === undefined) return 50;
     const limit = Number(value);
     if (!Number.isInteger(limit) || limit < 1)
-        throw new Error(`Invalid --limit "${value}". Use a positive whole number.`);
+        throw new UsageError(`Invalid --limit "${value}". Use a positive whole number.`);
     return limit;
 };
 
@@ -73,7 +76,9 @@ export const parseSince = (value: string, now: Date = new Date()): Date => {
     }
     const parsed = new Date(value);
     if (Number.isNaN(parsed.getTime()))
-        throw new Error(`Invalid --since value "${value}". Use 7d, 24h, 30m, or an ISO timestamp.`);
+        throw new UsageError(
+            `Invalid --since value "${value}". Use 7d, 24h, 30m, or an ISO timestamp.`
+        );
     return parsed;
 };
 
@@ -155,14 +160,16 @@ export type InboxListOptions = ProjectOptions & {
 };
 
 export const runInboxList = async (options: InboxListOptions): Promise<void> => {
-    const project = await loadProject(process.cwd());
-    const learnCard = options.as
-        ? await connectAsManaged(project, options, options.as)
-        : await connect(project, options);
-
+    // Validate flags before touching .env or the network.
     const currentStatus = parseStatus(options.status);
     const limit = parseLimit(options.limit);
     const since = options.since ? parseSince(options.since) : undefined;
+
+    const project = await loadProject(process.cwd());
+    requireIdentity(project);
+    const learnCard = options.as
+        ? await connectAsManaged(project, options, options.as)
+        : await connect(project, { ...options, readOnly: true });
 
     const { records: fetched, hasMore } = await fetchSentInboxCredentials(learnCard.invoke, {
         limit,
@@ -184,15 +191,7 @@ export const runInboxList = async (options: InboxListOptions): Promise<void> => 
     out.set({ records: filtered.map(toJsonRecord), hasMore });
 };
 
-export const registerInboxCommand = (
-    program: Command,
-    run: (
-        command: string,
-        options: { json?: boolean },
-        action: (didkit: Promise<Buffer>) => Promise<void>,
-        wrap?: boolean
-    ) => Promise<void>
-): void => {
+export const registerInboxCommand = (program: Command, run: RunCommand): void => {
     const inbox = program
         .command('inbox')
         .description('Credentials sent through the inbox (email/phone claim flow).');
@@ -211,7 +210,7 @@ export const registerInboxCommand = (
         )
 
         .option('--limit <n>', 'how many to list (default: 50)')
-        .option('--network <url>', 'network tRPC URL or staging (default: production)')
+        .option('--network <url>', 'production|staging|local or a tRPC URL (default: production)')
         .option('--json', 'print a single JSON result on stdout')
         .action(options =>
             run('inbox list', options, async didkit => {

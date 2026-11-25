@@ -61,7 +61,7 @@ export const AiPassportAppProfileTopics: React.FC<{ app: LaunchPadAppListItem }>
 
                 {!isLoading && showAllButton && (
                     <>
-                        <div className="mb-2 border-solid border-b-[2px] pb-4 border-grayscale-100" />
+                        <div className="mb-2 border-solid border-b-2 pb-4 border-grayscale-100" />
 
                         <div className="w-full flex items-center justify-center mt-4">
                             <button

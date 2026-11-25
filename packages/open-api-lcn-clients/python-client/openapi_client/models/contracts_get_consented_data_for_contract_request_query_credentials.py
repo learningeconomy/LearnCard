@@ -27,7 +27,7 @@ class ContractsGetConsentedDataForContractRequestQueryCredentials(BaseModel):
     """
     ContractsGetConsentedDataForContractRequestQueryCredentials
     """ # noqa: E501
-    categories: Optional[Dict[str, Optional[StrictBool]]] = None
+    categories: Optional[Dict[str, StrictBool]] = None
     __properties: ClassVar[List[str]] = ["categories"]
 
     model_config = ConfigDict(
@@ -57,9 +57,8 @@ class ContractsGetConsentedDataForContractRequestQueryCredentials(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])

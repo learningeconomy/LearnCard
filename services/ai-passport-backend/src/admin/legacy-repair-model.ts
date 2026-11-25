@@ -1,0 +1,32 @@
+export const REPAIR_LABELS = {
+    eligible: 'Eligible for original verification',
+    repaired: 'Verification metadata repaired',
+    already_verified: 'Already has verification metadata',
+    missing_owner: 'Missing or invalid owner',
+    missing_uri: 'Missing original URI',
+    generated: 'Generated record requires separate provenance',
+    generated_original_unavailable: 'Retained generated original unavailable or expired',
+    generated_original_integrity: 'Retained generated original failed integrity validation',
+    generated_issuer_mismatch: 'Generated original issuer is not the trusted application',
+    generated_type_mismatch: 'Retained original is not an AI Insight credential',
+    generated_consent_evidence_missing:
+        'No matching retained consent evidence or direct current grant',
+    generated_consent_evidence_changed:
+        'Retained generated consent evidence does not match the current source or grant',
+    consent_missing: 'No current consent grant',
+    consent_revoked: 'Consent revoked',
+    consent_expired: 'Consent expired',
+    guardian_required: 'Current guardian authorization required',
+    consent_unavailable: 'Current consent could not be established',
+    unshared: 'Original is not currently shared',
+    original_unavailable: 'Original could not be retrieved',
+    verification_unavailable: 'Verification could not be completed',
+    credential_invalid: 'Signature or credential verification failed',
+    credential_revoked: 'Credential revoked or suspended',
+    credential_expired: 'Credential expired or not yet valid',
+    subject_mismatch: 'Credential subject does not match owner',
+    source_changed: 'Source or consent changed; preview again',
+    owner_erased: 'Owner erasure confirmed',
+    unavailable: 'Repair unavailable; no source update confirmed',
+} as const;
+export type RepairOutcome = keyof typeof REPAIR_LABELS;

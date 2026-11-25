@@ -37,6 +37,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
     getOpenID4VCPlugin,
     requestW3cVc,
+    VpSubmitError,
+    type OpenID4VCPluginMethods,
 } from '@learncard/openid4vc-plugin';
 
 import {
@@ -45,24 +47,21 @@ import {
     resolveOfferToByValue,
     tamperJwtSignature,
 } from '../setup/walt-id-client';
-import {
-    startSphereonVerifier,
-    type SphereonVerifier,
-} from '../setup/sphereon-verifier';
+import { startSphereonVerifier, type SphereonVerifier } from '../setup/sphereon-verifier';
 import { buildMockLearnCard, type MockLearnCardHandle } from './helpers/mock-learncard';
 
 const ISSUER_BASE_URL = process.env.WALTID_ISSUER_BASE_URL ?? 'http://localhost:7002';
 
 const QUERY_ID = 'university_degree_query';
 
-const getPlugin = (mock: MockLearnCardHandle) => {
+const getPlugin = (mock: MockLearnCardHandle): OpenID4VCPluginMethods => {
     const plugin = getOpenID4VCPlugin(mock.learnCard, {});
-    const bound: Record<string, (...args: any[]) => any> = {};
+    const bound = {} as OpenID4VCPluginMethods;
     for (const [name, fn] of Object.entries(plugin.methods)) {
-        bound[name] = (...args: any[]) =>
-            (fn as (...a: any[]) => any)(mock.learnCard, ...args);
+        (bound as Record<string, unknown>)[name] = (...args: unknown[]) =>
+            (fn as (...a: unknown[]) => unknown)(mock.learnCard, ...args);
     }
-    return bound as any;
+    return bound;
 };
 
 /**
@@ -80,10 +79,7 @@ const getPlugin = (mock: MockLearnCardHandle) => {
  * `sphereon-strict-binding.spec.ts`; the duplication is
  * intentional \u2014 each file owns its replay shape.
  */
-const encodeDcqlFormBody = (args: {
-    vpToken: unknown;
-    state: string;
-}): string => {
+const encodeDcqlFormBody = (args: { vpToken: unknown; state: string }): string => {
     const params = new URLSearchParams();
     params.set(
         'vp_token',
@@ -93,7 +89,7 @@ const encodeDcqlFormBody = (args: {
     return params.toString();
 };
 
-const issueWaltidUniversityDegree = async (plugin: any): Promise<string> => {
+const issueWaltidUniversityDegree = async (plugin: OpenID4VCPluginMethods): Promise<string> => {
     const issuerKey = await createIssuerKey();
     const offerRaw = await mintWaltidOffer({
         issuerBaseUrl: ISSUER_BASE_URL,
@@ -101,7 +97,9 @@ const issueWaltidUniversityDegree = async (plugin: any): Promise<string> => {
     });
     const offer = await resolveOfferToByValue(offerRaw);
     const accepted = await plugin.acceptCredentialOffer(offer);
-    return accepted.credentials[0].credential as string;
+    const credential = accepted.credentials[0]?.credential;
+    if (typeof credential !== 'string') throw new Error('Expected an issued JWT credential');
+    return credential;
 };
 
 /**
@@ -150,15 +148,12 @@ describe('interop: Sphereon strict nonce + audience binding (DCQL route)', () =>
         // 1) Plugin presents to session A \u2014 genuine flow. The
         //    plugin auto-routes to its DCQL response builder
         //    because the resolved request carries `dcql_query`.
-        const presentA = await plugin.presentCredentials(
-            sessionA.authorizationRequestUri,
-            [
-                {
-                    credentialQueryId: QUERY_ID,
-                    candidate: { credential: vc, format: 'jwt_vc_json' as const },
-                },
-            ]
-        );
+        const presentA = await plugin.presentCredentials(sessionA.authorizationRequestUri, [
+            {
+                credentialQueryId: QUERY_ID,
+                candidate: { credential: vc, format: 'jwt_vc_json' as const },
+            },
+        ]);
 
         expect(presentA.submitted.status).toBe(200);
         expect(sphereon.getStatus(sessionA.state).verificationResult).toBe(true);
@@ -215,15 +210,12 @@ describe('interop: Sphereon strict nonce + audience binding (DCQL route)', () =>
         expect(sessionA.nonce).toBe(sessionB.nonce);
 
         // 1) Genuine flow into A.
-        const presentA = await plugin.presentCredentials(
-            sessionA.authorizationRequestUri,
-            [
-                {
-                    credentialQueryId: QUERY_ID,
-                    candidate: { credential: vc, format: 'jwt_vc_json' as const },
-                },
-            ]
-        );
+        const presentA = await plugin.presentCredentials(sessionA.authorizationRequestUri, [
+            {
+                credentialQueryId: QUERY_ID,
+                candidate: { credential: vc, format: 'jwt_vc_json' as const },
+            },
+        ]);
 
         expect(presentA.submitted.status).toBe(200);
         expect(sphereon.getStatus(sessionA.state).verificationResult).toBe(true);
@@ -288,18 +280,22 @@ describe('interop: Sphereon strict nonce + audience binding (DCQL route)', () =>
             ]);
         } catch (e) {
             submitFailed = true;
-            const err = e as { status?: number; body?: { error?: string } };
+            // Check the redacted SDK error here; the verifier's session
+            // status below still proves the specific signature failure.
+            expect(e).toBeInstanceOf(VpSubmitError);
+            const err = e as VpSubmitError;
+            expect(err.code).toBe('server_error');
             expect(err.status).toBe(400);
-            expect(err.body?.error ?? '').toMatch(/signature/i);
+            expect(err.message).toBe('Verifier returned HTTP 400');
+            expect(err.body).toBeUndefined();
+            expect(err.cause).toBeUndefined();
         }
 
         expect(submitFailed).toBe(true);
 
         const status = sphereon.getStatus(session.state);
         expect(status.verificationResult).toBe(false);
-        expect(
-            status.errors.some(e => /signature/i.test(e) || /invalid/i.test(e))
-        ).toBe(true);
+        expect(status.errors.some(e => /signature/i.test(e) || /invalid/i.test(e))).toBe(true);
     });
 
     /* ------ positive control: clean DCQL flow proves strict mode is real --- */

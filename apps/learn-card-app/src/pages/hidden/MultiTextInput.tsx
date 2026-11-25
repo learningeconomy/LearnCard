@@ -4,10 +4,11 @@ import { produce } from 'immer';
 import TrashBin from '../../components/svgs/TrashBin';
 import Plus from 'learn-card-base/svgs/Plus';
 import { IonInput, IonCheckbox } from '@ionic/react';
+import type { ConsentFlowContract } from '@learncard/types';
 
 type MultiTextInputProps = {
-    values: Record<string, { required?: boolean }>;
-    onChange: (value: Record<string, { required?: boolean }>) => void;
+    values: ConsentFlowContract['read']['personal'];
+    onChange: (value: ConsentFlowContract['read']['personal']) => void;
     label?: string;
     buttonText?: string;
     className?: string;
@@ -78,7 +79,7 @@ const MultiTextInput: React.FC<MultiTextInputProps> = ({
             {!isAdminDashboardStyle && (
                 <button
                     type="button"
-                    className="transition-colors h-full w-full rounded border border-solid py-2 border-emerald-600 hover:text-white hover:bg-emerald-600"
+                    className="transition-colors h-full w-full rounded-sm border border-solid py-2 border-emerald-600 hover:text-white hover:bg-emerald-600"
                     onClick={() =>
                         onChange(
                             produce(values, draft => {
@@ -93,7 +94,7 @@ const MultiTextInput: React.FC<MultiTextInputProps> = ({
             {isAdminDashboardStyle && (
                 <button
                     type="button"
-                    className="py-[5px] px-[10px] bg-white rounded-[20px] w-fit text-[16px] shadow-box-bottom disabled:opacity-60 flex gap-[5px] items-center border-solid border-[1px] border-grayscale-200 hover:bg-grayscale-100 transition-colors"
+                    className="py-[5px] px-[10px] bg-white rounded-[20px] w-fit text-[16px] shadow-box-bottom disabled:opacity-60 flex gap-[5px] items-center border-solid border border-grayscale-200 hover:bg-grayscale-100 transition-colors"
                     onClick={() =>
                         onChange(
                             produce(values, draft => {

@@ -59,7 +59,7 @@ const TemplatePicker: React.FC<TemplatePickerProps> = ({
     const current = matchTemplate(policy, termination, action ?? null);
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-v3-2">
             <p className="text-xs font-medium text-grayscale-700">Pick a shape</p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -77,7 +77,7 @@ const TemplatePicker: React.FC<TemplatePickerProps> = ({
                                 border
                                 ${
                                     isActive
-                                        ? 'border-emerald-500 bg-emerald-50 shadow-sm'
+                                        ? 'border-emerald-500 bg-emerald-50 shadow-xs'
                                         : 'border-grayscale-200 bg-white hover:border-grayscale-300 hover:bg-grayscale-10'
                                 }
                                 active:scale-[0.98]

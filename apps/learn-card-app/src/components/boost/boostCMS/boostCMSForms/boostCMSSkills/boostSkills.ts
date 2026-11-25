@@ -983,6 +983,7 @@ export enum BoostCMSSubSkillEnum {
     weightLifting = 'weightLifting',
     speedTraining = 'speedTraining',
     agility = 'agility',
+    // eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values -- existing duplicate enum value; changing it changes runtime enum values
     lexibility = 'flexibility',
     // injuryPrevention = 'injuryPrevention', // ! duplicate
 

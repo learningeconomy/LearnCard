@@ -1,7 +1,11 @@
 # learn-card-base
 
-This library was generated with [Nx](https://nx.dev).
+Internal, private workspace package (not published to npm). It holds the shared React components, hooks, stores, React Query helpers, and auth/config code used by the LearnCard apps in this monorepo (for example `apps/learn-card-app`).
 
-## Running unit tests
+If you're building on LearnCard from outside this repo, use [`@learncard/init`](../learn-card-init) and the `@learncard/*` plugins instead.
 
-Run `nx test learn-card-base` to execute the unit tests via [Jest](https://jestjs.io).
+## Development
+
+```bash
+bunx nx test learn-card-base
+```

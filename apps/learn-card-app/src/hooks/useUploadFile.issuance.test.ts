@@ -45,7 +45,13 @@ describe('certificate attachment issuance', () => {
 
         const signedCredential = await wallet.invoke.issueCredential(unsignedCredential);
 
-        expect(signedCredential.proof).toBeDefined();
+        expect(await wallet.invoke.verifyCredential(signedCredential)).toMatchObject({
+            checks: expect.arrayContaining(['proof']),
+            errors: [],
+        });
+        const tampered = structuredClone(signedCredential);
+        tampered.attachments[0].data = 'data:application/pdf;base64,dGFtcGVyZWQ=';
+        expect((await wallet.invoke.verifyCredential(tampered)).errors).not.toEqual([]);
     }, 30_000);
 
     it('issues a Boost credential that already uses the canonical attachment context', async () => {
@@ -93,19 +99,13 @@ describe('certificate attachment issuance', () => {
         );
         const unsignedCredential = UnsignedVCValidator.parse(credential);
 
-        expect(credential).toHaveProperty('attachments.0.@context.data', {
-            '@id': 'https://docs.learncard.com/definitions#boostAttachmentData',
-            '@type': 'https://www.w3.org/2001/XMLSchema#string',
+        const signedCredential = await wallet.invoke.issueCredential(unsignedCredential);
+        expect(await wallet.invoke.verifyCredential(signedCredential)).toMatchObject({
+            checks: expect.arrayContaining(['proof']),
+            errors: [],
         });
-        expect(
-            credential['@context'].some(
-                (context: unknown) =>
-                    typeof context === 'object' && context !== null && 'attachments' in context
-            )
-        ).toBe(false);
-
-        await expect(wallet.invoke.issueCredential(unsignedCredential)).resolves.toHaveProperty(
-            'proof'
-        );
+        const tampered = structuredClone(signedCredential);
+        tampered.attachments[0].data = 'data:application/pdf;base64,dGFtcGVyZWQ=';
+        expect((await wallet.invoke.verifyCredential(tampered)).errors).not.toEqual([]);
     }, 30_000);
 });

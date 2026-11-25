@@ -1,6 +1,13 @@
+import {
+    withSQLiteDatabase,
+    ensureSQLiteSchema,
+    ensureSQLiteSchemas,
+    forgetSQLiteSchema,
+    type SQLiteSchema,
+} from 'learn-card-base/SQL/connection';
 import React, { useEffect, useState } from 'react';
-import { SQLiteHook, useSQLite } from 'learn-card-base/react-sqlite-hook';
-import { SQLiteConnection, SQLiteDBConnection } from '@capacitor-community/sqlite';
+import { SQLiteHook, createSQLiteDriver, useSQLite } from 'learn-card-base/react-sqlite-hook';
+import { SQLiteDBConnection } from '@capacitor-community/sqlite';
 import { UserInfo } from '@web3auth/base';
 import { Capacitor } from '@capacitor/core';
 
@@ -16,141 +23,106 @@ export { clearUserData, PRESERVED_TABLES } from '../SQL/clearUserData';
 import { getLogger } from '../logging/logger';
 const log = getLogger('use-sqlite-storage');
 
-export const ensureUserTableExists = async (db: SQLiteDBConnection) => {
-    await db.open();
-
-    const usersTableExists = await db.isTable('users');
-
-    if (!usersTableExists.result) {
-        await db.execute(`
-                    CREATE TABLE users( 
-                        email TEXT, 
+const userTableSchema: SQLiteSchema = {
+    name: 'ensureUserTableExists',
+    statements: `
+                    CREATE TABLE IF NOT EXISTS users(
+                        email TEXT,
                         name TEXT,
-                        profileImage TEXT, 
-                        aggregateVerifier TEXT, 
-                        verifier TEXT, 
-                        verifierId TEXT, 
-                        typeOfLogin TEXT, 
-                        dappShare TEXT, 
-                        privateKey TEXT, 
+                        profileImage TEXT,
+                        aggregateVerifier TEXT,
+                        verifier TEXT,
+                        verifierId TEXT,
+                        typeOfLogin TEXT,
+                        dappShare TEXT,
+                        privateKey TEXT,
                         baseColor TEXT,
                         uid TEXT,
-                        phoneNumber TEXT 
+                        phoneNumber TEXT
                     );
-                `);
-    }
 
-    const tokensTableExists = await db.isTable('tokens');
-
-    if (!tokensTableExists.result) {
-        await db.execute(`
-                    CREATE TABLE tokens( 
-                        authProviderName TEXT, 
+                    CREATE TABLE IF NOT EXISTS tokens(
+                        authProviderName TEXT,
                         token TEXT
                     );
-                `);
-    }
-
-    await db.close();
+`,
 };
 
-export const ensureReactQueryTableExists = async (db: SQLiteDBConnection) => {
-    await db.open();
+export const ensureUserTableExists = (db: SQLiteDBConnection): Promise<void> =>
+    ensureSQLiteSchema(db, userTableSchema.name, userTableSchema.statements);
 
-    const tableExists = await db.isTable('reactQuery');
-
-    if (!tableExists.result) {
-        // create tables in db
-        await db.execute(`
-                    CREATE TABLE reactQuery( 
+const reactQueryTableSchema: SQLiteSchema = {
+    name: 'ensureReactQueryTableExists',
+    statements: `
+                    CREATE TABLE IF NOT EXISTS reactQuery(
                         id TEXT PRIMARY KEY,
                         cache TEXT
                     );
-                `);
-    }
-    await db.close();
+`,
 };
 
-export const ensureCredentialsTableExists = async (db: SQLiteDBConnection) => {
-    await db.open();
+export const ensureReactQueryTableExists = (db: SQLiteDBConnection): Promise<void> =>
+    ensureSQLiteSchema(db, reactQueryTableSchema.name, reactQueryTableSchema.statements);
 
-    const tableExists = await db.isTable('credentials');
-
-    if (!tableExists.result) {
-        // create tables in db
-        await db.execute(`
-                    CREATE TABLE credentials( 
+const credentialsTableSchema: SQLiteSchema = {
+    name: 'ensureCredentialsTableExists',
+    statements: `
+                    CREATE TABLE IF NOT EXISTS credentials(
                         id INTEGER PRIMARY KEY,
                         credential TEXT
                     );
-                `);
-    }
-    await db.close();
+`,
 };
 
-export const ensureIndexTableExists = async (db: SQLiteDBConnection) => {
-    await db.open();
+export const ensureCredentialsTableExists = (db: SQLiteDBConnection): Promise<void> =>
+    ensureSQLiteSchema(db, credentialsTableSchema.name, credentialsTableSchema.statements);
 
-    const tableExists = await db.isTable('indexRecords');
-
-    if (!tableExists.result) {
-        // create tables in db
-        await db.execute(`
-                    CREATE TABLE indexRecords( 
+const indexTableSchema: SQLiteSchema = {
+    name: 'ensureIndexTableExists',
+    statements: `
+                    CREATE TABLE IF NOT EXISTS indexRecords(
                         did TEXT PRIMARY KEY,
                         records TEXT
                     );
-                `);
-    }
-    await db.close();
+`,
 };
 
-export const ensureCredentialCacheTableExists = async (db: SQLiteDBConnection) => {
-    await db.open();
+export const ensureIndexTableExists = (db: SQLiteDBConnection): Promise<void> =>
+    ensureSQLiteSchema(db, indexTableSchema.name, indexTableSchema.statements);
 
-    const tableExists = await db.isTable('credentialsCache');
-
-    if (!tableExists.result) {
-        // create tables in db
-        await db.execute(`
-                    CREATE TABLE credentialsCache( 
+const credentialCacheTableSchema: SQLiteSchema = {
+    name: 'ensureCredentialCacheTableExists',
+    statements: `
+                    CREATE TABLE IF NOT EXISTS credentialsCache(
                         uri TEXT PRIMARY KEY,
                         credential TEXT
                     );
-                `);
-    }
-    await db.close();
+`,
 };
 
-export const ensureIndexCacheTableExists = async (db: SQLiteDBConnection) => {
-    await db.open();
+export const ensureCredentialCacheTableExists = (db: SQLiteDBConnection): Promise<void> =>
+    ensureSQLiteSchema(db, credentialCacheTableSchema.name, credentialCacheTableSchema.statements);
 
-    const tableExists = await db.isTable('indexCache');
-
-    if (!tableExists.result) {
-        // create tables in db
-        await db.execute(`
-                    CREATE TABLE indexCache( 
+const indexCacheTableSchema: SQLiteSchema = {
+    name: 'ensureIndexCacheTableExists',
+    statements: `
+                    CREATE TABLE IF NOT EXISTS indexCache(
                         did TEXT NOT NULL,
                         name TEXT NOT NULL,
                         indexQuery TEXT,
                         records TEXT,
                         PRIMARY KEY (did, name, indexQuery)
                     );
-                `);
-    }
-    await db.close();
+`,
 };
 
-export const ensureIndexPageCacheTableExists = async (db: SQLiteDBConnection) => {
-    await db.open();
+export const ensureIndexCacheTableExists = (db: SQLiteDBConnection): Promise<void> =>
+    ensureSQLiteSchema(db, indexCacheTableSchema.name, indexCacheTableSchema.statements);
 
-    const tableExists = await db.isTable('indexPageCache');
-
-    if (!tableExists.result) {
-        // create tables in db
-        await db.execute(`
-                    CREATE TABLE indexPageCache( 
+const indexPageCacheTableSchema: SQLiteSchema = {
+    name: 'ensureIndexPageCacheTableExists',
+    statements: `
+                    CREATE TABLE IF NOT EXISTS indexPageCache(
                         did TEXT NOT NULL,
                         name TEXT NOT NULL,
                         indexQuery TEXT,
@@ -158,128 +130,128 @@ export const ensureIndexPageCacheTableExists = async (db: SQLiteDBConnection) =>
                         result TEXT,
                         PRIMARY KEY (did, name, indexQuery, paginationOptions)
                     );
-                `);
-    }
-    await db.close();
+`,
 };
 
-export const ensureIndexCountCacheTableExists = async (db: SQLiteDBConnection) => {
-    await db.open();
+export const ensureIndexPageCacheTableExists = (db: SQLiteDBConnection): Promise<void> =>
+    ensureSQLiteSchema(db, indexPageCacheTableSchema.name, indexPageCacheTableSchema.statements);
 
-    const tableExists = await db.isTable('indexCountCache');
-
-    if (!tableExists.result) {
-        // create tables in db
-        await db.execute(`
-                    CREATE TABLE indexCountCache( 
+const indexCountCacheTableSchema: SQLiteSchema = {
+    name: 'ensureIndexCountCacheTableExists',
+    statements: `
+                    CREATE TABLE IF NOT EXISTS indexCountCache(
                         did TEXT NOT NULL,
                         name TEXT NOT NULL,
                         indexQuery TEXT,
                         count INTEGER,
                         PRIMARY KEY (did, name, indexQuery)
                     );
-                `);
-    }
-    await db.close();
+`,
 };
+
+export const ensureIndexCountCacheTableExists = (db: SQLiteDBConnection): Promise<void> =>
+    ensureSQLiteSchema(db, indexCountCacheTableSchema.name, indexCountCacheTableSchema.statements);
 
 export const ensureWriteAheadLogging = async (db: SQLiteDBConnection) => {
-    await db.open();
-
-    await db.execute('PRAGMA journal_mode = WAL;', false);
-
-    await db.close();
+    return await withSQLiteDatabase(db, async () => {
+        await db.execute('PRAGMA journal_mode = WAL;', false);
+    });
 };
 
+/** Every table the app expects at startup, created in one native `execute`. */
+const NATIVE_STARTUP_SCHEMAS: readonly SQLiteSchema[] = [
+    userTableSchema,
+    credentialsTableSchema,
+    indexTableSchema,
+    credentialCacheTableSchema,
+    indexCacheTableSchema,
+    indexPageCacheTableSchema,
+    indexCountCacheTableSchema,
+    reactQueryTableSchema,
+];
+
+/** How long native init keeps its connection open for the startup reads that follow. */
+export const NATIVE_STARTUP_CONNECTION_HOLD_MS = 2_000;
+
+type NativeDatabase = { db: SQLiteDBConnection; sqlite: SQLiteHook };
+let nativeInitialization: Promise<NativeDatabase> | undefined;
+const initializeNativeDatabase = async (sqlite: SQLiteHook): Promise<NativeDatabase> => {
+    const consistent = (await sqlite.checkConnectionsConsistency()).result;
+    const connected = (await sqlite.isConnection('learncardDB', false)).result;
+    const db =
+        consistent && connected
+            ? await sqlite.retrieveConnection('learncardDB', false)
+            : await sqlite.createConnection('learncardDB', false, 'no-encryption', 1, false);
+    await new Promise<void>((resolve, reject) => {
+        void withSQLiteDatabase(db, async () => {
+            try {
+                await ensureSQLiteSchemas(db, NATIVE_STARTUP_SCHEMAS);
+            } catch (error) {
+                reject(error);
+                return;
+            }
+            resolve();
+            // Keep this lease (and so the connection) open briefly: the cached-key read on the
+            // auth cold-start path follows within a few hundred ms and reuses it instead of
+            // paying another close + open. Released after the hold like any other lease.
+            await new Promise(release => setTimeout(release, NATIVE_STARTUP_CONNECTION_HOLD_MS));
+        }).catch(reject);
+    });
+    return { db, sqlite };
+};
+
+/**
+ * Starts native SQLite initialization, or joins the one in flight. Safe to call before React
+ * mounts: index.tsx calls it at entry so the connection + schema pass (a chain of native bridge
+ * round trips) overlaps loading the app shell instead of starting after its first commit. The
+ * cached-key read on the auth critical path waits for this (`waitForSQLiteReady`).
+ *
+ * Each attempt publishes the handle and releases boot waiters once. A failed attempt is cleared
+ * so the next caller (e.g. the `sqliteInit` mount) retries.
+ */
+export const startNativeSQLiteInit = (driver?: SQLiteHook): Promise<NativeDatabase> | undefined => {
+    if (Capacitor.getPlatform() === 'web') return undefined;
+    if (nativeInitialization) return nativeInitialization;
+    const sqlite = driver ?? createSQLiteDriver();
+    if (!sqlite.isAvailable) return undefined;
+    const attempt = initializeNativeDatabase(sqlite);
+    nativeInitialization = attempt;
+    void attempt
+        .then(({ db, sqlite: driverForDb }) => {
+            sqliteStore.set.db(db);
+            sqliteStore.set.sqlite(driverForDb);
+        })
+        .catch(error => {
+            if (nativeInitialization === attempt) nativeInitialization = undefined;
+            log.error('Failed to initialize SQLite database:', error);
+        })
+        .finally(() => {
+            // Failure still releases boot waiters; never store a false DB handle.
+            markSQLiteReady();
+        });
+    return attempt;
+};
+
+/** Native connection initialization is shared by remounts and account consumers. */
 export const sqliteInit = () => {
     const nativeSqlite = useSQLite();
-    const webSqlite = sqliteStore.use.sqlite();
-
     const [existingConnection, setExistConnection] = useState(false);
-
     useEffect(() => {
-        try {
-            if (nativeSqlite.isAvailable) {
-                const sqlite = Capacitor.getPlatform() === 'web' ? webSqlite : nativeSqlite;
-                initDB(sqlite)
-                    .then(db => {
-                        sqliteStore.set.db(db);
-                        sqliteStore.set.sqlite(sqlite);
-
-                        // Mark SQLite as ready so wallet initialization can proceed
-                        try {
-                            markSQLiteReady();
-                        } catch (e) {
-                            log.warn('markSQLiteReady (native) failed', e);
-                        }
-                    })
-                    .catch(error => {
-                        log.error('Failed to initialize SQLite database:', error);
-                        // Mark ready even on error so app doesn't hang
-                        try {
-                            markSQLiteReady();
-                        } catch (e) {
-                            log.warn('markSQLiteReady (native, on error) failed', e);
-                        }
-                    });
-            } else {
-                nativeSqlite.getPlatform().then(async (ret: { platform: string }) => {
-                    log.debug('\n* Not available for ' + ret.platform + ' platform *\n');
-                });
-            }
-        } catch (error) {
-            log.warn(error);
-            // Mark ready on exception to prevent app from hanging
-            try {
-                markSQLiteReady();
-            } catch (e) {
-                log.warn('markSQLiteReady (native, on exception) failed', e);
-            }
-        }
+        if (Capacitor.getPlatform() === 'web' || !nativeSqlite.isAvailable) return;
+        let stopped = false;
+        // Usually joins the attempt index.tsx started at entry; retries if that one failed.
+        void startNativeSQLiteInit(nativeSqlite)
+            ?.then(() => {
+                if (!stopped) setExistConnection(true);
+            })
+            .catch(() => undefined);
+        return () => {
+            stopped = true;
+        };
+        // The first caller owns the connection; later remounts reuse its promise/driver.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [nativeSqlite.isAvailable]);
-
-    const initDB = async (sqlite: SQLiteConnection | SQLiteHook | null): Promise<any> => {
-        try {
-            // await performSqliteMigrations(sqlite);
-
-            const isDBConnected = (await sqlite?.isConnection('learncardDB', false))?.result;
-
-            let db: SQLiteDBConnection;
-
-            const ret = await sqlite?.checkConnectionsConsistency();
-
-            // initialize the connection
-            if (isDBConnected && ret?.result) {
-                db = await sqlite!.retrieveConnection('learncardDB', false);
-            } else {
-                db = await sqlite!.createConnection(
-                    'learncardDB',
-                    false,
-                    'no-encryption',
-                    1,
-                    false
-                );
-            }
-            await ensureUserTableExists(db);
-            await ensureCredentialsTableExists(db);
-            await ensureIndexTableExists(db);
-            await ensureCredentialCacheTableExists(db);
-            await ensureIndexCacheTableExists(db);
-            await ensureIndexPageCacheTableExists(db);
-            await ensureIndexCountCacheTableExists(db);
-
-            setExistConnection(true);
-            return db;
-        } catch (error) {
-            log.debug('initDB::error', (error as any).message);
-            return false;
-        }
-    };
-
-    return {
-        existingConnection,
-        setExistConnection,
-    };
+    return { existingConnection, setExistConnection };
 };
 
 export const useSQLiteStorage = () => {
@@ -289,65 +261,53 @@ export const useSQLiteStorage = () => {
         try {
             if (!currentUser) return;
             if (db) {
-                await ensureUserTableExists(db);
-                await db.open();
-                // query user using stable identifiers (uid -> verifierId -> email)
-                let userExists;
-                if (currentUser?.uid) {
-                    userExists = await db.query(
-                        `SELECT * FROM users WHERE uid="${currentUser.uid}"`
-                    );
-                } else if ((currentUser as Partial<UserInfo>)?.verifierId) {
-                    userExists = await db.query(
-                        `SELECT * FROM users WHERE verifierId="${
-                            (currentUser as Partial<UserInfo>).verifierId
-                        }"`
-                    );
-                } else if (currentUser?.email) {
-                    userExists = await db.query(
-                        `SELECT * FROM users WHERE email="${currentUser.email}"`
-                    );
-                } else {
-                    userExists = { values: [] } as any;
-                }
+                return await withSQLiteDatabase(db, async () => {
+                    await ensureUserTableExists(db);
 
-                // check if user already exists
-                if (userExists.values?.length === 0) {
-                    await db.execute(`INSERT INTO users (
-                        email,
-                        name,
-                        profileImage,
-                        aggregateVerifier,
-                        verifier,
-                        verifierId,
-                        typeOfLogin,
-                        dappShare,
-                        baseColor,
-                        uid,
-                        phoneNumber
-                    ) VALUES (
-                        '${currentUser.email ?? ''}',
-                        '${currentUser.name ?? ''}',
-                        '${currentUser.profileImage ?? ''}',
-                        '${(currentUser as Partial<UserInfo>).aggregateVerifier ?? ''}',
-                        '${(currentUser as Partial<UserInfo>).verifier ?? ''}',
-                        '${(currentUser as Partial<UserInfo>).verifierId ?? ''}',
-                        '${(currentUser as Partial<UserInfo>).typeOfLogin ?? ''}',
-                        '${(currentUser as Partial<UserInfo>).dappShare ?? ''}',
-                        '${currentUser.baseColor ?? ''}',
-                        '${(currentUser as any).uid ?? currentUser?.uid ?? ''}',
-                        '${(currentUser as any).phoneNumber ?? ''}'
-                    )`);
-                } else {
-                }
-                await db.close();
+                    // query user using stable identifiers (uid -> verifierId -> email)
+                    let userExists;
+                    if (currentUser?.uid) {
+                        userExists = await db.query('SELECT * FROM users WHERE uid = ?', [
+                            currentUser.uid,
+                        ]);
+                    } else if ((currentUser as Partial<UserInfo>)?.verifierId) {
+                        userExists = await db.query('SELECT * FROM users WHERE verifierId = ?', [
+                            (currentUser as Partial<UserInfo>).verifierId,
+                        ]);
+                    } else if (currentUser?.email) {
+                        userExists = await db.query('SELECT * FROM users WHERE email = ?', [
+                            currentUser.email,
+                        ]);
+                    } else {
+                        userExists = { values: [] } as any;
+                    }
+
+                    // check if user already exists
+                    if (userExists.values?.length === 0) {
+                        await db.run(
+                            `INSERT INTO users (
+                            email, name, profileImage, aggregateVerifier, verifier, verifierId,
+                            typeOfLogin, dappShare, baseColor, uid, phoneNumber
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                            [
+                                currentUser.email ?? '',
+                                currentUser.name ?? '',
+                                currentUser.profileImage ?? '',
+                                (currentUser as Partial<UserInfo>).aggregateVerifier ?? '',
+                                (currentUser as Partial<UserInfo>).verifier ?? '',
+                                (currentUser as Partial<UserInfo>).verifierId ?? '',
+                                (currentUser as Partial<UserInfo>).typeOfLogin ?? '',
+                                (currentUser as Partial<UserInfo>).dappShare ?? '',
+                                currentUser.baseColor ?? '',
+                                currentUser.uid ?? '',
+                                currentUser.phoneNumber ?? '',
+                            ]
+                        );
+                    }
+                });
             }
         } catch (e) {
             log.warn('😵 useSQLiteStorage::setCurrentUser', e);
-        } finally {
-            if (db && (await db?.isDBOpen())?.result) {
-                await db?.close();
-            }
         }
         //     }
         // }
@@ -356,13 +316,13 @@ export const useSQLiteStorage = () => {
     const getCurrentUser = async (): Promise<CurrentUser | null> => {
         try {
             if (db) {
-                await ensureUserTableExists(db);
-                await db.open();
-                const results = await db.query('SELECT * FROM users');
+                return await withSQLiteDatabase(db, async () => {
+                    await ensureUserTableExists(db);
 
-                await db.close();
+                    const results = await db.query('SELECT * FROM users');
 
-                return results?.values?.[0];
+                    return results?.values?.[0];
+                });
             }
 
             return null;
@@ -370,15 +330,6 @@ export const useSQLiteStorage = () => {
             log.warn('😵 useSQLiteStorage::getCurrentUser', e);
 
             return null;
-        } finally {
-            if (db && (await db?.isDBOpen())?.result) {
-                try {
-                    await db?.close();
-                } catch (closeError) {
-                    log.warn('😵 useSQLiteStorage::getCurrentUser:await db?.close()', closeError);
-                    return null;
-                }
-            }
         }
         // }
         // }
@@ -390,67 +341,58 @@ export const useSQLiteStorage = () => {
     ) => {
         try {
             if (db) {
-                await ensureUserTableExists(db);
-                await db.open();
-                if (uid) {
-                    await db.execute(`
-                        UPDATE users
-                        SET 
-                        name="${payload.name}",
-                        profileImage="${payload.profileImage}"
-                        WHERE uid="${uid}"`);
-                } else {
-                    // Fallback: update existing row(s) if uid is unavailable
-                    await db.execute(`
-                        UPDATE users
-                        SET 
-                        name="${payload.name}",
-                        profileImage="${payload.profileImage}"`);
-                }
+                return await withSQLiteDatabase(db, async () => {
+                    await ensureUserTableExists(db);
 
-                await db.close();
+                    if (uid) {
+                        await db.run('UPDATE users SET name = ?, profileImage = ? WHERE uid = ?', [
+                            payload.name,
+                            payload.profileImage,
+                            uid,
+                        ]);
+                    } else {
+                        // Fallback: update existing row(s) if uid is unavailable.
+                        await db.run('UPDATE users SET name = ?, profileImage = ?', [
+                            payload.name,
+                            payload.profileImage,
+                        ]);
+                    }
 
-                return;
+                    return;
+                });
             }
         } catch (e) {
-            log.warn('😵 useSQLiteStorage::getCurrentUser', e);
-        } finally {
-            if (db && (await db?.isDBOpen())?.result) {
-                await db?.close();
-            }
+            log.warn('useSQLiteStorage::updateCurrentUser', e);
+            throw e;
         }
     };
 
     const setProviderAuthToken = async (authProviderName: string | null, token: string | null) => {
         try {
             if (db) {
-                await ensureUserTableExists(db);
-                await db.open();
+                return await withSQLiteDatabase(db, async () => {
+                    await ensureUserTableExists(db);
 
-                // query auth provider
-                const authProviderExists = await db.query(
-                    `SELECT * FROM tokens WHERE authProviderName="${authProviderName}"`
-                );
+                    // query auth provider
+                    const authProviderExists = await db.query(
+                        `SELECT * FROM tokens WHERE authProviderName="${authProviderName}"`
+                    );
 
-                if (!authProviderExists.values?.[0]?.token) {
-                    await db.execute(`INSERT INTO tokens(
+                    if (!authProviderExists.values?.[0]?.token) {
+                        await db.execute(`INSERT INTO tokens(
                         authProviderName,
                         token
                     ) VALUES (
                         '${authProviderName}',
                         '${token}'
                     )`);
-                    await db.close();
-                } else {
-                    // no-op
-                }
+                    } else {
+                        // no-op
+                    }
+                });
             }
         } catch (e) {
             log.warn('😵 useSQLiteStorage::setProviderAuthToken::error', e);
-        } finally {
-            if (db && (await db?.isDBOpen())?.result) {
-                await db?.close();
-            }
         }
     };
 
@@ -459,23 +401,18 @@ export const useSQLiteStorage = () => {
     ): Promise<{ authProviderName: string; token: string } | undefined> => {
         try {
             if (db) {
-                await ensureUserTableExists(db);
-                await db.open();
+                return await withSQLiteDatabase(db, async () => {
+                    await ensureUserTableExists(db);
 
-                const results = await db.query(
-                    `SELECT * FROM tokens WHERE authProviderName="${authProviderName}"`
-                );
+                    const results = await db.query(
+                        `SELECT * FROM tokens WHERE authProviderName="${authProviderName}"`
+                    );
 
-                await db.close();
-
-                return results?.values?.[0];
+                    return results?.values?.[0];
+                });
             }
         } catch (error) {
             log.warn('😵 useSQLiteStorage::getProviderAuthToken::error', error);
-        } finally {
-            if (db && (await db?.isDBOpen())?.result) {
-                await db?.close();
-            }
         }
         return undefined;
     };
@@ -502,6 +439,7 @@ export async function deleteDatabase(db: SQLiteDBConnection): Promise<void> {
         if (ret.result) {
             const dbName = db.getConnectionDBName();
             await db.delete();
+            forgetSQLiteSchema(db);
             return Promise.resolve();
         } else {
             return Promise.resolve();

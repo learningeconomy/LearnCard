@@ -1347,6 +1347,36 @@ describe('Profiles', () => {
             ).resolves.not.toThrow();
         });
 
+        it('does not allow a legacy service-flagged child to change its type', async () => {
+            await Profile.update(
+                { type: 'child', isServiceProfile: true },
+                { where: { profileId: 'usera' } }
+            );
+
+            await expect(
+                userA.clients.fullAuth.profile.updateProfile({
+                    type: 'adult',
+                    profileId: 'escaped-child',
+                    displayName: 'Escaped',
+                })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+
+            await expect(userA.clients.fullAuth.profile.getProfile()).resolves.toMatchObject({
+                profileId: 'usera',
+                type: 'child',
+                isServiceProfile: true,
+            });
+            await userA.clients.fullAuth.profile.updateProfile({
+                type: 'child',
+                displayName: 'Updated child',
+            });
+            await expect(userA.clients.fullAuth.profile.getProfile()).resolves.toMatchObject({
+                type: 'child',
+                isServiceProfile: true,
+                displayName: 'Updated child',
+            });
+        });
+
         it('should allow you to update your profile image', async () => {
             await expect(
                 userA.clients.fullAuth.profile.updateProfile({

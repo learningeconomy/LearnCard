@@ -1,4 +1,5 @@
 import React from 'react';
+import { withCompetencyAdmin } from './withCompetencyAdmin';
 import * as m from '../../paraglide/messages.js';
 import { formatLocaleDate } from '../../i18n/formatters';
 import { useModal, ModalTypes, useWallet } from 'learn-card-base';
@@ -32,7 +33,7 @@ const SkillFrameworks: React.FC = () => {
     const handleManageSkills = () => {
         newModal(
             <ManageSkills />,
-            { className: '!bg-transparent' },
+            { className: 'bg-transparent!' },
             { desktop: ModalTypes.Right, mobile: ModalTypes.FullScreen }
         );
     };
@@ -41,7 +42,7 @@ const SkillFrameworks: React.FC = () => {
         newModal(
             <CreateFrameworkModal />,
             {
-                sectionClassName: '!bg-transparent !shadow-none',
+                sectionClassName: 'bg-transparent! shadow-none!',
             },
             { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
         );
@@ -123,7 +124,7 @@ const SkillFrameworks: React.FC = () => {
                                         <img
                                             src={framework.image}
                                             alt={framework.name}
-                                            className="w-[60px] h-[60px] rounded-[8px] object-cover flex-shrink-0"
+                                            className="w-[60px] h-[60px] rounded-[8px] object-cover shrink-0"
                                         />
                                     )}
                                     <div className="flex flex-col flex-1">
@@ -161,4 +162,4 @@ const SkillFrameworks: React.FC = () => {
     );
 };
 
-export default SkillFrameworks;
+export default withCompetencyAdmin(SkillFrameworks);

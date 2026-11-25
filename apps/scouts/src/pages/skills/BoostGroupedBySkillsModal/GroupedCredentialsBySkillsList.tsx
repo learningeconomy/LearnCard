@@ -103,7 +103,7 @@ const GroupedCredentialsBySkillsList: React.FC<BoostGroupedBySkillsModalProps> =
                     <div className="flex items-center justify-between px-1 my-2">
                         <p className="text-grayscale-700 text-sm">{skillDescription}</p>
                     </div>
-                    <div className="w-full mx-auto border-b-solid border-b-[1px] border-grayscale-100 mt-4" />
+                    <div className="w-full mx-auto border-b-solid border-b border-grayscale-100 mt-4" />
                 </div>
 
                 {sortedCredentials?.length > 0 && (
@@ -149,7 +149,7 @@ const GroupedCredentialsBySkillsList: React.FC<BoostGroupedBySkillsModalProps> =
                                                 sizeMd={12}
                                                 sizeSm={12}
                                                 isInSkillsModal={true}
-                                                className="!min-h-[310px]"
+                                                className="min-h-[310px]!"
                                             />
                                         )}
                                     </SwiperSlide>

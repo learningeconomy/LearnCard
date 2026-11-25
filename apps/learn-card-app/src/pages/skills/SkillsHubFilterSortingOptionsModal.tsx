@@ -64,7 +64,7 @@ export const SkillsHubFilterSortingOptionsModal: React.FC<{
                         return (
                             <button
                                 className={`font-poppins text-[17px] flex gap-[10px] items-center justify-start text-left text-grayscale-900 rounded-[15px] w-full p-[10px] ${
-                                    option.type === _sortBy ? '!bg-grayscale-100' : ''
+                                    option.type === _sortBy ? 'bg-grayscale-100!' : ''
                                 }`}
                                 key={option.id}
                                 onClick={() => _setSortBy(option.type)}
@@ -91,7 +91,7 @@ export const SkillsHubFilterSortingOptionsModal: React.FC<{
                         return (
                             <button
                                 className={`font-poppins text-[17px] flex gap-[10px] items-center justify-start text-left text-grayscale-900 rounded-[15px] w-full p-[10px] ${
-                                    _filterBy.includes(option.type) ? '!bg-grayscale-100' : ''
+                                    _filterBy.includes(option.type) ? 'bg-grayscale-100!' : ''
                                 }`}
                                 key={option.id}
                                 onClick={() => _setFilterBy(toggleFilter(_filterBy, option.type))}
@@ -109,7 +109,7 @@ export const SkillsHubFilterSortingOptionsModal: React.FC<{
                         return (
                             <button
                                 className={`font-poppins text-[17px] flex gap-[10px] items-start justify-start text-left text-grayscale-900 w-full p-[10px] rounded-[15px] ${
-                                    _filterBy.includes(option.id) ? '!bg-grayscale-100' : ''
+                                    _filterBy.includes(option.id) ? 'bg-grayscale-100!' : ''
                                 }`}
                                 key={option.id}
                                 onClick={() => _setFilterBy(toggleFilter(_filterBy, option.id))}

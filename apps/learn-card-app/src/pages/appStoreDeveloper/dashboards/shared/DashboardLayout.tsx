@@ -58,7 +58,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     children,
 }) => {
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -98,13 +98,13 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                                     const status = (integration.status as string) || 'setup';
                                     if (status === 'active') {
                                         return (
-                                            <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs font-medium">
+                                            <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-sm text-xs font-medium">
                                                 {m['developerPortal.dashboards.status.active']()}
                                             </span>
                                         );
                                     }
                                     return (
-                                        <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-medium capitalize">
+                                        <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-sm text-xs font-medium capitalize">
                                             {status === 'setup'
                                                 ? m['developerPortal.dashboards.status.inSetup']()
                                                 : status}

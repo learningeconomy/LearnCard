@@ -6,8 +6,10 @@ import {
 } from './ai-pathways-skill-profile/SkillProfileStep1';
 import { Plus, X } from 'lucide-react';
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- existing empty props type; replacing it changes the accepted props type
 type EditGoalsModalProps = {};
 
+// eslint-disable-next-line no-empty-pattern -- dropping the empty destructure removes the implicit non-null argument check
 const EditGoalsModal: React.FC<EditGoalsModalProps> = ({}) => {
     const { closeModal } = useModal();
     const [goalInput, setGoalInput] = useState('');
@@ -49,12 +51,12 @@ const EditGoalsModal: React.FC<EditGoalsModalProps> = ({}) => {
     };
 
     return (
-        <div className="relative h-full overflow-hidden text-grayscale-900 bg-grayscale-100 bg-opacity-80 backdrop-blur-[3px]">
+        <div className="relative h-full overflow-hidden text-grayscale-900 bg-grayscale-100/80  backdrop-blur-[3px]">
             {/* <div className="absolute inset-0 bg-white/10" /> */}
 
             <section className="relative h-full px-[20px] flex flex-col justify-center">
                 <div className="w-full max-w-[600px] mx-auto rounded-[15px] bg-white shadow-bottom-4-4 px-[15px] pb-[15px] pt-[30px] flex flex-col gap-[30px]">
-                    <h3 className="text-[20px] font-poppins font-[700] leading-[24px] tracking-[0.24px] text-grayscale-900">
+                    <h3 className="text-[20px] font-poppins font-bold leading-[24px] tracking-[0.24px] text-grayscale-900">
                         Manage your Goals
                     </h3>
 
@@ -86,7 +88,7 @@ const EditGoalsModal: React.FC<EditGoalsModalProps> = ({}) => {
                                 {goals.map((goal, index) => (
                                     <span
                                         key={`${goal}-${index}`}
-                                        className="flex items-center gap-[8px] border-solid border-[2px] border-sky-600 bg-sky-50 pl-[15px] pr-[10px] py-[7px] rounded-full text-sky-600 font-poppins text-[13px] font-bold leading-[18px]"
+                                        className="flex items-center gap-[8px] border-solid border-2 border-sky-600 bg-sky-50 pl-[15px] pr-[10px] py-[7px] rounded-full text-sky-600 font-poppins text-[13px] font-bold leading-[18px]"
                                     >
                                         {goal}
                                         <button
@@ -103,19 +105,19 @@ const EditGoalsModal: React.FC<EditGoalsModalProps> = ({}) => {
                 </div>
             </section>
 
-            <footer className="absolute bottom-0 left-0 w-full p-[20px] bg-white/70 border-t-[1px] border-white border-solid">
+            <footer className="absolute bottom-0 left-0 w-full p-[20px] bg-white/70 border-t border-white border-solid">
                 <div className="flex items-center gap-[10px] max-w-[600px] mx-auto">
                     <button
                         type="button"
                         onClick={closeModal}
-                        className="h-[44px] flex-1 rounded-full border-[1px] border-grayscale-200 border-solid bg-grayscale-50 text-grayscale-800 font-poppins text-[17px] leading-[24px] tracking-[0.25px]"
+                        className="h-[44px] flex-1 rounded-full border border-grayscale-200 border-solid bg-grayscale-50 text-grayscale-800 font-poppins text-[17px] leading-[24px] tracking-[0.25px]"
                     >
                         Cancel
                     </button>
 
                     <button
                         type="button"
-                        className="h-[44px] flex-1 rounded-full bg-emerald-500 text-white font-poppins font-[700] text-[17px] leading-[24px] tracking-[0.25px] disabled:opacity-50"
+                        className="h-[44px] flex-1 rounded-full bg-emerald-500 text-white font-poppins font-bold text-[17px] leading-[24px] tracking-[0.25px] disabled:opacity-50"
                         onClick={handleSave}
                         disabled={goalsSaving || goalsLoading}
                     >

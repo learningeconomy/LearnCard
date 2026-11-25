@@ -8,12 +8,12 @@ Each authority uses a separate 256-bit data-encryption key. AWS Key Management S
 
 `encryptedSeed` is base64 of a 12-byte initialization vector, the encrypted UTF-8 seed, and a 16-byte authentication tag. `encryptedDek` is the KMS ciphertext blob in production. The record ID and a digest of the owner/name/DID are authenticated with both the seed and its data key. Moving an envelope to another record fails authentication.
 
-| Variable                    | Purpose                                                                                                        |
-| --------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `SA_SEED_KMS_KEY_ARN`       | Full KMS key ARN, supplied by CloudFormation in AWS. Aliases are not accepted.                                 |
-| `SA_SEED_LOCAL_KEK`         | 32-byte hex key for offline/test environments only. Never an automatic fallback after a KMS error.             |
-| `SA_SEED_ENCRYPT_WRITES`    | Temporary rollout control. Offline development: `false`; online/test: `true`; initial AWS deployment: `false`. |
-| `SA_SEED_ALLOW_LEGACY_READ` | Temporary rollout control. Offline development: `true`; online/test: `false`; initial AWS deployment: `true`.  |
+| Variable                    | Purpose                                                                                                                                                                                                     |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SA_SEED_KMS_KEY_ARN`       | Full KMS key ARN, supplied by CloudFormation in AWS. Aliases are not accepted.                                                                                                                              |
+| `SA_SEED_LOCAL_KEK`         | 32-byte hex key for offline/test environments only. Never an automatic fallback after a KMS error.                                                                                                          |
+| `SA_SEED_ENCRYPT_WRITES`    | Temporary rollout control. Offline development: `false`; online/test: `true`; AWS: set per tenant/stage in lca-api's checked-in `config/config.<stage>.json` (LearnCard) or `config.<tenant>.<stage>.json`. |
+| `SA_SEED_ALLOW_LEGACY_READ` | Temporary rollout control. Offline development: `true`; online/test: `false`; AWS: same checked-in stage file as `SA_SEED_ENCRYPT_WRITES`.                                                                  |
 
 `kms-v1` and `local-v1` identify envelope formats, not individual versions of automatically rotated KMS key material. Retain the same CMK ARN; automatic KMS rotation does not require rewriting documents. Replacing the CMK is a separate operation and is not supported by changing the environment variable alone.
 
@@ -113,10 +113,20 @@ Require `protected_branches: true` and `custom_branch_policies: false` on every 
 
 Repeat the complete process in staging before production. Run commands below from `services/learn-card-network/lca-api` and substitute the intended service/stage/region. Do not run migration while any old plaintext writer is still serving traffic.
 
-1. Deploy this encryption-capable release with `SA_SEED_ENCRYPT_WRITES=false` and `SA_SEED_ALLOW_LEGACY_READ=true`. These are the initial CloudFormation defaults. Wait for every API/tRPC function to finish updating and existing invocations to drain. Confirm ordinary creation and signing still work. This release intentionally still writes plaintext so older readers remain compatible during deployment.
-2. Set `SA_SEED_ENCRYPT_WRITES=true` and keep `SA_SEED_ALLOW_LEGACY_READ=true`; deploy again. In GitHub Actions, set these variables in **each lca-api deployment environment**. For direct deployments, use the equivalent Serverless parameters `--param="saSeedEncryptWrites=true" --param="saSeedAllowLegacyRead=true"`. Wait for deployment completion and old invocations to drain. Inspect a newly created authority: it must contain an envelope and no `seed`.
+**Where the flags live.** Deployed lca-api reads both flags from its checked-in stage file, selected by tenant and stage: `config/config.<stage>.json` for LearnCard, `config/config.scouts.<stage>.json` for ScoutPass. GitHub Environment variables and Serverless `--param` values no longer reach Lambda. Change a flag with a reviewed PR to that file, merge, and deploy that tenant/stage. Before and after each deploy, confirm the effective values:
+
+```sh
+CONFIG_TENANT=scouts bun run sa-seed:flags production   # prints the flags this deployment loads
+aws lambda get-function-configuration --function-name <service>-<stage>-api --region <region> \
+  --query 'Environment.Variables.[SA_SEED_ENCRYPT_WRITES, SA_SEED_ALLOW_LEGACY_READ]'   # must be [null, null]
+```
+
+A non-null Lambda value would be an explicit override that wins over the stage file; remove it. Change one tenant/stage per PR so each step deploys independently.
+
+1. Deploy this encryption-capable release with the stage file set to `SA_SEED_ENCRYPT_WRITES=false` and `SA_SEED_ALLOW_LEGACY_READ=true` (ScoutPass production's current values). Wait for every API/tRPC function to finish updating and existing invocations to drain. Confirm ordinary creation and signing still work. This release intentionally still writes plaintext so older readers remain compatible during deployment.
+2. In that tenant/stage file, set `SA_SEED_ENCRYPT_WRITES` to `"true"` and keep `SA_SEED_ALLOW_LEGACY_READ` at `"true"`; merge and deploy, then confirm both with `sa-seed:flags`. Wait for deployment completion and old invocations to drain. Inspect a newly created authority: it must contain an envelope and no `seed`.
 3. Verify the GitHub Environment protections above. Open **Actions → Migrate Signing Authority Seeds**, select the lca-api GitHub Environment, and run `dry-run`, `prepare`, `verify`, and `purge` as four separate workflow runs. The workflow discovers the migration function from the CloudFormation output. The migration Lambda refuses mutating phases unless its deployed encrypted-write flag is enabled, causing the workflow to fail. The operator must still confirm all API/tRPC writers have finished updating.
-4. After purge completes, run the direct database and Redis checks below and issue/verify a credential using both a new and a migrated authority. Set `SA_SEED_ALLOW_LEGACY_READ=false`, retain encrypted writes, and deploy again. Recheck signing after cold starts.
+4. After purge completes, run the direct database and Redis checks below and issue/verify a credential using both a new and a migrated authority. Set `SA_SEED_ALLOW_LEGACY_READ` to `"false"` in the same stage file, retain encrypted writes, merge, deploy, and confirm with `sa-seed:flags`. Keep legacy reads enabled until purge has completed for that tenant/stage. Recheck signing after cold starts.
 5. Only after every supported deployment has completed this process, ship the cleanup release: remove the legacy branch in `decryptSigningAuthoritySeed`, the plaintext-write branch in creation, legacy cache-fingerprint handling, and both rollout controls from runtime configuration, CI, and Serverless. Keep historical-record types and seed comparisons in migration tooling. Do not remove compatibility before the deployment evidence exists.
 
 The workflow is manual-only, checks for `main`, uses the selected GitHub Environment, and permits only one run per environment at a time. `dry-run` is the default phase. The environment protections must be configured separately before rollout. Every migration run writes the final sanitized reconciliation counts to the GitHub job summary and never returns plaintext.
@@ -207,7 +217,7 @@ These checks validate infrastructure behavior and latency; local tests alone can
 
 ## Rollback and restoration
 
-Before encrypted writes start, the compatibility release can be rolled back normally. Once encrypted writes start, **do not roll back to a plaintext-only reader**: newly created records no longer contain a plaintext seed.
+Flag changes roll back by reverting the stage-file PR and redeploying that tenant/stage; confirm with `sa-seed:flags`. Never revert encrypted writes to `false` after step 2 (see below). Before encrypted writes start, the compatibility release can be rolled back normally. Once encrypted writes start, **do not roll back to a plaintext-only reader**: newly created records no longer contain a plaintext seed.
 
 Use an encryption-capable artifact for rollback, with encrypted writes still enabled. Leave the CMK, its alias/policies, and database ciphertext intact. Before purge, a defective migration can be stopped without deleting retained plaintext; fix it and resume prepare/verify. After purge, roll back application code only to an encryption-capable version; do not reconstruct plaintext rows as a rollback step.
 

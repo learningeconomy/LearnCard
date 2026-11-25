@@ -252,7 +252,7 @@ export const JoinNetworkPrompt: React.FC<{
                 </IonCol>
             </IonRow>
             <IonRow className="w-full flex items-center justify-center mt-6">
-                <IonCol className="flex items-center flex-col max-w-[90%] border-b-[1px] border-grayscale-200">
+                <IonCol className="flex items-center flex-col max-w-[90%] border-b border-grayscale-200">
                     {step === 1 ? (
                         <button
                             onClick={handleNextStep}

@@ -25,7 +25,7 @@ export const CheckList: React.FC<{ activeChecklistStep?: ChecklistEnum }> = ({
         (checkListItem: ChecklistItem) => {
             newModal(
                 <CheckListManagerContainer checkListItem={checkListItem} />,
-                { className: '!bg-transparent' },
+                { className: 'bg-transparent!' },
                 { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
             );
         },

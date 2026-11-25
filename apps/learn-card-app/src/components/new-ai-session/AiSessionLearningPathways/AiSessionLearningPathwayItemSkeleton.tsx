@@ -12,7 +12,7 @@ export const AiSessionLearningPathwayItemSkeleton: React.FC = () => {
                     />
                 </div>
 
-                <div className="space-y-1 my-4">
+                <div className="space-y-v3-1 my-4">
                     <IonSkeletonText
                         animated
                         style={{ width: '100%', height: '14px', borderRadius: '4px' }}
@@ -33,7 +33,7 @@ export const AiSessionLearningPathwayItemSkeleton: React.FC = () => {
                     animated
                     style={{ width: '16px', height: '16px', borderRadius: '50%' }}
                 />
-                <div className="ml-2 space-x-1 flex items-center">
+                <div className="ml-2 space-x-v3-1 flex items-center">
                     <IonSkeletonText
                         animated
                         style={{ width: '42px', height: '12px', borderRadius: '4px' }}

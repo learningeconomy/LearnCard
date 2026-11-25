@@ -127,7 +127,7 @@ const MySkillProfile: React.FC<MySkillProfileProps> = ({ className = '' }) => {
                             </span>
                             <button
                                 onClick={() => setCurrentStep(prev => (prev < 5 ? prev + 1 : prev))}
-                                className="ml-auto text-grayscale-600 font-poppins font-[700] text-[14px] leading-[18px]"
+                                className="ml-auto text-grayscale-600 font-poppins font-bold text-[14px] leading-[18px]"
                             >
                                 {m['skillProfile.skip']()}
                             </button>

@@ -13,8 +13,26 @@ import { getModelTokenPricing, type ServiceConfig } from './config';
 
 type TelemetryValue = string | number | boolean | undefined;
 type TelemetryFields = Record<string, TelemetryValue>;
+
+/** One bounded record in the complete per-run application-log event stream. */
+export interface SafeRunLogRecord {
+    event: string;
+    level: 'info' | 'warn' | 'error';
+    timestamp: number;
+    /** Process-local ordering, not a cross-worker or cross-restart sequence. */
+    sequence: number;
+    fields: TelemetryFields;
+}
 type MetricUnit = 'Count' | 'Milliseconds' | 'None';
 type SentryDeliveryState = 'disabled' | 'unchecked' | 'delivered' | 'failed';
+
+interface SerializedTraceSpan {
+    span_id: string;
+    op?: string;
+    start_timestamp: number;
+    timestamp?: number;
+    status?: string;
+}
 
 interface MetricValue {
     name: string;
@@ -28,6 +46,7 @@ interface AgentRunTelemetryContext {
     ownerDid: string;
     triggerType: 'interactive' | 'autonomous';
     config: ServiceConfig;
+    sensitiveContent?: string[];
 }
 
 interface AutonomyCycleTelemetry {
@@ -56,6 +75,7 @@ let cloudWatchFlushTimer: ReturnType<typeof setTimeout> | undefined;
 let sentryInitialized = false;
 let sentryDeliveryState: SentryDeliveryState = 'disabled';
 const pendingMetrics: MetricDatum[] = [];
+let applicationLogSequence = 0;
 
 const sanitizeField = (value: TelemetryValue): TelemetryValue =>
     typeof value === 'string' ? value.slice(0, MAX_FIELD_LENGTH) : value;
@@ -86,10 +106,42 @@ const writeLog = (
     event: string,
     fields: TelemetryFields = {}
 ): void => {
+    const safeFields = sanitizeFields(fields);
+    if (activeConfig?.sentryDsn && typeof safeFields.runId === 'string') {
+        // SDK 7 has no native structured Logs API. Emit one bounded record per
+        // event instead of retaining/truncating a whole-run buffer or capturing
+        // arbitrary console output. The existing private snapshot gate applies.
+        const logRecord: SafeRunLogRecord = {
+            event,
+            level,
+            timestamp: Date.now() / 1_000,
+            sequence: ++applicationLogSequence,
+            fields: safeFields,
+        };
+        captureSafeEvent({
+            message: `Application log: ${event}`,
+            level: level === 'warn' ? 'warning' : level,
+            timestamp: logRecord.timestamp,
+            fingerprint: [SERVICE_NAME, 'application-log', event],
+            // Index only run identity/classification. All capped log fields,
+            // including counters and tool/runtime values, stay in the record.
+            tags: sanitizeFields({
+                component: 'application-log',
+                recordKind: 'application-log',
+                runId: safeFields.runId,
+                correlationId: safeFields.correlationId,
+                ownerId: safeFields.ownerId,
+                triggerType: safeFields.triggerType,
+                phase: safeFields.phase,
+                status: safeFields.status,
+            }),
+            extra: { logRecord },
+        });
+    }
     if (!shouldEmitTelemetry(activeConfig)) return;
 
-    const details = Object.entries(sanitizeFields(fields))
-        .map(([key, value]) => `${key}=${formatLogValue(value)}`)
+    const details = Object.entries(safeFields)
+        .map(([key, value]) => `${key}=${formatLogValue(value!)}`)
         .join(' ');
     const line = `${level.toUpperCase()} ${event}${details ? ` ${details}` : ''}`;
 
@@ -184,37 +236,378 @@ const writeMetrics = (
     scheduleCloudWatchFlush();
 };
 
+// Node 24 exposes native Error.stack as an accessor. Only that intrinsic getter
+// may be invoked; application getters and arbitrary thrown objects stay opaque.
+const nativeStackGetter = Object.getOwnPropertyDescriptor(new Error(), 'stack')?.get;
+const errorProperty = (error: unknown, key: string): unknown => {
+    try {
+        if (!(error instanceof Error)) return undefined;
+        const descriptor = Object.getOwnPropertyDescriptor(error, key);
+        if (descriptor && 'value' in descriptor) return descriptor.value;
+        if (key === 'stack' && nativeStackGetter && descriptor?.get === nativeStackGetter) {
+            return nativeStackGetter.call(error);
+        }
+        return undefined;
+    } catch {
+        return undefined;
+    }
+};
+
 const getSafeErrorFields = (error: unknown): TelemetryFields => {
-    if (!error || typeof error !== 'object') return { errorType: typeof error };
+    const name = errorProperty(error, 'name');
+    let errorType = 'UnknownError';
+    try {
+        if (error instanceof Error) {
+            errorType =
+                error instanceof TypeError
+                    ? 'TypeError'
+                    : error instanceof RangeError
+                      ? 'RangeError'
+                      : error instanceof SyntaxError
+                        ? 'SyntaxError'
+                        : error instanceof ReferenceError
+                          ? 'ReferenceError'
+                          : error instanceof URIError
+                            ? 'URIError'
+                            : error instanceof EvalError
+                              ? 'EvalError'
+                              : error instanceof AggregateError
+                                ? 'AggregateError'
+                                : typeof name === 'string' &&
+                                    /^[A-Za-z][A-Za-z0-9_.-]{0,55}(?:Error|Exception)$/.test(name)
+                                  ? hashIdentifier(name)
+                                  : 'Error';
+        }
+    } catch {
+        // Hostile thrown values are classified without invoking their properties.
+    }
+    return { errorType };
+};
 
-    const candidate = error as { name?: unknown; status?: unknown };
-    const httpStatus =
-        typeof candidate.status === 'number' && Number.isInteger(candidate.status)
-            ? candidate.status
-            : undefined;
+const hashIdentifier = (value: string): string =>
+    `sha256:${createHash('sha256').update(value).digest('hex').slice(0, 24)}`;
 
-    return {
-        errorType:
-            typeof candidate.name === 'string' &&
-            /^[A-Za-z][A-Za-z0-9_.-]{0,63}$/.test(candidate.name)
-                ? candidate.name
-                : 'UnknownError',
-        httpStatus,
+// Preserve only service-generated run UUIDs. External correlation/provider IDs
+// are hashed at their capture sites regardless of whether they resemble UUIDs.
+const safeIdentifier = (value: string): string =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
+        ? value
+        : hashIdentifier(value);
+
+const MAX_DIAGNOSTIC_CHARACTERS = 8_192;
+const OVERSIZED_DIAGNOSTIC = '[Message withheld: diagnostic exceeded length limit]';
+
+const scrubText = (value: string): string => {
+    // Do not run unanchored patterns on unbounded provider bodies or expose
+    // a private token truncated at the output boundary.
+    if (value.length > MAX_DIAGNOSTIC_CHARACTERS) return OVERSIZED_DIAGNOSTIC;
+    return value
+        .replace(/https?:\/\/[^\s)]+/gi, '[URL]')
+        .replace(/mongodb(?:\+srv)?:\/\/[^\s)]+/gi, '[URL]')
+        .replace(/did:[^\s"',;]+/gi, '[DID]')
+        .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[EMAIL]')
+        .replace(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g, '[IP]')
+        .replace(/\b\d{3}[- .]\d{2}[- .]\d{4}\b/g, '[SSN]')
+        .replace(/(?:\+?\d[\d ().-]{7,}\d)/g, '[PHONE]')
+        .replace(/\b(?:Bearer\s+|sdk[-_]|sk[-_]|eyJ)[A-Za-z0-9._/-]+/gi, '[SECRET]')
+        .replace(
+            /\b(?:password|secret|token|api[-_ ]?key|seed|mnemonic|authorization)\s*[:=]\s*["']?[^"',;\n]+/gi,
+            '[SECRET]'
+        )
+        .replace(/\/(?:home|Users)\/[^/\s]+/g, '/home/[USER]');
+};
+
+const SAFE_INTERNAL_DIAGNOSTICS: Record<string, true> = {
+    'Agent run exceeded its configured token limit.': true,
+    'Agent run exceeded its configured cost limit.': true,
+    'Agent run exceeded its configured time limit.': true,
+    'Agent post-run exceeded its configured time limit.': true,
+    'Agent reached the maximum tool-call rounds before producing a response.': true,
+    'Retrospective failed; its audit result has been persisted.': true,
+    'Retrospective exceeded the run time limit.': true,
+    'Retrospective exceeded the run token or output limit.': true,
+    'Retrospective exceeded the run cost limit.': true,
+    'Model returned malformed tool arguments.': true,
+    'Retrospective returned malformed JSON.': true,
+    'Wallet method call failed.': true,
+    'Invalid time value': true,
+    'Invalid Date': true,
+};
+
+const createContentRedactor = (initial: string[] = [], config = activeConfig) => {
+    // Private to one run, never stored in a Sentry scope or a global registry.
+    const fragments = new Set<string>();
+    let orderedFragments: string[] | undefined;
+    let registeredCharacters = 0;
+    // The character budget bounds registry size; ordinary conversations must
+    // not fail closed merely because they contain more than 256 distinct words.
+    let overflowed = false;
+    const register = (content: string | undefined): void => {
+        if (overflowed || content === '') return;
+        if (
+            content === undefined ||
+            content.length > 16_384 ||
+            (!fragments.has(content) && registeredCharacters + content.length > 65_536)
+        ) {
+            overflowed = true;
+            fragments.clear();
+            orderedFragments = undefined;
+            return;
+        }
+        // Exact values already covered consume no additional cumulative budget,
+        // but every registration must still satisfy the per-value limit.
+        if (fragments.has(content)) return;
+        registeredCharacters += content.length;
+        orderedFragments = undefined;
+        fragments.add(content);
+        fragments.add(JSON.stringify(content).slice(1, -1));
+        // Common words are intentionally included: an external diagnostic and
+        // an echoed prompt/tool fragment have no trusted provenance distinction.
+        for (const fragment of content.match(/[\p{L}\p{N}_@./:+-]{3,}/gu) ?? []) {
+            fragments.add(fragment);
+        }
     };
+    initial.forEach(register);
+    // Explicit credentials include values supplied directly through ServiceConfig,
+    // not just secret-named environment variables. Mongo errors can echo decoded
+    // userinfo separately from the original URI, including multi-host URIs.
+    for (const credential of [
+        config?.openAIApiKey,
+        config?.walletSeed,
+        config?.sentryDsn,
+        config?.braveSearchApiKey,
+        config?.debugToken,
+        config?.launchDarklySdkKey,
+        config?.triggerSecretKey,
+        config?.mongoUri,
+        process.env.LAUNCHDARKLY_SDK_KEY,
+        process.env.AI_AGENT_MONGO_URI,
+        process.env.MONGO_URI,
+    ]) {
+        if (!credential) continue;
+        if (!fragments.has(credential)) register(credential);
+        const authority = credential.match(/^mongodb(?:\+srv)?:\/\/([^/?#]*)/i)?.[1];
+        const userInfoEnd = authority?.lastIndexOf('@') ?? -1;
+        if (!authority || userInfoEnd < 0) continue;
+        const userInfo = authority.slice(0, userInfoEnd);
+        const passwordStart = userInfo.indexOf(':');
+        for (const part of [
+            userInfo,
+            passwordStart < 0 ? userInfo : userInfo.slice(0, passwordStart),
+            passwordStart < 0 ? '' : userInfo.slice(passwordStart + 1),
+        ]) {
+            if (!part) continue;
+            if (!fragments.has(part)) register(part);
+            try {
+                const decoded = decodeURIComponent(part);
+                if (!fragments.has(decoded)) register(decoded);
+            } catch {
+                register(undefined); // Undecodable credential content fails closed.
+            }
+        }
+    }
+    // Additional secret-valued environment entries are registered locally only.
+    for (const [key, value] of Object.entries(process.env)) {
+        if (
+            /(?:secret|token|password|seed|mnemonic|api.?key|sdk.?key|private.?key|dsn)/i.test(
+                key
+            ) &&
+            value
+        ) {
+            if (!fragments.has(value)) register(value);
+        }
+    }
+    const redact = (text: string): string => {
+        // Internal literals carry no user data and remain actionable even when
+        // large VC/tool content forces the rest of the boundary to fail closed.
+        if (Object.hasOwn(SAFE_INTERNAL_DIAGNOSTICS, text)) return text;
+        if (overflowed) return '[Message withheld: sensitive content exceeded redaction capacity]';
+        if (text.length > MAX_DIAGNOSTIC_CHARACTERS) return OVERSIZED_DIAGNOSTIC;
+        let result = text;
+        orderedFragments ??= [...fragments].sort((a, b) => b.length - a.length);
+        for (const fragment of orderedFragments) {
+            if (fragment.length < 3) {
+                const escaped = fragment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                result = result.replace(
+                    new RegExp(`(?<![\\p{L}\\p{N}_])${escaped}(?![\\p{L}\\p{N}_])`, 'gu'),
+                    '[REDACTED]'
+                );
+            } else {
+                result = result.split(fragment).join('[REDACTED]');
+            }
+        }
+        return scrubText(result);
+    };
+    return { register, redact };
+};
+
+const sanitizedExceptions = (
+    error: unknown,
+    redact: (value: string) => string,
+    includeMessage: boolean
+): Sentry.Exception[] => {
+    const seen = new Set<unknown>();
+    const values: Sentry.Exception[] = [];
+    let current = error;
+    for (let depth = 0; current !== undefined && depth < 5 && !seen.has(current); depth += 1) {
+        seen.add(current);
+        const message = errorProperty(current, 'message');
+        const stack = errorProperty(current, 'stack');
+        const frames =
+            typeof stack === 'string'
+                ? Sentry.defaultStackParser(stack)
+                      .slice(-50)
+                      .map(frame => ({
+                          filename:
+                              typeof frame.filename === 'string'
+                                  ? hashIdentifier(frame.filename)
+                                  : undefined,
+                          function:
+                              typeof frame.function === 'string'
+                                  ? hashIdentifier(frame.function)
+                                  : undefined,
+                          lineno: frame.lineno,
+                          colno: frame.colno,
+                          in_app: frame.in_app,
+                      }))
+                : undefined;
+        values.unshift({
+            type: String(getSafeErrorFields(current).errorType),
+            value:
+                includeMessage && typeof message === 'string'
+                    ? redact(message)
+                    : typeof message === 'string' &&
+                        (message === 'Invalid time value' ||
+                            message === 'Invalid Date' ||
+                            message === 'Invalid array length' ||
+                            message === 'Maximum call stack size exceeded')
+                      ? message
+                      : '[Message withheld: sensitive content unavailable]',
+            ...(frames?.length ? { stacktrace: { frames } } : {}),
+            mechanism: { type: depth === 0 ? 'generic' : 'chained', handled: true },
+        });
+        current = errorProperty(current, 'cause');
+    }
+    return values;
+};
+
+// SDK processors may mutate hint data; only an opaque identity leaves this map.
+const approvedSentryEvents = new WeakMap<object, Sentry.Event>();
+
+// Rebuild from the sanitized capture snapshot after *all* SDK processors. Never
+// forward SDK-added requests, breadcrumbs, user, env, modules, custom contexts,
+// originalException, attachments, or custom properties.
+export const sanitizeSentryEvent = (
+    event: Sentry.Event,
+    hint: Sentry.EventHint
+): Sentry.Event | null => {
+    const token = hint.data?.aiAgentSafeToken;
+    const snapshot =
+        token && typeof token === 'object' ? approvedSentryEvents.get(token) : undefined;
+    if (!snapshot) return null;
+    const sanitized = structuredClone(snapshot);
+    sanitized.event_id =
+        typeof event.event_id === 'string' && /^[0-9a-f]{32}$/i.test(event.event_id)
+            ? event.event_id
+            : undefined;
+    sanitized.timestamp =
+        typeof event.timestamp === 'number' && Number.isFinite(event.timestamp)
+            ? event.timestamp
+            : undefined;
+    return sanitized;
+};
+
+const sanitizeTraceEvent = (event: Sentry.Event): Sentry.Event | null => {
+    if (
+        event.transaction !== 'LearnCard AI Agent run' &&
+        event.transaction !== 'LearnCard AI Agent post-run persistence'
+    )
+        return null;
+    const trace = event.contexts?.trace;
+    if (
+        typeof trace?.trace_id !== 'string' ||
+        !/^[0-9a-f]{32}$/.test(trace.trace_id) ||
+        typeof trace.span_id !== 'string' ||
+        !/^[0-9a-f]{16}$/.test(trace.span_id)
+    )
+        return null;
+    // Trace context is deliberately narrower than persistent lifecycle events.
+    // Never copy ambient SDK scope data, span data or descriptions.
+    // SDK 7 declares live Span objects here, but beforeSendTransaction receives
+    // their serialized toJSON payloads.
+    const spans = event.spans as unknown as SerializedTraceSpan[] | undefined;
+    return {
+        type: 'transaction',
+        event_id: event.event_id,
+        timestamp: event.timestamp,
+        start_timestamp: event.start_timestamp,
+        transaction: event.transaction,
+        platform: 'node',
+        contexts: {
+            trace: {
+                trace_id: trace.trace_id,
+                span_id: trace.span_id,
+                op:
+                    event.transaction === 'LearnCard AI Agent run'
+                        ? 'ai.agent.run'
+                        : 'ai.agent.post_run',
+                status: trace.status === 'ok' ? 'ok' : 'internal_error',
+            },
+        },
+        spans: spans
+            ?.filter(span => span.op === 'ai.model' || span.op === 'ai.tool')
+            .map(span => ({
+                trace_id: trace.trace_id,
+                span_id: /^[0-9a-f]{16}$/.test(span.span_id) ? span.span_id : undefined,
+                parent_span_id: trace.span_id,
+                op: span.op,
+                start_timestamp: span.start_timestamp,
+                timestamp: span.timestamp,
+                status: span.status === 'ok' ? 'ok' : 'internal_error',
+            })) as unknown as Sentry.Event['spans'],
+    };
+};
+
+const captureSafeEvent = (event: Sentry.Event): string | undefined => {
+    if (!activeConfig?.sentryDsn) return undefined;
+    const environment = activeConfig.sentryEnvironment ?? activeConfig.nodeEnv;
+    const release = activeConfig.sentryRelease;
+    const snapshot: Sentry.Event = {
+        ...event,
+        platform: 'node',
+        logger: SERVICE_NAME,
+        environment: /^(?:production|staging|development|test|dev)$/.test(environment)
+            ? environment
+            : hashIdentifier(environment),
+        release: release
+            ? /^(?:sha-)?[0-9a-f]{7,40}$/i.test(release)
+                ? release
+                : hashIdentifier(release)
+            : undefined,
+    };
+    const token = {};
+    approvedSentryEvents.set(token, snapshot);
+    return Sentry.getCurrentHub()
+        .getClient()
+        ?.captureEvent(
+            structuredClone(snapshot),
+            { data: { aiAgentSafeToken: token } },
+            new Sentry.Scope()
+        );
 };
 
 const captureOperationalError = (
     component: string,
     error: unknown,
-    fields: TelemetryFields
+    fields: TelemetryFields,
+    redact = scrubText,
+    includeMessage = false
 ): void => {
-    if (!activeConfig?.sentryDsn) return;
-
-    const safeErrorFields = getSafeErrorFields(error);
-
-    Sentry.captureException(new Error(`${component} failed`), {
-        tags: sanitizeFields({ component, ...fields }),
-        extra: safeErrorFields,
+    const values = sanitizedExceptions(error, redact, includeMessage);
+    captureSafeEvent({
+        level: 'error',
+        tags: sanitizeFields({ component, ...fields, errorType: values.at(-1)?.type }),
+        exception: { values },
     });
 };
 
@@ -241,21 +634,29 @@ const getEstimatedCostUsd = (
 export const getOwnerTelemetryId = (did: string): string =>
     createHash('sha256').update(did).digest('hex').slice(0, 16);
 
-export const initializeObservability = (config: ServiceConfig): void => {
+export const initializeObservability = (
+    config: ServiceConfig,
+    transport?: Sentry.NodeOptions['transport']
+): void => {
     activeConfig = config;
     sentryDeliveryState = config.sentryDsn ? 'unchecked' : 'disabled';
 
     if (config.sentryDsn && !sentryInitialized) {
         Sentry.init({
             dsn: config.sentryDsn,
+            transport,
             environment: config.sentryEnvironment ?? config.nodeEnv,
             release: config.sentryRelease,
             sendDefaultPii: false,
+            sampleRate: 1,
             tracesSampleRate: config.sentryTracesSampleRate ?? 0.1,
-            integrations: integrations =>
-                integrations.filter(
-                    integration => !['Console', 'Http', 'RequestData'].includes(integration.name)
-                ),
+            defaultIntegrations: false,
+            autoSessionTracking: false,
+            beforeBreadcrumb: () => null,
+            beforeSend: sanitizeSentryEvent,
+            // Explicit traces contain only our safe counters/identifiers. Drop
+            // other transaction payloads rather than forwarding ambient context.
+            beforeSendTransaction: event => sanitizeTraceEvent(event),
         });
         sentryInitialized = true;
     }
@@ -272,19 +673,20 @@ export const verifySentryDelivery = async (config: ServiceConfig): Promise<boole
     if (!config.sentryDsn || !sentryInitialized) return false;
 
     const client = Sentry.getCurrentHub().getClient();
-    let timeout: ReturnType<typeof setTimeout> | undefined;
+    let timeout: number | NodeJS.Timeout | undefined;
     const response = new Promise<number | undefined>(resolve => {
         client?.on?.('afterSendEvent', (event, result) => {
             if (event.event_id === eventId) resolve(result?.statusCode);
         });
     });
 
-    const eventId = Sentry.captureMessage('AI Agent deployment observability check', {
+    const eventId = captureSafeEvent({
+        message: 'AI Agent deployment observability check',
         level: 'info',
         fingerprint: ['ai-agent-deployment-observability-check'],
         tags: sanitizeFields({
             component: 'service.startup',
-            deploymentId: config.deploymentId,
+            deploymentId: config.deploymentId ? safeIdentifier(config.deploymentId) : undefined,
         }),
     });
 
@@ -345,7 +747,14 @@ export const recordHttpRequest = ({
     ownerId?: string;
 }): void => {
     const failed = statusCode >= 500;
-    const fields = { requestId, method, route, statusCode, durationMs, ownerId };
+    const fields = {
+        requestId: hashIdentifier(requestId),
+        method,
+        route,
+        statusCode,
+        durationMs,
+        ownerId,
+    };
 
     writeLog(failed ? 'error' : 'info', 'http.request.completed', fields);
     writeMetrics(
@@ -429,36 +838,84 @@ export const createAgentRunTelemetry = ({
     ownerDid,
     triggerType,
     config,
+    sensitiveContent = [],
 }: AgentRunTelemetryContext): {
     observer: AgentRunObserver;
     started: () => void;
     succeeded: (result: AgentRunResult, durationMs: number) => void;
     failed: (error: unknown, durationMs: number) => void;
+    postRunStarted: () => void;
     postRunSucceeded: (durationMs: number) => void;
     postRunFailed: (error: unknown, durationMs: number) => void;
+    registerToolNames: (names: string[]) => void;
 } => {
-    const ownerId = getOwnerTelemetryId(ownerDid);
+    const content = createContentRedactor([ownerDid, ...sensitiveContent], config);
+    const knownTools = new Set(['listSkills', 'searchSkills', 'readSkill']);
+    const safeModel = (model: string): string =>
+        (model === config.model || model === config.retroModel) &&
+        /^[a-z0-9][a-z0-9_.:/-]{0,100}$/i.test(model)
+            ? model
+            : hashIdentifier(model);
     const baseFields = {
-        runId,
-        correlationId,
-        ownerId,
+        runId: safeIdentifier(runId),
+        correlationId: hashIdentifier(correlationId),
+        ownerId: getOwnerTelemetryId(ownerDid),
         triggerType,
-        model: config.model,
+        model: safeModel(config.model),
+        maxRunTokens: config.maxRunTokens,
+        maxRunCostUsd: config.maxRunCostUsd,
+        maxOutputTokens: config.maxOutputTokens,
+        maxToolRounds: config.maxToolRounds,
+        runTimeoutMs: config.runTimeoutMs,
     };
     let runTrace: SentryTransaction | undefined;
+    let phase: 'main' | 'post-run' = 'main';
+    let inputTokens = 0;
+    let outputTokens = 0;
+    let totalTokens = 0;
+    let modelCalls = 0;
+    let toolSuccesses = 0;
+    let toolFailures = 0;
+    let providerRequestId: string | undefined;
+    const runFields = (): TelemetryFields => ({
+        cumulativeInputTokens: inputTokens,
+        cumulativeOutputTokens: outputTokens,
+        cumulativeTotalTokens: totalTokens,
+        ...baseFields,
+        phase,
+        inputTokens,
+        outputTokens,
+        totalTokens,
+        modelCalls,
+        toolCalls: toolSuccesses + toolFailures,
+        toolSuccesses,
+        toolFailures,
+        providerRequestId,
+    });
 
     return {
+        registerToolNames: names => {
+            for (const name of names) {
+                if (/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(name)) knownTools.add(name);
+            }
+        },
         observer: {
+            onSensitiveContent: value => content.register(value),
             onModelComplete: ({ model, round, durationMs, requestId, usage }) => {
+                modelCalls += 1;
+                inputTokens += usage?.inputTokens ?? 0;
+                outputTokens += usage?.outputTokens ?? 0;
+                totalTokens += usage?.totalTokens ?? 0;
+                providerRequestId = requestId ? hashIdentifier(requestId) : undefined;
                 const estimatedCostUsd = usage
                     ? getEstimatedCostUsd(usage, config, model)
                     : undefined;
                 const fields = {
-                    ...baseFields,
-                    model,
+                    ...runFields(),
+                    model: safeModel(model),
                     round,
                     durationMs,
-                    providerRequestId: requestId,
+                    providerRequestId,
                     inputTokens: usage?.inputTokens,
                     outputTokens: usage?.outputTokens,
                     totalTokens: usage?.totalTokens,
@@ -485,20 +942,25 @@ export const createAgentRunTelemetry = ({
                 }
 
                 writeLog('info', 'agent.model.completed', fields);
+                captureSafeEvent({
+                    message: 'agent.model.completed',
+                    level: 'info',
+                    tags: sanitizeFields({ ...fields, status: 'succeeded' }),
+                });
                 recordChildTrace(
                     runTrace,
-                    `${model} completion`,
+                    'Model completion',
                     'ai.model',
                     durationMs,
                     true,
                     fields
                 );
-                writeMetrics('agent.model.metrics', metrics, fields, { Model: model });
+                writeMetrics('agent.model.metrics', metrics, fields, { Model: safeModel(model) });
             },
             onModelError: ({ model, round, durationMs, error }) => {
                 const fields = {
-                    ...baseFields,
-                    model,
+                    ...runFields(),
+                    model: safeModel(model),
                     round,
                     durationMs,
                     ...getSafeErrorFields(error),
@@ -512,12 +974,18 @@ export const createAgentRunTelemetry = ({
                         { name: 'ModelCallLatency', unit: 'Milliseconds', value: durationMs },
                     ],
                     fields,
-                    { Model: model }
+                    { Model: safeModel(model) }
                 );
-                captureOperationalError('agent.model', error, baseFields);
+                captureOperationalError(
+                    'agent.model',
+                    error,
+                    { ...fields, status: 'failed' },
+                    content.redact,
+                    true
+                );
                 recordChildTrace(
                     runTrace,
-                    `${model} completion`,
+                    'Model completion',
                     'ai.model',
                     durationMs,
                     false,
@@ -525,9 +993,12 @@ export const createAgentRunTelemetry = ({
                 );
             },
             onToolComplete: ({ name, durationMs, success, error }) => {
+                if (success) toolSuccesses += 1;
+                else toolFailures += 1;
+                const toolName = knownTools.has(name) ? name : hashIdentifier(name);
                 const fields = {
-                    ...baseFields,
-                    toolName: name,
+                    ...runFields(),
+                    toolName,
                     durationMs,
                     success,
                     ...(error ? getSafeErrorFields(error) : {}),
@@ -542,12 +1013,39 @@ export const createAgentRunTelemetry = ({
                         { name: 'ToolCallLatency', unit: 'Milliseconds', value: durationMs },
                     ],
                     fields,
-                    { ToolName: name }
+                    { ToolName: toolName }
                 );
-                recordChildTrace(runTrace, name, 'ai.tool', durationMs, success, fields);
+                if (success) {
+                    captureSafeEvent({
+                        message: 'agent.tool.completed',
+                        level: 'info',
+                        tags: sanitizeFields({ ...fields, status: 'succeeded' }),
+                    });
+                } else {
+                    captureOperationalError(
+                        'agent.tool',
+                        error,
+                        { ...fields, status: 'failed' },
+                        content.redact,
+                        true
+                    );
+                }
+                recordChildTrace(
+                    runTrace,
+                    'Tool execution',
+                    'ai.tool',
+                    durationMs,
+                    success,
+                    fields
+                );
             },
         },
         started: () => {
+            captureSafeEvent({
+                message: 'agent.run.started',
+                level: 'info',
+                tags: sanitizeFields({ ...runFields(), status: 'started' }),
+            });
             writeLog('info', 'agent.run.started', baseFields);
             writeMetrics(
                 'agent.run.started',
@@ -559,7 +1057,7 @@ export const createAgentRunTelemetry = ({
         },
         succeeded: (result, durationMs) => {
             const fields = {
-                ...baseFields,
+                ...runFields(),
                 durationMs,
                 modelCalls: result.modelRuns.length,
                 toolCalls: result.toolRuns.length,
@@ -570,6 +1068,11 @@ export const createAgentRunTelemetry = ({
             };
 
             writeLog('info', 'agent.run.succeeded', fields);
+            captureSafeEvent({
+                message: 'agent.run.succeeded',
+                level: 'info',
+                tags: sanitizeFields({ ...fields, status: 'succeeded' }),
+            });
             writeMetrics(
                 'agent.run.succeeded',
                 [
@@ -591,7 +1094,7 @@ export const createAgentRunTelemetry = ({
         },
         failed: (error, durationMs) => {
             const fields = {
-                ...baseFields,
+                ...runFields(),
                 durationMs,
                 ...getSafeErrorFields(error),
             };
@@ -606,7 +1109,13 @@ export const createAgentRunTelemetry = ({
                 fields,
                 { TriggerType: triggerType }
             );
-            captureOperationalError('agent.run', error, baseFields);
+            captureOperationalError(
+                'agent.run',
+                error,
+                { ...fields, status: 'failed' },
+                content.redact,
+                true
+            );
             if (runTrace) {
                 for (const [key, value] of Object.entries(sanitizeFields(fields))) {
                     if (value !== undefined) runTrace.setData(key, value);
@@ -617,10 +1126,23 @@ export const createAgentRunTelemetry = ({
                 runTrace = undefined;
             }
         },
+        postRunStarted: () => {
+            phase = 'post-run';
+            captureSafeEvent({
+                message: 'agent.post-run.started',
+                level: 'info',
+                tags: sanitizeFields({ ...runFields(), status: 'started' }),
+            });
+        },
         postRunSucceeded: durationMs => {
-            const fields = { ...baseFields, durationMs };
+            const fields = { ...runFields(), durationMs, phase: 'post-run' };
 
             writeLog('info', 'agent.post-run.succeeded', fields);
+            captureSafeEvent({
+                message: 'agent.post-run.succeeded',
+                level: 'info',
+                tags: sanitizeFields({ ...fields, status: 'succeeded' }),
+            });
             writeMetrics(
                 'agent.post-run.succeeded',
                 [
@@ -640,7 +1162,8 @@ export const createAgentRunTelemetry = ({
         },
         postRunFailed: (error, durationMs) => {
             const fields = {
-                ...baseFields,
+                ...runFields(),
+                phase: 'post-run',
                 durationMs,
                 ...getSafeErrorFields(error),
             };
@@ -655,7 +1178,13 @@ export const createAgentRunTelemetry = ({
                 fields,
                 { TriggerType: triggerType }
             );
-            captureOperationalError('agent.post-run', error, baseFields);
+            captureOperationalError(
+                'agent.post-run',
+                error,
+                { ...fields, status: 'failed' },
+                content.redact,
+                true
+            );
             recordCompletedTrace(
                 'LearnCard AI Agent post-run persistence',
                 'ai.agent.post_run',
@@ -733,9 +1262,41 @@ export const recordAutonomyCycle = (summary: AutonomyCycleTelemetry): void => {
     }
 };
 
-export const recordServiceError = (component: string, error: unknown): void => {
-    const fields = { component, ...getSafeErrorFields(error) };
-
+export const recordServiceError = (
+    component: string,
+    error: unknown,
+    context?: {
+        runId: string;
+        correlationId?: string;
+        ownerDid: string;
+        phase: 'main' | 'post-run' | 'autonomy';
+        sensitiveContent?: string[];
+    }
+): void => {
+    const fields: TelemetryFields = {
+        component,
+        ...getSafeErrorFields(error),
+        ...(context
+            ? {
+                  runId: safeIdentifier(context.runId),
+                  correlationId: hashIdentifier(context.correlationId ?? context.runId),
+                  ownerId: getOwnerTelemetryId(context.ownerDid),
+                  triggerType: 'autonomous',
+                  phase: context.phase,
+                  status: 'failed',
+              }
+            : {}),
+    };
+    const content = createContentRedactor([
+        ...(context ? [context.ownerDid] : []),
+        ...(context?.sensitiveContent ?? []),
+    ]);
     writeLog('error', 'service.error', fields);
-    captureOperationalError(component, error, fields);
+    captureOperationalError(
+        component,
+        error,
+        fields,
+        content.redact,
+        Boolean(context?.sensitiveContent)
+    );
 };

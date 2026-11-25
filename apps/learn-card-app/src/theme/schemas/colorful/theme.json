@@ -17,7 +17,7 @@
                 "headerBrandingTextColor": "text-grayscale-900",
                 "headerTextColor": "text-grayscale-900",
                 "helperTextColor": "text-grayscale-600",
-                "backgroundPrimaryColor": "!bg-white",
+                "backgroundPrimaryColor": "bg-white!",
                 "backgroundSecondaryColor": "grayscale-100"
             },
             "aiPathway": {
@@ -29,7 +29,7 @@
                 "headerBrandingTextColor": "text-black",
                 "headerTextColor": "text-grayscale-900",
                 "helperTextColor": "text-grayscale-700",
-                "backgroundPrimaryColor": "!bg-white",
+                "backgroundPrimaryColor": "bg-white!",
                 "backgroundSecondaryColor": "grayscale-100"
             },
             "aiInsight": {
@@ -39,7 +39,7 @@
                 "borderColor": "lime-300",
                 "statusBarColor": "light",
                 "headerBrandingTextColor": "text-grayscale-900",
-                "backgroundPrimaryColor": "!bg-white",
+                "backgroundPrimaryColor": "bg-white!",
                 "backgroundSecondaryColor": "grayscale-100"
             },
             "skill": {
@@ -49,7 +49,7 @@
                 "borderColor": "violet-300",
                 "statusBarColor": "light",
                 "headerBrandingTextColor": "text-grayscale-900",
-                "backgroundPrimaryColor": "!bg-white",
+                "backgroundPrimaryColor": "bg-white!",
                 "backgroundSecondaryColor": "grayscale-100"
             },
             "socialBadge": {
@@ -60,7 +60,7 @@
                 "statusBarColor": "blue-400",
                 "headerBrandingTextColor": "text-black",
                 "headerTextColor": "text-white",
-                "backgroundPrimaryColor": "!bg-blue-400",
+                "backgroundPrimaryColor": "bg-blue-400!",
                 "backgroundSecondaryColor": "blue-200",
                 "tabActiveColor": "bg-blue-300"
             },
@@ -72,9 +72,22 @@
                 "statusBarColor": "pink-400",
                 "headerBrandingTextColor": "text-black",
                 "headerTextColor": "text-white",
-                "backgroundPrimaryColor": "!bg-pink-400",
+                "backgroundPrimaryColor": "bg-pink-400!",
                 "backgroundSecondaryColor": "pink-200",
                 "tabActiveColor": "bg-pink-300"
+            },
+            "qualifications": {
+                "primaryColor": "orange-300",
+                "secondaryColor": "orange-500",
+                "indicatorColor": "orange-200",
+                "borderColor": "orange-300",
+                "statusBarColor": "orange-400",
+                "headerBrandingTextColor": "text-grayscale-900",
+                "headerTextColor": "text-grayscale-900",
+                "helperTextColor": "text-grayscale-900",
+                "backgroundPrimaryColor": "bg-orange-400!",
+                "backgroundSecondaryColor": "orange-200",
+                "tabActiveColor": "bg-orange-300"
             },
             "learningHistory": {
                 "primaryColor": "emerald-401",
@@ -84,7 +97,7 @@
                 "statusBarColor": "emerald-401",
                 "headerBrandingTextColor": "text-black",
                 "headerTextColor": "text-white",
-                "backgroundPrimaryColor": "!bg-emerald-401",
+                "backgroundPrimaryColor": "bg-emerald-401!",
                 "backgroundSecondaryColor": "emerald-200",
                 "tabActiveColor": "bg-emerald-300"
             },
@@ -96,7 +109,7 @@
                 "statusBarColor": "yellow-400",
                 "headerBrandingTextColor": "text-black",
                 "headerTextColor": "text-white",
-                "backgroundPrimaryColor": "!bg-yellow-400",
+                "backgroundPrimaryColor": "bg-yellow-400!",
                 "backgroundSecondaryColor": "yellow-200",
                 "tabActiveColor": "bg-yellow-300"
             },
@@ -108,7 +121,7 @@
                 "statusBarColor": "violet-400",
                 "headerBrandingTextColor": "text-black",
                 "headerTextColor": "text-white",
-                "backgroundPrimaryColor": "!bg-violet-400",
+                "backgroundPrimaryColor": "bg-violet-400!",
                 "backgroundSecondaryColor": "violet-200",
                 "tabActiveColor": "bg-violet-300"
             },
@@ -120,7 +133,7 @@
                 "statusBarColor": "cyan-401",
                 "headerBrandingTextColor": "text-black",
                 "headerTextColor": "text-white",
-                "backgroundPrimaryColor": "!bg-cyan-401",
+                "backgroundPrimaryColor": "bg-cyan-401!",
                 "backgroundSecondaryColor": "cyan-200",
                 "tabActiveColor": "bg-cyan-400"
             },
@@ -132,7 +145,7 @@
                 "statusBarColor": "amber-400",
                 "headerBrandingTextColor": "text-black",
                 "headerTextColor": "text-white",
-                "backgroundPrimaryColor": "!bg-amber-400",
+                "backgroundPrimaryColor": "bg-amber-400!",
                 "backgroundSecondaryColor": "amber-200",
                 "tabActiveColor": "bg-amber-300"
             },
@@ -144,7 +157,7 @@
                 "statusBarColor": "blue-400",
                 "headerBrandingTextColor": "text-black",
                 "headerTextColor": "text-white",
-                "backgroundPrimaryColor": "!bg-blue-400",
+                "backgroundPrimaryColor": "bg-blue-400!",
                 "backgroundSecondaryColor": "blue-200",
                 "tabActiveColor": "bg-blue-300"
             }
@@ -174,15 +187,15 @@
             "primaryButtonColor": "bg-indigo-600 text-white",
             "secondaryButtonColor": "bg-gradient-rainbow text-white border-white",
             "indicatorColor": "text-rose-500",
-            "syncingColor": "!text-indigo-500",
-            "completedColor": "!text-emerald-900",
+            "syncingColor": "text-indigo-500!",
+            "completedColor": "text-emerald-900!",
             "logoColor": "text-grayscale-900"
         },
         "navbar": {
             "activeColor": "text-grayscale-900",
             "inactiveColor": "text-grayscale-800",
-            "syncingColor": "!text-indigo-500",
-            "completedColor": "!text-emerald-900"
+            "syncingColor": "text-indigo-500!",
+            "completedColor": "text-emerald-900!"
         },
         "introSlides": {
             "firstSlideBackground": "bg-indigo-500",
@@ -217,6 +230,13 @@
                     "backsplash": "#F9A8D4",
                     "spill": "#CA8A04",
                     "cupOutline": "#BE185D"
+                }
+            },
+            "qualifications": {
+                "spilledCup": {
+                    "backsplash": "#FDBA74",
+                    "spill": "#FB923C",
+                    "cupOutline": "#C2410C"
                 }
             },
             "accomplishment": {

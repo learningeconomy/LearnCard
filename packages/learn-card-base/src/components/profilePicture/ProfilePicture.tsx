@@ -114,9 +114,12 @@ export const UserProfilePicture: React.FC<{
 
     const [imageLoaded, setImageLoaded] = React.useState(false);
     const [imageFailed, setImageFailed] = React.useState(false);
+    const imageRef = React.useRef<HTMLImageElement>(null);
 
     React.useEffect(() => {
-        setImageLoaded(false);
+        // Cached images may finish before this effect, so don't hide an already-loaded image.
+        const image = imageRef.current;
+        setImageLoaded(Boolean(image?.complete && image.naturalWidth > 0));
         setImageFailed(false);
     }, [src]);
 
@@ -146,6 +149,7 @@ export const UserProfilePicture: React.FC<{
                 {letterToDisplay || <PersonGlyph className="w-1/2 h-1/2 opacity-90" />}
             </div>
             <img
+                ref={imageRef}
                 className={`relative rounded-full bg-white transition-opacity duration-150 ${customImageClass} ${
                     imageLoaded ? 'opacity-100' : 'opacity-0'
                 }`}

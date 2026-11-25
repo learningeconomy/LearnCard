@@ -27,7 +27,7 @@ export const ContractAudience: React.FC<{
                 />
                 {m['contractRequests.sharedWith']()}
             </h4>
-            <ul className="mt-3 space-y-2.5 text-sm text-grayscale-900">
+            <ul className="mt-3 space-y-v3-2.5 text-sm text-grayscale-900">
                 {profiles.map(profile => (
                     <li
                         key={profile.did}
@@ -40,7 +40,7 @@ export const ContractAudience: React.FC<{
                                 className="text-sm text-grayscale-500"
                             />
                         </span>
-                        <span className="break-words min-w-0">
+                        <span className="wrap-break-word min-w-0">
                             {profile.displayName || profile.profileId}
                         </span>
                     </li>

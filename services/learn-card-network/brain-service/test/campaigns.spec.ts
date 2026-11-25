@@ -1,0 +1,1563 @@
+import { claimCampaignEmail, acknowledgeCampaignEmail } from '@accesslayer/campaign/email';
+import { pageCampaignAudience } from '@accesslayer/campaign/audience';
+import { getAnnouncementPreferences } from '@accesslayer/campaign/preferences';
+import { getProfileByProfileId } from '@accesslayer/profile/read';
+import { updateProfile } from '@accesslayer/profile/update';
+import { signCampaignUnsubscribeToken } from '@helpers/campaign-unsubscribe.helpers';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { resolveTenantFromRequest } from '@learncard/email-templates';
+import {
+    CampaignAudienceSourceValidator,
+    type CampaignAudienceInput,
+    type CreateCampaignInput,
+} from '@learncard/types';
+
+import { neogma } from '@instance';
+import cache from '@cache';
+import { campaignsRouter } from '@routes/campaigns';
+import {
+    acknowledgeCampaignNotification,
+    getCampaignDeliveryRecipient,
+} from '@accesslayer/campaign/delivery';
+import * as notifications from '@helpers/notifications.helpers';
+import * as learnCardHelpers from '@helpers/learnCard.helpers';
+import { getLiveCampaignsForProfile } from '@accesslayer/campaign/read';
+import { MAX_CONFIRMED_DISPATCH_RECIPIENTS } from '@accesslayer/campaign/dispatch';
+import { int } from 'neo4j-driver';
+import { campaignTimeParams } from '@accesslayer/campaign/shared';
+import { constructUri } from '@helpers/uri.helpers';
+import { ensureCampaignConstraints } from '../src/models/campaign-constraints';
+import { buildCampaignNotification } from '@helpers/campaign-notifications.helpers';
+
+const domain = 'localhost%3A3000';
+const tenant = resolveTenantFromRequest({}, 'learncard');
+const did = (profileId: string): string => `did:key:${profileId}`;
+const caller = (profileId: string, scope = '*:*', callerDomain = domain) =>
+    campaignsRouter.createCaller({
+        domain: callerDomain,
+        tenant,
+        user: { did: did(profileId), scope, isChallengeValid: true },
+    });
+const admin = caller('campaign-admin');
+const learner = caller('learner');
+const other = caller('other');
+const draft = (overrides: Partial<CreateCampaignInput> = {}): CreateCampaignInput => ({
+    id: 'pilot-clr',
+    name: 'Pilot campaign',
+    channels: ['inApp'],
+    message: { title: 'Welcome' },
+    ...overrides,
+});
+const audience = (source: CampaignAudienceInput['source']): CampaignAudienceInput => ({
+    campaignId: 'pilot-clr',
+    source,
+});
+const addLearner = async (): Promise<void> => {
+    await admin.addAudience(audience({ type: 'dids', dids: [did('learner')] }));
+};
+
+it.each([
+    { channels: ['notify'], enabled: true, expected: false },
+    { channels: ['inApp', 'notify'], enabled: false, expected: false },
+    { channels: ['inApp', 'notify'], enabled: true, expected: true },
+] as const)(
+    'aligns notification destinations with learner feed eligibility (%j)',
+    async ({ channels, enabled, expected }) => {
+        const campaign = await admin.create(
+            draft({
+                status: 'live',
+                channels: [...channels],
+                message: { title: 'News', enabled },
+                notification: { title: 'News', body: 'Read this announcement' },
+            })
+        );
+        await addLearner();
+        const signer = vi.spyOn(learnCardHelpers, 'getDidWebLearnCard').mockResolvedValue({
+            id: { did: () => 'did:web:brain.example' },
+        } as never);
+        try {
+            const notification = await buildCampaignNotification(campaign, {
+                profileId: 'learner',
+                did: did('learner'),
+            });
+            expect(notification.data?.metadata?.campaignHasInApp).toBe(expected);
+            const feed = await getLiveCampaignsForProfile('learner');
+            expect(feed.some(item => item.campaign.id === campaign.id)).toBe(expected);
+        } finally {
+            signer.mockRestore();
+        }
+    }
+);
+
+beforeAll(async () => {
+    await ensureCampaignConstraints();
+});
+beforeEach(async () => {
+    await neogma.queryRunner.run('MATCH (n) DETACH DELETE n');
+    await neogma.queryRunner.run(
+        `UNWIND $profiles AS properties CREATE (p:Profile) SET p = properties`,
+        {
+            profiles: [
+                'campaign-admin',
+                'learner',
+                'other',
+                'pending',
+                'revoked',
+                'minor',
+                'child',
+                'unknown-dob',
+                'managed-adult',
+                'managed-service',
+            ].map(profileId => ({
+                profileId,
+                did: did(profileId),
+                displayName: profileId,
+                shortBio: '',
+                bio: '',
+                type:
+                    profileId === 'child'
+                        ? 'child'
+                        : profileId === 'managed-service'
+                          ? 'organization'
+                          : 'person',
+                isServiceProfile: profileId === 'managed-service',
+                dob:
+                    profileId === 'minor'
+                        ? '2020-01-01'
+                        : profileId === 'unknown-dob'
+                          ? ''
+                          : '1990-01-01',
+            })),
+        }
+    );
+    for (const profileId of [
+        'campaign-admin',
+        'learner',
+        'other',
+        'minor',
+        'child',
+        'unknown-dob',
+        'managed-adult',
+        'managed-service',
+    ]) {
+        await cache.delete([`campaigns:user:${profileId}`]);
+    }
+});
+afterAll(async () => {
+    await neogma.driver.close();
+});
+
+describe('campaign lifecycle and access', () => {
+    it('requires a signed-in admin for every management procedure', async () => {
+        await expect(
+            campaignsRouter.createCaller({ domain, tenant }).getMyCampaigns()
+        ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        await expect(other.isAdmin()).resolves.toBe(false);
+        await expect(admin.isAdmin()).resolves.toBe(true);
+        for (const request of [
+            () => other.create(draft()),
+            () => other.get({ campaignId: 'pilot-clr' }),
+            () => other.update({ campaignId: 'pilot-clr', updates: { name: 'No' } }),
+            () => other.delete({ campaignId: 'pilot-clr' }),
+            () => other.list(),
+            () => other.setStatus({ campaignId: 'pilot-clr', status: 'live' }),
+            () => other.previewAudience(audience({ type: 'dids', dids: [did('learner')] })),
+            () => other.addAudience(audience({ type: 'dids', dids: [did('learner')] })),
+            () => other.pageAudience({ campaignId: 'pilot-clr' }),
+            () => other.getStats({ campaignId: 'pilot-clr' }),
+            () => other.sendTestToMe({ campaignId: 'pilot-clr' }),
+            () => other.dispatch({ campaignId: 'pilot-clr' }),
+            () => other.previewDispatch({ campaignId: 'pilot-clr' }),
+        ])
+            await expect(request()).rejects.toMatchObject({ code: 'FORBIDDEN' });
+        await expect(caller('campaign-admin', '*:read').create(draft())).rejects.toMatchObject({
+            code: 'UNAUTHORIZED',
+        });
+        await expect(
+            caller('learner', 'campaigns:read').enroll({ campaignId: 'pilot-clr' })
+        ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+    });
+
+    it('forces message identity, enforces uniqueness, validates merged updates, and keeps archived campaigns immutable', async () => {
+        const campaign = await admin.create(
+            draft({ message: { id: 'different', title: 'Welcome' } })
+        );
+        expect(campaign.message?.id).toBe('pilot-clr');
+        await expect(admin.create(draft())).rejects.toMatchObject({ code: 'CONFLICT' });
+        await expect(
+            admin.update({ campaignId: campaign.id, updates: { channels: ['notify'] } })
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        const updated = await admin.update({
+            campaignId: campaign.id,
+            updates: {
+                message: { id: 'wrong', title: 'Changed' },
+                startsAt: '2026-01-01T00:00:00Z',
+                endsAt: '2027-01-01T00:00:00Z',
+            },
+        });
+        expect(updated.message).toMatchObject({ id: campaign.id, title: 'Changed' });
+        await expect(
+            admin.update({ campaignId: campaign.id, updates: { startsAt: '2028-01-01T00:00:00Z' } })
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        expect((await admin.get({ campaignId: campaign.id })).startsAt).toBe(
+            '2026-01-01T00:00:00.000Z'
+        );
+        await admin.update({ campaignId: campaign.id, updates: { startsAt: null, endsAt: null } });
+        expect(await admin.get({ campaignId: campaign.id })).not.toHaveProperty('startsAt');
+        await admin.setStatus({ campaignId: campaign.id, status: 'archived' });
+        await expect(
+            admin.update({ campaignId: campaign.id, updates: { name: 'Changed' } })
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        await expect(
+            admin.setStatus({ campaignId: campaign.id, status: 'live' })
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        await expect(addLearner()).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        await admin.delete({ campaignId: campaign.id });
+        await expect(admin.get({ campaignId: campaign.id })).rejects.toMatchObject({
+            code: 'NOT_FOUND',
+        });
+    });
+
+    it.each(['live', 'paused'] as const)(
+        'requires archiving a %s campaign before deletion and preserves audience and engagement on refusal',
+        async status => {
+            await admin.create(draft({ status: 'live' }));
+            await addLearner();
+            await learner.recordEvent({ campaignId: 'pilot-clr', event: 'shown' });
+            if (status === 'paused') await admin.setStatus({ campaignId: 'pilot-clr', status });
+            const before = await admin.get({ campaignId: 'pilot-clr' });
+            const stats = await admin.getStats({ campaignId: 'pilot-clr' });
+
+            await expect(admin.delete({ campaignId: 'pilot-clr' })).rejects.toMatchObject({
+                code: 'BAD_REQUEST',
+                message: 'Archive live or paused campaigns before deleting them',
+            });
+            expect(await admin.get({ campaignId: 'pilot-clr' })).toEqual(before);
+            expect(await admin.getStats({ campaignId: 'pilot-clr' })).toEqual(stats);
+            const state = await neogma.queryRunner.run(
+                `MATCH (:Profile {profileId: 'learner'})-[state:CAMPAIGN_STATE]->(:Campaign {id: 'pilot-clr'})
+                 RETURN state.shownCount AS shownCount`
+            );
+            expect(state.records[0]!.get('shownCount').toNumber()).toBe(1);
+
+            await admin.setStatus({ campaignId: 'pilot-clr', status: 'archived' });
+            expect(await admin.delete({ campaignId: 'pilot-clr' })).toBe(true);
+            await expect(admin.get({ campaignId: 'pilot-clr' })).rejects.toMatchObject({
+                code: 'NOT_FOUND',
+            });
+        }
+    );
+
+    it('deletes draft campaigns and reports missing campaigns', async () => {
+        await admin.create(draft());
+        expect(await admin.delete({ campaignId: 'pilot-clr' })).toBe(true);
+        await expect(admin.delete({ campaignId: 'pilot-clr' })).rejects.toMatchObject({
+            code: 'NOT_FOUND',
+        });
+    });
+
+    it.each(['live', 'paused'] as const)(
+        'does not let a %s campaign roll back to draft and bypass archive-before-delete',
+        async status => {
+            await admin.create(draft({ status: 'live' }));
+            if (status === 'paused') await admin.setStatus({ campaignId: 'pilot-clr', status });
+
+            await expect(
+                admin.setStatus({ campaignId: 'pilot-clr', status: 'draft' })
+            ).rejects.toMatchObject({
+                code: 'BAD_REQUEST',
+                message: `Campaign status cannot transition from ${status} to draft`,
+            });
+            await expect(
+                admin.update({ campaignId: 'pilot-clr', updates: { status: 'draft' } })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            await expect(admin.delete({ campaignId: 'pilot-clr' })).rejects.toMatchObject({
+                code: 'BAD_REQUEST',
+            });
+            expect(await admin.get({ campaignId: 'pilot-clr' })).toMatchObject({ status });
+        }
+    );
+
+    it('rejects an editor save after another administrator pauses the campaign', async () => {
+        const opened = await admin.create(draft({ status: 'live' }));
+        const paused = await admin.setStatus({ campaignId: opened.id, status: 'paused' });
+        await expect(
+            admin.update({
+                campaignId: opened.id,
+                expectedUpdatedAt: opened.updatedAt,
+                updates: { name: 'Stale editor', status: 'live' },
+            })
+        ).rejects.toMatchObject({ code: 'CONFLICT' });
+        expect(await admin.get({ campaignId: opened.id })).toEqual(paused);
+    });
+
+    it('serializes two editors saving the same revision without overwriting the winner', async () => {
+        const opened = await admin.create(draft());
+        const results = await Promise.allSettled(
+            ['First editor', 'Second editor'].map(name =>
+                admin.update({
+                    campaignId: opened.id,
+                    expectedUpdatedAt: opened.updatedAt,
+                    updates: { name },
+                })
+            )
+        );
+        const accepted = results.filter(result => result.status === 'fulfilled');
+        const rejected = results.filter(result => result.status === 'rejected');
+        expect(accepted).toHaveLength(1);
+        expect(rejected).toHaveLength(1);
+        expect(rejected[0]?.reason).toMatchObject({ code: 'CONFLICT' });
+        expect(await admin.get({ campaignId: opened.id })).toEqual(accepted[0]?.value);
+    });
+
+    it('advances the revision even when writes share a clock tick', async () => {
+        const opened = await admin.create(draft());
+        const clock = vi.spyOn(Date, 'now').mockReturnValue(Date.parse(opened.updatedAt));
+        try {
+            const updated = await admin.update({
+                campaignId: opened.id,
+                expectedUpdatedAt: opened.updatedAt,
+                updates: { name: 'First edit' },
+            });
+            expect(Date.parse(updated.updatedAt)).toBe(Date.parse(opened.updatedAt) + 1);
+            await expect(
+                admin.update({
+                    campaignId: opened.id,
+                    expectedUpdatedAt: opened.updatedAt,
+                    updates: { name: 'Stale edit' },
+                })
+            ).rejects.toMatchObject({ code: 'CONFLICT' });
+            const next = await admin.update({
+                campaignId: opened.id,
+                expectedUpdatedAt: updated.updatedAt,
+                updates: { name: 'Fresh edit' },
+            });
+            expect(Date.parse(next.updatedAt)).toBe(Date.parse(updated.updatedAt) + 1);
+        } finally {
+            clock.mockRestore();
+        }
+    });
+
+    it('paginates campaigns by immutable ID and filters status', async () => {
+        await admin.create(draft({ id: 'aaa', status: 'live' }));
+        await admin.create(draft({ id: 'bbb' }));
+        const first = await admin.list({ limit: 1 });
+        expect(first).toMatchObject({ hasMore: true, cursor: 'aaa', records: [{ id: 'aaa' }] });
+        expect(await admin.list({ limit: 1, cursor: first.cursor })).toMatchObject({
+            hasMore: false,
+            records: [{ id: 'bbb' }],
+        });
+        expect((await admin.list({ status: 'live' })).records.map(item => item.id)).toEqual([
+            'aaa',
+        ]);
+    });
+
+    it('serializes concurrent creation and partial edits without losing fields', async () => {
+        const creates = await Promise.allSettled([admin.create(draft()), admin.create(draft())]);
+        expect(creates.filter(result => result.status === 'fulfilled')).toHaveLength(1);
+        expect(creates.find(result => result.status === 'rejected')).toMatchObject({
+            reason: { code: 'CONFLICT' },
+        });
+        await admin.update({
+            campaignId: 'pilot-clr',
+            updates: { status: 'live', selfEnroll: true, excludeMinors: false },
+        });
+        await Promise.all([
+            admin.update({ campaignId: 'pilot-clr', updates: { name: 'Renamed' } }),
+            admin.update({ campaignId: 'pilot-clr', updates: { message: { title: 'Updated' } } }),
+        ]);
+        expect(await admin.get({ campaignId: 'pilot-clr' })).toMatchObject({
+            name: 'Renamed',
+            status: 'live',
+            selfEnroll: true,
+            excludeMinors: false,
+            message: { title: 'Updated' },
+        });
+    });
+});
+
+describe('campaign audiences', () => {
+    it('reports newly added profiles and missing DIDs across aliases and retries', async () => {
+        await admin.create(draft());
+        const input = audience({
+            type: 'dids',
+            dids: [
+                did('learner'),
+                `did:web:${domain}:users:learner`,
+                'did:key:missing',
+                did('minor'),
+            ],
+        });
+        expect(await admin.previewAudience(input)).toEqual({
+            count: 1,
+            added: 0,
+            notFound: ['did:key:missing'],
+        });
+        expect(await admin.addAudience(input)).toEqual({
+            count: 1,
+            added: 1,
+            notFound: ['did:key:missing'],
+        });
+        expect(await admin.addAudience(input)).toEqual({
+            count: 1,
+            added: 0,
+            notFound: ['did:key:missing'],
+        });
+    });
+
+    it('deduplicates DID aliases and verified emails, applies minor policy, and pages eligible profiles', async () => {
+        await admin.create(draft());
+        await neogma.queryRunner.run(
+            `MATCH (p:Profile {profileId: 'learner'}) CREATE (p)-[:HAS_CONTACT_METHOD]->(:ContactMethod {type:'email', value:'  Learner@Example.COM  ', isVerified:true})`
+        );
+        await neogma.queryRunner.run(
+            `MATCH (p:Profile {profileId: 'other'}) CREATE (p)-[:HAS_CONTACT_METHOD]->(:ContactMethod {type:'email', value:'unverified@example.com', isVerified:false})`
+        );
+        const inputs = audience({
+            type: 'dids',
+            dids: [
+                did('learner'),
+                did('other'),
+                `did:web:${domain}:users:learner`,
+                did('minor'),
+                did('child'),
+                did('unknown-dob'),
+            ],
+        });
+        expect(await admin.previewAudience(inputs)).toMatchObject({ count: 2 });
+        expect((await admin.getStats({ campaignId: 'pilot-clr' })).audience).toBe(0);
+        expect(await admin.addAudience(inputs)).toMatchObject({ count: 2 });
+        expect(
+            await admin.previewAudience(
+                audience({
+                    type: 'emails',
+                    emails: ['LEARNER@example.com', 'unverified@example.com'],
+                })
+            )
+        ).toMatchObject({ count: 1 });
+        expect(
+            await admin.addAudience(
+                audience({
+                    type: 'emails',
+                    emails: ['LEARNER@example.com', 'unverified@example.com'],
+                })
+            )
+        ).toMatchObject({ count: 1 });
+        expect((await admin.getStats({ campaignId: 'pilot-clr' })).audience).toBe(2);
+        const page = await admin.pageAudience({ campaignId: 'pilot-clr', limit: 1 });
+        expect(page).toMatchObject({
+            hasMore: true,
+            cursor: 'learner',
+            records: [{ profileId: 'learner' }],
+        });
+        expect(
+            await admin.pageAudience({ campaignId: 'pilot-clr', cursor: page.cursor })
+        ).toMatchObject({ hasMore: false, records: [{ profileId: 'other' }] });
+        await admin.update({ campaignId: 'pilot-clr', updates: { excludeMinors: false } });
+        expect(await admin.addAudience(inputs)).toMatchObject({ count: 4 });
+        await admin.update({ campaignId: 'pilot-clr', updates: { excludeMinors: true } });
+        expect((await admin.pageAudience({ campaignId: 'pilot-clr' })).records).toHaveLength(2);
+    });
+
+    it.each([
+        ['localhost%3A3000', 'did:web:localhost%3A3000:users:learner'],
+        ['network.learncard.app', 'did:web:network.learncard.app:users:learner'],
+        [
+            'pr-99.preview.learncard.ai:brain',
+            'did:web:pr-99.preview.learncard.ai%3Abrain:users:learner',
+        ],
+    ])('matches the canonical did:web alias for %s', async (callerDomain, learnerDid) => {
+        await admin.create(draft());
+        const domainAdmin = caller('campaign-admin', '*:*', callerDomain);
+
+        expect(
+            await domainAdmin.previewAudience(audience({ type: 'dids', dids: [learnerDid] }))
+        ).toMatchObject({ count: 1 });
+    });
+
+    it('treats managed human profiles as minors without classifying managed services as children', async () => {
+        await admin.create(draft({ status: 'live', selfEnroll: true }));
+        await neogma.queryRunner.run(
+            `MATCH (adult:Profile {profileId: 'managed-adult'}),
+                   (service:Profile {profileId: 'managed-service'}),
+                   (admin:Profile {profileId: 'campaign-admin'})
+             CREATE (:ProfileManager {id: 'guardian-manager', created: $now, managerType: 'guardian'})-[:MANAGES]->(adult)
+             CREATE (service)-[:MANAGED_BY]->(admin)`,
+            { now: new Date().toISOString() }
+        );
+        const input = audience({
+            type: 'dids',
+            dids: [did('managed-adult'), did('managed-service')],
+        });
+
+        expect(await admin.previewAudience(input)).toMatchObject({ count: 1 });
+        await admin.update({ campaignId: 'pilot-clr', updates: { excludeMinors: false } });
+        expect(await admin.previewAudience(input)).toMatchObject({ count: 2 });
+        expect(await admin.addAudience(input)).toMatchObject({ count: 2 });
+        await expect(
+            caller('managed-adult').enroll({ campaignId: 'pilot-clr' })
+        ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+        await expect(caller('managed-service').enroll({ campaignId: 'pilot-clr' })).resolves.toBe(
+            true
+        );
+
+        await admin.update({ campaignId: 'pilot-clr', updates: { excludeMinors: true } });
+        expect(await caller('managed-adult').getMyCampaigns()).toEqual([]);
+        expect(await caller('managed-service').getMyCampaigns()).toHaveLength(1);
+    });
+
+    it.each([null, '', 'unknown'])(
+        'excludes unavailable birthdays (%s) from targeting, discovery, enrollment and events',
+        async dob => {
+            await neogma.queryRunner.run(
+                `MATCH (p:Profile {profileId: 'unknown-dob'}) SET p.dob = $dob`,
+                { dob }
+            );
+            const unknown = caller('unknown-dob');
+            for (const excludeMinors of [true, false]) {
+                const campaignId = `birthday-${excludeMinors}`;
+                await admin.create(
+                    draft({ id: campaignId, status: 'live', selfEnroll: true, excludeMinors })
+                );
+                const input = {
+                    campaignId,
+                    source: { type: 'dids' as const, dids: [did('unknown-dob')] },
+                };
+                expect(await admin.previewAudience(input)).toMatchObject({ count: 0 });
+                expect(await admin.addAudience(input)).toMatchObject({ count: 0 });
+                expect(await unknown.getMyCampaigns()).toEqual([]);
+                await expect(unknown.enroll({ campaignId })).rejects.toMatchObject({
+                    code: 'FORBIDDEN',
+                });
+                expect((await admin.getStats({ campaignId })).audience).toBe(0);
+
+                // Existing membership must not bypass a missing birthday at read/event time.
+                await neogma.queryRunner.run(
+                    `MATCH (p:Profile {profileId: 'unknown-dob'}), (c:Campaign {id: $campaignId})
+                     CREATE (p)-[:IN_CAMPAIGN_AUDIENCE]->(c)`,
+                    { campaignId }
+                );
+                expect((await admin.pageAudience({ campaignId })).records).toEqual([]);
+                expect(await unknown.getMyCampaigns()).toEqual([]);
+                expect(await unknown.recordEvent({ campaignId, event: 'shown' })).toBe(false);
+                expect((await admin.getStats({ campaignId })).shown).toBe(0);
+            }
+        }
+    );
+
+    it('matches profile and listing senders, deduplicates dual attribution, and preserves recipient identity', async () => {
+        await admin.create(draft());
+        await neogma.queryRunner.run(
+            `CREATE (listing:AppStoreListing {listing_id:'transcript-app'}), (boost:Boost {id:'test-boost'})
+             WITH listing, boost MATCH (sender:Profile {profileId:'campaign-admin'})
+             UNWIND $ids AS id MATCH (p:Profile {profileId:id})
+             CREATE (credential:Credential {id:id})-[:INSTANCE_OF]->(boost)
+             CREATE (sender)-[sent:CREDENTIAL_SENT]->(credential)
+             SET sent.to = id, sent.date = '2026-10-20T00:00:00.000Z', sent.\`metadata.kind\` = 'transcript',
+                 sent.status = CASE WHEN id = 'revoked' THEN 'revoked' ELSE null END
+             CREATE (listing)-[appSent:CREDENTIAL_SENT]->(credential) SET appSent = properties(sent)
+             FOREACH (unused IN CASE WHEN id = 'pending' THEN [] ELSE [1] END |
+                CREATE (credential)-[:CREDENTIAL_RECEIVED]->(p))`,
+            { ids: ['learner', 'pending', 'revoked'] }
+        );
+        // A shared credential can have other recipients: only sent.to belongs to this send.
+        await neogma.queryRunner.run(
+            `MATCH (c:Credential {id:'learner'}), (p:Profile {profileId:'other'}) CREATE (c)-[:CREDENTIAL_RECEIVED]->(p)`
+        );
+        // Legacy and specialized paths can write a listing-only sent edge. The
+        // shared learner credential above has both edges and must still count once.
+        await neogma.queryRunner.run(
+            `MATCH (listing:AppStoreListing {listing_id:'transcript-app'}),
+                   (boost:Boost {id:'test-boost'}), (other:Profile {profileId:'other'})
+             CREATE (listingOnly:Credential {id:'listing-only'})-[:INSTANCE_OF]->(boost)
+             CREATE (listing)-[:CREDENTIAL_SENT {
+                to:'other', date:'2026-10-20T00:00:00.000Z', \`metadata.kind\`:'listing-only'
+             }]->(listingOnly)
+             CREATE (listingOnly)-[:CREDENTIAL_RECEIVED]->(other)`
+        );
+        for (const identity of [
+            { senderProfileId: 'campaign-admin' },
+            { listingId: 'transcript-app' },
+        ]) {
+            const source = {
+                type: 'credentialsSentBy' as const,
+                ...identity,
+                metadata: { kind: 'transcript' },
+                since: '2026-10-19T00:00:00Z',
+            };
+            expect(await admin.previewAudience(audience(source))).toMatchObject({ count: 1 });
+            expect(await admin.addAudience(audience(source))).toMatchObject({ count: 1 });
+            expect(
+                await admin.previewAudience(audience({ ...source, includePending: true }))
+            ).toMatchObject({ count: 2 });
+            expect(
+                await admin.previewAudience(audience({ ...source, metadata: { kind: 'badge' } }))
+            ).toMatchObject({ count: 0 });
+            expect(
+                await admin.previewAudience(audience({ ...source, since: '2026-10-21T00:00:00Z' }))
+            ).toMatchObject({ count: 0 });
+        }
+        expect(
+            await admin.previewAudience(
+                audience({ type: 'credentialsSentBy', listingId: 'other-app' })
+            )
+        ).toMatchObject({ count: 0 });
+        const boostSource = {
+            type: 'boostRecipients' as const,
+            boostUri: `lc:network:${domain}/trpc:boost:test-boost`,
+        };
+        expect(await admin.previewAudience(audience(boostSource))).toMatchObject({ count: 2 });
+        expect(
+            await admin.addAudience(audience({ ...boostSource, includePending: true }))
+        ).toMatchObject({ count: 3 });
+        for (const [callerDomain, boostUri] of [
+            [
+                'pr-99.preview.learncard.ai:brain',
+                constructUri('boost', 'test-boost', 'pr-99.preview.learncard.ai:brain'),
+            ],
+            [
+                'pr-99.preview.learncard.ai:brain',
+                'lc:network:pr-99.preview.learncard.ai%3Abrain/trpc:boost:test-boost',
+            ],
+            ['network.learncard.app', constructUri('boost', 'test-boost', 'network.learncard.app')],
+        ] as const) {
+            const domainAdmin = caller('campaign-admin', '*:*', callerDomain);
+            expect(
+                await domainAdmin.previewAudience(audience({ type: 'boostRecipients', boostUri }))
+            ).toMatchObject({ count: 2 });
+        }
+        expect((await admin.pageAudience({ campaignId: 'pilot-clr' })).records).toEqual([
+            { profileId: 'learner', did: did('learner') },
+            { profileId: 'other', did: did('other') },
+            { profileId: 'pending', did: did('pending') },
+        ]);
+        expect((await admin.getStats({ campaignId: 'pilot-clr' })).audience).toBe(3);
+        await expect(
+            admin.previewAudience(
+                audience({
+                    ...boostSource,
+                    boostUri: 'lc:network:foreign.example/trpc:boost:test-boost',
+                })
+            )
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        await neogma.queryRunner.run(
+            `MATCH (c:Credential {id:'learner'})-[received:CREDENTIAL_RECEIVED]->() SET received.status = 'revoked'`
+        );
+        expect(await admin.previewAudience(audience(boostSource))).toMatchObject({ count: 1 });
+        await neogma.queryRunner.run(
+            `MATCH (c:Credential {id:'pending'}), (p:Profile {profileId:'pending'}) CREATE (c)-[:CREDENTIAL_RECEIVED {status:'pending'}]->(p)`
+        );
+        expect(await admin.previewAudience(audience(boostSource))).toMatchObject({ count: 1 });
+    });
+
+    it('matches inbox claims by issuer and claim time, and rejects injection before querying', async () => {
+        await admin.create(draft());
+        await neogma.queryRunner.run(
+            `MATCH (p:Profile {profileId:'learner'}) CREATE (p)-[:CLAIMED_INBOX_CREDENTIAL {timestamp:'2026-10-20T00:00:00.000Z'}]->(:InboxCredential {id:'inbox', issuerDid:'did:key:issuer'})`
+        );
+        const source = {
+            type: 'inboxClaims' as const,
+            issuerDid: 'did:key:issuer',
+            since: '2026-10-19T00:00:00Z',
+        };
+        expect(await admin.previewAudience(audience(source))).toMatchObject({ count: 1 });
+        expect(await admin.addAudience(audience(source))).toMatchObject({ count: 1 });
+        expect(
+            await admin.previewAudience(audience({ ...source, issuerDid: 'did:key:other' }))
+        ).toMatchObject({ count: 0 });
+        expect(
+            await admin.previewAudience(audience({ ...source, since: '2026-10-21T00:00:00Z' }))
+        ).toMatchObject({ count: 0 });
+        const unsafe = {
+            type: 'credentialsSentBy' as const,
+            senderProfileId: 'campaign-admin',
+            metadata: { 'kind`]) MATCH (n) DETACH DELETE n //': 'x' },
+        };
+        expect(CampaignAudienceSourceValidator.safeParse(unsafe).success).toBe(false);
+        await expect(admin.addAudience(audience(unsafe))).rejects.toMatchObject({
+            code: 'BAD_REQUEST',
+        });
+        expect((await admin.get({ campaignId: 'pilot-clr' })).id).toBe('pilot-clr');
+    });
+});
+
+describe('campaign eligibility and engagement', () => {
+    it('applies live windows, channels, membership, message enablement and current minor eligibility', async () => {
+        await admin.create(
+            draft({
+                status: 'live',
+                startsAt: '2026-10-20T00:00:00Z',
+                endsAt: '2026-10-23T00:00:00Z',
+            })
+        );
+        await addLearner();
+        expect(
+            await getLiveCampaignsForProfile('learner', new Date('2026-10-19T23:59:59Z'))
+        ).toEqual([]);
+        expect(
+            await getLiveCampaignsForProfile('learner', new Date('2026-10-20T00:00:00Z'))
+        ).toHaveLength(1);
+        expect(
+            await getLiveCampaignsForProfile('learner', new Date('2026-10-23T00:00:00Z'))
+        ).toEqual([]);
+        expect(await other.getMyCampaigns()).toEqual([]);
+        await admin.update({ campaignId: 'pilot-clr', updates: { startsAt: null, endsAt: null } });
+        expect(await learner.getMyCampaigns()).toHaveLength(1);
+        await neogma.queryRunner.run(
+            `MATCH (p:Profile {profileId:'learner'}) SET p.type = 'child'`
+        );
+        expect(await learner.getMyCampaigns()).toEqual([]);
+        await neogma.queryRunner.run(
+            `MATCH (p:Profile {profileId:'learner'}) SET p.type = 'person'`
+        );
+        await admin.setStatus({ campaignId: 'pilot-clr', status: 'paused' });
+        expect(await learner.getMyCampaigns()).toEqual([]);
+        await admin.update({
+            campaignId: 'pilot-clr',
+            updates: { status: 'live', message: { title: 'Disabled', enabled: false } },
+        });
+        expect(await learner.getMyCampaigns()).toEqual([]);
+        await admin.update({
+            campaignId: 'pilot-clr',
+            updates: {
+                message: { title: 'Notify' },
+                channels: ['notify'],
+                notification: { title: 'Hi', body: 'Hello' },
+            },
+        });
+        expect(await learner.getMyCampaigns()).toEqual([]);
+    });
+
+    it.each(['not-json', JSON.stringify({ id: 'broken-campaign' })])(
+        'skips a malformed stored definition without breaking other campaign discovery',
+        async invalidDefinition => {
+            await admin.create(draft({ id: 'valid-campaign', status: 'live' }));
+            await admin.create(draft({ id: 'broken-campaign', status: 'live' }));
+            for (const campaignId of ['valid-campaign', 'broken-campaign']) {
+                await admin.addAudience({
+                    campaignId,
+                    source: { type: 'dids', dids: [did('learner')] },
+                });
+            }
+            await neogma.queryRunner.run(
+                `MATCH (c:Campaign {id: 'broken-campaign'}) SET c.definition = $definition`,
+                { definition: invalidDefinition }
+            );
+
+            expect((await learner.getMyCampaigns()).map(item => item.campaign.id)).toEqual([
+                'valid-campaign',
+            ]);
+        }
+    );
+
+    it('supports self-enrollment only while live/enabled and never for known minors', async () => {
+        await admin.create(draft({ status: 'live', selfEnroll: true, excludeMinors: false }));
+        expect(await learner.getMyCampaigns()).toHaveLength(1);
+        expect(await learner.recordEvent({ campaignId: 'pilot-clr', event: 'shown' })).toBe(false);
+        await expect(caller('minor').enroll({ campaignId: 'pilot-clr' })).rejects.toMatchObject({
+            code: 'FORBIDDEN',
+        });
+        await expect(caller('child').enroll({ campaignId: 'pilot-clr' })).rejects.toMatchObject({
+            code: 'FORBIDDEN',
+        });
+        await Promise.all(
+            Array.from({ length: 5 }, () => learner.enroll({ campaignId: 'pilot-clr' }))
+        );
+        expect(await admin.getStats({ campaignId: 'pilot-clr' })).toMatchObject({
+            audience: 1,
+            enrolled: 1,
+        });
+        await admin.addAudience(audience({ type: 'dids', dids: [did('learner')] }));
+        expect((await admin.getStats({ campaignId: 'pilot-clr' })).enrolled).toBe(1);
+        await admin.setStatus({ campaignId: 'pilot-clr', status: 'paused' });
+        await expect(other.enroll({ campaignId: 'pilot-clr' })).rejects.toMatchObject({
+            code: 'FORBIDDEN',
+        });
+        await admin.update({
+            campaignId: 'pilot-clr',
+            updates: { status: 'live', selfEnroll: false },
+        });
+        await expect(other.enroll({ campaignId: 'pilot-clr' })).rejects.toMatchObject({
+            code: 'FORBIDDEN',
+        });
+    });
+
+    it('rejects disabled and out-of-window enrollment and never stores a supplied credential payload', async () => {
+        await admin.create(
+            draft({ status: 'live', selfEnroll: true, startsAt: '2999-01-01T00:00:00Z' })
+        );
+        await expect(learner.enroll({ campaignId: 'pilot-clr' })).rejects.toMatchObject({
+            code: 'FORBIDDEN',
+        });
+        await admin.update({
+            campaignId: 'pilot-clr',
+            updates: { startsAt: null, endsAt: '2000-01-01T00:00:00Z' },
+        });
+        await expect(learner.enroll({ campaignId: 'pilot-clr' })).rejects.toMatchObject({
+            code: 'FORBIDDEN',
+        });
+        await admin.update({
+            campaignId: 'pilot-clr',
+            updates: { endsAt: null, message: { title: 'Disabled', enabled: false } },
+        });
+        await expect(learner.enroll({ campaignId: 'pilot-clr' })).rejects.toMatchObject({
+            code: 'FORBIDDEN',
+        });
+        const unsolicited = { campaignId: 'pilot-clr', credential: { issuer: 'did:key:private' } };
+        await expect(learner.enroll(unsolicited)).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        expect(await admin.getStats({ campaignId: 'pilot-clr' })).toMatchObject({
+            audience: 0,
+            enrolled: 0,
+        });
+    });
+
+    it.each(['missing campaign', 'nonmember', 'age-ineligible member'])(
+        'does not write profile properties or campaign state for a rejected event: %s',
+        async scenario => {
+            await admin.create(draft({ status: 'live' }));
+            await addLearner();
+            const profileId = scenario === 'age-ineligible member' ? 'learner' : 'other';
+            const actor = caller(profileId);
+            if (scenario === 'age-ineligible member') {
+                await neogma.queryRunner.run(
+                    `MATCH (p:Profile {profileId: $profileId}) REMOVE p.dob`,
+                    { profileId }
+                );
+            }
+            await neogma.queryRunner.run(
+                `MATCH (p:Profile {profileId: $profileId}) SET p.campaignStateLock = 17`,
+                { profileId }
+            );
+            const readProfile = async (): Promise<Record<string, unknown>> => {
+                const result = await neogma.queryRunner.run(
+                    `MATCH (p:Profile {profileId: $profileId}) RETURN properties(p) AS profile`,
+                    { profileId }
+                );
+                return result.records[0]!.get('profile');
+            };
+            const before = await readProfile();
+            const campaignId = scenario === 'missing campaign' ? 'missing' : 'pilot-clr';
+            expect(await actor.recordEvent({ campaignId, event: 'shown' })).toBe(false);
+            expect(await readProfile()).toEqual(before);
+            expect((await admin.getStats({ campaignId: 'pilot-clr' })).shown).toBe(0);
+        }
+    );
+
+    it.each([
+        ['paused', { status: 'paused' as const }],
+        ['not started', { status: 'live' as const, startsAt: '2999-01-01T00:00:00Z' }],
+        ['ended', { status: 'live' as const, endsAt: '2000-01-01T00:00:00Z' }],
+    ])('does not write profile or engagement state when a campaign is %s', async (_, options) => {
+        await admin.create(draft(options));
+        await addLearner();
+        await neogma.queryRunner.run(
+            `MATCH (p:Profile {profileId: 'learner'}) SET p.campaignStateLock = 17`
+        );
+
+        expect(await learner.recordEvent({ campaignId: 'pilot-clr', event: 'shown' })).toBe(false);
+        const result = await neogma.queryRunner.run(
+            `MATCH (p:Profile {profileId: 'learner'})
+             OPTIONAL MATCH (p)-[state:CAMPAIGN_STATE]->(:Campaign {id: 'pilot-clr'})
+             RETURN p.campaignStateLock AS lockVersion, state`
+        );
+        expect(result.records[0]!.get('lockVersion').toNumber()).toBe(17);
+        expect(result.records[0]!.get('state')).toBeNull();
+    });
+
+    it('persists shared state and counts unique engaged profiles under concurrent shown events', async () => {
+        await admin.create(draft({ status: 'live' }));
+        await addLearner();
+        expect(await other.recordEvent({ campaignId: 'pilot-clr', event: 'shown' })).toBe(false);
+        await learner.recordEvent({ campaignId: 'pilot-clr', event: 'shown' });
+        const first = (await learner.getMyCampaigns())[0]!.state.firstShownAt;
+        await Promise.all(
+            Array.from({ length: 6 }, () =>
+                learner.recordEvent({ campaignId: 'pilot-clr', event: 'shown' })
+            )
+        );
+        for (const event of ['clicked', 'dismissed', 'converted'] as const)
+            await learner.recordEvent({ campaignId: 'pilot-clr', event });
+        const anotherDevice = caller('learner');
+        expect((await anotherDevice.getMyCampaigns())[0]!.state).toMatchObject({
+            firstShownAt: first,
+            shownCount: 7,
+            clickedAt: expect.any(String),
+            dismissedAt: expect.any(String),
+            convertedAt: expect.any(String),
+        });
+        expect(await admin.getStats({ campaignId: 'pilot-clr' })).toEqual({
+            audience: 1,
+            enrolled: 0,
+            notified: 0,
+            emailed: 0,
+            shown: 1,
+            clicked: 1,
+            dismissed: 1,
+            converted: 1,
+        });
+    });
+
+    it('enforces a combined 60-call user budget without counting admin operations', async () => {
+        for (let index = 0; index < 60; index += 1) await learner.getMyCampaigns();
+        await expect(learner.isAdmin()).rejects.toMatchObject({ code: 'TOO_MANY_REQUESTS' });
+        await expect(other.getMyCampaigns()).resolves.toEqual([]);
+        await expect(admin.create(draft())).resolves.toMatchObject({ id: 'pilot-clr' });
+    });
+
+    it('uses the exact UTC eighteenth birthday cutoff', async () => {
+        expect(campaignTimeParams(new Date('2026-10-22T23:59:59Z')).adultCutoff).toBe('2008-10-22');
+        await admin.create(draft({ status: 'live', selfEnroll: true }));
+        await neogma.queryRunner.run(
+            `MATCH (p:Profile {profileId:'learner'}) SET p.dob = '2008-10-22'`
+        );
+        expect(
+            await getLiveCampaignsForProfile('learner', new Date('2026-10-22T00:00:00Z'))
+        ).toHaveLength(1);
+        expect(
+            await getLiveCampaignsForProfile('learner', new Date('2026-10-21T23:59:59Z'))
+        ).toEqual([]);
+        await neogma.queryRunner.run(
+            `MATCH (p:Profile {profileId:'learner'}) SET p.dob = '2010-03-01'`
+        );
+        expect(
+            await getLiveCampaignsForProfile('learner', new Date('2028-02-29T23:59:59Z'))
+        ).toEqual([]);
+        expect(
+            await getLiveCampaignsForProfile('learner', new Date('2028-03-01T00:00:00Z'))
+        ).toHaveLength(1);
+    });
+});
+
+describe('campaign notification delivery state', () => {
+    it('rechecks delivery eligibility and atomically records concurrent acknowledgements', async () => {
+        const campaign = await admin.create(
+            draft({
+                status: 'live',
+                channels: ['inApp', 'notify'],
+                notification: { title: 'Explore', body: 'Your next step' },
+            })
+        );
+        await addLearner();
+        await expect(
+            getCampaignDeliveryRecipient(campaign.id, campaign.createdAt, 'learner')
+        ).resolves.toMatchObject({ profileId: 'learner' });
+        await expect(
+            getCampaignDeliveryRecipient(campaign.id, campaign.createdAt, 'other')
+        ).resolves.toBeUndefined();
+        const notification = {
+            type: 'ANNOUNCEMENT' as const,
+            from: 'did:web:brain.example',
+            to: { profileId: 'learner', did: did('learner') },
+            data: { metadata: { campaignId: campaign.id, campaignCreatedAt: campaign.createdAt } },
+        };
+        await Promise.all([
+            ...Array.from({ length: 10 }, () => acknowledgeCampaignNotification(notification)),
+            learner.recordEvent({ campaignId: campaign.id, event: 'shown' }),
+        ]);
+        const states = await neogma.queryRunner.run(
+            `MATCH (:Profile {profileId: 'learner'})-[state:CAMPAIGN_STATE]->(:Campaign {id: $id})
+             RETURN count(state) AS count`,
+            { id: campaign.id }
+        );
+        expect(states.records[0]!.get('count').toNumber()).toBe(1);
+        await expect(admin.getStats({ campaignId: campaign.id })).resolves.toMatchObject({
+            notified: 1,
+            shown: 1,
+        });
+        await expect(
+            getCampaignDeliveryRecipient(campaign.id, campaign.createdAt, 'learner')
+        ).resolves.toBeUndefined();
+    });
+
+    it('keeps in-app tests private, durable, snapshot-based and separate from campaign state', async () => {
+        await admin.create(draft());
+        await admin.sendTestToMe({ campaignId: 'pilot-clr' });
+        const [first] = await admin.getMyCampaigns();
+        expect(first?.testId).toBeTruthy();
+        expect(first?.campaign.message.title).toBe('Welcome');
+        expect(await learner.getMyCampaigns()).toEqual([]);
+        expect(await other.getMyCampaigns()).toEqual([]);
+        await admin.update({ campaignId: 'pilot-clr', updates: { message: { title: 'Edited' } } });
+        expect((await caller('campaign-admin').getMyCampaigns())[0]?.campaign.message.title).toBe(
+            'Welcome'
+        );
+        await learner.recordEvent({
+            campaignId: 'pilot-clr',
+            event: 'shown',
+            testId: first!.testId,
+        });
+        expect(await admin.getMyCampaigns()).toHaveLength(1);
+        await admin.sendTestToMe({ campaignId: 'pilot-clr' });
+        const [latest] = await admin.getMyCampaigns();
+        expect(latest?.testId).not.toBe(first?.testId);
+        await admin.recordEvent({ campaignId: 'pilot-clr', event: 'shown', testId: first!.testId });
+        expect((await admin.getMyCampaigns())[0]?.testId).toBe(latest?.testId);
+        await admin.recordEvent({
+            campaignId: 'pilot-clr',
+            event: 'shown',
+            testId: latest!.testId,
+        });
+        expect(await admin.getMyCampaigns()).toEqual([]);
+        expect(await admin.getStats({ campaignId: 'pilot-clr' })).toMatchObject({
+            audience: 0,
+            shown: 0,
+            notified: 0,
+            clicked: 0,
+        });
+        expect((await admin.get({ campaignId: 'pilot-clr' })).status).toBe('draft');
+    });
+    it('keeps live campaigns and valid tests visible when another private snapshot is corrupt', async () => {
+        await admin.create(draft({ status: 'live', selfEnroll: true }));
+        await admin.create(draft({ id: 'valid-test' }));
+        await admin.sendTestToMe({ campaignId: 'valid-test' });
+        await admin.sendTestToMe({ campaignId: 'pilot-clr' });
+        for (const message of ['{', JSON.stringify({ id: 'old', presentation: 'obsolete' })]) {
+            await neogma.queryRunner.run(
+                `MATCH (:Profile {profileId: 'campaign-admin'})-[test:CAMPAIGN_TEST]->(:Campaign {id: 'pilot-clr'})
+                 SET test.message = $message`,
+                { message }
+            );
+            const campaigns = await admin.getMyCampaigns();
+            expect(campaigns).toHaveLength(2);
+            expect(
+                campaigns.find(item => item.campaign.id === 'pilot-clr')?.testId
+            ).toBeUndefined();
+            expect(campaigns.find(item => item.campaign.id === 'valid-test')?.testId).toBeTruthy();
+        }
+    });
+    it('clears inactive message content and rejects missing active content on merged updates', async () => {
+        await admin.create(draft());
+        const notification = { title: 'Hello', body: 'Notification only' };
+        const updated = await admin.update({
+            campaignId: 'pilot-clr',
+            updates: { channels: ['notify'], message: null, notification },
+        });
+        expect(updated.message).toBeUndefined();
+        await expect(
+            admin.update({ campaignId: 'pilot-clr', updates: { channels: ['inApp'] } })
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        await expect(
+            admin.update({
+                campaignId: 'pilot-clr',
+                updates: {
+                    channels: ['inApp'],
+                    message: { title: 'Restored' },
+                    notification: null,
+                },
+            })
+        ).resolves.toMatchObject({ message: { title: 'Restored' } });
+    });
+    it('test delivery does not increment stats and only targets the authenticated administrator', async () => {
+        await admin.create(
+            draft({
+                channels: ['notify'],
+                message: undefined,
+                notification: { title: 'Test', body: 'Preview' },
+            })
+        );
+        const queue = vi.spyOn(notifications, 'addNotificationToQueue').mockResolvedValue(true);
+        const signer = vi.spyOn(learnCardHelpers, 'getDidWebLearnCard').mockResolvedValue({
+            id: { did: () => 'did:web:brain.example' },
+        } as never);
+        try {
+            await expect(admin.sendTestToMe({ campaignId: 'pilot-clr' })).resolves.toBe(true);
+            expect(queue).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    type: 'ANNOUNCEMENT',
+                    to: expect.objectContaining({ profileId: 'campaign-admin' }),
+                    data: {
+                        metadata: expect.objectContaining({
+                            campaignId: 'pilot-clr',
+                            campaignTestId: expect.any(String),
+                        }),
+                    },
+                }),
+                expect.anything()
+            );
+            await expect(admin.getStats({ campaignId: 'pilot-clr' })).resolves.toMatchObject({
+                notified: 0,
+                emailed: 0,
+            });
+            await expect(admin.dispatch({ campaignId: 'pilot-clr' })).rejects.toMatchObject({
+                code: 'BAD_REQUEST',
+            });
+        } finally {
+            queue.mockRestore();
+            signer.mockRestore();
+        }
+    });
+
+    it('suppresses paused, removed-channel and age-ineligible recipients', async () => {
+        const campaign = await admin.create(
+            draft({
+                status: 'live',
+                channels: ['notify'],
+                notification: { title: 'Test', body: 'Preview' },
+            })
+        );
+        await addLearner();
+        await admin.setStatus({ campaignId: campaign.id, status: 'paused' });
+        await expect(
+            getCampaignDeliveryRecipient(campaign.id, campaign.createdAt, 'learner')
+        ).resolves.toBeUndefined();
+        await admin.setStatus({ campaignId: campaign.id, status: 'live' });
+        await admin.update({ campaignId: campaign.id, updates: { channels: ['inApp'] } });
+        await expect(
+            getCampaignDeliveryRecipient(campaign.id, campaign.createdAt, 'learner')
+        ).resolves.toBeUndefined();
+        await admin.update({ campaignId: campaign.id, updates: { channels: ['notify'] } });
+        await neogma.queryRunner.run(
+            "MATCH (p:Profile {profileId: 'learner'}) SET p.dob = '2020-01-01'"
+        );
+        await expect(
+            getCampaignDeliveryRecipient(campaign.id, campaign.createdAt, 'learner')
+        ).resolves.toBeUndefined();
+    });
+});
+
+describe('confirmed audience notification dispatch', () => {
+    const live = () =>
+        draft({
+            status: 'live',
+            channels: ['notify'],
+            notification: { title: 'Campaign notice', body: 'A test message' },
+        });
+    it('reviews both channels and invalidates confirmation when the primary email changes', async () => {
+        await admin.create(live());
+        await addLearner();
+        await admin.update({
+            campaignId: 'pilot-clr',
+            updates: {
+                channels: ['notify', 'email'],
+                email: { subject: 'News', title: 'News', body: 'News', ctaLabel: 'View' },
+            },
+        });
+        await neogma.queryRunner.run(`MATCH (p:Profile {profileId:'learner'})
+            CREATE (p)-[:HAS_CONTACT_METHOD]->(:ContactMethod {id:'review-email', type:'email',
+            value:'learner@example.com', isPrimary:true, isVerified:true})`);
+        const preview = await admin.previewDispatch({ campaignId: 'pilot-clr' });
+        expect(preview).toMatchObject({
+            recipientCount: 1,
+            notificationRecipientCount: 1,
+            emailRecipientCount: 1,
+        });
+        expect(preview.blockedReason).toBeUndefined();
+        await neogma.queryRunner.run(
+            `MATCH (e:ContactMethod {id:'review-email'}) SET e.value = 'changed@example.com'`
+        );
+        await expect(
+            admin.dispatch({ campaignId: 'pilot-clr', expectedPreviewToken: preview.previewToken })
+        ).rejects.toMatchObject({ code: 'CONFLICT' });
+    });
+    it('excludes push opt-outs from notification confirmation counts', async () => {
+        await admin.create(live());
+        await addLearner();
+        expect((await admin.previewDispatch({ campaignId: 'pilot-clr' })).recipientCount).toBe(1);
+        await learner.updateAnnouncementPreferences({ announcementPushOptOut: true });
+        const preview = await admin.previewDispatch({ campaignId: 'pilot-clr' });
+        expect(preview.recipientCount).toBe(0);
+        expect(preview.blockedReason).toBe('no_recipients');
+    });
+    const id = { campaignId: 'pilot-clr' };
+    const deliveryMocks = () => {
+        const enqueue = vi.spyOn(notifications, 'addNotificationToQueue').mockResolvedValue(true);
+        const signer = vi
+            .spyOn(learnCardHelpers, 'getDidWebLearnCard')
+            .mockResolvedValue({ id: { did: () => 'did:web:brain.test' } } as never);
+        return {
+            enqueue,
+            restore: () => {
+                enqueue.mockRestore();
+                signer.mockRestore();
+            },
+        };
+    };
+    it('counts the same delivery-eligible members, excluding already notified and ineligible profiles', async () => {
+        const campaign = await admin.create(live());
+        await neogma.queryRunner.run(
+            `MATCH (c:Campaign {id: $id}), (p:Profile)
+            WHERE p.profileId IN $profiles CREATE (p)-[:IN_CAMPAIGN_AUDIENCE]->(c)`,
+            {
+                id: campaign.id,
+                profiles: [
+                    'learner',
+                    'other',
+                    'minor',
+                    'child',
+                    'unknown-dob',
+                    'managed-adult',
+                    'managed-service',
+                ],
+            }
+        );
+        await neogma.queryRunner
+            .run(`MATCH (owner:Profile {profileId: 'campaign-admin'}), (p:Profile)
+            WHERE p.profileId IN ['managed-adult', 'managed-service'] CREATE (p)-[:MANAGED_BY]->(owner)`);
+        await acknowledgeCampaignNotification({
+            type: 'ANNOUNCEMENT',
+            from: 'did:web:brain.test',
+            to: { profileId: 'other', did: did('other') },
+            data: { metadata: { campaignId: campaign.id, campaignCreatedAt: campaign.createdAt } },
+        });
+        const preview = await admin.previewDispatch(id);
+        expect(preview).toMatchObject({
+            audienceCount: 7,
+            recipientCount: 2,
+            alreadyNotifiedCount: 1,
+        });
+        expect(preview.previewToken).toMatch(/^[a-f0-9]{64}$/);
+        expect(await admin.previewDispatch(id)).toEqual(preview);
+        for (const profile of ['learner', 'managed-service'])
+            expect(
+                await getCampaignDeliveryRecipient(campaign.id, campaign.createdAt, profile)
+            ).toBeTruthy();
+        for (const profile of ['minor', 'child', 'unknown-dob', 'managed-adult', 'other'])
+            expect(
+                await getCampaignDeliveryRecipient(campaign.id, campaign.createdAt, profile)
+            ).toBeUndefined();
+        await admin.update({ ...id, updates: { excludeMinors: false } });
+        expect(await admin.previewDispatch(id)).toMatchObject({ recipientCount: 5 });
+    });
+    it('accepts the recipient limit and rejects larger previews and confirmations without enqueueing', async () => {
+        await admin.create(live());
+        await neogma.queryRunner.run(
+            `MATCH (c:Campaign {id: $campaignId})
+             UNWIND range(1, $count) AS index
+             CREATE (p:Profile {profileId: 'limit-' + toString(index), dob: '1990-01-01'})
+             CREATE (p)-[:IN_CAMPAIGN_AUDIENCE]->(c)`,
+            { ...id, count: int(MAX_CONFIRMED_DISPATCH_RECIPIENTS) }
+        );
+        const preview = await admin.previewDispatch(id);
+        expect(preview.recipientCount).toBe(MAX_CONFIRMED_DISPATCH_RECIPIENTS);
+        await addLearner();
+        const mocks = deliveryMocks();
+        try {
+            await expect(admin.previewDispatch(id)).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            await expect(
+                admin.dispatch({ ...id, expectedPreviewToken: preview.previewToken })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            expect(mocks.enqueue).not.toHaveBeenCalled();
+        } finally {
+            mocks.restore();
+        }
+    });
+    it.each([
+        [{ status: 'draft' }, 'not_live'],
+        [{ status: 'paused' }, 'not_live'],
+        [{ status: 'archived' }, 'not_live'],
+        [{ channels: ['inApp'], message: { title: 'In-app only' } }, 'notify_disabled'],
+        [{ startsAt: '2999-01-01T00:00:00Z' }, 'not_started'],
+        [{ endsAt: '2000-01-01T00:00:00Z' }, 'ended'],
+    ] as const)('explains non-dispatchable campaigns (%j)', async (updates, reason) => {
+        await admin.create({ ...live(), ...updates } as CreateCampaignInput);
+        const preview = await admin.previewDispatch(id);
+        expect(preview).toMatchObject({ blockedReason: reason, recipientCount: 0 });
+        await expect(
+            admin.dispatch({ ...id, expectedPreviewToken: preview.previewToken })
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+    });
+    it('dispatches to the stored audience and requires a fresh eligible preview after delivery', async () => {
+        await admin.create(live());
+        await addLearner();
+        const mocks = deliveryMocks();
+        try {
+            const preview = await admin.previewDispatch(id);
+            expect(preview.recipientCount).toBe(1);
+            expect(mocks.enqueue).not.toHaveBeenCalled();
+            await expect(
+                admin.dispatch({ ...id, expectedPreviewToken: preview.previewToken })
+            ).resolves.toHaveProperty('dispatchId');
+            expect(mocks.enqueue).toHaveBeenCalledTimes(1);
+            expect(mocks.enqueue.mock.calls[0][0]).toMatchObject({
+                to: { profileId: 'learner' },
+                type: 'ANNOUNCEMENT',
+            });
+            expect(await admin.getStats(id)).toMatchObject({ audience: 1, notified: 1 });
+            await expect(
+                admin.dispatch({ ...id, expectedPreviewToken: preview.previewToken })
+            ).rejects.toMatchObject({ code: 'CONFLICT' });
+            const empty = await admin.previewDispatch(id);
+            expect(empty).toMatchObject({
+                recipientCount: 0,
+                alreadyNotifiedCount: 1,
+                blockedReason: 'no_recipients',
+            });
+            await expect(
+                admin.dispatch({ ...id, expectedPreviewToken: empty.previewToken })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            expect(mocks.enqueue).toHaveBeenCalledTimes(1);
+        } finally {
+            mocks.restore();
+        }
+    });
+    it('rejects stale recipient identities even when their count is unchanged', async () => {
+        await admin.create(live());
+        await addLearner();
+        const preview = await admin.previewDispatch(id);
+        await neogma.queryRunner.run(
+            `MATCH (p:Profile {profileId:'learner'})-[a:IN_CAMPAIGN_AUDIENCE]->(c:Campaign {id:$id}), (other:Profile {profileId:'other'}) DELETE a CREATE (other)-[:IN_CAMPAIGN_AUDIENCE]->(c)`,
+            { id: id.campaignId }
+        );
+        expect((await admin.previewDispatch(id)).recipientCount).toBe(preview.recipientCount);
+        await expect(
+            admin.dispatch({ ...id, expectedPreviewToken: preview.previewToken })
+        ).rejects.toMatchObject({ code: 'CONFLICT' });
+    });
+    it('rejects a changed campaign definition and concurrent reuse of the confirmation', async () => {
+        await admin.create(live());
+        await addLearner();
+        const before = await admin.previewDispatch(id);
+        await admin.update({
+            ...id,
+            updates: { notification: { title: 'Changed', body: 'Changed' } },
+        });
+        await expect(
+            admin.dispatch({ ...id, expectedPreviewToken: before.previewToken })
+        ).rejects.toMatchObject({ code: 'CONFLICT' });
+        const preview = await admin.previewDispatch(id);
+        const mocks = deliveryMocks();
+        try {
+            const results = await Promise.allSettled([
+                admin.dispatch({ ...id, expectedPreviewToken: preview.previewToken }),
+                admin.dispatch({ ...id, expectedPreviewToken: preview.previewToken }),
+            ]);
+            expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(1);
+            expect(results.filter(result => result.status === 'rejected')).toHaveLength(1);
+            expect(mocks.enqueue).toHaveBeenCalledTimes(1);
+        } finally {
+            mocks.restore();
+        }
+    });
+    it('recovers from an enqueue failure with a fresh preview without marking a recipient notified', async () => {
+        await admin.create(live());
+        await addLearner();
+        const mocks = deliveryMocks();
+        mocks.enqueue.mockRejectedValueOnce(new Error('temporary transport failure'));
+        try {
+            const first = await admin.previewDispatch(id);
+            await expect(
+                admin.dispatch({ ...id, expectedPreviewToken: first.previewToken })
+            ).rejects.toThrow();
+            expect(await admin.getStats(id)).toMatchObject({ notified: 0 });
+            const next = await admin.previewDispatch(id);
+            expect(next.recipientCount).toBe(1);
+            expect(next.previewToken).not.toBe(first.previewToken);
+            await expect(
+                admin.dispatch({ ...id, expectedPreviewToken: next.previewToken })
+            ).resolves.toHaveProperty('dispatchId');
+            expect(await admin.getStats(id)).toMatchObject({ notified: 1 });
+        } finally {
+            mocks.restore();
+        }
+    });
+});
+
+describe('campaign email database boundaries', () => {
+    const email = { subject: 'News', title: 'News', body: 'Programs', ctaLabel: 'View' };
+    const setup = async () => {
+        const campaign = await admin.create(
+            draft({
+                channels: ['inApp', 'notify', 'email'],
+                notification: { title: 'News', body: 'Programs' },
+                email,
+                status: 'live',
+            })
+        );
+        await addLearner();
+        await neogma.queryRunner.run(
+            `MATCH (p:Profile {profileId: 'learner'}) CREATE (p)-[:HAS_CONTACT_METHOD]->(:ContactMethod {id:'primary', type:'email', value:'learner@example.com', isVerified:true, isPrimary:true})`
+        );
+        return campaign;
+    };
+    it('keeps old links bound to the original recipient after renames and name reuse', async () => {
+        const campaign = await setup();
+        const recipient = await claimCampaignEmail(
+            campaign.id,
+            campaign.createdAt,
+            'learner',
+            true
+        );
+        const token = signCampaignUnsubscribeToken(recipient!.unsubscribeId, campaign.id);
+        await updateProfile((await getProfileByProfileId('learner'))!, {
+            profileId: 'renamed-learner',
+        });
+        const anonymous = campaignsRouter.createCaller({ domain });
+        await anonymous.unsubscribe({ token });
+        expect((await getAnnouncementPreferences('renamed-learner')).announcementEmailOptOut).toBe(
+            true
+        );
+
+        await neogma.queryRunner.run(
+            "MATCH (p:Profile {profileId:'renamed-learner'}) SET p.announcementEmailOptOut = false"
+        );
+        await updateProfile((await getProfileByProfileId('other'))!, { profileId: 'learner' });
+        await anonymous.unsubscribe({ token });
+        expect((await getAnnouncementPreferences('renamed-learner')).announcementEmailOptOut).toBe(
+            true
+        );
+        expect((await getAnnouncementPreferences('learner')).announcementEmailOptOut).toBe(false);
+    });
+
+    it('does not transfer an old link to a new holder after recipient deletion', async () => {
+        const campaign = await setup();
+        const recipient = await claimCampaignEmail(
+            campaign.id,
+            campaign.createdAt,
+            'learner',
+            true
+        );
+        const token = signCampaignUnsubscribeToken(recipient!.unsubscribeId, campaign.id);
+        await neogma.queryRunner.run("MATCH (p:Profile {profileId:'learner'}) DETACH DELETE p");
+        await updateProfile((await getProfileByProfileId('other'))!, { profileId: 'learner' });
+        await campaignsRouter.createCaller({ domain }).unsubscribe({ token });
+        expect((await getAnnouncementPreferences('learner')).announcementEmailOptOut).toBe(false);
+    });
+
+    it('allocates one durable unsubscribe identity across concurrent self-tests', async () => {
+        const campaign = await setup();
+        const recipients = await Promise.all(
+            Array.from({ length: 8 }, () =>
+                claimCampaignEmail(campaign.id, campaign.createdAt, 'learner', true)
+            )
+        );
+        expect(new Set(recipients.map(recipient => recipient!.unsubscribeId)).size).toBe(1);
+        expect(recipients[0]!.unsubscribeId).toMatch(/^[0-9a-f-]{36}$/);
+    });
+
+    it('filters email opt-outs before pagination without hiding them from audience management', async () => {
+        const campaign = await setup();
+        await admin.addAudience(audience({ type: 'dids', dids: [did('other')] }));
+        await neogma.queryRunner.run(
+            "MATCH (p:Profile {profileId:'learner'}) SET p.announcementEmailOptOut = true"
+        );
+        const page = await pageCampaignAudience(campaign.id, undefined, 1, 'email');
+        expect(page.records.map(row => row.profileId)).toEqual(['other']);
+        expect(page.hasMore).toBe(false);
+        expect((await pageCampaignAudience(campaign.id, 'other', 1, 'email')).records).toEqual([]);
+        expect((await pageCampaignAudience(campaign.id)).records.map(row => row.profileId)).toEqual(
+            ['learner', 'other']
+        );
+        // A preference change after paging must still be enforced by the locked claim.
+        await neogma.queryRunner.run(
+            "MATCH (p:Profile {profileId:'learner'}) SET p.announcementEmailOptOut = false"
+        );
+        expect(
+            (await pageCampaignAudience(campaign.id, undefined, 1, 'email')).records[0]?.profileId
+        ).toBe('learner');
+        await neogma.queryRunner.run(
+            "MATCH (p:Profile {profileId:'learner'}) SET p.announcementEmailOptOut = true"
+        );
+        expect(
+            await claimCampaignEmail(campaign.id, campaign.createdAt, 'learner')
+        ).toBeUndefined();
+    });
+
+    it('leaves a recipient claimable after local preparation fails', async () => {
+        const campaign = await setup();
+        await expect(
+            claimCampaignEmail(campaign.id, campaign.createdAt, 'learner', false, async () => {
+                throw new Error('Cannot render');
+            })
+        ).rejects.toThrow('Cannot render');
+        expect((await admin.getStats({ campaignId: campaign.id })).emailed).toBe(0);
+        expect(await claimCampaignEmail(campaign.id, campaign.createdAt, 'learner')).toMatchObject({
+            email: 'learner@example.com',
+        });
+    });
+    it('atomically claims once across concurrent dispatches and only counts acknowledged sends', async () => {
+        const campaign = await setup();
+        const claims = await Promise.all(
+            Array.from({ length: 8 }, () =>
+                claimCampaignEmail(campaign.id, campaign.createdAt, 'learner')
+            )
+        );
+        expect(claims.filter(Boolean)).toHaveLength(1);
+        expect((await admin.previewDispatch({ campaignId: campaign.id })).emailRecipientCount).toBe(
+            0
+        );
+        expect((await admin.getStats({ campaignId: campaign.id })).emailed).toBe(0);
+        await acknowledgeCampaignEmail(campaign.id, campaign.createdAt, 'learner');
+        await acknowledgeCampaignEmail(campaign.id, campaign.createdAt, 'learner');
+        expect((await admin.getStats({ campaignId: campaign.id })).emailed).toBe(1);
+        expect(
+            await claimCampaignEmail(campaign.id, campaign.createdAt, 'learner')
+        ).toBeUndefined();
+    });
+    it.each([
+        'SET p.announcementEmailOptOut = true',
+        "SET p.dob = '2020-01-01'",
+        'REMOVE p.dob',
+        "SET p.type = 'child'",
+        'SET email.isVerified = false',
+        'SET email.isPrimary = false',
+        "SET email.value = 'invalid'",
+    ])('skips ineligible recipients: %s', async change => {
+        const campaign = await setup();
+        await neogma.queryRunner.run(
+            `MATCH (p:Profile {profileId:'learner'})-[:HAS_CONTACT_METHOD]->(email:ContactMethod) ${change}`
+        );
+        expect(
+            await claimCampaignEmail(campaign.id, campaign.createdAt, 'learner')
+        ).toBeUndefined();
+        expect(
+            await claimCampaignEmail(campaign.id, campaign.createdAt, 'learner', true)
+        ).toBeUndefined();
+        expect((await admin.previewDispatch({ campaignId: campaign.id })).emailRecipientCount).toBe(
+            0
+        );
+    });
+    it('keeps minors excluded from email even when the campaign relaxes the older age flag', async () => {
+        const campaign = await setup();
+        await admin.update({ campaignId: campaign.id, updates: { excludeMinors: false } });
+        await neogma.queryRunner.run(
+            "MATCH (p:Profile {profileId:'learner'}) SET p.dob = '2020-01-01'"
+        );
+        expect(
+            await claimCampaignEmail(campaign.id, campaign.createdAt, 'learner')
+        ).toBeUndefined();
+    });
+    it('checks pause, membership and campaign generation at claim time', async () => {
+        const campaign = await setup();
+        expect(
+            await claimCampaignEmail(campaign.id, '2000-01-01T00:00:00.000Z', 'learner')
+        ).toBeUndefined();
+        await admin.setStatus({ campaignId: campaign.id, status: 'paused' });
+        expect(
+            await claimCampaignEmail(campaign.id, campaign.createdAt, 'learner')
+        ).toBeUndefined();
+        expect(
+            await claimCampaignEmail(campaign.id, campaign.createdAt, 'learner', true)
+        ).toBeDefined();
+        await admin.setStatus({ campaignId: campaign.id, status: 'live' });
+        await neogma.queryRunner.run(
+            "MATCH (:Profile {profileId:'learner'})-[a:IN_CAMPAIGN_AUDIENCE]->(:Campaign) DELETE a"
+        );
+        expect(
+            await claimCampaignEmail(campaign.id, campaign.createdAt, 'learner')
+        ).toBeUndefined();
+    });
+    it('authenticates preferences, patches choices independently, and leaves in-app messages available', async () => {
+        const campaign = await setup();
+        await expect(
+            campaignsRouter.createCaller({ domain }).getAnnouncementPreferences()
+        ).rejects.toThrow();
+        expect(await learner.getAnnouncementPreferences()).toEqual({
+            announcementEmailOptOut: false,
+            announcementPushOptOut: false,
+        });
+        await learner.updateAnnouncementPreferences({ announcementPushOptOut: true });
+        expect(
+            await getCampaignDeliveryRecipient(campaign.id, campaign.createdAt, 'learner')
+        ).toBeUndefined();
+        expect(await learner.getMyCampaigns()).toHaveLength(1);
+        await learner.updateAnnouncementPreferences({ announcementEmailOptOut: true });
+        expect(await learner.getAnnouncementPreferences()).toEqual({
+            announcementEmailOptOut: true,
+            announcementPushOptOut: true,
+        });
+        expect(await other.getAnnouncementPreferences()).toEqual({
+            announcementEmailOptOut: false,
+            announcementPushOptOut: false,
+        });
+    });
+});

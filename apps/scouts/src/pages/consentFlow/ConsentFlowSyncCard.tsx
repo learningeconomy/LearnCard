@@ -225,7 +225,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                             )}
                         </div>
                     </div>,
-                    { sectionClassName: '!max-w-[400px]' },
+                    { sectionClassName: 'max-w-[400px]!' },
                     { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
                 );
 
@@ -260,7 +260,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                         </button>
                     </div>
                 </div>,
-                { sectionClassName: '!max-w-[400px]' },
+                { sectionClassName: 'max-w-[400px]!' },
                 { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
             );
 

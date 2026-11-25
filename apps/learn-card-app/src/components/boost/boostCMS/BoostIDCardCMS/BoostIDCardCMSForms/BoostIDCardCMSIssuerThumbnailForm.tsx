@@ -19,6 +19,7 @@ const BoostIDCardCMSIssuerThumbnailForm: React.FC<{
     const [image, setImage] = useState<string>(state?.appearance?.backgroundImage || '');
     const [uploadProgress, setUploadProgress] = useState<number | false>(false);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const handleStateChange = (propName: string, value: any) => {
         setState(prevState => {
             return {

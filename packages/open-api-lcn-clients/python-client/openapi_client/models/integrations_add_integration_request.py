@@ -28,7 +28,7 @@ class IntegrationsAddIntegrationRequest(BaseModel):
     """
     IntegrationsAddIntegrationRequest
     """ # noqa: E501
-    name: Optional[StrictStr]
+    name: StrictStr
     description: Optional[StrictStr] = None
     whitelisted_domains: Optional[List[IntegrationsAddIntegrationRequestWhitelistedDomainsInner]] = Field(default=None, alias="whitelistedDomains")
     guide_type: Optional[StrictStr] = Field(default=None, alias="guideType")
@@ -61,9 +61,8 @@ class IntegrationsAddIntegrationRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -79,21 +78,6 @@ class IntegrationsAddIntegrationRequest(BaseModel):
             for _item_whitelisted_domains in self.whitelisted_domains:
                 _items.append(_item_whitelisted_domains.to_dict() if _item_whitelisted_domains is not None else None)
             _dict['whitelistedDomains'] = _items
-        # set to None if name (nullable) is None
-        # and model_fields_set contains the field
-        if self.name is None and "name" in self.model_fields_set:
-            _dict['name'] = None
-
-        # set to None if description (nullable) is None
-        # and model_fields_set contains the field
-        if self.description is None and "description" in self.model_fields_set:
-            _dict['description'] = None
-
-        # set to None if guide_type (nullable) is None
-        # and model_fields_set contains the field
-        if self.guide_type is None and "guide_type" in self.model_fields_set:
-            _dict['guideType'] = None
-
         return _dict
 
     @classmethod

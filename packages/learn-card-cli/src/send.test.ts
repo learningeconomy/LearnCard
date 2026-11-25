@@ -7,6 +7,7 @@ import { out } from './out';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
+    inboxSentMessage,
     SEND_MJS,
     parseEnv,
     upsertEnv,
@@ -231,7 +232,11 @@ describe('send --as script generation', () => {
         async existing => {
             const managedDid = 'did:web:staging.network.learncard.com:users:managed';
             const loaded = {
-                env: { SECURE_SEED: 'seed', PROFILE_ID: 'parent' },
+                env: {
+                    SECURE_SEED: 'seed',
+                    PROFILE_ID: 'parent',
+                    ORG_PROFILE_MANAGER_DID: 'did:web:manager',
+                },
                 envPath: '/unused/.env',
                 existing: '',
             };
@@ -241,6 +246,7 @@ describe('send --as script generation', () => {
                 seed: 'seed',
                 profileId: 'parent',
                 displayName: 'Parent',
+                created: false,
             });
             const card = {
                 id: { did: () => managedDid },
@@ -318,4 +324,22 @@ describe('send --as script generation', () => {
             }
         }
     );
+});
+
+describe('inboxSentMessage', () => {
+    it('promises a claim email or text only when delivery is on', () => {
+        expect(inboxSentMessage('a@acme.org', 'email', 'https://x/claim', false)).toContain(
+            'will get a claim email'
+        );
+        expect(inboxSentMessage('+15555550100', 'phone', 'https://x/claim', false)).toContain(
+            'will get a claim text'
+        );
+    });
+
+    it('says nothing was sent with --suppress-delivery and still gives the link', () => {
+        const message = inboxSentMessage('a@acme.org', 'email', 'https://x/claim', true);
+        expect(message).not.toContain('will get');
+        expect(message).toContain('No claim email was sent (--suppress-delivery)');
+        expect(message).toContain('https://x/claim');
+    });
 });

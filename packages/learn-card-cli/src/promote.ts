@@ -4,6 +4,7 @@ import type { Command } from 'commander';
 
 import {
     loadProject,
+    requireIdentity,
     saveProject,
     resolveServices,
     PRODUCTION_NETWORK,
@@ -32,14 +33,8 @@ export const PROMOTE_CHECKLIST: readonly string[] = [
     'did:web (host-bound)',
 ];
 
-const NETWORK_ALIASES: Record<string, string> = {
-    staging: STAGING_NETWORK,
-    production: PRODUCTION_NETWORK,
-};
-
-/** `resolveServices` only special-cases the literal string "staging"; translate "production" too. */
-const resolveNetworkUrl = (network: string): string =>
-    resolveServices({}, NETWORK_ALIASES[network] ?? network, {}).network;
+/** Aliases (production|prod|staging|local) are resolved by `resolveServices`, same as every --network. */
+const resolveNetworkUrl = (network: string): string => resolveServices({}, network, {}).network;
 
 const NETWORK_DIR_NAMES: Record<string, string> = {
     [STAGING_NETWORK]: 'staging',
@@ -107,17 +102,17 @@ export const runPromote = async (options: PromoteOptions): Promise<void> => {
     out.log(`Target: ${targetDir}`);
 
     const sourceProject = await loadProject(options.cwd ?? process.cwd());
-    if (!sourceProject.env.SECURE_SEED)
-        throw new Error(
-            `No SECURE_SEED in .env here. Run \`org apply\` against ${from} in this folder first.`
-        );
+    const seed = requireIdentity(
+        sourceProject,
+        `Run \`npx @learncard/cli org apply <spec> --network ${from}\` in this folder first.`
+    );
     assertSourceNetwork(sourceProject.env, from, fromNetwork);
 
     // Only the seed (and, if present, the matching profile ID) carries over — every
     // other resource (tokens, signing authority, templates, contracts) is per-network
     // and must be recreated by `org apply` against the target network below.
     const carried = {
-        SECURE_SEED: sourceProject.env.SECURE_SEED,
+        SECURE_SEED: seed,
         ...(sourceProject.env.PROFILE_ID ? { PROFILE_ID: sourceProject.env.PROFILE_ID } : {}),
         NETWORK_URL: toNetwork,
     };
@@ -173,8 +168,11 @@ export const registerPromoteCommand = (program: Command, run: RunCommand): void 
     program
         .command('promote')
         .description('Move an issuer org from one network to another (e.g. staging to production).')
-        .requiredOption('--from <network>', 'source network tRPC URL or staging|production')
-        .requiredOption('--to <network>', 'target network tRPC URL or staging|production')
+        .requiredOption(
+            '--from <network>',
+            'source network: production|staging|local or a tRPC URL'
+        )
+        .requiredOption('--to <network>', 'target network: production|staging|local or a tRPC URL')
         .requiredOption('--org <file>', 'org spec to re-apply on the target network')
         .option(
             '--secrets-out <path>',

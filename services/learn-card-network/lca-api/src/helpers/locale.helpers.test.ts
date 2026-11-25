@@ -5,6 +5,9 @@ import cache from '@cache';
 
 import { resolveLocaleByEmail } from './locale.helpers';
 
+vi.mock('@environment', () => ({
+    environment: { NETWORK_BRAIN_SERVICE_URL: 'http://brain.test/trpc' },
+}));
 vi.mock('axios');
 vi.mock('@cache', () => ({
     default: {
@@ -44,7 +47,7 @@ describe('resolveLocaleByEmail', () => {
         await expect(resolveLocaleByEmail('Jane@Example.com')).resolves.toBe('es');
 
         expect(mockedPost).toHaveBeenCalledWith(
-            expect.stringContaining('/utilities/resolve-email-locale'),
+            'http://brain.test/api/utilities/resolve-email-locale',
             { email: 'Jane@Example.com' },
             expect.objectContaining({ timeout: expect.any(Number) })
         );

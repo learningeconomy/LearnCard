@@ -1,0 +1,71 @@
+<!doctype html>
+<!-- Configure iframe.allowedInternalPaths: ["/passport"] for this example's navigation button. -->
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>In-app message bridge example</title>
+        <style>
+            body {
+                font: 16px system-ui;
+                margin: 0;
+                padding: 24px;
+                color: #18224e;
+                background: #fbfbfc;
+            }
+            button {
+                padding: 12px 16px;
+                border-radius: 20px;
+                border: 1px solid #c5c8d3;
+                background: white;
+                color: #18224e;
+                cursor: pointer;
+                margin: 8px;
+            }
+            button:focus-visible {
+                outline: 3px solid #059669;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Explore your achievements</h1>
+        <p>This page can request navigation or closure. It receives no account data.</p>
+        <p id="status" role="status"></p>
+        <button id="navigate">Open Passport</button>
+        <button id="dismiss">Send dismiss action</button>
+        <button id="close">Request close</button>
+        <script>
+            const status = document.getElementById('status');
+            // Set explicitly in your integration; never trust document.referrer as an allowlist.
+            const raw = new URLSearchParams(location.search).get('parentOrigin');
+            let parentOrigin;
+            try {
+                if (raw === 'capacitor://localhost') {
+                    // URL.origin is "null" for Capacitor's custom iOS scheme.
+                    parentOrigin = raw;
+                } else {
+                    const url = new URL(raw);
+                    if (!['https:', 'http:'].includes(url.protocol) || url.origin === 'null')
+                        throw new Error();
+                    parentOrigin = url.origin;
+                }
+            } catch {
+                status.textContent = 'Set the parentOrigin query parameter to your app origin.';
+            }
+            const send = (event, action) => {
+                if (!parentOrigin) return;
+                parent.postMessage(
+                    { type: 'LC_IN_APP_MESSAGE', event, ...(action ? { action } : {}) },
+                    parentOrigin
+                );
+                status.textContent = `Sent ${event}. Required messages ignore close and dismiss requests.`;
+            };
+            document.getElementById('navigate').onclick = () =>
+                send('runAction', { type: 'internalLink', path: '/passport' });
+            document.getElementById('dismiss').onclick = () =>
+                send('runAction', { type: 'dismiss' });
+            document.getElementById('close').onclick = () => send('close');
+            send('ready');
+        </script>
+    </body>
+</html>

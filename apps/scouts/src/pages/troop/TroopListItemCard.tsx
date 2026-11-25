@@ -108,7 +108,7 @@ const TroopListItemCardItem: React.FC<TroopListItemCardItemProps> = ({
                 handleEdit={openEditTroopOrNetworkModal}
                 handleInviteMember={handleSelectInviteModal}
             />,
-            { sectionClassName: '!max-w-[400px]' },
+            { sectionClassName: 'max-w-[400px]!' },
             {
                 desktop: ModalTypes.Cancel,
                 mobile: ModalTypes.Cancel,
@@ -148,7 +148,7 @@ const TroopListItemCardItem: React.FC<TroopListItemCardItemProps> = ({
                 type={typeOverride || scoutNoun}
             />,
             {
-                sectionClassName: '!max-w-[450px]',
+                sectionClassName: 'max-w-[450px]!',
             },
             {
                 desktop: ModalTypes.Cancel,
@@ -179,7 +179,7 @@ const TroopListItemCardItem: React.FC<TroopListItemCardItemProps> = ({
                     leaderImage={leaderImage}
                     scoutImage={scoutImage}
                 />,
-                { sectionClassName: '!max-w-[450px]' },
+                { sectionClassName: 'max-w-[450px]!' },
                 { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
             );
         } else if (canInviteScout) {
@@ -203,7 +203,7 @@ const TroopListItemCardItem: React.FC<TroopListItemCardItemProps> = ({
             <div className="thumb-container cursor-pointer h-[100px] w-[85px] flex items-center z-[0]">
                 <div className="thumbnail rounded-full bg-grayscale-100 h-[70px] w-[70px]">
                     <div
-                        className="thumb-bg-el bg-grayscale-50 absolute left-0 top-0 h-[90%] w-[100px] rounded-bl-[0px] rounded-tl-[20px] rounded-br-[100%] z-[2]"
+                        className="thumb-bg-el bg-grayscale-50 absolute left-0 top-0 h-[90%] w-[100px] rounded-bl-none rounded-tl-[20px] rounded-br-[100%] z-[2]"
                         style={bgImgStyle}
                     ></div>
 
@@ -227,7 +227,7 @@ const TroopListItemCardItem: React.FC<TroopListItemCardItemProps> = ({
             <div className="flex flex-col z-[2] w-full pl-[15px]">
                 <span className="text-grayscale-900 cursor-pointer font-medium text-med relative">
                     {_resolvedBoost?.name}
-                    <div className="absolute right-[0px] top-[0px] cursor-pointer">
+                    <div className="absolute right-[0px] top-0 cursor-pointer">
                         <SlimCaretRight
                             className="rtl-mirror text-grayscale-400 h-[20px] w-[20px]"
                             color="currentColor"

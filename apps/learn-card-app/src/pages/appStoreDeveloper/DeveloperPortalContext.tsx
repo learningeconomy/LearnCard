@@ -56,28 +56,38 @@ export const DeveloperPortalProvider: React.FC<DeveloperPortalProviderProps> = (
     }, [currentIntegrationId, integrations]);
 
     // Navigation actions
-    const selectIntegration = useCallback((id: string | null) => {
-        if (!id) return;
+    const selectIntegration = useCallback(
+        (id: string | null) => {
+            if (!id) return;
 
-        const integration = integrations.find(i => i.id === id);
+            const integration = integrations.find(i => i.id === id);
 
-        if (integration?.status === 'active') {
-            // Active integrations go to their dashboard
-            history.push(`/app-store/developer/integrations/${id}`);
-        } else if (integration?.guideType) {
-            // If integration has a guide type, go directly to that guide
-            history.push(`/app-store/developer/integrations/${id}/guides/${integration.guideType}`);
-        } else {
-            // Otherwise go to the hub to choose a guide
-            history.push(`/app-store/developer/integrations/${id}/guides`);
-        }
-    }, [history, integrations]);
+            if (integration?.status === 'active') {
+                // Active integrations go to their dashboard
+                history.push(`/app-store/developer/integrations/${id}`);
+            } else if (integration?.guideType) {
+                // If integration has a guide type, go directly to that guide
+                history.push(
+                    `/app-store/developer/integrations/${id}/guides/${integration.guideType}`
+                );
+            } else {
+                // Otherwise go to the hub to choose a guide
+                history.push(`/app-store/developer/integrations/${id}/guides`);
+            }
+        },
+        [history, integrations]
+    );
 
-    const selectGuide = useCallback((guideType: UseCaseId) => {
-        if (!currentIntegrationId) return;
+    const selectGuide = useCallback(
+        (guideType: UseCaseId) => {
+            if (!currentIntegrationId) return;
 
-        history.push(`/app-store/developer/integrations/${currentIntegrationId}/guides/${guideType}`);
-    }, [history, currentIntegrationId]);
+            history.push(
+                `/app-store/developer/integrations/${currentIntegrationId}/guides/${guideType}`
+            );
+        },
+        [history, currentIntegrationId]
+    );
 
     const goToIntegrationHub = useCallback(() => {
         if (currentIntegration?.status === 'active') {
@@ -85,13 +95,15 @@ export const DeveloperPortalProvider: React.FC<DeveloperPortalProviderProps> = (
             history.push(`/app-store/developer/integrations/${currentIntegration.id}`);
         } else if (currentIntegration?.guideType) {
             // Setup integrations with a guide type go to that guide
-            history.push(`/app-store/developer/integrations/${currentIntegration.id}/guides/${currentIntegration.guideType}`);
+            history.push(
+                `/app-store/developer/integrations/${currentIntegration.id}/guides/${currentIntegration.guideType}`
+            );
         } else if (currentIntegrationId) {
             // Setup integrations without a guide type go to guide selection
             history.push(`/app-store/developer/integrations/${currentIntegrationId}/guides`);
         } else {
-            // No integration selected - go to guide hub to pick one
-            history.push('/app-store/developer/guides');
+            // No integration selected - start from the guides
+            history.push('/app-store/developer/build');
         }
     }, [history, currentIntegration, currentIntegrationId]);
 
@@ -100,45 +112,49 @@ export const DeveloperPortalProvider: React.FC<DeveloperPortalProviderProps> = (
     }, [history]);
 
     // Create integration action
-    const createIntegration = useCallback(async (name: string): Promise<string> => {
-        const id = await createIntegrationMutation.mutateAsync(name);
+    const createIntegration = useCallback(
+        async (name: string): Promise<string> => {
+            const id = await createIntegrationMutation.mutateAsync(name);
 
-        // Navigate to the new integration's hub
-        history.push(`/app-store/developer/integrations/${id}/guides`);
+            // Navigate to the new integration's hub
+            history.push(`/app-store/developer/integrations/${id}/guides`);
 
-        return id;
-    }, [createIntegrationMutation, history]);
+            return id;
+        },
+        [createIntegrationMutation, history]
+    );
 
-    const value = useMemo<DeveloperPortalContextValue>(() => ({
-        currentIntegrationId,
-        currentGuideType,
-        integrations,
-        currentIntegration,
-        isLoadingIntegrations,
-        selectIntegration,
-        selectGuide,
-        goToIntegrationHub,
-        goToApps,
-        createIntegration,
-        isCreatingIntegration: createIntegrationMutation.isPending,
-    }), [
-        currentIntegrationId,
-        currentGuideType,
-        integrations,
-        currentIntegration,
-        isLoadingIntegrations,
-        selectIntegration,
-        selectGuide,
-        goToIntegrationHub,
-        goToApps,
-        createIntegration,
-        createIntegrationMutation.isPending,
-    ]);
+    const value = useMemo<DeveloperPortalContextValue>(
+        () => ({
+            currentIntegrationId,
+            currentGuideType,
+            integrations,
+            currentIntegration,
+            isLoadingIntegrations,
+            selectIntegration,
+            selectGuide,
+            goToIntegrationHub,
+            goToApps,
+            createIntegration,
+            isCreatingIntegration: createIntegrationMutation.isPending,
+        }),
+        [
+            currentIntegrationId,
+            currentGuideType,
+            integrations,
+            currentIntegration,
+            isLoadingIntegrations,
+            selectIntegration,
+            selectGuide,
+            goToIntegrationHub,
+            goToApps,
+            createIntegration,
+            createIntegrationMutation.isPending,
+        ]
+    );
 
     return (
-        <DeveloperPortalContext.Provider value={value}>
-            {children}
-        </DeveloperPortalContext.Provider>
+        <DeveloperPortalContext.Provider value={value}>{children}</DeveloperPortalContext.Provider>
     );
 };
 

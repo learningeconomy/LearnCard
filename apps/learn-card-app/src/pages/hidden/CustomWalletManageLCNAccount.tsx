@@ -55,7 +55,7 @@ const CustomWalletManageLCNAccount: React.FC<CustomWalletManageLCNAccountProps> 
                         value={profile.profileId}
                         onChange={textHandler('profileId')}
                         required
-                        className="bg-white border flex-grow"
+                        className="bg-white border grow"
                         type="text"
                     />
                 </label>
@@ -69,7 +69,7 @@ const CustomWalletManageLCNAccount: React.FC<CustomWalletManageLCNAccountProps> 
                     <input
                         value={profile.displayName}
                         onChange={textHandler('displayName')}
-                        className="bg-white border flex-grow"
+                        className="bg-white border grow"
                         type="text"
                     />
                 </label>
@@ -78,7 +78,7 @@ const CustomWalletManageLCNAccount: React.FC<CustomWalletManageLCNAccountProps> 
                     bio
                     <textarea
                         onChange={textHandler('bio')}
-                        className="bg-white border flex-grow"
+                        className="bg-white border grow"
                         defaultValue={profile.bio}
                     />
                 </label>
@@ -88,7 +88,7 @@ const CustomWalletManageLCNAccount: React.FC<CustomWalletManageLCNAccountProps> 
                     <input
                         value={profile.email}
                         onChange={textHandler('email')}
-                        className="bg-white border flex-grow"
+                        className="bg-white border grow"
                         type="text"
                     />
                 </label>
@@ -98,7 +98,7 @@ const CustomWalletManageLCNAccount: React.FC<CustomWalletManageLCNAccountProps> 
                     <input
                         value={profile.image}
                         onChange={textHandler('image')}
-                        className="bg-white border flex-grow"
+                        className="bg-white border grow"
                         type="text"
                     />
                 </label>
@@ -106,7 +106,7 @@ const CustomWalletManageLCNAccount: React.FC<CustomWalletManageLCNAccountProps> 
 
             <button
                 type="submit"
-                className="transition-colors h-full w-full rounded border border-solid py-2 border-emerald-600 hover:text-white hover:bg-emerald-600"
+                className="transition-colors h-full w-full rounded-sm border border-solid py-2 border-emerald-600 hover:text-white hover:bg-emerald-600"
             >
                 {loading
                     ? hasProfile

@@ -14,7 +14,7 @@ export const AiInsightsExploreMoreButton: React.FC = () => {
     const handleExploreMore = () => {
         newModal(<AiInsightsExploreMoreModal />, {
             hideButton: true,
-            sectionClassName: '!max-w-[500px]',
+            sectionClassName: 'max-w-[500px]!',
         });
     };
     return (

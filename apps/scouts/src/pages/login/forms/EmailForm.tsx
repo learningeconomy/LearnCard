@@ -279,7 +279,7 @@ const EmailForm: React.FC = () => {
                 <input
                     aria-label={m['login.emailPlaceholder']()}
                     autoCapitalize="on"
-                    className={`w-full px-4 py-3 bg-grayscale-100 border rounded-[15px] font-medium font-notoSans tracking-widest text-base text-grayscale-900 placeholder:text-grayscale-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                    className={`w-full px-4 py-3 bg-grayscale-100 border rounded-[15px] font-medium font-notoSans tracking-widest text-base text-grayscale-900 placeholder:text-grayscale-500 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
                         emailError ? 'border-red-300' : 'border-grayscale-200'
                     } ${emailError ? 'login-input-email-error' : ''}`}
                     placeholder={m['login.emailPlaceholder']()}
@@ -412,14 +412,14 @@ const EmailForm: React.FC = () => {
                                         e.stopPropagation();
                                         handleResendCode();
                                     }}
-                                    className="text-grayscale-600 font-bold mt-4 border-b-grayscale-600 border-solid border-b-[1px] font-notoSans"
+                                    className="text-grayscale-600 font-bold mt-4 border-b-grayscale-600 border-solid border-b font-notoSans"
                                 >
                                     {resendCodeButtonText}
                                 </button>
                             ) : (
                                 <button
                                     disabled
-                                    className="text-grayscale-600 font-bold mt-4 border-b-grayscale-600 border-solid border-b-[1px] font-notoSans"
+                                    className="text-grayscale-600 font-bold mt-4 border-b-grayscale-600 border-solid border-b font-notoSans"
                                 >
                                     {m['common.resendIn']({ seconds })}
                                 </button>

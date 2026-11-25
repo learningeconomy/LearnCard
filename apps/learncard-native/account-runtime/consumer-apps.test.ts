@@ -34,6 +34,7 @@ const contract = () =>
         name: 'App agreement',
         createdAt: '2026-10-13T12:00:00Z',
         updatedAt: '2026-10-13T12:00:00Z',
+        version: 1,
         audienceVersion: 2,
         owner: { did: 'did:example:owner', profileId: 'owner', displayName: 'Publisher' },
         recipients: [
@@ -130,6 +131,12 @@ function fixture() {
         },
         changeDuring: () => {
             changedDuringEncryption = true;
+        },
+        incrementVersion: () => {
+            current.version++;
+        },
+        retire: () => {
+            current.status = 'retired';
         },
     };
 }
@@ -230,6 +237,26 @@ describe('native consumer agreement interoperability', () => {
         g.changeDuring();
         await expect(g.commands.appsConsent(e)).rejects.toThrow('consumer:changed');
         expect(g.publications).toHaveLength(0);
+    });
+    test('a version change alone invalidates an agreement review before sharing', async () => {
+        const f = fixture();
+        const reviewed = await decision(f);
+        f.incrementVersion();
+        await expect(f.commands.appsConsent(reviewed)).rejects.toThrow('consumer:changed');
+        expect(f.uploads).toHaveLength(0);
+        expect(f.publications).toHaveLength(0);
+    });
+    test('retired agreements cannot be approved or launch an installed app', async () => {
+        const f = fixture();
+        await f.commands.appsConsent(await decision(f));
+        await f.commands.appsInstall({ id: 'app' });
+        f.retire();
+        const review = await f.commands.appsReview({ id: 'app' });
+        expect(review?.blockReason).toBe('inactive');
+        await expect(f.commands.appsLaunch({ id: 'app' })).rejects.toThrow('consumer:inactive');
+        const retired = await decision(f);
+        await expect(f.commands.appsConsent(retired)).rejects.toThrow('consumer:inactive');
+        expect(f.publications).toHaveLength(1);
     });
     test('a missing selected record cannot silently become a smaller agreement', async () => {
         const f = fixture();

@@ -24,7 +24,7 @@ export const AssessmentMultipleChoiceAnswers: React.FC<{
                 return (
                     <button
                         key={i}
-                        className="bg-white rounded-full p-4 w-[50px] h-[50px] flex items-center justify-center mr-4 border-[1px] border-solid border-grayscale-200 last:mr-0"
+                        className="bg-white rounded-full p-4 w-[50px] h-[50px] flex items-center justify-center mr-4 border border-solid border-grayscale-200 last:mr-0"
                         onClick={() => handleAnswer(index, answer)}
                     >
                         <p className="text-grayscale-800 text-[17px] text-center">{choiceLetter}</p>

@@ -20,7 +20,7 @@ export const ClaimBoostLoggedOutPrompt: React.FC<{
                 </IonRow>
             </IonHeader>
             <IonContent>
-                <IonGrid className="relative flex flex-col items-center justify-center h-[100%] w-full">
+                <IonGrid className="relative flex flex-col items-center justify-center h-full w-full">
                     <IonRow className="flex flex-col items-center justify-center">
                         <IonCol className="w-full flex flex-col items-center justify-center">
                             <h6 className="font-semi-bold text-grayscale-900 font-mouse font-medium text-xl mb-[25px]">

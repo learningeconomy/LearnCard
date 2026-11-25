@@ -47,17 +47,17 @@ export const FinishedAiSessionAssessmentPreviewLearningPathwayItem: React.FC<{
     if (isLoading) {
         return (
             <div className="flex flex-col justify-between bg-white h-full w-full ion-padding border border-gray-200 rounded-2xl cursor-pointer mb-4 mt-4 animate-pulse">
-                <div className="h-5 bg-gray-200 rounded w-3/5 mb-4" />
+                <div className="h-5 bg-gray-200 rounded-sm w-3/5 mb-4" />
 
-                <div className="space-y-2 mb-4">
-                    <div className="h-4 bg-gray-200 rounded w-full" />
-                    <div className="h-4 bg-gray-200 rounded w-5/6" />
-                    <div className="h-4 bg-gray-200 rounded w-2/3" />
+                <div className="space-y-v3-2 mb-4">
+                    <div className="h-4 bg-gray-200 rounded-sm w-full" />
+                    <div className="h-4 bg-gray-200 rounded-sm w-5/6" />
+                    <div className="h-4 bg-gray-200 rounded-sm w-2/3" />
                 </div>
 
-                <div className="flex space-x-2 overflow-x-auto">
+                <div className="flex space-x-v3-2 overflow-x-auto">
                     {[...Array(4)].map((_, i) => (
-                        <div key={i} className="h-6 bg-gray-200 rounded-full w-16 flex-shrink-0" />
+                        <div key={i} className="h-6 bg-gray-200 rounded-full w-16 shrink-0" />
                     ))}
                 </div>
             </div>
@@ -74,7 +74,7 @@ export const FinishedAiSessionAssessmentPreviewLearningPathwayItem: React.FC<{
                 })
             }
             key={index}
-            className="flex flex-col items-start justify-between bg-white h-full w-full ion-padding border-solid border-[1px] border-grayscale-100 rounded-[20px] cursor-pointer mb-4 mt-4"
+            className="flex flex-col items-start justify-between bg-white h-full w-full ion-padding border-solid border border-grayscale-100 rounded-[20px] cursor-pointer mb-4 mt-4"
         >
             <div>
                 <div className="flex items-center justify-between w-full">

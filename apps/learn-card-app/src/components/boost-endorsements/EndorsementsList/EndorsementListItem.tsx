@@ -9,6 +9,7 @@ import { CredentialCategoryEnum, useGetVCInfo } from 'learn-card-base';
 
 export const EndorsementListItem: React.FC<{
     endorsement: VC; // endorsement VC stored
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     metadata?: any; // item stored in index
 }> = ({ endorsement, metadata }) => {
     const { issuerName, issuerProfileImageElement } = useGetVCInfo(

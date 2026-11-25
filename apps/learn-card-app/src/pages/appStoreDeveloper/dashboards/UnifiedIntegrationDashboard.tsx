@@ -20,8 +20,10 @@ import {
     Settings,
     FileSpreadsheet,
     ChevronDown,
+    Webhook,
 } from 'lucide-react';
 import type { LCNIntegration, AppStoreListing } from '@learncard/types';
+import type { EmbedAppGuideConfig, GuideState } from '../guides/types';
 import * as m from '../../../paraglide/messages.js';
 
 import { useWallet } from 'learn-card-base';
@@ -53,6 +55,9 @@ const EmbedConfigTab = lazy(() =>
 );
 const ContractsTab = lazy(() =>
     import('./tabs/ContractsTab').then(m => ({ default: m.ContractsTab }))
+);
+const WebhooksTab = lazy(() =>
+    import('./tabs/WebhooksTab').then(m => ({ default: m.WebhooksTab }))
 );
 const ConnectionsTab = lazy(() =>
     import('./tabs/ConnectionsTab').then(m => ({ default: m.ConnectionsTab }))
@@ -143,6 +148,14 @@ function getTabsForConfig(config: DashboardConfig): DashboardTabConfig[] {
             id: 'contracts',
             label: m['developerPortal.dashboards.nav.contracts'](),
             icon: FileText,
+        });
+    }
+
+    if (config.showWebhooks) {
+        tabs.push({
+            id: 'webhooks',
+            label: m['developerPortal.dashboards.nav.webhooks'](),
+            icon: Webhook,
         });
     }
 
@@ -251,7 +264,6 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
     const [authGrants, setAuthGrants] = useState<AuthGrant[]>([]);
     const [templates, setTemplates] = useState<CredentialTemplate[]>([]);
     const [branding, setBranding] = useState<BrandingConfig | null>(null);
-    const [contracts, setContracts] = useState<any[]>([]);
 
     const [stats, setStats] = useState<DashboardStats>({
         totalIssued: 0,
@@ -377,7 +389,7 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
 
                 // Extract basic template info from paginated response (no additional API calls needed)
                 const basicTemplates: CredentialTemplate[] = (boostsResult?.records || []).map(
-                    (boost: any) => ({
+                    boost => ({
                         id: boost.uri,
                         boostUri: boost.uri,
                         name: boost.name || 'Untitled Template',
@@ -394,12 +406,15 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                 // Count contracts configured for this integration (from guide state)
                 let activeContractsCount = 0;
                 if (config.showContracts) {
-                    const guideState = integration?.guideState as any;
+                    const guideState = integration?.guideState as GuideState | undefined;
                     const gsConfig = guideState?.config || {};
 
                     // Count contracts from different guide type configs
-                    if (gsConfig.consentFlowConfig?.contractUri) activeContractsCount++;
-                    const embedFeatures = gsConfig.embedAppConfig?.featureConfig || {};
+                    const consentConfig = gsConfig.consentFlowConfig as
+                        { contractUri?: string } | undefined;
+                    if (consentConfig?.contractUri) activeContractsCount++;
+                    const embedConfig = gsConfig.embedAppConfig as EmbedAppGuideConfig | undefined;
+                    const embedFeatures = embedConfig?.featureConfig || {};
                     if (embedFeatures['request-data-consent']?.contractUri) activeContractsCount++;
                     if (embedFeatures['issue-credentials']?.contractUri) activeContractsCount++;
                 }
@@ -414,6 +429,7 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                                 image: profile.image || '',
                                 shortBio: profile.shortBio || '',
                                 bio: profile.bio || '',
+                                linkedInOrganizationId: profile.linkedInOrganizationId,
                                 display: profile.display || {},
                             });
                         }
@@ -426,8 +442,10 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                 let connectionCount = 0;
                 if (config.showConnections && integration.guideType === 'consent-flow') {
                     try {
-                        const guideState = integration?.guideState as any;
-                        const contractUri = guideState?.config?.consentFlowConfig?.contractUri;
+                        const guideState = integration?.guideState as GuideState | undefined;
+                        const consentConfig = guideState?.config?.consentFlowConfig as
+                            { contractUri?: string } | undefined;
+                        const contractUri = consentConfig?.contractUri;
                         if (contractUri) {
                             const consentData = await wallet.invoke.getConsentFlowData(
                                 contractUri,
@@ -472,7 +490,6 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
         setActiveTab('overview');
         setAuthGrants([]);
         setTemplates([]);
-        setContracts([]);
         setStats({
             totalIssued: 0,
             totalClaimed: 0,
@@ -662,6 +679,8 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                 )}
 
                 {activeTab === 'contracts' && <ContractsTab integration={integration} />}
+
+                {activeTab === 'webhooks' && <WebhooksTab integration={integration} />}
 
                 {activeTab === 'connections' && <ConnectionsTab integration={integration} />}
 

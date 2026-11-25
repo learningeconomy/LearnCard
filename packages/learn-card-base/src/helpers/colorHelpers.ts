@@ -1,5 +1,17 @@
 import { CredentialCategoryEnum } from 'learn-card-base';
 
+/** Apply opacity to a named theme token, including variant and important utility forms. */
+export const tailwindColorWithOpacity = (
+    color: string | undefined,
+    opacity: number
+): string | undefined => {
+    const utility = color?.trim().split(':').pop()?.replace(/^!|!$/g, '');
+    const token = utility?.replace(/^(?:bg|text|border)-/, '');
+    if (!token || !/^[a-zA-Z0-9-]+$/.test(token) || !Number.isFinite(opacity)) return undefined;
+    const percentage = Math.max(0, Math.min(100, opacity));
+    return `color-mix(in srgb, var(--color-${token}) ${percentage}%, transparent)`;
+};
+
 const baseColors: string[] = [
     'bg-emerald-500',
     'bg-cyan-500',

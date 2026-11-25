@@ -137,6 +137,9 @@ export const useAppStore = () => {
                 });
             },
             staleTime: 1000 * 60 * 2, // 2 minutes
+            // A reload can restore the pre-install persisted snapshot before its throttled
+            // write completes. Revalidate on mount instead of trusting that snapshot's age.
+            refetchOnMount: 'always',
         });
     };
 

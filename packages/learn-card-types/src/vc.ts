@@ -200,7 +200,19 @@ export const ProofValidator = z
     .superRefine((proof, ctx) => {
         if (
             proof.created === undefined &&
-            (proof.type !== 'DataIntegrityProof' || proof.cryptosuite !== 'ecdsa-rdfc-2019')
+            // These standardized Data Integrity suites make created optional.
+            // Keep the prior requirement for legacy and unknown proof suites.
+            // https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-jcs-2022
+            // https://www.w3.org/TR/vc-di-bbs/#proof-configuration
+            (proof.type !== 'DataIntegrityProof' ||
+                ![
+                    'ecdsa-rdfc-2019',
+                    'ecdsa-jcs-2019',
+                    'ecdsa-sd-2023',
+                    'eddsa-rdfc-2022',
+                    'eddsa-jcs-2022',
+                    'bbs-2023',
+                ].includes(proof.cryptosuite as string))
         ) {
             ctx.addIssue({
                 code: 'custom',

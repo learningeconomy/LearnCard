@@ -16,6 +16,7 @@ const harness = (provisional = true) => {
     );
     const save = vi.fn().mockResolvedValue(undefined);
     const clear = vi.fn().mockResolvedValue(undefined);
+    const onPinChange = vi.fn();
     const recreate = () =>
         createRecoveryPinActions(
             {
@@ -24,9 +25,10 @@ const harness = (provisional = true) => {
                 setEscrowPin: save,
                 clearEscrowPin: clear,
             },
-            did
+            did,
+            onPinChange
         );
-    return { ...recreate(), recreate, activate, save, clear };
+    return { ...recreate(), recreate, activate, save, clear, onPinChange };
 };
 
 describe('provider recovery PIN actions', () => {
@@ -148,4 +150,33 @@ describe('provider recovery PIN actions', () => {
             expect(actions.activate).toHaveBeenCalledOnce();
         }
     );
+
+    it('signals a user PIN change before the set or clear mutation runs', async () => {
+        const actions = harness(false);
+        actions.save.mockImplementationOnce(async () => {
+            expect(actions.onPinChange).toHaveBeenCalledOnce();
+        });
+        await actions.setEscrowPin('135790');
+        actions.clear.mockImplementationOnce(async () => {
+            expect(actions.onPinChange).toHaveBeenCalledTimes(2);
+        });
+        await actions.clearEscrowPin();
+        expect(actions.save).toHaveBeenCalledOnce();
+        expect(actions.clear).toHaveBeenCalledOnce();
+    });
+
+    it('does not signal a PIN change for a call rejected by the removal guard', async () => {
+        const actions = harness(false);
+        let finish!: () => void;
+        actions.clear.mockImplementationOnce(
+            () => new Promise<void>(resolve => (finish = resolve))
+        );
+        const removing = actions.clearEscrowPin();
+        expect(actions.onPinChange).toHaveBeenCalledOnce();
+        await expect(actions.setEscrowPin('135790')).rejects.toThrow('Please wait');
+        await expect(actions.clearEscrowPin()).rejects.toThrow('Please wait');
+        expect(actions.onPinChange).toHaveBeenCalledOnce();
+        finish();
+        await removing;
+    });
 });

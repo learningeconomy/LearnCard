@@ -94,7 +94,7 @@ const BoostCMSMediaDocumentUpload: React.FC<BoostCMSMediaDocumentUploadProps> = 
                     type="text"
                     value={state?.documents?.[currentIndex]?.title}
                     onIonInput={e => {
-                        let stateCopy = structuredClone(state.documents);
+                        const stateCopy = structuredClone(state.documents);
                         if (stateCopy[currentIndex]) {
                             stateCopy[currentIndex].title = e.detail.value as string;
                             setState(stateCopy);
@@ -135,7 +135,7 @@ const BoostCMSMediaDocumentUpload: React.FC<BoostCMSMediaDocumentUploadProps> = 
             {sectionPortal &&
                 createPortal(
                     <div className="w-full flex flex-col items-center justify-center">
-                        <div className="flex justify-center gap-[10px] items-center relative !border-none w-full max-w-[500px]">
+                        <div className="flex justify-center gap-[10px] items-center relative border-none! w-full max-w-[500px]">
                             <button
                                 onClick={() => {
                                     handleSave();
@@ -155,7 +155,7 @@ const BoostCMSMediaDocumentUpload: React.FC<BoostCMSMediaDocumentUploadProps> = 
                             )}
                         </div>
 
-                        <div className="flex flex-col justify-center items-center relative !border-none w-full max-w-[500px]">
+                        <div className="flex flex-col justify-center items-center relative border-none! w-full max-w-[500px]">
                             <button
                                 onClick={() => {
                                     if (createMode) {

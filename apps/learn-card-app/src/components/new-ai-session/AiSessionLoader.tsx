@@ -62,6 +62,7 @@ const AiSessionLoader: React.FC<{
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let app = null;
     if (appSelection?.answer) {
         app = aiPassportApps.find(app => app.id === Number(appSelection?.answer));
@@ -74,7 +75,7 @@ const AiSessionLoader: React.FC<{
 
     const containerStyles = isInline
         ? ''
-        : 'h-[100vh] w-full flex items-center justify-center absolute top-0 left-0 z-9999 bg-black/50';
+        : 'h-screen w-full flex items-center justify-center absolute top-0 left-0 z-9999 bg-black/50';
 
     const cardStyles = isInline ? '' : 'shadow-box-bottom';
 
@@ -95,7 +96,7 @@ const AiSessionLoader: React.FC<{
                         >
                             {overrideText?.map((quote, index) => (
                                 <SwiperSlide key={index}>
-                                    <span className="block font-notoSans text-grayscale-900 text-[17px] font-[600] leading-[24px] tracking-[0.25px]">
+                                    <span className="block font-notoSans text-grayscale-900 text-[17px] font-semibold leading-[24px] tracking-[0.25px]">
                                         {quote}
                                     </span>
                                 </SwiperSlide>
@@ -103,7 +104,7 @@ const AiSessionLoader: React.FC<{
                         </Swiper>
                     </div>
                 ) : (
-                    <span className="font-notoSans text-grayscale-900 text-[17px] font-[600] leading-[24px] tracking-[0.25px]">
+                    <span className="font-notoSans text-grayscale-900 text-[17px] font-semibold leading-[24px] tracking-[0.25px]">
                         {text}
                     </span>
                 )}
@@ -152,7 +153,7 @@ const AiSessionLoader: React.FC<{
                         >
                             {overrideText?.map((quote, index) => (
                                 <SwiperSlide key={index}>
-                                    <span className="block font-notoSans text-grayscale-900 text-[17px] font-[600] leading-[24px] tracking-[0.25px]">
+                                    <span className="block font-notoSans text-grayscale-900 text-[17px] font-semibold leading-[24px] tracking-[0.25px]">
                                         {quote}
                                     </span>
                                 </SwiperSlide>
@@ -160,7 +161,7 @@ const AiSessionLoader: React.FC<{
                         </Swiper>
                     </div>
                 ) : (
-                    <span className="font-notoSans text-grayscale-900 text-[17px] font-[600] leading-[24px] tracking-[0.25px]">
+                    <span className="font-notoSans text-grayscale-900 text-[17px] font-semibold leading-[24px] tracking-[0.25px]">
                         {text}
                     </span>
                 )}

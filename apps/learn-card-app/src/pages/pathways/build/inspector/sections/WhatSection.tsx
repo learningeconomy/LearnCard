@@ -131,7 +131,7 @@ const WhatSection: React.FC<WhatSectionProps> = ({
             iconTone="emerald"
             defaultOpen
         >
-            <div className="space-y-5">
+            <div className="space-y-v3-5">
                 <TemplatePicker
                     policy={node.stage.policy}
                     termination={node.stage.termination}

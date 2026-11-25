@@ -28,7 +28,7 @@ const AiInsightsConsentFlowHeader: React.FC<{
     );
 
     if (childProfile || isChild) {
-        let childName = childProfile?.displayName;
+        const childName = childProfile?.displayName;
 
         text = (
             <p className="text-grayscale-900 text-[17px] text-center">
@@ -36,7 +36,9 @@ const AiInsightsConsentFlowHeader: React.FC<{
                     m={m['aiInsights.shareChildInsights']}
                     values={{ child: childName ?? '', teacher: profile?.displayName ?? '' }}
                     components={[
+                        // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                         <span className="font-semibold" />,
+                        // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                         <span className="font-semibold" />,
                     ]}
                 />

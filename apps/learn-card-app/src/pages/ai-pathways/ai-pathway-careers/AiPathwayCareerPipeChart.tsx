@@ -229,7 +229,7 @@ export const AiPathwayCareerPipeChart: React.FC<{
             </div>
 
             {/* Min / Max labels */}
-            <div className="flex justify-between px-[8px] py-[0] mt-[2px] text-[14px] leading-[16px] text-grayscale-900">
+            <div className="flex justify-between px-[8px] py-0 mt-[2px] text-[14px] leading-[16px] text-grayscale-900">
                 <span className="ml-[34px]">
                     {formatSalaryAmount(minSalary, false, salaryType)}
                 </span>

@@ -81,7 +81,7 @@ export const FamilyBoostMembersList: React.FC<{
                     return (
                         <div
                             key={index}
-                            className="profile-thumb-img border-[1px] border-white border-solid  vc-issuee-image h-[40px] w-[40px] rounded-full overflow-hidden mx-[-5px] z-10"
+                            className="profile-thumb-img border border-white border-solid  vc-issuee-image h-[40px] w-[40px] rounded-full overflow-hidden mx-[-5px] z-10"
                         >
                             <UserProfilePicture
                                 customContainerClass="flex justify-center items-center w-full h-full rounded-full overflow-hidden text-white font-medium text-2xl"

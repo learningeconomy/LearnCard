@@ -23,7 +23,7 @@ const useBoostGroupedBySkillsModal = (credentials: VC[] | VC_WITH_URI[]) => {
                     totalSkillsCount={totalSkillsCount}
                 />,
                 {
-                    sectionClassName: '!max-w-[500px]',
+                    sectionClassName: 'max-w-[500px]!',
                 }
             );
         }

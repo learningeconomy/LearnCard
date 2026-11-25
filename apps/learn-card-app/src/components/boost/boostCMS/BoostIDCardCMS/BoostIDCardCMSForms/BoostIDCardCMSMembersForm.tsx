@@ -14,6 +14,7 @@ const BoostIDCardCMSMembersForm: React.FC<{
 
     const [showAbout, setShowAbout] = useState<boolean>(false);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const handleStateChange = (propName: string, value: any) => {
         setState(prevState => {
             return {
@@ -33,7 +34,7 @@ const BoostIDCardCMSMembersForm: React.FC<{
                 <button onClick={() => setShowAbout(!showAbout)}>
                     <CaretLeft
                         className={`h-auto w-3 text-grayscale-800 ${
-                            showAbout ? 'rotate-[-90deg]' : 'rotate-180'
+                            showAbout ? '-rotate-90' : 'rotate-180'
                         }`}
                     />
                 </button>

@@ -88,7 +88,7 @@ vi.mock('learn-card-base/components/vcmodal/VCDisplayCardWrapper2', () => ({
 }));
 vi.mock('./SharedBoostPageFooter', () => ({ default: () => null }));
 vi.mock('../clr-transcript/surfaces/ClrTranscriptFullPage', () => ({ default: () => null }));
-vi.mock('../../helpers/clrRenderer.helpers', () => ({
+vi.mock('learn-card-base/helpers/credentials/clr/renderer', () => ({
     ClrTranscriptSurface: { Full: 'full' },
     normalizeClrTranscriptDisplayModel: () => null,
 }));
@@ -121,7 +121,7 @@ vi.mock('../../paraglide/messages.js', () => ({
     'issue.suspended': () => 'Suspended',
 }));
 
-import ViewSharedBoost from './ViewSharedBoost';
+import ViewSharedBoost from './ViewSharedBoostContent';
 
 describe('ViewSharedBoost', () => {
     beforeEach(() => {

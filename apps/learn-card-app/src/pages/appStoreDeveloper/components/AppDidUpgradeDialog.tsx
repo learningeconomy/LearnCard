@@ -58,7 +58,7 @@ export const AppDidUpgradeDialog: React.FC<AppDidUpgradeDialogProps> = ({
     if (upgradeSuccess) {
         return (
             <div className="fixed inset-0 z-[9999] flex items-center justify-center">
-                <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+                <div className="absolute inset-0 bg-black/40 backdrop-blur-xs" />
                 <div className="relative bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 animate-fade-in">
                     <div className="p-6 text-center">
                         <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -81,7 +81,7 @@ export const AppDidUpgradeDialog: React.FC<AppDidUpgradeDialogProps> = ({
     return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center">
             <div
-                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                className="absolute inset-0 bg-black/40 backdrop-blur-xs"
                 onClick={onDismiss}
                 onKeyDown={e => e.key === 'Escape' && onDismiss()}
                 role="button"
@@ -136,7 +136,7 @@ export const AppDidUpgradeDialog: React.FC<AppDidUpgradeDialogProps> = ({
                         </div>
                     </div>
 
-                    <div className="space-y-3 mb-6">
+                    <div className="space-y-v3-3 mb-6">
                         <p className="text-sm text-gray-600">
                             {m[
                                 'developerPortal.components.appDidUpgradeDialog.upgradeDescription'
@@ -147,9 +147,9 @@ export const AppDidUpgradeDialog: React.FC<AppDidUpgradeDialogProps> = ({
                             <p className="text-sm font-medium text-violet-800 mb-2">
                                 {m['developerPortal.components.appDidUpgradeDialog.upgradeWill']()}
                             </p>
-                            <ul className="text-sm text-violet-700 space-y-1">
+                            <ul className="text-sm text-violet-700 space-y-v3-1">
                                 <li className="flex items-start gap-2">
-                                    <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                                    <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
                                     <span>
                                         {m[
                                             'developerPortal.components.appDidUpgradeDialog.generateUniqueId'
@@ -157,7 +157,7 @@ export const AppDidUpgradeDialog: React.FC<AppDidUpgradeDialogProps> = ({
                                     </span>
                                 </li>
                                 <li className="flex items-start gap-2">
-                                    <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                                    <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
                                     <span>
                                         {m[
                                             'developerPortal.components.appDidUpgradeDialog.createDedicatedSigning'
@@ -165,7 +165,7 @@ export const AppDidUpgradeDialog: React.FC<AppDidUpgradeDialogProps> = ({
                                     </span>
                                 </li>
                                 <li className="flex items-start gap-2">
-                                    <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                                    <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
                                     <span>
                                         {m[
                                             'developerPortal.components.appDidUpgradeDialog.enableAppIssuance'
@@ -182,7 +182,7 @@ export const AppDidUpgradeDialog: React.FC<AppDidUpgradeDialogProps> = ({
 
                     {upgradeError && (
                         <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-xl mb-4">
-                            <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                            <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
                             <p className="text-sm text-red-700">{upgradeError}</p>
                         </div>
                     )}

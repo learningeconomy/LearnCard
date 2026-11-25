@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import {
     fingerPrint,
@@ -10,6 +10,7 @@ import {
     checkmarkOutline,
     mailOutline,
     closeOutline,
+    chevronForwardOutline,
 } from 'ionicons/icons';
 
 import { Capacitor } from '@capacitor/core';
@@ -48,6 +49,16 @@ interface RecoverySetupModalProps extends Partial<AutomaticRecoveryProps> {
     onCompleted?: (method: RecoverySetupType) => void;
     onClose: () => void;
     registerCloseRequest?: (fn: () => void) => void;
+    /**
+     * "Sign out of other devices": the same revoke as "Secure my account". The caller
+     * closes this modal and opens the secure flow, whose confirm screen explains it.
+     */
+    onSignOutOtherDevices?: () => void;
+    /**
+     * Shows a small amber dot on "Sign out of other devices". Driven only by signals
+     * that already exist: wrong PIN entries recorded against the current PIN.
+     */
+    signOutAttention?: boolean;
 }
 
 const isValidChallengeOptions = (
@@ -81,9 +92,13 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     onEnableEscrowRecovery,
     onSetEscrowPin,
     onClearEscrowPin,
+    onSignOutOtherDevices,
+    signOutAttention = false,
 }) => {
     const webAuthnSupported = isWebAuthnSupported();
     const isNative = Capacitor.isNativePlatform();
+    // The security row's name is its label alone; the signal and caption describe it.
+    const signOutIds = useId();
 
     const hasExistingMethod = (type: string) => existingMethods.some(m => m.type === type);
 
@@ -626,7 +641,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
         <div className="p-6 max-w-md mx-auto bg-white min-h-full relative">
             {showLeaveGuard && (
                 <div
-                    className="absolute inset-0 z-50 bg-white/80 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in-up motion-reduce:animate-none"
+                    className="absolute inset-0 z-50 bg-white/80 backdrop-blur-xs flex items-center justify-center p-6 animate-fade-in-up motion-reduce:animate-none"
                     role="alertdialog"
                     aria-labelledby="leave-guard-title"
                     aria-describedby="leave-guard-desc"
@@ -645,11 +660,11 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                         <p id="leave-guard-desc" className="text-sm text-grayscale-600 mb-6">
                             {m['recovery.guard.body']()}
                         </p>
-                        <div className="space-y-3">
+                        <div className="space-y-v3-3">
                             <button
                                 autoFocus
                                 onClick={() => setShowLeaveGuard(false)}
-                                className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                             >
                                 {m['recovery.guard.finish']()}
                             </button>
@@ -681,7 +696,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                     type="button"
                     onClick={requestClose}
                     aria-label={m['common.close']()}
-                    className="absolute top-0 end-0 p-2 rounded-full text-grayscale-500 hover:text-grayscale-700 hover:bg-grayscale-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                    className="absolute top-0 inset-e-0 p-2 rounded-full text-grayscale-500 hover:text-grayscale-700 hover:bg-grayscale-100 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
                     <IonIcon icon={closeOutline} className="text-lg" />
                 </button>
@@ -823,7 +838,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                 <>
                     {/* ── Passkey Tab ───────────────────────────────────── */}
                     {activeTab === 'passkey' && (
-                        <div className="space-y-4">
+                        <div className="space-y-v3-4">
                             {!webAuthnSupported ? (
                                 <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl">
                                     <p className="text-sm text-amber-800 leading-relaxed">
@@ -866,7 +881,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
 
                     {/* ── Phrase Tab ────────────────────────────────────── */}
                     {activeTab === 'phrase' && (
-                        <div className="space-y-4">
+                        <div className="space-y-v3-4">
                             {isConfigured('phrase') &&
                             !showUpdateForm &&
                             !recoveryPhrase ? null : phraseChallengeStarted ? (
@@ -928,7 +943,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                                                 }
                                                                 className={`
                                                                 min-h-[44px] px-3 py-2 rounded-[20px] text-sm font-medium transition-all
-                                                                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500
+                                                                focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500
                                                                 ${
                                                                     isCorrect
                                                                         ? 'bg-emerald-500 text-white border border-transparent'
@@ -1022,7 +1037,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                                                     )
                                                                 )
                                                             }
-                                                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                                                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                                                         />
                                                     </div>
                                                 )
@@ -1080,7 +1095,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                             {m['recovery.yourRecoveryPhrase']()}
                                         </p>
 
-                                        <p className="font-mono text-sm text-white leading-relaxed break-words">
+                                        <p className="font-mono text-sm text-white leading-relaxed wrap-break-word">
                                             {recoveryPhrase}
                                         </p>
                                     </div>
@@ -1111,7 +1126,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
 
                     {/* ── Backup Tab ──────────────────────────────────── */}
                     {activeTab === 'backup' && (
-                        <div className="space-y-4">
+                        <div className="space-y-v3-4">
                             {isConfigured('backup') &&
                             !showUpdateForm &&
                             !backupFileJson ? null : !backupFileJson ? (
@@ -1137,7 +1152,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                             value={backupPassword}
                                             onChange={e => setBackupPassword(e.target.value)}
                                             placeholder={m['recovery.placeholder.minLength']()}
-                                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                                         />
                                     </div>
 
@@ -1151,7 +1166,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                             value={confirmBackupPassword}
                                             onChange={e => setConfirmBackupPassword(e.target.value)}
                                             placeholder={m['recovery.placeholder.typeAgain']()}
-                                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                                         />
                                     </div>
 
@@ -1200,7 +1215,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                     </button>
 
                                     {backupDownloaded && !backupConfirmed && (
-                                        <div className="space-y-4">
+                                        <div className="space-y-v3-4">
                                             <p className="text-xs text-grayscale-600 mb-3">
                                                 {m['recovery.hint.oneMoreStep']()}
                                             </p>
@@ -1219,7 +1234,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                                     placeholder={m[
                                                         'recovery.placeholder.typeAgain'
                                                     ]()}
-                                                    className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                                                    className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                                                 />
                                                 <p className="mt-1.5 text-xs text-grayscale-500">
                                                     {m['recovery.verifyBackupDescription']()}
@@ -1241,7 +1256,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
 
                     {/* ── Email Tab ─────────────────────────────────── */}
                     {activeTab === 'email' && (
-                        <div className="space-y-4">
+                        <div className="space-y-v3-4">
                             {isConfigured('email') && !showUpdateForm ? null : !emailVerified ? (
                                 // Step 1 & 2: Verify email
                                 <>
@@ -1275,7 +1290,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                                     value={emailInput}
                                                     onChange={e => setEmailInput(e.target.value)}
                                                     placeholder="personal@gmail.com"
-                                                    className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                                                    className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                                                 />
                                             </div>
 
@@ -1321,7 +1336,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                                         )
                                                     }
                                                     placeholder="123456"
-                                                    className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white text-center tracking-[0.3em] font-mono"
+                                                    className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white text-center tracking-[0.3em] font-mono"
                                                 />
                                             </div>
 
@@ -1415,7 +1430,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                                 )
                                             }
                                             placeholder="123456"
-                                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white text-center tracking-[0.3em] font-mono"
+                                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white text-center tracking-[0.3em] font-mono"
                                         />
                                     </div>
 
@@ -1449,6 +1464,60 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                         {anyConfigured ? m['common.done']() : m['common.skipForNow']()}
                     </button>
                 </div>
+            )}
+
+            {/* A quiet row, last: the secure flow's confirm screen carries the full
+                explanation and the destructive button. */}
+            {onSignOutOtherDevices && (
+                <section aria-labelledby="security-section-title" className="mt-6">
+                    <h3
+                        id="security-section-title"
+                        className="px-1 mb-1 text-xs font-medium uppercase tracking-wide text-grayscale-500"
+                    >
+                        {m['recovery.signOutOtherDevices.section']()}
+                    </h3>
+                    <button
+                        type="button"
+                        onClick={onSignOutOtherDevices}
+                        disabled={loading}
+                        aria-labelledby={`${signOutIds}-label`}
+                        aria-describedby={
+                            signOutAttention
+                                ? `${signOutIds}-attention ${signOutIds}-caption`
+                                : `${signOutIds}-caption`
+                        }
+                        className="w-full py-3 px-1 min-h-[44px] flex items-center gap-3 text-start rounded-xl hover:bg-grayscale-10 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                        <span className="flex-1 min-w-0">
+                            <span className="flex items-center gap-2 text-sm font-medium text-grayscale-900">
+                                <span id={`${signOutIds}-label`}>
+                                    {m['recovery.signOutOtherDevices.label']()}
+                                </span>
+                                {signOutAttention && (
+                                    <span
+                                        data-testid="sign-out-attention-dot"
+                                        className="w-2 h-2 rounded-full bg-amber-500 shrink-0"
+                                    >
+                                        <span id={`${signOutIds}-attention`} className="sr-only">
+                                            {m['recovery.signOutOtherDevices.attention']()}
+                                        </span>
+                                    </span>
+                                )}
+                            </span>
+                            <span
+                                id={`${signOutIds}-caption`}
+                                className="block mt-0.5 text-xs text-grayscale-500"
+                            >
+                                {m['recovery.signOutOtherDevices.caption']()}
+                            </span>
+                        </span>
+                        <IonIcon
+                            icon={chevronForwardOutline}
+                            aria-hidden="true"
+                            className="text-grayscale-400 text-base shrink-0 rtl:rotate-180"
+                        />
+                    </button>
+                </section>
             )}
         </div>
     );

@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useHistory } from 'react-router-dom';
+import type { BoostExclusion } from '@learncard/types';
 import {
     X,
     Loader2,
@@ -19,7 +20,7 @@ import {
     ToastTypeEnum,
     useGetCurrentLCNUser,
     useSigningAuthority,
-    useGetPaginatedManagedBoosts,
+    useGetPaginatedManagedBoostsQuery,
     getLogger,
     boostCategoryMetadata,
     BoostCategoryOptionsEnum,
@@ -51,6 +52,30 @@ interface ReuseExistingProps {
 type Step = 'list' | 'preview' | 'recipient' | 'success';
 
 const ENUM_VALUES = Object.values(BoostCategoryOptionsEnum);
+// Include the Unicode whitespace that JavaScript's \s also matches so Neo4j
+// accepts the same stored spellings and padding as the original picker.
+const WHITESPACE = String.raw`\s\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff`;
+const CATEGORY_SEPARATOR = `[${WHITESPACE}-]*`;
+const AI_PASSPORT_CATEGORY_PATTERN = [
+    BoostCategoryOptionsEnum.aiSummary,
+    BoostCategoryOptionsEnum.aiTopic,
+    BoostCategoryOptionsEnum.aiPathway,
+    BoostCategoryOptionsEnum.aiInsight,
+    BoostCategoryOptionsEnum.aiAssessment,
+]
+    .map(category => category.replace(/[\s-]/g, '').split('').join(CATEGORY_SEPARATOR))
+    .join('|');
+
+const REUSE_EXCLUSIONS = {
+    category: {
+        $regex: new RegExp(
+            `^${CATEGORY_SEPARATOR}(?:${AI_PASSPORT_CATEGORY_PATTERN})${CATEGORY_SEPARATOR}$`,
+            'i'
+        ),
+    },
+    // The stored name also identifies AI Passport boosts with a generic category.
+    name: { $regex: new RegExp(`^[${WHITESPACE}]*AI Passport credential[${WHITESPACE}]*$`, 'i') },
+} satisfies BoostExclusion;
 
 const resolveCategory = (category?: string): BoostCategoryOptionsEnum => {
     if (!category) return BoostCategoryOptionsEnum.achievement;
@@ -111,7 +136,7 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
     const { getRegisteredSigningAuthority, getRegisteredSigningAuthorities } =
         useSigningAuthority();
     const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
-        useGetPaginatedManagedBoosts(undefined, { limit: 18 });
+        useGetPaginatedManagedBoostsQuery(undefined, { limit: 18, exclude: REUSE_EXCLUSIONS });
 
     const [step, setStep] = useState<Step>('list');
     const [query, setQuery] = useState('');
@@ -132,8 +157,13 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
     const records = useMemo<BoostRecord[]>(() => {
         const all = (data?.pages ?? []).flatMap(page => (page?.records ?? []) as BoostRecord[]);
         const trimmed = query.trim().toLowerCase();
-        if (!trimmed) return all;
-        return all.filter(r => (r.name ?? '').toLowerCase().includes(trimmed));
+        // Older Brain deployments can silently ignore the exclusion option.
+        return all.filter(
+            record =>
+                !REUSE_EXCLUSIONS.name.$regex.test(record.name ?? '') &&
+                !REUSE_EXCLUSIONS.category.$regex.test(record.category ?? '') &&
+                (!trimmed || record.name?.toLowerCase().includes(trimmed))
+        );
     }, [data, query]);
 
     const groups = useMemo(() => {
@@ -163,8 +193,7 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
         try {
             const wallet = await initWallet();
             const fetched = (await wallet.invoke.getBoost(record.uri)) as
-                | { boost?: Record<string, unknown> }
-                | undefined;
+                { boost?: Record<string, unknown> } | undefined;
             const vc = fetched?.boost;
             if (!vc) throw new Error('empty');
             setSelected({ record, vc });
@@ -251,7 +280,7 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
     };
 
     const previewType = selected
-        ? getTypeByObv3(achievementTypeOf(selected.vc) ?? '')?.baseSimpleType ?? 'badge'
+        ? (getTypeByObv3(achievementTypeOf(selected.vc) ?? '')?.baseSimpleType ?? 'badge')
         : null;
     const selectedName =
         selected?.record.name?.trim() ||
@@ -286,16 +315,16 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
         step === 'preview'
             ? m['issueFlow.sendThisCred']()
             : step === 'recipient'
-            ? m['issueFlow.whosItFor']()
-            : step === 'success'
-            ? m['passport.activity.status.sent']()
-            : m['issueFlow.reuseTitle']();
+              ? m['issueFlow.whosItFor']()
+              : step === 'success'
+                ? m['passport.activity.status.sent']()
+                : m['issueFlow.reuseTitle']();
 
     const onBack =
         step === 'preview' ? resetToList : step === 'recipient' ? () => setStep('preview') : null;
 
     return (
-        <div className="font-poppins w-full max-w-[560px] mx-auto bg-white rounded-[20px] flex flex-col max-h-[85vh] overflow-hidden animate-fade-in-up">
+        <div className="font-poppins flex min-h-0 flex-auto flex-col">
             <div className="shrink-0 px-6 pt-6 pb-4 border-b border-grayscale-100">
                 <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2 min-w-0">
@@ -335,7 +364,7 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
                                 value={query}
                                 onChange={e => setQuery(e.target.value)}
                                 placeholder={m['issueFlow.searchCreds']()}
-                                className="w-full py-3 pl-10 pr-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                                className="w-full py-3 pl-10 pr-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                             />
                         </div>
                     </>
@@ -360,18 +389,21 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
                             <div className="flex items-center justify-center py-12 text-grayscale-400">
                                 <Loader2 className="w-6 h-6 animate-spin" />
                             </div>
-                        ) : records.length === 0 ? (
-                            <div className="text-center py-12">
-                                <RotateCcw className="w-8 h-8 text-grayscale-300 mx-auto mb-3" />
-                                <p className="text-sm text-grayscale-500">
-                                    {query
-                                        ? m['issueFlow.nothingMatches']({ query })
-                                        : m['issueFlow.noneIssued']()}
-                                </p>
-                            </div>
                         ) : (
                             <>
-                                <div className="space-y-5">
+                                {records.length === 0 && (
+                                    <div className="text-center py-12">
+                                        <RotateCcw className="w-8 h-8 text-grayscale-300 mx-auto mb-3" />
+                                        <p className="text-sm text-grayscale-500">
+                                            {query
+                                                ? m['issueFlow.nothingMatches']({ query })
+                                                : hasNextPage
+                                                  ? m['issueFlow.lookForOlderCredentials']()
+                                                  : m['issueFlow.noneIssued']()}
+                                        </p>
+                                    </div>
+                                )}
+                                <div className="space-y-v3-5">
                                     {groups.map(({ label, items }) => (
                                         <div key={label}>
                                             <div className="flex items-center gap-2 mb-2">
@@ -413,7 +445,7 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
                 )}
 
                 {step === 'preview' && selected && (
-                    <div className="space-y-5 animate-fade-in-up">
+                    <div className="space-y-v3-5 animate-fade-in-up">
                         <p className="text-sm text-grayscale-600 -mt-1">
                             {m['issueFlow.previewDesc']()}
                         </p>
@@ -459,11 +491,11 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
                 )}
 
                 {step === 'success' && (
-                    <div className="text-center py-6 space-y-5 animate-fade-in-up">
+                    <div className="text-center py-6 space-y-v3-5 animate-fade-in-up">
                         <div className="w-14 h-14 rounded-full bg-emerald-50 flex items-center justify-center mx-auto">
                             <Check className="w-7 h-7 text-emerald-500" />
                         </div>
-                        <div className="space-y-1">
+                        <div className="space-y-v3-1">
                             <h3 className="text-lg font-semibold text-grayscale-900">
                                 {claimLink ? m['issueFlow.linkReady']() : m['issueFlow.credSent']()}
                             </h3>
@@ -538,8 +570,8 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
                                 {recipientMode === 'link'
                                     ? m['issueFlow.createLink']()
                                     : recipientMode === 'self'
-                                    ? m['issueFlow.sendToSelf']()
-                                    : m['issueFlow.sendCred']()}
+                                      ? m['issueFlow.sendToSelf']()
+                                      : m['issueFlow.sendCred']()}
                             </>
                         )}
                     </button>

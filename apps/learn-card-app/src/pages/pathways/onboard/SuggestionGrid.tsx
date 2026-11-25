@@ -25,7 +25,7 @@ const SuggestionGrid: React.FC<SuggestionGridProps> = ({
     onBack,
     goalText,
 }) => (
-    <div className="max-w-md mx-auto px-4 py-10 font-poppins space-y-5">
+    <div className="max-w-md mx-auto px-4 py-10 font-poppins space-y-v3-5">
         <div>
             <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide mb-1">
                 Step 3 of 3
@@ -42,7 +42,7 @@ const SuggestionGrid: React.FC<SuggestionGridProps> = ({
             </p>
         </div>
 
-        <ul className="space-y-3">
+        <ul className="space-y-v3-3">
             {suggestions.map((suggestion, i) => (
                 <li key={suggestion.template.id}>
                     <button
@@ -50,7 +50,7 @@ const SuggestionGrid: React.FC<SuggestionGridProps> = ({
                         onClick={() => onPick(suggestion)}
                         className="w-full text-left p-4 rounded-2xl border border-grayscale-300 bg-white
                                    hover:border-grayscale-900 hover:bg-grayscale-10 transition-colors
-                                   focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                   focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
                     >
                         <div className="flex items-start justify-between gap-3 mb-1.5">
                             <h3 className="text-base font-semibold text-grayscale-900">
@@ -68,7 +68,7 @@ const SuggestionGrid: React.FC<SuggestionGridProps> = ({
                             {suggestion.template.summary}
                         </p>
 
-                        <ul className="space-y-1">
+                        <ul className="space-y-v3-1">
                             {suggestion.reasons.slice(0, 2).map(reason => (
                                 <li
                                     key={reason}

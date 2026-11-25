@@ -85,7 +85,7 @@ export const AssistantCardDetailsModal: React.FC<{
         <div className="fixed inset-0 z-[1000] bg-grayscale-900/50 flex items-center justify-center p-4 font-poppins">
             <section className="w-full max-w-[680px] max-h-[88vh] overflow-hidden bg-white rounded-[20px] shadow-2xl flex flex-col animate-fade-in-up">
                 <div className="p-5 border-b border-grayscale-200 flex items-start justify-between gap-4">
-                    <div className="space-y-2">
+                    <div className="space-y-v3-2">
                         <div className="flex flex-wrap items-center gap-2">
                             <span
                                 className={`inline-flex items-center px-2.5 py-1 rounded-[6px] border text-xs font-semibold tracking-wide uppercase ${getLearnCardAssistantCardTypeClasses(
@@ -112,8 +112,8 @@ export const AssistantCardDetailsModal: React.FC<{
                     </button>
                 </div>
 
-                <div className="p-5 overflow-y-auto space-y-5">
-                    <section className="space-y-2">
+                <div className="p-5 overflow-y-auto space-y-v3-5">
+                    <section className="space-y-v3-2">
                         <h3 className="text-xs font-medium text-grayscale-700 uppercase tracking-wide">
                             What happened
                         </h3>
@@ -128,7 +128,7 @@ export const AssistantCardDetailsModal: React.FC<{
                         </div>
                     </section>
 
-                    <section className="space-y-2">
+                    <section className="space-y-v3-2">
                         <h3 className="text-xs font-medium text-grayscale-700 uppercase tracking-wide">
                             Why this appeared
                         </h3>
@@ -143,7 +143,7 @@ export const AssistantCardDetailsModal: React.FC<{
                         )}
                     </section>
 
-                    <section className="rounded-[20px] border border-grayscale-200 p-4 space-y-3">
+                    <section className="rounded-[20px] border border-grayscale-200 p-4 space-y-v3-3">
                         <div className="flex items-start gap-3">
                             <div className="w-10 h-10 rounded-full bg-grayscale-100 text-grayscale-700 flex items-center justify-center shrink-0">
                                 <IonIcon icon={action.icon} className="text-xl" />

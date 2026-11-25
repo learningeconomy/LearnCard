@@ -39,7 +39,7 @@ const BoostRecipients: React.FC<BoostRecipientsProps> = ({
                 return (
                     <div
                         key={index}
-                        className="profile-thumb-img border-[2px] border-white border-solid  vc-issuee-image h-[25px] w-[25px] rounded-full overflow-hidden mx-[-5px]"
+                        className="profile-thumb-img border-2 border-white border-solid  vc-issuee-image h-[25px] w-[25px] rounded-full overflow-hidden mx-[-5px]"
                     >
                         <UserProfilePicture
                             customContainerClass="flex justify-center items-center w-full h-full rounded-full overflow-hidden text-white font-medium text-2xl mr-3"

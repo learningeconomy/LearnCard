@@ -27,11 +27,13 @@ const BulkBoostParentSelector: React.FC<BulkBoostParentSelectorProps> = ({
     const { data: earnedBoostIDs } = useGetIDs();
 
     const nationalNetworkIds =
-        earnedBoostIDs?.filter(
-            cred =>
-                getDefaultCategoryForCredential(cred) ===
-                CredentialCategoryEnum.nationalNetworkAdminId
-        ) ?? [];
+        earnedBoostIDs
+            ?.map(({ vc }) => vc)
+            .filter(
+                cred =>
+                    getDefaultCategoryForCredential(cred) ===
+                    CredentialCategoryEnum.nationalNetworkAdminId
+            ) ?? [];
 
     const { data: networkBoost, isLoading } = useGetBoost(parentUri);
     const networkName = networkBoost?.meta?.edits?.name ?? networkBoost?.name;
@@ -40,7 +42,7 @@ const BulkBoostParentSelector: React.FC<BulkBoostParentSelectorProps> = ({
     const presentModal = () => {
         newModal(
             <BulkBoostParentSelectorModal parentUri={parentUri} setParentUri={setParentUri} />,
-            { sectionClassName: '!max-w-[400px]' }
+            { sectionClassName: 'max-w-[400px]!' }
         );
     };
 
@@ -54,7 +56,7 @@ const BulkBoostParentSelector: React.FC<BulkBoostParentSelectorProps> = ({
     return (
         <button
             onClick={() => presentModal()}
-            className="w-full rounded-full pl-2 pr-4 py-[6px] flex items-center justify-between border-[1px] border-solid border-grayscale-300 mt-4 mb-4 h-[58px]"
+            className="w-full rounded-full pl-2 pr-4 py-[6px] flex items-center justify-between border border-solid border-grayscale-300 mt-4 mb-4 h-[58px]"
         >
             {!parentUri && (
                 <p className="m-0 pl-[10px] p-0 text-lg font-notoSans text-grayscale-600 line-clamp-1">

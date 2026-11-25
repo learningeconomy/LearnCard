@@ -2,9 +2,9 @@ import React, { useEffect, type RefObject } from 'react';
 
 export const useScrollBorders = <Ref extends HTMLElement>({
     ref,
-    topShowClassName = 'border-t border-t-[--color-grayscale-line]',
+    topShowClassName = 'border-t border-t-(--color-grayscale-line)',
     topHideClassName = 'border-t border-t-transparent',
-    bottomShowClassName = 'border-b border-b-[--color-grayscale-line]',
+    bottomShowClassName = 'border-b border-b-(--color-grayscale-line)',
     bottomHideClassName = 'border-b border-b-transparent',
 }: {
     ref?: RefObject<Ref>;

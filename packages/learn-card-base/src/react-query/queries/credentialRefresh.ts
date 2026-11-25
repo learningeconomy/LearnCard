@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { fetchResolvedCredential } from './credentialResolution';
 import type { VC } from '@learncard/types';
 import { getSupportedRefreshService } from '@learncard/helpers';
 
@@ -75,7 +76,10 @@ export const isCredentialRefreshCandidateStale = (
  * supported `refreshService`. A credential that cannot be resolved is skipped
  * without failing discovery.
  */
-export const getCredentialRefreshCandidates = async (wallet: BespokeLearnCard): Promise<LCR[]> => {
+export const getCredentialRefreshCandidates = async (
+    wallet: BespokeLearnCard,
+    queryClient?: QueryClient
+): Promise<LCR[]> => {
     const records = (await wallet.index.LearnCloud.get({})) as LCR[];
 
     const candidates: LCR[] = [];
@@ -91,7 +95,9 @@ export const getCredentialRefreshCandidates = async (wallet: BespokeLearnCard): 
         CREDENTIAL_REFRESH_SCAN_CONCURRENCY,
         async record => {
             try {
-                const vc = (await wallet.read.get(record.uri)) as VC | undefined;
+                const vc = queryClient
+                    ? await fetchResolvedCredential(queryClient, wallet, record.uri)
+                    : ((await wallet.read.get(record.uri)) as VC | undefined);
 
                 if (vc && getSupportedRefreshService(vc)) candidates.push(record);
             } catch (error) {
@@ -111,6 +117,7 @@ export const getCredentialRefreshCandidates = async (wallet: BespokeLearnCard): 
  */
 export const useGetCredentialRefreshCandidates = (enabled: boolean = true) => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
     const switchedDid = switchedProfileStore.use.switchedDid();
 
     return useQuery<LCR[]>({
@@ -118,7 +125,7 @@ export const useGetCredentialRefreshCandidates = (enabled: boolean = true) => {
         queryFn: async () => {
             const wallet = await initWallet();
 
-            return getCredentialRefreshCandidates(wallet);
+            return getCredentialRefreshCandidates(wallet, queryClient);
         },
         staleTime: 1000 * 60 * 5,
         enabled,

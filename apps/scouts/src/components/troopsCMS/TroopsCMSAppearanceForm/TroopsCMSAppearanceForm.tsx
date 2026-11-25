@@ -110,7 +110,7 @@ export const TroopCMSAppearanceForm: React.FC<{
         <div className="w-full flex items-center justify-center flex-col">
             {isInIDMode && (
                 <>
-                    <div className="w-full flex items-center justify-end border-b-solid border-b-grayscale-100 border-b-[2px] pb-2 mt-4">
+                    <div className="w-full flex items-center justify-end border-b-solid border-b-grayscale-100 border-b-2 pb-2 mt-4">
                         <p className="font-notoSans text-grayscale-600 font-semibold">
                             {m['scoutsId.display']()}
                         </p>
@@ -151,7 +151,7 @@ export const TroopCMSAppearanceForm: React.FC<{
                     setState={setState}
                     viewMode={viewMode}
                     disabled={isDisabled}
-                    className="!m-0"
+                    className="m-0!"
                 />
             )}
 
@@ -163,7 +163,7 @@ export const TroopCMSAppearanceForm: React.FC<{
             )}
 
             {activeAppearanceTab === TroopsAppearanceTabs.custom && isInIDMode && (
-                <div className="flex items-center justify-between w-full p-2 border-b-white border-b-solid border-b-[2px]">
+                <div className="flex items-center justify-between w-full p-2 border-b-white border-b-solid border-b-2">
                     <div className="flex items-center justify-between w-full pb-2 pl-[4px]">
                         <p className="text-grayscale-900 font-notoSans text-lg flex items-center justify-start w-[80%]">
                             {m['scoutsId.fadeImage']()}
@@ -195,7 +195,7 @@ export const TroopCMSAppearanceForm: React.FC<{
             )}
 
             {activeAppearanceTab === TroopsAppearanceTabs.custom && isInIDMode && (
-                <div className="flex items-center justify-between w-full p-2 border-b-white border-b-solid border-b-[2px]">
+                <div className="flex items-center justify-between w-full p-2 border-b-white border-b-solid border-b-2">
                     <div className="flex items-center justify-between w-full pb-2 pl-[4px]">
                         <p className="text-grayscale-900 font-notoSans text-lg flex items-center justify-start w-[80%]">
                             {m['scoutsId.darkText']()}
@@ -222,7 +222,7 @@ export const TroopCMSAppearanceForm: React.FC<{
             )}
 
             {isInIDMode && (
-                <div className="w-full border-b-solid border-b-grayscale-100 border-b-[2px] mb-4 mt-2" />
+                <div className="w-full border-b-solid border-b-grayscale-100 border-b-2 mb-4 mt-2" />
             )}
 
             {!isInIDMode && (
@@ -255,7 +255,7 @@ export const TroopCMSAppearanceForm: React.FC<{
                                 updateFieldKey="idBackgroundColor"
                                 isDisabled={isDisabled}
                                 viewMode={viewMode}
-                                className="!mb-0"
+                                className="mb-0!"
                             />
                             <button
                                 onClick={() => {
@@ -295,7 +295,7 @@ export const TroopCMSAppearanceForm: React.FC<{
                     )}
 
                     {!isInIDMode && (
-                        <div className="flex items-center justify-between w-full bg-grayscale-100 p-2 border-b-white border-b-solid border-b-[2px]">
+                        <div className="flex items-center justify-between w-full bg-grayscale-100 p-2 border-b-white border-b-solid border-b-2">
                             <div className="flex items-center justify-between w-full pb-2 pl-[4px]">
                                 <p className="text-grayscale-900 font-notoSans text-lg flex items-center justify-start w-[80%]">
                                     {m['scoutsId.fadeImage']()}

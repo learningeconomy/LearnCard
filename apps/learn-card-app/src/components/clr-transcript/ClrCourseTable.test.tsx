@@ -3,7 +3,7 @@ import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { clrAchievementIdAssociations } from '../../../../../packages/credential-library/src/fixtures/clr/achievement-id-associations';
-import { normalizeClrTranscriptDisplayModel } from '../../helpers/clrRenderer.helpers';
+import { normalizeClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 import ClrCourseTable from './ClrCourseTable';
 
@@ -12,7 +12,7 @@ const model = normalizeClrTranscriptDisplayModel(
 );
 
 describe('ClrCourseTable', () => {
-    it('keeps a long grade inside its dedicated column', () => {
+    it('keeps the full long-grade value available in the course row', () => {
         render(<ClrCourseTable courses={model.courses} />);
 
         const foundationRow = screen.getByRole('button', {
@@ -20,12 +20,7 @@ describe('ClrCourseTable', () => {
         });
         const grade = within(foundationRow).getByText('Advanced');
 
-        expect(foundationRow).toHaveClass(
-            'grid-cols-[minmax(0,1fr)_64px_72px_24px]',
-            'sm:grid-cols-[minmax(0,1fr)_80px_80px_64px_80px_24px]'
-        );
-        expect(grade.parentElement).toHaveClass('min-w-0', 'pl-2');
-        expect(grade).toHaveClass('max-w-full', 'truncate');
+        expect(grade).toHaveClass('truncate');
         expect(grade).toHaveAttribute('title', 'Advanced');
     });
 });

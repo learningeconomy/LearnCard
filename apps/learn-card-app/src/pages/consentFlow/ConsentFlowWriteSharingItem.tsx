@@ -7,11 +7,11 @@ import AnonymousIcon from '../../components/svgs/AnonymousIcon';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 import Mail from 'learn-card-base/svgs/Mail';
 import { ProfilePicture } from 'learn-card-base';
+import { getInfoFromContractKey } from '../../helpers/contract.helpers';
 import {
     contractAnonImageSrc,
-    getInfoFromContractKey,
     isSupportedPersonalField,
-} from '../../helpers/contract.helpers';
+} from '../../helpers/consentPersonalFields';
 import * as m from '../../paraglide/messages.js';
 import { localizeCategoryTitle } from '../../i18n/categoryTitle';
 
@@ -44,9 +44,14 @@ const ConsentFlowWriteSharingItem: React.FC<ConsentFlowWriteSharingItemProps> = 
     infoText,
     onClickOverride,
 }) => {
-    let { IconComponent, iconSrc, title, iconClassName, iconCircleClass } = category
-        ? getInfoFromContractKey(category)
-        : {};
+    const {
+        IconComponent,
+        iconSrc,
+        title: categoryTitle,
+        iconClassName,
+        iconCircleClass,
+    } = category ? getInfoFromContractKey(category) : {};
+    let title = categoryTitle;
 
     const isName = category?.toLowerCase() === 'name'; // special case
     const isEmail = category?.toLowerCase() === 'email'; // special case
@@ -137,7 +142,7 @@ const ConsentFlowWriteSharingItem: React.FC<ConsentFlowWriteSharingItemProps> = 
                     </output> */}
 
                 <div className="flex flex-col flex-1 items-start">
-                    <h4 className="text-[17px] text-grayscale-900 font-notoSans font-[600] leading-[24px] tracking-[0.25px] line-clamp-1 grow text-left capitalize">
+                    <h4 className="text-[17px] text-grayscale-900 font-notoSans font-semibold leading-[24px] tracking-[0.25px] line-clamp-1 grow text-left capitalize">
                         {titleOverride ?? localizeCategoryTitle(title)}
                     </h4>
 
@@ -157,12 +162,12 @@ const ConsentFlowWriteSharingItem: React.FC<ConsentFlowWriteSharingItemProps> = 
 
                 <section className="flex items-center">
                     {term && !isAnonymous && (
-                        <span className="text-emerald-700 font-notoSans text-[14px] font-[600]">
+                        <span className="text-emerald-700 font-notoSans text-[14px] font-semibold">
                             {allowWord}
                         </span>
                     )}
                     {(!term || isAnonymous) && (
-                        <span className="text-grayscale-600 font-notoSans text-[14px] font-[600]">
+                        <span className="text-grayscale-600 font-notoSans text-[14px] font-semibold">
                             {isAnonymous && _isSupportedPersonalField
                                 ? m['consentFlow.anonymized']()
                                 : denyWord}

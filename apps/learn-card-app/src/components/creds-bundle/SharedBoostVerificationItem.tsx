@@ -10,7 +10,8 @@ export const SharedBoostVerificationItem: React.FC<{
     verification: VerificationItem;
     hideBorder?: boolean;
 }> = ({ verification, hideBorder = false }) => {
-    let check = verification.check;
+    const check = verification.check;
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let message: string | undefined = '';
 
     message = verification?.check ? verification?.message : verification.message;
@@ -30,22 +31,22 @@ export const SharedBoostVerificationItem: React.FC<{
         verification.status === VerificationStatusEnum.Success
             ? m['verification.status.success']()
             : verification.status === VerificationStatusEnum.Failed
-            ? m['verification.status.failed']()
-            : verification.status === VerificationStatusEnum.Error
-            ? m['verification.status.error']()
-            : verification.status;
+              ? m['verification.status.failed']()
+              : verification.status === VerificationStatusEnum.Error
+                ? m['verification.status.error']()
+                : verification.status;
 
     const checkLower = (check ?? '').toLowerCase();
     const checkLabel =
         checkLower === 'proof'
             ? m['verification.checks.proof']()
             : checkLower === 'revocation' ||
-              checkLower === 'status' ||
-              checkLower === 'credentialstatus'
-            ? m['verification.checks.revocation']()
-            : checkLower === 'expiration'
-            ? m['verification.checks.expiration']()
-            : check;
+                checkLower === 'status' ||
+                checkLower === 'credentialstatus'
+              ? m['verification.checks.revocation']()
+              : checkLower === 'expiration'
+                ? m['verification.checks.expiration']()
+                : check;
 
     const resolveMessage = (raw: string | undefined): string | undefined => {
         if (!raw) return raw;
@@ -91,12 +92,13 @@ export const SharedBoostVerificationItem: React.FC<{
         verification.check === 'Boost is Authentic. Verified by LearnCard Network.' &&
         verification.status === VerificationStatusEnum.Success
     ) {
+        // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
         message = verification.check ? `${verification.message}` : verification.message;
 
         return (
             <div
                 className={`w-full flex flex-col items-start justify-center border-grayscale-200 mb-2 pb-2 ${
-                    hideBorder ? 'border-none' : 'border-b-[1px]'
+                    hideBorder ? 'border-none' : 'border-b'
                 }`}
             >
                 <p
@@ -117,7 +119,7 @@ export const SharedBoostVerificationItem: React.FC<{
     return (
         <div
             className={`w-full flex flex-col items-start justify-center border-grayscale-200 mb-2 pb-2 ${
-                hideBorder ? 'border-none' : 'border-b-[1px]'
+                hideBorder ? 'border-none' : 'border-b'
             }`}
         >
             <p

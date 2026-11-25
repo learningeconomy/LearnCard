@@ -16,6 +16,8 @@ import useFirebaseAnalytics from './useFirebaseAnalytics';
 import GoogleLoginHelpModal from '../components/auth/GoogleLoginHelpModal';
 
 const log = getLogger('use-firebase');
+// Unique within this document, including attempts from different hook instances.
+let googleSignInAttempt = 0;
 const authError = (error: unknown): { code?: string | number; message?: string } => {
     if (!error || typeof error !== 'object') return {};
     const { code, message } = error as { code?: unknown; message?: unknown };
@@ -35,7 +37,7 @@ export const useFirebase = () => {
 
     const presentGoogleHelpModal = (message?: string): void => {
         newModal(React.createElement(GoogleLoginHelpModal, { message }), {
-            sectionClassName: '!max-w-[420px]',
+            sectionClassName: 'max-w-[420px]!',
         });
     };
 
@@ -52,18 +54,60 @@ export const useFirebase = () => {
     };
 
     const googleLogin = async (): Promise<void> => {
+        const startedAt = performance.now();
+        const context = {
+            attemptId: ++googleSignInAttempt,
+            provider: 'google',
+            isNativePlatform: Capacitor.isNativePlatform(),
+        };
+        const diagnostics = (): typeof context & {
+            elapsedMs: number;
+            authUserPresent: boolean | undefined;
+        } => {
+            let authUserPresent: boolean | undefined;
+            try {
+                authUserPresent = Boolean(adapter.getCurrentUser());
+            } catch {
+                // Diagnostics must not hide the original sign-in failure.
+            }
+            return {
+                ...context,
+                elapsedMs: Math.round(performance.now() - startedAt),
+                authUserPresent,
+            };
+        };
+        log.info('Google sign-in started', context);
         try {
             await adapter.signInWithGoogle();
             authStore.set.typeOfLogin(SocialLoginTypes.google);
             void logAnalyticsEvent('login', { method: SocialLoginTypes.google });
+            log.info('Google sign-in succeeded', diagnostics());
         } catch (error) {
             const { code: errorCode, message: errorMessage } = authError(error);
+            const internalAssertion =
+                typeof errorMessage === 'string' &&
+                (errorMessage.includes('Pending promise was never set') ||
+                    errorMessage.includes('INTERNAL ASSERTION FAILED'));
+            const failure = {
+                ...diagnostics(),
+                errorCode: errorCode ?? 'unknown',
+                internalAssertion,
+            };
+            // Capture failures before the help-modal branch returns. Only record
+            // codes and state: raw SDK errors can contain OAuth/account data.
+            if (
+                errorCode === 'auth/popup-closed-by-user' ||
+                errorCode === 'auth/popup-blocked' ||
+                errorCode === 'auth/cancelled-popup-request'
+            ) {
+                log.warn('Google sign-in did not complete', failure);
+            } else {
+                log.error('Google sign-in failed', failure);
+            }
             if (
                 errorCode === 'auth/popup-closed-by-user' ||
                 errorCode === 'auth/network-request-failed' ||
-                (typeof errorMessage === 'string' &&
-                    (errorMessage.includes('Pending promise was never set') ||
-                        errorMessage.includes('INTERNAL ASSERTION FAILED')))
+                internalAssertion
             ) {
                 presentGoogleHelpModal(
                     'Google sign-in failed to start. If the issue persists, please check your browser settings, clear the site data, refresh the page and try again. You may also try using a different browser or incognito mode.'
@@ -71,15 +115,15 @@ export const useFirebase = () => {
                 return;
             }
             if (errorCode === 'auth/popup-blocked') {
-                log.warn(`googleLogin popup blocked (${errorCode ?? 'unknown'})`, error);
                 presentGoogleHelpModal(
                     'Popups are blocked in your browser. Please enable popups in your browser and try again.'
                 );
             } else if (errorCode === 'auth/cancelled-popup-request') {
-                log.warn(`googleLogin cancelled (${errorCode ?? 'unknown'})`, error);
+                return;
             } else {
-                log.error(`googleLogin failed (${errorCode ?? 'unknown'})`, error);
-                if (errorMessage) presentGoogleHelpModal(errorMessage);
+                presentGoogleHelpModal(
+                    'Sign-in failed. Please try again or use a different browser.'
+                );
             }
         }
     };

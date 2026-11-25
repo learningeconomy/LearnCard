@@ -229,8 +229,8 @@ const ShareBoostLink: React.FC<{
 
                         {!isLinkLoading && shareLink && shareLink?.length > 0 && (
                             <div className="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-grayscale-100">
-                                <div className="w-[50%] flex flex-grow justify-start items-center text-left overflow-ellipsis">
-                                    <p className="w-full flex items-center justify-start text-left text-grayscale-500 font-medium text-sm line-clamp-1 overflow-ellipsis">
+                                <div className="w-[50%] flex grow justify-start items-center text-left text-ellipsis">
+                                    <p className="w-full flex items-center justify-start text-left text-grayscale-500 font-medium text-sm line-clamp-1 text-ellipsis">
                                         {shareLink}
                                     </p>
                                 </div>

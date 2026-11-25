@@ -1,10 +1,11 @@
+import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 import { execSync } from 'child_process';
 import { createRequire } from 'module';
 import { readdirSync, readFileSync, existsSync } from 'fs';
 
 import { NodeGlobalsPolyfillPlugin as GlobalPolyfill } from '@esbuild-plugins/node-globals-polyfill';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react-swc';
 import svgr from 'vite-plugin-svgr';
 import stdlibbrowser from 'node-stdlib-browser';
@@ -15,13 +16,32 @@ import type { Plugin as EsbuildPlugin } from 'esbuild';
 
 import { findDuplicateMessageImports } from './scripts/check-i18n-imports.mjs';
 import { paraglideMissingKeyOnWarn } from './paraglideOnWarn';
+import { paraglideLazyLocales } from './src/i18n/paraglideLazyLocales';
+import { minifySvgPathDataInSource } from './src/buildPlugins/minifySvgPathData';
+import {
+    chunkPrefetchFiles,
+    CHUNK_PREFETCH_ELEMENT_ID,
+    type BundleChunk,
+} from './src/buildPlugins/chunkPrefetchList';
 import { parseLearnCardAppEnvironment } from './src/config/buildEnvironment';
+import { registryProxyDevServer } from '../../packages/learn-card-base/src/registry-proxy/registryProxyDevServer';
 
 // The polyfill package ships against a different esbuild type instance than Vite.
 const globalPolyfillPlugin = GlobalPolyfill({
     process: true,
     buffer: true,
 }) as unknown as EsbuildPlugin;
+
+// Re-optimization can replace chunks without changing a dependency entry's URL version.
+// Revalidate dev responses instead of keeping Vite's year-long immutable browser cache.
+// A named plugin also changes the optimizer fingerprint, retiring already-cached URLs.
+const devCacheRevalidation: Plugin = {
+    name: 'dev-cache-revalidation',
+    apply: (_config, { command, isPreview }) => command === 'serve' && !isPreview,
+    config: () => ({
+        server: { headers: { 'Cache-Control': 'no-cache' } },
+    }),
+};
 
 /**
  * Fail the build/dev start if any file imports paraglide/messages.js twice
@@ -138,6 +158,135 @@ const collectWorkspacePackages = (): string[] => {
 
 const workspacePackages = collectWorkspacePackages();
 
+/**
+ * Production builds: resolve the root entry of each @learncard/* workspace package to its TypeScript
+ * source (the `development` export) instead of its prebuilt ESM dist. Several dist bundles inline their
+ * own copies of zod and @learncard/types (brain-client, openid4vc, render-method, sss-key-manager, helpers...),
+ * so the startup bundle carried ~6 copies that Rollup cannot dedupe or tree-shake. Only root entries of
+ * @learncard/* are redirected; npm packages keep production export conditions (a global `development`
+ * condition would pull dev builds of e.g. micromark). didkit keeps its dist (wasm asset wiring).
+ */
+const SOURCE_ENTRY_EXCLUDE = new Set(['@learncard/didkit-plugin', '@learncard/didkit-plugin-node']);
+const collectWorkspaceSourceEntries = (): Map<string, string> => {
+    const entries = new Map<string, string>();
+    const walk = (dir: string, depth: number): void => {
+        if (depth < 0 || !existsSync(dir)) return;
+        for (const entry of readdirSync(dir, { withFileTypes: true })) {
+            if (!entry.isDirectory() || ['node_modules', 'dist', 'src'].includes(entry.name))
+                continue;
+            const child = path.join(dir, entry.name);
+            const pkgPath = path.join(child, 'package.json');
+            if (existsSync(pkgPath)) {
+                try {
+                    const pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) as {
+                        name?: string;
+                        exports?: Record<string, unknown>;
+                    };
+                    const root = pkg.exports?.['.'] as { development?: unknown } | undefined;
+                    const dev =
+                        typeof root?.development === 'string' ? root.development : undefined;
+                    if (
+                        pkg.name?.startsWith('@learncard/') &&
+                        dev &&
+                        !SOURCE_ENTRY_EXCLUDE.has(pkg.name)
+                    ) {
+                        const file = path.join(child, dev);
+                        if (existsSync(file)) entries.set(pkg.name, file);
+                    }
+                } catch {
+                    // Ignore unreadable/partial package.json files during the scan.
+                }
+            }
+            walk(child, depth - 1);
+        }
+    };
+    walk(path.resolve(__dirname, '../../packages'), 2);
+    return entries;
+};
+
+const workspaceSourceEntries = (): Plugin => {
+    const entries = collectWorkspaceSourceEntries();
+    return {
+        name: 'learncard-workspace-source-entries',
+        enforce: 'pre',
+        apply: 'build',
+        resolveId: id => entries.get(id) ?? null,
+    };
+};
+
+// `lodash` is CommonJS, so one `import { isEqual } from 'lodash'` in workspace code bundles all of it
+// (~76 KB raw) into the entry. Resolve workspace imports of it to lodash-es (same API, tree-shakes).
+// Packages in node_modules keep real lodash: CJS callers may rely on the callable `_` chain.
+const lodashEsForWorkspace = (): Plugin => ({
+    name: 'learncard-lodash-es-for-workspace',
+    enforce: 'pre',
+    apply: 'build',
+    async resolveId(id, importer) {
+        if (id !== 'lodash' || !importer || importer.includes('/node_modules/')) return null;
+        return this.resolve('lodash-es', path.join(__dirname, 'index.html'), { skipSelf: true });
+    },
+});
+
+// Inline SVG icons are Figma exports (absolute coordinates, four decimals): ~1 MB of startup JS.
+// Round path points to a 0.01 grid (0.001 for small view boxes) and use the shorter of absolute or
+// relative commands. Source stays as exported; see src/buildPlugins/minifySvgPathData.ts.
+const minifySvgPathData = (): Plugin => ({
+    name: 'learncard-minify-svg-path-data',
+    enforce: 'pre',
+    apply: 'build',
+    transform(code, id) {
+        if (id.includes('/node_modules/') || !/\.[jt]sx$/.test(id.split('?')[0])) return null;
+        const next = minifySvgPathDataInSource(code);
+        // edits stay within single lines, so the existing source map is still line-accurate
+        return next === null ? null : { code: next, map: null };
+    },
+});
+
+// Lazy chunks the app warms ahead of time with plain fetch() (src/helpers/prefetchChunk.ts).
+// Writes each one's file URLs into index.html as JSON. Dev has no chunks, so it lists the
+// source module, which is what the dev server's import() requests.
+const PREFETCH_CHUNKS = {
+    'my-learncard': 'src/components/learncard/MyLearnCardModalContent.tsx',
+} as const;
+
+const chunkPrefetchList = (): Plugin => {
+    let base = '/';
+    let root = __dirname;
+    return {
+        name: 'learncard-chunk-prefetch-list',
+        configResolved(config) {
+            base = config.base;
+            root = config.root;
+        },
+        transformIndexHtml: {
+            order: 'post',
+            handler(_html, ctx) {
+                const list = Object.fromEntries(
+                    Object.entries(PREFETCH_CHUNKS).map(([key, source]) => {
+                        if (!ctx.bundle || !ctx.chunk) return [key, [`${base}${source}`]];
+                        const files = chunkPrefetchFiles(
+                            ctx.bundle as Record<string, BundleChunk>,
+                            ctx.chunk.fileName,
+                            path.resolve(root, source)
+                        );
+                        if (files.length === 0)
+                            throw new Error(`[chunk-prefetch-list] no chunk for ${source}`);
+                        return [key, files.map(file => `${base}${file}`)];
+                    })
+                );
+                return [
+                    {
+                        tag: 'script',
+                        attrs: { type: 'application/json', id: CHUNK_PREFETCH_ELEMENT_ID },
+                        children: JSON.stringify(list).replace(/</g, '\\u003c'),
+                        injectTo: 'head',
+                    },
+                ];
+            },
+        },
+    };
+};
+
 export default defineConfig(async ({ mode, command }) => {
     const loadedEnvironment = loadEnv(mode, __dirname, '');
     const environment = parseLearnCardAppEnvironment(
@@ -173,7 +322,14 @@ export default defineConfig(async ({ mode, command }) => {
 
     return {
         plugins: [
+            devCacheRevalidation,
+            ...(useSourceConditions ? [] : [workspaceSourceEntries()]),
+            lodashEsForWorkspace(),
+            minifySvgPathData(),
+            tailwindcss(),
+            registryProxyDevServer(),
             i18nImportGuard(),
+            chunkPrefetchList(),
             react(),
             svgr(),
             tsconfigPaths({ root: '../../' }),
@@ -182,6 +338,13 @@ export default defineConfig(async ({ mode, command }) => {
                 outdir: './src/paraglide',
                 outputStructure: 'locale-modules',
             }),
+            // Only the active language's strings load at startup (production builds).
+            paraglideLazyLocales(
+                JSON.parse(
+                    readFileSync(path.join(__dirname, 'project.inlang/settings.json'), 'utf8')
+                ).baseLocale,
+                path.join(__dirname, 'src/paraglide/messages')
+            ),
             ...(environment.ANALYZE
                 ? [
                       visualizer({
@@ -195,6 +358,7 @@ export default defineConfig(async ({ mode, command }) => {
         ],
         build: {
             target: 'esnext',
+            cssTarget: ['chrome111', 'safari16.4', 'firefox128'],
             outDir: path.join(__dirname, 'build'),
             rollupOptions: {
                 onwarn: paraglideMissingKeyOnWarn,
@@ -219,6 +383,9 @@ export default defineConfig(async ({ mode, command }) => {
             // the initial dependency scan. Pre-bundle them before serving the first page:
             // discovering them during sign-in replaces chunks and reloads active navigation.
             include: [
+                // Lazy XLSX workers must not discover dependencies and reload an active import.
+                'xlsx',
+                'fflate',
                 'buffer',
                 'process',
                 'react-router',
@@ -230,6 +397,11 @@ export default defineConfig(async ({ mode, command }) => {
                 'zod/v4',
                 '@learncard/sss-key-manager > shamir-secret-sharing',
                 '@learncard/sss-key-manager > hash-wasm',
+                '@learncard/sss-key-manager > @noble/ed25519',
+                // Escrow Nitro attestation (recovery) imports these at runtime.
+                '@learncard/sss-key-manager > reflect-metadata',
+                '@learncard/sss-key-manager > cborg',
+                '@learncard/sss-key-manager > @peculiar/x509',
                 '@learncard/sss-key-manager > @scure/bip39/wordlists/english',
                 '@learncard/react > react-barcode',
                 '@learncard/react > react-flip-toolkit',
@@ -238,18 +410,31 @@ export default defineConfig(async ({ mode, command }) => {
                 '@learncard/vpqr-plugin > @digitalbazaar/vpqr',
                 '@learncard/ethereum-plugin > ethers',
                 '@learncard/network-brain-client > @trpc/client',
+                '@learncard/learn-cloud-client > @trpc/client',
+                '@learncard/lca-api-plugin > @learncard/lca-api-client > @trpc/client',
                 '@learncard/core > core-js/actual/promise',
                 '@learncard/core > abort-controller/dist/abort-controller.js',
-                '@learncard/core > isomorphic-webcrypto',
                 '@learncard/chapi-plugin > credential-handler-polyfill',
                 '@learncard/chapi-plugin > web-credential-handler',
                 '@learncard/sd-jwt-vc-plugin > @sd-jwt/sd-jwt-vc',
+                '@learncard/sd-jwt-vc-plugin > @noble/curves/ed25519',
+                '@learncard/sd-jwt-vc-plugin > @scure/base',
                 '@learncard/openid4vc-plugin > jose',
                 '@learncard/openid4vc-plugin > safe-regex',
                 '@learncard/openid4vc-plugin > @peculiar/x509',
                 '@learncard/openid4vc-plugin > dcql',
                 '@learncard/vc-plugin > multiformats/bases/base58',
                 '@learncard/vc-plugin > multiformats/bases/base64',
+                // Found only after first paint (lazy routes, locale imports); a cold dev
+                // server otherwise re-optimizes and reloads mid-navigation.
+                '@headlessui/react',
+                '@emoji-mart/react',
+                'recharts',
+                '@digitalcredentials/jsonld',
+                '@capacitor-community/in-app-review',
+                'moment/dist/locale/ar',
+                'moment/dist/locale/es',
+                'moment/dist/locale/fr',
             ],
             // Exclude workspace packages from pre-bundling so Vite serves their TypeScript sources.
             exclude: workspacePackages,
@@ -308,6 +493,9 @@ export default defineConfig(async ({ mode, command }) => {
         server: {
             port: 3000,
             watch: {
+                // Native assembly writes generated HTML/assets; those must not reload an
+                // in-progress credential request in the development WebView.
+                ignored: ['**/android/**', '**/ios/**', '**/build/**'],
                 // Enable polling for Docker volume mounts
                 usePolling: environment.CHOKIDAR_USEPOLLING,
                 interval: environment.CHOKIDAR_INTERVAL,

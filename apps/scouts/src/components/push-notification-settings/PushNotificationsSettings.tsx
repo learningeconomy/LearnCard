@@ -58,7 +58,7 @@ const PushNotificationsSettings: React.FC<{
                             color="indigo-700"
                         />
                     </div>
-                    <p className="text-left p-0 pt-2 pb-5 m-0 text-xs border-b-[1px] border-grayscale-200">
+                    <p className="text-left p-0 pt-2 pb-5 m-0 text-xs border-b border-grayscale-200">
                         {getSettingDescription(setting.type)}
                     </p>
                 </IonCol>

@@ -127,7 +127,7 @@ export const AssistantAgentChatModal: React.FC<{
 
                 <div
                     ref={scrollRef}
-                    className="flex-1 overflow-y-auto p-5 space-y-3 bg-grayscale-10"
+                    className="flex-1 overflow-y-auto p-5 space-y-v3-3 bg-grayscale-10"
                 >
                     {messages.length === 0 ? (
                         <div className="h-full flex items-center justify-center text-center px-6">
@@ -193,7 +193,7 @@ export const AssistantAgentChatModal: React.FC<{
                             }
                             rows={2}
                             disabled={!auth || isSending}
-                            className="flex-1 py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white resize-none disabled:opacity-50"
+                            className="flex-1 py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white resize-none disabled:opacity-50"
                         />
 
                         <button

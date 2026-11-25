@@ -16,6 +16,7 @@ export {
     type AuthProvider,
     type RecoveryMethodInfo,
     type RecoveryResult,
+    type RevokeOtherDevicesResult,
     type IdentityRecoverySession,
     type ServerKeyStatus,
     type SssActivationState,
@@ -23,6 +24,7 @@ export {
     type DidAuthVpSigner,
     type EscrowEnrollmentOptions,
     type EscrowEnrollmentState,
+    type EscrowBlobStaleReason,
     type EscrowPinStatus,
 } from '@learncard/types';
 
@@ -71,7 +73,17 @@ export type RecoveryMethodType = 'passkey' | 'backup' | 'phrase' | 'email' | 'es
 /** Trust policy for the enclave that receives recovery material. */
 export type EscrowAttestationPolicy =
     | { mode: 'software'; pinnedPublicKeys: string[] }
-    | { mode: 'nitro'; pinnedMeasurements: { imageSha384: string }[]; rootCertificatePem?: string };
+    | {
+          mode: 'nitro';
+          /** Legacy image-only pins remain assignable but never match an attestation. */
+          pinnedMeasurements: (
+              | { pcr0: string; pcr1: string; pcr2: string; imageSha384?: string }
+              | { imageSha384: string; pcr0?: string; pcr1?: string; pcr2?: string }
+          )[];
+          rootCertificateSha256?: string;
+          /** Maximum age in milliseconds; defaults to five minutes. */
+          maxAgeMs?: number;
+      };
 
 /** Public status of an escrow recovery waiting period. */
 export interface EscrowHoldStatus {
@@ -82,10 +94,24 @@ export interface EscrowHoldStatus {
     releaseAfter: string;
     cancelledAt?: string;
     completedAt?: string;
+    /** Only present for an authority-mode hold-policy hold; `confirmed` only appears alongside it. */
+    requiresConfirmation?: boolean;
+    confirmed?: boolean;
+    /** Opaque enclave-signed `SignedHoldRecord`; present only in authority
+     * (nitro) mode. Callers must verify it with `verifyEscrowHoldRecord`
+     * before trusting any field inside it — see escrow-authority.ts. */
+    holdRecord?: import('./escrow-authority').EscrowHoldRecordLike;
 }
 
 /** Persist these secrets securely until completion; a null token means an existing hold. */
 export type EscrowRecoveryStart = EscrowHoldStatus & {
+    codeSent?: boolean;
+    delivery?: {
+        codeSent: boolean;
+        proof: import('./escrow-authority.types').EscrowAuthorityRecord;
+    };
+    /** Persist with the secrets, never rebuild from server status. Required for Nitro resume. */
+    expectations?: import('@learncard/types').EscrowRecoveryExpectations;
     resumeToken: string | null;
     clientEphemeralPrivateKey: string;
     pinSalt?: string;
@@ -97,6 +123,29 @@ export class EscrowPinUnavailableError extends Error {
         super('PIN recovery is not available for this account.');
         this.name = 'EscrowPinUnavailableError';
     }
+}
+
+/**
+ * What this client saw during one PIN sign-in flow (own-typos rule, E). A flow starts
+ * with the first PIN status read before the first attempt and ends when the sign-in
+ * completes; a new modal or app start begins a new flow.
+ */
+export interface EscrowPinAttemptContext {
+    /**
+     * Verified wrong entries recorded against the PIN when the flow started, before
+     * any attempt here. Undefined when the server could not say (legacy record, failed
+     * read): treated as "wrong entries recorded".
+     */
+    priorWrongAttempts?: number;
+    /** Wrong entries this client itself submitted in this flow (mismatch responses). */
+    ownWrongAttempts: number;
+    /**
+     * Salt of the PIN generation the counts belong to (from the flow's first status).
+     * A status read during the release that shows another salt (a new PIN, or a
+     * same-PIN re-set elsewhere) means the counts describe a different PIN, so they
+     * are ignored and the stricter #1905 rule applies.
+     */
+    pinSalt?: string;
 }
 
 /** A failed PIN attempt consumes its hold; another attempt must start a fresh hold. */
@@ -131,6 +180,18 @@ export class EscrowPinLockedError extends Error {
     }
 }
 
+/**
+ * A PIN sign-in released the key, but the released share version is no longer on the
+ * server (another device secured the account or recovered meanwhile). Nothing was
+ * stored; a revoke is never silently undone.
+ */
+export class PinSignInStaleError extends Error {
+    constructor() {
+        super('Your account changed while signing in. Try again.');
+        this.name = 'PinSignInStaleError';
+    }
+}
+
 export interface PasskeyRecoveryMethod {
     type: 'passkey';
     credentialId?: string;
@@ -155,8 +216,27 @@ export type RecoveryMethod =
  * SSS-specific recovery input — what the user provides to recover their key.
  */
 export type RecoveryInput =
-    | { method: 'escrow-pin'; pin: string }
-    | { method: 'escrow'; holdId: string; resumeToken: string; clientEphemeralPrivateKey: string }
+    | {
+          method: 'escrow-pin';
+          pin: string;
+          expectedDid?: string;
+          /** Verified recovery-email session; set only when no login is bound yet. */
+          recoverySessionToken?: string;
+          /**
+           * Own-typos rule (E): wrong entries this client observed in the current PIN
+           * sign-in flow. Omitted by older callers, which keeps the stricter rule (any
+           * recorded wrong entry blocks the same-PIN re-set).
+           */
+          pinAttempts?: EscrowPinAttemptContext;
+      }
+    | {
+          method: 'escrow';
+          holdId: string;
+          resumeToken: string;
+          clientEphemeralPrivateKey: string;
+          /** Original start bindings loaded with the private key, required for Nitro. */
+          expectations?: import('@learncard/types').EscrowRecoveryExpectations;
+      }
     | { method: 'passkey'; credentialId: string }
     | { method: 'phrase'; phrase: string }
     | { method: 'backup'; fileContents: string; password: string }
@@ -274,7 +354,10 @@ export type SSSKeyDerivationStrategy = KeyDerivationStrategy<
     RecoverySetupInput,
     RecoverySetupResult,
     RecoveryConfirmationInput
->;
+> & {
+    /** Last receipt/snapshot-verified ciphertext for this session, never a freshness oracle. */
+    getVerifiedEscrowEnvelope?(): import('./escrow-crypto').EscrowEnvelope | null;
+};
 
 // ---------------------------------------------------------------------------
 // Legacy types (deprecated)

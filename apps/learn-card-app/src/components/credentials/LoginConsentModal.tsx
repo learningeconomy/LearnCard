@@ -32,7 +32,7 @@ export const LoginConsentModal: React.FC<LoginConsentModalProps> = ({
 
             {/* Content */}
             <div className="flex-1 p-6 overflow-auto">
-                <div className="flex flex-col items-center text-center space-y-4">
+                <div className="flex flex-col items-center text-center space-y-v3-4">
                     {/* Icon */}
                     <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center">
                         <svg
@@ -65,10 +65,10 @@ export const LoginConsentModal: React.FC<LoginConsentModalProps> = ({
                         <p className="text-sm font-semibold text-grayscale-900 mb-3">
                             This will allow the app to:
                         </p>
-                        <ul className="space-y-2">
+                        <ul className="space-y-v3-2">
                             <li className="flex items-start text-sm text-grayscale-700">
                                 <svg
-                                    className="h-5 w-5 text-indigo-600 mr-2 flex-shrink-0"
+                                    className="h-5 w-5 text-indigo-600 mr-2 shrink-0"
                                     fill="none"
                                     viewBox="0 0 24 24"
                                     stroke="currentColor"
@@ -84,7 +84,7 @@ export const LoginConsentModal: React.FC<LoginConsentModalProps> = ({
                             </li>
                             <li className="flex items-start text-sm text-grayscale-700">
                                 <svg
-                                    className="h-5 w-5 text-indigo-600 mr-2 flex-shrink-0"
+                                    className="h-5 w-5 text-indigo-600 mr-2 shrink-0"
                                     fill="none"
                                     viewBox="0 0 24 24"
                                     stroke="currentColor"
@@ -100,7 +100,7 @@ export const LoginConsentModal: React.FC<LoginConsentModalProps> = ({
                             </li>
                             <li className="flex items-start text-sm text-grayscale-700">
                                 <svg
-                                    className="h-5 w-5 text-indigo-600 mr-2 flex-shrink-0"
+                                    className="h-5 w-5 text-indigo-600 mr-2 shrink-0"
                                     fill="none"
                                     viewBox="0 0 24 24"
                                     stroke="currentColor"

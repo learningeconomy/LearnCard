@@ -15,6 +15,10 @@ type KnownCredentialType = KnownAchievementType | CredentialType;
 
 export const SELF_ASSIGNED_SKILLS_ACHIEVEMENT_TYPE = 'ext:SelfAssignedSkills';
 
+// obv3 achievementType spec -> https://1edtech.github.io/openbadges-specification/ob_v3p0.html#achievementtype-enumeration
+// The type of achievement, for example 'Award' or 'Certification'.
+// This is an extensible enumerated vocabulary. Extending the vocabulary makes use of a naming convention
+// ! MUST ALIGN WITH -> learn-card-base/src/components/issueVC -> constants.ts -> { AchievementTypes }
 export const CATEGORY_MAP: Record<
     KnownCredentialType | 'Student Buckcard' | `ext:${string}`,
     CredentialCategory
@@ -40,7 +44,7 @@ export const CATEGORY_MAP: Record<
     'ext:Language': 'Achievement',
     'ext:Upskilling': 'Achievement',
 
-    License: 'ID',
+    License: 'Qualifications',
     Membership: 'ID',
     'Student Buckcard': 'ID',
     PermanentResidentCard: 'ID',
@@ -66,9 +70,9 @@ export const CATEGORY_MAP: Record<
     'ext:StateOrNationalID': 'ID',
     'ext:Passport': 'ID',
 
-    ApprenticeshipCertificate: 'Work History',
-    JourneymanCertificate: 'Work History',
-    MasterCertificate: 'Work History',
+    ApprenticeshipCertificate: 'Qualifications',
+    JourneymanCertificate: 'Qualifications',
+    MasterCertificate: 'Qualifications',
 
     // extending { Work History } category
     'ext:Job': 'Work History',
@@ -121,7 +125,7 @@ export const CATEGORY_MAP: Record<
 
     Competency: 'Achievement',
     Assessment: 'Achievement',
-    Certification: 'Achievement',
+    Certification: 'Qualifications',
     MicroCredential: 'Achievement',
 
     MasterDegree: 'Learning History',

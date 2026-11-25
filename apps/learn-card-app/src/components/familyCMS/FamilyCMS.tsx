@@ -175,7 +175,7 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
                         onDiscard={handleDiscard}
                         discardButtonText={m['family.createNewFamily']()}
                     />,
-                    { sectionClassName: '!max-w-[400px]' },
+                    { sectionClassName: 'max-w-[400px]!' },
                     { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
                 );
             }, 300);

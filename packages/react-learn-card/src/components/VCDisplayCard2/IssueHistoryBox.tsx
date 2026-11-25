@@ -15,7 +15,7 @@ const IssueHistoryBox: React.FC<SkillsBoxProps> = ({
     let renderIssueHistory = issueHistory?.map(issueItem => {
         return (
             <div
-                className="flex items-center issue-log-item border-b-[1px] last:border-b-0 py-[5px] border-grayscale-200 border-solid w-full"
+                className="flex items-center issue-log-item border-b last:border-b-0 py-[5px] border-grayscale-200 border-solid w-full"
                 key={issueItem?.id}
             >
                 <div className="profile-thumb-img vc-issuee-image h-[35px] w-[35px] rounded-full overflow-hidden">

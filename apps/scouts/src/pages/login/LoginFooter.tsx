@@ -19,7 +19,7 @@ const LoginFooter: React.FC<LoginFooterProps> = ({
 }) => {
     return (
         <div className={`${className}`}>
-            <div className={`ion-padding pl-6 !pt-1 w-full ${wrapperClassName}`}>
+            <div className={`ion-padding pl-6 pt-1! w-full ${wrapperClassName}`}>
                 {!hideSelfCustodialLogin && (
                     <IonCol size="12" className="login-footer-title-wrap">
                         <p className="text-grayscale-600 font-medium text-base">

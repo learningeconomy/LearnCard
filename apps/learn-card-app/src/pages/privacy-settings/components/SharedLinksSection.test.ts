@@ -24,6 +24,7 @@ vi.mock('qrcode.react', () => ({
         React.createElement('img', { role, 'aria-label': ariaLabel }),
 }));
 vi.mock('learn-card-base', () => ({
+    useGetProfile: () => ({ data: undefined }),
     ModalTypes: { Center: 'center', BottomSheet: 'bottom-sheet', FullScreen: 'full-screen' },
     useModal: () => ({
         newModal: (node: React.ReactNode) => {
@@ -341,6 +342,80 @@ describe('row animation', () => {
 });
 
 describe('shared with you', () => {
+    it('occupies no layout space without owner access until received content or an error appears', () => {
+        const base = viewModel();
+        const pending = {
+            ...base,
+            savedCollections: { ...base.savedCollections, records: [], isLoading: true },
+        };
+        const view = render(
+            React.createElement(SharedLinksSection, { vm: pending, showOwnerLinks: false })
+        );
+        expect(view.container).toBeEmptyDOMElement();
+
+        const empty = {
+            ...pending,
+            savedCollections: { ...pending.savedCollections, isLoading: false },
+        };
+        view.rerender(
+            React.createElement(SharedLinksSection, { vm: empty, showOwnerLinks: false })
+        );
+        expect(view.container).toBeEmptyDOMElement();
+
+        view.rerender(
+            React.createElement(SharedLinksSection, {
+                vm: { ...empty, savedCollections: { ...empty.savedCollections, error: true } },
+                showOwnerLinks: false,
+            })
+        );
+        expect(screen.getByRole('alert')).toHaveTextContent(/saved collections/);
+        expect(screen.getByRole('button', { name: 'Try again' })).toBeEnabled();
+
+        view.rerender(React.createElement(SharedLinksSection, { vm: base, showOwnerLinks: false }));
+        expect(screen.getByRole('button', { name: /^Career highlights/ })).toBeVisible();
+        expect(screen.queryByRole('heading', { name: 'Your shared links' })).toBeNull();
+    });
+
+    it('opens an explicitly requested empty received list without an inline layout gap', () => {
+        const base = viewModel();
+        const vm = {
+            ...base,
+            savedCollections: { ...base.savedCollections, records: [] },
+        };
+        const view = render(
+            React.createElement(SharedLinksSection, {
+                vm,
+                showOwnerLinks: false,
+                openReceived: true,
+            })
+        );
+        expect(view.container).toBeEmptyDOMElement();
+        const sheet = openTopSheet();
+        expect(
+            sheet.getByText("When someone shares credentials with you, they'll land here.")
+        ).toBeVisible();
+        expect(sheet.getByRole('button', { name: 'Back' })).toBeEnabled();
+    });
+
+    it('opens the received destination without exposing disabled owner controls', () => {
+        const vm = viewModel();
+        const props = { vm, openReceived: true, showOwnerLinks: false };
+        const view = render(React.createElement(SharedLinksSection, props));
+        const sheet = openTopSheet();
+
+        expect(screen.queryByRole('heading', { name: 'Your shared links' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'New link' })).toBeNull();
+        expect(sheet.getByRole('button', { name: /^Career highlights/ })).toBeEnabled();
+        fireEvent.click(sheet.getByRole('button', { name: 'Back' }));
+        expect(closeModalById).toHaveBeenCalledWith(0);
+
+        view.rerender(React.createElement(SharedLinksSection, { ...props, vm: { ...vm } }));
+        expect(modals).toHaveLength(1);
+        view.rerender(React.createElement(SharedLinksSection, { ...props, openReceived: false }));
+        view.rerender(React.createElement(SharedLinksSection, props));
+        expect(modals).toHaveLength(2);
+    });
+
     it('lists received collections without a tab and previews one', () => {
         const vm = viewModel();
         renderSection(vm);

@@ -65,6 +65,7 @@ export const getDefaultDisplayType = (
 
     if (
         category === CredentialCategoryEnum.achievement ||
+        category === CredentialCategoryEnum.qualifications ||
         category === CredentialCategoryEnum.accommodation ||
         category === CredentialCategoryEnum.learningHistory
     ) {

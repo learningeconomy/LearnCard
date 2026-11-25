@@ -39,7 +39,7 @@ export const ExitConfirmDialog: React.FC<ExitConfirmDialogProps> = ({
     return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center">
             {/* Backdrop */}
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onCancel} />
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-xs" onClick={onCancel} />
 
             {/* Dialog */}
             <div className="relative bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 animate-fade-in">

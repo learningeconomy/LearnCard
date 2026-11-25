@@ -72,7 +72,7 @@ export const ResumeIframePreview: React.FC<{
                         </button>
                         <button
                             onClick={onClose}
-                            className="text-grayscale-400 hover:text-grayscale-700 border-[1px] border-solid border-grayscale-200 rounded-full p-2.5"
+                            className="text-grayscale-400 hover:text-grayscale-700 border border-solid border-grayscale-200 rounded-full p-2.5"
                         >
                             <X className="w-3.5 h-3.5 text-grayscale-700" />
                         </button>

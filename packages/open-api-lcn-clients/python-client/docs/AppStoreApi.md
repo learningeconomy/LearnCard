@@ -6,12 +6,14 @@ All URIs are relative to _/api_
 | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------- |
 | [**app_store_add_boost_to_listing**](AppStoreApi.md#app_store_add_boost_to_listing)                                         | **POST** /app-store/listing/{listingId}/boost/add                        | Add Boost to Listing                     |
 | [**app_store_app_event**](AppStoreApi.md#app_store_app_event)                                                               | **POST** /app-store/event                                                | Process App Event                        |
+| [**app_store_apply_manifest_version**](AppStoreApi.md#app_store_apply_manifest_version)                                     | **POST** /app-store/integration/{integrationId}/manifest/{version}/apply | Apply App Manifest Version               |
 | [**app_store_associate_listing_with_signing_authority**](AppStoreApi.md#app_store_associate_listing_with_signing_authority) | **POST** /app-store/listing/{listingId}/associate-with-signing-authority | Associate Listing with Signing Authority |
 | [**app_store_browse_listed_apps**](AppStoreApi.md#app_store_browse_listed_apps)                                             | **POST** /app-store/browse                                               | Browse App Store                         |
 | [**app_store_count_installed_apps**](AppStoreApi.md#app_store_count_installed_apps)                                         | **GET** /app-store/installed/count                                       | Count Installed Apps                     |
 | [**app_store_count_listings_for_integration**](AppStoreApi.md#app_store_count_listings_for_integration)                     | **GET** /app-store/integration/{integrationId}/listings/count            | Count Listings for Integration           |
 | [**app_store_create_listing**](AppStoreApi.md#app_store_create_listing)                                                     | **POST** /app-store/listing/create                                       | Create App Store Listing                 |
 | [**app_store_delete_listing**](AppStoreApi.md#app_store_delete_listing)                                                     | **DELETE** /app-store/listing/{listingId}                                | Delete App Store Listing                 |
+| [**app_store_discard_listing_update**](AppStoreApi.md#app_store_discard_listing_update)                                     | **POST** /app-store/listing/{listingId}/update/discard                   | Discard Listing Update                   |
 | [**app_store_get_boosts_for_listing**](AppStoreApi.md#app_store_get_boosts_for_listing)                                     | **GET** /app-store/listing/{listingId}/boosts                            | Get Boosts for Listing                   |
 | [**app_store_get_installed_apps**](AppStoreApi.md#app_store_get_installed_apps)                                             | **POST** /app-store/installed                                            | Get Installed Apps                       |
 | [**app_store_get_integration_for_listing**](AppStoreApi.md#app_store_get_integration_for_listing)                           | **GET** /app-store/listing/{listingId}/integration                       | Get Integration for Listing              |
@@ -19,6 +21,9 @@ All URIs are relative to _/api_
 | [**app_store_get_listing_install_count**](AppStoreApi.md#app_store_get_listing_install_count)                               | **GET** /app-store/listing/{listingId}/install-count                     | Get App Install Count                    |
 | [**app_store_get_listing_signing_authority**](AppStoreApi.md#app_store_get_listing_signing_authority)                       | **GET** /app-store/listing/{listingId}/signing-authority                 | Get Listing Signing Authority            |
 | [**app_store_get_listings_for_integration**](AppStoreApi.md#app_store_get_listings_for_integration)                         | **POST** /app-store/integration/{integrationId}/listings                 | Get Listings for Integration             |
+| [**app_store_get_manifest_diff**](AppStoreApi.md#app_store_get_manifest_diff)                                               | **GET** /app-store/integration/{integrationId}/manifest/diff/{toVersion} | Get App Manifest Diff                    |
+| [**app_store_get_manifest_version**](AppStoreApi.md#app_store_get_manifest_version)                                         | **GET** /app-store/integration/{integrationId}/manifest/{version}        | Get App Manifest Version                 |
+| [**app_store_get_manifest_versions**](AppStoreApi.md#app_store_get_manifest_versions)                                       | **GET** /app-store/integration/{integrationId}/manifest/versions         | Get App Manifest Versions                |
 | [**app_store_get_my_credentials_from_app**](AppStoreApi.md#app_store_get_my_credentials_from_app)                           | **GET** /app-store/{listingId}/my-credentials                            | Get credentials earned from an app       |
 | [**app_store_get_public_listing**](AppStoreApi.md#app_store_get_public_listing)                                             | **GET** /app-store/public/listing/{listingId}                            | Get Public App Listing                   |
 | [**app_store_get_public_listing_by_slug**](AppStoreApi.md#app_store_get_public_listing_by_slug)                             | **GET** /app-store/public/listing/slug/{slug}                            | Get Public App Listing by Slug           |
@@ -26,10 +31,13 @@ All URIs are relative to _/api_
 | [**app_store_is_app_installed**](AppStoreApi.md#app_store_is_app_installed)                                                 | **GET** /app-store/listing/{listingId}/is-installed                      | Check if App is Installed                |
 | [**app_store_remove_boost_from_listing**](AppStoreApi.md#app_store_remove_boost_from_listing)                               | **POST** /app-store/listing/{listingId}/boost/remove                     | Remove Boost from Listing                |
 | [**app_store_send_app_notification**](AppStoreApi.md#app_store_send_app_notification)                                       | **POST** /app-store/listing/{listingId}/notify                           | Send App Notification                    |
+| [**app_store_submit_app_manifest**](AppStoreApi.md#app_store_submit_app_manifest)                                           | **POST** /app-store/integration/{integrationId}/manifest/submit          | Submit App Manifest                      |
 | [**app_store_submit_for_review**](AppStoreApi.md#app_store_submit_for_review)                                               | **POST** /app-store/listing/{listingId}/submit-for-review                | Submit Listing for Review                |
+| [**app_store_submit_listing_update**](AppStoreApi.md#app_store_submit_listing_update)                                       | **POST** /app-store/listing/{listingId}/update/submit                    | Submit Listing Update for Review         |
 | [**app_store_uninstall_app**](AppStoreApi.md#app_store_uninstall_app)                                                       | **POST** /app-store/listing/{listingId}/uninstall                        | Uninstall App                            |
 | [**app_store_unsubmit_for_review**](AppStoreApi.md#app_store_unsubmit_for_review)                                           | **POST** /app-store/listing/{listingId}/unsubmit-for-review              | Unsubmit Listing from Review             |
 | [**app_store_update_listing**](AppStoreApi.md#app_store_update_listing)                                                     | **POST** /app-store/listing/{listingId}/update                           | Update App Store Listing                 |
+| [**app_store_withdraw_listing_update**](AppStoreApi.md#app_store_withdraw_listing_update)                                   | **POST** /app-store/listing/{listingId}/update/withdraw                  | Withdraw Listing Update from Review      |
 
 # **app_store_add_boost_to_listing**
 
@@ -171,6 +179,91 @@ with openapi_client.ApiClient(configuration) as api_client:
 ### Return type
 
 **Dict[str, Optional[object]]**
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **app_store_apply_manifest_version**
+
+> AppStoreApplyManifestVersion200Response app_store_apply_manifest_version(integration_id, version, app_store_apply_manifest_version_request)
+
+Apply App Manifest Version
+
+Mark an app manifest version active and idempotently reconcile derived listing entities.
+
+### Example
+
+- Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.app_store_apply_manifest_version200_response import AppStoreApplyManifestVersion200Response
+from openapi_client.models.app_store_apply_manifest_version_request import AppStoreApplyManifestVersionRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.AppStoreApi(api_client)
+    integration_id = 'integration_id_example' # str |
+    version = 56 # int |
+    app_store_apply_manifest_version_request = openapi_client.AppStoreApplyManifestVersionRequest() # AppStoreApplyManifestVersionRequest |
+
+    try:
+        # Apply App Manifest Version
+        api_response = api_instance.app_store_apply_manifest_version(integration_id, version, app_store_apply_manifest_version_request)
+        print("The response of AppStoreApi->app_store_apply_manifest_version:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling AppStoreApi->app_store_apply_manifest_version: %s\n" % e)
+```
+
+### Parameters
+
+| Name                                         | Type                                                                              | Description | Notes |
+| -------------------------------------------- | --------------------------------------------------------------------------------- | ----------- | ----- |
+| **integration_id**                           | **str**                                                                           |             |
+| **version**                                  | **int**                                                                           |             |
+| **app_store_apply_manifest_version_request** | [**AppStoreApplyManifestVersionRequest**](AppStoreApplyManifestVersionRequest.md) |             |
+
+### Return type
+
+[**AppStoreApplyManifestVersion200Response**](AppStoreApplyManifestVersion200Response.md)
 
 ### Authorization
 
@@ -584,7 +677,7 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 Delete App Store Listing
 
-Delete an App Store Listing
+Delete an App Store Listing. Only draft or rejected listings may be deleted; in-review and live listings must be withdrawn or removed from the store first.
 
 ### Example
 
@@ -654,6 +747,85 @@ with openapi_client.ApiClient(configuration) as api_client:
 | **401**     | Authorization not provided | -                |
 | **403**     | Insufficient access        | -                |
 | **404**     | Not found                  | -                |
+| **500**     | Internal server error      | -                |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **app_store_discard_listing_update**
+
+> bool app_store_discard_listing_update(listing_id)
+
+Discard Listing Update
+
+Throw away unsubmitted changes to a LISTED app.
+
+### Example
+
+- Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.AppStoreApi(api_client)
+    listing_id = 'listing_id_example' # str |
+
+    try:
+        # Discard Listing Update
+        api_response = api_instance.app_store_discard_listing_update(listing_id)
+        print("The response of AppStoreApi->app_store_discard_listing_update:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling AppStoreApi->app_store_discard_listing_update: %s\n" % e)
+```
+
+### Parameters
+
+| Name           | Type    | Description | Notes |
+| -------------- | ------- | ----------- | ----- |
+| **listing_id** | **str** |             |
+
+### Return type
+
+**bool**
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
 | **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -1213,6 +1385,259 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **app_store_get_manifest_diff**
+
+> AppStoreGetManifestDiff200Response app_store_get_manifest_diff(integration_id, to_version, from_version=from_version)
+
+Get App Manifest Diff
+
+Diff one app manifest version against another for an integration.
+
+### Example
+
+- Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.app_store_get_manifest_diff200_response import AppStoreGetManifestDiff200Response
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.AppStoreApi(api_client)
+    integration_id = 'integration_id_example' # str |
+    to_version = 56 # int |
+    from_version = 56 # int |  (optional)
+
+    try:
+        # Get App Manifest Diff
+        api_response = api_instance.app_store_get_manifest_diff(integration_id, to_version, from_version=from_version)
+        print("The response of AppStoreApi->app_store_get_manifest_diff:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling AppStoreApi->app_store_get_manifest_diff: %s\n" % e)
+```
+
+### Parameters
+
+| Name               | Type    | Description | Notes      |
+| ------------------ | ------- | ----------- | ---------- |
+| **integration_id** | **str** |             |
+| **to_version**     | **int** |             |
+| **from_version**   | **int** |             | [optional] |
+
+### Return type
+
+[**AppStoreGetManifestDiff200Response**](AppStoreGetManifestDiff200Response.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **404**     | Not found                  | -                |
+| **500**     | Internal server error      | -                |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **app_store_get_manifest_version**
+
+> AppStoreGetManifestVersion200Response app_store_get_manifest_version(integration_id, version)
+
+Get App Manifest Version
+
+Get a full app manifest version for an integration.
+
+### Example
+
+- Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.app_store_get_manifest_version200_response import AppStoreGetManifestVersion200Response
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.AppStoreApi(api_client)
+    integration_id = 'integration_id_example' # str |
+    version = 56 # int |
+
+    try:
+        # Get App Manifest Version
+        api_response = api_instance.app_store_get_manifest_version(integration_id, version)
+        print("The response of AppStoreApi->app_store_get_manifest_version:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling AppStoreApi->app_store_get_manifest_version: %s\n" % e)
+```
+
+### Parameters
+
+| Name               | Type    | Description | Notes |
+| ------------------ | ------- | ----------- | ----- |
+| **integration_id** | **str** |             |
+| **version**        | **int** |             |
+
+### Return type
+
+[**AppStoreGetManifestVersion200Response**](AppStoreGetManifestVersion200Response.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **404**     | Not found                  | -                |
+| **500**     | Internal server error      | -                |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **app_store_get_manifest_versions**
+
+> AppStoreGetManifestVersions200Response app_store_get_manifest_versions(integration_id, limit=limit, cursor=cursor)
+
+Get App Manifest Versions
+
+List paginated app manifest versions for an integration.
+
+### Example
+
+- Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.app_store_get_manifest_versions200_response import AppStoreGetManifestVersions200Response
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.AppStoreApi(api_client)
+    integration_id = 'integration_id_example' # str |
+    limit = 56 # int |  (optional)
+    cursor = 'cursor_example' # str |  (optional)
+
+    try:
+        # Get App Manifest Versions
+        api_response = api_instance.app_store_get_manifest_versions(integration_id, limit=limit, cursor=cursor)
+        print("The response of AppStoreApi->app_store_get_manifest_versions:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling AppStoreApi->app_store_get_manifest_versions: %s\n" % e)
+```
+
+### Parameters
+
+| Name               | Type    | Description | Notes      |
+| ------------------ | ------- | ----------- | ---------- |
+| **integration_id** | **str** |             |
+| **limit**          | **int** |             | [optional] |
+| **cursor**         | **str** |             | [optional] |
+
+### Return type
+
+[**AppStoreGetManifestVersions200Response**](AppStoreGetManifestVersions200Response.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **404**     | Not found                  | -                |
+| **500**     | Internal server error      | -                |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **app_store_get_my_credentials_from_app**
 
 > AppStoreGetMyCredentialsFromApp200Response app_store_get_my_credentials_from_app(listing_id, limit=limit, cursor=cursor)
@@ -1758,6 +2183,89 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **app_store_submit_app_manifest**
+
+> AppStoreSubmitAppManifest200Response app_store_submit_app_manifest(integration_id, app_store_submit_app_manifest_request)
+
+Submit App Manifest
+
+Create a versioned app manifest draft for an integration, idempotently by manifest hash.
+
+### Example
+
+- Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.app_store_submit_app_manifest200_response import AppStoreSubmitAppManifest200Response
+from openapi_client.models.app_store_submit_app_manifest_request import AppStoreSubmitAppManifestRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.AppStoreApi(api_client)
+    integration_id = 'integration_id_example' # str |
+    app_store_submit_app_manifest_request = openapi_client.AppStoreSubmitAppManifestRequest() # AppStoreSubmitAppManifestRequest |
+
+    try:
+        # Submit App Manifest
+        api_response = api_instance.app_store_submit_app_manifest(integration_id, app_store_submit_app_manifest_request)
+        print("The response of AppStoreApi->app_store_submit_app_manifest:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling AppStoreApi->app_store_submit_app_manifest: %s\n" % e)
+```
+
+### Parameters
+
+| Name                                      | Type                                                                        | Description | Notes |
+| ----------------------------------------- | --------------------------------------------------------------------------- | ----------- | ----- |
+| **integration_id**                        | **str**                                                                     |             |
+| **app_store_submit_app_manifest_request** | [**AppStoreSubmitAppManifestRequest**](AppStoreSubmitAppManifestRequest.md) |             |
+
+### Return type
+
+[**AppStoreSubmitAppManifest200Response**](AppStoreSubmitAppManifest200Response.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **app_store_submit_for_review**
 
 > bool app_store_submit_for_review(listing_id)
@@ -1804,6 +2312,85 @@ with openapi_client.ApiClient(configuration) as api_client:
         pprint(api_response)
     except Exception as e:
         print("Exception when calling AppStoreApi->app_store_submit_for_review: %s\n" % e)
+```
+
+### Parameters
+
+| Name           | Type    | Description | Notes |
+| -------------- | ------- | ----------- | ----- |
+| **listing_id** | **str** |             |
+
+### Return type
+
+**bool**
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **app_store_submit_listing_update**
+
+> bool app_store_submit_listing_update(listing_id)
+
+Submit Listing Update for Review
+
+Send pending changes to a LISTED app for admin review. The live listing is unchanged until approval.
+
+### Example
+
+- Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.AppStoreApi(api_client)
+    listing_id = 'listing_id_example' # str |
+
+    try:
+        # Submit Listing Update for Review
+        api_response = api_instance.app_store_submit_listing_update(listing_id)
+        print("The response of AppStoreApi->app_store_submit_listing_update:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling AppStoreApi->app_store_submit_listing_update: %s\n" % e)
 ```
 
 ### Parameters
@@ -2063,6 +2650,85 @@ with openapi_client.ApiClient(configuration) as api_client:
 ### HTTP request headers
 
 - **Content-Type**: application/json
+- **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **app_store_withdraw_listing_update**
+
+> bool app_store_withdraw_listing_update(listing_id)
+
+Withdraw Listing Update from Review
+
+Return a submitted update to a LISTED app back to editable changes.
+
+### Example
+
+- Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.AppStoreApi(api_client)
+    listing_id = 'listing_id_example' # str |
+
+    try:
+        # Withdraw Listing Update from Review
+        api_response = api_instance.app_store_withdraw_listing_update(listing_id)
+        print("The response of AppStoreApi->app_store_withdraw_listing_update:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling AppStoreApi->app_store_withdraw_listing_update: %s\n" % e)
+```
+
+### Parameters
+
+| Name           | Type    | Description | Notes |
+| -------------- | ------- | ----------- | ----- |
+| **listing_id** | **str** |             |
+
+### Return type
+
+**bool**
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
 - **Accept**: application/json
 
 ### HTTP response details

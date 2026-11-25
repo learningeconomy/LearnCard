@@ -39,6 +39,7 @@ const BoostCMSTitleForm: React.FC<{
         setCharCount(state?.basicInfo?.name?.length ?? 0);
     }, [state.basicInfo.name]);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const handleStateChange = (propName: string, value: any) => {
         setState(prevState => {
             return {

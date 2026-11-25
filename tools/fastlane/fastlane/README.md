@@ -29,15 +29,11 @@ Description of what the lane does
 [bundle exec] fastlane ios certificates
 ```
 
-
-
 ### ios nukeandrecertify
 
 ```sh
 [bundle exec] fastlane ios nukeandrecertify
 ```
-
-
 
 ### ios release
 
@@ -45,15 +41,11 @@ Description of what the lane does
 [bundle exec] fastlane ios release
 ```
 
-
-
 ### ios beta
 
 ```sh
 [bundle exec] fastlane ios beta
 ```
-
-
 
 ### ios upload_to_appetize
 
@@ -61,10 +53,15 @@ Description of what the lane does
 [bundle exec] fastlane ios upload_to_appetize
 ```
 
+### ios smoke_xctest
 
+```sh
+[bundle exec] fastlane ios smoke_xctest
+```
 
-----
+Build AppUITests for Device Farm and package the Payload IPA plus the test runner
 
+---
 
 ## Android
 
@@ -73,8 +70,6 @@ Description of what the lane does
 ```sh
 [bundle exec] fastlane android release
 ```
-
-
 
 ### android initial_upload
 
@@ -90,9 +85,15 @@ Build AAB for first-time manual upload to Google Play (no Play Store lookup or u
 [bundle exec] fastlane android upload_to_appetize
 ```
 
+### android smoke_apk
 
+```sh
+[bundle exec] fastlane android smoke_apk
+```
 
-----
+Build a debug APK for native smoke tests
+
+---
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.
 

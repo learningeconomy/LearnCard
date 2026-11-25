@@ -15,6 +15,7 @@ import { ChecklistEnum, ChecklistItem } from 'learn-card-base';
 export const CheckListManagerContainer: React.FC<{ checkListItem: ChecklistItem }> = ({
     checkListItem,
 }) => {
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let checkListStep = null;
 
     switch (checkListItem.type) {

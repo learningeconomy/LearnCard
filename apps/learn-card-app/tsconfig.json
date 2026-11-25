@@ -1,14 +1,14 @@
 {
     "extends": "../../tsconfig.browser.json",
     "compilerOptions": {
-        "baseUrl": ".",
+        "types": ["node", "vitest/globals", "testing-library__jest-dom"],
         "paths": {
             "learn-card-base": ["../../packages/learn-card-base/src/index.ts"],
             "learn-card-base/*": ["../../packages/learn-card-base/src/*"],
             "learn-card-base/src/*": ["../../packages/learn-card-base/src/*"],
-            "apps/learn-card-app/src/*": ["src/*"],
-            "@analytics": ["src/analytics"],
-            "@analytics/*": ["src/analytics/*"]
+            "apps/learn-card-app/src/*": ["./src/*"],
+            "@analytics": ["./src/analytics"],
+            "@analytics/*": ["./src/analytics/*"]
         },
         "noFallthroughCasesInSwitch": true
     },

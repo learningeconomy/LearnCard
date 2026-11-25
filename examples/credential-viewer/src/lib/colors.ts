@@ -45,6 +45,7 @@ export const PROFILE_LABELS: Record<CredentialProfile, string> = {
 export const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
     'Achievement': { bg: 'bg-blue-500/10', text: 'text-blue-400' },
     'ID': { bg: 'bg-emerald-500/10', text: 'text-emerald-400' },
+    'Qualifications': { bg: 'bg-emerald-500/10', text: 'text-emerald-400' },
     'Learning History': { bg: 'bg-amber-500/10', text: 'text-amber-400' },
     'Work History': { bg: 'bg-orange-500/10', text: 'text-orange-400' },
     'Social Badge': { bg: 'bg-pink-500/10', text: 'text-pink-400' },

@@ -1,8 +1,81 @@
 # Mocked-network E2E tier
 
 Playwright tests that run against the **vite dev server only — no docker backend**.
-Fast and deterministic, so they run on every affected PR (`.github/workflows/mock-e2e.yml`)
-via the `test-mock` nx target. The real-backend E2E stays on the gated EC2 job.
+They run via the `test-mock` Nx target (`.github/workflows/mock-e2e.yml`).
+The real-backend E2E tier is hosted separately in `.github/workflows/e2e.yml`.
+
+## CI eligibility and browser reuse (LC-2312 / CI-14)
+
+Before installing the workspace or downloading Firefox, a Node check compares
+the PR's changes from its Git merge base. It can skip unrelated code projects
+using Nx's project graph and the planned `test-mock` prerequisite tasks.
+
+For example, a ScoutPass-only or AI-agent-only code edit can skip the LearnCard
+App mock suite, workspace installation and Firefox. Changes to shared types,
+crypto, `learn-card-base` or brain-service still run: those projects are in the
+app's dependency graph. A backend label alone is not a reason to skip.
+
+The preflight copies the isolated `.github/mock-e2e-preflight/package.json` and
+`package-lock.json` into a temporary directory, then runs **`npm ci --ignore-scripts`**
+from that directory. Nx, TypeScript and their transitive dependencies use the
+committed lockfile; checkout-local `.npmrc` settings do not apply to this install.
+The checkout does not persist Git credentials. This npm project lives outside
+Bun's `scripts/*` workspace pattern, so it does not change the Bun workspace lock.
+It does not install workspace dependencies, run builds or execute tests. Nx
+produces its actual project/task graph; the check follows transitive, dynamic
+and implicit dependencies and includes build prerequisites. A file must belong
+to a known project outside that required set to skip. Unknown/deleted project
+paths, missing/invalid/empty comparisons, graph/bootstrap failures and global
+config or dependency metadata changes run the **complete** mock suite. Renames
+consider both old and new paths. Non-prose deletions, renames and file-type
+changes also run in full: removing a module can erase a former consumer edge
+from the head graph. Manual dispatch always runs the complete suite.
+
+Keep the preflight's Nx/TypeScript versions aligned with root `devDependencies`.
+When either changes, update the isolated manifest and regenerate its lock with
+`npm install --package-lock-only --ignore-scripts --save-exact nx@<version> typescript@<version>`
+from `.github/mock-e2e-preflight`, then review both files. Version drift requests
+the full suite with `reason=preflight-version-mismatch`. A future Nx root project
+(`root: '.'`) also requests the full suite, visibly reported as
+`reason=root-project-requires-full-run`, until root ownership is reviewed.
+
+An even cheaper check skips prose-only changes without downloading graph tools:
+Markdown under `docs/`, `.changeset/*.md`, and exact root `README.md`,
+`CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` or `LICENSE`. Code snippets and assets
+outside known unrelated projects do not qualify for that shortcut. The path
+prefixes only bound when graph analysis may be attempted; they never establish
+that an app or service is unrelated.
+
+Eligible runs cache a job-local Playwright browser directory with an exact key
+covering the installed Playwright version, Firefox revision, full browser
+manifest (including FFmpeg/revision overrides), OS distribution/release and
+architecture. There is no broad fallback key. `playwright install --with-deps
+firefox` still runs on cache hits: OS packages are not cached, and Playwright can
+install missing browser files. A cache hit never skips tests. GitHub controls
+cache scope/eviction; this does not add a default-branch cache producer.
+The initial cache benefit is **repeat runs/commits within the same PR**. A cache
+saved on one PR's merge ref does not seed other PRs or the default branch. It is
+saved only after a successful job; a failing test run does not publish a new
+cache. Cross-PR warming is deferred until measured restore/download costs justify
+a separate default-branch producer.
+
+[Playwright cautions](https://playwright.dev/docs/ci#caching-browsers) that browser
+cache restore can cost as much as downloading. Treat this as download reuse,
+not a guaranteed speedup; compare actual install/cache timings before expanding
+it. Neither the browser cache nor eligibility changes retries, workers, browser
+choice, HAR fixtures or backend isolation.
+
+Review locally with `node --test scripts/mock-e2e-ci.test.cjs` and
+`node .github/tests/test-mock-e2e-workflow.test.cjs` from the repository root.
+In Actions, an unrelated-project PR should show `run_e2e=false` /
+`reason=unrelated-projects`; prose-only changes show `reason=prose-only`. Both
+skip workspace/browser/test/report steps. A graph/tooling failure shows
+`reason=graph-unavailable` and runs the full suite. For an eligible or manual run,
+inspect the exact cache key, unconditional browser/OS install, and full results.
+The run page's step summary distinguishes **Not applicable — suite skipped**
+from **Full suite requested**, with the reason. A green skipped check is not a
+claim that browser tests ran. Policy regression tests run in Lint's
+**Repository shell contracts** job, outside the mock check's eligibility path.
 
 ## What it covers
 
@@ -18,15 +91,52 @@ real issuance — that's a signing + multi-service backend flow that lives in th
 1. **HAR replay** (`har/issue.har.zip`) — serves the recorded auth/boot handshake and all
    backend reads on `localhost:4000/4100/5100` (tRPC, `/api`, `/keys`, and non-tRPC calls
    like did:web resolution) verbatim. Recorded once against real docker; refreshable.
-2. **A typed tRPC mock** (`trpc.ts`) layered on top — installed but empty by default; a
-   test can register per-procedure overrides on the returned mock (`mock.on(...)`).
+2. **A typed tRPC mock** (`trpc.ts`) layered on top — serves authentication challenge
+   refills for both services; a test can register per-procedure overrides on the
+   returned mock (`mock.on(...)`). The clients randomize refill sizes, so exact HAR
+   request-body matching cannot cover every bootstrap. The stub returns the requested
+   number of unique strings; recording mode still uses the real backend.
 
 On replay, any backend call that isn't in the HAR (and isn't overridden) is **aborted**
 (`notFound: 'abort'`) — missing coverage fails loudly instead of hanging.
 
+A batched tRPC request is only answered by the typed mock when **every** procedure in
+the batch has a handler; otherwise the whole batch falls through to the HAR. So a
+background read that can join other batches needs a default handler, or any batch it
+joins is aborted. `installNetwork` registers defaults for `utilities.getChallenges`,
+`campaigns.getMyCampaigns` and `preferences.getPreferencesForDid` (the recorded adult preferences);
+override them per spec with `mock.on`.
+
 The replay app is built with the **local** tenant config (`--stage local`) so it points at
 `localhost`, matching the recorded HAR. DIDKit signing runs locally (WASM mocked by the
 `mocked-test` fixture).
+
+The shared `mocked-test` fixture also intercepts LaunchDarkly evaluation, streaming,
+goals and telemetry requests. Flags are deterministic; both `inAppMessages` and
+`inAppMessagesV2` default to `{ messages: [] }`, so live announcements cannot cover
+controls during an unrelated test.
+Set flags explicitly with `test.use({ featureFlags: { flagName: { value: true } } })`.
+Existing page-level `mockLaunchDarkly(page, flags)` overrides still take precedence.
+
+The fixture also serves the tracked `public/connectivity.txt` marker locally. This
+keeps intentionally aborted backend calls and slow Vite startup from turning an
+online mocked flow into an offline sign-in remount. Offline-specific tests can
+override this route. Use `nextPath` in `waitForAuthenticatedState` to return directly
+to the tested route through developer sign-in, avoiding a second full app load.
+When `profileId` is supplied, developer sign-in creates the profile and resets its
+queries before returning. The helper does not wait for the legacy profile-setup
+modal, which is absent in this flow. Tests still assert their authenticated page
+content. Keep explicit reloads when persistence or recovery is the behavior under test.
+
+For mocked sign-in and persistence reloads, use `waitUntil: 'commit'` and then wait
+for the feature's visible authenticated content. The document's `load` event also
+waits for unrelated resources and frames, so it is not an app-readiness signal.
+`navigation.mocked.spec.ts` exercises sign-in while a document resource stays pending.
+
+For a complete Linux run before opening a PR, push the branch and run
+`gh workflow run mock-e2e.yml --ref <branch>`. Manual runs execute the full suite even
+when Nx finds no affected changes. Each manual run has its own concurrency group,
+so repeated runs can complete independently; PR updates still cancel superseded runs.
 
 ## Writing a mocked test
 
@@ -45,6 +155,7 @@ test.describe('My feature @mocked', () => {
         await installNetwork(page);
         await waitForAuthenticatedState(page, {
             path: '/my-page',
+            nextPath: '/my-page',
             profileId: TEST_USER_PROFILE_ID,
         });
     });
@@ -55,7 +166,7 @@ test.describe('My feature @mocked', () => {
 });
 ```
 
-Run it: `pnpm test-mock` (or `pnpm exec nx run learn-card-app:test-mock`). Stop docker
+Run it: `bun run test-mock` (or `bunx nx run learn-card-app:test-mock`). Stop docker
 first to prove it's truly offline.
 
 ## Adding coverage for NEW backend calls
@@ -66,9 +177,12 @@ failure's `error-context.md` / network log names the procedure. Two options:
 ### Reads / boot (input-specific) → re-record the HAR
 
 ```bash
-pnpm test:e2e:mock:record     # runs @mocked specs against real docker, PWHAR=update
+bun run test:e2e:mock:record  # runs @mocked specs against real docker, PWHAR=update
+bun tests/mocks/normalize-har-cors.ts # allow replay on any PW_MOCK_PORT
 git add tests/mocks/har/issue.har.zip
 ```
+
+Normalize recorded response origins after recording: real-backend captures use port 3000, while replay defaults to 3010. These test fixtures use bearer headers rather than browser cookies, so replay responses use `Access-Control-Allow-Origin: *`. Wait for app readiness assertions with `waitUntil: 'domcontentloaded'` when external assets are irrelevant.
 
 Records to a single `.zip` (never a loose `.har` — that scatters ~hundreds of body files;
 the `har/.gitignore` blocks those).
@@ -93,7 +207,7 @@ mock.on('boost.someNewProc', () => ({/* ... */}) satisfies BrainOutputs['boost']
 | `network.ts`                             | `installNetwork()` — HAR replay + optional typed override, record/replay    |
 | `trpc.ts`                                | `createTrpcMock` (batch-aware) + `BrainOutputs`/`CloudOutputs` type anchors |
 | `har/issue.har.zip`                      | Recorded boot + reads (single-file HAR)                                     |
-| `../fixtures/mocked-test.ts`             | WASM mock, no docker cleanup                                                |
+| `../fixtures/mocked-test.ts`             | WASM, connectivity and feature-flag mocks, no docker cleanup                |
 | `../../playwright.mock.config.ts`        | Replay config (vite, local stage, `@mocked` only)                           |
 | `../../playwright.mock-record.config.ts` | Record config (real docker)                                                 |
 

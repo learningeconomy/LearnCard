@@ -37,6 +37,7 @@ export * from './PdfIcon';
 export * from './PersonBadge';
 export * from './PuzzlePiece';
 export * from './QRCodeIcon';
+export * from './QualificationsIcon';
 export * from './RedFlag';
 export * from './RoundedCorner';
 export * from './RoundedX';

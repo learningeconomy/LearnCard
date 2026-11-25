@@ -102,7 +102,7 @@ export const AiInsightsUserCard: React.FC<{
             } else {
                 newModal(
                     <ShareInsightsWithUser targetProfile={profile} />,
-                    { className: '!bg-transparent' },
+                    { className: 'bg-transparent!' },
                     { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
                 );
             }
@@ -115,7 +115,7 @@ export const AiInsightsUserCard: React.FC<{
         ) {
             newModal(
                 <RequestInsightsFromUserModal profile={profile} contractUri={contractUri} />,
-                { className: '!bg-transparent' },
+                { className: 'bg-transparent!' },
                 { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
             );
             return;
@@ -136,7 +136,7 @@ export const AiInsightsUserCard: React.FC<{
                     readStatus={readStatus}
                     status={requestStatus}
                 />,
-                { className: '!bg-transparent' },
+                { className: 'bg-transparent!' },
                 { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
             );
             return;
@@ -253,7 +253,7 @@ export const AiInsightsUserCardWrapper: React.FC<{ profile: LCNProfile; contract
             readStatus={readStatus}
             requestId={data?.requestId}
             mode={mode}
-            containerClassName="!shadow-none !p-4"
+            containerClassName="shadow-none! p-4!"
             imageContainerClassName="h-[50px] w-[50px] min-w-[50px] min-h-[50px]"
         />
     );

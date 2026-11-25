@@ -12,7 +12,7 @@ export const TopicsItemSkeleton: React.FC = () => {
                     />
                 </div>
 
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-v3-2">
                     <IonSkeletonText
                         animated
                         style={{ width: '24px', height: '16px', borderRadius: '4px' }}

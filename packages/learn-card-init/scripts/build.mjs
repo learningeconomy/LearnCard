@@ -30,7 +30,6 @@ const buildOptions = {
         'abortcontroller-polyfill',
         'abort-controller',
         'isomorphic-fetch',
-        'isomorphic-webcrypto',
         'cross-fetch',
         'ethers',
         'cipher-base',

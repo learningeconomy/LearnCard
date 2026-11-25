@@ -9,6 +9,9 @@ import { neogma } from '@instance';
  * makes the resulting race fail closed instead of forking state.
  */
 const SHARE_LINK_CONSTRAINT_QUERIES = [
+    'CREATE CONSTRAINT share_link_attachment_stage_key_unique IF NOT EXISTS FOR (a:ShareLinkAttachmentStage) REQUIRE (a.key) IS UNIQUE',
+    'CREATE CONSTRAINT share_link_attachment_id_unique IF NOT EXISTS FOR (a:ShareLinkAttachmentStage) REQUIRE (a.attachmentId) IS UNIQUE',
+    'CREATE CONSTRAINT share_attachment_owner_quota_key_unique IF NOT EXISTS FOR (q:ShareAttachmentOwnerQuota) REQUIRE (q.key) IS UNIQUE',
     // A share id is globally unique across namespaces.
     'CREATE CONSTRAINT share_link_id_unique IF NOT EXISTS FOR (s:ShareLink) REQUIRE (s.id) IS UNIQUE',
     // One idempotency record per (namespace, owner, operation kind, client request).
@@ -26,6 +29,8 @@ const SHARE_LINK_CONSTRAINT_QUERIES = [
  * idempotent and shares the same readiness gate as the constraints.
  */
 const SHARE_LINK_INDEX_QUERIES = [
+    'CREATE INDEX share_attachment_stage_owner_idx IF NOT EXISTS FOR (a:ShareLinkAttachmentStage) ON (a.namespace, a.ownerProfileId, a.status)',
+    'CREATE INDEX share_attachment_stage_expiry_idx IF NOT EXISTS FOR (a:ShareLinkAttachmentStage) ON (a.namespace, a.status, a.expiresAt)',
     'CREATE INDEX share_link_ns_owner_idx IF NOT EXISTS FOR (s:ShareLink) ON (s.namespace, s.ownerProfileId)',
     // Bounded owner-list keyset pagination: filters on the leading
     // (namespace, ownerProfileId) prefix and orders by the immutable

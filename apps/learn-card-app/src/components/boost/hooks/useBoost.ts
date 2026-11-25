@@ -4,8 +4,10 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('use-boost');
 
 import useWallet from 'learn-card-base/hooks/useWallet';
+import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 
-import { useToast, ToastTypeEnum } from 'learn-card-base';
+import { useQueryClient } from '@tanstack/react-query';
+import { useToast, ToastTypeEnum, invalidateBoostRecipientQueries } from 'learn-card-base';
 
 import {
     sendAndSaveBoostCredentialSelf,
@@ -18,10 +20,15 @@ import * as m from '../../../paraglide/messages.js';
 
 const useBoost = (history: RouteComponentProps['history']) => {
     const { initWallet, addVCtoWallet } = useWallet();
+    const queryClient = useQueryClient();
     const { presentToast } = useToast();
     const [loading, setIsLoading] = useState(false);
 
-    const boostSomeoneElse = async (issueTo: BoostCMSIssueTo[], wallet: any, boostUri: string) => {
+    const boostSomeoneElse = async (
+        issueTo: BoostCMSIssueTo[],
+        wallet: BespokeLearnCard,
+        boostUri: string
+    ) => {
         try {
             setIsLoading(true);
 
@@ -36,6 +43,7 @@ const useBoost = (history: RouteComponentProps['history']) => {
                         return issuedVc;
                     })
                 ).then(() => {
+                    void invalidateBoostRecipientQueries(queryClient, boostUri);
                     setIsLoading(false);
                     presentToast(m['toasts.boost.boostIssuedSuccess'](), {
                         duration: 3000,
@@ -85,12 +93,13 @@ const useBoost = (history: RouteComponentProps['history']) => {
         }
     };
 
-    const boostSelf = async (wallet: any, profileId: string, boostUri: string) => {
+    const boostSelf = async (wallet: BespokeLearnCard, profileId: string, boostUri: string) => {
         try {
             setIsLoading(true);
 
             const vcUri = await sendAndSaveBoostCredentialSelf(wallet, profileId, boostUri);
             await addVCtoWallet({ uri: vcUri });
+            void invalidateBoostRecipientQueries(queryClient, boostUri);
             setIsLoading(false);
             presentToast(m['toasts.boost.boostIssuedSuccess'](), {
                 duration: 3000,

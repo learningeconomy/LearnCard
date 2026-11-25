@@ -172,6 +172,8 @@ export interface RunChatResult {
           }
         | { error: string };
     afterResponse?: (signal?: AbortSignal) => Promise<void>;
+    /** Internal only: preserve original errors across scheduled-run boundaries. */
+    failure?: unknown;
 }
 
 const OPENAI_API_KEY_REQUIRED_ERROR = 'OPENAI_API_KEY must be set to run the AI agent.';
@@ -263,6 +265,10 @@ export const runChatRequest = async ({
         ownerDid,
         triggerType: runOrigin,
         config,
+        sensitiveContent: [
+            ...parsed.data.messages.map(message => message.content),
+            ...(parsed.data.consentFlowContractUri ? [parsed.data.consentFlowContractUri] : []),
+        ],
     });
     const abortController = new AbortController();
     const abortFromSignal = (): void => abortController.abort(signal?.reason);
@@ -347,6 +353,7 @@ export const runChatRequest = async ({
                 assistantProfilePrompt
             );
         }
+        telemetry.registerToolNames(agentTools.map(tool => tool.name));
 
         const result = await runAgent({
             model: config.model,
@@ -379,6 +386,7 @@ export const runChatRequest = async ({
             },
             afterResponse: async afterResponseSignal => {
                 const postRunStartedAt = Date.now();
+                telemetry.postRunStarted();
                 const postRunController = new AbortController();
                 const deadlineAt = startedAt + (config.runTimeoutMs ?? 120_000);
                 const remainingMs = deadlineAt - Date.now();
@@ -431,6 +439,7 @@ export const runChatRequest = async ({
         return {
             status: 500,
             payload: { error: message },
+            failure: error,
         };
     } finally {
         clearTimeout(timeout);

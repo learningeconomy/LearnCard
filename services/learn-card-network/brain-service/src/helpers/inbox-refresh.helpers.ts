@@ -20,6 +20,9 @@ import { AUTH_GRANT_NO_ACCESS_SCOPE } from '../constants/auth-grant';
 import { ensureCredentialRefreshConstraints } from '../models/credential-refresh-constraints';
 import { getCredentialRefresh, generateRefreshId } from '@accesslayer/credential-refresh';
 import { getInboxCredentialById } from '@accesslayer/inbox-credential/read';
+import { getBoostById } from '@accesslayer/boost/read';
+import { getPublicBoostDisplayName } from './credential-display.helpers';
+import { extractBoundedCredentialDisplayTitle } from './credential-refresh-email-content.helpers';
 import {
     advancePendingInboxRefresh,
     bindPendingInboxRefresh,
@@ -46,8 +49,10 @@ import {
 } from './credential-refresh.helpers';
 import {
     getCredentialRefreshDigestSecret,
+    getCredentialRefreshDigestCandidateSecrets,
     computeCredentialMaterialDigest,
     computeCredentialStatusDigest,
+    matchesCredentialStatusDigest,
     computeCredentialSubjectDigest,
 } from './credential-refresh-materiality.helpers';
 import { appendBitstringStatusListEntries } from './status-list.helpers';
@@ -67,8 +72,11 @@ export const assertInboxRefreshEnabled = async (scope?: string): Promise<void> =
     await ensureCredentialRefreshConstraints();
 };
 
-export const inboxRefreshRequestDigest = (request: unknown): string =>
-    createHmac('sha256', getCredentialRefreshDigestSecret())
+export const inboxRefreshRequestDigest = (
+    request: unknown,
+    secret: string = getCredentialRefreshDigestSecret()
+): string =>
+    createHmac('sha256', secret)
         .update('inbox-refresh-issue:v1\0')
         .update(canonicalizeCredentialJson(request))
         .digest('base64url');
@@ -76,14 +84,23 @@ export const inboxRefreshRequestDigest = (request: unknown): string =>
 export const getInboxRefreshIssueKey = (issuerProfileId: string, key: string): string =>
     `${issuerProfileId}:${key}`;
 
+export const getInboxRefreshRequestDigestCandidates = (request: unknown): string[] =>
+    getCredentialRefreshDigestCandidateSecrets().map(secret =>
+        inboxRefreshRequestDigest(request, secret)
+    );
+
+export const matchesInboxRefreshRequestDigest = (request: unknown, stored: string): boolean =>
+    getInboxRefreshRequestDigestCandidates(request).includes(stored);
+
 export const getInboxRefreshReplay = async (
     issuerProfileId: string,
     key: string | undefined,
-    requestDigest: string
+    requestDigest: string,
+    requestDigestCandidates: string[] = [requestDigest]
 ) => {
     if (!key) return null;
     const existing = await getInboxRefreshIssue(getInboxRefreshIssueKey(issuerProfileId, key));
-    if (existing && existing.requestDigest !== requestDigest)
+    if (existing && !requestDigestCandidates.includes(existing.requestDigest))
         throw new TRPCError({
             code: 'CONFLICT',
             message: 'This idempotencyKey was used for a different inbox issuance.',
@@ -220,7 +237,7 @@ export const publishPendingInboxRefresh = async (
         computeCredentialSubjectDigest(body.credentialSubject) !==
             computeCredentialSubjectDigest(previous.credentialSubject) ||
         body.boostId !== previous.boostId ||
-        computeCredentialStatusDigest(body.credentialStatus) !== aggregate.credentialStatusDigest ||
+        !matchesCredentialStatusDigest(body.credentialStatus, aggregate.credentialStatusDigest) ||
         canonicalizeCredentialJson(body.refreshService) !==
             canonicalizeCredentialJson(previous.refreshService)
     )
@@ -237,14 +254,20 @@ export const publishPendingInboxRefresh = async (
             message: 'Credential effective time is older than the current version',
         });
     const prepared = injectManagedRefreshService(body, serviceFor(aggregate.refreshId, domain));
+    // Public label only: the anchor's explicit display name, never the VC's own name.
+    const displayBoost = aggregate.boostId ? await getBoostById(aggregate.boostId) : null;
+    const credentialName = extractBoundedCredentialDisplayTitle(
+        getPublicBoostDisplayName(displayBoost)
+    );
     const result = await advancePendingInboxRefresh({
         refreshId: aggregate.refreshId,
         expectedVersion: aggregate.currentVersion,
         credential: await encryptInboxCredential(JSON.stringify(prepared)),
-        credentialName: typeof prepared.name === 'string' ? prepared.name : undefined,
+        ...(credentialName ? { credentialName } : {}),
         materialDigest: computeCredentialMaterialDigest(prepared),
         idempotencyKey: input.idempotencyKey,
         updateSummary: input.updateSummary,
+        updateReason: input.updateReason,
     });
     if (!result)
         throw new TRPCError({
@@ -328,8 +351,10 @@ export const finalizeInboxRefresh = async (params: {
             getCredentialIssuerId(credential) !== aggregate.issuerDid ||
             computeCredentialSubjectDigest(credential.credentialSubject) !==
                 computeCredentialSubjectDigest(unsigned.credentialSubject) ||
-            computeCredentialStatusDigest(credential.credentialStatus) !==
-                aggregate.credentialStatusDigest ||
+            !matchesCredentialStatusDigest(
+                credential.credentialStatus,
+                aggregate.credentialStatusDigest
+            ) ||
             canonicalizeCredentialJson(credential.refreshService) !==
                 canonicalizeCredentialJson(unsigned.refreshService) ||
             computeCredentialMaterialDigest(credential) !==
@@ -386,6 +411,7 @@ export const finalizeInboxRefresh = async (params: {
                     ? {}
                     : { effectiveAt: new Date(effectiveTime).toISOString() }),
                 ...(aggregate.updateSummary ? { updateSummary: aggregate.updateSummary } : {}),
+                ...(aggregate.updateReason ? { updateReason: aggregate.updateReason } : {}),
                 etag,
             },
             aggregate: {

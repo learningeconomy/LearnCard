@@ -49,7 +49,7 @@ const QrCodeUserCardShareOptions: React.FC<{
                 profileId={profileId}
                 overrideShareLink={overrideShareLink}
             />,
-            { sectionClassName: '!max-w-[400px]' },
+            { sectionClassName: 'max-w-[400px]!' },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
         );
     };
@@ -61,7 +61,7 @@ const QrCodeUserCardShareOptions: React.FC<{
                 profileId={profileId}
                 overrideShareLink={overrideShareLink}
             />,
-            { sectionClassName: '!max-w-[400px]' },
+            { sectionClassName: 'max-w-[400px]!' },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
         );
     };
@@ -87,7 +87,7 @@ const QrCodeUserCardShareOptions: React.FC<{
                     handleCloseModal={closeModal}
                     showScanner={showScanner}
                 />,
-                { hideButton: true, sectionClassName: '!max-w-[400px]' }
+                { hideButton: true, sectionClassName: 'max-w-[400px]!' }
             );
             return;
         }

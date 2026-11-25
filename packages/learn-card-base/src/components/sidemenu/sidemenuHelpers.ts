@@ -20,6 +20,7 @@ import UnicornIcon from 'learn-card-base/svgs/UnicornIcon';
 
 import { SideNavIcons } from 'learn-card-base/svgs/SideNav/SideNavIcons';
 import PassportIcon from 'learn-card-base/svgs/PassportIcon';
+import { QualificationsIconGrayscale1 } from 'learn-card-base/svgs/wallet/QualificationsIcon';
 const {
     SkillsTwoTonedIcon,
     BoostsTwoTonedIcon,
@@ -33,45 +34,10 @@ const {
 } = SideNavIcons;
 
 import { BrandingEnum } from '../headerBranding/headerBrandingHelpers';
-import { CredentialCategoryEnum } from 'learn-card-base/types/boostAndCredentialMetadata';
 
-export enum SideMenuLinksEnum {
-    //  root links
-    launchPad = 'launchPad',
-    contacts = 'contacts',
-    alerts = 'alerts',
-    myAssistant = 'myAssistant',
-    personalize = 'personalize',
+import { SideMenuLinksEnum } from './sideMenuLinksEnum';
 
-    // secondary links
-    wallet = 'wallet',
-    passport = 'passport',
-    aiTopics = CredentialCategoryEnum.aiTopic,
-    aiInsights = CredentialCategoryEnum.aiInsight,
-    aiPathways = CredentialCategoryEnum.aiPathway,
-    skills = CredentialCategoryEnum.skill,
-    socialBadges = CredentialCategoryEnum.socialBadge,
-    achievements = CredentialCategoryEnum.achievement,
-    studies = CredentialCategoryEnum.learningHistory,
-    portfolio = CredentialCategoryEnum.accomplishment,
-    assistance = CredentialCategoryEnum.accommodation,
-    experiences = CredentialCategoryEnum.workHistory,
-    families = CredentialCategoryEnum.family,
-    ids = CredentialCategoryEnum.id,
-
-    // Feature-flagged routes (not backed by a credential category).
-    // Pathways v2 — the new dynamic-pathways feature, gated by the
-    // `features.pathways` tenant config + the `enableJourneys`
-    // LaunchDarkly flag. Displays as "Journey" in the side menu while
-    // the legacy `aiPathways` link still owns the "Pathways" label.
-    pathways = 'pathways',
-
-    // Returning-user home surface. Top-of-list above Passport — shows
-    // a welcome header, last credential activity, and the learner's
-    // current Pathway goal when one is active. See
-    // `apps/learn-card-app/src/pages/dashboard/DashboardPage.tsx`.
-    dashboard = 'dashboard',
-}
+export { SideMenuLinksEnum };
 
 /**
  * Returns the stable i18n lookup key for a given side-menu link.
@@ -284,6 +250,13 @@ export const sidemenuLinks: Record<BrandingEnum, SideMenuLinks[]> = {
             path: '/ids',
             type: SideMenuLinksEnum.ids,
         },
+        {
+            id: 12,
+            name: 'Qualifications',
+            IconComponent: QualificationsIconGrayscale1,
+            path: '/qualifications',
+            type: SideMenuLinksEnum.qualifications,
+        },
         // {
         //     id: 9,
         //     name: 'Memberships',
@@ -384,7 +357,7 @@ export const sidemenuLinks: Record<BrandingEnum, SideMenuLinks[]> = {
 
 export const sideMenuLearnCardBrandingStyles = {
     mainBg: 'grayscale-100',
-    brandingTextColor: '!text-emerald-700',
+    brandingTextColor: 'text-emerald-700!',
     bradingSpanColor: '',
     defaultListStyles: 'learn-card-side-menu-list',
     defaultLinkStyles: 'learn-card-side-menu-list-item-link',
@@ -396,8 +369,8 @@ export const sideMenuLearnCardBrandingStyles = {
 
 export const sideMenuMetaversityBrandingStyles = {
     mainBg: 'metaversity-primary-blue',
-    brandingTextColor: '!text-white',
-    bradingSpanColor: '!text-white',
+    brandingTextColor: 'text-white!',
+    bradingSpanColor: 'text-white!',
     defaultListStyles: 'mv-side-menu-list',
     defaultLinkStyles: 'mv-side-menu-list-item-link',
     activeLinkStyles: 'mv-side-menu-list-item-link-active',
@@ -406,7 +379,7 @@ export const sideMenuMetaversityBrandingStyles = {
 
 export const sideMenuScoutPassStyles = {
     mainBg: 'grayscale-100',
-    brandingTextColor: '!text-white',
+    brandingTextColor: 'text-white!',
     bradingSpanColor: '',
     defaultListStyles: 'scout-pass-side-menu-list',
     defaultLinkStyles: 'scout-pass-side-menu-list-item-link',

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { IonRadio, IonRadioGroup, IonInput } from '@ionic/react';
 import { useQueryClient } from '@tanstack/react-query';
-import _ from 'lodash-es';
+import { shuffle } from 'lodash-es';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('admin-tools-network');
 
@@ -95,7 +95,7 @@ const AdminToolsNetworkOption: React.FC<{ option: AdminToolOption; showFooter?: 
     const handleSwitchNetwork = async (switchStorage: boolean) => {
         try {
             newModal(
-                <GenericLoader overrideText={_.shuffle(getNetworkSwitchMessages())} />,
+                <GenericLoader overrideText={shuffle(getNetworkSwitchMessages())} />,
                 {
                     disableCloseHandlers: true,
                 },
@@ -110,6 +110,7 @@ const AdminToolsNetworkOption: React.FC<{ option: AdminToolOption; showFooter?: 
                 const storageOption = storageOptionsList.find(
                     (o: StorageOption) => o.type === selectedOption.type
                 );
+                // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain -- removing the assertion widens the type and needs a real null check
                 networkStore.set.cloudUrl(storageOption?.endpoint!);
             }
 
@@ -175,7 +176,7 @@ const AdminToolsNetworkOption: React.FC<{ option: AdminToolOption; showFooter?: 
     return (
         <section className="h-full w-full flex items-start justify-center overflow-y-scroll pt-4">
             <section className="bg-white max-w-[800px] w-full rounded-[20px]">
-                <AdminToolsOptionItemHeader option={option} className="!pb-1" />
+                <AdminToolsOptionItemHeader option={option} className="pb-1!" />
 
                 <div className="w-full flex flex-col items-center justify-center px-4">
                     <IonRadioGroup

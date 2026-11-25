@@ -69,8 +69,8 @@ const ClaimFromDashboardLoggedOut: React.FC<ClaimFromDashboardLoggedOutProps> = 
                     </div>
                 )}
 
-                <div className="pt-[20px] border-solid border-t-[1px] border-grayscale-200 w-full flex flex-col items-center gap-[10px]">
-                    <span className="text-grayscale-900 text-[14px] font-montserrat normal font-[700] tracking-[7px] uppercase">
+                <div className="pt-[20px] border-solid border-t border-grayscale-200 w-full flex flex-col items-center gap-[10px]">
+                    <span className="text-grayscale-900 text-[14px] font-montserrat normal font-bold tracking-[7px] uppercase">
                         {brandingConfig?.name}
                     </span>
                     <span className="text-grayscale-700 text-[14px]">{m['common.tagline']()}</span>

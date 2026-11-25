@@ -26,6 +26,8 @@ vi.mock('@ionic/react', () => ({
 
 vi.mock('learn-card-base', async () => ({
     getLogger: () => ({ error: vi.fn() }),
+    isSameEscrowPinError: (await import('learn-card-base/auth-coordinator/errors'))
+        .isSameEscrowPinError,
     Toggle: (
         await import('../../../../../packages/learn-card-base/src/components/form-inputs/Toggle')
     ).default,
@@ -65,8 +67,8 @@ const renderModal = (
         ...overrides,
     };
 
-    render(<RecoverySetupModal {...props} />);
-    return { onCompleted, props };
+    const { container } = render(<RecoverySetupModal {...props} />);
+    return { onCompleted, props, container };
 };
 
 describe('RecoverySetupModal prompt integration', () => {
@@ -143,6 +145,38 @@ describe('RecoverySetupModal prompt integration', () => {
         expect(screen.getByText('Enter a 6-digit PIN')).toBeInTheDocument();
     });
 
+    it('Change PIN explains a refused same PIN and starts over at the first entry', async () => {
+        const same = new Error('Choose a different PIN from the one you just used.');
+        same.name = 'SameEscrowPinError';
+        const onSetEscrowPin = vi.fn().mockRejectedValueOnce(same).mockResolvedValue(undefined);
+        renderModal('email', vi.fn(), {
+            onGetEscrowEnrollmentState: vi
+                .fn()
+                .mockResolvedValue({ state: 'enrolled', escrowPin: { state: 'enabled' } }),
+            onDisableEscrowRecovery: vi.fn(),
+            onEnableEscrowRecovery: vi.fn(),
+            onSetEscrowPin,
+        });
+        fireEvent.click(await screen.findByRole('button', { name: 'Change' }));
+        const enterPin = (pin: string) =>
+            fireEvent.paste(screen.getAllByLabelText(/PIN digit/)[0], {
+                clipboardData: { getData: () => pin },
+            });
+        enterPin('135790');
+        enterPin('135790');
+
+        expect(
+            await screen.findByText('Choose a different PIN from the one you just used.')
+        ).toBeInTheDocument();
+        expect(screen.queryByText('Something went wrong. Please try again.')).toBeNull();
+        expect(screen.getByText('Enter a 6-digit PIN')).toBeInTheDocument();
+        expect(onSetEscrowPin).toHaveBeenCalledWith('135790');
+
+        enterPin('246802');
+        enterPin('246802');
+        await waitFor(() => expect(onSetEscrowPin).toHaveBeenLastCalledWith('246802'));
+    });
+
     it('shows Change and Remove buttons when PIN is set', async () => {
         const onClearEscrowPin = vi.fn().mockResolvedValue(undefined);
         renderModal('email', vi.fn(), {
@@ -165,6 +199,17 @@ describe('RecoverySetupModal prompt integration', () => {
         expect(
             screen.getByText(/Are you sure you want to remove your recovery PIN/)
         ).toBeInTheDocument();
+        // Nothing is removed until the destructive confirm button is pressed.
+        expect(onClearEscrowPin).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+        expect(screen.queryByText(/Are you sure you want to remove/)).toBeNull();
+        expect(onClearEscrowPin).not.toHaveBeenCalled();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Remove PIN' }));
+        const confirm = screen.getAllByRole('button', { name: 'Remove PIN' }).at(-1)!;
+        expect(confirm.className).toMatch(/bg-red-600/);
+        fireEvent.click(confirm);
+        await waitFor(() => expect(onClearEscrowPin).toHaveBeenCalledOnce());
     });
 
     it.each(['enrolled', 'opted-out'] as const)('renders automatic recovery %s', async state => {
@@ -622,5 +667,59 @@ describe('RecoverySetupModal unfinished-check guard', () => {
         expect(props.onClose).not.toHaveBeenCalled();
         vi.unstubAllGlobals();
         click.mockRestore();
+    });
+});
+
+describe('RecoverySetupModal security row', () => {
+    const row = () => screen.getByRole('button', { name: /Sign out of other devices/ });
+
+    it('offers a quiet "Sign out of other devices" row last, under "Security"', () => {
+        const onSignOutOtherDevices = vi.fn();
+        const { container } = renderModal('phrase', vi.fn(), { onSignOutOtherDevices });
+
+        const section = screen.getByRole('region', { name: 'Security' });
+        expect(section).toBeInTheDocument();
+        expect(row().textContent).toContain('Lost a device or see something unfamiliar?');
+        // Neutral, not destructive: the red button lives on the secure flow's confirm screen.
+        expect(row().className).not.toMatch(/red/);
+        expect(row().innerHTML).not.toMatch(/text-red|border-red|bg-red/);
+        // Last thing in the modal.
+        expect(container.firstElementChild?.lastElementChild).toBe(section);
+        // The old boxed card is gone.
+        expect(screen.queryByText(/Signed in somewhere you don't recognize/)).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Sign out of all other devices' })).toBeNull();
+
+        fireEvent.click(row());
+        expect(onSignOutOtherDevices).toHaveBeenCalledOnce();
+    });
+
+    it('shows no amber dot without a signal', () => {
+        renderModal('phrase', vi.fn(), { onSignOutOtherDevices: vi.fn() });
+
+        expect(screen.queryByTestId('sign-out-attention-dot')).toBeNull();
+        expect(row()).toHaveAccessibleName('Sign out of other devices');
+        expect(row()).toHaveAccessibleDescription('Lost a device or see something unfamiliar?');
+    });
+
+    it('shows an amber dot when wrong PIN entries are recorded', () => {
+        renderModal('phrase', vi.fn(), {
+            onSignOutOtherDevices: vi.fn(),
+            signOutAttention: true,
+        });
+
+        const dot = screen.getByTestId('sign-out-attention-dot');
+        expect(dot.className).toMatch(/bg-amber/);
+        // The name is the label alone; the signal and caption are separate descriptions.
+        expect(row()).toHaveAccessibleName('Sign out of other devices');
+        expect(row()).toHaveAccessibleDescription(
+            'Your PIN was entered incorrectly. Lost a device or see something unfamiliar?'
+        );
+    });
+
+    it('hides the row without a handler', () => {
+        renderModal('phrase');
+
+        expect(screen.queryByRole('region', { name: 'Security' })).toBeNull();
+        expect(screen.queryByRole('button', { name: /Sign out of other devices/ })).toBeNull();
     });
 });

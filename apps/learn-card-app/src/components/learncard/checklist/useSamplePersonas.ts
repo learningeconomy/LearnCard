@@ -43,15 +43,19 @@ export const useSamplePersonas = () => {
     );
     const allContractUriSet = useMemo(() => new Set(allContractUris), [allContractUris]);
 
-    const { data: consentedContracts, isLoading: consentedContractsLoading } =
-        useConsentedContracts();
+    const {
+        data: consentedContracts,
+        isLoading: consentedContractsLoading,
+        refetch: refetchConsentedContracts,
+    } = useConsentedContracts();
     const consentedSampleContracts = useMemo(
         () =>
             consentedContracts?.filter(
                 consent =>
                     consent?.contract?.uri &&
                     allContractUriSet.has(consent.contract.uri) &&
-                    consent.status !== 'withdrawn'
+                    consent.status !== 'withdrawn' &&
+                    consent.status !== 'consumed'
             ) ?? [],
         [allContractUriSet, consentedContracts]
     );
@@ -85,7 +89,18 @@ export const useSamplePersonas = () => {
         setRemovalStatus('disconnecting');
 
         try {
-            const consentUris = consentedSampleContracts
+            // A hard reload can hydrate a snapshot from before a recently created consent
+            // was persisted. Refresh before deleting so a sample contract is withdrawn
+            // rather than leaving its live consent behind.
+            const refreshedConsents = await refetchConsentedContracts({ throwOnError: true });
+            const consentUris = (refreshedConsents.data ?? [])
+                .filter(
+                    consent =>
+                        consent?.contract?.uri &&
+                        allContractUriSet.has(consent.contract.uri) &&
+                        consent.status !== 'withdrawn' &&
+                        consent.status !== 'consumed'
+                )
                 .map(consent => consent.uri)
                 .filter((uri): uri is string => Boolean(uri));
             await Promise.all(consentUris.map(uri => withdrawConsent(uri)));
@@ -132,7 +147,7 @@ export const useSamplePersonas = () => {
             );
             log.debug('Sample credential cleanup completed', {
                 deletedUriCount: deletedUriList.length,
-                contractsWithdrawn: consentedSampleContracts.length,
+                contractsWithdrawn: consentUris.length,
                 contractsUpdated: cleanupResult.contractsUpdated,
                 removedSharedUris: cleanupResult.removedSharedUris,
             });

@@ -1,13 +1,19 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as m from '../../../../paraglide/messages.js';
 import { TransP } from '../../../../i18n/TransP';
-import { useWallet } from 'learn-card-base';
+import { useLocale } from '../../../../i18n';
 import WarningCircle from '../../../svgs/WarningCircle';
 import { getLogger } from 'learn-card-base';
+import GuardianEmailStatusMessage from '../../../pending-approval-banner/GuardianEmailStatusMessage';
+import {
+    getGuardianSendErrorKind,
+    useGuardianApprovalStatus,
+    useSendGuardianApprovalEmail,
+} from '../../../../hooks/useGuardianApprovalStatus';
+import { isValidGuardianEmail } from '../helpers/validators';
 const log = getLogger('e-u-parental-consent-modal-content');
 
-// Basic email validation via native input + simple regex handled via UI
-const EMAIL_REGEX = /[^@\s]+@[^@\s]+\.[^@\s]+/;
+const normalizeEmail = (value?: string): string => (value ?? '').trim().toLowerCase();
 
 export type EUParentalConsentModalContentProps = {
     name?: string | null;
@@ -29,15 +35,48 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
     onComplete,
     onSubmit,
 }) => {
-    const { initWallet } = useWallet();
+    const locale = useLocale();
+    const { data: status, refetch: refetchStatus } = useGuardianApprovalStatus(!onSubmit);
+    const { mutateAsync: sendApprovalEmail } = useSendGuardianApprovalEmail();
 
     const [email, setEmail] = useState<string>('');
     const [error, setError] = useState<string>('');
     const [sent, setSent] = useState<boolean>(false);
     const [loading, setLoading] = useState<boolean>(false);
+    const [now, setNow] = useState<number>(() => Date.now());
+
+    const approvedWhileOpen = !onSubmit && status?.pendingApproval === false;
+    const closedForApprovalRef = useRef(false);
+    useEffect(() => {
+        if (!approvedWhileOpen || closedForApprovalRef.current) return;
+        closedForApprovalRef.current = true;
+        onClose();
+    }, [approvedWhileOpen, onClose]);
+
+    const resendAvailableAt = status?.resendAvailableAt ? Date.parse(status.resendAvailableAt) : 0;
+    const isCoolingDown =
+        resendAvailableAt > now &&
+        (status?.attemptsRemaining === 0 ||
+            (email.trim() !== '' &&
+                normalizeEmail(email) === normalizeEmail(status?.guardianEmail)));
+
+    // Re-enable the send button as soon as the server-side cooldown ends.
+    useEffect(() => {
+        const remaining = resendAvailableAt - Date.now();
+        if (remaining <= 0) return;
+        const timeout = window.setTimeout(() => setNow(Date.now()), remaining + 250);
+        return () => window.clearTimeout(timeout);
+    }, [resendAvailableAt]);
+
+    const formatTime = (iso: string): string =>
+        new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit' }).format(
+            new Date(iso)
+        );
+
+    const hasPreviousRequest = status?.status === 'accepted' || status?.status === 'failed';
 
     const handleSend = async () => {
-        if (!EMAIL_REGEX.test(email.trim())) {
+        if (!isValidGuardianEmail(email)) {
             setError(m['onboarding.consent.eu.error.invalidEmail']());
             return;
         }
@@ -48,16 +87,29 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
             if (onSubmit) {
                 await onSubmit(email.trim());
             } else {
-                const wallet = await initWallet();
-                if (!wallet) throw new Error('Wallet not initialized');
-
-                await wallet.invoke.sendGuardianApprovalEmail({ guardianEmail: email.trim() });
+                await sendApprovalEmail(email.trim());
             }
 
             setSent(true);
         } catch (e) {
             log.error('Failed to send guardian approval email:', e);
-            setError(m['onboarding.consent.eu.error.sendFailed']());
+            const kind = getGuardianSendErrorKind(e);
+
+            if (kind === 'cooldown') {
+                const fresh = (await refetchStatus()).data;
+                setNow(Date.now());
+                setError(
+                    fresh?.resendAvailableAt
+                        ? m['onboarding.consent.eu.error.cooldown']({
+                              time: formatTime(fresh.resendAvailableAt),
+                          })
+                        : m['onboarding.consent.eu.error.sendFailed']()
+                );
+            } else if (kind === 'inProgress') {
+                setError(m['onboarding.consent.eu.error.inProgress']());
+            } else {
+                setError(m['onboarding.consent.eu.error.sendFailed']());
+            }
         } finally {
             setLoading(false);
         }
@@ -79,6 +131,14 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
                         <p className="text-grayscale-700 text-[17px] leading-[24px] px-[10px]">
                             {m['onboarding.consent.eu.description']()}
                         </p>
+                        {status && status.status !== 'not_requested' && (
+                            <p
+                                role="status"
+                                className="mt-3 text-sm text-grayscale-600 leading-relaxed px-[10px]"
+                            >
+                                <GuardianEmailStatusMessage status={status} />
+                            </p>
+                        )}
                         <div className="mt-3">
                             <label htmlFor="eu-guardian-email" className="sr-only">
                                 {m['onboarding.consent.eu.placeholder']()}
@@ -93,15 +153,21 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
                                     setEmail(event.target.value);
                                 }}
                                 onKeyDown={event => {
-                                    if (event.key === 'Enter' && !loading) {
+                                    if (event.key === 'Enter' && !loading && !isCoolingDown) {
                                         event.preventDefault();
                                         void handleSend();
                                     }
                                 }}
                                 autoComplete="email"
                                 aria-invalid={Boolean(error)}
-                                aria-describedby={error ? 'eu-guardian-email-error' : undefined}
-                                className={`w-full bg-grayscale-100 text-grayscale-900 placeholder:text-grayscale-400 rounded-[12px] ion-padding font-medium tracking-wider text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-transparent ${
+                                aria-describedby={
+                                    error
+                                        ? 'eu-guardian-email-error'
+                                        : isCoolingDown
+                                          ? 'eu-guardian-email-cooldown'
+                                          : undefined
+                                }
+                                className={`w-full bg-grayscale-100 text-grayscale-900 placeholder:text-grayscale-400 rounded-[12px] ion-padding font-medium tracking-wider text-base focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-transparent ${
                                     error ? 'login-input-email-error' : ''
                                 }`}
                             />
@@ -114,6 +180,17 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
                                     {error}
                                 </p>
                             )}
+                            {!error && isCoolingDown && status?.resendAvailableAt && (
+                                <p
+                                    id="eu-guardian-email-cooldown"
+                                    role="status"
+                                    className="p-0 m-0 w-full text-left mt-1 text-grayscale-600 text-xs"
+                                >
+                                    {m['onboarding.consent.eu.error.cooldown']({
+                                        time: formatTime(status.resendAvailableAt),
+                                    })}
+                                </p>
+                            )}
                         </div>
                     </>
                 ) : (
@@ -121,17 +198,20 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
                         <h2 className="text-[22px] font-semibold text-grayscale-900 mb-2 font-noto">
                             {m['onboarding.consent.eu.sent.heading']()}
                         </h2>
-                        <p className="text-grayscale-700 text-[17px] leading-[24px] px-[10px]">
+                        <p
+                            role="status"
+                            className="text-grayscale-700 text-[17px] leading-[24px] px-[10px]"
+                        >
                             <TransP
-                                m={m['onboarding.consent.eu.sent.description']}
-                                values={{ email }}
+                                m={m['onboarding.consent.eu.status.accepted']}
+                                values={{ email: email.trim() }}
                                 components={[<span className="font-semibold" key="e" />]}
                             />
                         </p>
                     </>
                 )}
             </div>
-            <div className="w-full flex gap-[10px] justify-center px-[10px] left-[0px] items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] py-4 absolute bottom-0 bg-white !max-h-[100px] safe-area-bottom">
+            <div className="w-full flex gap-[10px] justify-center px-[10px] left-[0px] items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 bg-white/60 max-h-[100px]! safe-area-bottom">
                 <div className="w-full max-w-[700px] flex gap-[10px]">
                     <button
                         type="button"
@@ -144,13 +224,15 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
                         <button
                             type="button"
                             onClick={handleSend}
-                            disabled={loading}
+                            disabled={loading || isCoolingDown}
                             aria-busy={loading}
-                            className=" shadow-button-bottom font-semibold flex-1 py-[10px] text-[17px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom"
+                            className=" shadow-button-bottom font-semibold flex-1 py-[10px] text-[17px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                             {loading
                                 ? m['onboarding.consent.eu.sending']()
-                                : m['onboarding.consent.eu.sendRequest']()}
+                                : hasPreviousRequest
+                                  ? m['onboarding.consent.eu.resendRequest']()
+                                  : m['onboarding.consent.eu.sendRequest']()}
                         </button>
                     ) : (
                         <button

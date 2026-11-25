@@ -71,7 +71,7 @@ const UserVerifyEmail: React.FC = () => {
                         <button
                             type="button"
                             onClick={() => history.push('/')}
-                            className={`mt-2 bg-${primaryColor} py-[10px] px-[20px] rounded-[30px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-white shadow-button-bottom flex gap-[5px] items-center justify-center w-[80%] max-w-[280px]`}
+                            className={`mt-2 bg-${primaryColor} py-[10px] px-[20px] rounded-[30px] font-notoSans text-[17px] font-semibold leading-[24px] tracking-[0.25px] text-white shadow-button-bottom flex gap-[5px] items-center justify-center w-[80%] max-w-[280px]`}
                         >
                             {m['profile.verify.returnHome']()}
                         </button>
@@ -89,7 +89,7 @@ const UserVerifyEmail: React.FC = () => {
                         <button
                             type="button"
                             onClick={() => history.push('/')}
-                            className={`bg-${primaryColor} py-[10px] px-[20px] rounded-[30px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-white shadow-button-bottom flex gap-[5px] items-center justify-center w-[80%] max-w-[280px]`}
+                            className={`bg-${primaryColor} py-[10px] px-[20px] rounded-[30px] font-notoSans text-[17px] font-semibold leading-[24px] tracking-[0.25px] text-white shadow-button-bottom flex gap-[5px] items-center justify-center w-[80%] max-w-[280px]`}
                         >
                             {m['profile.verify.returnHome']()}
                         </button>

@@ -7,6 +7,7 @@ import {
     UseQueryResult,
     type QueryClient,
 } from '@tanstack/react-query';
+import { dropMalformedInfiniteCacheEntry } from '../infiniteQueryGuard';
 import {
     BoostAndVCType,
     CredentialCategoryEnum,
@@ -342,6 +343,29 @@ export const useGetCredentialWithEdits = (credential: VC | undefined, boostUri?:
 };
 
 /**
+ * Recipient lists are expensive on brain-service and only change when someone sends,
+ * accepts, or revokes a boost. Those paths invalidate via invalidateBoostRecipientQueries,
+ * so we don't need to refetch on every mount/focus.
+ */
+export const BOOST_RECIPIENTS_STALE_TIME = 5 * 60 * 1000;
+
+/**
+ * Invalidate every cached recipient list/count for a boost (or for all boosts when no URI
+ * is given). Call this after sending, accepting, or revoking a boost.
+ */
+export const invalidateBoostRecipientQueries = async (
+    queryClient: QueryClient,
+    boostUri?: string | null
+) => {
+    const keys = ['boostRecipients', 'useCountBoostRecipients', 'paginatedBoostRecipients'];
+    await Promise.all(
+        keys.map(key =>
+            queryClient.invalidateQueries({ queryKey: boostUri ? [key, boostUri] : [key] })
+        )
+    );
+};
+
+/**
  * Query: Count the number of recipients for a given boost.
  * @param includeUnacceptedBoosts - If true, includes pending (sent but not claimed) credentials. Default: false
  */
@@ -359,6 +383,8 @@ export const useCountBoostRecipients = (
             return wallet.invoke.countBoostRecipients(uri, includeUnacceptedBoosts);
         },
         enabled: enabled && Boolean(uri),
+        staleTime: BOOST_RECIPIENTS_STALE_TIME,
+        refetchOnWindowFocus: false,
     });
 };
 
@@ -502,6 +528,8 @@ export const useGetBoostRecipients = (
             return Array.isArray(data) ? data : [];
         },
         enabled,
+        staleTime: BOOST_RECIPIENTS_STALE_TIME,
+        refetchOnWindowFocus: false,
     });
 };
 
@@ -514,8 +542,11 @@ export const useGetPaginatedBoostRecipients = (
     enabled = true
 ) => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
+    const queryKey = ['paginatedBoostRecipients', boostUri, initialOptions] as const;
+    dropMalformedInfiniteCacheEntry(queryClient, queryKey, 'paginatedBoostRecipients');
     return useInfiniteQuery({
-        queryKey: ['paginatedBoostRecipients', boostUri, initialOptions],
+        queryKey,
         queryFn: async ({ pageParam }) => {
             if (!boostUri) throw new Error('Boost URI required.');
             const wallet = await initWallet();
@@ -590,9 +621,12 @@ export const useGetPaginatedConnections = (
     initialOptions: PaginationOptionsType = { limit: 10 }
 ) => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
     const switchedDid = switchedProfileStore.use.switchedDid();
+    const queryKey = ['paginatedConnections', switchedDid ?? '', initialOptions] as const;
+    dropMalformedInfiniteCacheEntry(queryClient, queryKey, 'paginatedConnections');
     return useInfiniteQuery({
-        queryKey: ['paginatedConnections', switchedDid ?? '', initialOptions],
+        queryKey,
         queryFn: async ({ pageParam }) => {
             const wallet = await initWallet();
             const options = { ...initialOptions, cursor: pageParam as string | undefined };
@@ -645,9 +679,12 @@ export const useGetPaginatedPendingConnections = (
     initialOptions: PaginationOptionsType = { limit: 10 }
 ) => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
     const switchedDid = switchedProfileStore.use.switchedDid();
+    const queryKey = ['paginatedPendingConnections', switchedDid ?? '', initialOptions] as const;
+    dropMalformedInfiniteCacheEntry(queryClient, queryKey, 'paginatedPendingConnections');
     return useInfiniteQuery({
-        queryKey: ['paginatedPendingConnections', switchedDid ?? '', initialOptions],
+        queryKey,
         queryFn: async ({ pageParam }) => {
             const wallet = await initWallet();
             const options = { ...initialOptions, cursor: pageParam as string | undefined };
@@ -668,8 +705,24 @@ export const useGetConnectionsRequests = () => {
         queryKey: ['getConnectionRequests', switchedDid ?? ''],
         queryFn: async () => {
             const wallet = await initWallet();
-            const data = await wallet.invoke.getConnectionRequests();
-            return Array.isArray(data) ? data : [];
+            const allRecords: LCNVisibleProfile[] = [];
+            let cursor: string | undefined;
+            const MAX_PAGES = 50; // Safety limit: 50 pages × 100 = 5000 max records
+
+            for (let page = 0; page < MAX_PAGES; page++) {
+                const result = await wallet.invoke.getPaginatedConnectionRequests({
+                    limit: 100,
+                    cursor,
+                });
+                const records = result?.records;
+                if (Array.isArray(records)) {
+                    allRecords.push(...records);
+                }
+                cursor = result?.cursor;
+                if (!result?.hasMore || !cursor || !records?.length) break;
+            }
+
+            return allRecords;
         },
     });
 };
@@ -681,9 +734,12 @@ export const useGetPaginatedConnectionRequests = (
     initialOptions: PaginationOptionsType = { limit: 10 }
 ) => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
     const switchedDid = switchedProfileStore.use.switchedDid();
+    const queryKey = ['paginatedConnectionRequests', switchedDid ?? '', initialOptions] as const;
+    dropMalformedInfiniteCacheEntry(queryClient, queryKey, 'paginatedConnectionRequests');
     return useInfiniteQuery({
-        queryKey: ['paginatedConnectionRequests', switchedDid ?? '', initialOptions],
+        queryKey,
         queryFn: async ({ pageParam }) => {
             const wallet = await initWallet();
             const options = { ...initialOptions, cursor: pageParam as string | undefined };
@@ -798,11 +854,7 @@ export const useGetProfile = (
     return useQuery<QueriedProfile | null>({
         enabled: enabled && (!!profileId || isLoggedIn) && (!requiresOwnWallet || walletReady),
         queryKey: ['getProfile', switchedDid ?? '', profileId],
-        // The current user's profile changes rarely (avatar/displayName edits).
-        // Keep cached data fresh for 5 minutes so navigations between pages don't
-        // trigger background refetches that flicker dependent UI like
-        // UserProfilePicture in the header. Mutations that update the profile
-        // (e.g., editProfile) are responsible for invalidating this query.
+        // Cache profiles for 5 minutes; profile edits update the affected cache entries.
         staleTime: 5 * 60 * 1000,
         queryFn: async (): Promise<QueriedProfile | null> => {
             // Own profile: the wallet MUST resolve here. On failure, throw so React
@@ -952,7 +1004,7 @@ export const getOrFetchIntegrationForListing = async (
 /**
  * Query: Get incoming credentials.
  */
-export const useGetIncomingCredentials = () => {
+export const useGetIncomingCredentials = (enabled: boolean = true) => {
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
     return useQuery<SentCredentialInfo[]>({
@@ -962,6 +1014,7 @@ export const useGetIncomingCredentials = () => {
             const data = await wallet.invoke.getIncomingCredentials();
             return Array.isArray(data) ? data : [];
         },
+        enabled,
     });
 };
 
@@ -1241,10 +1294,13 @@ export const useGetSkillChildrenInfinite = (
     options?: { limit?: number; enabled?: boolean }
 ) => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
     const { limit = 50, enabled = true } = options ?? {};
+    const queryKey = ['getSkillChildrenInfinite', frameworkId, skillId, limit] as const;
+    dropMalformedInfiniteCacheEntry(queryClient, queryKey, 'getSkillChildrenInfinite');
 
     return useInfiniteQuery({
-        queryKey: ['getSkillChildrenInfinite', frameworkId, skillId, limit],
+        queryKey,
         queryFn: async ({ pageParam }) => {
             const wallet = await initWallet();
             if (skillId) {

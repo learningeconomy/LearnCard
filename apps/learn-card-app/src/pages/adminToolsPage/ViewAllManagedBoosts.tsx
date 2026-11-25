@@ -32,7 +32,7 @@ const ViewAllManagedBoosts: React.FC<ViewAllManagedBoostsProps> = ({
             </button>
             <button
                 onClick={selectModeOptions?.handleClearAll}
-                className="py-[5px] px-6 bg-white rounded-[20px] w-fit text-base font-semibold text-grayscale-900 shadow-box-bottom disabled:opacity-60 flex gap-[5px] items-center border-solid border-[1px] border-grayscale-200 hover:bg-grayscale-100 transition-colors"
+                className="py-[5px] px-6 bg-white rounded-[20px] w-fit text-base font-semibold text-grayscale-900 shadow-box-bottom disabled:opacity-60 flex gap-[5px] items-center border-solid border border-grayscale-200 hover:bg-grayscale-100 transition-colors"
             >
                 Clear All
             </button>

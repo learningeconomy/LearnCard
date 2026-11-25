@@ -1,4 +1,5 @@
 import { QueryBuilder, BindParam } from 'neogma';
+import type { Transaction } from 'neo4j-driver';
 import { InboxCredential } from '@models';
 import { InboxCredentialType } from '@learncard/types';
 import { flattenObject, inflateObject } from '@helpers/objects.helpers';
@@ -31,7 +32,8 @@ export const updateInboxCredential = async (
 export const finalizeAndWipeInboxCredential = async (
     id: string,
     delivery: InboxDelivery,
-    { isAccepted = true }: { isAccepted?: boolean } = {}
+    { isAccepted = true }: { isAccepted?: boolean } = {},
+    transaction?: Transaction
 ): Promise<InboxCredentialType | null> => {
     const result = await new QueryBuilder(
         new BindParam({
@@ -64,7 +66,7 @@ export const finalizeAndWipeInboxCredential = async (
         )
         .return('inboxCredential')
         .limit(1)
-        .run();
+        .run(transaction);
 
     const inboxCredential = result.records[0]?.get('inboxCredential')?.properties;
     return inboxCredential

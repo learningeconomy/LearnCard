@@ -135,7 +135,7 @@ import XCTest
         let app = launch("signup", language: "ar", extra: ["--large-type", "--preview-dark"])
         let country = app.buttons["signup-country"]
         XCTAssertTrue(country.waitForExistence(timeout: 10)); reveal(country, app); country.tap()
-        let search = app.searchFields.firstMatch; XCTAssertTrue(search.waitForExistence(timeout: 5)); search.tap(); search.typeText("Ireland")
+        let search = countrySearch(app); search.tap(); search.typeText("Ireland")
         let row = app.buttons["signup-country-IE"]; XCTAssertTrue(row.waitForExistence(timeout: 5))
         XCTAssertGreaterThan(row.frame.height, 70)
         capture(app, "Arabic large text dark - country sheet"); row.tap()
@@ -156,8 +156,18 @@ import XCTest
     }
     private func country(_ app: XCUIApplication, code: String, query: String) {
         let button = app.buttons["signup-country"]; reveal(button, app); button.tap()
-        let search = app.searchFields.firstMatch; XCTAssertTrue(search.waitForExistence(timeout: 5)); search.tap(); search.typeText(query)
+        let search = countrySearch(app); search.tap(); search.typeText(query)
         let row = app.buttons["signup-country-\(code)"]; XCTAssertTrue(row.waitForExistence(timeout: 5)); row.tap()
+    }
+    private func countrySearch(_ app: XCUIApplication) -> XCUIElement {
+        let search = app.searchFields.firstMatch
+        // The system may present country search as a toolbar button on iOS 27.
+        let searchButton = app.toolbars.buttons["Search"].firstMatch
+        if !search.waitForExistence(timeout: 2), searchButton.waitForExistence(timeout: 3) {
+            searchButton.tap()
+        }
+        XCTAssertTrue(search.waitForExistence(timeout: 5))
+        return search
     }
     private func fillBackup(_ app: XCUIApplication) {
         let terms = app.switches["signup-terms"]; XCTAssertTrue(terms.waitForExistence(timeout: 10))

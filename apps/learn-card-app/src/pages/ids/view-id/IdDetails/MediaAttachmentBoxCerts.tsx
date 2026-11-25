@@ -25,7 +25,7 @@ import {
     ResolvedDocumentResource,
     resolvePdfDocumentResource,
 } from './helpers/pdfDocumentResource.helpers';
-import { openAttachmentUrl } from '../../../../components/clr-transcript/clr.helpers';
+import { openAttachmentUrl } from 'learn-card-base/helpers/credentials/clr/helpers';
 
 type Attachment = {
     title: string;
@@ -37,7 +37,7 @@ type Attachment = {
 };
 
 type AttachmentSourceContext = {
-    kind: 'transcript' | 'course' | 'program';
+    kind: 'transcript' | 'course' | 'program' | 'assessment';
     title: string;
     humanCode?: string;
     dateLabel?: string;
@@ -91,7 +91,7 @@ const getAttachmentDownloadName = (
 ): string => {
     if (documentResource?.downloadName) return documentResource.downloadName;
 
-    const safeTitle = (title || 'attachment').replace(/[^\w.\-]/g, '_');
+    const safeTitle = (title || 'attachment').replace(/[^\w.-]/g, '_');
     const extension = metadata?.fileExtension;
     const alreadyHasExtension =
         extension && safeTitle.toLowerCase().endsWith(`.${extension.toLowerCase()}`);
@@ -140,7 +140,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
             const result = await Promise.all(
                 _evidence.map(async ev => {
                     let attachmentUrl = '';
-                    let type: Attachment['type'] = 'link';
+                    let type: Attachment['type'];
 
                     const genreType = normalizeAttachmentType(ev.genre);
 
@@ -187,7 +187,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
     const allowedTypes = ['link', 'photo', 'video', 'document', 'text'] as const;
     const safeEvidenceAttachments = (evidenceAttachments ?? []).map(item => ({
         ...item,
-        type: allowedTypes.includes(item.type as any) ? (item.type as Attachment['type']) : 'link',
+        type: allowedTypes.includes(item.type) ? item.type : 'link',
     }));
     const normalizedAttachments = (attachments ?? []).map(attachment => ({
         ...attachment,
@@ -263,7 +263,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
     if (combinedAttachments.length === 0) return null;
 
     return (
-        <div className="w-full space-y-2">
+        <div className="w-full space-y-v3-2">
             <Lightbox
                 items={lightboxItems}
                 currentUrl={currentLightboxUrl}
@@ -282,7 +282,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                 const subtitle =
                     attachment.type === 'link'
                         ? getMediaBaseUrl(attachment.url)
-                        : attachment.url?.split('/').filter(Boolean).pop() ?? '';
+                        : (attachment.url?.split('/').filter(Boolean).pop() ?? '');
                 const fileDetails = [
                     metadata?.fileExtension?.toUpperCase(),
                     metadata?.sizeInBytes ? prettyBytes(metadata.sizeInBytes) : undefined,
@@ -318,7 +318,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                 }}
                             >
                                 {videoMeta?.videoLength && (
-                                    <span className="absolute bottom-1.5 right-1.5 rounded bg-grayscale-900/80 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                                    <span className="absolute bottom-1.5 right-1.5 rounded-sm bg-grayscale-900/80 px-1.5 py-0.5 text-[10px] font-semibold text-white">
                                         {videoMeta.videoLength}
                                     </span>
                                 )}
@@ -381,13 +381,13 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                         attachment.sourceContext.kind === 'course' ? (
                             <StudiesIcon className="w-4 h-4" />
                         ) : attachment.sourceContext.kind === 'program' ? (
-                            <CertificateDisplayIcon className="w-4 h-4 !text-grayscale-500" />
+                            <CertificateDisplayIcon className="w-4 h-4 text-grayscale-500!" />
                         ) : (
                             <Graduation className="w-4 h-4 text-grayscale-500" />
                         );
 
                     return (
-                        <div className="w-full rounded-[28px] border border-grayscale-200 bg-white p-4 shadow-box-bottom space-y-3">
+                        <div className="w-full rounded-[28px] border border-grayscale-200 bg-white p-4 shadow-box-bottom space-y-v3-3">
                             <div className="flex items-center gap-2 min-w-0 px-1">
                                 {attachment.sourceContext.dateLabel && (
                                     <p className="shrink-0 text-[13px] text-grayscale-700">

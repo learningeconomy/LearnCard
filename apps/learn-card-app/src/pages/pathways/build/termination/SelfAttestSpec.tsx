@@ -18,7 +18,7 @@ const SelfAttestEditor: React.FC<{
     value: Extract<Termination, { kind: 'self-attest' }>;
     onChange: (next: Termination) => void;
 }> = ({ value, onChange }) => (
-    <div className="space-y-1.5">
+    <div className="space-y-v3-1.5">
         <label className={LABEL} htmlFor="term-prompt">
             What they attest to
         </label>

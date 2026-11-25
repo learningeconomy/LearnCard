@@ -2,11 +2,11 @@
 
 ## Properties
 
-| Name              | Type                                                                              | Description | Notes      |
-| ----------------- | --------------------------------------------------------------------------------- | ----------- | ---------- |
-| **request_id**    | **str**                                                                           |             | [optional] |
-| **items**         | [**List[InboxIssueBatchRequestItemsInner]**](InboxIssueBatchRequestItemsInner.md) |             |
-| **configuration** | [**InboxIssueBatchRequestConfiguration**](InboxIssueBatchRequestConfiguration.md) |             | [optional] |
+| Name              | Type                                                                                                  | Description | Notes      |
+| ----------------- | ----------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **request_id**    | **str**                                                                                               |             | [optional] |
+| **items**         | [**List[InboxIssueBatchRequestItemsInner]**](InboxIssueBatchRequestItemsInner.md)                     |             |
+| **configuration** | [**InboxIssueBatchRequestItemsInnerConfiguration**](InboxIssueBatchRequestItemsInnerConfiguration.md) |             | [optional] |
 
 ## Example
 

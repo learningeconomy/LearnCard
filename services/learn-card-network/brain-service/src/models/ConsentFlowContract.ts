@@ -27,6 +27,7 @@ export type ConsentFlowRelationships = {
             message?: string;
             requestedAt?: string;
             readStatus?: 'unseen' | 'seen' | null;
+            addressedByEmail?: boolean;
         },
         {
             status: 'pending' | 'accepted' | 'denied' | 'cancelled';
@@ -36,6 +37,7 @@ export type ConsentFlowRelationships = {
             message?: string;
             requestedAt?: string;
             readStatus?: 'unseen' | 'seen' | null;
+            addressedByEmail?: boolean;
         }
     >;
 };
@@ -58,6 +60,9 @@ export const ConsentFlowContract = ModelFactory<FlatDbContractType, ConsentFlowR
             createdAt: { type: 'string', required: true },
             updatedAt: { type: 'string', required: true },
             expiresAt: { type: 'string', required: false },
+            currentVersion: { type: 'number', required: false },
+            status: { type: 'string', required: false },
+            latestUpdate: { type: 'string', required: false },
             audienceVersion: { type: 'number', required: false },
             hasConsented: { type: 'boolean', required: false },
         } as any,
@@ -122,6 +127,10 @@ export const ConsentFlowContract = ModelFactory<FlatDbContractType, ConsentFlowR
                             enum: ['unseen', 'seen'],
                             required: false, // when undefined = null
                         },
+                    },
+                    addressedByEmail: {
+                        property: 'addressedByEmail',
+                        schema: { type: 'boolean', required: false },
                     },
                 },
             },

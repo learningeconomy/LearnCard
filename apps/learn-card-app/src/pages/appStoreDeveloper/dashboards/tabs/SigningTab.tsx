@@ -86,7 +86,7 @@ export const SigningTab: React.FC<SigningTabProps> = ({ integration: _integratio
     const hasSigningAuthority = primarySA !== null;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div>
                 <h2 className="text-lg font-semibold text-gray-800">
                     {m['developerPortal.dashboards.tabs.signing.title']()}
@@ -102,8 +102,8 @@ export const SigningTab: React.FC<SigningTabProps> = ({ integration: _integratio
                     loading
                         ? 'bg-gray-50 border-gray-200'
                         : hasSigningAuthority
-                        ? 'bg-emerald-50 border-emerald-200'
-                        : 'bg-amber-50 border-amber-200'
+                          ? 'bg-emerald-50 border-emerald-200'
+                          : 'bg-amber-50 border-amber-200'
                 }`}
             >
                 {loading ? (
@@ -120,15 +120,15 @@ export const SigningTab: React.FC<SigningTabProps> = ({ integration: _integratio
                             loading
                                 ? 'text-gray-600'
                                 : hasSigningAuthority
-                                ? 'text-emerald-800'
-                                : 'text-amber-800'
+                                  ? 'text-emerald-800'
+                                  : 'text-amber-800'
                         }`}
                     >
                         {loading
                             ? m['developerPortal.dashboards.tabs.signing.checking']()
                             : hasSigningAuthority
-                            ? m['developerPortal.dashboards.tabs.signing.configured']()
-                            : m['developerPortal.dashboards.tabs.signing.notFound']()}
+                              ? m['developerPortal.dashboards.tabs.signing.configured']()
+                              : m['developerPortal.dashboards.tabs.signing.notFound']()}
                     </h3>
 
                     {!loading && (

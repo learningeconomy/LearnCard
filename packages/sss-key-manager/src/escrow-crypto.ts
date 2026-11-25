@@ -28,19 +28,65 @@ export interface EscrowEnvelope {
     ciphertext: string;
 }
 
-/** Recovery share bound to an identity and a positive share version. */
+/** P9.1 (attack C): the app's compiled template languages. Keep in lockstep with
+ * apps/learn-card-app/src/i18n's SUPPORTED_LANGUAGES and the Rust RECOVERY_LANGUAGES. */
+export const RECOVERY_LANGUAGES = ['en', 'es', 'fr', 'ar'] as const;
+
+/** Recovery share bound to an identity and a positive share version.
+ * `recoveryEmail`/`recoveryLanguage`: bound by the user's own device at
+ * enrollment, never by lca-api. Always both-present or both-absent; changing
+ * the address requires a fresh `replace` enrollment, not an edit.
+ * `recoveryBrand` (D21): display name for enclave-sent recovery emails, sealed
+ * by the owner's device at enrollment alongside the contact. Not in the signed
+ * intent; canonical per `canonicalEscrowEmailBrand`, and silently dropped
+ * (never an error) when invalid so recovery is never refused over display text. */
 export interface EscrowBlobPlaintext {
     version: typeof ESCROW_ENVELOPE_VERSION;
     recoveryShare: string;
     did: string;
     shareVersion: number;
     pinVerifier?: string;
+    recoveryEmail?: string;
+    recoveryLanguage?: string;
+    recoveryBrand?: string;
 }
 
 /** Released recovery share additionally bound to its recovery hold. */
 export interface EscrowReleasePlaintext extends EscrowBlobPlaintext {
     holdId: string;
 }
+
+/** D21: longest canonical email brand, in characters (ASCII only, so also bytes). */
+export const MAX_ESCROW_EMAIL_BRAND_LENGTH = 32;
+
+/** D21: most digits an escrow email brand may contain, in total (not per run). */
+export const MAX_ESCROW_EMAIL_BRAND_DIGITS = 3;
+
+/** D21: canonical form of an owner-sealed escrow email brand, or `undefined` if
+ * it is not acceptable display text. Mirrors the enclave's `canonical_brand`
+ * (crypto.rs) exactly; both are pinned by escrow-email-brand-contract-v1.json.
+ * Trims and collapses runs of ASCII space only (every other whitespace or
+ * control character rejects); allows only `A-Z a-z 0-9`, space, `-`, `'`, `&`;
+ * must start with a letter, be 1-32 characters, contain at most 3 digits in total
+ * (not per run, so `Code 123 456 78` rejects) and no `http`/`www` in any case. ASCII-only by design: no URL, address, bidi or
+ * homoglyph can be formed, and no RFC 2047 encoding is ever needed. */
+export const canonicalEscrowEmailBrand = (raw: unknown): string | undefined => {
+    if (typeof raw !== 'string') return undefined;
+    const brand = raw
+        .split(' ')
+        .filter(word => word.length > 0)
+        .join(' ');
+    if (
+        brand.length === 0 ||
+        brand.length > MAX_ESCROW_EMAIL_BRAND_LENGTH ||
+        !/^[A-Za-z][A-Za-z0-9 '&-]*$/.test(brand) ||
+        (brand.match(/[0-9]/g)?.length ?? 0) > MAX_ESCROW_EMAIL_BRAND_DIGITS ||
+        /http|www/i.test(brand)
+    ) {
+        return undefined;
+    }
+    return brand;
+};
 
 const encodeUtf8 = (value: string): Uint8Array<ArrayBuffer> => {
     const bytes = new TextEncoder().encode(value);
@@ -105,6 +151,38 @@ export const parseEscrowBlobPlaintext = (value: unknown): EscrowBlobPlaintext =>
         throw new Error('Invalid escrow shareVersion');
     }
 
+    // P9.1: paired requirement; deliberately conservative email shape (not full
+    // RFC 5322/IDN), matching the enclave's `normalize()` exactly.
+    if ((value.recoveryEmail !== undefined) !== (value.recoveryLanguage !== undefined)) {
+        throw new Error('Invalid escrow recoveryEmail');
+    }
+    let recoveryContact: Pick<EscrowBlobPlaintext, 'recoveryEmail' | 'recoveryLanguage'> = {};
+    if (value.recoveryEmail !== undefined) {
+        const email = requireString(value, 'recoveryEmail', { min: 3, max: 254 })
+            .trim()
+            .toLowerCase();
+        const at = email.split('@');
+        if (
+            !/^[\x21-\x7e]+$/.test(email) ||
+            at.length !== 2 ||
+            at[0].length === 0 ||
+            at[1].length === 0 ||
+            !at[1].includes('.') ||
+            at[1].startsWith('.') ||
+            at[1].endsWith('.')
+        ) {
+            throw new Error('Invalid escrow recoveryEmail');
+        }
+        const language = requireString(value, 'recoveryLanguage', { min: 2, max: 2 });
+        if (!(RECOVERY_LANGUAGES as readonly string[]).includes(language)) {
+            throw new Error('Invalid escrow recoveryLanguage');
+        }
+        recoveryContact = { recoveryEmail: email, recoveryLanguage: language };
+    }
+    // D21: lenient on read, exactly like the enclave's `normalize`: an invalid
+    // or mistyped brand is omitted, never an error. Independent of the contact
+    // (kept but inert without one).
+    const recoveryBrand = canonicalEscrowEmailBrand(value.recoveryBrand);
     return {
         version: ESCROW_ENVELOPE_VERSION,
         recoveryShare: requireString(value, 'recoveryShare', {
@@ -123,6 +201,8 @@ export const parseEscrowBlobPlaintext = (value: unknown): EscrowBlobPlaintext =>
                   }).toLowerCase(),
               }
             : {}),
+        ...recoveryContact,
+        ...(recoveryBrand !== undefined ? { recoveryBrand } : {}),
     };
 };
 

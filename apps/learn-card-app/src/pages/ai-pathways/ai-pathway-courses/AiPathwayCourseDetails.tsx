@@ -10,6 +10,7 @@ import openSyllabusLogo from '../../../assets/images/open-syllabus-logo.webp';
 
 import { useModal } from 'learn-card-base';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 const AiPathwayCourseDetails: React.FC<{ course: any }> = ({ course }) => {
     const { closeModal } = useModal();
 
@@ -37,7 +38,7 @@ const AiPathwayCourseDetails: React.FC<{ course: any }> = ({ course }) => {
                 <div className="h-full overflow-y-auto pb-[150px] px-[20px] flex flex-col items-center justify-start">
                     <section className="bg-white rounded-[24px] flex flex-col overflow-y-auto shadow-box-bottom max-w-[600px] mx-auto min-w-[300px] shrink-0 mt-[60px] w-full">
                         {/* header */}
-                        <div className="flex flex-col gap-[10px] items-center p-[20px] border-b-[1px] border-grayscale-200 border-solid">
+                        <div className="flex flex-col gap-[10px] items-center p-[20px] border-b border-grayscale-200 border-solid">
                             <img
                                 src={CareerLaptopIcon}
                                 alt="career icon"
@@ -93,7 +94,7 @@ const AiPathwayCourseDetails: React.FC<{ course: any }> = ({ course }) => {
                         </div> */}
 
                         <div className="flex flex-col gap-[10px] items-start justify-start px-[20px] pb-1">
-                            <div className="w-full border-b-[1px] border-grayscale-200 border-solid" />
+                            <div className="w-full border-b border-grayscale-200 border-solid" />
                         </div>
 
                         {/* description */}
@@ -107,7 +108,7 @@ const AiPathwayCourseDetails: React.FC<{ course: any }> = ({ course }) => {
             </div>
             <IonFooter
                 mode="ios"
-                className="w-full flex justify-center items-center bg-opacity-80 backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white border-solid border-[1px] border-white"
+                className="w-full flex justify-center items-center  backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white/80 border-solid border border-white"
             >
                 <div className="w-full flex items-center justify-center gap-[10px] max-w-[600px]">
                     <button

@@ -4,8 +4,8 @@ import { createBrowserHistory } from 'history';
 import { IonReactRouter } from '@ionic/react-router';
 import { QueryClient } from '@tanstack/react-query';
 import * as Sentry from '@sentry/react';
-import IntroSlides from './components/intro-slides/IntroSlides';
 import { IonApp, setupIonicReact } from '@ionic/react';
+import LoginLoadingPage from './pages/login/LoginPageLoader/LoginLoader';
 
 import { lazyWithRetry, useIsLoggedIn } from 'learn-card-base';
 import { useEnforceVisibleLocale } from './i18n/useLanguageSelectorConfig';
@@ -35,6 +35,7 @@ import './theme/floating-tab-bar.css';
 
 // importing styles
 import '@learncard/react/main.css';
+import './tailwind.css';
 import './index.scss';
 
 // base styles of swiper js
@@ -50,6 +51,8 @@ setupIonicReact({ swipeBackEnabled: false });
 
 // Dynamically import the component
 const LazyFullApp = lazyWithRetry(() => import('./FullApp'));
+// Native first launch only (signed out, slides not yet seen); keeps Swiper out of every other start.
+const IntroSlides = lazyWithRetry(() => import('./components/intro-slides/IntroSlides'));
 
 const App: React.FC = () => {
     useIntroSlidesCompleted();
@@ -70,12 +73,26 @@ const App: React.FC = () => {
         return (
             <IonReactRouter history={history}>
                 <IonApp>
-                    <IntroSlides />
+                    <React.Suspense fallback={null}>
+                        <IntroSlides />
+                    </React.Suspense>
                 </IonApp>
             </IonReactRouter>
         );
     } else {
-        return <LazyFullApp />;
+        // Paint the same loader AppRouter shows during auth init while FullApp's chunks download,
+        // instead of an empty page until they arrive.
+        return (
+            <React.Suspense
+                fallback={
+                    <IonApp>
+                        <LoginLoadingPage />
+                    </IonApp>
+                }
+            >
+                <LazyFullApp />
+            </React.Suspense>
+        );
     }
 };
 

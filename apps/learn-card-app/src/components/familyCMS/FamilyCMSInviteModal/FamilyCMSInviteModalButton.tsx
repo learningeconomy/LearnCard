@@ -78,6 +78,7 @@ const FamilyCMSInviteModalButton: React.FC<FamilyCMSInviteModalButtonProps> = ({
         setState(prevState => {
             return {
                 ...prevState,
+                // eslint-disable-next-line no-unsafe-optional-chaining -- existing expression; guarding it changes what this returns or throws
                 childAccounts: [...prevState?.childAccounts, childAccount],
             };
         });
@@ -114,7 +115,7 @@ const FamilyCMSInviteModalButton: React.FC<FamilyCMSInviteModalButtonProps> = ({
                     handleInvite();
                 }}
                 className={`w-full flex items-center justify-between px-2 border-b-grayscale-200 0 py-4 ${
-                    showBorder ? 'border-solid border-b-[1px]' : ''
+                    showBorder ? 'border-solid border-b' : ''
                 }`}
             >
                 <div className="flex flex-col items-start justify-center">

@@ -1,203 +1,87 @@
-import serverlessHttp from 'serverless-http';
-import type {
-    Context,
-    APIGatewayProxyResultV2,
-    APIGatewayProxyEventV2,
-    SQSBatchResponse,
-    SQSHandler,
-} from 'aws-lambda';
-import { awsLambdaRequestHandler } from '@trpc/server/adapters/aws-lambda';
-import * as Sentry from '@sentry/serverless';
+import { bootstrapLambda } from '@learncard/service-config';
+import type * as LambdaApplication from './lambdaApp';
 
-import app from './src/openapi';
-import skillsViewerApp from './src/skills-viewer';
-import statusListsApp from './src/status-lists';
-import credentialRefreshApp from './src/credential-refresh';
-import { appRouter, createContext } from './src/app';
-import { publicShareLinkCacheControlHeaders } from './src/routes';
-import { deliverQueuedNotification } from './src/helpers/notificationQueue.helpers';
-import { startSkillEmbeddingBackfill } from './src/helpers/skill-embedding.helpers';
-import { createOpenApiAwsLambdaHandler } from './src/helpers/shim';
-import {
-    handleTrpcError,
-    sentryBeforeSend,
-    getTracesSampleRate,
-} from './src/helpers/sentry.helpers';
-import { environment } from './src/config/environment';
-import { toServerlessApplication } from './src/helpers/serverlessApplication';
-import { runInboxMaintenance } from './src/helpers/inbox-maintenance.helpers';
-import {
-    inboxBatchResponseMeta,
-    withInboxBatchBodyLimit,
-} from './src/helpers/inbox-batch-http.helpers';
+import { base, stages } from './src/config/stageConfig';
 
-Sentry.AWSLambda.init({
-    dsn: environment.SENTRY_DSN,
-    environment: environment.SENTRY_ENV,
-    enabled: Boolean(environment.SENTRY_DSN),
-    tracesSampleRate: getTracesSampleRate(),
-    beforeSend: sentryBeforeSend,
-    integrations: [
-        new Sentry.Integrations.Console(),
-        new Sentry.Integrations.Http({ tracing: true }),
-        new Sentry.Integrations.ContextLines(),
-    ],
+type LambdaApp = typeof LambdaApplication;
+
+const getApplication = bootstrapLambda<LambdaApp>({
+    base,
+    stages,
+    stage: process.env.AWS_LAMBDA_FUNCTION_NAME
+        ? process.env.LAMBDA_STAGE
+        : process.env.CONFIG_STAGE,
+    // Stage configuration must be installed before importing database-bound modules.
+    importApp: () => import('./lambdaApp'),
 });
 
-startSkillEmbeddingBackfill().catch(err =>
-    console.error('Skill embedding backfill startup error:', err)
-);
-
-export const swaggerUiHandler = serverlessHttp(toServerlessApplication(app), {
-    basePath: '/docs',
-});
-
-export const skillsViewerHandler = serverlessHttp(toServerlessApplication(skillsViewerApp));
-
-export const statusListsHandler = serverlessHttp(toServerlessApplication(statusListsApp));
-
-// Passing the Fastify instance selects serverless-http's inject adapter, which
-// drops the API Gateway source address. The HTTP server path preserves it.
-const credentialRefreshProxy = serverlessHttp(toServerlessApplication(credentialRefreshApp.server));
-export const credentialRefreshHandler: typeof credentialRefreshProxy = async (event, context) => {
-    await credentialRefreshApp.ready();
-    return credentialRefreshProxy(event, context);
+let migrationReadiness: Promise<void> | undefined;
+const ensureMigrationReady = async () => {
+    if (!migrationReadiness) {
+        const migration = import('./src/helpers/consentflow-legacy-migration.helpers').then(
+            ({ migrateLegacyConsentFlowContracts }) => migrateLegacyConsentFlowContracts()
+        );
+        migrationReadiness = migration;
+        migration.catch(() => {
+            if (migrationReadiness === migration) migrationReadiness = undefined;
+        });
+    }
+    await migrationReadiness;
 };
 
-export const _openApiHandler = createOpenApiAwsLambdaHandler({
-    router: appRouter,
-    responseMeta: meta => {
-        return {
-            ...inboxBatchResponseMeta(meta),
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-                'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-                ...publicShareLinkCacheControlHeaders(meta.paths),
-            },
-        };
-    },
-    createContext,
-    onError: handleTrpcError,
-});
+const getReadyApplication = async () => {
+    const application = await getApplication();
+    await ensureMigrationReady();
+    return application;
+};
 
-export const _trpcHandler = withInboxBatchBodyLimit(
-    awsLambdaRequestHandler({
-        allowMethodOverride: true,
-        router: appRouter,
-        createContext,
-        onError: handleTrpcError,
-        responseMeta: ({ paths }) => {
-            return {
-                headers: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': '*',
-                    'Access-Control-Allow-Headers': 'authorization',
-                    ...publicShareLinkCacheControlHeaders(paths),
-                },
-            };
-        },
-    }),
-    'trpc'
-);
+export const trpcHandler = async (...args: Parameters<LambdaApp['trpcHandler']>) =>
+    (await getReadyApplication()).trpcHandler(...args);
 
-export const openApiHandler = Sentry.AWSLambda.wrapHandler(
-    async (event: APIGatewayProxyEventV2, context: Context): Promise<APIGatewayProxyResultV2> => {
-        if (event.requestContext.http.method === 'OPTIONS') {
-            return {
-                statusCode: 204,
-                headers: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-                    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-                },
-            };
-        }
+export const openApiHandler = async (...args: Parameters<LambdaApp['openApiHandler']>) =>
+    (await getReadyApplication()).openApiHandler(...args);
 
-        return _openApiHandler(event, context);
-    }
-);
+export const _trpcHandler = async (...args: Parameters<LambdaApp['_trpcHandler']>) =>
+    (await getReadyApplication())._trpcHandler(...args);
 
-export const trpcHandler = Sentry.AWSLambda.wrapHandler(
-    async (event: APIGatewayProxyEventV2, context: Context): Promise<APIGatewayProxyResultV2> => {
-        if (event.requestContext.http.method === 'OPTIONS') {
-            return {
-                statusCode: 200,
-                headers: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Methods': '*',
-                },
-            };
-        }
+export const _openApiHandler = async (...args: Parameters<LambdaApp['_openApiHandler']>) =>
+    (await getReadyApplication())._openApiHandler(...args);
 
-        return _trpcHandler(event, context);
-    }
-);
+export const swaggerUiHandler = async (...args: Parameters<LambdaApp['swaggerUiHandler']>) =>
+    (await getReadyApplication()).swaggerUiHandler(...args);
 
-export const inboxQueueWorker: SQSHandler = Sentry.AWSLambda.wrapHandler(async event => {
-    const { processInboxQueueMessage } = await import('./src/helpers/inbox-queue.helpers');
-    const batchItemFailures = [];
-    for (const record of event.Records) {
-        try {
-            await processInboxQueueMessage(record.body);
-        } catch {
-            console.error('Inbox worker message failed', { messageId: record.messageId });
-            batchItemFailures.push({ itemIdentifier: record.messageId });
-        }
-    }
-    return { batchItemFailures } satisfies SQSBatchResponse;
-});
+export const skillsViewerHandler = async (...args: Parameters<LambdaApp['skillsViewerHandler']>) =>
+    (await getReadyApplication()).skillsViewerHandler(...args);
 
-export const inboxQueueDispatcher = Sentry.AWSLambda.wrapHandler(
-    async (_event: unknown, context: Context): Promise<void> => {
-        const { dispatchInboxJobs } = await import('./src/helpers/inbox-queue.helpers');
-        // Share one clock across publication and recovery, retaining five seconds for shutdown.
-        const deadline = Date.now() + Math.max(0, context.getRemainingTimeInMillis() - 5_000);
-        await dispatchInboxJobs(deadline);
-    }
-);
+export const statusListsHandler = async (...args: Parameters<LambdaApp['statusListsHandler']>) =>
+    (await getReadyApplication()).statusListsHandler(...args);
 
-export const inboxDeadLetterWorker: SQSHandler = Sentry.AWSLambda.wrapHandler(async event => {
-    const { processInboxDeadLetter } = await import('./src/helpers/inbox-queue.helpers');
-    const batchItemFailures = [];
-    for (const record of event.Records) {
-        try {
-            await processInboxDeadLetter(record.body);
-        } catch {
-            console.error('Inbox dead-letter processing failed', { messageId: record.messageId });
-            batchItemFailures.push({ itemIdentifier: record.messageId });
-        }
-    }
-    return { batchItemFailures } satisfies SQSBatchResponse;
-});
+export const credentialRefreshHandler = async (
+    ...args: Parameters<LambdaApp['credentialRefreshHandler']>
+) => (await getReadyApplication()).credentialRefreshHandler(...args);
 
-export const notificationsWorker: SQSHandler = Sentry.AWSLambda.wrapHandler(async event => {
-    const batchItemFailures = await Promise.all(
-        event.Records.map(async record => {
-            try {
-                await deliverQueuedNotification(record.body);
+export const inboxQueueWorker = async (...args: Parameters<LambdaApp['inboxQueueWorker']>) =>
+    (await getReadyApplication()).inboxQueueWorker(...args);
 
-                return undefined;
-            } catch (error) {
-                console.error('Notification queue record failed', {
-                    messageId: record.messageId,
-                    error,
-                });
+export const inboxQueueDispatcher = async (
+    ...args: Parameters<LambdaApp['inboxQueueDispatcher']>
+) => (await getReadyApplication()).inboxQueueDispatcher(...args);
 
-                return { itemIdentifier: record.messageId };
-            }
-        })
-    );
+export const inboxDeadLetterWorker = async (
+    ...args: Parameters<LambdaApp['inboxDeadLetterWorker']>
+) => (await getReadyApplication()).inboxDeadLetterWorker(...args);
 
-    return {
-        batchItemFailures: batchItemFailures.filter(
-            (failure): failure is { itemIdentifier: string } => failure !== undefined
-        ),
-    } satisfies SQSBatchResponse;
-});
+export const notificationsWorker = async (...args: Parameters<LambdaApp['notificationsWorker']>) =>
+    (await getReadyApplication()).notificationsWorker(...args);
 
-export const inboxMaintenanceHandler = Sentry.AWSLambda.wrapHandler(async (): Promise<void> => {
-    const counts = await runInboxMaintenance();
-    console.log('Universal Inbox maintenance completed', counts);
-});
+export const campaignDispatchWorker = async (
+    ...args: Parameters<LambdaApp['campaignDispatchWorker']>
+) => (await getReadyApplication()).campaignDispatchWorker(...args);
+
+export const inboxMaintenanceHandler = async (
+    ...args: Parameters<LambdaApp['inboxMaintenanceHandler']>
+) => (await getReadyApplication()).inboxMaintenanceHandler(...args);
+
+export const campaignUnsubscribeHandler = async (
+    ...args: Parameters<LambdaApp['campaignUnsubscribeHandler']>
+) => (await getReadyApplication()).campaignUnsubscribeHandler(...args);

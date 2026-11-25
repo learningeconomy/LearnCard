@@ -2,10 +2,10 @@
 
 ## Properties
 
-| Name     | Type                                                                                                                                              | Description | Notes |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
-| **type** | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |             |
-| **data** | [**ClaimHookGetClaimHooksForBoostRequestQueryData**](ClaimHookGetClaimHooksForBoostRequestQueryData.md)                                           |             |
+| Name     | Type                                                                                                                                | Description | Notes |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **type** | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.md) |             |
+| **data** | [**ClaimHookGetClaimHooksForBoostRequestQueryData**](ClaimHookGetClaimHooksForBoostRequestQueryData.md)                             |             |
 
 ## Example
 

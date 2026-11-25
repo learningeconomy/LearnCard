@@ -50,7 +50,7 @@ type BoostAddressBookContactOptionsProps = {
     handleCloseModal: () => void;
     showFixedFooter?: boolean;
     showCloseButton?: boolean;
-    title?: String | React.ReactNode;
+    title?: string | React.ReactNode;
     footer?: React.ReactNode;
     search?: string;
     setSearch?: React.Dispatch<React.SetStateAction<string>>;
@@ -320,7 +320,7 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                             }}
                             className={`${
                                 primaryColor ? `bg-${primaryColor}` : 'bg-grayscale-900'
-                            } text-xl text-white flex items-center justify-center font-semibold py-[5px] rounded-full w-full border-solid border-white border-[2px] px-[18px] shadow-soft-bottom`}
+                            } text-xl text-white flex items-center justify-center font-semibold py-[5px] rounded-full w-full border-solid border-white border-2 px-[18px] shadow-soft-bottom`}
                         >
                             {m['boost.cms.issueTo.boostMyself']()}
                             <GearPlusIcon className="ml-1 text-grayscale-800" />
@@ -335,7 +335,7 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                             }}
                             className={`${
                                 primaryColor ? `bg-${primaryColor}` : 'bg-grayscale-900'
-                            } text-xl text-white flex items-center justify-center font-semibold py-[5px] rounded-full w-full border-solid border-white border-[2px] px-[18px] shadow-soft-bottom`}
+                            } text-xl text-white flex items-center justify-center font-semibold py-[5px] rounded-full w-full border-solid border-white border-2 px-[18px] shadow-soft-bottom`}
                         >
                             {m['boost.cms.issueTo.boostOthers']()}
                             <GearPlusIcon className="ml-1 text-grayscale-800" />

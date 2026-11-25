@@ -34,6 +34,8 @@ export const Credential = ModelFactory<CredentialType, CredentialRelationships>(
             id: { type: 'string', required: true, uniqueItems: true },
             credential: { type: 'string', required: true },
             statusEntries: { type: 'string', required: false },
+            statusOwnerProfileId: { type: 'string', required: false },
+            statusReservationMode: { type: 'string', enum: ['strict', 'lenient'], required: false },
         },
         primaryKeyField: 'id',
     },

@@ -31,7 +31,7 @@ interface ResultFieldEditorProps {
 const RESULT_VARIABLE_NAME = 'grade';
 
 const INPUT_CLASS =
-    'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all';
+    'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all';
 const LABEL_CLASS = 'block text-xs font-medium text-grayscale-700 mb-1.5';
 const newEditorId = (): string =>
     typeof crypto !== 'undefined' && crypto.randomUUID
@@ -58,15 +58,20 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
     onChangeTemplate,
     canMakeDynamic,
 }) => {
-    const state = readResultState(template);
+    const [selectedResult, setSelectedResult] = useState(0);
+    const resultIndex = Math.min(
+        selectedResult,
+        Math.max(0, (template.credentialSubject.result?.length ?? 1) - 1)
+    );
+    const state = readResultState(template, resultIndex);
     const isDynamic = Boolean(state.valueField?.isDynamic);
-    const validationError = getResultValidationError(template);
+    const validationError = getResultValidationError(template, undefined, resultIndex);
 
     // Keep an empty selection locally until there is enough result data to store.
     const [selectedType, setSelectedType] = useState<ResultType>(state.resultType);
 
     const hasStoredResult = Boolean(
-        template.credentialSubject.result?.[0] || state.resultDescription
+        template.credentialSubject.result?.[resultIndex] || state.resultDescription
     );
     useEffect(() => {
         if (hasStoredResult && !state.isLegacyUntyped) setSelectedType(state.resultType);
@@ -87,7 +92,7 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
     });
 
     const commitUpdate = (patch: Partial<ResultUpdate>) => {
-        onChangeTemplate(writeResult(template, currentUpdate(patch)));
+        onChangeTemplate(writeResult(template, currentUpdate(patch), resultIndex));
     };
 
     const setResultType = (resultType: ResultType) => {
@@ -105,22 +110,32 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
                     : [createRubricLevel()]
                 : undefined;
         onChangeTemplate(
-            writeResult(template, {
-                ...currentUpdate({
-                    resultType,
-                    value,
-                    valueMin: '',
-                    valueMax: '',
-                    rubricCriterionLevel,
-                    achievedLevel: '',
-                }),
-            })
+            writeResult(
+                template,
+                {
+                    ...currentUpdate({
+                        resultType,
+                        value,
+                        valueMin: '',
+                        valueMax: '',
+                        rubricCriterionLevel,
+                        achievedLevel: '',
+                    }),
+                },
+                resultIndex
+            )
         );
     };
 
     const setValue = (value: string) => commitUpdate({ value });
 
-    const makeDynamic = () => commitUpdate({ value: dynamicField(RESULT_VARIABLE_NAME) });
+    const makeDynamic = () =>
+        commitUpdate({
+            value: dynamicField(
+                state.valueField?.variableName ||
+                    (resultIndex ? `grade_${resultIndex + 1}` : RESULT_VARIABLE_NAME)
+            ),
+        });
 
     const makeStatic = () => commitUpdate({ value: staticField('') });
 
@@ -153,7 +168,24 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
     };
 
     return (
-        <div className="sm:col-span-2 space-y-3">
+        <div className="sm:col-span-2 space-y-v3-3">
+            {(template.credentialSubject.result?.length ?? 0) > 1 && (
+                <label className={LABEL_CLASS}>
+                    {m['issueFlow.sheet.resultField']()}
+                    <select
+                        className={INPUT_CLASS}
+                        value={resultIndex}
+                        onChange={event => setSelectedResult(Number(event.target.value))}
+                    >
+                        {template.credentialSubject.result?.map((result, index) => (
+                            <option key={result.id} value={index}>
+                                {readResultState(template, index).resultDescription?.name.value ||
+                                    index + 1}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+            )}
             <div>
                 <div className="flex items-center justify-between mb-1.5">
                     <label className="text-xs font-medium text-grayscale-700">
@@ -301,7 +333,7 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
             )}
 
             {selectedType === 'RubricCriterionLevel' && (
-                <div className="rounded-2xl border border-grayscale-200 bg-grayscale-10 p-4 space-y-4">
+                <div className="rounded-2xl border border-grayscale-200 bg-grayscale-10 p-4 space-y-v3-4">
                     <div>
                         <p className="text-sm font-medium text-grayscale-900">
                             {m['issueFlow.result.editor.rubricLevels']()}
@@ -313,7 +345,7 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
                     {(state.rubricCriterionLevel ?? []).map((level, index) => (
                         <div
                             key={`${index}-${level.id}`}
-                            className="rounded-xl border border-grayscale-200 bg-white p-3 space-y-3"
+                            className="rounded-xl border border-grayscale-200 bg-white p-3 space-y-v3-3"
                         >
                             <div className="flex items-center justify-between">
                                 <span className="text-xs font-medium text-grayscale-700">
@@ -467,11 +499,11 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
                         </p>
                     </div>
                 </summary>
-                <div className="space-y-3 mt-4">
+                <div className="space-y-v3-3 mt-4">
                     {(state.alignment ?? []).map((alignment, index) => (
                         <div
                             key={alignment.id}
-                            className="rounded-xl border border-grayscale-200 bg-grayscale-10 p-3 space-y-3"
+                            className="rounded-xl border border-grayscale-200 bg-grayscale-10 p-3 space-y-v3-3"
                         >
                             <div className="flex items-center justify-between">
                                 <span className="text-xs font-medium text-grayscale-700">

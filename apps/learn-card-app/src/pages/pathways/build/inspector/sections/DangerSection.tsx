@@ -52,7 +52,7 @@ const DangerSection: React.FC<DangerSectionProps> = ({
             sticky={false}
             danger
         >
-            <div className="space-y-3">
+            <div className="space-y-v3-3">
                 <p className="text-xs text-grayscale-600 leading-relaxed">
                     Deleting a step also removes any prerequisites pointing to
                     or from it. This cannot be undone.

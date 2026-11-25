@@ -49,6 +49,7 @@ export const AddContactView: React.FC<{
         e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
         profileId: string
     ) => void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     updateCacheOnSuccessCallback?: any;
 }> = ({
     mode = AddContactViewMode?.requestConnection,
@@ -112,13 +113,16 @@ export const AddContactView: React.FC<{
             setConnectionRequested(true);
             if (closeModal) handleCancel?.();
         } catch (err) {
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
             // @ts-ignore
             presentToast(err?.message ?? 'An error ocurred, unable to send connection request.', {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
             // @ts-ignore
             if (err?.message.includes('Connection already requested')) setConnectionRequested(true);
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
             // @ts-ignore
             log.info('connectionReq::error', err?.message);
             setLoading(false);
@@ -137,6 +141,7 @@ export const AddContactView: React.FC<{
 
         setLoading(true);
         try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
             const connectionReq = await (wallet as any)?.invoke?.connectWithExpiredInvite(
                 profileId
             );
@@ -150,13 +155,16 @@ export const AddContactView: React.FC<{
             setConnectionRequested(true);
             if (closeModal) handleCancel?.();
         } catch (err) {
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
             // @ts-ignore
             presentToast(err?.message ?? 'An error ocurred, unable to send connection request.', {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
             // @ts-ignore
             if (err?.message.includes('Connection already requested')) setConnectionRequested(true);
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
             // @ts-ignore
             log.info('expiredInviteConnectionReq::error', err?.message);
             setLoading(false);
@@ -201,12 +209,14 @@ export const AddContactView: React.FC<{
                     { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
                 );
             } else {
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
                 // @ts-ignore
                 presentToast(_errMessage ?? 'An error ocurred, unable to connect!', {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
             }
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
             // @ts-ignore
             log.info('connection::error', err?.message);
             setLoading(false);
@@ -244,6 +254,7 @@ export const AddContactView: React.FC<{
                         await updateCacheOnSuccessCallback(profileId);
                     },
                     onError(error, variables, context) {
+                        // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
                         // @ts-ignore
                         presentToast(
                             error?.message || 'An error occurred, unable to accept request',
@@ -256,6 +267,7 @@ export const AddContactView: React.FC<{
                 }
             );
         } catch (err) {
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
             // @ts-ignore
             presentToast(error?.message || 'An error occurred, unable to accept request', {
                 type: ToastTypeEnum.Error,
@@ -382,6 +394,7 @@ export const AddContactView: React.FC<{
         );
     }
 
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let promptText = null;
 
     if (isIssuingBoost) {
@@ -416,7 +429,7 @@ export const AddContactView: React.FC<{
 
     return (
         // <IonGrid className="flex flex-col items-center justify-center py-5 px-5">
-        <IonGrid className="relative flex flex-col items-center justify-center h-[100%] w-full">
+        <IonGrid className="relative flex flex-col items-center justify-center h-full w-full">
             <IonRow className={`max-w-[375px] py-[75px] ${customContainerClass}`}>
                 <IonRow className="flex items-center justify-center w-full">
                     <IonCol

@@ -130,7 +130,7 @@ const SharedLinksAllSheet: React.FC<{
                 ref={tablistRef}
                 role="tablist"
                 aria-label={m['dataShareCenter.shared.filterLabel']()}
-                className="mb-3 grid grid-cols-3 gap-1 rounded-[20px] bg-white/70 p-1 ring-1 ring-grayscale-900/[0.06]"
+                className="mb-3 grid grid-cols-3 gap-1 rounded-[20px] bg-white/70 p-1 ring-1 ring-grayscale-900/6"
             >
                 {FILTERS.map((filter, index) => (
                     <button

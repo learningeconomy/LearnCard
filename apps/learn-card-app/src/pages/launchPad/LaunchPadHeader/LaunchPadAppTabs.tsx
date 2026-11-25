@@ -1,3 +1,4 @@
+import { tailwindColorWithOpacity } from 'learn-card-base/helpers/colorHelpers';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
@@ -133,9 +134,14 @@ const LaunchPadAppTabs: React.FC<LaunchPadAppTabsProps> = ({ tab, setTab }) => {
                     <button
                         key={index}
                         onClick={() => setTab(option)}
-                        className={`${borderRadius} px-[15px] py-[5px] z-9999 border-solid border-[1px] font-poppins text-[14px] font-[600] leading-[130%] whitespace-nowrap flex-shrink-0 ${
+                        style={{
+                            borderColor: isActive
+                                ? tailwindColorWithOpacity(primaryColorShade, 40)
+                                : undefined,
+                        }}
+                        className={`${borderRadius} px-[15px] py-[5px] z-9999 border-solid border font-poppins text-[14px] font-[600] leading-[130%] whitespace-nowrap shrink-0 ${
                             isActive
-                                ? `border-${primaryColorShade} border-opacity-40 bg-grayscale-50 text-${primaryColor}`
+                                ? `bg-grayscale-50 text-${primaryColor}`
                                 : 'border-transparent text-grayscale-600 xs:text-[12px]'
                         }`}
                     >

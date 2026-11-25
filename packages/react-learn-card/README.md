@@ -55,11 +55,29 @@ const Test = () => {
 
 ### Styles
 
-`@learncard/react` uses [tailwind](https://tailwindcss.com/) for styles, and exports two css files
-for consumers: `base.css` and `main.css`. If you are already using Tailwind, you do not need to import
-`base.css`, as it is simply re-exposing `@tailwind base` and `@tailwindcss/components`. However, you
-_will_ need to import `main.css`, because it imports the tailwind classes used by our components, as
-well as our bespoke CSS classes.
+`@learncard/react` uses Tailwind 4.3 and exports two compiled stylesheets:
+`main.css` contains component utilities and bespoke styles; optional `base.css`
+applies the global reset. A host that already owns its reset should import only
+`main.css`. Consumers do not need to run Tailwind themselves.
+
+#### Migrating to the Tailwind 4 stylesheet release
+
+This is a major package release because the CSS requires Safari/iOS 16.4+,
+Chrome/Edge/Android WebView 111+, or Firefox 128+. Keep the previous major release
+if older browsers must remain supported. No React component API change is required
+to keep using the same stylesheet imports.
+
+The card palette and font families compile to literal values, preserving the
+previous package design without exporting `--color-*` tokens or inheriting host
+Tailwind palette variables. Host token overrides alone do not recolor these
+utilities. Utility class names remain global: a host rule for the same class can
+still override the package through the usual CSS cascade, as before. Import the
+styles in the intended order and review any deliberate host overrides.
+
+For native consumers, enforce the actual WebView engine floor and provide an
+update notice before sending this CSS to older clients. The monorepo apps use
+separate Capgo channels and a static browser error page; release their matching
+native builds before promoting OTA bundles.
 
 #### If using Tailwind already
 

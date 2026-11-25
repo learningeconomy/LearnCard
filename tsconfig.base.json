@@ -9,10 +9,12 @@
         "esModuleInterop": true,
         "allowSyntheticDefaultImports": true,
         "forceConsistentCasingInFileNames": true,
-        "baseUrl": ".",
+        "types": ["node", "vitest/globals"],
         "paths": {
-            "learn-card-base": ["packages/learn-card-base/src/index.ts"],
-            "learn-card-base/*": ["packages/learn-card-base/src/*"]
+            "apps/*": ["./apps/*"],
+            "packages/*": ["./packages/*"],
+            "learn-card-base": ["./packages/learn-card-base/src/index.ts"],
+            "learn-card-base/*": ["./packages/learn-card-base/src/*"]
         }
     }
 }

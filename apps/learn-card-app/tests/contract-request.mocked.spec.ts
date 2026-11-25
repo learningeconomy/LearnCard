@@ -5,7 +5,6 @@ import type { BrainOutputs, CloudOutputs } from './mocks/trpc';
 import { mockLaunchDarkly } from './route.helpers';
 import { waitForAuthenticatedState } from './test.helpers';
 import { TEST_USER_PROFILE_ID } from './constants';
-import { randomUUID } from 'node:crypto';
 import type { Page } from '@playwright/test';
 
 const uri = 'lc:network:localhost%3A4000/trpc:contract:referral-mock';
@@ -56,6 +55,16 @@ const setup = async (
         route.fulfill({ json: { features: { contractRequests: options.tenant ?? true } } })
     );
     const mock = await installNetwork(page);
+    // Consent reads can share an LCA batch with notifications. Own both so a
+    // timing-dependent mixed batch cannot fall through to an unmatched HAR.
+    mock.on('preferences.getPreferencesForDid', () => ({
+        aiEnabled: true,
+        aiAutoDisabled: false,
+        analyticsEnabled: false,
+        analyticsAutoDisabled: false,
+        bugReportsEnabled: false,
+        isMinor: false,
+    }));
     mock.on(
         'user.getDids',
         () =>
@@ -70,7 +79,6 @@ const setup = async (
         () => ({ records: [], hasMore: false }) satisfies CloudOutputs['index']['get']
     );
     mock.on('index.count', () => 0 satisfies CloudOutputs['index']['count']);
-    mock.on('utilities.getChallenges', () => Array.from({ length: 100 }, () => randomUUID()));
     mock.on('utilities.getEncryptionKey', () => 'a'.repeat(64));
     mock.on(
         'inbox.finalize',
@@ -95,6 +103,15 @@ const setup = async (
     mock.on('utilities.getDid', () => 'did:key:z6Mkv1o2GEgtXjFdEMfLtupcKhGRydM8V7VHzjiN7Uh4AHoqH');
     mock.on('profile.getProfile', () => profile(TEST_USER_PROFILE_ID, 'Learner'));
     mock.on('profile.createProfile', () => profile(TEST_USER_PROFILE_ID, 'Learner').did);
+    // Privacy & Data batches this read with the pending invitations query.
+    mock.on(
+        'campaigns.getAnnouncementPreferences',
+        () =>
+            ({
+                announcementEmailOptOut: false,
+                announcementPushOptOut: false,
+            }) satisfies BrainOutputs['campaigns']['getAnnouncementPreferences']
+    );
     let status: 'pending' | 'denied' | 'cancelled' | 'accepted' = options.connected
         ? 'accepted'
         : 'pending';
@@ -210,26 +227,19 @@ const setup = async (
             : [],
     }));
     mock.on('contracts.getConsentFlowCredentials', () => ({ hasMore: false, records: [] }));
-    await waitForAuthenticatedState(
-        page,
-        {
-            path: '/wallet',
-            profileId: TEST_USER_PROFILE_ID,
-        },
-        15_000
-    );
-    await expect(page.getByRole('heading', { name: 'Passport', exact: true })).toBeVisible({
-        timeout: 30_000,
+    await waitForAuthenticatedState(page, {
+        path: '/notifications',
+        nextPath: '/notifications',
+        profileId: TEST_USER_PROFILE_ID,
+        waitUntil: 'commit',
     });
-    await page.goto('/notifications', { waitUntil: 'domcontentloaded' });
-    // A full navigation initializes the account again before notifications load.
-    // Wait for that observable UI state, including on a cold CI server.
+    // Sign-in returns directly to Alerts; wait for its authenticated content.
     const notification = page.getByTestId(
         (options.tenant ?? true) && (options.flag ?? true)
             ? 'contract-request-card'
             : 'notification-title'
     );
-    await expect(notification).toBeVisible({ timeout: 30_000 });
+    await expect(notification).toBeVisible({ timeout: 60_000 });
     return {
         seen: () => seen,
         denied: () => denied,
@@ -245,7 +255,16 @@ const setup = async (
 
 test.use({ screenshot: 'only-on-failure' });
 
+const openPrivacyAndData = async (page: Page): Promise<void> => {
+    await page.getByRole('button', { name: 'Open profile', exact: true }).click();
+    await page.getByRole('button', { name: 'Data Sharing', exact: true }).click();
+    await expect(page).toHaveURL(/\/privacy-and-data$/);
+};
+
 test.describe('Generic referrals @mocked', () => {
+    // Includes cold app initialization and an explicit locale-persistence reload.
+    test.describe.configure({ timeout: 180_000 });
+
     test('S1 referral card and target seen state', async ({ page }, testInfo) => {
         const state = await setup(page);
         const card = page.getByTestId('contract-request-card');
@@ -263,7 +282,7 @@ test.describe('Generic referrals @mocked', () => {
                 { timeout: 30_000 }
             );
             await expect(page.getByTestId('contract-request-card')).toHaveCount(0);
-            await page.goto('/privacy-and-data', { waitUntil: 'domcontentloaded' });
+            await openPrivacyAndData(page);
             await expect(page.getByRole('heading', { name: /Privacy/ }).first()).toBeAttached({
                 timeout: 30_000,
             });
@@ -332,7 +351,7 @@ test.describe('Generic referrals @mocked', () => {
             page,
         }, testInfo) => {
             await setup(page, { connected: true, recipients });
-            await page.goto('/privacy-and-data', { waitUntil: 'domcontentloaded' });
+            await openPrivacyAndData(page);
             await page.getByText('Partner services', { exact: true }).click();
             const detailsAudience = page.getByTestId('contract-shared-with');
             if (recipients) {
@@ -421,7 +440,7 @@ test.describe('Generic referrals @mocked', () => {
         await expect.poll(state.archived).toBe(true);
         await expect(page.getByTestId('contract-request-card')).toHaveCount(0);
         expect(state.denied()).toBe(false);
-        await page.goto('/privacy-and-data', { waitUntil: 'domcontentloaded' });
+        await openPrivacyAndData(page);
         await page.getByTestId('pending-contract-requests').getByText('Partner services').click();
         await expect(
             page

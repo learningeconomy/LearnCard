@@ -1,14 +1,18 @@
 import { useMemo } from 'react';
-import { BoostCMSAlignment, useGetCredentialsForSkills } from 'learn-card-base';
+import { useGetCredentialsForSkills } from 'learn-card-base';
 import { SkillFramework, SkillFrameworkNode } from '../components/boost/boost';
 import { VC } from '@learncard/types';
-import { getFrameworkIdAndSkillIdFromUrl } from '../components/boost/alignmentHelpers';
 import {
     SkillsHubFilterOptionsEnum,
     SkillsHubFilterValue,
     SkillsHubSortOptionsEnum,
 } from '../pages/skills/skillshub-search.helpers';
 import { useGlobalSkillFrameworks } from '../helpers/globalSkillFrameworks.helpers';
+import {
+    aggregateHubSkillAlignments,
+    getCredentialAchievementAlignments,
+    type HubSkillAlignment,
+} from './skillAlignment.helpers';
 
 export type SkillFrameworkNodeWithCredentials = SkillFrameworkNode & {
     credentials?: string[];
@@ -19,13 +23,7 @@ export type SkillFrameworkWithCredentials = Omit<SkillFramework, 'skills'> & {
     skills: SkillFrameworkNodeWithCredentials[];
 };
 
-export type AlignmentWithMetadata = BoostCMSAlignment & {
-    credentials: VC[];
-    count: number;
-    frameworkId: string;
-    skillId: string;
-    issuanceDate: string;
-};
+export type AlignmentWithMetadata = HubSkillAlignment<VC>;
 
 export const useAlignments = (
     {
@@ -55,64 +53,21 @@ export const useAlignments = (
         refetch,
     } = useGetCredentialsForSkills();
 
-    // filter boosts with alignments
+    // Filter credentials that carry skill alignments (boost wrapper or bare OB3).
     const credentialsWithAlignments = useMemo(() => {
-        return allResolvedCreds?.filter(vc => {
-            const alignment = (vc as VC)?.boostCredential?.credentialSubject?.achievement
-                ?.alignment;
-            if (alignment && alignment.length > 0) return true;
-
-            return false;
-        });
+        return allResolvedCreds?.filter(vc => getCredentialAchievementAlignments(vc).length > 0);
     }, [allResolvedCreds]);
 
-    const { alignments, frameworkIds } = useMemo(() => {
-        const alignmentMap = new Map<string, AlignmentWithMetadata>();
-        credentialsWithAlignments?.forEach(vc => {
-            const credentialAlignments = (vc as VC)?.boostCredential?.credentialSubject?.achievement
-                ?.alignment;
-            const issuanceDate =
-                (vc as VC)?.boostCredential?.issuanceDate ?? vc?.boostCredential?.validFrom ?? '';
-
-            if (credentialAlignments && Array.isArray(credentialAlignments)) {
-                credentialAlignments.forEach(alignment => {
-                    const { targetUrl } = alignment;
-                    const { frameworkId, skillId } = getFrameworkIdAndSkillIdFromUrl(targetUrl);
-
-                    if (targetUrl) {
-                        if (alignmentMap.has(targetUrl)) {
-                            const existing = alignmentMap.get(targetUrl)!;
-                            existing.credentials.push(vc);
-                            existing.count++;
-                            // Update issuanceDate if this one is more recent
-                            if (
-                                issuanceDate &&
-                                (!existing.issuanceDate || issuanceDate > existing.issuanceDate)
-                            ) {
-                                existing.issuanceDate = issuanceDate;
-                            }
-                        } else {
-                            alignmentMap.set(targetUrl, {
-                                ...alignment,
-                                credentials: [vc],
-                                issuanceDate,
-                                count: 1,
-                                frameworkId,
-                                skillId,
-                            });
-                        }
-                    }
-                });
-            }
-        });
-
-        return {
-            alignments: Array.from(alignmentMap.values()).filter(alignment =>
-                globalFrameworkIds.includes(alignment.frameworkId)
+    const { alignments, frameworkIds } = useMemo(
+        () => ({
+            alignments: aggregateHubSkillAlignments(
+                credentialsWithAlignments as VC[] | undefined,
+                globalFrameworkIds
             ),
             frameworkIds: globalFrameworkIds,
-        };
-    }, [credentialsWithAlignments, globalFrameworkIds]);
+        }),
+        [credentialsWithAlignments, globalFrameworkIds]
+    );
 
     const alignmentsAndSkills = useMemo(() => {
         const filterBySet = new Set(filterBy);

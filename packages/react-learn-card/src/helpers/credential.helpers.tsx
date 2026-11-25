@@ -1,5 +1,5 @@
 import React from 'react';
-import { format } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
 
 import {
     Image,
@@ -15,6 +15,7 @@ import PuzzlePiece from '../components/svgs/PuzzlePiece';
 import KeyIcon from '../components/svgs/KeyIcon';
 import User from '../components/svgs/User';
 import Trophy from '../components/svgs/Trophy';
+import QualificationsIcon from '../components/svgs/QualificationsIcon';
 import Graduation from '../components/svgs/Graduation';
 import Briefcase from '../components/svgs/Briefcase';
 import AccommodationsIcon from '../components/svgs/AccommodationsIcon';
@@ -42,7 +43,9 @@ export const getImageFromProfile = (profile: Profile): string => {
 export const getInfoFromCredential = (
     credential: VC | AchievementCredential,
     dateFormat: string = 'dd MMM yyyy',
-    options: { uppercaseDate?: boolean } = { uppercaseDate: true }
+    options: { uppercaseDate?: boolean; dateType?: 'issuance' | 'awarded' } = {
+        uppercaseDate: true,
+    }
 ): CredentialInfo => {
     const { issuer, issuanceDate, validFrom } = credential;
 
@@ -56,12 +59,29 @@ export const getInfoFromCredential = (
 
     // Support both VC 2.0 (validFrom) and VC 1.0 (issuanceDate)
     // Gracefully handle missing dates
-    const dateValue = validFrom || issuanceDate;
+    const awardDateText = typeof credential.awardedDate === 'string' ? credential.awardedDate : '';
+    const awardedDate =
+        options.dateType === 'awarded' && awardDateText ? parseISO(awardDateText) : undefined;
+    const validAwardedDate = awardedDate && isValid(awardedDate) ? awardedDate : undefined;
+    const dateValue = validAwardedDate ?? (validFrom || issuanceDate);
     let createdAt = '';
 
     if (dateValue) {
         try {
-            createdAt = format(new Date(dateValue), dateFormat);
+            const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
+            // Offset-less ISO values describe a calendar day. Only explicit
+            // instants need UTC conversion, matching the Details date helper.
+            // Inspect at most six suffix characters; never scan arbitrary input
+            // with a backtracking wildcard when looking for a timezone.
+            const hasAwardOffset =
+                validAwardedDate &&
+                (awardDateText.includes('T') || awardDateText.includes(' ')) &&
+                /(?:Z|[+-]\d{2}(?::?\d{2})?)$/i.test(awardDateText.slice(-6));
+            const displayDate =
+                validAwardedDate && hasAwardOffset
+                    ? new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
+                    : date;
+            createdAt = format(displayDate, dateFormat);
             if (options.uppercaseDate) {
                 createdAt = createdAt.toUpperCase();
             }
@@ -97,6 +117,8 @@ export const getCategoryColor = (category = LCCategoryEnum.achievement) => {
             return 'indigo-600';
         case LCCategoryEnum.achievement:
             return 'pink-600';
+        case LCCategoryEnum.qualifications:
+            return 'orange-700';
         case LCCategoryEnum.learningHistory:
             return 'emerald-700';
         case LCCategoryEnum.id:
@@ -124,6 +146,8 @@ export const getCategoryPrimaryColor = (category = LCCategoryEnum.achievement) =
             return 'indigo';
         case LCCategoryEnum.achievement:
             return 'pink';
+        case LCCategoryEnum.qualifications:
+            return 'orange';
         case LCCategoryEnum.learningHistory:
             return 'emerald';
         case LCCategoryEnum.id:
@@ -151,6 +175,7 @@ export const getCategoryLightColor = (category = LCCategoryEnum.achievement) => 
     if (category === LCCategoryEnum.meritBadge) {
         return 'sp-purple-base';
     }
+    if (category === LCCategoryEnum.qualifications) return 'orange-700';
 
     return `${getCategoryPrimaryColor(category)}-500`;
 };
@@ -159,6 +184,7 @@ export const getCategoryDarkColor = (category = LCCategoryEnum.achievement) => {
     if (category === LCCategoryEnum.meritBadge) {
         return 'sp-purple-base';
     }
+    if (category === LCCategoryEnum.qualifications) return 'orange-900';
 
     return `${getCategoryPrimaryColor(category)}-700`;
 };
@@ -171,6 +197,8 @@ export const getCategoryIcon = (category = LCCategoryEnum.achievement, size: str
             return <PuzzlePiece size={size} />;
         case LCCategoryEnum.achievement:
             return <Trophy size={size} />;
+        case LCCategoryEnum.qualifications:
+            return <QualificationsIcon size={size} />;
         case LCCategoryEnum.course:
         case LCCategoryEnum.learningHistory:
             return <Graduation size={size} />;

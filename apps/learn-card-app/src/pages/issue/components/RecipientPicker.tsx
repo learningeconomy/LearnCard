@@ -1,15 +1,24 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Search, X, Mail, Loader2, Calendar } from 'lucide-react';
-import { useGetSearchProfiles, useGetConnections } from 'learn-card-base';
+import { useGetSearchProfiles, useGetConnections, useModal, ModalTypes } from 'learn-card-base';
 import useDebounce from '../../../hooks/useDebounce';
-import { RecipientMode, Recipient, LinkOptions, isEmail } from './recipientTypes';
+import { looksLikeSpreadsheet } from '../spreadsheet/parseSpreadsheet';
+import type { SpreadsheetView } from '../spreadsheet/viewTypes';
+import {
+    RecipientMode,
+    Recipient,
+    LinkOptions,
+    isEmail,
+    recipientKey,
+    recipientDisplayName,
+} from './recipientTypes';
 import * as m from '../../../paraglide/messages.js';
 import ScanRecipientButton, {
     canScanRecipients,
 } from '../../../components/recipient-picker/ScanRecipientButton';
 
 const INPUT_CLASS =
-    'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all';
+    'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all';
 const LABEL_CLASS = 'block text-xs font-medium text-grayscale-700 mb-1.5';
 
 const Avatar: React.FC<{
@@ -42,6 +51,7 @@ const Avatar: React.FC<{
 };
 
 interface RecipientPickerProps {
+    spreadsheet?: SpreadsheetView;
     mode: RecipientMode;
     onModeChange: (mode: RecipientMode) => void;
     recipients: Recipient[];
@@ -53,6 +63,7 @@ interface RecipientPickerProps {
 }
 
 export const RecipientPicker: React.FC<RecipientPickerProps> = ({
+    spreadsheet,
     mode,
     onModeChange,
     recipients,
@@ -62,6 +73,7 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
     hideHeader = false,
     inlineResults = false,
 }) => {
+    const { newModal, closeModal } = useModal();
     const [query, setQuery] = useState('');
     const [debouncedQuery, setDebouncedQuery] = useState('');
     const [isFocused, setIsFocused] = useState(false);
@@ -163,7 +175,9 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                 !dropdownResults.some(p => p.profileId === query || p.displayName === query) && (
                     <button
                         type="button"
-                        onClick={() => handleAddRecipient({ kind: 'email', email: query })}
+                        onClick={() =>
+                            handleAddRecipient({ kind: 'email', email: query.trim().toLowerCase() })
+                        }
                         className="w-full flex items-center gap-3 p-3 hover:bg-grayscale-10 transition-colors text-left border-b border-grayscale-100 last:border-0"
                     >
                         <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
@@ -188,7 +202,7 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
     );
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-v3-4">
             {!hideHeader && (
                 <>
                     <h3 className="text-base font-semibold text-grayscale-900">
@@ -202,10 +216,11 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
             <div className="flex gap-1 sm:gap-2 bg-grayscale-100 p-1 rounded-full">
                 <button
                     type="button"
+                    disabled={spreadsheet?.busy || spreadsheet?.templateLocked}
                     onClick={() => onModeChange('self')}
                     className={`flex-1 py-2 px-2 sm:px-3 rounded-full font-medium text-xs sm:text-sm whitespace-nowrap transition-colors ${
                         mode === 'self'
-                            ? 'bg-grayscale-900 text-white shadow-sm'
+                            ? 'bg-grayscale-900 text-white shadow-xs'
                             : 'text-grayscale-700 hover:bg-grayscale-200'
                     }`}
                 >
@@ -213,10 +228,11 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                 </button>
                 <button
                     type="button"
+                    disabled={spreadsheet?.busy || spreadsheet?.templateLocked}
                     onClick={() => onModeChange('people')}
                     className={`flex-1 py-2 px-2 sm:px-3 rounded-full font-medium text-xs sm:text-sm whitespace-nowrap transition-colors ${
                         mode === 'people'
-                            ? 'bg-grayscale-900 text-white shadow-sm'
+                            ? 'bg-grayscale-900 text-white shadow-xs'
                             : 'text-grayscale-700 hover:bg-grayscale-200'
                     }`}
                 >
@@ -225,10 +241,11 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                 </button>
                 <button
                     type="button"
+                    disabled={spreadsheet?.busy || spreadsheet?.templateLocked}
                     onClick={() => onModeChange('link')}
                     className={`flex-1 py-2 px-2 sm:px-3 rounded-full font-medium text-xs sm:text-sm whitespace-nowrap transition-colors ${
                         mode === 'link'
-                            ? 'bg-grayscale-900 text-white shadow-sm'
+                            ? 'bg-grayscale-900 text-white shadow-xs'
                             : 'text-grayscale-700 hover:bg-grayscale-200'
                     }`}
                 >
@@ -238,40 +255,81 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
             </div>
 
             {mode === 'people' && (
-                <div className="space-y-3 animate-fade-in-up">
-                    {recipients.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                            {recipients.map((recipient, index) => (
-                                <span
-                                    key={index}
-                                    className="flex items-center gap-1.5 py-1.5 pl-2 pr-3 rounded-full bg-grayscale-900 text-white text-sm"
+                <div className="space-y-v3-3 animate-fade-in-up">
+                    {recipients.length > 8 ? (
+                        <div className="flex flex-wrap gap-3 items-center text-sm text-grayscale-700">
+                            <span>
+                                {m['issueFlow.sheet.peopleSummary']({ count: recipients.length })}
+                                {spreadsheet?.sourceName ? ` · ${spreadsheet.sourceName}` : ''}
+                            </span>
+                            {!spreadsheet && (
+                                <button
+                                    type="button"
+                                    className="py-2 px-3 rounded-[20px] border border-grayscale-300 hover:bg-grayscale-10"
+                                    onClick={() =>
+                                        newModal(
+                                            <RecipientList
+                                                initial={recipients}
+                                                onChange={onRecipientsChange}
+                                                canRemove={() => true}
+                                                onClose={closeModal}
+                                            />,
+                                            {},
+                                            {
+                                                mobile: ModalTypes.Freeform,
+                                                desktop: ModalTypes.Center,
+                                            }
+                                        )
+                                    }
                                 >
-                                    {recipient.kind === 'profile' ? (
-                                        <Avatar
-                                            image={recipient.image}
-                                            name={recipient.displayName}
-                                            sizeClass="w-5 h-5"
-                                            fallbackClass="bg-grayscale-700 text-white text-[10px]"
-                                        />
-                                    ) : (
-                                        <Mail className="w-4 h-4 text-grayscale-400" />
-                                    )}
-                                    <span className="truncate max-w-[180px]">
-                                        {recipient.kind === 'profile'
-                                            ? recipient.displayName
-                                            : recipient.email}
-                                    </span>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveRecipient(index)}
-                                        className="text-white/70 hover:text-white transition-colors shrink-0 ml-1"
-                                        aria-label={m['boostAFriend.recip.rmRecip']()}
-                                    >
-                                        <X className="w-3.5 h-3.5" />
-                                    </button>
-                                </span>
-                            ))}
+                                    {m['issueFlow.sheet.viewAll']()}
+                                </button>
+                            )}
                         </div>
+                    ) : (
+                        recipients.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                                {recipients.map((recipient, index) => (
+                                    <span
+                                        key={index}
+                                        className="flex items-center gap-1.5 py-1.5 pl-2 pr-3 rounded-full bg-grayscale-900 text-white text-sm"
+                                    >
+                                        {recipient.kind === 'profile' ? (
+                                            <Avatar
+                                                image={recipient.image}
+                                                name={recipient.displayName}
+                                                sizeClass="w-5 h-5"
+                                                fallbackClass="bg-grayscale-700 text-white text-[10px]"
+                                            />
+                                        ) : (
+                                            <Mail className="w-4 h-4 text-grayscale-400" />
+                                        )}
+                                        <span className="truncate max-w-[180px]">
+                                            {recipient.kind === 'profile'
+                                                ? recipient.displayName
+                                                : recipient.email}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            disabled={
+                                                spreadsheet?.busy ||
+                                                !(
+                                                    spreadsheet?.canRemove?.(
+                                                        recipientKey(recipient)
+                                                    ) ??
+                                                    !spreadsheet?.locked?.(recipientKey(recipient))
+                                                )
+                                            }
+                                            onClick={() => handleRemoveRecipient(index)}
+                                            className="text-white/70 hover:text-white transition-colors shrink-0 ml-1"
+                                            aria-label={m['boostAFriend.recip.rmRecip']()}
+                                        >
+                                            <X className="w-3.5 h-3.5" />
+                                        </button>
+                                    </span>
+                                ))}
+                            </div>
+                        )
                     )}
 
                     <div className="relative">
@@ -279,6 +337,15 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                         <input
                             type="text"
                             value={query}
+                            disabled={spreadsheet?.busy}
+                            onPaste={event => {
+                                const text = event.clipboardData.getData('text/plain');
+                                if (spreadsheet && looksLikeSpreadsheet(text)) {
+                                    event.preventDefault();
+                                    setQuery('');
+                                    spreadsheet.onPaste(text);
+                                }
+                            }}
                             onChange={e => setQuery(e.target.value)}
                             onFocus={() => setIsFocused(true)}
                             onBlur={() => {
@@ -291,14 +358,14 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                             autoCorrect="off"
                             className={`w-full py-3 pl-10 ${
                                 canScan ? 'pr-20' : 'pr-10'
-                            } border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white`}
+                            } border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white`}
                         />
                         {query && (
                             <button
                                 type="button"
                                 onClick={() => setQuery('')}
                                 className={`absolute ${
-                                    canScan ? 'end-11' : 'end-3'
+                                    canScan ? 'inset-e-11' : 'inset-e-3'
                                 } top-1/2 -translate-y-1/2 text-grayscale-400 hover:text-grayscale-700 transition-colors`}
                                 aria-label={m['aiPathways.clearSearch']()}
                             >
@@ -308,7 +375,7 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                         <ScanRecipientButton
                             recipients={recipients}
                             onRecipientsChange={onRecipientsChange}
-                            className="end-1"
+                            className="inset-e-1"
                         />
 
                         {!inlineResults && showResults && (
@@ -321,6 +388,7 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                         {m['issueFlow.addByHint']()}
                     </p>
 
+                    {spreadsheet?.controls}
                     {inlineResults && showResults && (
                         <div className="w-full bg-white border border-grayscale-200 rounded-xl overflow-hidden">
                             {resultsContent}
@@ -330,7 +398,7 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
             )}
 
             {mode === 'link' && (
-                <div className="space-y-4 animate-fade-in-up">
+                <div className="space-y-v3-4 animate-fade-in-up">
                     <p className="text-sm text-grayscale-600">{m['issueFlow.linkOnIssue']()}</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
@@ -375,6 +443,73 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                     </div>
                 </div>
             )}
+        </div>
+    );
+};
+
+const RecipientList: React.FC<{
+    initial: Recipient[];
+    onChange: (recipients: Recipient[]) => void;
+    canRemove: (recipient: Recipient) => boolean;
+    onClose: () => void;
+}> = ({ initial, onChange, canRemove, onClose }) => {
+    const [rows, setRows] = useState(initial);
+    const [search, setSearch] = useState('');
+    return (
+        <div className="font-poppins p-6 bg-white text-grayscale-900 space-y-v3-4">
+            <div className="flex justify-between items-center">
+                <h2 className="text-xl font-semibold">
+                    {m['issueFlow.sheet.peopleSummary']({ count: rows.length })}
+                </h2>
+                <button
+                    type="button"
+                    onClick={onClose}
+                    aria-label={m['common.cancel']()}
+                    className="p-2"
+                >
+                    <X className="w-5 h-5" />
+                </button>
+            </div>
+            <input
+                aria-label={m['issueFlow.sheet.searchPeople']()}
+                placeholder={m['issueFlow.sheet.searchPeople']()}
+                value={search}
+                onChange={event => setSearch(event.target.value)}
+                className={INPUT_CLASS}
+            />
+            <ul className="space-y-v3-2 max-h-[60vh] overflow-y-auto">
+                {rows
+                    .filter(row =>
+                        `${recipientDisplayName(row)} ${row.kind === 'email' ? row.email : row.profileId}`
+                            .toLowerCase()
+                            .includes(search.toLowerCase())
+                    )
+                    .map(row => (
+                        <li
+                            key={recipientKey(row)}
+                            className="flex items-center justify-between gap-3 border-b border-grayscale-100 py-2"
+                        >
+                            <div className="min-w-0">
+                                <p className="text-sm truncate">{recipientDisplayName(row)}</p>
+                                <p className="text-xs text-grayscale-500 truncate">
+                                    {row.kind === 'email' ? row.email : row.profileId}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                disabled={!canRemove(row)}
+                                className="py-2 px-3 rounded-[20px] border border-grayscale-300 text-sm disabled:opacity-40"
+                                onClick={() => {
+                                    const next = rows.filter(item => item !== row);
+                                    setRows(next);
+                                    onChange(next);
+                                }}
+                            >
+                                {m['issueFlow.sheet.skip']()}
+                            </button>
+                        </li>
+                    ))}
+            </ul>
         </div>
     );
 };

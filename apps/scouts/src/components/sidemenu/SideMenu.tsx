@@ -102,8 +102,8 @@ const SideMenu: React.FC<{ branding: BrandingEnum }> = ({ branding = BrandingEnu
             />,
 
             {
-                className: '!p-0',
-                sectionClassName: '!p-0',
+                className: 'p-0!',
+                sectionClassName: 'p-0!',
             }
         );
     };

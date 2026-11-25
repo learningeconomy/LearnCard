@@ -12,7 +12,7 @@ export const ChatBotTypingIndicator: React.FC = () => (
                 <BlueMagicWand className="z-50 w-[45px] h-auto" />
             </div>
             <div className="bg-grayscale-100 rounded-[20px] px-[15px] py-[10px] flex items-center">
-                <div className="flex space-x-2">
+                <div className="flex space-x-v3-2">
                     <span className="w-2 h-2 bg-grayscale-400 rounded-full animate-[typing-dot_1.4s_infinite_ease-in-out]" />
                     <span className="w-2 h-2 bg-grayscale-400 rounded-full animate-[typing-dot_1.4s_infinite_ease-in-out] animation-delay-200" />
                     <span className="w-2 h-2 bg-grayscale-400 rounded-full animate-[typing-dot_1.4s_infinite_ease-in-out] animation-delay-400" />
@@ -26,7 +26,7 @@ export const UserChatBotTypingIndicator: React.FC = () => (
     <div className="w-full bg-white flex items-center justify-end ion-padding">
         <div className="animate-chat-in flex">
             <div className="bg-cyan-50  rounded-[20px] px-[15px] py-[10px] flex items-center">
-                <div className="flex space-x-2">
+                <div className="flex space-x-v3-2">
                     <span className="w-2 h-2 bg-grayscale-400 rounded-full animate-[typing-dot_1.4s_infinite_ease-in-out]" />
                     <span className="w-2 h-2 bg-grayscale-400 rounded-full animate-[typing-dot_1.4s_infinite_ease-in-out] animation-delay-200" />
                     <span className="w-2 h-2 bg-grayscale-400 rounded-full animate-[typing-dot_1.4s_infinite_ease-in-out] animation-delay-400" />

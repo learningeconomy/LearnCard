@@ -40,7 +40,7 @@ class BoostGetBoost200Response(BaseModel):
     default_permissions: Optional[BoostGetBoost200ResponseDefaultPermissions] = Field(default=None, alias="defaultPermissions")
     allow_anyone_to_create_children: Optional[StrictBool] = Field(default=None, alias="allowAnyoneToCreateChildren")
     claim_permissions: Optional[BoostGetBoost200ResponseClaimPermissions] = Field(default=None, alias="claimPermissions")
-    uri: Optional[StrictStr]
+    uri: StrictStr
     boost: BoostGetBoost200ResponseBoost
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["name", "type", "category", "created", "status", "autoConnectRecipients", "meta", "defaultPermissions", "allowAnyoneToCreateChildren", "claimPermissions", "uri", "boost"]
@@ -82,9 +82,8 @@ class BoostGetBoost200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -109,41 +108,6 @@ class BoostGetBoost200Response(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if name (nullable) is None
-        # and model_fields_set contains the field
-        if self.name is None and "name" in self.model_fields_set:
-            _dict['name'] = None
-
-        # set to None if type (nullable) is None
-        # and model_fields_set contains the field
-        if self.type is None and "type" in self.model_fields_set:
-            _dict['type'] = None
-
-        # set to None if category (nullable) is None
-        # and model_fields_set contains the field
-        if self.category is None and "category" in self.model_fields_set:
-            _dict['category'] = None
-
-        # set to None if created (nullable) is None
-        # and model_fields_set contains the field
-        if self.created is None and "created" in self.model_fields_set:
-            _dict['created'] = None
-
-        # set to None if auto_connect_recipients (nullable) is None
-        # and model_fields_set contains the field
-        if self.auto_connect_recipients is None and "auto_connect_recipients" in self.model_fields_set:
-            _dict['autoConnectRecipients'] = None
-
-        # set to None if allow_anyone_to_create_children (nullable) is None
-        # and model_fields_set contains the field
-        if self.allow_anyone_to_create_children is None and "allow_anyone_to_create_children" in self.model_fields_set:
-            _dict['allowAnyoneToCreateChildren'] = None
-
-        # set to None if uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.uri is None and "uri" in self.model_fields_set:
-            _dict['uri'] = None
 
         return _dict
 

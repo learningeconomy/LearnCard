@@ -2,12 +2,12 @@
 
 ## Properties
 
-| Name       | Type                                                                | Description | Notes                      |
-| ---------- | ------------------------------------------------------------------- | ----------- | -------------------------- |
-| **limit**  | **float**                                                           |             | [optional] [default to 25] |
-| **cursor** | **str**                                                             |             | [optional]                 |
-| **sort**   | **str**                                                             |             | [optional]                 |
-| **query**  | [**BoostCountBoostsRequestQuery**](BoostCountBoostsRequestQuery.md) |             | [optional]                 |
+| Name       | Type                                                            | Description | Notes                      |
+| ---------- | --------------------------------------------------------------- | ----------- | -------------------------- |
+| **limit**  | **float**                                                       |             | [optional] [default to 25] |
+| **cursor** | **str**                                                         |             | [optional]                 |
+| **sort**   | **str**                                                         |             | [optional]                 |
+| **query**  | [**BoostGetBoostsRequestQuery**](BoostGetBoostsRequestQuery.md) |             | [optional]                 |
 
 ## Example
 

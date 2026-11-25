@@ -1,4 +1,4 @@
-import { EmojiClickData } from 'emoji-picker-react';
+import type { EmojiClickData } from 'emoji-picker-react';
 import {
     BoostCMSAppearanceDisplayTypeEnum,
     CurrentUser,

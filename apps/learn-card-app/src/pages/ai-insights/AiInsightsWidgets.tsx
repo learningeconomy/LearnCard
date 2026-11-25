@@ -24,8 +24,10 @@ import AiPathwayCareerJobGrowthInfo from '../ai-pathways/ai-pathway-careers/AiPa
 import AiInsightsQualitativeFactorsBox from './AiInsightsQualitativeFactorsBox';
 import AiInsightsAverageSalaryBox from './AiInsightsAverageSalaryBox';
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- existing empty props type; replacing it changes the accepted props type
 type AiInsightsWidgetsProps = {};
 
+// eslint-disable-next-line no-empty-pattern -- dropping the empty destructure removes the implicit non-null argument check
 const AiInsightsWidgets: React.FC<AiInsightsWidgetsProps> = ({}) => {
     const { data: profileData } = useVerifiableData<SkillProfileProfessionalTitleData>(
         SKILL_PROFILE_PROFESSIONAL_TITLE_KEY,

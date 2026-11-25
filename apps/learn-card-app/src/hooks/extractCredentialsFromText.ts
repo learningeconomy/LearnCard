@@ -1,10 +1,12 @@
 export interface ExtractionResult {
     /** Candidate credential objects, ready to be uploaded one-by-one. */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     credentials: any[];
     /** Human-readable reasons nothing usable could be extracted. Empty on success. */
     errors: string[];
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 const isVerifiablePresentation = (value: any): boolean => {
     if (!value || typeof value !== 'object') return false;
     const types = Array.isArray(value.type) ? value.type : value.type ? [value.type] : [];
@@ -12,6 +14,7 @@ const isVerifiablePresentation = (value: any): boolean => {
     return 'verifiableCredential' in value;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 const unwrapPresentation = (vp: any): any[] => {
     const inner = vp.verifiableCredential;
     return (Array.isArray(inner) ? inner : inner ? [inner] : []).filter(Boolean);
@@ -28,6 +31,7 @@ const CREDENTIAL_HINT_FIELDS = [
     'proof',
 ];
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 const looksLikeCredential = (value: any): boolean =>
     !!value &&
     typeof value === 'object' &&
@@ -42,6 +46,7 @@ const looksLikeCredential = (value: any): boolean =>
  * Plain JSON that isn't credential-shaped (metadata, config, primitives) yields nothing, so
  * the scanner skips it and keeps looking for a real credential later in the text.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 const collectCandidates = (parsed: any): any[] => {
     if (isVerifiablePresentation(parsed)) return unwrapPresentation(parsed);
     if (Array.isArray(parsed)) return parsed.filter(Boolean).flatMap(collectCandidates);
@@ -126,6 +131,7 @@ export const extractCredentialsFromText = (text: string): ExtractionResult => {
     let sawEmptyPresentation = false;
 
     for (const block of iterateJsonBlocks(trimmed)) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         let parsed: any;
         try {
             parsed = JSON.parse(block);

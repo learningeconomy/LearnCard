@@ -188,7 +188,7 @@ export const RecipientSection: React.FC<RecipientSectionProps> = ({
                     <button
                         type="button"
                         onClick={addResult}
-                        className="flex items-center gap-1 px-2 py-1 text-xs bg-emerald-100 text-emerald-700 rounded hover:bg-emerald-200 transition-colors"
+                        className="flex items-center gap-1 px-2 py-1 text-xs bg-emerald-100 text-emerald-700 rounded-sm hover:bg-emerald-200 transition-colors"
                     >
                         <Plus className="w-3 h-3" />
                         {m['developerPortal.credentialBuilder.recipient.addResult']()}
@@ -204,11 +204,11 @@ export const RecipientSection: React.FC<RecipientSectionProps> = ({
                         {m['developerPortal.credentialBuilder.recipient.noResults']()}
                     </p>
                 ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-v3-4">
                         {(subject.result || []).map((result, index) => (
                             <div
                                 key={result.id}
-                                className="pl-3 border-l-2 border-emerald-200 space-y-2"
+                                className="pl-3 border-l-2 border-emerald-200 space-y-v3-2"
                             >
                                 <div className="flex items-center justify-between">
                                     <span className="text-xs font-medium text-emerald-700">
@@ -220,7 +220,7 @@ export const RecipientSection: React.FC<RecipientSectionProps> = ({
                                     <button
                                         type="button"
                                         onClick={() => removeResult(index)}
-                                        className="p-1 text-gray-400 hover:text-red-500 rounded"
+                                        className="p-1 text-gray-400 hover:text-red-500 rounded-sm"
                                     >
                                         <X className="w-3 h-3" />
                                     </button>

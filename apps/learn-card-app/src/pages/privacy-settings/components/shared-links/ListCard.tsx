@@ -49,7 +49,7 @@ export const SkeletonRows: React.FC<{ count?: number }> = ({ count = 3 }) => (
     <>
         {Array.from({ length: count }, (_, index) => (
             <li key={index} aria-hidden="true" className="flex items-center gap-3 px-4 py-3.5">
-                <div className="flex-1 space-y-2">
+                <div className="flex-1 space-y-v3-2">
                     <div className="h-3.5 w-2/5 rounded-full bg-grayscale-100 motion-safe:animate-pulse" />
                     <div className="h-3 w-3/5 rounded-full bg-grayscale-100 motion-safe:animate-pulse" />
                 </div>

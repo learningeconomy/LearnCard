@@ -18,7 +18,7 @@ const SideMenuFooter: React.FC<{ version?: string | undefined }> = ({ version })
         if (!version) return;
 
         newModal(<VersionInfoModal fallbackVersion={version} />, {
-            sectionClassName: '!max-w-[420px]',
+            sectionClassName: 'max-w-[420px]!',
             cancelButtonTextOverride: m['common.close'](),
         });
     };
@@ -58,7 +58,7 @@ const SideMenuFooter: React.FC<{ version?: string | undefined }> = ({ version })
                         type="button"
                         onClick={openVersionInfo}
                         aria-label={m['sidemenu.footer.viewVersionDetails']()}
-                        className="text-grayscale-600 transition-colors focus-visible:outline-none focus-visible:underline"
+                        className="text-grayscale-600 transition-colors focus-visible:outline-hidden focus-visible:underline"
                     >
                         V {version}
                     </button>

@@ -9,11 +9,13 @@ import {
     switchedProfileStore,
     CredentialCategory,
     connectionPromptKeys,
+    invalidateCredentialIndexQueries,
 } from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { VC, Boost, CredentialRecord, VCValidator } from '@learncard/types';
 
 import { publishWalletEvent } from '../../pages/pathways/events/walletEventBus';
+import { withInternalCategoryHidden } from 'learn-card-base/helpers/credentialCollection';
 
 type CredentialRecordMinusId = Omit<CredentialRecord, 'id'>;
 
@@ -84,13 +86,15 @@ export const useAddCredentialToWallet = () => {
 
                 const category = getDefaultCategoryForCredential(vc) || 'Achievement';
 
-                const res = await wallet.index.LearnCloud.add({
-                    id: _id,
-                    uri,
-                    category,
-                    ...(title ? { title } : {}),
-                    ...(imgUrl ? { imgUrl } : {}),
-                });
+                const res = await wallet.index.LearnCloud.add(
+                    withInternalCategoryHidden({
+                        id: _id,
+                        uri,
+                        category,
+                        ...(title ? { title } : {}),
+                        ...(imgUrl ? { imgUrl } : {}),
+                    })
+                );
 
                 return {
                     vc,
@@ -98,6 +102,7 @@ export const useAddCredentialToWallet = () => {
                     uri,
                     id: _id,
                     didOverride,
+                    readerDid: wallet.id.did(),
                     eventSource: input.eventSource,
                     eventBoostUri: input.eventBoostUri,
                 };
@@ -107,7 +112,8 @@ export const useAddCredentialToWallet = () => {
             }
         },
         onSuccess: async data => {
-            const { category, vc, uri, id, didOverride, eventSource, eventBoostUri } = data;
+            const { category, vc, uri, id, didOverride, readerDid, eventSource, eventBoostUri } =
+                data;
 
             await queryClient.invalidateQueries({ queryKey: connectionPromptKeys.all });
 
@@ -139,7 +145,6 @@ export const useAddCredentialToWallet = () => {
                 didOverride === true
                     ? undefined
                     : didOverride || switchedProfileStore.get.switchedDid();
-            const didForCredentials = didWeb;
             const didForListsAndCounts = didWeb ?? '';
 
             await queryClient.cancelQueries({
@@ -150,36 +155,29 @@ export const useAddCredentialToWallet = () => {
             });
 
             // Update cache
-            insertItem(queryClient, ['useGetCredentialList', didForListsAndCounts, category], {
-                id,
-                category,
-                uri,
-            });
+            insertItem(
+                queryClient,
+                ['useGetCredentialList', didForListsAndCounts, category, readerDid],
+                {
+                    id,
+                    category,
+                    uri,
+                }
+            );
 
             // Keep resume-builder selectors and wallet credential views in sync after any issuance.
             // Intentionally don't await these to keep this mutation fast.
-            queryClient.invalidateQueries({ queryKey: ['useGetCredentials', didForCredentials] });
+            // Shared invalidator: useGetCredentials (any primary key shape), skills, IDs, counts.
+            void invalidateCredentialIndexQueries(queryClient, didWeb);
             queryClient.invalidateQueries({
                 queryKey: ['useGetCredentialList', didForListsAndCounts],
-            });
-            queryClient.invalidateQueries({
-                queryKey: ['useGetCredentialCount', didForListsAndCounts],
-            });
-            queryClient.invalidateQueries({
-                queryKey: ['useGetIDs', didForListsAndCounts],
             });
 
             queryClient.refetchQueries({
-                queryKey: ['useGetCredentials', didForCredentials, category],
-            });
-            queryClient.refetchQueries({
                 queryKey: ['useGetCredentialList', didForListsAndCounts],
             });
             queryClient.refetchQueries({
                 queryKey: ['useGetCredentialCount', didForListsAndCounts],
-            });
-            queryClient.refetchQueries({
-                queryKey: ['useGetIDs', didForListsAndCounts],
             });
 
             await syncCredentialToContracts({ record: data, category });

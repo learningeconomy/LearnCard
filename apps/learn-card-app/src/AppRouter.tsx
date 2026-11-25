@@ -11,6 +11,8 @@ import SideMenu from './components/sidemenu/SideMenu';
 import NewMyData from './components/new-my-data/NewMyData';
 import ViewSharedBoost from './components/creds-bundle/ViewSharedBoost';
 import MobileNavBar from './components/mobile-nav-bar/MobileNavBar';
+import { preloadRoutes } from './components/mobile-nav-bar/RoutesOutlet';
+import { afterFirstScreen } from 'learn-card-base/helpers/firstScreen';
 import LoginLoadingPage from './pages/login/LoginPageLoader/LoginLoader';
 import GenericErrorBoundary from './components/generic/GenericErrorBoundary';
 import { ShareInsightsWithUserWrapper } from './pages/ai-insights/share-insights/ShareInsightsWithUser';
@@ -21,7 +23,7 @@ import useAutoConsentLearnCardAi from './hooks/useAutoConsentLearnCardAi';
 import {
     useIsLoggedIn,
     QRCodeScannerStore,
-    usePrefetchCredentials,
+    usePrefetchCredentialPage,
     useIsCollapsed,
     usePrefetchBoosts,
     useModal,
@@ -33,6 +35,8 @@ import {
     useContract,
     usePendingContractSync,
     switchedProfileStore,
+    walletStore,
+    networkStore,
     usePrivacyGate,
     useAiFeatureGate,
     useNetworkConsentMutation,
@@ -49,7 +53,12 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import endorsementsRequestStore from './stores/endorsementsRequestStore';
 import { useFirebase } from './hooks/useFirebase';
-import { useSentryIdentify } from './constants/sentry';
+import { useKeycloakRedirect } from './auth/useKeycloakRedirect';
+import { assertCurrentKeycloakReauth } from './auth/keycloakReauth';
+import MyLearnCardModal, {
+    prefetchMyLearnCardWhenIdle,
+} from './components/learncard/MyLearnCardModal';
+import { useSentryIdentify } from './constants/useSentryIdentify';
 
 import { Modals, getLogger } from 'learn-card-base';
 import { SharedI18nProvider } from './i18n/SharedI18nProvider';
@@ -59,10 +68,14 @@ import { useAccountCreatedAndReturningSession } from '@analytics';
 import { useRecordFeedbackSession } from './feedback/useRecordFeedbackSession';
 import { useDeviceTypeByWidth } from 'learn-card-base';
 import { AI_ROUTES } from './constants/aiRoutes';
+import { NATIVE_CREDENTIAL_PATH } from './native-digital-credentials/types';
 import { useAutoVerifyContactMethodWithProofOfLogin } from './hooks/useAutoVerifyContactMethodWithProofOfLogin';
 import { useFinalizeInboxCredentials } from './hooks/useFinalizeInboxCredentials';
+import { useTranscriptPrompt } from './hooks/useTranscriptPrompt';
 import useConsentFlow from './pages/consentFlow/useConsentFlow';
+import { runCredentialIndexBackfills } from 'learn-card-base/helpers/credentialVisibilityBackfill';
 import ReducedMotionManager from './components/accessibility/ReducedMotionManager';
+import { observeDashboardLongTasks, useDashboardPathMark } from './helpers/dashboardPathMarks';
 
 const log = getLogger('app-router');
 
@@ -109,6 +122,7 @@ const AppRouter: React.FC = () => {
             coordinatorState.status === 'needs_recovery' ||
             coordinatorState.status === 'error'
         );
+    useDashboardPathMark('shell_commit', !showOfflineBootGate && !initLoading);
 
     // Native splash bridge. The Capacitor splash is configured with
     // launchAutoHide=false so it stays visible during the entire JS bootstrap
@@ -148,14 +162,22 @@ const AppRouter: React.FC = () => {
     const isChapiInteraction = useIsChapiInteraction();
     const networkConsentMutation = useNetworkConsentMutation();
     const analytics = useAnalytics();
-    const { setEnabled: setAnalyticsEnabled } = analytics;
     const { isAiEnabled } = useAiFeatureGate();
     const { autoConsentLearnCardAi } = useAutoConsentLearnCardAi();
-    usePrivacyGate({ onAnalyticsChange: setAnalyticsEnabled });
+    usePrivacyGate();
 
     const currentUser = useCurrentUser();
     const queryClient = useQueryClient();
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
+    const activeWallet = walletStore.use.wallet();
+    const cloudUrl = networkStore.use.cloudUrl();
+
+    useEffect(() => {
+        // The signed-in wallet, not walletReady: the demo login sets the wallet store without
+        // the auth coordinator, so walletReady stays false for that whole session.
+        if (!isLoggedIn || isShareViewer || !activeWallet) return;
+        void runCredentialIndexBackfills(activeWallet, queryClient, cloudUrl);
+    }, [isLoggedIn, isShareViewer, activeWallet, queryClient, cloudUrl]);
 
     useEffect(() => {
         if (
@@ -213,12 +235,17 @@ const AppRouter: React.FC = () => {
 
     const hideSideMenu =
         isShareViewer ||
+        location.pathname === NATIVE_CREDENTIAL_PATH ||
         [
             '/consent-flow',
             '/consent-flow-login',
             '/claim/from-dashboard/',
             '/chats',
             '/cli',
+            '/wallet-worker',
+            '/store',
+            '/exchange',
+            '/get',
         ].includes(location.pathname) ||
         (collapsed &&
             AI_ROUTES.includes(location.pathname as (typeof AI_ROUTES)[number]) &&
@@ -226,13 +253,27 @@ const AppRouter: React.FC = () => {
         location.pathname.includes('/app-store');
 
     const { newModal } = useModal();
+    const { refreshAuthSession, openRecoverySetup, openSecureAccount, authProvider } = useAppAuth();
+    const isKeycloak = useKeycloakRedirect(async intent => {
+        assertCurrentKeycloakReauth(intent, (await authProvider?.getCurrentUser())?.id);
+        if (!(await refreshAuthSession())) throw new Error('Session could not be restored');
+        assertCurrentKeycloakReauth(intent, (await authProvider?.getCurrentUser())?.id);
+        history.replace(intent.returnTo);
+        if (intent.action === 'account-recovery') {
+            newModal(<MyLearnCardModal branding={BrandingEnum.learncard} resumeRecovery />);
+        } else if (intent.action === 'secure-account') {
+            openSecureAccount();
+        } else {
+            openRecoverySetup({ initialMethod: intent.initialMethod });
+        }
+    }, walletReady);
 
     useEffect(() => {
         if (isInsightsConsent && contract) {
             if (isChild) {
                 newModal(
                     <ShareInsightsWithUserWrapper targetProfileId={teacherProfileId as string} />,
-                    { className: '!bg-transparent' },
+                    { className: 'bg-transparent!' },
                     { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
                 );
             } else {
@@ -248,7 +289,7 @@ const AppRouter: React.FC = () => {
                     profileId={learnerProfileId as string}
                     redirectToLink={`/passport?shareInsights=${isShareInsightsRequest}&learnerProfileId=${learnerProfileId}`}
                 />,
-                { className: '!bg-transparent' },
+                { className: 'bg-transparent!' },
                 { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
             );
         }
@@ -260,7 +301,7 @@ const AppRouter: React.FC = () => {
             history.replace({ search: queryString.stringify(allOtherSearchParams) });
             newModal(
                 <NewMyData />,
-                { sectionClassName: '!max-w-[350px]' },
+                { sectionClassName: 'max-w-[350px]!' },
                 { desktop: ModalTypes.Cancel }
             );
         }
@@ -346,15 +387,15 @@ const AppRouter: React.FC = () => {
 
     const enablePrefetch = isLoggedIn && !isChapiInteraction;
 
-    usePrefetchCredentials('Social Badge', enablePrefetch);
-    usePrefetchCredentials('Achievement', enablePrefetch);
-    usePrefetchCredentials('Learning History', enablePrefetch);
-    usePrefetchCredentials('Work History', enablePrefetch);
-    usePrefetchCredentials('Skill', enablePrefetch);
-    usePrefetchCredentials('ID', enablePrefetch);
-    usePrefetchCredentials('Membership', enablePrefetch);
-    usePrefetchCredentials('AI Topic', enablePrefetch);
-    usePrefetchCredentials(undefined, enablePrefetch);
+    usePrefetchCredentialPage('Social Badge', enablePrefetch);
+    usePrefetchCredentialPage('Achievement', enablePrefetch);
+    usePrefetchCredentialPage('Learning History', enablePrefetch);
+    usePrefetchCredentialPage('Work History', enablePrefetch);
+    usePrefetchCredentialPage('Skill', enablePrefetch);
+    usePrefetchCredentialPage('ID', enablePrefetch);
+    usePrefetchCredentialPage('Membership', enablePrefetch);
+    usePrefetchCredentialPage('AI Topic', enablePrefetch);
+    usePrefetchCredentialPage(undefined, enablePrefetch);
     usePrefetchBoosts(enablePrefetch);
     useSyncConsentFlow(enablePrefetch);
     usePendingContractSync(enablePrefetch);
@@ -363,13 +404,30 @@ const AppRouter: React.FC = () => {
     // (side menu, mobile nav, wallet squares, deep link) lands on a warm cache
     // and never hits the Suspense fallback. AI routes are skipped when the
     // user doesn't have AI access — no point downloading what they can't use.
+    // Waits for the first dashboard paint so ~100 chunks don't share a slow link with the wallet's
+    // WASM and the dashboard chunk (see helpers/firstScreen).
     useEffect(() => {
         if (!enablePrefetch) return;
-        // Lazy-import to avoid a circular import on the Routes module graph.
-        import('./Routes')
-            .then(m => m.prefetchRoutes({ aiEnabled: isAiEnabled }))
+        let cancelled = false;
+        afterFirstScreen()
+            .then(() => {
+                if (cancelled) return;
+                // Lazy-import to avoid a circular import on the Routes module graph.
+                return import('./Routes').then(m => m.prefetchRoutes({ aiEnabled: isAiEnabled }));
+            })
             .catch(() => undefined);
+        return () => {
+            cancelled = true;
+        };
     }, [enablePrefetch, isAiEnabled]);
+
+    // The My LearnCard modal (avatar, header profile button, side-menu Settings) is its own chunk.
+    // Fetch it once the first screen has painted and the browser is idle, so the first open doesn't
+    // wait on the network. Its triggers also prefetch on hover, focus and press.
+    useEffect(() => {
+        if (!enablePrefetch) return;
+        return prefetchMyLearnCardWhenIdle();
+    }, [enablePrefetch]);
 
     // Warm the landing chunks immediately — while the boot loader or login
     // form is still up, before auth resolves. The post-login redirect
@@ -380,6 +438,9 @@ const AppRouter: React.FC = () => {
     // routes: the default landing pages plus wherever the URL already points.
     const initialPathRef = useRef(window.location.pathname);
     useEffect(() => {
+        observeDashboardLongTasks();
+        // Lets the shell mount Routes without suspending once the wallet is ready.
+        preloadRoutes().catch(() => undefined);
         import('./Routes')
             .then(m => {
                 void m.ROUTE_PRELOAD['/dashboard']?.();
@@ -399,6 +460,7 @@ const AppRouter: React.FC = () => {
     useScreenView();
     useAutoVerifyContactMethodWithProofOfLogin();
     useFinalizeInboxCredentials();
+    useTranscriptPrompt();
 
     const saved_email = window.localStorage.getItem('emailForSignIn');
 
@@ -450,7 +512,7 @@ const AppRouter: React.FC = () => {
     }, [saved_email]);
 
     useEffect(() => {
-        if (!saved_email) {
+        if (!saved_email && !isKeycloak) {
             verifyAppleLogin();
         }
     }, []);
@@ -513,7 +575,7 @@ const AppRouter: React.FC = () => {
                                     event.preventDefault();
                                     document.getElementById('main')?.focus();
                                 }}
-                                className="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:left-4 focus-visible:top-4 focus-visible:z-[10000] focus-visible:rounded-[20px] focus-visible:bg-white focus-visible:px-4 focus-visible:py-3 focus-visible:text-sm focus-visible:font-medium focus-visible:text-grayscale-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                className="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:left-4 focus-visible:top-4 focus-visible:z-[10000] focus-visible:rounded-[20px] focus-visible:bg-white focus-visible:px-4 focus-visible:py-3 focus-visible:text-sm focus-visible:font-medium focus-visible:text-grayscale-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                             >
                                 Skip to main content
                             </a>
@@ -529,9 +591,9 @@ const AppRouter: React.FC = () => {
                                     {isLoggedIn && !hideSideMenu && (
                                         <SideMenu branding={BrandingEnum.learncard} />
                                     )}
-                                    <main id="main" tabIndex={-1} className="w-full">
+                                    <div id="main" tabIndex={-1} className="w-full">
                                         <MobileNavBar />
-                                    </main>
+                                    </div>
                                 </GenericErrorBoundary>
                             </IonSplitPane>
                         </>

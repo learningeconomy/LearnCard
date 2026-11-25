@@ -2,11 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { PathwayNode } from '../types';
 
-import {
-    ProjectionError,
-    canProject,
-    toAchievementCredential,
-} from './toAchievementCredential';
+import { ProjectionError, canProject, toAchievementCredential } from './toAchievementCredential';
 
 const NOW = '2026-04-20T12:00:00.000Z';
 const LEARNER_DID = 'did:key:zlearner';
@@ -120,7 +116,7 @@ describe('toAchievementCredential', () => {
         const node = projectableNode({
             endorsements: [
                 {
-                    endorsementId: 'end-1',
+                    endorsementId: 'inset-e-1',
                     endorserDid: 'did:key:zmentor',
                     endorserRelationship: 'mentor',
                     trustTier: 'trusted',
@@ -135,16 +131,16 @@ describe('toAchievementCredential', () => {
         });
 
         expect(claim.credentialSubject.endorsement).toHaveLength(1);
-        expect(claim.credentialSubject.endorsement?.[0].id).toBe('end-1');
+        expect(claim.credentialSubject.endorsement?.[0].id).toBe('inset-e-1');
         expect(claim.credentialSubject.endorsement?.[0].issuer).toBe('did:key:zmentor');
     });
 
     it('throws ProjectionError for a node with no credentialProjection', () => {
         const node = projectableNode({ credentialProjection: undefined });
 
-        expect(() =>
-            toAchievementCredential({ node, ownerDid: LEARNER_DID, now: NOW }),
-        ).toThrow(ProjectionError);
+        expect(() => toAchievementCredential({ node, ownerDid: LEARNER_DID, now: NOW })).toThrow(
+            ProjectionError
+        );
     });
 });
 

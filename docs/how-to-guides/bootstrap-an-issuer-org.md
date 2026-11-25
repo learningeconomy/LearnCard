@@ -7,7 +7,7 @@ description: 'Describe your organization in one file, apply it to staging, check
 An _organization_ on LearnCard is an issuer profile, the signing authority that signs for it, optionally the profiles it manages (districts, campuses, chapters), and the API tokens your systems use to reach it. Set it up by hand once and you will set it up wrong the second time. Instead, describe it in a file and let the CLI make the network match.
 
 {% hint style="info" %}
-**~15 min** · Needs Node 18+. Everything below runs against **staging**; the last step shows how the same file moves to production. Related: [Who Signs Your Credentials?](create-signing-authority.md) · [Generate API Tokens](deploy-infrastructure/generate-api-tokens.md) · [Test Safely](deploy-infrastructure/test-safely.md)
+**~15 min** · Needs Node.js 20+. Everything below runs against **staging**; the last step shows how the same file moves to production. Related: [Who Signs Your Credentials?](create-signing-authority.md) · [Generate API Tokens](deploy-infrastructure/generate-api-tokens.md) · [Test Safely](deploy-infrastructure/test-safely.md)
 {% endhint %}
 
 ## The one-line version
@@ -88,7 +88,7 @@ npx @learncard/cli doctor
 ## 4. Send something
 
 ```bash
-npx @learncard/cli send you@example.com
+npx @learncard/cli send you@yourdomain.com
 ```
 
 Because a signing authority is registered, this signs through it (you'll see `Signing through the registered signing authority "example-signer"`). Add `--no-template` to sign with the local key instead.
@@ -148,7 +148,7 @@ With a `learncard-hosted` signer, `org apply` also creates and registers a hoste
 Managed profiles have **no seed of their own**. You act as one from the parent's folder:
 
 ```bash
-npx @learncard/cli send you@example.com --as example-north
+npx @learncard/cli send you@yourdomain.com --as example-north
 npx @learncard/cli inbox list --as example-north
 ```
 

@@ -3,7 +3,7 @@ import { getVCDisplayCardVariant, VCDisplayCard2 } from '@learncard/react';
 import { VC, VerificationItem, CredentialRecord } from '@learncard/types';
 import { getCredentialSubject } from '../IssueVC/helpers';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
-import { CredentialCategory, categoryMetadata, useWallet } from 'learn-card-base';
+import { CredentialCategory, getCategoryMetadata, useWallet } from 'learn-card-base';
 import { getEmojiFromDidString } from 'learn-card-base/helpers/walletHelpers';
 import X from 'learn-card-base/svgs/X';
 import { IonContent, IonPage, IonRow } from '@ionic/react';
@@ -126,8 +126,8 @@ export const VCDisplayCardWrapper = ({
         overrideIssueName || isSubjectCurrentUser
             ? userName
             : dids.length > 0
-            ? `${credentialSubject?.id?.slice(0, 20)}...`
-            : 'Loading...';
+              ? `${credentialSubject?.id?.slice(0, 20)}...`
+              : 'Loading...';
     const issuerId = credential?.issuer?.id || credential?.issuer;
     const issuerName = credential?.issuer?.name;
 
@@ -135,10 +135,10 @@ export const VCDisplayCardWrapper = ({
     issuerText = isIssuerCurrentUser
         ? userName
         : issuerName
-        ? issuerName
-        : dids
-        ? issuerId
-        : 'Loading...';
+          ? issuerName
+          : dids
+            ? issuerId
+            : 'Loading...';
 
     const subjectElEmoji = getEmojiFromDidString(credentialSubject?.id);
     const issuerElEmoji = getEmojiFromDidString(issuerId);
@@ -161,8 +161,8 @@ export const VCDisplayCardWrapper = ({
             {isSubjectCurrentUser
                 ? getCurrentUserEl()
                 : subjectElEmoji
-                ? subjectElEmoji
-                : credentialSubject?.id?.slice(0, 1)}
+                  ? subjectElEmoji
+                  : credentialSubject?.id?.slice(0, 1)}
         </div>
     );
 
@@ -204,7 +204,7 @@ export const VCDisplayCardWrapper = ({
     const issuerImageComp = getDisplayComponent('issuer');
 
     const category: CredentialCategory = VcCategory || cr?.category || 'Achievement';
-    const categoryImgUrl = categoryMetadata[category].defaultImageSrc;
+    const categoryImgUrl = getCategoryMetadata(category).defaultImageSrc;
     const shouldUseHostCardPadding = getVCDisplayCardVariant(credential, category) !== 'ribbon';
 
     //override default image component in vc display which depends on assumption of a default vc data shape

@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -27,7 +27,7 @@ class BoostSendBoostRequestCredentialAnyOfRenderMethodAnyOfAnyOfOutputPreference
     """
     BoostSendBoostRequestCredentialAnyOfRenderMethodAnyOfAnyOfOutputPreference
     """ # noqa: E501
-    media_type: Optional[StrictStr] = Field(alias="mediaType")
+    media_type: StrictStr = Field(alias="mediaType")
     __properties: ClassVar[List[str]] = ["mediaType"]
 
     model_config = ConfigDict(
@@ -57,9 +57,8 @@ class BoostSendBoostRequestCredentialAnyOfRenderMethodAnyOfAnyOfOutputPreference
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -69,11 +68,6 @@ class BoostSendBoostRequestCredentialAnyOfRenderMethodAnyOfAnyOfOutputPreference
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if media_type (nullable) is None
-        # and model_fields_set contains the field
-        if self.media_type is None and "media_type" in self.model_fields_set:
-            _dict['mediaType'] = None
-
         return _dict
 
     @classmethod

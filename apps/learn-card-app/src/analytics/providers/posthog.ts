@@ -1,4 +1,5 @@
 import type { AnalyticsProvider, PostHogConfig } from '../types';
+import type { PostHog as PostHogClient, PostHogConfig as PostHogSDKConfig } from 'posthog-js';
 import {
     AnalyticsEvents,
     type AnalyticsEventName,
@@ -18,9 +19,11 @@ type CaptureLike = {
 interface PostHogProviderDependencies {
     fetch?: typeof globalThis.fetch;
     randomUUID?: () => string;
+    canCapture?: () => boolean;
 }
 
 const DEFAULT_POSTHOG_HOST = 'https://us.i.posthog.com';
+let nextInstanceId = 0;
 
 const getPostHogCaptureUrl = (apiHost?: string): string => {
     let url: URL;
@@ -131,13 +134,17 @@ export const applyPostHogHygiene = <T extends CaptureLike>(event: T): T | null =
 export class PostHogProvider implements AnalyticsProvider {
     readonly name = 'posthog';
 
-    private posthog: typeof import('posthog-js').default | null = null;
+    private posthog: PostHogClient | null = null;
 
     private config: PostHogConfig;
 
     private fetchRequest: typeof globalThis.fetch | undefined;
 
     private randomUUID: () => string;
+
+    private canCapture: () => boolean;
+
+    private abortController: AbortController | null = null;
 
     constructor(config: PostHogConfig, dependencies: PostHogProviderDependencies = {}) {
         this.config = config;
@@ -147,6 +154,7 @@ export class PostHogProvider implements AnalyticsProvider {
                 ? globalThis.fetch.bind(globalThis)
                 : undefined);
         this.randomUUID = dependencies.randomUUID ?? (() => globalThis.crypto.randomUUID());
+        this.canCapture = dependencies.canCapture ?? (() => true);
     }
 
     async init(): Promise<void> {
@@ -154,19 +162,31 @@ export class PostHogProvider implements AnalyticsProvider {
             log.warn('[Analytics:PostHog] No API key provided, skipping initialization');
             return;
         }
-
         try {
+            // Keep posthog-js out of the bundle/runtime until consent allows collection.
             const posthogModule = await import('posthog-js');
-            this.posthog = posthogModule.default;
-
-            this.posthog.init(this.config.apiKey, {
-                api_host: this.config.apiHost || 'https://us.i.posthog.com',
-                capture_pageview: false,
-                capture_pageleave: true,
-                persistence: 'localStorage',
-                before_send: applyPostHogHygiene,
-            });
-
+            if (!this.canCapture()) return;
+            const abortController = new AbortController();
+            this.abortController = abortController;
+            this.posthog = posthogModule.default.init(
+                this.config.apiKey,
+                {
+                    api_host: this.config.apiHost || 'https://us.i.posthog.com',
+                    api_transport: 'fetch',
+                    disable_beacon: true,
+                    capture_pageview: false,
+                    capture_pageleave: true,
+                    persistence: 'localStorage',
+                    request_batching: false,
+                    opt_out_capturing_by_default: true,
+                    opt_out_persistence_by_default: true,
+                    fetch_options: {
+                        signal: abortController.signal,
+                    } as PostHogSDKConfig['fetch_options'],
+                    before_send: event => (!this.canCapture() ? null : applyPostHogHygiene(event)),
+                },
+                `learncard-consent-${++nextInstanceId}`
+            );
             this.posthog.register(getSharedEventContext());
 
             log.debug('[Analytics:PostHog] Initialized');
@@ -262,8 +282,12 @@ export class PostHogProvider implements AnalyticsProvider {
 
         try {
             if (enabled) {
+                if (!this.canCapture() || this.abortController?.signal.aborted) return;
                 this.posthog.opt_in_capturing();
             } else {
+                this.abortController?.abort();
+                this.posthog.reset();
+                await this.posthog.shutdown();
                 this.posthog.opt_out_capturing();
             }
         } catch (error) {

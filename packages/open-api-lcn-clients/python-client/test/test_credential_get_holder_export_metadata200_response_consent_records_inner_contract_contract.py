@@ -41,24 +41,28 @@ class TestCredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContrac
                         categories = {
                             'key' : openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_read_credentials_categories_value.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_read_credentials_categories_value(
                                 required = True, 
-                                default_enabled = True, )
+                                default_enabled = True, 
+                                reason = '', )
                             }, ), 
                     personal = {
                         'key' : openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_read_personal_value.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_read_personal_value(
                             required = True, 
-                            default_enabled = True, )
+                            default_enabled = True, 
+                            reason = '', )
                         }, ),
                 write = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_write.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_write(
                     credentials = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_write_credentials.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_write_credentials(
                         categories = {
                             'key' : openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_read_personal_value.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_read_personal_value(
                                 required = True, 
-                                default_enabled = True, )
+                                default_enabled = True, 
+                                reason = '', )
                             }, ), 
                     personal = {
                         'key' : openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_read_personal_value.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_read_personal_value(
                             required = True, 
-                            default_enabled = True, )
+                            default_enabled = True, 
+                            reason = '', )
                         }, )
             )
         else:
@@ -69,24 +73,28 @@ class TestCredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContrac
                         categories = {
                             'key' : openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_read_credentials_categories_value.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_read_credentials_categories_value(
                                 required = True, 
-                                default_enabled = True, )
+                                default_enabled = True, 
+                                reason = '', )
                             }, ), 
                     personal = {
                         'key' : openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_read_personal_value.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_read_personal_value(
                             required = True, 
-                            default_enabled = True, )
+                            default_enabled = True, 
+                            reason = '', )
                         }, ),
                 write = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_write.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_write(
                     credentials = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_write_credentials.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_write_credentials(
                         categories = {
                             'key' : openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_read_personal_value.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_read_personal_value(
                                 required = True, 
-                                default_enabled = True, )
+                                default_enabled = True, 
+                                reason = '', )
                             }, ), 
                     personal = {
                         'key' : openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_read_personal_value.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_read_personal_value(
                             required = True, 
-                            default_enabled = True, )
+                            default_enabled = True, 
+                            reason = '', )
                         }, ),
         )
         """

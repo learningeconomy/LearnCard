@@ -537,7 +537,7 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 # **boost_count_boost_parents**
 
-> float boost_count_boost_parents(boost_count_boost_parents_request)
+> float boost_count_boost_parents(boost_count_boost_children_request)
 
 Count boost parents
 
@@ -549,7 +549,7 @@ This endpoint counts the parents of a particular boost
 
 ```python
 import openapi_client
-from openapi_client.models.boost_count_boost_parents_request import BoostCountBoostParentsRequest
+from openapi_client.models.boost_count_boost_children_request import BoostCountBoostChildrenRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -573,11 +573,11 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.BoostsApi(api_client)
-    boost_count_boost_parents_request = openapi_client.BoostCountBoostParentsRequest() # BoostCountBoostParentsRequest |
+    boost_count_boost_children_request = openapi_client.BoostCountBoostChildrenRequest() # BoostCountBoostChildrenRequest |
 
     try:
         # Count boost parents
-        api_response = api_instance.boost_count_boost_parents(boost_count_boost_parents_request)
+        api_response = api_instance.boost_count_boost_parents(boost_count_boost_children_request)
         print("The response of BoostsApi->boost_count_boost_parents:\n")
         pprint(api_response)
     except Exception as e:
@@ -586,9 +586,9 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-| Name                                  | Type                                                                  | Description | Notes |
-| ------------------------------------- | --------------------------------------------------------------------- | ----------- | ----- |
-| **boost_count_boost_parents_request** | [**BoostCountBoostParentsRequest**](BoostCountBoostParentsRequest.md) |             |
+| Name                                   | Type                                                                    | Description | Notes |
+| -------------------------------------- | ----------------------------------------------------------------------- | ----------- | ----- |
+| **boost_count_boost_children_request** | [**BoostCountBoostChildrenRequest**](BoostCountBoostChildrenRequest.md) |             |
 
 ### Return type
 
@@ -697,7 +697,7 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 # **boost_count_boosts**
 
-> float boost_count_boosts(boost_count_boosts_request=boost_count_boosts_request)
+> float boost_count_boosts(boost_get_boosts_request=boost_get_boosts_request)
 
 Count managed boosts
 
@@ -709,7 +709,7 @@ This endpoint counts the current user's managed boosts.
 
 ```python
 import openapi_client
-from openapi_client.models.boost_count_boosts_request import BoostCountBoostsRequest
+from openapi_client.models.boost_get_boosts_request import BoostGetBoostsRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -733,11 +733,11 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.BoostsApi(api_client)
-    boost_count_boosts_request = openapi_client.BoostCountBoostsRequest() # BoostCountBoostsRequest |  (optional)
+    boost_get_boosts_request = openapi_client.BoostGetBoostsRequest() # BoostGetBoostsRequest |  (optional)
 
     try:
         # Count managed boosts
-        api_response = api_instance.boost_count_boosts(boost_count_boosts_request=boost_count_boosts_request)
+        api_response = api_instance.boost_count_boosts(boost_get_boosts_request=boost_get_boosts_request)
         print("The response of BoostsApi->boost_count_boosts:\n")
         pprint(api_response)
     except Exception as e:
@@ -746,9 +746,9 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-| Name                           | Type                                                      | Description | Notes      |
-| ------------------------------ | --------------------------------------------------------- | ----------- | ---------- |
-| **boost_count_boosts_request** | [**BoostCountBoostsRequest**](BoostCountBoostsRequest.md) |             | [optional] |
+| Name                         | Type                                                  | Description | Notes      |
+| ---------------------------- | ----------------------------------------------------- | ----------- | ---------- |
+| **boost_get_boosts_request** | [**BoostGetBoostsRequest**](BoostGetBoostsRequest.md) |             | [optional] |
 
 ### Return type
 
@@ -1097,7 +1097,7 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 # **boost_detach_framework_from_boost**
 
-> bool boost_detach_framework_from_boost(boost_detach_framework_from_boost_request)
+> bool boost_detach_framework_from_boost(boost_attach_framework_to_boost_request)
 
 Detach framework from boost
 
@@ -1109,7 +1109,7 @@ Removes a USES_FRAMEWORK relationship from a boost to a SkillFramework. Requires
 
 ```python
 import openapi_client
-from openapi_client.models.boost_detach_framework_from_boost_request import BoostDetachFrameworkFromBoostRequest
+from openapi_client.models.boost_attach_framework_to_boost_request import BoostAttachFrameworkToBoostRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -1133,11 +1133,11 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.BoostsApi(api_client)
-    boost_detach_framework_from_boost_request = openapi_client.BoostDetachFrameworkFromBoostRequest() # BoostDetachFrameworkFromBoostRequest |
+    boost_attach_framework_to_boost_request = openapi_client.BoostAttachFrameworkToBoostRequest() # BoostAttachFrameworkToBoostRequest |
 
     try:
         # Detach framework from boost
-        api_response = api_instance.boost_detach_framework_from_boost(boost_detach_framework_from_boost_request)
+        api_response = api_instance.boost_detach_framework_from_boost(boost_attach_framework_to_boost_request)
         print("The response of BoostsApi->boost_detach_framework_from_boost:\n")
         pprint(api_response)
     except Exception as e:
@@ -1146,9 +1146,9 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-| Name                                          | Type                                                                                | Description | Notes |
-| --------------------------------------------- | ----------------------------------------------------------------------------------- | ----------- | ----- |
-| **boost_detach_framework_from_boost_request** | [**BoostDetachFrameworkFromBoostRequest**](BoostDetachFrameworkFromBoostRequest.md) |             |
+| Name                                        | Type                                                                            | Description | Notes |
+| ------------------------------------------- | ------------------------------------------------------------------------------- | ----------- | ----- |
+| **boost_attach_framework_to_boost_request** | [**BoostAttachFrameworkToBoostRequest**](BoostAttachFrameworkToBoostRequest.md) |             |
 
 ### Return type
 
@@ -3133,7 +3133,7 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 # **boost_remove_boost_admin**
 
-> bool boost_remove_boost_admin(boost_remove_boost_admin_request)
+> bool boost_remove_boost_admin(boost_add_boost_admin_request)
 
 Remove a Boost admin
 
@@ -3145,7 +3145,7 @@ This route removes an admin from a boost
 
 ```python
 import openapi_client
-from openapi_client.models.boost_remove_boost_admin_request import BoostRemoveBoostAdminRequest
+from openapi_client.models.boost_add_boost_admin_request import BoostAddBoostAdminRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -3169,11 +3169,11 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.BoostsApi(api_client)
-    boost_remove_boost_admin_request = openapi_client.BoostRemoveBoostAdminRequest() # BoostRemoveBoostAdminRequest |
+    boost_add_boost_admin_request = openapi_client.BoostAddBoostAdminRequest() # BoostAddBoostAdminRequest |
 
     try:
         # Remove a Boost admin
-        api_response = api_instance.boost_remove_boost_admin(boost_remove_boost_admin_request)
+        api_response = api_instance.boost_remove_boost_admin(boost_add_boost_admin_request)
         print("The response of BoostsApi->boost_remove_boost_admin:\n")
         pprint(api_response)
     except Exception as e:
@@ -3182,9 +3182,9 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-| Name                                 | Type                                                                | Description | Notes |
-| ------------------------------------ | ------------------------------------------------------------------- | ----------- | ----- |
-| **boost_remove_boost_admin_request** | [**BoostRemoveBoostAdminRequest**](BoostRemoveBoostAdminRequest.md) |             |
+| Name                              | Type                                                          | Description | Notes |
+| --------------------------------- | ------------------------------------------------------------- | ----------- | ----- |
+| **boost_add_boost_admin_request** | [**BoostAddBoostAdminRequest**](BoostAddBoostAdminRequest.md) |             |
 
 ### Return type
 
@@ -3213,7 +3213,7 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 # **boost_remove_boost_parent**
 
-> bool boost_remove_boost_parent(boost_remove_boost_parent_request)
+> bool boost_remove_boost_parent(boost_make_boost_parent_request)
 
 Remove Boost Parent
 
@@ -3225,7 +3225,7 @@ This endpoint removes a parent/child relationship between two boosts
 
 ```python
 import openapi_client
-from openapi_client.models.boost_remove_boost_parent_request import BoostRemoveBoostParentRequest
+from openapi_client.models.boost_make_boost_parent_request import BoostMakeBoostParentRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -3249,11 +3249,11 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.BoostsApi(api_client)
-    boost_remove_boost_parent_request = openapi_client.BoostRemoveBoostParentRequest() # BoostRemoveBoostParentRequest |
+    boost_make_boost_parent_request = openapi_client.BoostMakeBoostParentRequest() # BoostMakeBoostParentRequest |
 
     try:
         # Remove Boost Parent
-        api_response = api_instance.boost_remove_boost_parent(boost_remove_boost_parent_request)
+        api_response = api_instance.boost_remove_boost_parent(boost_make_boost_parent_request)
         print("The response of BoostsApi->boost_remove_boost_parent:\n")
         pprint(api_response)
     except Exception as e:
@@ -3262,9 +3262,9 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-| Name                                  | Type                                                                  | Description | Notes |
-| ------------------------------------- | --------------------------------------------------------------------- | ----------- | ----- |
-| **boost_remove_boost_parent_request** | [**BoostRemoveBoostParentRequest**](BoostRemoveBoostParentRequest.md) |             |
+| Name                                | Type                                                              | Description | Notes |
+| ----------------------------------- | ----------------------------------------------------------------- | ----------- | ----- |
+| **boost_make_boost_parent_request** | [**BoostMakeBoostParentRequest**](BoostMakeBoostParentRequest.md) |             |
 
 ### Return type
 
@@ -3618,7 +3618,7 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 # **boost_suspend_boost_recipient**
 
-> bool boost_suspend_boost_recipient(boost_suspend_boost_recipient_request)
+> bool boost_suspend_boost_recipient(boost_revoke_boost_recipient_request)
 
 Suspend a boost recipient
 
@@ -3630,7 +3630,7 @@ Temporarily suspends a credential for a specified recipient. Suspension is rever
 
 ```python
 import openapi_client
-from openapi_client.models.boost_suspend_boost_recipient_request import BoostSuspendBoostRecipientRequest
+from openapi_client.models.boost_revoke_boost_recipient_request import BoostRevokeBoostRecipientRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -3654,11 +3654,11 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.BoostsApi(api_client)
-    boost_suspend_boost_recipient_request = openapi_client.BoostSuspendBoostRecipientRequest() # BoostSuspendBoostRecipientRequest |
+    boost_revoke_boost_recipient_request = openapi_client.BoostRevokeBoostRecipientRequest() # BoostRevokeBoostRecipientRequest |
 
     try:
         # Suspend a boost recipient
-        api_response = api_instance.boost_suspend_boost_recipient(boost_suspend_boost_recipient_request)
+        api_response = api_instance.boost_suspend_boost_recipient(boost_revoke_boost_recipient_request)
         print("The response of BoostsApi->boost_suspend_boost_recipient:\n")
         pprint(api_response)
     except Exception as e:
@@ -3667,9 +3667,9 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-| Name                                      | Type                                                                          | Description | Notes |
-| ----------------------------------------- | ----------------------------------------------------------------------------- | ----------- | ----- |
-| **boost_suspend_boost_recipient_request** | [**BoostSuspendBoostRecipientRequest**](BoostSuspendBoostRecipientRequest.md) |             |
+| Name                                     | Type                                                                        | Description | Notes |
+| ---------------------------------------- | --------------------------------------------------------------------------- | ----------- | ----- |
+| **boost_revoke_boost_recipient_request** | [**BoostRevokeBoostRecipientRequest**](BoostRevokeBoostRecipientRequest.md) |             |
 
 ### Return type
 
@@ -3698,7 +3698,7 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 # **boost_unsuspend_boost_recipient**
 
-> bool boost_unsuspend_boost_recipient(boost_suspend_boost_recipient_request)
+> bool boost_unsuspend_boost_recipient(boost_revoke_boost_recipient_request)
 
 Unsuspend a boost recipient
 
@@ -3710,7 +3710,7 @@ Clears a temporary credential suspension for a specified recipient.
 
 ```python
 import openapi_client
-from openapi_client.models.boost_suspend_boost_recipient_request import BoostSuspendBoostRecipientRequest
+from openapi_client.models.boost_revoke_boost_recipient_request import BoostRevokeBoostRecipientRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -3734,11 +3734,11 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.BoostsApi(api_client)
-    boost_suspend_boost_recipient_request = openapi_client.BoostSuspendBoostRecipientRequest() # BoostSuspendBoostRecipientRequest |
+    boost_revoke_boost_recipient_request = openapi_client.BoostRevokeBoostRecipientRequest() # BoostRevokeBoostRecipientRequest |
 
     try:
         # Unsuspend a boost recipient
-        api_response = api_instance.boost_unsuspend_boost_recipient(boost_suspend_boost_recipient_request)
+        api_response = api_instance.boost_unsuspend_boost_recipient(boost_revoke_boost_recipient_request)
         print("The response of BoostsApi->boost_unsuspend_boost_recipient:\n")
         pprint(api_response)
     except Exception as e:
@@ -3747,9 +3747,9 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-| Name                                      | Type                                                                          | Description | Notes |
-| ----------------------------------------- | ----------------------------------------------------------------------------- | ----------- | ----- |
-| **boost_suspend_boost_recipient_request** | [**BoostSuspendBoostRecipientRequest**](BoostSuspendBoostRecipientRequest.md) |             |
+| Name                                     | Type                                                                        | Description | Notes |
+| ---------------------------------------- | --------------------------------------------------------------------------- | ----------- | ----- |
+| **boost_revoke_boost_recipient_request** | [**BoostRevokeBoostRecipientRequest**](BoostRevokeBoostRecipientRequest.md) |             |
 
 ### Return type
 
@@ -3938,7 +3938,7 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 # **boost_update_other_boost_permissions**
 
-> bool boost_update_other_boost_permissions(profile_id, boost_update_other_boost_permissions_request)
+> bool boost_update_other_boost_permissions(profile_id, boost_update_boost_permissions_request)
 
 Update other profile's boost permissions
 
@@ -3950,7 +3950,7 @@ This endpoint updates permission metadata about a boost for another user
 
 ```python
 import openapi_client
-from openapi_client.models.boost_update_other_boost_permissions_request import BoostUpdateOtherBoostPermissionsRequest
+from openapi_client.models.boost_update_boost_permissions_request import BoostUpdateBoostPermissionsRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -3975,11 +3975,11 @@ with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.BoostsApi(api_client)
     profile_id = 'profile_id_example' # str |
-    boost_update_other_boost_permissions_request = openapi_client.BoostUpdateOtherBoostPermissionsRequest() # BoostUpdateOtherBoostPermissionsRequest |
+    boost_update_boost_permissions_request = openapi_client.BoostUpdateBoostPermissionsRequest() # BoostUpdateBoostPermissionsRequest |
 
     try:
         # Update other profile's boost permissions
-        api_response = api_instance.boost_update_other_boost_permissions(profile_id, boost_update_other_boost_permissions_request)
+        api_response = api_instance.boost_update_other_boost_permissions(profile_id, boost_update_boost_permissions_request)
         print("The response of BoostsApi->boost_update_other_boost_permissions:\n")
         pprint(api_response)
     except Exception as e:
@@ -3988,10 +3988,10 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-| Name                                             | Type                                                                                      | Description | Notes |
-| ------------------------------------------------ | ----------------------------------------------------------------------------------------- | ----------- | ----- |
-| **profile_id**                                   | **str**                                                                                   |             |
-| **boost_update_other_boost_permissions_request** | [**BoostUpdateOtherBoostPermissionsRequest**](BoostUpdateOtherBoostPermissionsRequest.md) |             |
+| Name                                       | Type                                                                            | Description | Notes |
+| ------------------------------------------ | ------------------------------------------------------------------------------- | ----------- | ----- |
+| **profile_id**                             | **str**                                                                         |             |
+| **boost_update_boost_permissions_request** | [**BoostUpdateBoostPermissionsRequest**](BoostUpdateBoostPermissionsRequest.md) |             |
 
 ### Return type
 

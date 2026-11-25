@@ -70,9 +70,8 @@ class AppStoreBrowseListedAppsRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -82,20 +81,9 @@ class AppStoreBrowseListedAppsRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if limit (nullable) is None
-        # and model_fields_set contains the field
-        if self.limit is None and "limit" in self.model_fields_set:
+        # Preserve a supplied nullable value.
+        if self.limit is None and "limit" in self.model_fields_set and "limit" not in excluded_fields:
             _dict['limit'] = None
-
-        # set to None if cursor (nullable) is None
-        # and model_fields_set contains the field
-        if self.cursor is None and "cursor" in self.model_fields_set:
-            _dict['cursor'] = None
-
-        # set to None if category (nullable) is None
-        # and model_fields_set contains the field
-        if self.category is None and "category" in self.model_fields_set:
-            _dict['category'] = None
 
         return _dict
 

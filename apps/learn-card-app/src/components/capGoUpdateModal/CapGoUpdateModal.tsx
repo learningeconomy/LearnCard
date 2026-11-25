@@ -10,6 +10,7 @@ import { useTenantBrandingAssets } from '../../config/brandingAssets';
 export const CapGoUpdateModal: React.FC<{
     closeModal: () => void;
     updateVersion: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     bundle: any;
 }> = ({ closeModal, updateVersion, bundle }) => {
     const brandingConfig = useBrandingConfig();

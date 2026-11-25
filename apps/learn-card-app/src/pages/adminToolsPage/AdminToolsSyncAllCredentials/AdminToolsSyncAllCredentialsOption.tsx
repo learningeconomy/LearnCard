@@ -39,14 +39,14 @@ export const AdminToolsSyncAllCredentialsOption: React.FC<{ option: AdminToolOpt
                 />
 
                 <div className="flex items-center justify-center w-full px-4">
-                    <div className="flex items-center justify-center w-full border-grayscale-100 border-[1px] rounded-[20px]" />
+                    <div className="flex items-center justify-center w-full border-grayscale-100 border rounded-[20px]" />
                 </div>
 
                 <div className="w-full px-4 pb-6">
                     <p className="text-sm text-grayscale-600">
-                        This will scan your wallet, group credentials by category, fetch all consented
-                        contracts, and sync credentials to those contracts according to your sharing
-                        settings.
+                        This will scan your wallet, group credentials by category, fetch all
+                        consented contracts, and sync credentials to those contracts according to
+                        your sharing settings.
                     </p>
 
                     <SyncProgressDisplay />
@@ -84,10 +84,12 @@ const SyncProgressDisplay: React.FC = () => {
             {phase === 'syncing' && (
                 <div className="text-grayscale-700">
                     <div className="font-medium">Syncing to consented contracts…</div>
-                    <div className="text-sm">Contracts: {completed} / {totalContracts}</div>
-                    <div className="w-full bg-grayscale-100 h-[8px] rounded mt-2">
+                    <div className="text-sm">
+                        Contracts: {completed} / {totalContracts}
+                    </div>
+                    <div className="w-full bg-grayscale-100 h-[8px] rounded-sm mt-2">
                         <div
-                            className="bg-emerald-500 h-[8px] rounded"
+                            className="bg-emerald-500 h-[8px] rounded-sm"
                             style={{ width: `${percent}%` }}
                         />
                     </div>
@@ -102,7 +104,9 @@ const SyncProgressDisplay: React.FC = () => {
                 <div className="mt-3 text-emerald-600">Sync completed.</div>
             )}
             {phase === 'error' && lastError && (
-                <div className="mt-3 text-rose-600">There was an error during sync: {lastError}</div>
+                <div className="mt-3 text-rose-600">
+                    There was an error during sync: {lastError}
+                </div>
             )}
         </div>
     );

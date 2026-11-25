@@ -25,6 +25,7 @@ type ConsentFlowWriteSharingProps = {
     showCategories?: boolean;
     showPersonal?: boolean;
     contractDetails: ConsentFlowContractDetails;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     app: any;
 };
 
@@ -49,7 +50,7 @@ const ConsentFlowWriteSharing: React.FC<ConsentFlowWriteSharingProps> = ({
     });
 
     // Handle AI session categories
-    let aiSessionCategories: {
+    const aiSessionCategories: {
         [key: string]: {
             required: boolean;
             term: ConsentFlowTerms['write']['credentials']['categories'][string];

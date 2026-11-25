@@ -24,21 +24,21 @@ export const AdminToolsConsentFlowContractItem: React.FC<{
 
     const openShareContractModal = (contract: ConsentFlowContractDetails) => {
         newModal(<ShareContractModal contract={contract} />, {
-            sectionClassName: '!max-w-[500px]',
+            sectionClassName: 'max-w-[500px]!',
         });
     };
 
     return (
         <li
             role="button"
-            className="w-full ion-no-border px-[12px] py-[12px] border-gray-200 border-b-2 last:border-b-0 flex  bg-grayscale-100 items-center justify-between notificaion-list-item overflow-visible rounded-[12px] mt-2 first:mt-0 shadow-sm"
+            className="w-full ion-no-border px-[12px] py-[12px] border-gray-200 border-b-2 last:border-b-0 flex  bg-grayscale-100 items-center justify-between notificaion-list-item overflow-visible rounded-[12px] mt-2 first:mt-0 shadow-xs"
             onClick={e => {
                 e.stopPropagation();
                 openViewContractDataModal(contract);
             }}
         >
             <div className="flex items-center justify-start w-full bg-white-100">
-                <div className="bg-white flex items-center justify-center rounded-lg overflow-hidden w-[50px] h-[50px] mr-3 min-w-[50px] min-h-[50px] border-[1px] border-grayscale-200">
+                <div className="bg-white flex items-center justify-center rounded-lg overflow-hidden w-[50px] h-[50px] mr-3 min-w-[50px] min-h-[50px] border border-grayscale-200">
                     {contract?.image ? (
                         <img
                             className="w-full h-full object-cover bg-white"

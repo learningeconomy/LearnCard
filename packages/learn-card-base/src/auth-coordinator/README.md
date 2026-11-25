@@ -161,6 +161,20 @@ flowchart TD
 
 ## Method Sequence Diagrams
 
+### Stale shares with duplicate coordinates
+
+Independent SSS splits can reuse an x-coordinate (the share's final byte). A stale
+device share paired with a server share from a different split can therefore
+throw during reconstruction instead of producing a mismatched DID.
+
+`createSSSStrategy().reconstructKey()` reports this specific case as
+`DuplicateShareCoordinateError`. During login, the coordinator handles it only
+when an expected DID, DID verifier and reconciliation method are available. It
+reconciles once: verified data reaches `ready`; otherwise only the stale main
+share is removed and `needs_recovery` retains pending candidates for a delayed
+commit. Other reconstruction, network and reconciliation errors keep their
+existing handling. `forgetDevice()` still removes only the active account's data.
+
 ### `setupNewKey(privateKey, did)`
 
 Called by `useAuthCoordinatorAutoSetup` when state is `needs_setup`.
@@ -185,6 +199,15 @@ sequenceDiagram
 ### `migrate(privateKey, did)`
 
 Called by `useAuthCoordinatorAutoSetup` when state is `needs_migration`.
+
+If the server holds an archived legacy key for the account, the upgrade uses it;
+otherwise the legacy provider derives it. The LearnCard App requests it through
+the coordinator's existing key-derivation strategy before legacy derivation.
+An archive result uses `source: 'archive'` and follows the same migration path as
+a freshly derived key. Any existing server-provided `expectedDid` is preserved;
+otherwise the archive's server-attested DID becomes `expectedDid`. The coordinator
+compares the key's derived DID directly with that anchor before storing shares,
+without invoking the legacy identity verifier.
 
 ```mermaid
 sequenceDiagram
@@ -349,7 +372,51 @@ Default implementation: `createFirebaseAuthProvider({ getAuth, user, onSignOut }
 
 ## Server API Contract
 
-`createAuthCoordinatorApi(serverUrl)` communicates with these endpoints:
+The coordinator delegates server calls to `KeyDerivationStrategy`;
+`createSSSStrategy` implements the optional `fetchArchivedKey(authToken, providerType)`
+method using the same server URL and tenant headers as its auth-share requests.
+
+### `POST /keys/archived-key` — Fetch legacy upgrade material
+
+**Request:**
+
+```json
+{ "authToken": "<idToken>", "providerType": "firebase" }
+```
+
+**Response (200, available):**
+
+```json
+{ "available": true, "privateKey": "<64-character hex private key>", "did": "did:key:z..." }
+```
+
+**Response (200, confirmed not archived):**
+
+```json
+{ "available": false, "reason": "not_archived" }
+```
+
+Sent only when storage reports no archive object for the verified login.
+
+**Response (200, unavailable):**
+
+```json
+{ "available": false }
+```
+
+Sent when the archive is disabled, the login is not eligible, or an archive
+exists but cannot be released. Storage and KMS failures return a 5xx.
+
+The client returns an `ArchivedKeyLookup`: `found` with validated material,
+`absent` only for `reason: "not_archived"`, and `failed` for everything else
+(unavailable without a reason, non-success HTTP responses, network errors,
+malformed JSON or fields, and an eight-second request timeout). It accepts only
+a 64-character hexadecimal private key and a `did:key:` DID. Any non-`found`
+result falls back to legacy derivation without logging response bodies or
+forwarding raw errors. If the legacy provider then reports that it never
+assigned a key, the coordinator enters `needs_setup` only after an `absent`
+lookup; after `failed` it stays a retryable error, so a lookup outage never
+creates a new identity for an existing account.
 
 ### `POST /keys/auth-share` — Fetch key status
 
@@ -413,6 +480,22 @@ creation can resume. Existing-account updates remain available.
 ---
 
 ## Error Handling
+
+### Escrow authority verification
+
+With Nitro escrow enabled, the SSS strategy verifies a fresh nonce-bound authority
+Snapshot and signs enrollment changes with the ready account's Ed25519 key. The
+strategy verifies the returned commit against the attested ledger key and retains
+only the verified persisted envelope. AuthCoordinator forwards owner credentials
+for enroll/carry/PIN changes/disable, drains writes on session end, and does not
+publish Mongo's enrolled flag after authority verification fails. A verified
+disabled authority stays opted out until explicit enablement; an empty disposable
+staging generation is re-enrolled rather than initialized from Mongo metadata.
+
+Starting or completing lost-key recovery does not require signing with that key.
+Any subsequent enrollment change happens only after successful reconstruction.
+Client integration alone is not a rollout approval: independent monitoring and
+the escrow staging/security checklist must also be completed.
 
 Errors are classified into two categories:
 

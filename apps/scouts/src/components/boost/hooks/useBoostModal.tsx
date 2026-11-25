@@ -30,7 +30,7 @@ const useBoostModal = (
                 showCloseButton={showCloseButton}
                 otherUserProfileId={otherUserProfileId}
             />,
-            { sectionClassName: '!max-w-[500px] !h-full' }
+            { sectionClassName: 'max-w-[500px]! h-full!' }
         );
     };
 

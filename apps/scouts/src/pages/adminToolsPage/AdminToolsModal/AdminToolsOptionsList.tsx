@@ -1,4 +1,5 @@
 import React from 'react';
+import { useCanManageCompetencies } from '../../../hooks/useCanManageCompetencies';
 import * as m from '../../../paraglide/messages.js';
 
 import AdminToolOptionsListItem from './AdminToolsOptionsListItem';
@@ -12,6 +13,14 @@ import {
 export const AdminToolOptionsList: React.FC<{ shortCircuitDevTool?: AdminToolOptionsEnum }> = ({
     shortCircuitDevTool,
 }) => {
+    const canManageCompetencies = useCanManageCompetencies();
+    const options = getAdminToolOptions().filter(
+        option =>
+            canManageCompetencies ||
+            (option.type !== AdminToolOptionsEnum.SKILL_FRAMEWORKS &&
+                option.type !== AdminToolOptionsEnum.IMPORT_SKILL_FRAMEWORKS)
+    );
+
     return (
         <>
             <div className="w-full bg-white items-center justify-center flex flex-col shadow-2xl p-[15px] mt-4 rounded-[15px]">
@@ -22,7 +31,7 @@ export const AdminToolOptionsList: React.FC<{ shortCircuitDevTool?: AdminToolOpt
                 </div>
                 <div className="w-full flex items-center justify-start">
                     <ul className="w-full">
-                        {getAdminToolOptions().map(option => (
+                        {options.map(option => (
                             <AdminToolOptionsListItem
                                 shortCircuitDevTool={shortCircuitDevTool}
                                 option={option}

@@ -13,8 +13,9 @@ const ConnectedAppInfo: React.FC = () => {
 
     return (
         <div
-            className={`flex gap-[10px] min-h-[60px] ${appInfoLoading ? 'items-center justify-center' : ''
-                }`}
+            className={`flex gap-[10px] min-h-[60px] ${
+                appInfoLoading ? 'items-center justify-center' : ''
+            }`}
         >
             {!appInfoLoading && (
                 <>

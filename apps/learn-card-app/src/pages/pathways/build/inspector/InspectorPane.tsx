@@ -80,10 +80,10 @@ const InspectorPane: React.FC<InspectorPaneProps> = ({
             doesn't leak across nodes.
         */
         key={node.id}
-        className="space-y-3 font-poppins"
+        className="space-y-v3-3 font-poppins"
         aria-label={`Edit step ${node.title || 'untitled'}`}
     >
-        <header className="space-y-1 px-1">
+        <header className="space-y-v3-1 px-1">
             <h2 className="text-xs font-semibold text-grayscale-500 uppercase tracking-wide">
                 Edit step
             </h2>

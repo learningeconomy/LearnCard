@@ -282,7 +282,9 @@ export const createSelfImprovementRuntime = ({
                 ...getModelTokenPricing(config, config.retroModel),
             });
             if (retroResult.status === 'error') {
-                throw new Error('Retrospective failed; its audit result has been persisted.');
+                throw new Error('Retrospective failed; its audit result has been persisted.', {
+                    cause: retroResult.failure,
+                });
             }
         },
         getDocsForDebug: async ownerDid => {

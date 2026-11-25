@@ -7,6 +7,7 @@ const { getCredentialRefreshHistory } = vi.hoisted(() => ({
 }));
 vi.mock('./project', () => ({
     loadProject: vi.fn().mockResolvedValue({ env: {} }),
+    requireIdentity: vi.fn(),
     resolveServices: vi.fn().mockReturnValue({ network: 'https://network.learncard.com/trpc' }),
     connect: vi.fn().mockResolvedValue({ invoke: { getCredentialRefreshHistory } }),
 }));

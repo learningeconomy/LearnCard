@@ -82,7 +82,7 @@ export const LearnerInsightsPreview: React.FC<{
                     </div>
                 </div>
             </IonContent>
-            <footer className="absolute bottom-0 left-0 w-full bg-white bg-opacity-70 border-t-[1px] border-solid border-white p-[20px] backdrop-blur-[10px] z-50">
+            <footer className="absolute bottom-0 left-0 w-full bg-white/70  border-t border-solid border-white p-[20px] backdrop-blur-[10px] z-50">
                 <div className="max-w-[600px] flex gap-[10px] items-center mx-auto">
                     <button
                         type="button"

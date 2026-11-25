@@ -192,7 +192,7 @@ export const BoostSubCategoryOptions: React.FC<BoostSubCategoryOptionsProps> = (
                                 </div>
                                 <div className="flex items-center justify-center w-full">
                                     <div className="flex items-center justify-center w-full px-5 max-w-[95%]">
-                                        <h2 className="divider-with-text-dynamic border-white border-solid border-b-[1px]">
+                                        <h2 className="divider-with-text-dynamic border-white border-solid border-b">
                                             <span className={`bg-${subColor} text-white`}>
                                                 {m['boost.or']()}
                                             </span>

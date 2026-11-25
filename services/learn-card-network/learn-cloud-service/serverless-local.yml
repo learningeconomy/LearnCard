@@ -7,6 +7,7 @@ frameworkVersion: '3'
 useDotenv: true
 
 plugins:
+    - ../../../scripts/serverless-node24-runtime.cjs
     - serverless-esbuild
     - serverless-offline
 
@@ -22,7 +23,7 @@ custom:
         # minify: true
         external: ['@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm']
         sourcemap: external
-        target: 'node16'
+        target: 'node24'
         watch:
             pattern: ['src/**/*.ts', 'dids.ts']
 
@@ -35,14 +36,16 @@ package:
 
 provider:
     name: aws
-    runtime: nodejs16.x
+    runtime: nodejs24.x
     memorySize: 2048
     timeout: 20
     stage: ${opt:stage, "dev"}
     region: ${opt:region, "us-east-1"}
+    # serverless-offline sets AWS_LAMBDA_FUNCTION_NAME; stage config stays opt-in locally.
     environment:
         PORT: ${env:PORT, 3000}
-        LAMBDA_STAGE: ${opt:stage, "dev"}
+        LAMBDA_STAGE: ${env:CONFIG_STAGE, ''}
+        CONFIG_STAGE: ${env:CONFIG_STAGE, ''}
         LEARN_CLOUD_SEED: ${env:LEARN_CLOUD_SEED}
         LEARN_CLOUD_MONGO_URI: ${env:LEARN_CLOUD_MONGO_URI}
         LEARN_CLOUD_MONGO_DB_NAME: ${env:LEARN_CLOUD_MONGO_DB_NAME}

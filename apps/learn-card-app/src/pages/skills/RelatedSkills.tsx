@@ -43,6 +43,7 @@ const RelatedSkills: React.FC<RelatedSkillsProps> = ({
     parentIsEdit,
     parentProficiencyLevel,
 }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const swiperRef = useRef<any>(null);
     const [atBeginning, setAtBeginning] = useState(true);
     const [atEnd, setAtEnd] = useState(false);
@@ -87,7 +88,9 @@ const RelatedSkills: React.FC<RelatedSkillsProps> = ({
     if (skillSiblings) {
         relatedSkills.push(
             ...skillSiblings.records
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                 .filter((record: any) => record.id !== skillId && record.type === 'competency')
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                 .map((record: any) => ({
                     id: record.id,
                     type: SkillType.SIBLING,
@@ -96,6 +99,7 @@ const RelatedSkills: React.FC<RelatedSkillsProps> = ({
     }
     if (skillChildren?.records) {
         relatedSkills.push(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
             ...skillChildren.records.map((record: any) => ({
                 id: record.id,
                 type: SkillType.CHILD,
@@ -110,10 +114,12 @@ const RelatedSkills: React.FC<RelatedSkillsProps> = ({
         relatedSkills.push(
             ...similarSkillsData.records
                 .filter(
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                     (record: any) =>
                         !existingIds.has(record.id) &&
                         record.statement?.toLowerCase() !== currentSkillName
                 )
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                 .map((record: any) => ({
                     id: record.id,
                     type: SkillType.SIMILAR,
@@ -121,6 +127,7 @@ const RelatedSkills: React.FC<RelatedSkillsProps> = ({
         );
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const handleSwiperUpdate = (swiper: any) => {
         setAtBeginning(swiper.isBeginning);
         setAtEnd(swiper.isEnd);

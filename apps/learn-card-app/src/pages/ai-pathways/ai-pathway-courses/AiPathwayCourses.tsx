@@ -17,7 +17,9 @@ import { TrainingProgram } from 'learn-card-base/types/careerOneStop';
 
 const AiPathwayCourses: React.FC<{
     keywords?: string[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     courses: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     schoolPrograms: any;
     isLoading: boolean;
 }> = ({ keywords = [], courses, schoolPrograms, isLoading }) => {
@@ -42,6 +44,7 @@ const AiPathwayCourses: React.FC<{
             </div>
         );
 
+    // eslint-disable-next-line react-hooks/rules-of-hooks -- existing conditional hook call; restructuring it changes render behavior
     const trainingPrograms = useMemo(
         () => [...(schoolPrograms || []), ...(courses || [])],
         [schoolPrograms, courses]

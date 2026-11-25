@@ -19,6 +19,8 @@
 All LearnCard documentation can be found at:
 https://docs.learncard.com
 
+**Using an AI coding agent (Claude Code, Cursor, Codex)?** Run `npx @learncard/cli skill install` in your project, then point the agent at [Use LearnCard from an AI Agent](https://docs.learncard.com/start-here/for-ai-agents).
+
 ## Installation
 
 Use [Bun](https://bun.sh/) to install LearnCard.
@@ -38,6 +40,22 @@ bun run run-network-tests  # builds dependencies then runs the Brain service tes
 ```
 
 Avoid running individual package builds or tests directly, as that can lead to stale artifacts.
+
+For CI-only case retries, reporting, and cache input requirements, see
+[CI test retries](scripts/ci-test-retries/README.md).
+
+The shared local-service Docker image installs dependencies with Bun 1.4.4 to
+read lockfile v3, then runs services with Bun 1.3.14. Bun 1.4.x's runtime (rechecked on 1.4.4) bypasses
+the Compose `localhost:host-gateway` mapping used for cross-service DID document
+resolution and notification delivery. Do not run dependency installation with
+the older runtime. Hosted service and browser E2E runners verify Cloud's
+localhost DID-document fetch before running their suites. To run that smoke
+against an already-started service stack:
+
+```bash
+cd tests/e2e
+bash ../../scripts/e2e-hosted/verify-service-did-resolution.sh
+```
 
 ## Contributing
 

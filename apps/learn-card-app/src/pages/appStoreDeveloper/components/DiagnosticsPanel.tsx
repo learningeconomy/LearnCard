@@ -135,7 +135,7 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({
                                 requestedPermissions.map(permission => (
                                     <span
                                         key={permission}
-                                        className="px-2 py-0.5 bg-cyan-900/50 text-cyan-300 rounded text-xs"
+                                        className="px-2 py-0.5 bg-cyan-900/50 text-cyan-300 rounded-sm text-xs"
                                     >
                                         {getPermissionLabel(permission)}
                                     </span>
@@ -167,15 +167,15 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({
                                         <div className="flex items-start justify-between gap-2">
                                             <div className="flex items-center gap-2 min-w-0">
                                                 {event.status === 'pending' ? (
-                                                    <div className="w-3 h-3 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                                                    <div className="w-3 h-3 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin shrink-0" />
                                                 ) : event.status === 'success' ? (
                                                     event.authorized || !event.permission ? (
-                                                        <CheckCircle className="w-3 h-3 text-emerald-400 flex-shrink-0" />
+                                                        <CheckCircle className="w-3 h-3 text-emerald-400 shrink-0" />
                                                     ) : (
-                                                        <AlertTriangle className="w-3 h-3 text-amber-400 flex-shrink-0" />
+                                                        <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
                                                     )
                                                 ) : (
-                                                    <XCircle className="w-3 h-3 text-red-400 flex-shrink-0" />
+                                                    <XCircle className="w-3 h-3 text-red-400 shrink-0" />
                                                 )}
 
                                                 <span className="font-mono text-cyan-300 truncate">
@@ -183,7 +183,7 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({
                                                 </span>
                                             </div>
 
-                                            <span className="text-gray-500 flex-shrink-0">
+                                            <span className="text-gray-500 shrink-0">
                                                 {formatTime(event.timestamp)}
                                             </span>
                                         </div>
@@ -228,7 +228,7 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({
                     {unauthorizedCount > 0 && (
                         <div className="px-3 py-2 bg-amber-900/30 border-t border-amber-700/50">
                             <div className="flex items-start gap-2">
-                                <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                                 <div className="text-xs text-amber-200">
                                     <strong>
                                         {m['developerPortal.components.diagnosticsPanel.warning']()}

@@ -104,9 +104,12 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
                     {m['developerPortal.credentialBuilder.evidence.noEvidence']()}
                 </p>
             ) : (
-                <div className="space-y-4">
+                <div className="space-y-v3-4">
                     {evidence.map((item, index) => (
-                        <div key={item.id} className="pl-3 border-l-2 border-indigo-200 space-y-3">
+                        <div
+                            key={item.id}
+                            className="pl-3 border-l-2 border-indigo-200 space-y-v3-3"
+                        >
                             <div className="flex items-center justify-between">
                                 <span className="text-xs font-medium text-indigo-700">
                                     {m['developerPortal.credentialBuilder.evidence.evidenceNumber'](
@@ -117,7 +120,7 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
                                 <button
                                     type="button"
                                     onClick={() => removeEvidence(index)}
-                                    className="p-1 text-gray-400 hover:text-red-500 rounded"
+                                    className="p-1 text-gray-400 hover:text-red-500 rounded-sm"
                                 >
                                     <X className="w-3 h-3" />
                                 </button>

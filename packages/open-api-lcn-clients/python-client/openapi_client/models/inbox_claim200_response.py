@@ -29,7 +29,7 @@ class InboxClaim200Response(BaseModel):
     InboxClaim200Response
     """ # noqa: E501
     inbox_credential: InboxClaim200ResponseInboxCredential = Field(alias="inboxCredential")
-    status: Optional[StrictStr]
+    status: StrictStr
     recipient_did: Optional[StrictStr] = Field(default=None, alias="recipientDid")
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["inboxCredential", "status", "recipientDid"]
@@ -61,9 +61,8 @@ class InboxClaim200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -82,16 +81,6 @@ class InboxClaim200Response(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if status (nullable) is None
-        # and model_fields_set contains the field
-        if self.status is None and "status" in self.model_fields_set:
-            _dict['status'] = None
-
-        # set to None if recipient_did (nullable) is None
-        # and model_fields_set contains the field
-        if self.recipient_did is None and "recipient_did" in self.model_fields_set:
-            _dict['recipientDid'] = None
 
         return _dict
 

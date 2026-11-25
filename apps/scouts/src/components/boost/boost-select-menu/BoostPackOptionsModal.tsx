@@ -101,7 +101,7 @@ export const BoostPackOptionsModal: React.FC<{
                             autocapitalize="on"
                             placeholder={m['boost.searchPlaceholder']()}
                             value={search}
-                            className="bg-white text-grayscale-800 !px-4 !py-1 rounded-[15px] text-[17px] font-notoSans"
+                            className="bg-white text-grayscale-800 px-4! py-1! rounded-[15px] text-[17px] font-notoSans"
                             onIonInput={e => setSearch(e.detail.value!)}
                             type="text"
                             clearInput={true}
@@ -202,7 +202,7 @@ const BoostPackOptionItem: React.FC<{
     return (
         <button
             onClick={onSelect}
-            className={`w-full flex items-center justify-between rounded-full p-2 mt-4 shadow-sm hover:shadow-md transition-shadow ${
+            className={`w-full flex items-center justify-between rounded-full p-2 mt-4 shadow-xs hover:shadow-md transition-shadow ${
                 isSelected
                     ? 'border-2 border-emerald-700 bg-emerald-50'
                     : 'bg-white border-2 border-transparent'

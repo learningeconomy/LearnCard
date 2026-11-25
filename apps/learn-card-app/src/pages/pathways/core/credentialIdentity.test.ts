@@ -20,31 +20,32 @@ describe('extractCredentialIdentity — types + issuer + credentialId', () => {
                 'ceterms:CertificationCredential',
                 'CertificationCredential',
                 'OpenBadgeCredential',
-            ]),
+            ])
         );
     });
 
     it('extracts an issuer DID from both string and object shapes', () => {
-        expect(
-            extractCredentialIdentity({ issuer: 'did:web:aws.example' }).issuerDid,
-        ).toBe('did:web:aws.example');
+        expect(extractCredentialIdentity({ issuer: 'did:web:aws.example' }).issuerDid).toBe(
+            'did:web:aws.example'
+        );
 
         expect(
             extractCredentialIdentity({
                 issuer: { id: 'did:web:coursera.example', name: 'Coursera' },
-            }).issuerDid,
+            }).issuerDid
         ).toBe('did:web:coursera.example');
     });
 
     it('returns null issuer when the field is missing or malformed', () => {
         expect(extractCredentialIdentity({}).issuerDid).toBeNull();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         expect(extractCredentialIdentity({ issuer: {} as any }).issuerDid).toBeNull();
     });
 
     it('captures the W3C `id` field when present', () => {
-        expect(
-            extractCredentialIdentity({ id: 'urn:uuid:vc-1', type: 'Foo' }).credentialId,
-        ).toBe('urn:uuid:vc-1');
+        expect(extractCredentialIdentity({ id: 'urn:uuid:vc-1', type: 'Foo' }).credentialId).toBe(
+            'urn:uuid:vc-1'
+        );
 
         expect(extractCredentialIdentity({ type: 'Foo' }).credentialId).toBeNull();
     });
@@ -60,7 +61,7 @@ describe('extractCredentialIdentity — OBv3 achievement + alignments', () => {
         };
 
         expect(extractCredentialIdentity(vc).obAchievementId).toBe(
-            'https://badges.example/ach/aws-clf',
+            'https://badges.example/ach/aws-clf'
         );
     });
 
@@ -76,7 +77,7 @@ describe('extractCredentialIdentity — OBv3 achievement + alignments', () => {
         };
 
         expect(extractCredentialIdentity(vc).obAchievementId).toBe(
-            'https://badges.example/ach/aws-clf',
+            'https://badges.example/ach/aws-clf'
         );
     });
 
@@ -118,7 +119,7 @@ describe('extractCredentialIdentity — CTDL CTID', () => {
         } as VcLike;
 
         expect(extractCredentialIdentity(vc).ctdlCtid).toBe(
-            'ce-abcdef01-2345-6789-abcd-ef0123456789',
+            'ce-abcdef01-2345-6789-abcd-ef0123456789'
         );
     });
 
@@ -129,7 +130,7 @@ describe('extractCredentialIdentity — CTDL CTID', () => {
         } as VcLike;
 
         expect(extractCredentialIdentity(vc).ctdlCtid).toBe(
-            'ce-abcdef01-2345-6789-abcd-ef0123456789',
+            'ce-abcdef01-2345-6789-abcd-ef0123456789'
         );
     });
 
@@ -139,7 +140,7 @@ describe('extractCredentialIdentity — CTDL CTID', () => {
         } as VcLike;
 
         expect(extractCredentialIdentity(vc).ctdlCtid).toBe(
-            'ce-abcdef01-2345-6789-abcd-ef0123456789',
+            'ce-abcdef01-2345-6789-abcd-ef0123456789'
         );
     });
 
@@ -155,9 +156,7 @@ describe('extractCredentialIdentity — skill tags', () => {
                 tag: ['iam'],
                 achievement: {
                     tag: ['least-privilege'],
-                    alignments: [
-                        { targetCode: 'RSD:cross-account' },
-                    ],
+                    alignments: [{ targetCode: 'RSD:cross-account' }],
                 },
             },
         } as VcLike;
@@ -165,7 +164,7 @@ describe('extractCredentialIdentity — skill tags', () => {
         const identity = extractCredentialIdentity(vc);
 
         expect(identity.skillTags).toEqual(
-            expect.arrayContaining(['iam', 'least-privilege', 'RSD:cross-account']),
+            expect.arrayContaining(['iam', 'least-privilege', 'RSD:cross-account'])
         );
     });
 

@@ -65,7 +65,9 @@ export const AiSessionLearningPathways: React.FC<{ isLoading: boolean }> = ({ is
                 const items: PathwayItem[] = (
                     await Promise.all(
                         creds.filter(Boolean).map(async cred => {
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                             const vc: any = unwrapBoostCredential(cred as any);
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                             const pathwayBoostUri: string | undefined = (cred as any)?.boostId;
 
                             // Try to find the parent topic via familial lookup
@@ -81,6 +83,7 @@ export const AiSessionLearningPathways: React.FC<{ isLoading: boolean }> = ({ is
                                         }
                                     );
                                     const topic = family?.records?.find(
+                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                                         (r: any) =>
                                             r?.category ===
                                             categoryMetadata[CredentialCategoryEnum.aiTopic]
@@ -132,7 +135,7 @@ export const AiSessionLearningPathways: React.FC<{ isLoading: boolean }> = ({ is
 
     if (isLoading || aiInsightCredentialLoading) {
         return (
-            <div className="flex flex-col items-start justify-between w-full ion-padding border-solid border-[1px] border-grayscale-100 bg-white shadow-bottom-2-4 p-[15px] rounded-[15px]">
+            <div className="flex flex-col items-start justify-between w-full ion-padding border-solid border border-grayscale-100 bg-white shadow-bottom-2-4 p-[15px] rounded-[15px]">
                 <>
                     {[...Array(3)].map((_, i) => (
                         <div key={i} className="w-full mb-6">
@@ -148,7 +151,7 @@ export const AiSessionLearningPathways: React.FC<{ isLoading: boolean }> = ({ is
                                 />
                             </div>
 
-                            <div className="w-full mt-4 space-y-2">
+                            <div className="w-full mt-4 space-y-v3-2">
                                 <IonSkeletonText
                                     animated
                                     style={{ width: '100%', height: '14px' }}
@@ -163,7 +166,7 @@ export const AiSessionLearningPathways: React.FC<{ isLoading: boolean }> = ({ is
                                 />
                             </div>
 
-                            <div className="w-full overflow-x-auto whitespace-nowrap mt-4 flex space-x-2">
+                            <div className="w-full overflow-x-auto whitespace-nowrap mt-4 flex space-x-v3-2">
                                 {[...Array(3)].map((_, i) => (
                                     <div
                                         key={i}
@@ -206,7 +209,7 @@ export const AiSessionLearningPathways: React.FC<{ isLoading: boolean }> = ({ is
                         <div
                             role="button"
                             key={`${pathwayUri || title}-${index}`}
-                            className="flex flex-col items-start justify-between bg-white h-full w-full ion-padding border-solid border-[1px] border-grayscale-100 rounded-[20px] cursor-pointer mb-4 mt-4"
+                            className="flex flex-col items-start justify-between bg-white h-full w-full ion-padding border-solid border border-grayscale-100 rounded-[20px] cursor-pointer mb-4 mt-4"
                             onClick={() =>
                                 handleStart({ title, description, skills, topicUri, pathwayUri })
                             }

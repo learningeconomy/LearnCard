@@ -67,7 +67,7 @@ export const OnboardingFooter: React.FC<{
 
     if (showCloseButton) {
         return (
-            <div className="w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] p-[20px] absolute bottom-0 bg-white">
+            <div className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] p-[20px] absolute bottom-0 bg-white/60">
                 <div className="w-full flex items-center justify-center">
                     <div className="w-full flex flex-col items-center justify-between max-w-[600px] ion-padding">
                         <button
@@ -83,7 +83,7 @@ export const OnboardingFooter: React.FC<{
     }
 
     return (
-        <IonFooter className="w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] ion-padding bg-white">
+        <IonFooter className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] ion-padding bg-white/60">
             <IonToolbar color="transparent">
                 <div className="w-full flex items-center justify-center">
                     <div className="w-full flex flex-col items-center justify-between max-w-[600px]">

@@ -159,6 +159,7 @@ const {
     closeInsightsSession,
     continuePlan,
     credentialContextReadiness,
+    credentialPreloadUnavailable,
     currentThreadId,
     getActiveSessionStatus,
     finishSession,
@@ -173,11 +174,14 @@ const {
     planReadyThread,
     planSections,
     planStreamActive,
+    AiSessionMode,
     resetChatStores,
     sendMessage,
     sessionEnded,
     startInsightsSession,
+    startLearningPathway,
     startTopic,
+    startTopicWithUri,
     threads,
 } = await import('./chatStore');
 
@@ -225,6 +229,73 @@ describe('chat session startup', () => {
         vi.useRealTimers();
     });
 
+    it('keeps a preload warning independent of startup, streaming, and readiness', async () => {
+        const start = startTopic('Algebra');
+        const socket = await openLatestSocket();
+        await start;
+        socket.receive({ event: 'session_start_accepted', requestId: 'request-preload' });
+        messages.set([
+            { role: 'user', content: 'Algebra' },
+            { role: 'assistant', content: 'Working on a plan...' },
+        ]);
+        const messagesBeforeError = messages.get();
+        socket.receive({
+            event: 'credential_preload_error',
+            code: 'credential_verification_unavailable',
+        });
+
+        expect(credentialPreloadUnavailable.get()).toBe(true);
+        expect(messages.get()).toEqual(messagesBeforeError);
+        expect(isLoading.get()).toBe(true);
+        expect(isTyping.get()).toBe(true);
+        expect(planReady.get()).toBe(false);
+        expect(sessionEnded.get()).toBe(false);
+        expect(lastAiError.get()).toBe(null);
+        expect(mocks.showErrorModal).not.toHaveBeenCalled();
+        socket.receive({
+            event: 'plan_structured_delta',
+            requestId: 'request-preload',
+            planData: { welcome: 'Welcome to Algebra' },
+        });
+        socket.receive({
+            event: 'plan_ready',
+            requestId: 'request-preload',
+            threadId: 'thread-preload',
+            title: 'Algebra',
+        });
+        expect(planReady.get()).toBe(true);
+        expect(planSections.get().welcome).toBe('Welcome to Algebra');
+        expect(credentialPreloadUnavailable.get()).toBe(true);
+        const messagesBeforeReady = messages.get();
+
+        socket.receive({ event: 'credentials_ready', suggestedTopics: ['Algebra'] });
+        expect(credentialPreloadUnavailable.get()).toBe(false);
+        expect(planReady.get()).toBe(true);
+        expect(messages.get()).toEqual(messagesBeforeReady);
+        expect(sessionEnded.get()).toBe(false);
+        expect(lastAiError.get()).toBe(null);
+        expect(mocks.showErrorModal).not.toHaveBeenCalled();
+    });
+
+    it('does not carry preload warnings across accounts or accept stale socket warnings', async () => {
+        await connectWebSocket();
+        const first = await openLatestSocket();
+        first.receive({ event: 'credential_preload_error' });
+        expect(credentialPreloadUnavailable.get()).toBe(true);
+        auth.set({ did: 'did:example:replacement' });
+        walletStore.set.wallet({
+            id: { did: () => 'did:example:replacement' },
+        } as unknown as BespokeLearnCard);
+        expect(credentialPreloadUnavailable.get()).toBe(false);
+
+        await connectWebSocket();
+        const second = await openLatestSocket();
+        first.receive({ event: 'credential_preload_error' });
+        expect(credentialPreloadUnavailable.get()).toBe(false);
+        second.receive({ event: 'credential_preload_error' });
+        expect(credentialPreloadUnavailable.get()).toBe(true);
+    });
+
     it('starts over the socket without a REST preflight and sends the structured payload', async () => {
         const start = startTopic('Algebra');
         const socket = await openLatestSocket();
@@ -247,6 +318,207 @@ describe('chat session startup', () => {
                 locale: 'en',
             },
         ]);
+    });
+
+    it('shares one start_topic send between concurrent identical starts', async () => {
+        const firstStart = startTopic('Algebra');
+        const secondStart = startTopic('Algebra');
+        const socket = await openLatestSocket();
+        await Promise.all([firstStart, secondStart]);
+
+        const startTopicSends = (target: FakeWebSocket) =>
+            target.sent.filter(payload => JSON.parse(payload).action === 'start_topic');
+
+        expect(FakeWebSocket.instances).toHaveLength(1);
+        expect(startTopicSends(socket)).toHaveLength(1);
+        expect(secondStart).toBe(firstStart);
+
+        // Once the first start settles, the same args start a fresh session again.
+        const laterStart = startTopic('Algebra');
+        const laterSocket = await openLatestSocket();
+        await laterStart;
+
+        expect(laterStart).not.toBe(firstStart);
+        expect(startTopicSends(laterSocket)).toHaveLength(1);
+    });
+
+    it('lets the last start win across different topics or modes', async () => {
+        const tutorStart = startTopic('Algebra');
+        const insightsStart = startTopic('Algebra', AiSessionMode.insights);
+        const otherTopicStart = startTopic('Geometry');
+
+        expect(insightsStart).not.toBe(tutorStart);
+        expect(otherTopicStart).not.toBe(insightsStart);
+
+        await openLatestSocket();
+        await Promise.all([tutorStart, insightsStart, otherTopicStart]);
+
+        expect(
+            FakeWebSocket.instances
+                .flatMap(target => target.sent.map(payload => JSON.parse(payload)))
+                .filter(payload => payload.action === 'start_topic')
+                .map(({ topic, mode }) => ({ topic, mode }))
+        ).toEqual([{ topic: 'Geometry', mode: AiSessionMode.tutor }]);
+    });
+
+    it('cancels a displaced start when the session is disconnected', async () => {
+        mocks.authMode = undefined;
+        const { promise, resolve } = Promise.withResolvers<void>();
+
+        mocks.ensureGate = promise;
+
+        // Algebra waits on auth, Geometry displaces it, then the chat unmounts.
+        const algebraStart = startTopic('Algebra');
+        const geometryStart = startTopic('Geometry');
+        disconnectWebSocket();
+
+        resolve();
+        for (let attempt = 0; attempt < 10; attempt += 1) await Promise.resolve();
+        FakeWebSocket.instances.forEach(target => target.open());
+        await Promise.all([algebraStart, geometryStart]);
+
+        expect(
+            FakeWebSocket.instances.flatMap(target =>
+                target.sent.filter(payload => JSON.parse(payload).action === 'start_topic')
+            )
+        ).toEqual([]);
+        expect(isLoading.get()).toBe(false);
+        expect(isTyping.get()).toBe(false);
+    });
+
+    it('clears loading state when a pending start is cancelled with no replacement', async () => {
+        mocks.authMode = undefined;
+        const { promise, resolve } = Promise.withResolvers<void>();
+
+        mocks.ensureGate = promise;
+
+        const start = startTopic('Algebra');
+
+        expect(isLoading.get()).toBe(true);
+        expect(isTyping.get()).toBe(true);
+
+        disconnectWebSocket();
+
+        expect(isLoading.get()).toBe(false);
+        expect(isTyping.get()).toBe(false);
+
+        resolve();
+        await start;
+
+        expect(isLoading.get()).toBe(false);
+        expect(isTyping.get()).toBe(false);
+        expect(FakeWebSocket.instances).toHaveLength(0);
+    });
+
+    it("does not let a cancelled start clear a newer session's loading state", async () => {
+        mocks.authMode = undefined;
+        const { promise, resolve } = Promise.withResolvers<void>();
+
+        mocks.ensureGate = promise;
+
+        const staleStart = startTopic('Algebra');
+        disconnectWebSocket();
+        const freshStart = startTopic('Geometry');
+
+        // Release auth for both: the stale run resumes and bails out first.
+        resolve();
+        await staleStart;
+
+        expect(isLoading.get()).toBe(true);
+        expect(isTyping.get()).toBe(true);
+
+        const socket = await openLatestSocket();
+        await freshStart;
+
+        expect(
+            socket.sent
+                .map(payload => JSON.parse(payload))
+                .filter(payload => payload.action === 'start_topic')
+                .map(({ topic }) => topic)
+        ).toEqual(['Geometry']);
+        expect(isLoading.get()).toBe(true);
+    });
+
+    it('starts fresh after a disconnect instead of joining the stale start', async () => {
+        mocks.authMode = undefined;
+        const { promise, resolve } = Promise.withResolvers<void>();
+
+        mocks.ensureGate = promise;
+
+        // Mount, unmount (disconnect) and remount while auth is still negotiating.
+        const staleStart = startTopic('Algebra');
+        disconnectWebSocket();
+        const freshStart = startTopic('Algebra');
+
+        expect(freshStart).not.toBe(staleStart);
+
+        resolve();
+        const socket = await openLatestSocket();
+        await Promise.all([staleStart, freshStart]);
+
+        // The cancelled start bails out before sending, so only one session is created.
+        expect(
+            FakeWebSocket.instances.flatMap(target =>
+                target.sent.filter(payload => JSON.parse(payload).action === 'start_topic')
+            )
+        ).toHaveLength(1);
+        expect(socket.sent.some(payload => JSON.parse(payload).action === 'start_topic')).toBe(
+            true
+        );
+    });
+
+    it.each([
+        ['startLearningPathway', () => startLearningPathway('topic:uri', 'pathway:uri')],
+        ['startInsightsSession', () => startInsightsSession('Algebra')],
+        ['startTopicWithUri', () => startTopicWithUri('topic:uri')],
+        ['resetChatStores', () => resetChatStores()],
+    ])('clears the in-flight start when %s runs', async (_name, takeOver) => {
+        mocks.authMode = undefined;
+        const { promise, resolve } = Promise.withResolvers<void>();
+
+        mocks.ensureGate = promise;
+
+        const staleStart = startTopic('Algebra');
+        void takeOver();
+        const retry = startTopic('Algebra');
+
+        expect(retry).not.toBe(staleStart);
+
+        resolve();
+        await openLatestSocket();
+        await Promise.all([staleStart, retry]);
+
+        expect(
+            FakeWebSocket.instances.flatMap(target =>
+                target.sent.filter(payload => JSON.parse(payload).action === 'start_topic')
+            )
+        ).toHaveLength(1);
+    });
+
+    it('starts fresh instead of joining a start stuck past the join window', async () => {
+        mocks.authMode = undefined;
+        const { promise, resolve } = Promise.withResolvers<void>();
+
+        mocks.ensureGate = promise;
+
+        const stuckStart = startTopic('Algebra');
+
+        expect(startTopic('Algebra')).toBe(stuckStart);
+
+        vi.advanceTimersByTime(10_000);
+        const retry = startTopic('Algebra');
+
+        expect(retry).not.toBe(stuckStart);
+
+        resolve();
+        await openLatestSocket();
+        await Promise.all([stuckStart, retry]);
+
+        expect(
+            FakeWebSocket.instances.flatMap(target =>
+                target.sent.filter(payload => JSON.parse(payload).action === 'start_topic')
+            )
+        ).toHaveLength(1);
     });
 
     it('disconnects the previous socket before waiting for auth negotiation', async () => {
@@ -542,14 +814,15 @@ describe('chat session startup', () => {
         expect(JSON.parse(socket.sent[0]!)).toMatchObject({ locale: 'es' });
     });
 
-    it('sanitizes a tampered locale before it reaches the backend', async () => {
+    it('falls back to English for a tampered locale in the socket URL and payload', async () => {
         localStorage.setItem('i18n.language', 'es"&evil=1');
 
         const start = startTopic('Algebra');
         const socket = await openLatestSocket();
         await start;
 
-        expect(JSON.parse(socket.sent[0]!)).toMatchObject({ locale: 'esevil1' });
+        expect(new URL(socket.url).searchParams.get('locale')).toBe('en');
+        expect(JSON.parse(socket.sent[0]!)).toMatchObject({ locale: 'en' });
         expect(socket.url).not.toContain('evil=1');
     });
 
