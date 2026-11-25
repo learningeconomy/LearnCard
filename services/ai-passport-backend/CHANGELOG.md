@@ -1,5 +1,18 @@
 # ai-passport-backend
 
+## 0.0.6
+
+### Patch Changes
+
+- [#2110](https://github.com/learningeconomy/LearnCard/pull/2110) [`f29f91012022057bf6b4b5890c61de2bdd66a38a`](https://github.com/learningeconomy/LearnCard/commit/f29f91012022057bf6b4b5890c61de2bdd66a38a) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - LC-2435: switch default AI Sol model from gpt-6.1-sol to gpt-6.2-sol (OpenAI id and Bedrock us.openai / openai profiles).
+
+- [#2118](https://github.com/learningeconomy/LearnCard/pull/2118) [`739cd5655b37bc6842ac5e5d527bdda66679d7af`](https://github.com/learningeconomy/LearnCard/commit/739cd5655b37bc6842ac5e5d527bdda66679d7af) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-2358] Update Zod to 4.6.6 to address security vulnerability
+
+- Updated dependencies [[`afb25c9b840c75db9eccfe792428b0327a98afb6`](https://github.com/learningeconomy/LearnCard/commit/afb25c9b840c75db9eccfe792428b0327a98afb6), [`818979835a305dea973eac06f7b2fd5a6f100305`](https://github.com/learningeconomy/LearnCard/commit/818979835a305dea973eac06f7b2fd5a6f100305), [`902aebe9ba82986c6be52c46bc16f22cc1822294`](https://github.com/learningeconomy/LearnCard/commit/902aebe9ba82986c6be52c46bc16f22cc1822294), [`29d6949fd19a6179bd012932ee40fe4014b18941`](https://github.com/learningeconomy/LearnCard/commit/29d6949fd19a6179bd012932ee40fe4014b18941)]:
+    - @learncard/types@6.3.0
+    - @learncard/init@3.0.1
+    - @learncard/didkit-plugin@1.11.1
+
 ## 0.0.5
 
 ### Patch Changes

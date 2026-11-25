@@ -1,5 +1,18 @@
 # @learncard/sss-key-manager
 
+## 0.3.4
+
+### Patch Changes
+
+- [#2078](https://github.com/learningeconomy/LearnCard/pull/2078) [`818979835a305dea973eac06f7b2fd5a6f100305`](https://github.com/learningeconomy/LearnCard/commit/818979835a305dea973eac06f7b2fd5a6f100305) Thanks [@Custard7](https://github.com/Custard7)! - [LC-2448] Let accounts that never had a legacy key finish setup instead of staying on "Account Upgrade Needed", without risking a new identity for an existing user.
+
+    - `POST /keys/archived-key` adds `reason: 'not_archived'` to `{ available: false }` only when storage confirms no archive object exists for the login. Older clients ignore the field.
+    - `fetchArchivedKey` returns an `ArchivedKeyLookup` (`found` / `absent` / `failed`) instead of `null`. Only `reason: 'not_archived'` maps to `absent`; HTTP errors, timeouts, malformed data and unreleasable archives are `failed`.
+    - `AuthCoordinator.handleMigrationKeyError(error, archivedKey)` enters `needs_setup` on `LegacyKeyUnassignedError` only after an `absent` lookup. After a `failed` lookup it stays a retryable error.
+
+- Updated dependencies [[`afb25c9b840c75db9eccfe792428b0327a98afb6`](https://github.com/learningeconomy/LearnCard/commit/afb25c9b840c75db9eccfe792428b0327a98afb6), [`818979835a305dea973eac06f7b2fd5a6f100305`](https://github.com/learningeconomy/LearnCard/commit/818979835a305dea973eac06f7b2fd5a6f100305), [`902aebe9ba82986c6be52c46bc16f22cc1822294`](https://github.com/learningeconomy/LearnCard/commit/902aebe9ba82986c6be52c46bc16f22cc1822294)]:
+    - @learncard/types@6.3.0
+
 ## 0.3.3
 
 ### Patch Changes

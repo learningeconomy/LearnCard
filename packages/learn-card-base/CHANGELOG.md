@@ -1,5 +1,37 @@
 # learn-card-base
 
+## 0.8.4
+
+### Patch Changes
+
+- [#2014](https://github.com/learningeconomy/LearnCard/pull/2014) [`6d1ed7b28960dc3e4cda8721aecbd5a2b276d947`](https://github.com/learningeconomy/LearnCard/commit/6d1ed7b28960dc3e4cda8721aecbd5a2b276d947) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Route the remaining credential writers (add-to-wallet mutations, raw JSON imports, checklist delete/recategorize, consent-flow rollback, inbox finalize) through the shared index invalidator for the active profile, and refresh the unfiltered credential count after a claim (LC-2383).
+
+- [#2014](https://github.com/learningeconomy/LearnCard/pull/2014) [`6d1ed7b28960dc3e4cda8721aecbd5a2b276d947`](https://github.com/learningeconomy/LearnCard/commit/6d1ed7b28960dc3e4cda8721aecbd5a2b276d947) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Keep credential-index React Query results fresh across route mounts, and invalidate those keys from credential add/delete/revoke writers (LC-2383).
+
+- [#2014](https://github.com/learningeconomy/LearnCard/pull/2014) [`6d1ed7b28960dc3e4cda8721aecbd5a2b276d947`](https://github.com/learningeconomy/LearnCard/commit/6d1ed7b28960dc3e4cda8721aecbd5a2b276d947) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Refresh credential list, count, skills, and ID caches after Partner Connect (skipLCNUser) saves.
+
+- [#2014](https://github.com/learningeconomy/LearnCard/pull/2014) [`6d1ed7b28960dc3e4cda8721aecbd5a2b276d947`](https://github.com/learningeconomy/LearnCard/commit/6d1ed7b28960dc3e4cda8721aecbd5a2b276d947) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Credential-index refreshes no longer block the operation that triggered them (LC-2383). Raw JSON imports resolve as soon as the index write lands, inbox finalize/recovery completes its sync without waiting on the skills and IDs refetches (the list and counts are still awaited), and revoked-credential cleanup finishes its troop-ID refresh while the index refetches run in the background.
+
+- [#2110](https://github.com/learningeconomy/LearnCard/pull/2110) [`f29f91012022057bf6b4b5890c61de2bdd66a38a`](https://github.com/learningeconomy/LearnCard/commit/f29f91012022057bf6b4b5890c61de2bdd66a38a) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - LC-2435: switch default AI Sol model from gpt-6.1-sol to gpt-6.2-sol (OpenAI id and Bedrock us.openai / openai profiles).
+
+- [#2078](https://github.com/learningeconomy/LearnCard/pull/2078) [`818979835a305dea973eac06f7b2fd5a6f100305`](https://github.com/learningeconomy/LearnCard/commit/818979835a305dea973eac06f7b2fd5a6f100305) Thanks [@Custard7](https://github.com/Custard7)! - [LC-2448] Let accounts that never had a legacy key finish setup instead of staying on "Account Upgrade Needed", without risking a new identity for an existing user.
+
+    - `POST /keys/archived-key` adds `reason: 'not_archived'` to `{ available: false }` only when storage confirms no archive object exists for the login. Older clients ignore the field.
+    - `fetchArchivedKey` returns an `ArchivedKeyLookup` (`found` / `absent` / `failed`) instead of `null`. Only `reason: 'not_archived'` maps to `absent`; HTTP errors, timeouts, malformed data and unreleasable archives are `failed`.
+    - `AuthCoordinator.handleMigrationKeyError(error, archivedKey)` enters `needs_setup` on `LegacyKeyUnassignedError` only after an `absent` lookup. After a `failed` lookup it stays a retryable error.
+
+- [#2134](https://github.com/learningeconomy/LearnCard/pull/2134) [`f1ff9e4588f600b300d2aab5643b352429b650f9`](https://github.com/learningeconomy/LearnCard/commit/f1ff9e4588f600b300d2aab5643b352429b650f9) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-2406] List view shows incorrect display names for credentials
+
+- Updated dependencies [[`afb25c9b840c75db9eccfe792428b0327a98afb6`](https://github.com/learningeconomy/LearnCard/commit/afb25c9b840c75db9eccfe792428b0327a98afb6), [`818979835a305dea973eac06f7b2fd5a6f100305`](https://github.com/learningeconomy/LearnCard/commit/818979835a305dea973eac06f7b2fd5a6f100305), [`902aebe9ba82986c6be52c46bc16f22cc1822294`](https://github.com/learningeconomy/LearnCard/commit/902aebe9ba82986c6be52c46bc16f22cc1822294), [`29d6949fd19a6179bd012932ee40fe4014b18941`](https://github.com/learningeconomy/LearnCard/commit/29d6949fd19a6179bd012932ee40fe4014b18941)]:
+    - @learncard/types@6.3.0
+    - @learncard/helpers@1.8.4
+    - @learncard/sss-key-manager@0.3.4
+    - @learncard/didkit-plugin@1.11.1
+    - @learncard/lca-api-plugin@3.0.1
+    - @learncard/learn-card-plugin@1.2.48
+    - @learncard/ler-rs-plugin@0.1.39
+    - @learncard/render-method-plugin@16.0.0
+
 ## 0.8.3
 
 ### Patch Changes
