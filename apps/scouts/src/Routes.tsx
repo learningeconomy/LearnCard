@@ -20,6 +20,8 @@ import LaunchPad from './pages/launchPad/LaunchPad';
 import NotificationsPage from './pages/notificationsPage/NotificationsPage';
 
 import LoginPage from './pages/login/LoginPage';
+const SecureAccountPage = lazyWithRetry(() => import('./pages/recovery/SecureAccountPage'));
+const CancelRecoveryPage = lazyWithRetry(() => import('./pages/recovery/CancelRecoveryPage'));
 const CurrenciesPage = lazyWithRetry(() => import('./pages/currencies/CurrenciesPage'));
 const AchievementsPage = lazyWithRetry(() => import('./pages/achievements/AchievementsPage'));
 const AddressBook = lazyWithRetry(() => import('./pages/addressBook/AddressBook'));
@@ -95,7 +97,9 @@ const PrivateRoute = ({ component: Component, ...rest }: PrivateRouteProps) => {
             to={
                 rest.path === '/m/:messageId'
                     ? `/login?redirectTo=${encodeURIComponent(getInAppMessageEntryPath(location.pathname))}`
-                    : '/login'
+                    : rest.path === '/account/secure'
+                      ? '/login?redirectTo=%2Faccount%2Fsecure'
+                      : '/login'
             }
         />
     );
@@ -120,6 +124,7 @@ export const Routes: React.FC = () => {
                 <Switch location={switchLocation}>
                     <GenericErrorBoundary>
                         <SentryRoute exact path="/login" component={LoginPage} />
+                        <SentryRoute exact path="/recovery/cancel" component={CancelRecoveryPage} />
                         <SentryRoute exact path="/acctmgmt/__/auth/action" component={LoginPage} />
                         <SentryRoute
                             exact
@@ -134,6 +139,7 @@ export const Routes: React.FC = () => {
                         />
                         {/* <PrivateRoute exact path="/home" component={WalletPage} /> */}
                         <PrivateRoute exact path="/wallet" component={WalletPage} />
+                        <PrivateRoute exact path="/account/secure" component={SecureAccountPage} />
                         <PrivateRoute exact path="/home" component={LaunchPad} />
                         <PrivateRoute exact path="/launchpad" component={LaunchPad} />
                         <PrivateRoute exact path="/campfire" component={LaunchPad} />

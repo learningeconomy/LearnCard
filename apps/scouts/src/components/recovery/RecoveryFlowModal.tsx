@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import {
     fingerPrint,
@@ -8,6 +8,7 @@ import {
     phonePortraitOutline,
     chevronBackOutline,
     mailOutline,
+    shieldOutline,
 } from 'ionicons/icons';
 import { QRCodeSVG } from 'qrcode.react';
 
@@ -18,10 +19,19 @@ import type { RecoveryReason } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
 import { TransP } from '../../i18n/TransP';
 import { DirectionalIcon } from '../i18n/DirectionalIcon';
+import { EscrowRecoveryPanel } from './EscrowRecoveryPanel';
+import type { EscrowRecoveryPanelProps } from './EscrowRecoveryPanel';
+import { EscrowPinSignIn } from './EscrowPinSignIn';
 
 export type RecoveryFlowType = 'passkey' | 'phrase' | 'backup' | 'device' | 'email';
 
 interface RecoveryFlowModalProps {
+    /**
+     * Escrow (7-day hold / PIN) recovery. Only offered when the account lists an 'escrow'
+     * method; `pinAvailable` puts PIN sign-in first on Screen 1. Undefined keeps the
+     * legacy method picker unchanged.
+     */
+    escrowRecovery?: Omit<EscrowRecoveryPanelProps, 'available' | 'view' | 'onUsePin'>;
     availableMethods: { type: string; credentialId?: string; createdAt: string }[];
     recoveryReason?: RecoveryReason;
     maskedRecoveryEmail?: string | null;
@@ -33,7 +43,12 @@ interface RecoveryFlowModalProps {
     onCancel: () => void;
 }
 
+/** Matched by name: the class can come from another bundle copy of learn-card-base. */
+const isRecoveryInProgress = (e: unknown): boolean =>
+    e instanceof Error && e.name === 'RecoveryInProgressError';
+
 const friendlyError = (e: unknown): string => {
+    if (isRecoveryInProgress(e)) return m['recovery.inProgress']();
     if (e instanceof Error) {
         if (e.message.includes('decrypt')) return m['recovery.errors.decryptFailed']();
         if (e.message.includes('network') || e.message.includes('fetch'))
@@ -67,6 +82,7 @@ const getDefaultCopy = () => ({
 });
 
 export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
+    escrowRecovery,
     availableMethods,
     recoveryReason,
     maskedRecoveryEmail,
@@ -86,8 +102,48 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
     const [backupPassword, setBackupPassword] = useState('');
     const [emailShare, setEmailShare] = useState('');
 
-    const hasMethod = (type: string) => availableMethods.some(m => m.type === type);
+    const hasMethod = (type: string) => availableMethods.some(method => method.type === type);
     const webAuthnSupported = isWebAuthnSupported();
+
+    const hasEscrow = hasMethod('escrow');
+    const canShowScreen2 = !!escrowRecovery && hasEscrow;
+    // Locked or unavailable PINs are not offered again in this flow; the message stays visible.
+    const [pinBlockedMessage, setPinBlockedMessage] = useState<string | null>(null);
+    // A PIN sign-in is in flight. It shares one single-use session with every other
+    // method, so nothing else may start until it settles (the coordinator enforces the
+    // same rule with RecoveryInProgressError).
+    const [pinBusy, setPinBusy] = useState(false);
+    // A PIN sign-in keeps the account as it is, so it leads Screen 1. Screen 2 is the
+    // 7-day hold only, the one path that still resets the account.
+    const pinHero = canShowScreen2 && escrowRecovery?.pinAvailable === true && !pinBlockedMessage;
+    const [chosenScreen, setScreen] = useState<1 | 2>(1);
+
+    const screen2HeadingRef = useRef<HTMLHeadingElement>(null);
+
+    const handlePinSignIn = async (pin: string): Promise<void> => {
+        if (!escrowRecovery) return;
+        // EscrowPinSignIn maps the failure to copy; rethrow so it can show it.
+        await escrowRecovery.onRecover({ method: 'escrow-pin', pin });
+    };
+
+    const renderEscrowPanel = (view: EscrowRecoveryPanelProps['view'], onUsePin?: () => void) =>
+        escrowRecovery && (
+            <EscrowRecoveryPanel
+                key={escrowRecovery.scope}
+                view={view}
+                scope={escrowRecovery.scope}
+                available={hasEscrow}
+                pinAvailable={false}
+                onUsePin={onUsePin}
+                canResumeCompleted={escrowRecovery.canResumeCompleted}
+                onStart={escrowRecovery.onStart}
+                onStatus={escrowRecovery.onStatus}
+                onRecover={escrowRecovery.onRecover}
+                onConfirmCode={escrowRecovery.onConfirmCode}
+                onResendCode={escrowRecovery.onResendCode}
+                emailSender={escrowRecovery.emailSender}
+            />
+        );
 
     const handleBack = (): void => {
         setActiveMethod(null);
@@ -95,7 +151,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
     };
 
     const handlePasskeyRecovery = async () => {
-        const passkeyMethod = availableMethods.find(m => m.type === 'passkey');
+        const passkeyMethod = availableMethods.find(method => method.type === 'passkey');
 
         if (!passkeyMethod?.credentialId) {
             setError(m['recovery.errors.noPasskey']());
@@ -225,34 +281,141 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
 
     // Hide passkey entirely on native platforms (WebAuthn unavailable in WKWebView / Android WebView)
     const methods = Capacitor.isNativePlatform()
-        ? allMethods.filter(m => m.id !== 'passkey')
+        ? allMethods.filter(method => method.id !== 'passkey')
         : allMethods;
 
     const phraseWordCount = phrase.trim() ? phrase.trim().split(/\s+/).length : 0;
     const recoveryCopy = recoveryReason ? getRecoveryCopy()[recoveryReason] : getDefaultCopy();
 
+    const availableMethodsList = methods.filter(method => method.available);
+    const availableCount = availableMethodsList.length;
+    const initialScreen = !pinHero && availableCount === 0 && canShowScreen2 ? 2 : 1;
+    // Methods can load after mount: with nothing to pick, Screen 2 is the only useful view.
+    const screen = initialScreen === 2 ? 2 : chosenScreen;
+
+    useEffect(() => {
+        if (screen === 2 && !activeMethod) screen2HeadingRef.current?.focus();
+    }, [screen, activeMethod]);
+
+    const pinBlockedAlert = pinBlockedMessage && (
+        <div
+            role="alert"
+            className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5"
+        >
+            <IonIcon icon={alertCircleOutline} className="text-red-400 text-lg mt-0.5 shrink-0" />
+            <span className="text-sm text-red-700 leading-relaxed">{pinBlockedMessage}</span>
+        </div>
+    );
+
     // ── Method picker ────────────────────────────────────────────
+
+    if (!activeMethod && screen === 2) {
+        const content = (
+            <div className="p-6 max-w-md mx-auto">
+                <div className="animate-fade-in-up motion-reduce:animate-none">
+                    {initialScreen === 1 && (
+                        <button
+                            onClick={() => setScreen(1)}
+                            className="flex items-center gap-1 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors mb-5"
+                        >
+                            <DirectionalIcon>
+                                <IonIcon icon={chevronBackOutline} className="text-xs" />
+                            </DirectionalIcon>
+                            {m['common.back']()}
+                        </button>
+                    )}
+
+                    <div className="text-center mb-6">
+                        <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
+                            <IonIcon icon={shieldOutline} className="text-2xl" />
+                        </div>
+                        <h2
+                            ref={screen2HeadingRef}
+                            tabIndex={-1}
+                            className="text-xl font-semibold text-grayscale-900 mb-1 focus:outline-hidden"
+                        >
+                            {m['recovery.getBackIntoAccount']()}
+                        </h2>
+                        <p className="text-sm text-grayscale-600 leading-relaxed">
+                            {m['recovery.getBackIntoAccountDesc']()}
+                        </p>
+                    </div>
+
+                    {pinBlockedAlert}
+
+                    {/* Only the 7-day hold resets the account; a PIN sign-in never does. */}
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl mb-6">
+                        <p className="text-sm font-medium text-amber-900 mb-2">
+                            {m['recovery.thisWill']()}
+                        </p>
+                        <ul className="text-sm text-amber-800 space-y-v3-1.5 list-disc ps-4">
+                            <li>{m['recovery.consequence.signOut']()}</li>
+                            <li>{m['recovery.consequence.turnOff']()}</li>
+                        </ul>
+                    </div>
+
+                    {renderEscrowPanel('start', pinHero ? () => setScreen(1) : undefined)}
+
+                    <button
+                        onClick={onCancel}
+                        className="w-full mt-6 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
+                    >
+                        {m['common.cancel']()}
+                    </button>
+                </div>
+            </div>
+        );
+
+        return <Overlay onDismiss={onCancel}>{content}</Overlay>;
+    }
 
     if (!activeMethod) {
         const content = (
             <div className="p-6 max-w-md mx-auto">
                 <div className="text-center mb-6">
                     <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
-                        {recoveryCopy.title}
+                        {pinHero ? m['recovery.pinHero.title']() : recoveryCopy.title}
                     </h2>
 
                     <p className="text-sm text-grayscale-600 leading-relaxed">
-                        {recoveryCopy.description}
+                        {pinHero ? m['recovery.pinHero.description']() : recoveryCopy.description}
                     </p>
                 </div>
+
+                {pinBlockedAlert}
+
+                {escrowRecovery && (
+                    // Hold actions wait too while a PIN sign-in is in flight.
+                    <fieldset disabled={pinBusy} className="m-0 min-w-0 border-0 p-0">
+                        {renderEscrowPanel('status')}
+                    </fieldset>
+                )}
+
+                {pinHero && (
+                    <EscrowPinSignIn
+                        onRecover={handlePinSignIn}
+                        onBlocked={setPinBlockedMessage}
+                        onBusyChange={setPinBusy}
+                    />
+                )}
+
+                {pinHero && availableCount > 0 && (
+                    <p className="mt-6 mb-2 text-xs font-medium uppercase tracking-wide text-grayscale-500">
+                        {m['recovery.pinHero.otherWays']()}
+                    </p>
+                )}
 
                 <div className="space-y-v3-2">
                     {methods.map(method => (
                         <button
                             key={method.id}
-                            onClick={() => method.available && setActiveMethod(method.id)}
-                            disabled={!method.available}
+                            onClick={() =>
+                                method.available && !pinBusy && setActiveMethod(method.id)
+                            }
+                            disabled={!method.available || pinBusy}
                             className={`w-full p-4 rounded-2xl flex items-center gap-4 transition-all ${
+                                method.available && pinBusy ? 'opacity-40 cursor-not-allowed ' : ''
+                            }${
                                 method.available
                                     ? 'bg-grayscale-10 hover:bg-grayscale-100 text-grayscale-900'
                                     : 'bg-grayscale-10 text-grayscale-400 cursor-not-allowed opacity-60'
@@ -269,28 +432,66 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                             </div>
 
                             <div className="flex-1 text-left">
-                                <p className="font-medium text-sm">{method.label}</p>
+                                <p className="font-medium text-sm">
+                                    {pinHero && method.id === 'device'
+                                        ? m['recovery.pinHero.device']()
+                                        : method.label}
+                                </p>
 
                                 <p className="text-xs text-grayscale-500 mt-0.5">
-                                    {method.available
-                                        ? method.desc
-                                        : m['recovery.method.notSetUp']()}
+                                    {!method.available
+                                        ? m['recovery.method.notSetUp']()
+                                        : pinHero && method.id === 'device'
+                                          ? m['recovery.pinHero.deviceDesc']()
+                                          : method.desc}
                                 </p>
                             </div>
                         </button>
                     ))}
                 </div>
 
+                {canShowScreen2 && pinHero && (
+                    // One quiet way to the 7-day path: the PIN screen is a
+                    // "confirm it's you" step, not a list of fallbacks.
+                    <div className="mt-6 text-center">
+                        <button
+                            onClick={() => setScreen(2)}
+                            disabled={pinBusy}
+                            className="py-2 px-2 min-h-[44px] text-sm text-grayscale-600 underline-offset-2 hover:underline hover:text-grayscale-900 transition-colors rounded-[20px] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                            {m['recovery.pinHero.trouble']()}
+                        </button>
+                    </div>
+                )}
+
+                {canShowScreen2 && !pinHero && (
+                    <div className="mt-6 pt-5 border-t border-grayscale-200 text-center">
+                        <p className="text-xs text-grayscale-500 mb-3">
+                            {availableCount === 1 && availableMethodsList[0].id === 'device'
+                                ? m['recovery.cantUseAnotherDevice']()
+                                : m['recovery.cantUseAny']()}
+                        </p>
+                        <button
+                            onClick={() => setScreen(2)}
+                            disabled={pinBusy}
+                            className="w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                            {m['recovery.getBackIntoAccount']()}
+                        </button>
+                    </div>
+                )}
+
                 <button
                     onClick={onCancel}
-                    className="w-full mt-6 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
+                    disabled={pinBusy}
+                    className="w-full mt-6 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                     {m['common.cancel']()}
                 </button>
             </div>
         );
 
-        return <Overlay onDismiss={onCancel}>{content}</Overlay>;
+        return <Overlay onDismiss={pinBusy ? undefined : onCancel}>{content}</Overlay>;
     }
 
     // ── Active method detail ─────────────────────────────────────
