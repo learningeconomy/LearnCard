@@ -109,8 +109,8 @@ createRoot(document.getElementById('root')!).render(
         }
     >
         <LocaleProvider>
-            <AnalyticsContextProvider>
-                <QueryClientProvider client={client}>
+            <QueryClientProvider client={client}>
+                <AnalyticsContextProvider>
                     <MemoryRouter
                         initialEntries={[
                             state === 'apps' || state === 'my-apps'
@@ -194,8 +194,8 @@ createRoot(document.getElementById('root')!).render(
                             </div>
                         </ModalsProvider>
                     </MemoryRouter>
-                </QueryClientProvider>
-            </AnalyticsContextProvider>
+                </AnalyticsContextProvider>
+            </QueryClientProvider>
         </LocaleProvider>
     </TenantConfigProvider>
 );
