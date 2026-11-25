@@ -15,7 +15,7 @@
     "dependencies": {
         "@learncard/email-templates": "workspace:*",
         "@learncard/sss-key-manager": "workspace:*",
-        "postmark": "^4.0.5"
+        "postmark": "^5.1.0"
     },
     "devDependencies": {
         "@types/aws-lambda": "^8.10.106",
