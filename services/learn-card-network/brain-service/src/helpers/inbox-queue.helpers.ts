@@ -284,6 +284,8 @@ export const processInboxQueueMessage = async (body: string, inline = false): Pr
  */
 export const INBOX_ISSUE_REQUEST_ID_PREFIX = 'inbox.issue:';
 const SUPERSEDED_MESSAGE = 'Superseded by a later admission of this idempotency key.';
+const IN_PROGRESS_MESSAGE =
+    'Issuance is in progress. Retry this same idempotency key; do not issue with a new key.';
 
 /**
  * Single-request adapter over the existing durable batch lifecycle. A concurrent
@@ -350,15 +352,28 @@ export const issueKeyedInboxCredential = async (
                     idempotencyKey,
                     recipient: input.recipient,
                 });
-                if (!rejected) {
-                    // This call's own item has reserved the key since the record above was
-                    // read: answer from the record that holds the key now.
-                    const current = await readBatchReplay(replayKey);
-                    if (current !== null)
-                        return IssueInboxCredentialResponseValidator.parse(
-                            replayResult(current, inboxItemRequestHash(input), 0)
-                        );
+                // The refusal is decided again after the fence, from the record that holds the
+                // key now. Since the record above was read, an own item may have reserved the
+                // key, or delivered and completed: then the answer is that item's.
+                const current = await readBatchReplay(replayKey);
+                let own: IssueInboxCredentialBatchItemResult | undefined;
+                if (current !== null) {
+                    try {
+                        own = replayResult(current, inboxItemRequestHash(input), 0);
+                    } catch (again) {
+                        const foreign =
+                            again instanceof InboxBatchConflict &&
+                            again.reason === 'IDEMPOTENCY_MISMATCH';
+                        if (!foreign) throw again;
+                    }
                 }
+                if (own) {
+                    await settleWaiting({ ...own, index: 0, idempotencyKey });
+                    return IssueInboxCredentialResponseValidator.parse(own);
+                }
+                // An own item that could not be fenced can still issue, even if it has let go
+                // of the key in the meantime: a mismatch would be a stale answer.
+                if (!rejected) throw new InboxBatchConflict('IN_PROGRESS', IN_PROGRESS_MESSAGE);
             }
             throw error;
         }
@@ -398,8 +413,7 @@ export const issueKeyedInboxCredential = async (
     if (!result) {
         throw new TRPCError({
             code: 'CONFLICT',
-            message:
-                'Issuance is in progress. Retry this same idempotency key; do not issue with a new key.',
+            message: IN_PROGRESS_MESSAGE,
         });
     }
     if (!result.success) {

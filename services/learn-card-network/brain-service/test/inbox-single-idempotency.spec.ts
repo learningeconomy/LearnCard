@@ -18,6 +18,7 @@ import * as batchStore from '@accesslayer/inbox-batch/store';
 import {
     batchReplayStore,
     claimBatchItem,
+    finishBatchItem,
     markBatchIssuanceStarted,
     readBatchReplay,
     recoverInboxJobs,
@@ -648,6 +649,118 @@ describe('single inbox durable idempotency', () => {
             owner: worker,
         });
         await expectCounts(0);
+    }, 30000);
+
+    // The other payload's owner holds the key's marker inside issueToInbox until released,
+    // then fails preflight and frees the key. `waiting` is the call's own admission item.
+    const heldByAnotherPayload = async (
+        input: IssueInboxCredentialType,
+        substituted: IssueInboxCredentialType
+    ): Promise<{ waiting: string; ownerBatchId: string; release: () => Promise<void> }> => {
+        const ownerEntered = gate();
+        const ownerReleased = gate();
+        const waiting = await admit(input);
+        vi.spyOn(inboxHelpers, 'issueToInbox').mockImplementationOnce(async () => {
+            ownerEntered.open();
+            await ownerReleased.opened;
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Owner failed preflight.' });
+        });
+        const owner = await issuer.clients.fullAuth.inbox.issueBatch({ items: [substituted] });
+        const owning = processInboxQueueMessage(JSON.stringify({ itemId: `${owner.batchId}:0` }));
+        await ownerEntered.opened;
+        return {
+            waiting,
+            ownerBatchId: owner.batchId,
+            release: async () => {
+                ownerReleased.open();
+                await owning;
+            },
+        };
+    };
+
+    it('a call whose own claimed item reserved the key and was then requeued answers in progress, not the mismatch it first read', async () => {
+        const key = randomUUID();
+        const replayKey = inboxItemReplayKey(issuerId, key);
+        const input = await inputFor(issuer, key);
+        const held = await heldByAnotherPayload(input, await inputFor(issuer, key, 'Substituted'));
+        const itemId = `${held.waiting}:0`;
+        const worker = randomUUID();
+        const marker = JSON.stringify({
+            state: 'processing',
+            owner: worker,
+            requestHash: inboxItemRequestHash(input),
+        });
+        // Between the call's read of the key and its look at its own item: the other owner
+        // releases, and this item's worker claims it and reserves the key.
+        const readOutstanding = batchStore.readOutstandingBatchItems;
+        vi.spyOn(batchStore, 'readOutstandingBatchItems').mockImplementationOnce(
+            async (...args) => {
+                await held.release();
+                expect(await claimBatchItem(itemId, worker)).toBeDefined();
+                expect(
+                    await batchReplayStore(itemId, worker, replayKey).setIfAbsent('', marker, 86400)
+                ).toBe('OK');
+                return readOutstanding(...args);
+            }
+        );
+        // Between the fence, which leaves a reserved item to its worker, and the call's next
+        // read of the key: the worker fails in preparation, frees the key and requeues.
+        const reject = batchStore.rejectWaitingBatchItem;
+        vi.spyOn(batchStore, 'rejectWaitingBatchItem').mockImplementationOnce(async (...args) => {
+            const rejected = await reject(...args);
+            expect(rejected).toBe(false);
+            expect(
+                await batchReplayStore(itemId, worker, replayKey).compareAndSet(
+                    '',
+                    marker,
+                    null,
+                    86400
+                )
+            ).toBe(true);
+            await finishBatchItem(itemId, worker, {
+                success: false,
+                index: 0,
+                error: { code: 'INTERNAL_SERVER_ERROR', message: 'Failed to issue credential' },
+            });
+            return rejected;
+        });
+        await expect(issuer.clients.fullAuth.inbox.issue(input)).rejects.toMatchObject({
+            code: 'CONFLICT',
+            message: expect.stringMatching(/^Issuance is in progress/),
+        });
+        expect(await admittedStates(key, held.ownerBatchId)).toEqual(['QUEUED']);
+        // The requeued item is still this request's and nobody was told it was refused.
+        await runLateWorker();
+        expect(await issuedCount(input)).toBe(1);
+        await expectCounts(1);
+    }, 30000);
+
+    it('a call whose own item delivered and completed after the call read another payload as holding the key returns that receipt, not a mismatch', async () => {
+        const key = randomUUID();
+        const input = await inputFor(issuer, key);
+        const held = await heldByAnotherPayload(input, await inputFor(issuer, key, 'Substituted'));
+        // Between the call's read of the key and its look at its own item: the other owner
+        // releases and this call's item runs to its end (delivery, receipt, COMPLETED), so the
+        // look finds nothing waiting.
+        const readOutstanding = batchStore.readOutstandingBatchItems;
+        vi.spyOn(batchStore, 'readOutstandingBatchItems').mockImplementationOnce(
+            async (...args) => {
+                await held.release();
+                await processInboxQueueMessage(JSON.stringify({ itemId: `${held.waiting}:0` }));
+                const outstanding = await readOutstanding(...args);
+                expect(outstanding).toEqual([]);
+                return outstanding;
+            }
+        );
+        const result = await issuer.clients.fullAuth.inbox
+            .issue(input)
+            .catch((error: unknown) => error);
+        expect(result).toMatchObject({ status: 'ISSUED' });
+        expect(await issuedCount(input)).toBe(1);
+        expect((await getInboxBatch(issuerId, held.waiting)).items[0]?.result).toMatchObject({
+            success: true,
+        });
+        await expectCounts(1);
     }, 30000);
 
     it('a queued item admitted more than 24 hours ago does not issue after a later call under its key succeeded and that receipt expired', async () => {
