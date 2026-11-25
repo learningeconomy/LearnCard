@@ -150,7 +150,7 @@ describe('verifySdJwtVc', () => {
         expect(result.checks).toContain('issuer_signature');
     });
 
-    it('does not fetch the status list when skipStatusCheck is set', async () => {
+    it('still verifies the status list with the OpenID4VCI receipt option', async () => {
         const { compact, publicJwk, signer } = await issueTestCredential({
             status: { status_list: { idx: 0, uri: STATUS_LIST_URI } },
         });
@@ -160,10 +160,25 @@ describe('verifySdJwtVc', () => {
             skipStatusCheck: true,
         });
 
-        expect(fetchMock).not.toHaveBeenCalled();
+        expect(fetchMock).toHaveBeenCalledWith(STATUS_LIST_URI, expect.anything());
         expect(result.errors).toEqual([]);
         expect(result.checks).toContain('issuer_signature');
         expect(result.warnings).toEqual([]);
+    });
+
+    it('rejects a revoked credential even with the OpenID4VCI receipt option', async () => {
+        const { compact, publicJwk, signer } = await issueTestCredential({
+            status: { status_list: { idx: 0, uri: STATUS_LIST_URI } },
+        });
+        const fetchMock = stubStatusListFetch(await signStatusListJwt(signer, [1]));
+
+        const result = await verifySdJwtVc(buildLearnCardMock(publicJwk), compact, {
+            skipStatusCheck: true,
+        });
+
+        expect(fetchMock).toHaveBeenCalledWith(STATUS_LIST_URI, expect.anything());
+        expect(result.errors).not.toEqual([]);
+        expect(result.checks).not.toContain('issuer_signature');
     });
 
     it('retains verification of an Ed448-signed credential from a resolvable DID issuer', async () => {

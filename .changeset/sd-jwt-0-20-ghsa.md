@@ -11,5 +11,5 @@ Upgrade `@sd-jwt/core` and `@sd-jwt/sd-jwt-vc` to 0.20 for [GHSA-f9j6-8p6x-r9j6]
 - `@sd-jwt/decode` has no 0.20 release because it was merged into `@sd-jwt/core`. `@learncard/helpers` and `@learncard/sd-jwt-vc-plugin` now import `decodeSdJwt`, `getClaims` and the SD-JWT types from `@sd-jwt/core`.
 - `parseSdJwtVc` and `verifySdJwtVc` now reject a tampered or unreferenced disclosure with `disclosure_hash_mismatch` before checking the signature.
 - The credential display projection in `@learncard/helpers` drops every selectively disclosed claim when any disclosure is tampered, and keeps only the claims in the issuer payload. It previously kept the disclosures that still matched.
-- `verifySdJwtVc` with `skipStatusCheck: true` no longer fetches or checks the credential's status list. On 0.19 it still fetched the list and failed when the list was revoked, unreachable or not signed by the issuer. OpenID4VCI receipt passes `skipStatusCheck`, so receipt no longer depends on the status list endpoint.
+- Status-list verification still checks the issuer signature and credential status, including at OpenID4VCI receipt. The legacy `skipStatusCheck` option still suppresses the status warning without bypassing a declared status list.
 - The bundled CLI now ships `@sd-jwt/core@0.20.1` and `@sd-jwt/sd-jwt-vc@0.20.1`.
