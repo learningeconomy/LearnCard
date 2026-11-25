@@ -1,12 +1,17 @@
 # Native experiment handoff — 2026-11-25
 
+## Upstream parity
+
+- Claim links now use a protected request ID and the server's exact result. Reopening a link can resume an interrupted save. Only confirmed absence permits issuance after review with the same ID. Older receipts keep their fallback check. [Claim recovery](QR_CLAIM_FLOW.md), [upstream fix](https://github.com/learningeconomy/LearnCard/pull/1983).
+- New JSON credential imports save first, then deliver to current category-wide agreements in the background. Delivery retries on another import or Passport refresh from the protected index. Personal document copies stay private. [Import sharing](DOCUMENT_INTAKE.md), [upstream fix](https://github.com/learningeconomy/LearnCard/pull/2038).
+- Older accounts awaiting a legacy lookup still complete that step in staging web. The shared coordinator already has the upstream safety rule for confirmed archive absence and a definitive unassigned key. Native uses the SSS strategy and lacks the evidence from the old provider required to apply that rule. After setup on web, native can use the resulting account through its existing sign-in or recovery paths. [Upstream setup fix](https://github.com/learningeconomy/LearnCard/pull/2078).
+- Native excludes stale terms from automatic delivery. Reviewing and accepting a revised agreement in SwiftUI still needs its own UI. Passport already uses one store across tabs and refreshes after writes. The web list-row rendering fix has no direct SwiftUI equivalent. Generic title fallback and trusted issuer naming remain separate native display work. [Revised agreements](https://github.com/learningeconomy/LearnCard/pull/1819), [web index cache](https://github.com/learningeconomy/LearnCard/pull/2014), [web credential names](https://github.com/learningeconomy/LearnCard/pull/2134).
+
+## Sync with main
+
 The native branch now merges `origin/main` at `65e369b10`. It keeps the SwiftUI app and its manual Vesper workflow. The merge uses current upstream web, backend, referral and lockfile code because the native branch started from an older referral stack. The shared category map is extracted from the current upstream helper so both clients use the same entries and existing exports. The canonical shared age helper keeps the native branch’s existing Ireland consent threshold of 16. Native agreement review checks the current version and status before acting on saved choices. See [merge verification](TESTING.md#sync-with-main--november-25-2026).
 
 The new upstream DIDKit WASM is 3,935,119 bytes, down from 8,840,701. The native bundle was regenerated from the merged source with the repository’s pinned Bun 1.4.4. The Debug build is installed in Native Lab and opens to email sign-in.
-
-The next upstream parity pass should review how native handles ambiguous claim responses, revised agreements, automatic sharing after imports, and accounts with no legacy key. The bundled SDK and auth coordinator already include upstream changes, so focus the review on native-owned flows. [Claim reconciliation](https://github.com/learningeconomy/LearnCard/pull/1983), [agreement updates](https://github.com/learningeconomy/LearnCard/pull/1819), [import consent sync](https://github.com/learningeconomy/LearnCard/pull/2038), [legacy account setup](https://github.com/learningeconomy/LearnCard/pull/2078).
-
-Recent web fixes also give native two cases to compare against its Passport projections and store. Check issuer/title fallback on generic credentials and check that writes refresh cached credentials across navigation. [Credential display names](https://github.com/learningeconomy/LearnCard/pull/2134), [credential index cache](https://github.com/learningeconomy/LearnCard/pull/2014).
 
 The iPhone Duo design and learner skills remain in the native plan. [Native plan](PLAN.md).
 

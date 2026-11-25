@@ -1,5 +1,14 @@
 # Native regression checks
 
+## Upstream parity — November 25, 2026
+
+- **251 Bun cases** pass across the native runtime and staging SDK fixture suite. New regressions cover exact claim request binding, a completed URI missing from the recent list, automatic delivery to the current full audience, interrupted delivery, and cancellation when the account changes. Intake tests confirm the pending handoff is written with the private index record.
+- **243 Swift cases** pass (28 core XCTest, 182 account XCTest, 33 Swift Testing). Claim tests cover pending and absent requests, the same request ID on retry after relaunch, and safe handling of older receipts.
+- **12 shared coordinator cases** pass for legacy key resolution. This includes the distinction between confirmed absence and failed archive lookup. Native retains the staging web handoff for old accounts that still need that lookup.
+- Native TypeScript source contracts pass with 27 pre-existing dependency diagnostics. Scoped workspace lint and formatting pass.
+- **Three distinct iOS 27.1 fixture checks** pass across the initial run and targeted reruns. Claim review requires confirmation, a confirmed backup resumes setup, and JSON review saves only the selected credential to Passport. The initial import test changed selection while scrolling. The corrected test starts the drag in the sheet's gutter and verifies selection before saving. Simulator results are in `artifacts/native-parity-2026-11-25.xcresult` and `artifacts/native-parity-intake-{repeat,final}.xcresult`.
+- The normal Debug app launched to email sign-in on Native Lab. All 48 installed files match the build. Live staging claim, import delivery, and cross-device recovery remain unverified. The Linux verifier stops at preflight on macOS and its catalog does not drive the native SwiftUI app.
+
 ## Sync with main — November 25, 2026
 
 Merged `origin/main` at `65e369b10` into the restored `codex/vesper-73` worktree. All 71 merge conflicts were outside `apps/learncard-native` and came from the branch’s older referral base. The resolved tree takes current upstream web, service, documentation and lockfile content. It carries the native app, its manual workflow and two shared contracts needed by the app. The extracted category map initializer is byte-identical to upstream and the public helper retains its exports. The shared age helper preserves the existing native Ireland threshold of 16 in both maps.

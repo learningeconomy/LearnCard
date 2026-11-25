@@ -62,6 +62,7 @@ import { createConsumerCommands, consumerErrorCode } from './consumer-apps';
 import { createInboxCommands, inboxErrorCode } from './inbox';
 import { createPeopleCommands, peopleErrorCode } from './people';
 import { createIntakeCommands, intakeErrorCode, documentKinds } from './intake';
+import { createImportSharing } from './import-sharing';
 import { createFamilyCommands, familyErrorCode, type FamilyPinService } from './families';
 import { getClient as getAccountAPI } from '@learncard/lca-api-client';
 import { isFamilyCreation, sendPersonalCreation } from './personal-creations';
@@ -502,8 +503,12 @@ const snapshot = async (more = false) => {
     const offers = [];
     for (const record of incoming.slice(0, 30))
         offers.push(await display({ ...record, title: '' }));
+    if (!more) void syncImportedCredentials();
     return { credentials: collection, offers, activity, hasMore };
 };
+
+const intake = createIntakeCommands(() => wallet);
+const syncImportedCredentials = createImportSharing(() => wallet);
 
 // Session retry journal: retain a created template and completed delivery when later indexing/refresh fails.
 // A dropped network reply remains ambiguous; durable cross-launch delivery recovery is a later gate.
@@ -555,7 +560,12 @@ const commands = {
     ),
     ...signupCommands,
     ...createPeopleCommands(() => wallet),
-    ...createIntakeCommands(() => wallet),
+    ...intake,
+    intakeCommit: async (input: unknown) => {
+        const result = await intake.intakeCommit(input);
+        void syncImportedCredentials();
+        return result;
+    },
     ...createConsumerCommands(() => wallet, sampleContracts),
     ...createSampleCredentialCommands(() => wallet, sampleContracts),
     ...createInboxCommands(

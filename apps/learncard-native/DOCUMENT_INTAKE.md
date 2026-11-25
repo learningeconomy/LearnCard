@@ -23,13 +23,15 @@ flowchart TD
     I --> K[Passport]
 ```
 
-No credential/document write happens during file selection or review. Neither importing an existing credential nor saving a personal document issues a new credential to another person, accepts an incoming claim or creates a share link. No automatic app-consent synchronization or AI-insight generation is triggered.
+File selection and review are read-only. On save, personal document copies stay private. Selected JSON credentials can be delivered in the background to current agreements that already allow automatic sharing of their category. The import itself creates no share link or AI insights.
 
 ## Lifecycle, retries and viewing
 
 Each review belongs to one account host. Leaving review, backgrounding or locking clears native state; a review-bound discard clears the host payload without erasing a newer review. Late prepares/saves cannot populate another account. File reads are bounded even if the provider's reported size is wrong. Invalid formats, empty/large files, unsupported credentials and network failures have translated feedback.
 
 Native imports use deterministic content-derived index IDs; a lost index reply is reconciled on retry or a reselected file after relaunch. A partial credential import retains selection and reports added/existing/failed counts. Retry leaves already saved native items in place. A failed encrypted upload can leave an unindexed storage object, but does not create a second visible index entry. Imports originally added through web with random IDs are not globally content-deduplicated by this native ID scheme.
+
+Each new JSON import records pending delivery in the encrypted index. The account host retries after an import or Passport refresh, including the initial refresh after opening the account. Delivery requires live, current, unexpired category-wide consent. It uses a separate copy encrypted to the complete current audience and passes the audience version and automatic-delivery flag to the server. A lost acknowledgement is checked against the agreement's shared URIs before trying again. Saving to Passport succeeds independently of delivery. Existing imports and document copies stay outside this automatic delivery, as do Smart Résumé agreements that use special service recipients.
 
 Your documents reads source records independently of the first Passport page and includes web-created records. Counts are actual index counts. The optional four-kind milestone indicator marks each document kind once when its saved count is positive; it is not a signup or credential-quality score. The initial list shows up to 20 documents of each kind and states that bound. Legacy web records without filename metadata show their document kind until opened. Originals are read/decrypted only on explicit open, then shown by native Quick Look. Temporary viewer copies have complete file protection and are removed on dismissal/background/exit; startup removes owned remnants from an interrupted process. File size and supported original data-URL types are checked again when opening.
 

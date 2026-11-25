@@ -152,6 +152,7 @@ test('review and selection preserve source/proof and do not upload or issue', as
     expect(f.indexed[0]).toMatchObject({
         category: 'Accomplishment',
         uploadType: 'rawVC',
+        nativeImportSharing: 'pending',
         fileName: 'credential.json',
     });
 });

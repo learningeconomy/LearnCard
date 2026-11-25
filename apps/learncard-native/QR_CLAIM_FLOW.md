@@ -12,14 +12,17 @@ flowchart TD
     Preview --> Review[Artwork, issuer, category, account and description]
     Review -->|Cancel| Close[No issuance]
     Review -->|Add to Collection| Journal[Save protected attempt record]
-    Journal --> Issue[Claim through existing LearnCard SDK]
+    Journal --> Check[Check server request status]
+    Check -->|Server confirms no attempt| Issue[Claim with the same request ID]
+    Check -->|Already issued| Receipt
+    Check -->|Pending| Wait[Check again]
+    Wait --> Check
+    Check -->|Confirmed terminal| Explain
     Issue --> Receipt[Save returned credential receipt]
     Receipt --> Verify[Confirm account receipt and verify signature]
     Verify --> Index[Add to personal index once]
     Index --> Added[View credential / scan another]
-    Issue -->|Response lost| Reconcile[Read-only result check; never blindly issue again]
-    Reconcile -->|One exact owned template match| Receipt
-    Reconcile -->|Unknown or ambiguous| Inbox[Check Inbox; retain guard]
+    Issue -->|Response lost| Wait
 ```
 
 ## Supported inputs and capture
@@ -37,19 +40,19 @@ The app handles delivered URLs, but automatic opening of ordinary HTTPS links fr
 
 ## Account and transaction boundaries
 
-A pending link lives in the account controller, outside the replaceable collection screen. It survives foreground/background locking and the sign-in/recovery screens in the running process. Background removes the credential preview and clears unsubmitted input. Successful recovery opens review again; sign-out clears pending intent. An intent bound to one account cannot move to another. Unused in-memory intent expires after 15 minutes; force-quitting before confirmation requires scanning again.
+A pending link lives in the account controller, outside the replaceable collection screen. It survives foreground/background locking and the sign-in/recovery screens in the running process. Background removes the credential preview and clears unsubmitted input. Successful recovery opens review again. Sign-out clears pending intent. An intent bound to one account stays with that account. After force-quitting, reopen or scan the link to resume. The server determines link expiry.
 
 The runtime reads the same deployed endpoint as web: **`/api/storage/resolve`**, including the private claim challenge. The deployment was checked read-only with an invalid public URI: the API path returned structured 400, while the path without `/api` returned 404. No real claim capability was used in that check. Preview is an issuer template and may be unsigned; the interface does not call it a verified credential.
 
-Confirm uses `claimBoostWithLink`, which returns a newly issued credential URI and is **not an idempotent acceptance API**. The native flow therefore:
+New native claims use the SDK's request-ID support and the authenticated `getClaimBoostWithLinkStatus` operation.
 
-1. Writes a device-bound Keychain attempt record before sending the mutation. Failure to save it prevents issuance.
-2. Requires a current review, re-resolves its template before issuance and consumes that review once. A typed preflight change/unavailable/Family refusal can return to review without a duplicate issuance.
-3. Saves a known issued URI before indexing. Finishing/retrying uses that same receipt, never another `claimBoostWithLink` call.
-4. Checks the authenticated account's received records and verifies the actual signed credential before adding it to LearnCloud. Existing index entries are reused and semantic category is preserved. The complete web category table is shared through `packages/learn-card-base/src/helpers/credentialCategoryMap.ts`; web helper exports remain compatible and the table itself is unchanged. Original signed payloads remain unchanged.
-5. Keeps a guard when the mutation response is lost. Result checking considers up to 50 recent received records and requires exactly one exact `boostId` match; it never guesses by title or issuer. Multiple matches, credentials without that embedded template reference, unavailable reads and unresolved results remain uncertain. No second issuance occurs through this device's same-account guard. This is not global idempotency across other clients/devices; the server needs that contract for stronger guarantees.
+1. Save the request UUID to the device-bound Keychain before sending the mutation. Failure to save it prevents issuance.
+2. Ask the authenticated server about that request. A complete result supplies the issued URI. A pending result keeps the same receipt for another check. Confirmed absence allows issuance with the same UUID after review. Confirmed terminal results follow the server's status.
+3. Re-resolve the reviewed template before issuance and consume that review once. Save a known issued URI before indexing so interrupted saves can resume.
+4. Bind the issued URI to the exact completed server request and verify the signature before indexing. Reuse existing entries and preserve the semantic category and original signed payload.
+5. Preserve compatibility with older receipts. For a receipt without a UUID, use the existing recent-receipt check and require one exact `boostId` match. An unresolved old receipt stays blocked from reissuance.
 
-Receipt keys hash the verified Firebase UID and capability, so tokens do not appear in Keychain account labels. Receipt values contain only an optional issued URI and start time; they never persist the raw challenge. Minimal protected receipt metadata remains independent of saved sign-in/recovery access, including after ordinary sign-out. A future child-account switcher must include the active profile identity in this scope before reusing it for managed children; this client currently signs for the root account only.
+Receipt keys hash the verified Firebase UID and capability. Receipt values contain a request UUID, optional issued URI and start time. The raw challenge stays in memory. The protected receipt remains independent of saved sign-in and recovery access, including after ordinary sign-out. This client signs for the root account.
 
 After completion the existing collection refresh and server-owned connection prompt loader run. A prompt still requires the user's decision; scanning does not connect people automatically. Existing Inbox offers continue using `acceptCredential`, a distinct path from template issuance.
 

@@ -7,6 +7,7 @@ import type { ConsumerWallet } from './consumer-apps';
 const boostURI = 'lc:network:staging.network.learncard.com/trpc:boost:synthetic-template';
 const credentialURI = 'lc:network:staging.network.learncard.com/trpc:credential:synthetic-issued';
 const link = { boostURI, challenge: 'synthetic-capability' };
+const request = { ...link, requestID: 'b9a6f381-66b0-4a46-a05a-d967e5a06136' };
 const raw = () => ({
     '@context': ['https://www.w3.org/2018/credentials/v1'],
     type: ['VerifiableCredential', 'BoostCredential'],
@@ -22,16 +23,24 @@ function fixture() {
         writes = 0,
         verificationErrors: string[] = [],
         active = true;
+    let status: unknown = { status: 'absent' };
+    const calls: string[][] = [];
     let received = [
         { uri: credentialURI, received: new Date().toISOString(), sent: new Date().toISOString() },
     ];
     let indexed: unknown[] = [];
     const lc = {
         invoke: {
-            claimBoostWithLink: async () => {
+            claimBoostWithLink: async (...args: string[]) => {
+                calls.push(args);
                 issues++;
                 return credentialURI;
             },
+            getClaimBoostWithLinkStatus: async (...args: string[]) => {
+                calls.push(args);
+                return status;
+            },
+            getMyCredentialLifecycleStatuses: async () => ({ [credentialURI]: 'active' }),
             getReceivedCredentials: async () => received,
             verifyCredential: async () => ({ errors: verificationErrors }),
         },
@@ -42,6 +51,7 @@ function fixture() {
                 add: async (value: unknown) => {
                     writes++;
                     indexed = [value];
+                    return true;
                 },
             },
         },
@@ -54,6 +64,10 @@ function fixture() {
     return {
         commands,
         lc,
+        calls,
+        setStatus: (value: unknown) => {
+            status = value;
+        },
         get issues() {
             return issues;
         },
@@ -90,16 +104,37 @@ test('preview reads without issuance/index writes and preserves Portfolio and si
 });
 test('issuance requires the current reviewed template and consumes that review once', async () => {
     const f = fixture();
-    await expect(f.commands.claimsIssue(link)).rejects.toThrow('claims:changed');
+    await expect(f.commands.claimsIssue(request)).rejects.toThrow('claims:changed');
     await f.commands.claimsPreview(link);
-    await f.commands.claimsIssue(link);
-    await expect(f.commands.claimsIssue(link)).rejects.toThrow('claims:changed');
+    await f.commands.claimsIssue(request);
+    await expect(f.commands.claimsIssue(request)).rejects.toThrow('claims:changed');
     expect(f.issues).toBe(1);
     const changed = fixture();
     await changed.commands.claimsPreview(link);
     changed.setRaw({ ...raw(), name: 'Changed' });
-    await expect(changed.commands.claimsIssue(link)).rejects.toThrow('claims:changed');
+    await expect(changed.commands.claimsIssue(request)).rejects.toThrow('claims:changed');
     expect(changed.issues).toBe(0);
+});
+test('request status forwards the exact receipt and accepts only its issued credential', async () => {
+    const f = fixture();
+    f.missingReceipt(); // The recent receipt list can omit this claim.
+    f.setStatus({ status: 'pending' });
+    expect(await f.commands.claimsStatus(request)).toEqual({ status: 'pending' });
+    await expect(f.commands.claimsFinish({ uri: credentialURI, request })).rejects.toThrow(
+        'claims:pending'
+    );
+    f.setStatus({ status: 'complete', credentialUri: credentialURI });
+    await expect(
+        f.commands.claimsFinish({ uri: credentialURI + '-other', request })
+    ).rejects.toThrow('claims:pending');
+    await f.commands.claimsFinish({ uri: credentialURI, request });
+    expect(f.calls).toEqual(
+        Array.from({ length: 4 }, () => [boostURI, link.challenge, request.requestID])
+    );
+    expect(f.issues).toBe(0);
+    expect(f.writes).toBe(1);
+    f.setStatus({ status: 'complete', credentialUri: 'https://foreign.example/credential' });
+    await expect(f.commands.claimsStatus(request)).rejects.toThrow();
 });
 test('saving a known receipt verifies owned content and indexes idempotently with its category', async () => {
     const f = fixture();
@@ -130,10 +165,10 @@ test('family templates, foreign environments and malformed capabilities cannot i
     f.setRaw({ ...raw(), display: { displayType: 'family' } });
     await expect(f.commands.claimsPreview(link)).rejects.toThrow('claims:family');
     for (const value of [
-        { ...link, boostURI: boostURI.replace('staging.network', 'network') },
-        { ...link, challenge: '' },
-        { ...link, challenge: 'bad\nvalue' },
-        { ...link, extra: true },
+        { ...request, boostURI: boostURI.replace('staging.network', 'network') },
+        { ...request, challenge: '' },
+        { ...request, challenge: 'bad\nvalue' },
+        { ...request, extra: true },
     ])
         await expect(f.commands.claimsIssue(value)).rejects.toThrow();
     expect(f.issues).toBe(0);
@@ -215,6 +250,7 @@ test('claim saving checks a real SDK signature and rejects the same credential a
                 get: async () => [],
                 add: async () => {
                     writes++;
+                    return true;
                 },
             },
         },
