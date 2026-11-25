@@ -392,7 +392,7 @@ export default defineConfig(async ({ mode, command }) => {
                 'react-router-dom',
                 'crypto-browserify',
                 '@learncard/helpers > @noble/hashes/sha2',
-                '@learncard/helpers > @sd-jwt/decode',
+                '@learncard/helpers > @sd-jwt/core',
                 '@learncard/helpers > @trpc/server/observable',
                 'zod/v4',
                 '@learncard/sss-key-manager > shamir-secret-sharing',

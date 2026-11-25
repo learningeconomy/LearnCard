@@ -1,5 +1,5 @@
 import { sha256 } from '@noble/hashes/sha2';
-import { decodeSdJwtSync, getClaimsSync } from '@sd-jwt/decode';
+import { decodeSdJwtSync, getClaimsSync } from '@sd-jwt/core';
 import type {
     CredentialRecord,
     StoredCredential,

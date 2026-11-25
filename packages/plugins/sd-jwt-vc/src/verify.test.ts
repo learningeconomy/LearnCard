@@ -249,15 +249,30 @@ describe('verifySdJwtVc', () => {
         expect(allMsgs).toMatch(/invalid_compact_form|disclosure_hash_mismatch/);
     });
 
+    it('rejects a disclosure re-encoded with a new value instead of dropping it (GHSA-f9j6-8p6x-r9j6)', async () => {
+        const { compact, publicJwk } = await issueTestCredential();
+        const parts = compact.split('~');
+        const index = parts.findIndex((part, i) => i > 0 && part.length > 0);
+        const [salt, key] = JSON.parse(Buffer.from(parts[index]!, 'base64url').toString('utf8'));
+        parts[index] = Buffer.from(JSON.stringify([salt, key, 'tampered'])).toString('base64url');
+        const learnCard = buildLearnCardMock(publicJwk);
+
+        const result = await verifySdJwtVc(learnCard, parts.join('~'));
+
+        expect(result.errors).toEqual([
+            expect.stringMatching(/^disclosure_hash_mismatch: .*Unreferenced disclosure/),
+        ]);
+        expect(result.checks).not.toContain('issuer_signature');
+    });
+
     it('rejects an SD-JWT-VC with a tampered JWT payload (signature path)', async () => {
         const { compact, publicJwk } = await issueTestCredential();
         const [jwt, ...rest] = compact.split('~');
-        const [header, , signature] = jwt!.split('.');
+        const [header, payload, signature] = jwt!.split('.');
+        // Keep _sd and _sd_alg so every disclosure stays referenced and only the signature fails.
         const fakePayload = Buffer.from(
             JSON.stringify({
-                iss: ISSUER_DID,
-                iat: Math.floor(Date.now() / 1000),
-                vct: 'https://example.com/credentials/test-cert',
+                ...JSON.parse(Buffer.from(payload!, 'base64url').toString('utf8')),
                 attacker: 'forged',
             })
         )
