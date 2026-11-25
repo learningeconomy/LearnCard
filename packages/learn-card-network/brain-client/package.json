@@ -36,7 +36,7 @@
         "@learncard/helpers": "workspace:*",
         "@learncard/network-brain-service": "workspace:*",
         "dts-bundle-generator": "^6.10.0",
-        "esbuild": "^0.27.1",
+        "esbuild": "^0.28.2",
         "rollup": "^4.50.0",
         "rollup-plugin-dts": "^6.2.0",
         "vitest": "4.1.11"
