@@ -6,6 +6,8 @@ import type {
     ClrIdentifierModel,
     ClrNormalizedRecord,
 } from 'learn-card-base/helpers/credentials/clr/types';
+import { ClrRecordDrawerSection } from './ClrRecordDrawerSection';
+import { ClrDrawerIdentifier } from './ClrDrawerIdentifier';
 
 const safeWebUrl = (value?: string): string | undefined => {
     if (!value) return undefined;
@@ -51,15 +53,33 @@ const IdentifierRows = ({ identifiers }: { identifiers: ClrIdentifierModel[] }) 
     </dl>
 );
 
+const IdentifierGroup = ({
+    title,
+    identifiers,
+}: {
+    title: string;
+    identifiers: ClrIdentifierModel[];
+}) =>
+    identifiers.length > 0 && (
+        <section className="space-y-2">
+            <h4 className="text-sm font-semibold text-grayscale-900">{title}</h4>
+            <IdentifierRows identifiers={identifiers} />
+        </section>
+    );
+
 /** Displays supplied child-record facts without borrowing claims from its transcript publisher. */
 export const ClrRecordDetails = ({
     record,
     prominentFields = false,
+    drawer = false,
+    verification,
 }: {
     record?: ClrNormalizedRecord;
     prominentFields?: boolean;
+    drawer?: boolean;
+    verification?: React.ReactNode;
 }) => {
-    if (!record) return null;
+    if (!record) return verification ?? null;
 
     const profiles = [
         { label: m['clrTranscript.details.issuedBy'](), profile: record.provenance.issuer },
@@ -91,14 +111,20 @@ export const ClrRecordDetails = ({
     const subjectIdentifiers = record.subjectIdentifiers.filter(
         identifier => identifier.identifier?.value || identifier.identityHash?.value
     );
-    const hasAdditional = Boolean(
-        metadata.length ||
-        record.tags.length ||
-        (!prominentFields && achievementIdentifiers.length) ||
-        subjectIdentifiers.length ||
-        record.subjectId?.value ||
-        record.achievementId?.value
-    );
+    const ids = [
+        { label: m['clrTranscript.details.achievementId'](), value: record.achievementId?.value },
+        { label: m['clrTranscript.details.learnerId'](), value: record.subjectId?.value },
+    ];
+    const hasIds = ids.some(({ value }) => Boolean(value));
+    const hasIdentifiers =
+        hasIds || achievementIdentifiers.length > 0 || subjectIdentifiers.length > 0;
+    const hasAdditional =
+        metadata.length > 0 ||
+        record.tags.length > 0 ||
+        (!drawer &&
+            (hasIds ||
+                subjectIdentifiers.length > 0 ||
+                (!prominentFields && achievementIdentifiers.length > 0)));
     const criteria = record.criteria;
     const criteriaUrl = safeWebUrl(criteria?.id?.value);
     const hasCriteria = Boolean(criteria?.narrative?.value || criteria?.id?.value);
@@ -107,14 +133,21 @@ export const ClrRecordDetails = ({
         !profiles.length &&
         !dates.length &&
         !hasCriteria &&
+        !verification &&
         !hasAdditional &&
         !primaryFields.length &&
-        !achievementIdentifiers.length
+        !hasIdentifiers
     )
         return null;
 
     return (
-        <div className="space-y-v3-5 rounded-2xl border border-grayscale-200 bg-white p-4 font-poppins">
+        <div
+            className={
+                drawer
+                    ? 'flex min-w-0 flex-col gap-5 empty:hidden'
+                    : 'space-y-v3-5 rounded-2xl border border-grayscale-200 bg-white p-4 font-poppins'
+            }
+        >
             {prominentFields && primaryFields.length > 0 && (
                 <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     {primaryFields.map(({ label, field }) => (
@@ -124,16 +157,14 @@ export const ClrRecordDetails = ({
                     ))}
                 </dl>
             )}
-            {prominentFields && achievementIdentifiers.length > 0 && (
-                <section className="space-y-v3-2">
-                    <h4 className="text-sm font-semibold text-grayscale-900">
-                        {m['clrTranscript.details.achievementIdentifiers']()}
-                    </h4>
-                    <IdentifierRows identifiers={achievementIdentifiers} />
-                </section>
+            {prominentFields && !drawer && (
+                <IdentifierGroup
+                    title={m['clrTranscript.details.achievementIdentifiers']()}
+                    identifiers={achievementIdentifiers}
+                />
             )}
             {profiles.length > 0 && (
-                <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <dl className={drawer ? 'grid gap-3' : 'grid grid-cols-1 gap-4 sm:grid-cols-2'}>
                     {profiles.map(({ label, profile }) => {
                         const name =
                             profile?.name?.value ?? profile?.id?.value ?? profile?.url?.value;
@@ -159,13 +190,43 @@ export const ClrRecordDetails = ({
                 </dl>
             )}
             {dates.length > 0 && (
-                <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <dl className={drawer ? 'grid gap-3' : 'grid grid-cols-1 gap-4 sm:grid-cols-2'}>
                     {dates.map(({ label, date }) => (
                         <DetailRow key={label} label={label}>
                             {date && <time dateTime={date.value}>{formatClrDate(date.value)}</time>}
                         </DetailRow>
                     ))}
                 </dl>
+            )}
+            {verification}
+            {drawer && hasIdentifiers && (
+                <ClrRecordDrawerSection title={m['clrTranscript.details.credentialIdentifiers']()}>
+                    <div className="space-y-4">
+                        {hasIds && (
+                            <dl className="grid gap-3">
+                                {ids.map(({ label, value }) =>
+                                    value ? (
+                                        <DetailRow key={label} label={label}>
+                                            <ClrDrawerIdentifier
+                                                key={value}
+                                                label={label}
+                                                value={value}
+                                            />
+                                        </DetailRow>
+                                    ) : null
+                                )}
+                            </dl>
+                        )}
+                        <IdentifierGroup
+                            title={m['clrTranscript.details.achievementIdentifiers']()}
+                            identifiers={achievementIdentifiers}
+                        />
+                        <IdentifierGroup
+                            title={m['clrTranscript.details.learnerIdentifiers']()}
+                            identifiers={subjectIdentifiers}
+                        />
+                    </div>
+                </ClrRecordDrawerSection>
             )}
             {hasCriteria && (
                 <section className="space-y-v3-2">
@@ -221,32 +282,26 @@ export const ClrRecordDetails = ({
                                     </span>
                                 </DetailRow>
                             )}
-                            {record.achievementId?.value && (
-                                <DetailRow label={m['clrTranscript.details.achievementId']()}>
-                                    {record.achievementId.value}
-                                </DetailRow>
-                            )}
-                            {record.subjectId?.value && (
-                                <DetailRow label={m['clrTranscript.details.learnerId']()}>
-                                    {record.subjectId.value}
-                                </DetailRow>
-                            )}
+                            {!drawer &&
+                                ids.map(({ label, value }) =>
+                                    value ? (
+                                        <DetailRow key={label} label={label}>
+                                            {value}
+                                        </DetailRow>
+                                    ) : null
+                                )}
                         </dl>
-                        {!prominentFields && achievementIdentifiers.length > 0 && (
-                            <section className="space-y-v3-2">
-                                <h4 className="text-sm font-semibold text-grayscale-900">
-                                    {m['clrTranscript.details.achievementIdentifiers']()}
-                                </h4>
-                                <IdentifierRows identifiers={achievementIdentifiers} />
-                            </section>
+                        {!drawer && !prominentFields && (
+                            <IdentifierGroup
+                                title={m['clrTranscript.details.achievementIdentifiers']()}
+                                identifiers={achievementIdentifiers}
+                            />
                         )}
-                        {subjectIdentifiers.length > 0 && (
-                            <section className="space-y-v3-2">
-                                <h4 className="text-sm font-semibold text-grayscale-900">
-                                    {m['clrTranscript.details.learnerIdentifiers']()}
-                                </h4>
-                                <IdentifierRows identifiers={subjectIdentifiers} />
-                            </section>
+                        {!drawer && (
+                            <IdentifierGroup
+                                title={m['clrTranscript.details.learnerIdentifiers']()}
+                                identifiers={subjectIdentifiers}
+                            />
                         )}
                     </div>
                 </details>

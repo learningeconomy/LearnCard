@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { getVCDisplayCardVariant } from '@learncard/react';
@@ -60,6 +60,11 @@ import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreview
 import * as m from '../../../paraglide/messages.js';
 import { useDuplicateCredentialGuard } from '../../credentials/duplicate-credential/useDuplicateCredentialGuard';
 import type { DuplicateCredentialLookup } from '../../credentials/duplicate-credential/findDuplicateCredential';
+import ClrTranscriptFullPage from '../../clr-transcript/surfaces/ClrTranscriptFullPage';
+import {
+    ClrTranscriptSurface,
+    normalizeClrTranscriptDisplayModel,
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 
 type BoostClaimCardProps = {
     credential: VC | VP;
@@ -160,9 +165,21 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     })();
     const renderMethod = getSvgMustacheRenderMethod(credential as VC);
     const selectedDisplayView = boostPreviewStore.useTracked.selectedDisplayView();
-    const displayCredential = unwrapBoostCredential(credential as VC) as VC;
+    const displayCredential = useMemo(
+        () => unwrapBoostCredential(credential as VC) as VC,
+        [credential]
+    );
 
-    const _isClr = isClrCredential(credential);
+    const _isClr = isClrCredential(displayCredential);
+    const clrModel = useMemo(
+        () =>
+            _isClr
+                ? normalizeClrTranscriptDisplayModel(
+                      displayCredential as unknown as Record<string, unknown>
+                  )
+                : null,
+        [_isClr, displayCredential]
+    );
     const linkedCredentialCount = _isClr ? getClrLinkedCredentialCounts(credential) : 0;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const clrAchievements: any[] =
@@ -487,11 +504,20 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     const isIssuerViewSelected =
         Boolean(renderMethod) && selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
     const shouldUseHostCardPadding =
-        !credential ||
-        isIssuerViewSelected ||
-        getVCDisplayCardVariant(displayCredential, category) !== 'ribbon';
+        !clrModel &&
+        (!credential ||
+            isIssuerViewSelected ||
+            getVCDisplayCardVariant(displayCredential, category) !== 'ribbon');
 
-    const credentialDisplay = (
+    const credentialDisplay = clrModel ? (
+        <ClrTranscriptFullPage
+            model={clrModel}
+            boost={displayCredential}
+            certifiedWrapper={credential !== displayCredential ? credential : undefined}
+            boostUri={credentialUri}
+            options={{ viewer: 'student', surface: ClrTranscriptSurface.Full }}
+        />
+    ) : (
         <AccessibleCredentialCard
             label={getCredentialName(credential as VC) || m['claim.modal.credentialFallback']()}
         >
@@ -603,7 +629,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                             >
                                 {credential && !selectedImage && (
                                     <>
-                                        {isIssuerViewSelected && renderMethod ? (
+                                        {!clrModel && isIssuerViewSelected && renderMethod ? (
                                             <RenderMethodDisplay
                                                 vc={displayCredential}
                                                 renderMethod={renderMethod}

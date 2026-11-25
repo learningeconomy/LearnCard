@@ -19,14 +19,15 @@ Category names here are scenario labels, not new CLR properties or enums.
 There are no changes to the production renderer, schemas, wallet categorization,
 server endpoints, or existing fixtures.
 
-| Fixture ID                             | Children | What to inspect                                                                                                                                                                    |
-| -------------------------------------- | -------: | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `clr/employment-record`                |        3 | Workplace role, activity interval, distinct award/validity dates, assessor and creator, fieldwork hours, rubric-level-only competency result.                                      |
-| `clr/training-provider-record`         |        4 | Non-credit course, score/required score, completion certificate, in-progress training, explicitly labeled hours, no GPA or academic term.                                          |
-| `clr/military-training-record`         |        3 | Fictional non-combat logistics training, fieldwork role, assessment source, rubric level, and a training recognition award.                                                        |
-| `clr/professional-organization-record` |        3 | Membership period and identifier, volunteer mentoring, and development evidence issued by a separate provider.                                                                     |
-| `clr/licensing-regulatory-record`      |        3 | Synthetic license number, distinct validity windows, expired historical certification, renewal, and multiple issuer profiles.                                                      |
-| `clr/mixed-career-record`              |        6 | A course first, followed by employment activity, membership, apprenticeship, competency and license. Non-course records must not disappear when the transcript layout is selected. |
+| Fixture ID                             | Children | What to inspect                                                                                                                                                                                                                |
+| -------------------------------------- | -------: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `clr/employment-record`                |        3 | Workplace role, activity interval, distinct award/validity dates, assessor and creator, fieldwork hours, rubric-level-only competency result.                                                                                  |
+| `clr/training-provider-record`         |        4 | Non-credit course, score/required score, completion certificate, in-progress training, explicitly labeled hours, no GPA or academic term.                                                                                      |
+| `clr/military-training-record`         |        3 | Fictional non-combat logistics training, fieldwork role, assessment source, rubric level, and a training recognition award.                                                                                                    |
+| `clr/professional-organization-record` |        3 | Membership period and identifier, volunteer mentoring, and development evidence issued by a separate provider.                                                                                                                 |
+| `clr/licensing-regulatory-record`      |        3 | Synthetic license number, distinct validity windows, expired historical certification, renewal, and multiple issuer profiles.                                                                                                  |
+| `clr/mixed-career-record`              |        6 | A course first, followed by employment activity, membership, apprenticeship, competency and license. Non-course records must not disappear when the transcript layout is selected.                                             |
+| `clr/multi-issuer-verification`        |        3 | Unsigned source blueprint for two district issuers, one status-list entry, and independent nested proofs. `materializeMultiIssuerClrVerificationFixture()` signs children and the outer CLR with caller-provided real issuers. |
 
 ### Discover and preview
 
@@ -95,6 +96,15 @@ For an end-to-end multi-issuer test:
 - Embed the resulting children unchanged and sign the outer CLR with the publisher.
 - Verify parent and children independently using the intended time and status policy.
 
+For the real verifier/browser regression, `materializeMultiIssuerClrVerificationFixture()`
+accepts per-issuer signing callbacks and a genuinely signed revoked status-list
+credential. It signs each child independently, alters one already-signed child,
+then signs the enclosing CLR last; thus the outer proof covers the tampered child
+without making that child's proof valid. `materializeClrVerificationScaleFixture()`
+creates independently signed records across a caller-supplied issuer set (50
+records by default). These are runtime materializers, not registry fixtures, so
+generic library issuance tests continue to exercise only the unsigned templates.
+
 Do not run UUID/identity rewriting over already-signed child credentials. Avoid
 routing these rich payloads through a lossy form-template round trip during display
 review. Direct JSON/template previews are not equivalent to verified credentials.
@@ -132,6 +142,21 @@ fixture inputs, scenario-specific fields and deliberate expired-child behavior.
 The existing integration issuance suite discovers all six through the registry
 and can sign each outer CLR using its bundled contexts.
 That suite's outer-proof assertion alone is not recursive CLR conformance testing.
+
+The multi-issuer proof regression uses the registered unsigned blueprint above
+and a test-only materializer with real LearnCard/DIDKit signer callbacks. Its
+integration test starts an ephemeral loopback HTTP server for district/state
+`did:web` documents and the signed BitstringStatusList credential; the server is
+closed in test cleanup. The app-level commands are:
+
+```sh
+cd apps/learn-card-app
+bun run test -- src/pages/dev/ClrVerification.test.ts
+bunx playwright test --config=playwright.clr.config.ts tests/clr-verification.mocked.spec.ts
+```
+
+The Playwright config starts its existing Vite harness; no backend services are
+required. The installed workspace DIDKit WebAssembly package is required.
 
 These fixture tests do not assert that missing UI support has already been fixed.
 Use the scenarios for manual app review and add renderer tests with each follow-on

@@ -8,6 +8,7 @@ import {
 import * as m from '../../paraglide/messages.js';
 import { IonItem, IonLabel, IonList, IonPopover } from '@ionic/react';
 import type { VC } from '@learncard/types';
+import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
 
 import { CLR_TRANSCRIPT_DEMO_FIXTURES as FIXTURES } from './clrTranscriptDemo.fixtures';
 
@@ -35,7 +36,11 @@ type FixtureKey = keyof typeof FIXTURES;
 const ClrTranscriptRendererDemo = () => {
     const locale = useLocale();
     const changeLocale = useChangeLocale();
-    const [fixture, setFixture] = useState<FixtureKey>('westbridge');
+    const [fixture, setFixture] = useState<FixtureKey>(() =>
+        typeof window !== 'undefined' && window.__CLR_VERIFICATION_FIXTURE__
+            ? 'multiIssuerVerification'
+            : 'westbridge'
+    );
     const [viewer, setViewer] = useState<ClrTranscriptViewer>('student');
     const [surface, setSurface] = useState<ClrTranscriptSurface>(ClrTranscriptSurface.Full);
 
@@ -45,9 +50,10 @@ const ClrTranscriptRendererDemo = () => {
     const [viewerPopoverOpen, setViewerPopoverOpen] = useState(false);
     const [viewerPopoverEvent, setViewerPopoverEvent] = useState<Event | undefined>(undefined);
 
-    const currentModel = normalizeClrTranscriptDisplayModel(
-        FIXTURES[fixture].credential as Record<string, unknown>
-    );
+    const credential = FIXTURES[fixture].credential as unknown as VC;
+    const boost = unwrapBoostCredential(credential) as VC;
+    const certifiedWrapper = boost === credential ? undefined : credential;
+    const currentModel = normalizeClrTranscriptDisplayModel(boost);
 
     return (
         <div className="bg-grayscale-10 h-full overflow-hidden font-poppins flex flex-col pt-[var(--ion-safe-area-top,0px)] pb-[var(--ion-safe-area-bottom,0px)]">
@@ -206,21 +212,24 @@ const ClrTranscriptRendererDemo = () => {
                     <ClrTranscriptCard
                         model={currentModel}
                         options={{ viewer, surface }}
-                        boost={FIXTURES[fixture].credential as unknown as VC}
+                        boost={boost}
+                        certifiedWrapper={certifiedWrapper}
                         onViewDetails={() => setSurface(ClrTranscriptSurface.Full)}
                     />
                 )}
                 {surface === ClrTranscriptSurface.Embed && (
                     <ClrTranscriptEmbedWidget
                         model={currentModel}
-                        boost={FIXTURES[fixture].credential as unknown as VC}
+                        boost={boost}
+                        certifiedWrapper={certifiedWrapper}
                         options={{ viewer, surface }}
                     />
                 )}
                 {surface === ClrTranscriptSurface.Full && (
                     <ClrTranscriptFullPage
                         model={currentModel}
-                        boost={FIXTURES[fixture].credential as unknown as VC}
+                        boost={boost}
+                        certifiedWrapper={certifiedWrapper}
                         options={{ viewer, surface }}
                         insetTop={false}
                     />

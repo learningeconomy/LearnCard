@@ -64,12 +64,79 @@ available in details but are excluded from learner display names.
 
 Proof presence is metadata, not successful cryptographic verification.
 
+## Occurrence verification
+
+`verification.ts` shares CLR verification between wallet and share viewers.
+`verifyClrCredentialTree(model, verify, budget, onUpdate)` checks the outer
+credential and every signed embedded occurrence, returning progressive immutable
+snapshots. `records` uses canonical record IDs; duplicate source credential IDs
+never share a verdict. Descendant results retain source paths and do not replace
+the containing record's own signer or signature result.
+Unmapped signed occurrences still qualify verification summaries. Only occurrences
+with a canonical record owner receive record-detail navigation; do not invent a
+navigation target for ambiguous or otherwise unmapped source data.
+
+Keep proof, lifecycle, subject binding and registry trust separate. A valid
+publisher signature does not validate a district signature, and a valid district
+signature does not establish that its learner matches the CLR learner. Binding
+uses exact subject IDs; missing or ambiguous subjects remain unconfirmed. Registry
+lookup is per exact issuer DID, never inherited from the publisher.
+
+`isClrPublisherVerified(snapshot)` reflects only the settled outer credential.
+`isClrRecordConfirmed(node)` also requires its signed descendants, lifecycle and
+learner binding to be confirmed. Never use the latter to relabel a valid publisher
+as invalid because one district record failed. Passing a snapshot to
+`createClrTranscriptDisplayModel(canonical, snapshot)` keeps this distinction.
+Snapshots retain each occurrence's own issuer name, image and verification methods;
+these are display metadata, not registry trust.
+
+For a certified wrapper, verify the original wrapper with the SDK in the same
+pass. Keep its certification verdict separate from the inner CLR publisher and
+records. A shared wrapper never qualifies as verified unless both the
+certification and the enclosed CLR pass.
+
+Use one `createVerificationBudget()` per pass (30 seconds), including a share's
+holder presentation and selected members. Work is bounded to four credential
+checks at once. Cancellation stops new checks and discards late results; the
+SDK verification promise itself cannot be aborted. Resolution/transport failures,
+missing status evidence and exhausted budgets remain unavailable, not invalid.
+Reuse DIDKit's existing DID-web document cache; never cache credential proof
+results merely by issuer DID or raw credential ID.
+Encoded or otherwise non-object embedded occurrences are retained as unavailable;
+they cannot silently qualify an enclosing record as confirmed. Unsigned CLR
+occurrences are not submitted for proof or status checks. Recognized temporal
+errors are reported separately from proof and lifecycle.
+
+An active status requires a completed status check and structured unset evidence
+matching every declared entry's type, purpose, list URL and index. Missing or
+unmatched metadata stays unavailable; a status flag alone is not an all-clear.
+
+Unsigned children and successful same-publisher children need no extra UI.
+Signed-child exceptions must still qualify the summary, including same-publisher
+failures. Do not equate status-list presence with an active status or registry
+membership with signature validity.
+
+The app shows a compact publisher verdict first. Expand publisher or issuer
+details to see their IDs, registry evidence and verification methods; expand an
+issuer to inspect its individual record verdicts and checks. Registry evidence
+is shown once per issuer and does not change proof or lifecycle results.
+
+When the learner label falls back to an LCN DID, the app can display the name
+of the exact matching profile. This does not change signed claims or the
+identifier used for learner binding.
+
 ## Regression coverage
 
 Run `vitest run src/helpers/credentials/clr` from `packages/learn-card-base`, and
 the `clrRenderer` suites plus `src/components/clr-transcript` from
 `apps/learn-card-app`. The app corpus suite verifies both canonical preservation
 and display parity against every registered CLR fixture.
+
+`tests/clr-verification.mocked.spec.ts` exercises actual DIDKit signatures, a real
+revoked bitstring list, tampering and duplicate IDs on desktop/mobile. It staggers
+issuer responses to check stable geometry, checks English/Spanish/French/Arabic
+status labels, and proves exactly five cold DID-document requests for 50 records.
+Only registry discovery is isolated; signature and status verification are real.
 
 ## Collection layouts (LC-2215)
 

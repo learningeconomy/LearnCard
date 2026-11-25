@@ -6,11 +6,12 @@ import { StatCard } from './ClrStatCard';
 import ClrIssuerBadge from './ClrIssuerBadge';
 import ClrEvidenceDetailPanel from './ClrEvidenceDetailPanel';
 import ClrCompetencyDetailPanel from './ClrCompetencyDetailPanel';
-import ClrVerificationPills from './ClrVerificationPills';
+import { ClrCredentialValidity } from './ClrVerificationPills';
+import ClrTranscriptTrustBadge from './ClrTranscriptTrustBadge';
+import { hasSignedClrCredentials } from 'learn-card-base/helpers/credentials/clr/verification';
 import { createTranscriptEvidenceSourceSummaries } from './ClrTranscriptEvidenceList';
 import ShareBoostLink from '../boost/boost-options-menu/ShareBoostLink';
 import { UserProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
-import CredentialVerificationDisplay from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 
 import { CredentialCategoryEnum, ModalTypes, useModal } from 'learn-card-base';
 
@@ -18,6 +19,7 @@ import type { VC } from '@learncard/types';
 import { formatClrDate } from 'learn-card-base/helpers/credentials/clr/renderer';
 import type { ClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 import { formatClrGpa } from 'learn-card-base/helpers/credentials/clr/helpers';
+import { ClrVerificationSummary } from './ClrVerificationSummary';
 import { getClrIssuerLogo } from 'learn-card-base/helpers/credentials/clr/kind';
 
 const ClrTranscriptSummaryHeader: React.FC<{
@@ -26,7 +28,8 @@ const ClrTranscriptSummaryHeader: React.FC<{
     boostUri?: string;
     adminMode?: boolean;
     onSelectRecord?: (recordId: string) => void;
-}> = ({ model, boost, boostUri, adminMode = false, onSelectRecord }) => {
+    onRetryVerification?: () => void;
+}> = ({ model, boost, boostUri, adminMode = false, onSelectRecord, onRetryVerification }) => {
     const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
     const learner = useClrLearnerIdentity(model.header.learnerName?.value);
     const issuerLogo = getClrIssuerLogo(model);
@@ -196,23 +199,26 @@ const ClrTranscriptSummaryHeader: React.FC<{
                 )}
             </div>
 
-            {/* Verification badge + pills + issuer logo */}
             <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-2 flex-wrap">
-                    <div className="flex items-center bg-grayscale-100 rounded-full px-2 py-1">
-                        <CredentialVerificationDisplay
-                            className="bg-grayscale-100!"
-                            iconClassName="w-4! h-4!"
-                            credential={boost}
-                            showText
-                            spanClassName="text-[#026BFF]"
-                        />
-                    </div>
-                    <ClrVerificationPills boost={boost} />
+                    <ClrTranscriptTrustBadge
+                        verification={model.verification}
+                        hideStatus={Boolean(
+                            model.verification.snapshot &&
+                            hasSignedClrCredentials(model.verification.snapshot)
+                        )}
+                    />
+                    <ClrCredentialValidity boost={boost} />
                 </div>
-
                 <ClrIssuerBadge logoSrc={issuerLogo} issuerName={model.header.issuerName?.value} />
             </div>
+            <ClrVerificationSummary
+                snapshot={model.verification.snapshot}
+                publisherDid={model.canonical.collection.publisher?.id?.value}
+                model={model}
+                onSelectRecord={onSelectRecord}
+                retry={onRetryVerification}
+            />
         </div>
     );
 };

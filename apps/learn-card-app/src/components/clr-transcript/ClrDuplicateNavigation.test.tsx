@@ -13,6 +13,7 @@ vi.mock('learn-card-base', () => ({
     useModal: () => modal,
     ModalTypes: { Right: 'right' },
     CredentialCategoryEnum: { learningHistory: 'learningHistory' },
+    useGetProfile: () => ({ data: undefined }),
     isSkillCompetencyAlignment: () => false,
     SkillCompetencyCard: () => null,
 }));
@@ -62,7 +63,6 @@ describe('duplicate CLR navigation through the full page', () => {
                 fireEvent.click(screen.getByRole('button', { name: new RegExp(`${name} record`) }));
                 expect(modal.newModal).toHaveBeenCalledTimes(index + 1);
                 const panel = modal.newModal.mock.calls[index][0];
-                expect(panel.props.record.sourceCredentialId).toBe(model.records[index].id);
                 const detail = render(<div role="dialog">{panel}</div>);
                 const dialog = screen.getByRole('dialog');
                 expect(

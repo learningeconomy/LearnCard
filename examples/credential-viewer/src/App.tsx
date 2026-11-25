@@ -17,6 +17,7 @@ import { IssuePanel } from './components/IssuePanel';
 import { SendPanel } from './components/SendPanel';
 import { NewFixturePanel } from './components/NewFixturePanel';
 import { ManagedRefreshPanel } from './components/ManagedRefreshPanel';
+import { ClrVerificationDemoPanel } from './components/ClrVerificationDemoPanel';
 import { SPEC_LABELS } from './lib/colors';
 import { getCategoryForFixture } from './lib/category';
 
@@ -40,6 +41,7 @@ const AppInner: React.FC = () => {
     const [showFilters, setShowFilters] = useState(true);
     const [showNewFixture, setShowNewFixture] = useState(false);
     const [showManagedRefresh, setShowManagedRefresh] = useState(false);
+    const [showClrVerificationDemo, setShowClrVerificationDemo] = useState(false);
 
     const filtered = useMemo(() => {
         return allFixtures.filter(f => {
@@ -260,6 +262,13 @@ const AppInner: React.FC = () => {
                         </button>
 
                         <button
+                            onClick={() => setShowClrVerificationDemo(true)}
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 rounded-lg transition-colors cursor-pointer"
+                        >
+                            CLR Verification Demo
+                        </button>
+
+                        <button
                             onClick={() => setShowNewFixture(true)}
                             className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 rounded-lg transition-colors cursor-pointer"
                         >
@@ -382,6 +391,10 @@ const AppInner: React.FC = () => {
 
             {showManagedRefresh && (
                 <ManagedRefreshPanel onClose={() => setShowManagedRefresh(false)} />
+            )}
+
+            {showClrVerificationDemo && (
+                <ClrVerificationDemoPanel onClose={() => setShowClrVerificationDemo(false)} />
             )}
         </div>
     );

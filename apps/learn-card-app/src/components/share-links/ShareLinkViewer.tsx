@@ -25,9 +25,9 @@ import {
     decryptSharePayload,
     validateShareManifest,
 } from 'learn-card-base/helpers/share-links';
+import { isClrCredential, unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
 import * as m from '../../paraglide/messages.js';
 import {
-    createVerificationBudget,
     findSavedSharePresentation,
     readShareAddress,
     SAVED_SHARE_METADATA_TYPE,
@@ -46,6 +46,19 @@ import {
     hasProtectedResumePdf,
     downloadProtectedResumePdf,
 } from '../../helpers/resume-publishing/protectedPdf';
+import {
+    createVerificationBudget,
+    boundedVerification,
+    createClrVerificationSnapshot,
+    createUnavailableClrVerificationSnapshot,
+    type ClrVerificationSnapshot,
+} from 'learn-card-base/helpers/credentials/clr/verification';
+import {
+    normalizeClrTranscriptDisplayModel,
+    type ClrTranscriptDisplayModel,
+    ClrTranscriptSurface,
+} from 'learn-card-base/helpers/credentials/clr/renderer';
+import { ClrRenderer } from '../clr-renderer/ClrRenderer';
 
 type Ready = {
     payload: SharePayload;
@@ -98,6 +111,35 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
     const [attempt, setAttempt] = useState(0);
     const [proofs, setProofs] = useState<ProofState[]>([]);
     const [holder, setHolder] = useState<ProofState>('checking');
+    const [verificationAttempt, setVerificationAttempt] = useState(0);
+    const [clrVerifications, setClrVerifications] = useState<
+        Record<number, ClrVerificationSnapshot>
+    >({});
+    const clrModels = useMemo(() => {
+        const models = new Map<
+            number,
+            {
+                model: ClrTranscriptDisplayModel;
+                boost: VC;
+                certifiedWrapper?: VC;
+                pending: ClrVerificationSnapshot;
+            }
+        >();
+        ready?.payload.presentation.verifiableCredential.forEach((credential, index) => {
+            const inner = unwrapBoostCredential(credential);
+            if (inner && isClrCredential(inner)) {
+                const model = normalizeClrTranscriptDisplayModel(inner);
+                const certifiedWrapper = inner === credential ? undefined : credential;
+                models.set(index, {
+                    model,
+                    boost: inner,
+                    certifiedWrapper,
+                    pending: createClrVerificationSnapshot(model.canonical, !!certifiedWrapper),
+                });
+            }
+        });
+        return models;
+    }, [ready]);
     const [link, setLink] = useState('');
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.Center,
@@ -245,9 +287,6 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
     useEffect(() => {
         enterSharePrivacy();
         let cancelled = false;
-        // One budget bounds the holder proof plus every credential/endorsement
-        // check; cancelling on unmount/retry stops any further checks.
-        let budget: ReturnType<typeof createVerificationBudget> | undefined;
         currentReady.current = undefined;
         setReady(undefined);
         setState('loading');
@@ -289,7 +328,6 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
             setState('incomplete');
             return () => {
                 cancelled = true;
-                budget?.cancel();
             };
         }
         try {
@@ -356,30 +394,9 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                     if (cancelled) return;
                     const payload = validated.manifest;
                     const members = payload.presentation.verifiableCredential;
-                    budget = createVerificationBudget();
                     setReady({ payload, metadata, receipt: content.receipt });
                     setProofs(members.map(() => 'checking'));
                     setState('ready');
-                    void verifySharedPresentation(wallet, payload, budget).then(result => {
-                        if (!cancelled) setHolder(result);
-                    });
-                    // Bounded sequential checks avoid flooding issuer/status endpoints.
-                    // The shared budget (not the wallet call) decides when to stop; a
-                    // late result from an already-cancelled pass is ignored.
-                    for (let index = 0; index < members.length; index++) {
-                        if (cancelled || budget.expired()) {
-                            if (!cancelled)
-                                setProofs(previous =>
-                                    previous.map((value, i) => (i >= index ? 'unavailable' : value))
-                                );
-                            break;
-                        }
-                        const result = await verifyCredentialTree(wallet, members[index], budget);
-                        if (cancelled) break;
-                        setProofs(previous =>
-                            previous.map((value, i) => (i === index ? result : value))
-                        );
-                    }
                 } catch {
                     if (!cancelled) setState('corrupt');
                 }
@@ -391,9 +408,73 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
         return () => {
             cancelled = true;
             currentReady.current = undefined;
-            budget?.cancel();
         };
     }, [id, hash, attempt, submittedPasscode, history, location.pathname]);
+
+    useEffect(() => {
+        if (!ready || state !== 'ready') return;
+        let cancelled = false;
+        const budget = createVerificationBudget();
+        const members = ready.payload.presentation.verifiableCredential;
+        setProofs(members.map(() => 'checking'));
+        setHolder('checking');
+        setClrVerifications(
+            Object.fromEntries([...clrModels].map(([index, { pending }]) => [index, pending]))
+        );
+        const verify = async (): Promise<void> => {
+            try {
+                const wallet = shareWallet(
+                    await boundedVerification(getBespokeLearnCard('a'), budget)
+                );
+                if (cancelled) return;
+                void verifySharedPresentation(wallet, ready.payload, budget).then(result => {
+                    if (!cancelled) setHolder(result);
+                });
+                for (let index = 0; index < members.length; index++) {
+                    if (cancelled) return;
+                    const clr = clrModels.get(index);
+                    const result = await verifyCredentialTree(
+                        wallet,
+                        clr?.boost ?? members[index],
+                        budget,
+                        snapshot => {
+                            if (!cancelled)
+                                setClrVerifications(previous => ({
+                                    ...previous,
+                                    [index]: snapshot,
+                                }));
+                        },
+                        clr?.certifiedWrapper
+                    );
+                    if (!cancelled)
+                        setProofs(previous =>
+                            previous.map((value, i) => (i === index ? result : value))
+                        );
+                }
+            } catch {
+                if (!cancelled) {
+                    setHolder('unavailable');
+                    setProofs(members.map(() => 'unavailable'));
+                    setClrVerifications(
+                        Object.fromEntries(
+                            [...clrModels].map(([index, { model, certifiedWrapper }]) => [
+                                index,
+                                createUnavailableClrVerificationSnapshot(
+                                    model.canonical,
+                                    !!certifiedWrapper
+                                ),
+                            ])
+                        )
+                    );
+                }
+            }
+        };
+        void verify();
+        return () => {
+            cancelled = true;
+            budget.cancel();
+        };
+    }, [ready, state, clrModels, verificationAttempt]);
 
     useEffect(() => {
         if (state !== 'ready' || !ready || !visible.current) return;
@@ -745,8 +826,31 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                         expiresAt={ready.metadata.expiresAt}
                                         proofs={proofRecord}
                                         showOriginal
-                                        renderCredential={(credential, _index, proof) =>
-                                            hasProtectedResumePdf(credential) ? (
+                                        showCustomCredentialDetails={(_credential, index) =>
+                                            clrModels.has(index)
+                                        }
+                                        renderCredential={(credential, index, proof) => {
+                                            const clr = clrModels.get(index);
+                                            if (clr)
+                                                return (
+                                                    <ClrRenderer
+                                                        model={clr.model}
+                                                        boost={clr.boost}
+                                                        options={{
+                                                            viewer: 'employer',
+                                                            surface: ClrTranscriptSurface.Full,
+                                                        }}
+                                                        verification={
+                                                            clrVerifications[index] ?? clr.pending
+                                                        }
+                                                        onRetryVerification={() =>
+                                                            setVerificationAttempt(
+                                                                value => value + 1
+                                                            )
+                                                        }
+                                                    />
+                                                );
+                                            return hasProtectedResumePdf(credential) ? (
                                                 <ProtectedResumePreview
                                                     credential={credential}
                                                     onDownload={downloadPdf}
@@ -757,8 +861,8 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                                         ) : undefined
                                                     }
                                                 />
-                                            ) : undefined
-                                        }
+                                            ) : undefined;
+                                        }}
                                         summaryExtra={
                                             <>
                                                 <section

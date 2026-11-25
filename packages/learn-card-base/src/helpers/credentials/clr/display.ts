@@ -1,4 +1,6 @@
 import { normalizeClrCredential } from './normalize';
+import { isClrPublisherVerified } from './verification';
+import type { ClrVerificationSnapshot } from './verification.types';
 import { summarizeClrCredits, getClrCreditTotal } from './credits';
 import { getClrLearnerName, getClrProfileImage } from './selectors';
 import { getEvidenceMimeType } from './evidence';
@@ -156,7 +158,8 @@ const addressDisplay = (address?: ClrJsonObject): IssuerAddressDisplayModel | un
  * summary wording, and display fallbacks are policies; source claims remain canonical.
  */
 export const createClrTranscriptDisplayModel = (
-    canonical: ClrNormalizedModel
+    canonical: ClrNormalizedModel,
+    snapshot?: ClrVerificationSnapshot
 ): ClrTranscriptDisplayModel => {
     const { collection, records } = canonical;
     const credentialId = collection.id?.value ?? 'unknown-credential-id';
@@ -333,12 +336,6 @@ export const createClrTranscriptDisplayModel = (
             message: 'Credential is unsigned or proof was not provided.',
             sourcePath: 'proof',
         });
-    if (collection.nestedUnsignedCount)
-        warnings.push({
-            code: 'NESTED_UNSIGNED_CREDENTIALS',
-            severity: 'info',
-            message: 'One or more nested credentials are unsigned or missing proof.',
-        });
 
     const creditTotals = summarizeClrCredits(courses);
     const qualityLevel = courses.length
@@ -421,12 +418,15 @@ export const createClrTranscriptDisplayModel = (
         },
         verification: {
             credentialSigned: collection.hasProof,
-            credentialVerified: false,
-            nestedCredentialSignedCount: collection.nestedSignedCount,
-            nestedCredentialUnsignedCount: collection.nestedUnsignedCount,
-            status: collection.hasProof ? 'signed-unverified' : 'unsigned',
+            credentialVerified: isClrPublisherVerified(snapshot),
+            status: isClrPublisherVerified(snapshot)
+                ? 'verified'
+                : collection.hasProof
+                  ? 'signed-unverified'
+                  : 'unsigned',
             hasCredentialStatus: collection.hasCredentialStatus,
             credentialStatusType,
+            snapshot,
         },
     };
 };

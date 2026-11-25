@@ -1,8 +1,6 @@
 import React from 'react';
 import { formatClrCreditTotal } from 'learn-card-base/helpers/credentials/clr/credits';
-
 import ClrCourseTable from './ClrCourseTable';
-
 import type {
     ClrTranscriptDisplayModel,
     CourseDisplayModel,
@@ -12,31 +10,31 @@ const ClrCourseSection: React.FC<{
     model: ClrTranscriptDisplayModel;
     onSelectCourse: (course: CourseDisplayModel) => void;
     adminMode?: boolean;
-}> = ({ model, onSelectCourse, adminMode = false }) => {
-    return (
-        <div id="course-history" className="space-y-v3-3 scroll-mt-6">
-            <div className="flex items-center justify-between px-1 border-b border-grayscale-100 pb-2 mb-4">
-                <p className="text-xs font-semibold text-grayscale-500 uppercase tracking-widest">
-                    Course History
-                </p>
-                <p className="text-xs text-grayscale-500">
-                    {model.summary.courseCount} course{model.summary.courseCount !== 1 ? 's' : ''}
-                    {model.summary.creditTotals.map(total => (
-                        <span className="block" key={`${total.kind}-${total.unit ?? ''}`}>
-                            {formatClrCreditTotal(total)}
-                        </span>
-                    ))}
-                </p>
-            </div>
-            <ClrCourseTable
-                courses={model.courses}
-                onSelectCourse={onSelectCourse}
-                adminMode={adminMode}
-                competencies={model.competencies}
-                associations={model.associations}
-            />
+}> = ({ model, onSelectCourse, adminMode = false }) => (
+    <div id="course-history" className="space-y-v3-3 scroll-mt-6">
+        <div className="flex items-center justify-between px-1 border-b border-grayscale-100 pb-2 mb-4">
+            <p className="text-xs font-semibold text-grayscale-500 uppercase tracking-widest">
+                Course History
+            </p>
+            <p className="text-xs text-grayscale-500">
+                {model.summary.courseCount} course{model.summary.courseCount !== 1 ? 's' : ''}
+                {model.summary.creditTotals.map(total => (
+                    <span className="block" key={`${total.kind}-${total.unit ?? ''}`}>
+                        {formatClrCreditTotal(total)}
+                    </span>
+                ))}
+            </p>
         </div>
-    );
-};
+        <ClrCourseTable
+            courses={model.courses}
+            onSelectCourse={onSelectCourse}
+            adminMode={adminMode}
+            competencies={model.competencies}
+            associations={model.associations}
+            verification={model.verification.snapshot}
+            publisherDid={model.canonical.collection.publisher?.id?.value}
+        />
+    </div>
+);
 
 export default ClrCourseSection;

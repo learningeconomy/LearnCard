@@ -16,6 +16,7 @@ import ClrTranscriptEvidenceList, {
 } from './ClrTranscriptEvidenceList';
 import { StudiesIcon } from 'learn-card-base/svgs/wallet/StudiesIcon';
 import ClrCourseCredentialCollapsible from './ClrCourseCredentialCollapsible';
+import { ClrRecordVerificationDetails } from './ClrVerificationSummary';
 
 import { useModal } from 'learn-card-base';
 
@@ -82,6 +83,16 @@ const ClrCourseDetailPanel: React.FC<{
                         <p className="text-[22px] text-grayscale-900 leading-tight font-semibold">
                             {course.name?.value ?? 'Course Details'}
                         </p>
+                        {model && (
+                            <ClrRecordVerificationDetails
+                                node={
+                                    model.verification.snapshot?.records[course.sourceCredentialId]
+                                }
+                                recordId={course.sourceCredentialId}
+                                recordName={course.name?.value ?? 'Course'}
+                                publisherDid={model.canonical.collection.publisher?.id?.value}
+                            />
+                        )}
                         <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                             <span className="text-base leading-none text-grayscale-600">
                                 <FlatIcon>
@@ -187,6 +198,14 @@ const ClrCourseDetailPanel: React.FC<{
                                         )}
                                         onSelectRecord={onSelectRecord}
                                         adminMode={adminMode}
+                                        verificationNode={
+                                            model?.verification.snapshot?.records[
+                                                c.sourceCredentialId
+                                            ]
+                                        }
+                                        publisherDid={
+                                            model?.canonical.collection.publisher?.id?.value
+                                        }
                                     />
                                 ))}
                             </div>
