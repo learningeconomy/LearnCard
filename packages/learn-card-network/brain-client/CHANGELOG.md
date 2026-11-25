@@ -1,5 +1,16 @@
 # @learncard/network-brain-client
 
+## 2.9.0
+
+### Minor Changes
+
+- [#2115](https://github.com/learningeconomy/LearnCard/pull/2115) [`afb25c9b840c75db9eccfe792428b0327a98afb6`](https://github.com/learningeconomy/LearnCard/commit/afb25c9b840c75db9eccfe792428b0327a98afb6) Thanks [@goblincore](https://github.com/goblincore)! - Add an optional `exclude` filter to managed boost pagination. Omit boosts with a matching name or category before selecting a page. Each exclusion accepts an exact string, a list, or a regular expression. Missing field values remain eligible, and exact exclusions preserve slash-delimited strings over tRPC. Existing queries retain their matching behavior.
+
+### Patch Changes
+
+- Updated dependencies [[`afb25c9b840c75db9eccfe792428b0327a98afb6`](https://github.com/learningeconomy/LearnCard/commit/afb25c9b840c75db9eccfe792428b0327a98afb6), [`818979835a305dea973eac06f7b2fd5a6f100305`](https://github.com/learningeconomy/LearnCard/commit/818979835a305dea973eac06f7b2fd5a6f100305), [`902aebe9ba82986c6be52c46bc16f22cc1822294`](https://github.com/learningeconomy/LearnCard/commit/902aebe9ba82986c6be52c46bc16f22cc1822294)]:
+    - @learncard/types@6.3.0
+
 ## 2.8.0
 
 ### Minor Changes

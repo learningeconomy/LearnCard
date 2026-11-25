@@ -1,5 +1,13 @@
 # @learncard/escrow-canary
 
+## 0.3.6
+
+### Patch Changes
+
+- Updated dependencies [[`818979835a305dea973eac06f7b2fd5a6f100305`](https://github.com/learningeconomy/LearnCard/commit/818979835a305dea973eac06f7b2fd5a6f100305), [`29d6949fd19a6179bd012932ee40fe4014b18941`](https://github.com/learningeconomy/LearnCard/commit/29d6949fd19a6179bd012932ee40fe4014b18941)]:
+    - @learncard/sss-key-manager@0.3.4
+    - @learncard/init@3.0.1
+
 ## 0.3.5
 
 ### Patch Changes

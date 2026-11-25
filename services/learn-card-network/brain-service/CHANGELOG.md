@@ -1,5 +1,34 @@
 # @learncard/network-brain-service
 
+## 5.3.0
+
+### Minor Changes
+
+- [#2115](https://github.com/learningeconomy/LearnCard/pull/2115) [`afb25c9b840c75db9eccfe792428b0327a98afb6`](https://github.com/learningeconomy/LearnCard/commit/afb25c9b840c75db9eccfe792428b0327a98afb6) Thanks [@goblincore](https://github.com/goblincore)! - Add an optional `exclude` filter to managed boost pagination. Omit boosts with a matching name or category before selecting a page. Each exclusion accepts an exact string, a list, or a regular expression. Missing field values remain eligible, and exact exclusions preserve slash-delimited strings over tRPC. Existing queries retain their matching behavior.
+
+- [#2092](https://github.com/learningeconomy/LearnCard/pull/2092) [`902aebe9ba82986c6be52c46bc16f22cc1822294`](https://github.com/learningeconomy/LearnCard/commit/902aebe9ba82986c6be52c46bc16f22cc1822294) Thanks [@Custard7](https://github.com/Custard7)! - Add optional external consent bindings and opt-in revision/hash expectations to contract credential writes. Compare expectations inside the existing locked consent delivery gate and retain cleanup on rejected delivery. Calls without expectations retain existing authorization behavior.
+
+### Patch Changes
+
+- [#2086](https://github.com/learningeconomy/LearnCard/pull/2086) [`70ae9d27efd1ce69de02adeb00633c7a76f59fa5`](https://github.com/learningeconomy/LearnCard/commit/70ae9d27efd1ce69de02adeb00633c7a76f59fa5) Thanks [@Custard7](https://github.com/Custard7)! - Restrict user DID profile aliases to the configured authority, allowing the localhost fallback only in offline mode without a configured domain and with a defined port. Preserve encoded and decoded local authorities without trusting foreign hosts.
+
+- Updated dependencies [[`afb25c9b840c75db9eccfe792428b0327a98afb6`](https://github.com/learningeconomy/LearnCard/commit/afb25c9b840c75db9eccfe792428b0327a98afb6), [`818979835a305dea973eac06f7b2fd5a6f100305`](https://github.com/learningeconomy/LearnCard/commit/818979835a305dea973eac06f7b2fd5a6f100305), [`902aebe9ba82986c6be52c46bc16f22cc1822294`](https://github.com/learningeconomy/LearnCard/commit/902aebe9ba82986c6be52c46bc16f22cc1822294), [`29d6949fd19a6179bd012932ee40fe4014b18941`](https://github.com/learningeconomy/LearnCard/commit/29d6949fd19a6179bd012932ee40fe4014b18941)]:
+    - @learncard/types@6.3.0
+    - @learncard/helpers@1.8.4
+    - @learncard/credential-library@2.1.11
+    - @learncard/core@10.0.1
+    - @learncard/did-web-plugin@1.1.48
+    - @learncard/didkey-plugin@1.2.1
+    - @learncard/didkit-plugin@1.11.1
+    - @learncard/didkit-plugin-node@0.3.14
+    - @learncard/encryption-plugin@1.2.4
+    - @learncard/learn-card-plugin@1.2.48
+    - @learncard/vc-plugin@1.7.4
+    - @learncard/vc-templates-plugin@1.1.48
+    - @learncard/crypto-plugin@2.0.1
+    - @learncard/dynamic-loader-plugin@1.1.48
+    - @learncard/expiration-plugin@1.2.48
+
 ## 5.2.0
 
 ### Minor Changes

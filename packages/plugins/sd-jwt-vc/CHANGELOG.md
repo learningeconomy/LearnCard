@@ -1,5 +1,22 @@
 # @learncard/sd-jwt-vc-plugin
 
+## 0.2.26
+
+### Patch Changes
+
+- [#2136](https://github.com/learningeconomy/LearnCard/pull/2136) [`29d6949fd19a6179bd012932ee40fe4014b18941`](https://github.com/learningeconomy/LearnCard/commit/29d6949fd19a6179bd012932ee40fe4014b18941) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Upgrade `@sd-jwt/core` and `@sd-jwt/sd-jwt-vc` to 0.20 for [GHSA-f9j6-8p6x-r9j6](https://github.com/advisories/GHSA-f9j6-8p6x-r9j6). Version 0.19 silently dropped a disclosure whose digest didn't match the issuer-signed `_sd` array and returned the remaining claims.
+
+    - `@sd-jwt/decode` has no 0.20 release because it was merged into `@sd-jwt/core`. `@learncard/helpers` and `@learncard/sd-jwt-vc-plugin` now import `decodeSdJwt`, `getClaims` and the SD-JWT types from `@sd-jwt/core`.
+    - `parseSdJwtVc` and `verifySdJwtVc` now reject a tampered or unreferenced disclosure with `disclosure_hash_mismatch` before checking the signature.
+    - The credential display projection in `@learncard/helpers` drops every selectively disclosed claim when any disclosure is tampered, and keeps only the claims in the issuer payload. It previously kept the disclosures that still matched.
+    - Status-list verification still checks the issuer signature and credential status, including at OpenID4VCI receipt. The legacy `skipStatusCheck` option still suppresses the status warning without bypassing a declared status list.
+    - The bundled CLI now ships `@sd-jwt/core@0.20.1` and `@sd-jwt/sd-jwt-vc@0.20.1`.
+
+- Updated dependencies []:
+    - @learncard/core@10.0.1
+    - @learncard/didkit-plugin@1.11.1
+    - @learncard/vc-plugin@1.7.4
+
 ## 0.2.25
 
 ### Patch Changes

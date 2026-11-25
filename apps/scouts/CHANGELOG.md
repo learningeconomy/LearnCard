@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.90.54
+
+### Patch Changes
+
+- [#2014](https://github.com/learningeconomy/LearnCard/pull/2014) [`6d1ed7b28960dc3e4cda8721aecbd5a2b276d947`](https://github.com/learningeconomy/LearnCard/commit/6d1ed7b28960dc3e4cda8721aecbd5a2b276d947) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Route the remaining credential writers (add-to-wallet mutations, raw JSON imports, checklist delete/recategorize, consent-flow rollback, inbox finalize) through the shared index invalidator for the active profile, and refresh the unfiltered credential count after a claim (LC-2383).
+
+- [#2014](https://github.com/learningeconomy/LearnCard/pull/2014) [`6d1ed7b28960dc3e4cda8721aecbd5a2b276d947`](https://github.com/learningeconomy/LearnCard/commit/6d1ed7b28960dc3e4cda8721aecbd5a2b276d947) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Credential-index refreshes no longer block the operation that triggered them (LC-2383). Raw JSON imports resolve as soon as the index write lands, inbox finalize/recovery completes its sync without waiting on the skills and IDs refetches (the list and counts are still awaited), and revoked-credential cleanup finishes its troop-ID refresh while the index refetches run in the background.
+
+- [#2134](https://github.com/learningeconomy/LearnCard/pull/2134) [`f1ff9e4588f600b300d2aab5643b352429b650f9`](https://github.com/learningeconomy/LearnCard/commit/f1ff9e4588f600b300d2aab5643b352429b650f9) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-2406] List view shows incorrect display names for credentials
+
+- Updated dependencies [[`afb25c9b840c75db9eccfe792428b0327a98afb6`](https://github.com/learningeconomy/LearnCard/commit/afb25c9b840c75db9eccfe792428b0327a98afb6), [`818979835a305dea973eac06f7b2fd5a6f100305`](https://github.com/learningeconomy/LearnCard/commit/818979835a305dea973eac06f7b2fd5a6f100305), [`29d6949fd19a6179bd012932ee40fe4014b18941`](https://github.com/learningeconomy/LearnCard/commit/29d6949fd19a6179bd012932ee40fe4014b18941)]:
+    - @learncard/helpers@1.8.4
+    - @learncard/sss-key-manager@0.3.4
+    - @learncard/didkey-plugin@1.2.1
+    - @learncard/lca-api-plugin@3.0.1
+    - @learncard/react@4.0.1
+
 ## 1.90.53
 
 ### Patch Changes
