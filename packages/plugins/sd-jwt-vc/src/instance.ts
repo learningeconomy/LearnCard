@@ -14,5 +14,6 @@ export const createSdJwtVcInstance = (options: CreateInstanceOptions = {}): SDJw
         hashAlg: 'sha-256',
         saltGenerator: randomSalt,
         verifier: options.verifier,
+        statusVerifier: options.verifier,
     });
 };

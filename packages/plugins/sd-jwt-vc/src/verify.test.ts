@@ -1,3 +1,4 @@
+import { deflateSync } from 'node:zlib';
 import { vi } from 'vitest';
 import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc';
 import { generateKeyPair, exportJWK, importJWK, SignJWT } from 'jose';
@@ -70,7 +71,11 @@ const buildLearnCardMock = (publicJwk: Record<string, unknown>): LearnCardMock =
 const issueTestCredential = async (
     overrides: Record<string, unknown> = {},
     crv = 'Ed25519'
-): Promise<{ compact: string; publicJwk: Record<string, unknown> }> => {
+): Promise<{
+    compact: string;
+    publicJwk: Record<string, unknown>;
+    signer: (data: string) => Promise<string>;
+}> => {
     const { signer, publicJwk } = await makeIssuerSigner(crv);
 
     const instance = new SDJwtVcInstance({
@@ -94,10 +99,57 @@ const issueTestCredential = async (
         { header: { kid: ISSUER_KID, alg: 'EdDSA' } }
     );
 
-    return { compact, publicJwk };
+    return { compact, publicJwk, signer };
+};
+
+const STATUS_LIST_URI = 'https://status.example.com/lists/1';
+
+const signStatusListJwt = async (
+    signer: (data: string) => Promise<string>,
+    statusBytes: number[]
+): Promise<string> => {
+    const encode = (value: unknown) => Buffer.from(JSON.stringify(value)).toString('base64url');
+    const data = `${encode({ alg: 'EdDSA', typ: 'statuslist+jwt', kid: ISSUER_KID })}.${encode({
+        iss: ISSUER_DID,
+        sub: STATUS_LIST_URI,
+        iat: Math.floor(Date.now() / 1000),
+        status_list: {
+            bits: 1,
+            lst: deflateSync(Buffer.from(statusBytes)).toString('base64url'),
+        },
+    })}`;
+    return `${data}.${await signer(data)}`;
+};
+
+const stubStatusListFetch = (statusListJwt: string) => {
+    const fetchMock = vi.fn(
+        async () =>
+            new Response(statusListJwt, {
+                headers: { 'content-type': 'application/statuslist+jwt' },
+            })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    return fetchMock;
 };
 
 describe('verifySdJwtVc', () => {
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    it('verifies a credential whose status list is signed by the issuer', async () => {
+        const { compact, publicJwk, signer } = await issueTestCredential({
+            status: { status_list: { idx: 0, uri: STATUS_LIST_URI } },
+        });
+        const fetchMock = stubStatusListFetch(await signStatusListJwt(signer, [0]));
+
+        const result = await verifySdJwtVc(buildLearnCardMock(publicJwk), compact);
+
+        expect(fetchMock).toHaveBeenCalledWith(STATUS_LIST_URI, expect.anything());
+        expect(result.errors).toEqual([]);
+        expect(result.checks).toContain('issuer_signature');
+    });
+
     it('retains verification of an Ed448-signed credential from a resolvable DID issuer', async () => {
         const { compact, publicJwk } = await issueTestCredential({}, 'Ed448');
         expect(publicJwk.crv).toBe('Ed448');
