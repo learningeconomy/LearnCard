@@ -423,8 +423,8 @@ export const batchReplayStore = (
     ): Promise<boolean> => {
         const encrypted = value === null ? null : await encryptInboxCredential(value);
         return transaction(async tx => {
-            // REQUEST lock first (request, item, replay): the winner's receipt also covers a
-            // job admitted between its checkpoint and this write.
+            // REQUEST lock first (request, item, replay): the receipt also covers a job
+            // admitted between this item's checkpoint and this write.
             const decision =
                 request && value !== null ? await lockRequestDecision(tx, request) : undefined;
             await lockOwnedItem(tx, itemId, owner);
@@ -445,11 +445,13 @@ export const batchReplayStore = (
                     r.marker = null, r.expiresAt = $expiry`,
                     { id: replayKey, value: encrypted, expiry: Date.now() + ttl * 1000 }
                 );
+                // The stored receipt is this item's own proof of delivery, so it covers every
+                // job admitted so far whoever the decision names by now: a call that replayed
+                // an older receipt may have cleared the winner since the checkpoint.
                 if (decision)
                     await tx.run(
-                        `MATCH (d:InboxBatchRequest {id: $id}) WHERE d.winner = $itemId
-                        SET d.decidedSeq = d.admitted`,
-                        { id: decision.id, itemId }
+                        `MATCH (d:InboxBatchRequest {id: $id}) SET d.decidedSeq = d.admitted`,
+                        { id: decision.id }
                     );
             }
             return true;

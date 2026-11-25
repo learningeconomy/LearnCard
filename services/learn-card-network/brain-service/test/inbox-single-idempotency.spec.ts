@@ -1167,6 +1167,61 @@ describe('single inbox durable idempotency', () => {
         }
     }, 30000);
 
+    it("a winner's receipt covers a job admitted after a replayed success had cleared the winner: that job does not issue after the receipt expired", async () => {
+        const key = randomUUID();
+        const input = await inputFor(issuer, key);
+        const now = freezeClock();
+        const read = gate();
+        const answer = gate();
+        const passed = gate();
+        const deliver = gate();
+        try {
+            // An earlier delivery under the key (a batch job's): its receipt is the old one.
+            const owner = await issuer.clients.fullAuth.inbox.issueBatch({ items: [input] });
+            await processInboxQueueMessage(JSON.stringify({ itemId: `${owner.batchId}:0` }));
+            const aged = await admit(input, true); // A: admitted after it, still waiting.
+            await setJobCreatedAt(aged, now - DAY);
+            const readReplay = batchStore.readBatchReplay;
+            vi.spyOn(batchStore, 'readBatchReplay').mockImplementationOnce(async id => {
+                const stored = await readReplay(id);
+                read.open();
+                await answer.opened;
+                return stored;
+            });
+            const replayed = issuer.clients.fullAuth.inbox.issue(input);
+            await read.opened; // A call read the old receipt just before it expired.
+            await expireReceipt(key);
+            const start = batchStore.markBatchIssuanceStarted;
+            vi.spyOn(batchStore, 'markBatchIssuanceStarted').mockImplementationOnce(
+                async (...step) => {
+                    await start(...step);
+                    passed.open();
+                    await deliver.opened;
+                }
+            );
+            const working = processInboxQueueMessage(JSON.stringify({ itemId: `${aged}:0` }));
+            await passed.opened; // A reserved the free key and passed its checkpoint: the winner.
+            answer.open();
+            await replayed; // The delayed call answers from what it read and closes the request.
+            const later = await admit(input, true); // B: admitted before A delivers.
+            expect(later).not.toBe(aged);
+            deliver.open();
+            await working; // A delivers and stores its receipt.
+            // Two deliveries a day apart: the batch job's, and A's (admitted after it).
+            await expectCounts(2);
+            expect((await getInboxBatch(issuerId, later)).items[0]?.state).toBe('QUEUED');
+            await expireReceipt(key);
+            await runLateWorker();
+            await expectCounts(2);
+            expect((await getInboxBatch(issuerId, later)).items[0]).toMatchObject({
+                state: 'COMPLETED',
+                result: { success: false, error: { code: 'CONFLICT' } },
+            });
+        } finally {
+            vi.useRealTimers();
+        }
+    }, 30000);
+
     it('the batch endpoint answers a reused requestId from its newest job when two are inside the lookup', async () => {
         const requestId = randomUUID();
         const batch = { requestId, items: [await inputFor(issuer, randomUUID())] };
