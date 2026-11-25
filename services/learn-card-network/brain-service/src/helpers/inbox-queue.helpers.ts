@@ -31,6 +31,7 @@ import {
     readBatchJob,
     readBatchReplay,
     recoverInboxJobs,
+    rejectWaitingBatchItem,
     settleQueuedBatchItem,
     takeInboxDispatches,
 } from '@accesslayer/inbox-batch/store';
@@ -294,11 +295,22 @@ export const issueKeyedInboxCredential = async (
     // An earlier call under this key may have left its item waiting. Once the key's outcome
     // is known, record it there as a worker would, so that no later worker issues the item.
     // A job holding another payload under this request id is not this caller's to settle.
-    const settleWaiting = async (result: IssueInboxCredentialBatchItemResult): Promise<void> => {
+    const ownAdmission = async (): ReturnType<typeof readBatchAdmission> => {
         const admission = await readBatchAdmission(profile.profileId, request.requestId);
-        if (admission?.state !== 'QUEUED') return;
-        if (admission.requestHash !== batchRequestHash(request, ctx)) return;
-        await settleQueuedBatchItem(admission.itemId, result);
+        return admission?.requestHash === batchRequestHash(request, ctx) ? admission : undefined;
+    };
+    const settleWaiting = async (result: IssueInboxCredentialBatchItemResult): Promise<void> => {
+        const admission = await ownAdmission();
+        if (admission?.state === 'QUEUED') await settleQueuedBatchItem(admission.itemId, result);
+    };
+    // A refusal must also hold against a worker that has claimed the item and has not reserved
+    // the key yet: if the record this call was refused against is released, that worker would
+    // find the key free and issue the refused payload. The store decides in one guarded step.
+    // False: the item's worker is already past its issuance checkpoint.
+    const rejectWaiting = async (result: IssueInboxCredentialBatchItemResult): Promise<boolean> => {
+        const admission = await ownAdmission();
+        if (admission?.state !== 'QUEUED' && admission?.state !== 'PROCESSING') return true;
+        return rejectWaitingBatchItem(admission.itemId, result);
     };
     const replay = async (
         stored: string
@@ -309,14 +321,24 @@ export const issueKeyedInboxCredential = async (
         } catch (error) {
             // IN_PROGRESS is rethrown as is: the owner's outcome is not known yet, so a
             // waiting item must stay queued.
-            if (error instanceof InboxBatchConflict && error.reason === 'IDEMPOTENCY_MISMATCH')
-                await settleWaiting({
+            if (error instanceof InboxBatchConflict && error.reason === 'IDEMPOTENCY_MISMATCH') {
+                const rejected = await rejectWaiting({
                     success: false,
                     index: 0,
                     error: { code: 'CONFLICT', message: error.message, reason: error.reason },
                     idempotencyKey,
                     recipient: input.recipient,
                 });
+                if (!rejected) {
+                    // This call's own item is being issued, so the record read above no longer
+                    // holds the key: answer from the record that does.
+                    const current = await readBatchReplay(replayKey);
+                    if (current !== null)
+                        return IssueInboxCredentialResponseValidator.parse(
+                            replayResult(current, inboxItemRequestHash(input), 0)
+                        );
+                }
+            }
             throw error;
         }
         await settleWaiting({ ...result, index: 0, idempotencyKey });

@@ -345,6 +345,42 @@ export const settleQueuedBatchItem = async (
     });
 };
 
+/** Records a refusal on a waiting item so that it can no longer issue: an unowned QUEUED item,
+ * and also one a worker has claimed but not taken past its issuance checkpoint. One guarded
+ * statement under the item lock decides it, so it is serialised with claimBatchItem and with
+ * every step of an owner, which all take the same lock and then test ownership. Clearing the
+ * owner fences that worker as recovery does: its next step fails with a lost lease. A marker the
+ * item reserved is removed with it; before the checkpoint nothing has been delivered.
+ * Returns false only when the item's owner is past the checkpoint: the outcome is then its own.
+ */
+export const rejectWaitingBatchItem = async (
+    id: string,
+    result: IssueInboxCredentialBatchItemResult
+): Promise<boolean> => {
+    const encrypted = await encryptInboxCredential(JSON.stringify(result));
+    return transaction(async tx => {
+        const rejected = await tx.run(
+            `MATCH (i:InboxBatchItem {id: $id}) SET i.lock = coalesce(i.lock, 0) + 1
+            WITH i WHERE i.state = 'QUEUED'
+                OR (i.state = 'PROCESSING' AND coalesce(i.phase, 'PREPARING') <> 'ISSUING')
+            SET i.state = 'COMPLETED', i.result = $encrypted, i.owner = null,
+                i.leaseUntil = null, i.dispatchAt = 0
+            WITH i OPTIONAL MATCH (r:InboxBatchReplay {itemId: i.id}) WHERE r.marker IS NOT NULL
+            DELETE r RETURN DISTINCT i.batchId AS batchId`,
+            { id, encrypted }
+        );
+        const batchId = rejected.records[0]?.get('batchId');
+        if (batchId) {
+            await finalizeSettledBatch(tx, batchId);
+            return true;
+        }
+        const left = await tx.run(`MATCH (i:InboxBatchItem {id: $id}) RETURN i.state AS state`, {
+            id,
+        });
+        return left.records[0]?.get('state') !== 'PROCESSING';
+    });
+};
+
 /** Claim dispatch leases before publishing. A lost publish acknowledgement causes a safe duplicate. */
 export const takeInboxDispatches = async (): Promise<InboxDispatchLease[]> =>
     transaction(async tx => {
