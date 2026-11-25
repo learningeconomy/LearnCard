@@ -28,7 +28,7 @@
         "ioredis": "^5.2.2",
         "mongodb": "^6.2.0",
         "neo4j-driver": "^5.18.0",
-        "pg": "^8.13.1"
+        "pg": "^8.23.1"
     },
     "devDependencies": {
         "@types/pg": "^8.11.10",
