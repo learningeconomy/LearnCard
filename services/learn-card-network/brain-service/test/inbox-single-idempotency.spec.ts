@@ -172,6 +172,31 @@ describe('single inbox durable idempotency', () => {
         );
         return delivered.filter(credential => credential?.id === id).length;
     };
+    // The clock stands still at the returned instant until vi.useRealTimers().
+    const freezeClock = (): number => {
+        const now = Date.now();
+        vi.useFakeTimers({ toFake: ['Date'], now });
+        return now;
+    };
+    const setJobCreatedAt = async (batchId: string, createdAt: number): Promise<void> => {
+        const result = await neogma.queryRunner.run(
+            'MATCH (b:InboxBatch {id: $batchId}) SET b.createdAt = $createdAt RETURN count(b) AS n',
+            { batchId, createdAt }
+        );
+        expect(Number(result.records[0]!.get('n'))).toBe(1);
+    };
+    // Every admission job of this key's single-call request, oldest first.
+    const admissionJobs = async (key: string): Promise<{ id: string; state: string }[]> => {
+        const result = await neogma.queryRunner.run(
+            `MATCH (b:InboxBatch {issuer: $issuerId, requestId: $requestId})-[:HAS_ITEM]->(i)
+             RETURN b.id AS id, i.state AS state ORDER BY b.createdAt`,
+            { issuerId, requestId: `inbox.issue:${fingerprint(key)}` }
+        );
+        return result.records.map(record => ({
+            id: String(record.get('id')),
+            state: String(record.get('state')),
+        }));
+    };
     // A point a test holds a participant at, and lets it pass: no timing is involved.
     const gate = (): { opened: Promise<void>; open: () => void } => {
         let open!: () => void;
@@ -589,25 +614,27 @@ describe('single inbox durable idempotency', () => {
         // own item: the other owner releases, and this item's worker reserves the key for the
         // call's own payload.
         const worker = randomUUID();
-        const readAdmission = batchStore.readBatchAdmission;
-        vi.spyOn(batchStore, 'readBatchAdmission').mockImplementationOnce(async (...args) => {
-            ownerReleased.open();
-            await owning;
-            const claimed = await claimBatchItem(`${waiting}:0`, worker);
-            if (!claimed) throw new Error('Expected fresh lease');
-            expect(
-                await batchReplayStore(claimed.item.id, worker, replayKey).setIfAbsent(
-                    '',
-                    JSON.stringify({
-                        state: 'processing',
-                        owner: worker,
-                        requestHash: inboxItemRequestHash(input),
-                    }),
-                    86400
-                )
-            ).toBe('OK');
-            return readAdmission(...args);
-        });
+        const readOutstanding = batchStore.readOutstandingBatchItems;
+        vi.spyOn(batchStore, 'readOutstandingBatchItems').mockImplementationOnce(
+            async (...args) => {
+                ownerReleased.open();
+                await owning;
+                const claimed = await claimBatchItem(`${waiting}:0`, worker);
+                if (!claimed) throw new Error('Expected fresh lease');
+                expect(
+                    await batchReplayStore(claimed.item.id, worker, replayKey).setIfAbsent(
+                        '',
+                        JSON.stringify({
+                            state: 'processing',
+                            owner: worker,
+                            requestHash: inboxItemRequestHash(input),
+                        }),
+                        86400
+                    )
+                ).toBe('OK');
+                return readOutstanding(...args);
+            }
+        );
         await expect(issuer.clients.fullAuth.inbox.issue(input)).rejects.toMatchObject({
             code: 'CONFLICT',
             message: expect.stringMatching(
@@ -622,6 +649,95 @@ describe('single inbox durable idempotency', () => {
         });
         await expectCounts(0);
     }, 30000);
+
+    it('a queued item admitted more than 24 hours ago does not issue after a later call under its key succeeded and that receipt expired', async () => {
+        const key = randomUUID();
+        const input = await inputFor(issuer, key);
+        const now = freezeClock();
+        try {
+            const aged = await admit(input); // Admitted and told to retry; never processed.
+            await setJobCreatedAt(aged, now - DAY); // The admission lookup no longer finds it.
+            const first = await issuer.clients.fullAuth.inbox.issue(input);
+            await expectCounts(1);
+            const replayed = await issuer.clients.fullAuth.inbox.issue(input);
+            expect(replayed.issuanceId).toBe(first.issuanceId);
+            expect
+                .soft(await admissionJobs(key))
+                .toMatchObject([{ id: aged, state: 'COMPLETED' }, { state: 'COMPLETED' }]);
+            await expireReceipt(key);
+            await runLateWorker();
+            await expectCounts(1);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('a queued item admitted more than 24 hours ago is settled when its call replays a batch success under the same key', async () => {
+        const key = randomUUID();
+        const input = await inputFor(issuer, key);
+        const now = freezeClock();
+        try {
+            const aged = await admit(input);
+            await setJobCreatedAt(aged, now - DAY);
+            const owner = await issuer.clients.fullAuth.inbox.issueBatch({ items: [input] });
+            await processInboxQueueMessage(JSON.stringify({ itemId: `${owner.batchId}:0` }));
+            const original = IssueInboxCredentialResponseValidator.parse(
+                (await getInboxBatch(issuerId, owner.batchId)).items[0]!.result
+            );
+            await expect(issuer.clients.fullAuth.inbox.issue(input)).resolves.toEqual(original);
+            expect.soft((await getInboxBatch(issuerId, aged)).items[0]).toMatchObject({
+                state: 'COMPLETED',
+                result: { success: true, deduplicated: true },
+            });
+            await expireReceipt(key);
+            await runLateWorker();
+            await expectCounts(1);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('one millisecond inside the 24-hour admission lookup a waiting job is reused; on the boundary a new job is admitted and the old item is retired', async () => {
+        const insideKey = randomUUID();
+        const boundaryKey = randomUUID();
+        const inside = await inputFor(issuer, insideKey);
+        const boundary = await inputFor(issuer, boundaryKey, 'On the boundary');
+        const now = freezeClock();
+        try {
+            const reused = await admit(inside);
+            await setJobCreatedAt(reused, now - DAY + 1);
+            await issuer.clients.fullAuth.inbox.issue(inside);
+            expect(await admissionJobs(insideKey)).toEqual([{ id: reused, state: 'COMPLETED' }]);
+            expect((await getInboxBatch(issuerId, reused)).items[0]?.result).toMatchObject({
+                success: true,
+            });
+            await expectCounts(1);
+
+            const retired = await admit(boundary);
+            await setJobCreatedAt(retired, now - DAY);
+            await issuer.clients.fullAuth.inbox.issue(boundary);
+            const jobs = await admissionJobs(boundaryKey);
+            expect(jobs).toMatchObject([
+                { id: retired, state: 'COMPLETED' },
+                { state: 'COMPLETED' },
+            ]);
+            expect(jobs[1]!.id).not.toBe(retired);
+            // Retired without issuing: the new job made the one delivery of this request.
+            expect((await getInboxBatch(issuerId, retired)).items[0]?.result).toMatchObject({
+                success: false,
+                error: { code: 'CONFLICT' },
+            });
+            expect((await getInboxBatch(issuerId, jobs[1]!.id)).items[0]?.result).toMatchObject({
+                success: true,
+            });
+            expect(await issuedCount(boundary)).toBe(1);
+            await expectCounts(2);
+            await runLateWorker();
+            await expectCounts(2);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
 
     it('a replayed or rejected keyed call admits nothing', async () => {
         const key = randomUUID();
