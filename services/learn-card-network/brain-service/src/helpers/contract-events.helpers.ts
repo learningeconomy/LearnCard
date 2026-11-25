@@ -104,6 +104,22 @@ export const appendConsentEvent = (
         WITH contract, terms, transaction, consenter, request, previous, restoreVisible, reviewed,
             ${storedContractRequestTimes('profile', 'request')} AS profileTimes,
             ${storedContractRequestTimes('email', 'request')} AS emailTimes
+        CALL {
+            WITH contract, transaction, consenter, request, reviewed
+            WITH contract, transaction, consenter AS target, request, reviewed
+            WHERE reviewed IS NOT NULL AND request.requestId IS NOT NULL
+                AND request.status = 'pending' AND NOT coalesce(request.addressedByEmail, false)
+            MERGE (contract)-[closed:CANCELLED_DIRECT_REQUEST {requestId: request.requestId}]->(target)
+            ON CREATE SET closed = request{.requestId, .requestedBy, .externalReferenceId,
+                .message, .requestedAt, .readStatus, status: 'cancelled'}
+            WITH contract, target, closed AS request, transaction
+            ${requestEventWriteCypher({
+                kind: "'request_cancelled'",
+                actor: 'target.profileId',
+                domain: '$eventDomain',
+                now: 'transaction.date',
+            })}
+        }
         FOREACH (_ IN CASE WHEN restoreVisible THEN [1] ELSE [] END |
             SET request = coalesce(properties(previous), {requestHistoryOnly: true})
             SET request.profileRequestTimes = profileTimes, request.emailRequestTimes = emailTimes)
@@ -178,32 +194,42 @@ export const appendConsentEvent = (
  * request_sent written when the invite attaches is not fanned out: integrations already got one,
  * without a subject, when the invite was created.
  */
-export const requestEventCypher = `
-    WITH contract, request, target
+const requestEventWriteCypher = ({
+    kind = '$eventKind',
+    actor = '$eventFrom',
+    domain = '$domain',
+    now = '$now',
+}: { kind?: string; actor?: string; domain?: string; now?: string } = {}): string => `
+    WITH contract, request, target, ${kind} AS kind, ${actor} AS actor,
+        ${domain} AS domain, ${now} AS now
     MATCH (contract)-[:CREATED_BY]->(owner:Profile)
-    MERGE (event:ConsentFlowEvent {id: CASE WHEN $eventKind = 'request_sent' THEN request.requestId ELSE request.requestId + ':' + request.status END})
-    ON CREATE SET event += {contractId: contract.id, fromId: $eventFrom,
-        ownerId: owner.profileId, domain: $domain, kind: $eventKind, createdAt: $now,
+    MERGE (event:ConsentFlowEvent {id: CASE WHEN kind = 'request_sent' THEN request.requestId ELSE request.requestId + ':' + request.status END})
+    ON CREATE SET event += {contractId: contract.id, fromId: actor,
+        ownerId: owner.profileId, domain: domain, kind: kind, createdAt: now,
         requestId: request.requestId, requestedBy: request.requestedBy,
         externalReferenceId: request.externalReferenceId, message: request.message, fanoutCreated: false, cleanupPending: true,
         targetId: target.profileId,
-        integrationFanoutPending: CASE WHEN $eventKind = 'request_sent' AND coalesce(request.addressedByEmail, false) THEN null ELSE true END,
+        integrationFanoutPending: CASE WHEN kind = 'request_sent' AND coalesce(request.addressedByEmail, false) THEN null ELSE true END,
         subjectHidden: CASE WHEN coalesce(request.addressedByEmail, false) THEN true ELSE null END,
-        hideActor: coalesce(request.addressedByEmail, false) AND $eventFrom = target.profileId}
-    WITH request, event, owner, target,
+        hideActor: coalesce(request.addressedByEmail, false) AND actor = target.profileId}
+    WITH request, event, owner, kind, actor, now,
         CASE WHEN coalesce(event.fanoutCreated, false) THEN []
-            WHEN $eventKind = 'request_cancelled' AND coalesce(request.addressedByEmail, false)
-                AND $eventFrom <> target.profileId THEN []
-            WHEN $eventKind = 'request_sent' THEN [target.profileId]
+            WHEN kind = 'request_cancelled' AND coalesce(request.addressedByEmail, false)
+                AND actor <> target.profileId THEN []
+            WHEN kind = 'request_sent' THEN [target.profileId]
             ELSE [owner.profileId] + CASE WHEN request.requestedBy <> owner.profileId
                 THEN [request.requestedBy] ELSE [] END END AS deliveries
-    FOREACH (recipientId IN [id IN deliveries WHERE id IS NOT NULL AND id <> $eventFrom] |
+    FOREACH (recipientId IN [id IN deliveries WHERE id IS NOT NULL AND id <> actor] |
     MERGE (event)-[:HAS_DELIVERY]->(delivery:ConsentFlowEventDelivery {id: event.id + ':' + recipientId})
-    ON CREATE SET delivery += {toId: recipientId, state: 'pending', nextAttemptAt: $now,
+    ON CREATE SET delivery += {toId: recipientId, state: 'pending', nextAttemptAt: now,
         eventCreatedAt: event.createdAt, attempts: 0,
-        role: CASE WHEN $eventKind = 'request_sent' THEN 'target'
+        role: CASE WHEN kind = 'request_sent' THEN 'target'
             WHEN recipientId = owner.profileId THEN 'owner' ELSE 'requester' END})
     SET event.fanoutCreated = true
+`;
+
+export const requestEventCypher = `
+    ${requestEventWriteCypher()}
     RETURN DISTINCT request, event.id AS eventId
 `;
 

@@ -331,9 +331,10 @@ export const decideGenericContractRequest = async ({
             ),
             contract.id
         ).raw(`
-        MATCH (contract)-[request:REQUESTED_FOR|PREVIOUS_VISIBLE_REQUEST|PENDING_EMAIL_REQUEST]->(target:Profile {profileId: $targetProfileId})
+        MATCH (contract)-[request:REQUESTED_FOR|PREVIOUS_VISIBLE_REQUEST|PENDING_EMAIL_REQUEST|CANCELLED_DIRECT_REQUEST]->(target:Profile {profileId: $targetProfileId})
         WHERE request.requestId = $requestId AND request.status IN ['pending', $status]
-            AND (type(request) <> 'PREVIOUS_VISIBLE_REQUEST' OR (request.status = 'cancelled' AND $status = 'cancelled'))
+            AND (type(request) IN ['REQUESTED_FOR', 'PENDING_EMAIL_REQUEST'] OR
+                (request.status = 'cancelled' AND $status = 'cancelled'))
             AND (request.status = $status OR request.expiresAt IS NULL OR request.expiresAt > $now)
             AND ($actorProfileId = $targetProfileId OR ($status = 'cancelled' AND
                 (EXISTS { MATCH (contract)-[:CREATED_BY|CAN_WRITE]->(:Profile {profileId: $actorProfileId}) } OR
@@ -368,7 +369,7 @@ export const cancelContractRequestById = async ({
     const findTarget = async (): Promise<string | undefined> =>
         (
             await neogma.queryRunner.run(
-                `MATCH (:ConsentFlowContract {id: $contractId})-[request:REQUESTED_FOR|PREVIOUS_VISIBLE_REQUEST|PENDING_EMAIL_REQUEST]->(target:Profile)
+                `MATCH (:ConsentFlowContract {id: $contractId})-[request:REQUESTED_FOR|PREVIOUS_VISIBLE_REQUEST|PENDING_EMAIL_REQUEST|CANCELLED_DIRECT_REQUEST]->(target:Profile)
                  WHERE request.requestId = $requestId
                  RETURN target.profileId AS targetProfileId`,
                 { contractId: contract.id, requestId }

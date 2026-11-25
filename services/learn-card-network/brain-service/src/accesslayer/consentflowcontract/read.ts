@@ -109,7 +109,7 @@ export const getRequestedForList = async (id: string, viewerProfileId: string) =
         `MATCH (c:ConsentFlowContract {id: $id})
          CALL {
              WITH c
-             MATCH (c)-[r:REQUESTED_FOR|PREVIOUS_VISIBLE_REQUEST|PENDING_EMAIL_REQUEST]->(p:Profile)
+             MATCH (c)-[r:REQUESTED_FOR|PREVIOUS_VISIBLE_REQUEST|PENDING_EMAIL_REQUEST|CANCELLED_DIRECT_REQUEST]->(p:Profile)
              WHERE NOT coalesce(r.requestHistoryOnly, false)
                  AND (${requestManagerWhere} OR (${requestingRecipientWhere}))
              OPTIONAL MATCH (c)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite)
@@ -249,7 +249,7 @@ export const getRequestedForForUser = async (
         .match('(c)-[current:REQUESTED_FOR]->(p:Profile {profileId: $requesterProfileId})')
         .raw(
             `OPTIONAL MATCH (c)-[previous:PREVIOUS_VISIBLE_REQUEST]->(p)
-              OPTIONAL MATCH (c)-[parked:PENDING_EMAIL_REQUEST]->(p)
+              OPTIONAL MATCH (c)-[parked:PENDING_EMAIL_REQUEST|CANCELLED_DIRECT_REQUEST]->(p)
                   WHERE p.profileId = $viewerProfileId AND parked.requestId = $requestId
               WITH c, p, CASE
                   WHEN p.profileId <> $viewerProfileId AND current.addressedByEmail = true
@@ -326,7 +326,7 @@ export const getContractRequestById = async (
     viewerProfileId: string
 ): Promise<StoredContractRequestById | null> => {
     const result = await neogma.queryRunner.run(
-        `MATCH (c:ConsentFlowContract {id: $contractId})-[r:REQUESTED_FOR|PREVIOUS_VISIBLE_REQUEST|PENDING_EMAIL_REQUEST]->(p:Profile)
+        `MATCH (c:ConsentFlowContract {id: $contractId})-[r:REQUESTED_FOR|PREVIOUS_VISIBLE_REQUEST|PENDING_EMAIL_REQUEST|CANCELLED_DIRECT_REQUEST]->(p:Profile)
          WHERE r.requestId = $requestId AND (${requestManagerWhere} OR (${requestingRecipientWhere}))
          OPTIONAL MATCH (c)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite)
              WHERE invite.id = r.requestId
@@ -372,7 +372,7 @@ export const getStoredContractRequest = async (
     const result = await neogma.queryRunner.run(
         `MATCH (contract:ConsentFlowContract {id: $contractId})-[current:REQUESTED_FOR]->(target:Profile {profileId: $targetProfileId})
          OPTIONAL MATCH (contract)-[previous:PREVIOUS_VISIBLE_REQUEST]->(target)
-         OPTIONAL MATCH (contract)-[parked:PENDING_EMAIL_REQUEST]->(target)
+         OPTIONAL MATCH (contract)-[parked:PENDING_EMAIL_REQUEST|CANCELLED_DIRECT_REQUEST]->(target)
              WHERE parked.requestId = $requestId
          WITH CASE
              WHEN parked IS NOT NULL AND ($viewerProfileId IS NULL OR $viewerProfileId = $targetProfileId) THEN parked

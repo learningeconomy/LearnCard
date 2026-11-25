@@ -15,11 +15,14 @@ export const preservePreviousRequestCypher = `
         THEN [1] ELSE [] END | DELETE previous)
 `;
 
-/** Park a pending email on a separate edge under the audience lock. Its invite stays attached. */
+/**
+ * Park a pending email by request ID under the audience lock. Older decided or expired edges can
+ * coexist until invite maintenance folds them back into their invite records.
+ */
 export const parkEmailRequestCypher = (request: string, target: string, park: string): string => `
     FOREACH (_ IN CASE WHEN ${park} THEN [1] ELSE [] END |
-        CREATE (contract)-[parked:PENDING_EMAIL_REQUEST]->(${target})
-        SET parked = ${request}{.requestId, .status, .requestedBy, .externalReferenceId, .message,
+        MERGE (contract)-[parked:PENDING_EMAIL_REQUEST {requestId: ${request}.requestId}]->(${target})
+        ON CREATE SET parked = ${request}{.requestId, .status, .requestedBy, .externalReferenceId, .message,
             .requestedAt, .readStatus, .addressedByEmail, .expiresAt, .liveReferral, .referralConsentId})
 `;
 
