@@ -54,10 +54,45 @@ class TestIntegrationsApi(unittest.TestCase):
         """
         pass
 
+    def test_integrations_get_integration_events(self) -> None:
+        """Test case for integrations_get_integration_events
+
+        Get Integration Events
+        """
+        pass
+
+    def test_integrations_get_integration_webhook(self) -> None:
+        """Test case for integrations_get_integration_webhook
+
+        Get Integration Webhook
+        """
+        pass
+
     def test_integrations_get_integrations(self) -> None:
         """Test case for integrations_get_integrations
 
         Get My Integrations
+        """
+        pass
+
+    def test_integrations_rotate_integration_webhook_secret(self) -> None:
+        """Test case for integrations_rotate_integration_webhook_secret
+
+        Rotate Integration Webhook Secret
+        """
+        pass
+
+    def test_integrations_send_integration_test_event(self) -> None:
+        """Test case for integrations_send_integration_test_event
+
+        Send Integration Test Event
+        """
+        pass
+
+    def test_integrations_set_integration_webhook(self) -> None:
+        """Test case for integrations_set_integration_webhook
+
+        Set Integration Webhook
         """
         pass
 

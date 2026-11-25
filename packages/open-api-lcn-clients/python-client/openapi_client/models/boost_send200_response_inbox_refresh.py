@@ -17,7 +17,7 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
 from openapi_client.models.boost_send200_response_inbox_refresh_refresh_service import BoostSend200ResponseInboxRefreshRefreshService
@@ -32,12 +32,23 @@ class BoostSend200ResponseInboxRefresh(BaseModel):
     """ # noqa: E501
     refresh_id: Annotated[str, Field(min_length=1, strict=True)] = Field(alias="refreshId")
     refresh_service: BoostSend200ResponseInboxRefreshRefreshService = Field(alias="refreshService")
+    refresh_service_binding: Optional[StrictStr] = Field(default=None, alias="refreshServiceBinding")
     credential_id: Annotated[str, Field(min_length=1, strict=True)] = Field(alias="credentialId")
     issuer_did: Annotated[str, Field(min_length=1, strict=True)] = Field(alias="issuerDid")
     credential_status: Optional[BoostSendBoostRequestCredentialAnyOfRefreshService] = Field(default=None, alias="credentialStatus")
     holder_did: Optional[Annotated[str, Field(min_length=1, strict=True)]] = Field(default=None, alias="holderDid")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["refreshId", "refreshService", "credentialId", "issuerDid", "credentialStatus", "holderDid"]
+    __properties: ClassVar[List[str]] = ["refreshId", "refreshService", "refreshServiceBinding", "credentialId", "issuerDid", "credentialStatus", "holderDid"]
+
+    @field_validator('refresh_service_binding')
+    def refresh_service_binding_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['managed-entry']):
+            raise ValueError("must be one of enum values ('managed-entry')")
+        return value
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -104,6 +115,7 @@ class BoostSend200ResponseInboxRefresh(BaseModel):
         _values = {
             "refreshId": obj.get("refreshId"),
             "refreshService": BoostSend200ResponseInboxRefreshRefreshService.from_dict(obj["refreshService"]) if obj.get("refreshService") is not None else None,
+            "refreshServiceBinding": obj.get("refreshServiceBinding"),
             "credentialId": obj.get("credentialId"),
             "issuerDid": obj.get("issuerDid"),
             "credentialStatus": BoostSendBoostRequestCredentialAnyOfRefreshService.from_dict(obj["credentialStatus"]) if obj.get("credentialStatus") is not None else None,

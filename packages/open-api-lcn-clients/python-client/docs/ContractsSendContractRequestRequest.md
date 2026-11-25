@@ -5,7 +5,8 @@
 | Name                      | Type    | Description | Notes      |
 | ------------------------- | ------- | ----------- | ---------- |
 | **contract_uri**          | **str** |             |
-| **target_profile_id**     | **str** |             |
+| **target_profile_id**     | **str** |             | [optional] |
+| **target_email**          | **str** |             | [optional] |
 | **external_reference_id** | **str** |             | [optional] |
 | **message**               | **str** |             | [optional] |
 

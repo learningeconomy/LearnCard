@@ -32,10 +32,11 @@ class IntegrationsUpdateIntegrationRequestUpdates(BaseModel):
     description: Optional[StrictStr] = None
     whitelisted_domains: Optional[List[IntegrationsAddIntegrationRequestWhitelistedDomainsInner]] = Field(default=None, alias="whitelistedDomains")
     rotate_publishable_key: Optional[StrictBool] = Field(default=None, alias="rotatePublishableKey")
+    contract_events_enabled: Optional[StrictBool] = Field(default=None, description="true enables the contract event feed without a webhook; false disables it.", alias="contractEventsEnabled")
     status: Optional[StrictStr] = None
     guide_type: Optional[StrictStr] = Field(default=None, alias="guideType")
     guide_state: Optional[Dict[str, Any]] = Field(default=None, alias="guideState")
-    __properties: ClassVar[List[str]] = ["name", "description", "whitelistedDomains", "rotatePublishableKey", "status", "guideType", "guideState"]
+    __properties: ClassVar[List[str]] = ["name", "description", "whitelistedDomains", "rotatePublishableKey", "contractEventsEnabled", "status", "guideType", "guideState"]
 
     @field_validator('status')
     def status_validate_enum(cls, value):
@@ -107,6 +108,7 @@ class IntegrationsUpdateIntegrationRequestUpdates(BaseModel):
             "description": obj.get("description"),
             "whitelistedDomains": [IntegrationsAddIntegrationRequestWhitelistedDomainsInner.from_dict(_item) for _item in obj["whitelistedDomains"]] if obj.get("whitelistedDomains") is not None else None,
             "rotatePublishableKey": obj.get("rotatePublishableKey"),
+            "contractEventsEnabled": obj.get("contractEventsEnabled"),
             "status": obj.get("status"),
             "guideType": obj.get("guideType"),
             "guideState": obj.get("guideState")

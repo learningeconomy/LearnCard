@@ -18,8 +18,9 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List
+from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.contracts_write_credential_to_contract_request_credential import ContractsWriteCredentialToContractRequestCredential
+from openapi_client.models.contracts_write_credential_to_contract_request_expected_external_grant import ContractsWriteCredentialToContractRequestExpectedExternalGrant
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -32,7 +33,8 @@ class ContractsWriteCredentialToContractRequest(BaseModel):
     contract_uri: StrictStr = Field(alias="contractUri")
     boost_uri: StrictStr = Field(alias="boostUri")
     credential: ContractsWriteCredentialToContractRequestCredential
-    __properties: ClassVar[List[str]] = ["did", "contractUri", "boostUri", "credential"]
+    expected_external_grant: Optional[ContractsWriteCredentialToContractRequestExpectedExternalGrant] = Field(default=None, alias="expectedExternalGrant")
+    __properties: ClassVar[List[str]] = ["did", "contractUri", "boostUri", "credential", "expectedExternalGrant"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -75,6 +77,9 @@ class ContractsWriteCredentialToContractRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of credential
         if self.credential:
             _dict['credential'] = self.credential.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of expected_external_grant
+        if self.expected_external_grant:
+            _dict['expectedExternalGrant'] = self.expected_external_grant.to_dict()
         return _dict
 
     @classmethod
@@ -90,7 +95,8 @@ class ContractsWriteCredentialToContractRequest(BaseModel):
             "did": obj.get("did"),
             "contractUri": obj.get("contractUri"),
             "boostUri": obj.get("boostUri"),
-            "credential": ContractsWriteCredentialToContractRequestCredential.from_dict(obj["credential"]) if obj.get("credential") is not None else None
+            "credential": ContractsWriteCredentialToContractRequestCredential.from_dict(obj["credential"]) if obj.get("credential") is not None else None,
+            "expectedExternalGrant": ContractsWriteCredentialToContractRequestExpectedExternalGrant.from_dict(obj["expectedExternalGrant"]) if obj.get("expectedExternalGrant") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

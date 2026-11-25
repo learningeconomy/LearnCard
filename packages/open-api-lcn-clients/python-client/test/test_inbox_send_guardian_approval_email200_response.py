@@ -36,12 +36,14 @@ class TestInboxSendGuardianApprovalEmail200Response(unittest.TestCase):
         if include_optional:
             return InboxSendGuardianApprovalEmail200Response(
                 message = '',
-                approval_url = ''
+                approval_url = '',
+                status = 'accepted'
             )
         else:
             return InboxSendGuardianApprovalEmail200Response(
                 message = '',
                 approval_url = '',
+                status = 'accepted',
         )
         """
 

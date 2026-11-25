@@ -145,6 +145,20 @@ class TestContractsApi(unittest.TestCase):
         """
         pass
 
+    def test_contracts_get_contract_connections(self) -> None:
+        """Test case for contracts_get_contract_connections
+
+        Get the current connections of a contract
+        """
+        pass
+
+    def test_contracts_get_contract_request(self) -> None:
+        """Test case for contracts_get_contract_request
+
+        Get one contract request by its request ID
+        """
+        pass
+
     def test_contracts_get_contract_sent_requests(self) -> None:
         """Test case for contracts_get_contract_sent_requests
 

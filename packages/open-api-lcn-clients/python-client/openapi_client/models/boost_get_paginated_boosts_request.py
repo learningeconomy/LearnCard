@@ -20,6 +20,7 @@ import json
 from pydantic import BaseModel, ConfigDict, StrictFloat, StrictInt, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional, Union
 from openapi_client.models.boost_get_boosts_request_query import BoostGetBoostsRequestQuery
+from openapi_client.models.boost_get_paginated_boosts_request_exclude import BoostGetPaginatedBoostsRequestExclude
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -32,7 +33,8 @@ class BoostGetPaginatedBoostsRequest(BaseModel):
     cursor: Optional[StrictStr] = None
     sort: Optional[StrictStr] = None
     query: Optional[BoostGetBoostsRequestQuery] = None
-    __properties: ClassVar[List[str]] = ["limit", "cursor", "sort", "query"]
+    exclude: Optional[BoostGetPaginatedBoostsRequestExclude] = None
+    __properties: ClassVar[List[str]] = ["limit", "cursor", "sort", "query", "exclude"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -75,6 +77,9 @@ class BoostGetPaginatedBoostsRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of query
         if self.query:
             _dict['query'] = self.query.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of exclude
+        if self.exclude:
+            _dict['exclude'] = self.exclude.to_dict()
         return _dict
 
     @classmethod
@@ -90,7 +95,8 @@ class BoostGetPaginatedBoostsRequest(BaseModel):
             "limit": obj.get("limit") if obj.get("limit") is not None else 25,
             "cursor": obj.get("cursor"),
             "sort": obj.get("sort"),
-            "query": BoostGetBoostsRequestQuery.from_dict(obj["query"]) if obj.get("query") is not None else None
+            "query": BoostGetBoostsRequestQuery.from_dict(obj["query"]) if obj.get("query") is not None else None,
+            "exclude": BoostGetPaginatedBoostsRequestExclude.from_dict(obj["exclude"]) if obj.get("exclude") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

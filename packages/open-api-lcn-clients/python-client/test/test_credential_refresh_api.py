@@ -40,10 +40,31 @@ class TestCredentialRefreshApi(unittest.TestCase):
         """
         pass
 
+    def test_credential_refresh_get_encryption_recipients(self) -> None:
+        """Test case for credential_refresh_get_encryption_recipients
+
+        Get the current holder-mode encryption recipients
+        """
+        pass
+
     def test_credential_refresh_publish_credential_refresh(self) -> None:
         """Test case for credential_refresh_publish_credential_refresh
 
         Publish a managed credential refresh version
+        """
+        pass
+
+    def test_credential_refresh_publish_holder_encrypted_refreshable(self) -> None:
+        """Test case for credential_refresh_publish_holder_encrypted_refreshable
+
+        Publish a holder-mode (student-only encrypted) refresh version
+        """
+        pass
+
+    def test_credential_refresh_send_holder_encrypted_refreshable(self) -> None:
+        """Test case for credential_refresh_send_holder_encrypted_refreshable
+
+        Send a holder-mode (student-only encrypted) refreshable credential
         """
         pass
 

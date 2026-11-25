@@ -155,6 +155,7 @@ All URIs are relative to _/api_
 | _BoostsApi_                  | [**boost_allocate_credential_status**](docs/BoostsApi.md#boost_allocate_credential_status)                                                            | **POST** /boost/status/allocate                                          | Allocate Bitstring credential status entries                                 |
 | _BoostsApi_                  | [**boost_attach_framework_to_boost**](docs/BoostsApi.md#boost_attach_framework_to_boost)                                                              | **POST** /boost/attach-framework                                         | Attach framework to boost                                                    |
 | _BoostsApi_                  | [**boost_claim_boost_with_link**](docs/BoostsApi.md#boost_claim_boost_with_link)                                                                      | **POST** /boost/claim                                                    | Claim a boost using a claim link                                             |
+| _BoostsApi_                  | [**boost_claim_boost_with_link_status**](docs/BoostsApi.md#boost_claim_boost_with_link_status)                                                        | **POST** /boost/claim/status                                             | Reconcile claim-link request status                                          |
 | _BoostsApi_                  | [**boost_count_boost_children**](docs/BoostsApi.md#boost_count_boost_children)                                                                        | **POST** /boost/children/count                                           | Count boost children                                                         |
 | _BoostsApi_                  | [**boost_count_boost_parents**](docs/BoostsApi.md#boost_count_boost_parents)                                                                          | **POST** /boost/parents/count                                            | Count boost parents                                                          |
 | _BoostsApi_                  | [**boost_count_boost_siblings**](docs/BoostsApi.md#boost_count_boost_siblings)                                                                        | **POST** /boost/siblings/count                                           | Count boost siblings                                                         |
@@ -227,6 +228,8 @@ All URIs are relative to _/api_
 | _ContractsApi_               | [**contracts_get_consented_data**](docs/ContractsApi.md#contracts_get_consented_data)                                                                 | **POST** /consent-flow-contract/data                                     | Get the data that has been consented for all of your contracts               |
 | _ContractsApi_               | [**contracts_get_consented_data_for_contract**](docs/ContractsApi.md#contracts_get_consented_data_for_contract)                                       | **POST** /consent-flow-contract/data-for-contract                        | Get the data that has been consented for a contract                          |
 | _ContractsApi_               | [**contracts_get_consented_data_for_did**](docs/ContractsApi.md#contracts_get_consented_data_for_did)                                                 | **POST** /consent-flow-contract/data-for-did                             | Get the data that has been consented by a did                                |
+| _ContractsApi_               | [**contracts_get_contract_connections**](docs/ContractsApi.md#contracts_get_contract_connections)                                                     | **GET** /consent-flow-contracts/connections                              | Get the current connections of a contract                                    |
+| _ContractsApi_               | [**contracts_get_contract_request**](docs/ContractsApi.md#contracts_get_contract_request)                                                             | **GET** /consent-flow-contracts/request                                  | Get one contract request by its request ID                                   |
 | _ContractsApi_               | [**contracts_get_contract_sent_requests**](docs/ContractsApi.md#contracts_get_contract_sent_requests)                                                 | **GET** /consent-flow-contracts/sent-requests                            | Get requests sent for a given contract                                       |
 | _ContractsApi_               | [**contracts_get_credentials_for_contract**](docs/ContractsApi.md#contracts_get_credentials_for_contract)                                             | **POST** /consent-flow-contract/credentials                              | Get credentials issued via a contract                                        |
 | _ContractsApi_               | [**contracts_get_request_status_for_profile**](docs/ContractsApi.md#contracts_get_request_status_for_profile)                                         | **GET** /consent-flow-contracts/request-status                           | Get request status for a specific profile under a contract                   |
@@ -247,7 +250,10 @@ All URIs are relative to _/api_
 | _ContractsApi_               | [**contracts_write_credential_to_contract_via_signing_authority**](docs/ContractsApi.md#contracts_write_credential_to_contract_via_signing_authority) | **POST** /consent-flow-contract/write/via-signing-authority              | Write credential through signing authority for a DID consented to a contract |
 | _CredentialRefreshApi_       | [**credential_refresh_allocate_credential_refresh**](docs/CredentialRefreshApi.md#credential_refresh_allocate_credential_refresh)                     | **POST** /credential-refresh/allocate                                    | Allocate a managed credential refresh service                                |
 | _CredentialRefreshApi_       | [**credential_refresh_get_credential_refresh_history**](docs/CredentialRefreshApi.md#credential_refresh_get_credential_refresh_history)               | **GET** /credential-refresh/history                                      | Get managed credential refresh history                                       |
+| _CredentialRefreshApi_       | [**credential_refresh_get_encryption_recipients**](docs/CredentialRefreshApi.md#credential_refresh_get_encryption_recipients)                         | **GET** /credential-refresh/encryption-recipients                        | Get the current holder-mode encryption recipients                            |
 | _CredentialRefreshApi_       | [**credential_refresh_publish_credential_refresh**](docs/CredentialRefreshApi.md#credential_refresh_publish_credential_refresh)                       | **POST** /credential-refresh/publish                                     | Publish a managed credential refresh version                                 |
+| _CredentialRefreshApi_       | [**credential_refresh_publish_holder_encrypted_refreshable**](docs/CredentialRefreshApi.md#credential_refresh_publish_holder_encrypted_refreshable)   | **POST** /credential-refresh/publish-holder-encrypted                    | Publish a holder-mode (student-only encrypted) refresh version               |
+| _CredentialRefreshApi_       | [**credential_refresh_send_holder_encrypted_refreshable**](docs/CredentialRefreshApi.md#credential_refresh_send_holder_encrypted_refreshable)         | **POST** /credential-refresh/send-holder-encrypted                       | Send a holder-mode (student-only encrypted) refreshable credential           |
 | _CredentialRefreshApi_       | [**credential_refresh_send_refreshable_credential**](docs/CredentialRefreshApi.md#credential_refresh_send_refreshable_credential)                     | **POST** /credential-refresh/send                                        | Send a refreshable credential                                                |
 | _CredentialSharePreviewsApi_ | [**credential_share_previews_delete**](docs/CredentialSharePreviewsApi.md#credential_share_previews_delete)                                           | **POST** /credential-share-previews/{id}/delete                          | Delete owned credential share preview                                        |
 | _CredentialSharePreviewsApi_ | [**credential_share_previews_get**](docs/CredentialSharePreviewsApi.md#credential_share_previews_get)                                                 | **GET** /credential-share-previews/{id}                                  | Get public credential share preview                                          |
@@ -271,7 +277,12 @@ All URIs are relative to _/api_
 | _IntegrationsApi_            | [**integrations_count_integrations**](docs/IntegrationsApi.md#integrations_count_integrations)                                                        | **POST** /profile/integrations/count                                     | Count My Integrations                                                        |
 | _IntegrationsApi_            | [**integrations_delete_integration**](docs/IntegrationsApi.md#integrations_delete_integration)                                                        | **DELETE** /integration/{id}                                             | Delete Integration                                                           |
 | _IntegrationsApi_            | [**integrations_get_integration**](docs/IntegrationsApi.md#integrations_get_integration)                                                              | **GET** /integration/{id}                                                | Get Integration                                                              |
+| _IntegrationsApi_            | [**integrations_get_integration_events**](docs/IntegrationsApi.md#integrations_get_integration_events)                                                | **GET** /integration/{id}/events                                         | Get Integration Events                                                       |
+| _IntegrationsApi_            | [**integrations_get_integration_webhook**](docs/IntegrationsApi.md#integrations_get_integration_webhook)                                              | **GET** /integration/{id}/webhook                                        | Get Integration Webhook                                                      |
 | _IntegrationsApi_            | [**integrations_get_integrations**](docs/IntegrationsApi.md#integrations_get_integrations)                                                            | **POST** /profile/integrations                                           | Get My Integrations                                                          |
+| _IntegrationsApi_            | [**integrations_rotate_integration_webhook_secret**](docs/IntegrationsApi.md#integrations_rotate_integration_webhook_secret)                          | **POST** /integration/{id}/webhook-secret/rotate                         | Rotate Integration Webhook Secret                                            |
+| _IntegrationsApi_            | [**integrations_send_integration_test_event**](docs/IntegrationsApi.md#integrations_send_integration_test_event)                                      | **POST** /integration/{id}/webhook/test                                  | Send Integration Test Event                                                  |
+| _IntegrationsApi_            | [**integrations_set_integration_webhook**](docs/IntegrationsApi.md#integrations_set_integration_webhook)                                              | **POST** /integration/{id}/webhook                                       | Set Integration Webhook                                                      |
 | _IntegrationsApi_            | [**integrations_update_integration**](docs/IntegrationsApi.md#integrations_update_integration)                                                        | **POST** /integration/update/{id}                                        | Update Integration                                                           |
 | _PresentationsApi_           | [**presentation_accept_presentation**](docs/PresentationsApi.md#presentation_accept_presentation)                                                     | **POST** /presentation/accept                                            | Accept a Presentation                                                        |
 | _PresentationsApi_           | [**presentation_delete_presentation**](docs/PresentationsApi.md#presentation_delete_presentation)                                                     | **DELETE** /presentation                                                 | Delete a presentation                                                        |
@@ -292,6 +303,7 @@ All URIs are relative to _/api_
 | _ProfileManagersApi_         | [**profile_manager_update_profile_manager**](docs/ProfileManagersApi.md#profile_manager_update_profile_manager)                                       | **POST** /profile-manager                                                | Update the profile of your Profile Manager                                   |
 | _ProfilesApi_                | [**inbox_approve_guardian_request**](docs/ProfilesApi.md#inbox_approve_guardian_request)                                                              | **POST** /inbox/guardian-approval/approve                                | Approve Guardian Request                                                     |
 | _ProfilesApi_                | [**inbox_approve_guardian_request_by_path**](docs/ProfilesApi.md#inbox_approve_guardian_request_by_path)                                              | **GET** /inbox/guardian-approval/{token}                                 | Approve Guardian Request (GET)                                               |
+| _ProfilesApi_                | [**inbox_get_guardian_approval_status**](docs/ProfilesApi.md#inbox_get_guardian_approval_status)                                                      | **GET** /inbox/guardian-approval-status                                  | Get Guardian Approval Email Status                                           |
 | _ProfilesApi_                | [**inbox_send_guardian_approval_email**](docs/ProfilesApi.md#inbox_send_guardian_approval_email)                                                      | **POST** /inbox/guardian-approval/send                                   | Send Guardian Approval Email                                                 |
 | _ProfilesApi_                | [**profile_accept_connection_request**](docs/ProfilesApi.md#profile_accept_connection_request)                                                        | **POST** /profile/{profileId}/accept-connection                          | Accept Connection Request                                                    |
 | _ProfilesApi_                | [**profile_block_profile**](docs/ProfilesApi.md#profile_block_profile)                                                                                | **POST** /profile/{profileId}/block                                      | Block another profile                                                        |
@@ -385,6 +397,7 @@ All URIs are relative to _/api_
 | _UniversalInboxApi_          | [**inbox_claim_pending_guardian_links**](docs/UniversalInboxApi.md#inbox_claim_pending_guardian_links)                                                | **POST** /inbox/claim-guardian-links                                     | Claim Pending Guardian Links                                                 |
 | _UniversalInboxApi_          | [**inbox_finalize**](docs/UniversalInboxApi.md#inbox_finalize)                                                                                        | **POST** /inbox/finalize                                                 | Finalize Universal Inbox Credentials                                         |
 | _UniversalInboxApi_          | [**inbox_get_batch**](docs/UniversalInboxApi.md#inbox_get_batch)                                                                                      | **GET** /inbox/batches/{batchId}                                         | Get Inbox Batch Progress                                                     |
+| _UniversalInboxApi_          | [**inbox_get_guardian_approval_status**](docs/UniversalInboxApi.md#inbox_get_guardian_approval_status)                                                | **GET** /inbox/guardian-approval-status                                  | Get Guardian Approval Email Status                                           |
 | _UniversalInboxApi_          | [**inbox_get_guardian_pending_credential**](docs/UniversalInboxApi.md#inbox_get_guardian_pending_credential)                                          | **GET** /inbox/guardian-credential-approval/{token}                      | Get Guardian Pending Credential                                              |
 | _UniversalInboxApi_          | [**inbox_get_inbox_credential**](docs/UniversalInboxApi.md#inbox_get_inbox_credential)                                                                | **GET** /inbox/credentials/{credentialId}                                | Get Universal Inbox Credential Details                                       |
 | _UniversalInboxApi_          | [**inbox_get_my_inbox_deliveries**](docs/UniversalInboxApi.md#inbox_get_my_inbox_deliveries)                                                          | **POST** /inbox/deliveries                                               | Recover claimed inbox deliveries                                             |
@@ -522,6 +535,12 @@ All URIs are relative to _/api_
 - [BoostAllocateCredentialStatusRequest](docs/BoostAllocateCredentialStatusRequest.md)
 - [BoostAttachFrameworkToBoostRequest](docs/BoostAttachFrameworkToBoostRequest.md)
 - [BoostClaimBoostWithLinkRequest](docs/BoostClaimBoostWithLinkRequest.md)
+- [BoostClaimBoostWithLinkStatus200Response](docs/BoostClaimBoostWithLinkStatus200Response.md)
+- [BoostClaimBoostWithLinkStatus200ResponseOneOf](docs/BoostClaimBoostWithLinkStatus200ResponseOneOf.md)
+- [BoostClaimBoostWithLinkStatus200ResponseOneOf1](docs/BoostClaimBoostWithLinkStatus200ResponseOneOf1.md)
+- [BoostClaimBoostWithLinkStatus200ResponseOneOf2](docs/BoostClaimBoostWithLinkStatus200ResponseOneOf2.md)
+- [BoostClaimBoostWithLinkStatus200ResponseOneOf3](docs/BoostClaimBoostWithLinkStatus200ResponseOneOf3.md)
+- [BoostClaimBoostWithLinkStatusRequest](docs/BoostClaimBoostWithLinkStatusRequest.md)
 - [BoostCountBoostChildrenRequest](docs/BoostCountBoostChildrenRequest.md)
 - [BoostCountBoostSiblingsRequest](docs/BoostCountBoostSiblingsRequest.md)
 - [BoostCountFamilialBoostsRequest](docs/BoostCountFamilialBoostsRequest.md)
@@ -599,6 +618,7 @@ All URIs are relative to _/api_
 - [BoostGetPaginatedBoosts200Response](docs/BoostGetPaginatedBoosts200Response.md)
 - [BoostGetPaginatedBoosts200ResponseRecordsInner](docs/BoostGetPaginatedBoosts200ResponseRecordsInner.md)
 - [BoostGetPaginatedBoostsRequest](docs/BoostGetPaginatedBoostsRequest.md)
+- [BoostGetPaginatedBoostsRequestExclude](docs/BoostGetPaginatedBoostsRequestExclude.md)
 - [BoostGetSkillsAvailableForBoost200ResponseInner](docs/BoostGetSkillsAvailableForBoost200ResponseInner.md)
 - [BoostGetSkillsAvailableForBoost200ResponseInnerFramework](docs/BoostGetSkillsAvailableForBoost200ResponseInnerFramework.md)
 - [BoostGetSkillsAvailableForBoost200ResponseInnerSkillsInner](docs/BoostGetSkillsAvailableForBoost200ResponseInnerSkillsInner.md)
@@ -622,7 +642,8 @@ All URIs are relative to _/api_
 - [BoostSend200ResponseInbox](docs/BoostSend200ResponseInbox.md)
 - [BoostSend200ResponseInboxRefresh](docs/BoostSend200ResponseInboxRefresh.md)
 - [BoostSend200ResponseInboxRefreshRefreshService](docs/BoostSend200ResponseInboxRefreshRefreshService.md)
-- [BoostSend200ResponseInboxRefreshRefreshServiceAuthorization](docs/BoostSend200ResponseInboxRefreshRefreshServiceAuthorization.md)
+- [BoostSend200ResponseInboxRefreshRefreshServiceAnyOf](docs/BoostSend200ResponseInboxRefreshRefreshServiceAnyOf.md)
+- [BoostSend200ResponseInboxRefreshRefreshServiceAnyOfAuthorization](docs/BoostSend200ResponseInboxRefreshRefreshServiceAnyOfAuthorization.md)
 - [BoostSend200ResponseRefresh](docs/BoostSend200ResponseRefresh.md)
 - [BoostSendBoostRequest](docs/BoostSendBoostRequest.md)
 - [BoostSendBoostRequestCredential](docs/BoostSendBoostRequestCredential.md)
@@ -660,6 +681,7 @@ All URIs are relative to _/api_
 - [BoostSendBoostViaSigningAuthorityRequest](docs/BoostSendBoostViaSigningAuthorityRequest.md)
 - [BoostSendBoostViaSigningAuthorityRequestSigningAuthority](docs/BoostSendBoostViaSigningAuthorityRequestSigningAuthority.md)
 - [BoostSendRequest](docs/BoostSendRequest.md)
+- [BoostSendRequestDisplay](docs/BoostSendRequestDisplay.md)
 - [BoostSendRequestOptions](docs/BoostSendRequestOptions.md)
 - [BoostSendRequestOptionsBranding](docs/BoostSendRequestOptionsBranding.md)
 - [BoostSendRequestTemplate](docs/BoostSendRequestTemplate.md)
@@ -717,6 +739,7 @@ All URIs are relative to _/api_
 - [ContactMethodsVerifyWithCredentialRequest](docs/ContactMethodsVerifyWithCredentialRequest.md)
 - [ContractsAddAutoBoostsToContractRequest](docs/ContractsAddAutoBoostsToContractRequest.md)
 - [ContractsAddContractRecipientRequest](docs/ContractsAddContractRecipientRequest.md)
+- [ContractsCancelContractRequestRequest](docs/ContractsCancelContractRequestRequest.md)
 - [ContractsConsentToContract200Response](docs/ContractsConsentToContract200Response.md)
 - [ContractsConsentToContractRequest](docs/ContractsConsentToContractRequest.md)
 - [ContractsConsentToContractRequestTerms](docs/ContractsConsentToContractRequestTerms.md)
@@ -770,7 +793,15 @@ All URIs are relative to _/api_
 - [ContractsGetConsentedDataForDidRequest](docs/ContractsGetConsentedDataForDidRequest.md)
 - [ContractsGetConsentedDataForDidRequestQuery](docs/ContractsGetConsentedDataForDidRequestQuery.md)
 - [ContractsGetConsentedDataRequest](docs/ContractsGetConsentedDataRequest.md)
+- [ContractsGetContractConnections200Response](docs/ContractsGetContractConnections200Response.md)
+- [ContractsGetContractConnections200ResponseRecordsInner](docs/ContractsGetContractConnections200ResponseRecordsInner.md)
+- [ContractsGetContractRequest200Response](docs/ContractsGetContractRequest200Response.md)
+- [ContractsGetContractRequest200ResponseTarget](docs/ContractsGetContractRequest200ResponseTarget.md)
+- [ContractsGetContractRequest200ResponseTargetAnyOf](docs/ContractsGetContractRequest200ResponseTargetAnyOf.md)
+- [ContractsGetContractRequest200ResponseTargetAnyOf1](docs/ContractsGetContractRequest200ResponseTargetAnyOf1.md)
 - [ContractsGetContractSentRequests200ResponseInner](docs/ContractsGetContractSentRequests200ResponseInner.md)
+- [ContractsGetContractSentRequests200ResponseInnerTarget](docs/ContractsGetContractSentRequests200ResponseInnerTarget.md)
+- [ContractsGetContractSentRequests200ResponseInnerTargetAnyOf](docs/ContractsGetContractSentRequests200ResponseInnerTargetAnyOf.md)
 - [ContractsGetCredentialsForContract200Response](docs/ContractsGetCredentialsForContract200Response.md)
 - [ContractsGetCredentialsForContract200ResponseRecordsInner](docs/ContractsGetCredentialsForContract200ResponseRecordsInner.md)
 - [ContractsGetCredentialsForContractRequest](docs/ContractsGetCredentialsForContractRequest.md)
@@ -791,6 +822,7 @@ All URIs are relative to _/api_
 - [ContractsRemoveAutoBoostsFromContractRequest](docs/ContractsRemoveAutoBoostsFromContractRequest.md)
 - [ContractsSendAiInsightShareRequestRequest](docs/ContractsSendAiInsightShareRequestRequest.md)
 - [ContractsSendAiInsightsContractRequestRequest](docs/ContractsSendAiInsightsContractRequestRequest.md)
+- [ContractsSendContractRequest200Response](docs/ContractsSendContractRequest200Response.md)
 - [ContractsSendContractRequestRequest](docs/ContractsSendContractRequestRequest.md)
 - [ContractsSyncCredentialsToContractRequest](docs/ContractsSyncCredentialsToContractRequest.md)
 - [ContractsUpdateConsentFlowContract200Response](docs/ContractsUpdateConsentFlowContract200Response.md)
@@ -803,7 +835,9 @@ All URIs are relative to _/api_
 - [ContractsUpdateConsentedContractTermsRequest](docs/ContractsUpdateConsentedContractTermsRequest.md)
 - [ContractsWriteCredentialToContractRequest](docs/ContractsWriteCredentialToContractRequest.md)
 - [ContractsWriteCredentialToContractRequestCredential](docs/ContractsWriteCredentialToContractRequestCredential.md)
+- [ContractsWriteCredentialToContractRequestExpectedExternalGrant](docs/ContractsWriteCredentialToContractRequestExpectedExternalGrant.md)
 - [ContractsWriteCredentialToContractViaSigningAuthorityRequest](docs/ContractsWriteCredentialToContractViaSigningAuthorityRequest.md)
+- [ContractsWriteCredentialToContractViaSigningAuthorityRequestExpectedExternalGrant](docs/ContractsWriteCredentialToContractViaSigningAuthorityRequestExpectedExternalGrant.md)
 - [CredentialAcceptCredentialRequest](docs/CredentialAcceptCredentialRequest.md)
 - [CredentialAcceptCredentialRequestOptions](docs/CredentialAcceptCredentialRequestOptions.md)
 - [CredentialGetHolderExportMetadata200Response](docs/CredentialGetHolderExportMetadata200Response.md)
@@ -830,6 +864,7 @@ All URIs are relative to _/api_
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerCumulativeUpdateDiffDetailsInner](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerCumulativeUpdateDiffDetailsInner.md)
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerReferral](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerReferral.md)
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTerms](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTerms.md)
+- [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsExternalGrant](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsExternalGrant.md)
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsRead](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsRead.md)
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsReadCredentials](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsReadCredentials.md)
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsReadCredentialsCategoriesValue](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsReadCredentialsCategoriesValue.md)
@@ -839,6 +874,7 @@ All URIs are relative to _/api_
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerGuardianApproval](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerGuardianApproval.md)
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerReferral](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerReferral.md)
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTerms](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTerms.md)
+- [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsExternalGrant](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsExternalGrant.md)
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsRead](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsRead.md)
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsReadCredentials](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsReadCredentials.md)
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsReadCredentialsCategoriesValue](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsReadCredentialsCategoriesValue.md)
@@ -850,11 +886,17 @@ All URIs are relative to _/api_
 - [CredentialRefreshAllocateCredentialRefreshRequestHolder](docs/CredentialRefreshAllocateCredentialRefreshRequestHolder.md)
 - [CredentialRefreshGetCredentialRefreshHistory200Response](docs/CredentialRefreshGetCredentialRefreshHistory200Response.md)
 - [CredentialRefreshGetCredentialRefreshHistory200ResponseRecordsInner](docs/CredentialRefreshGetCredentialRefreshHistory200ResponseRecordsInner.md)
+- [CredentialRefreshGetEncryptionRecipients200Response](docs/CredentialRefreshGetEncryptionRecipients200Response.md)
 - [CredentialRefreshPublishCredentialRefresh200Response](docs/CredentialRefreshPublishCredentialRefresh200Response.md)
 - [CredentialRefreshPublishCredentialRefreshRequest](docs/CredentialRefreshPublishCredentialRefreshRequest.md)
 - [CredentialRefreshPublishCredentialRefreshRequestOneOf](docs/CredentialRefreshPublishCredentialRefreshRequestOneOf.md)
 - [CredentialRefreshPublishCredentialRefreshRequestOneOf1](docs/CredentialRefreshPublishCredentialRefreshRequestOneOf1.md)
 - [CredentialRefreshPublishCredentialRefreshRequestOneOf1SigningAuthority](docs/CredentialRefreshPublishCredentialRefreshRequestOneOf1SigningAuthority.md)
+- [CredentialRefreshPublishHolderEncryptedRefreshableRequest](docs/CredentialRefreshPublishHolderEncryptedRefreshableRequest.md)
+- [CredentialRefreshPublishHolderEncryptedRefreshableRequestHandoff](docs/CredentialRefreshPublishHolderEncryptedRefreshableRequestHandoff.md)
+- [CredentialRefreshSendHolderEncryptedRefreshable200Response](docs/CredentialRefreshSendHolderEncryptedRefreshable200Response.md)
+- [CredentialRefreshSendHolderEncryptedRefreshableRequest](docs/CredentialRefreshSendHolderEncryptedRefreshableRequest.md)
+- [CredentialRefreshSendHolderEncryptedRefreshableRequestHandoff](docs/CredentialRefreshSendHolderEncryptedRefreshableRequestHandoff.md)
 - [CredentialRefreshSendRefreshableCredentialRequest](docs/CredentialRefreshSendRefreshableCredentialRequest.md)
 - [CredentialSendCredentialRequest](docs/CredentialSendCredentialRequest.md)
 - [CredentialSendCredentialRequestCredential](docs/CredentialSendCredentialRequestCredential.md)
@@ -910,6 +952,7 @@ All URIs are relative to _/api_
 - [InboxGetBatch200ResponseItemsInnerResultOneOfRecipientOneOf](docs/InboxGetBatch200ResponseItemsInnerResultOneOfRecipientOneOf.md)
 - [InboxGetBatch200ResponseItemsInnerResultOneOfRecipientOneOf1](docs/InboxGetBatch200ResponseItemsInnerResultOneOfRecipientOneOf1.md)
 - [InboxGetBatch200ResponseSummary](docs/InboxGetBatch200ResponseSummary.md)
+- [InboxGetGuardianApprovalStatus200Response](docs/InboxGetGuardianApprovalStatus200Response.md)
 - [InboxGetGuardianPendingCredential200Response](docs/InboxGetGuardianPendingCredential200Response.md)
 - [InboxGetGuardianPendingCredential200ResponseIssuer](docs/InboxGetGuardianPendingCredential200ResponseIssuer.md)
 - [InboxGetMyInboxDeliveries200Response](docs/InboxGetMyInboxDeliveries200Response.md)
@@ -956,10 +999,18 @@ All URIs are relative to _/api_
 - [IntegrationsAddIntegrationRequestWhitelistedDomainsInner](docs/IntegrationsAddIntegrationRequestWhitelistedDomainsInner.md)
 - [IntegrationsCountIntegrationsRequest](docs/IntegrationsCountIntegrationsRequest.md)
 - [IntegrationsGetIntegration200Response](docs/IntegrationsGetIntegration200Response.md)
+- [IntegrationsGetIntegrationEvents200Response](docs/IntegrationsGetIntegrationEvents200Response.md)
+- [IntegrationsGetIntegrationEvents200ResponseRecordsInner](docs/IntegrationsGetIntegrationEvents200ResponseRecordsInner.md)
+- [IntegrationsGetIntegrationEvents200ResponseRecordsInnerSubject](docs/IntegrationsGetIntegrationEvents200ResponseRecordsInnerSubject.md)
+- [IntegrationsGetIntegrationWebhook200Response](docs/IntegrationsGetIntegrationWebhook200Response.md)
 - [IntegrationsGetIntegrations200Response](docs/IntegrationsGetIntegrations200Response.md)
 - [IntegrationsGetIntegrations200ResponseRecordsInner](docs/IntegrationsGetIntegrations200ResponseRecordsInner.md)
 - [IntegrationsGetIntegrationsRequest](docs/IntegrationsGetIntegrationsRequest.md)
 - [IntegrationsGetIntegrationsRequestQuery](docs/IntegrationsGetIntegrationsRequestQuery.md)
+- [IntegrationsRotateIntegrationWebhookSecret200Response](docs/IntegrationsRotateIntegrationWebhookSecret200Response.md)
+- [IntegrationsSendIntegrationTestEvent200Response](docs/IntegrationsSendIntegrationTestEvent200Response.md)
+- [IntegrationsSetIntegrationWebhook200Response](docs/IntegrationsSetIntegrationWebhook200Response.md)
+- [IntegrationsSetIntegrationWebhookRequest](docs/IntegrationsSetIntegrationWebhookRequest.md)
 - [IntegrationsUpdateIntegrationRequest](docs/IntegrationsUpdateIntegrationRequest.md)
 - [IntegrationsUpdateIntegrationRequestUpdates](docs/IntegrationsUpdateIntegrationRequestUpdates.md)
 - [PresentationAcceptPresentationRequest](docs/PresentationAcceptPresentationRequest.md)

@@ -13,106 +13,125 @@
 
 
 from __future__ import annotations
+from inspect import getfullargspec
+import json
 import pprint
 import re  # noqa: F401
-import json
+from pydantic import BaseModel, ConfigDict, Field, StrictStr, ValidationError, field_validator
+from typing import List, Optional
+from openapi_client.models.boost_send200_response_inbox_refresh_refresh_service_any_of import BoostSend200ResponseInboxRefreshRefreshServiceAnyOf
+from openapi_client.models.boost_send_boost_request_credential_any_of_refresh_service_any_of import BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf
+from typing import Union, Any, List, Set, TYPE_CHECKING, Optional, Dict
+from typing_extensions import Literal, Self
+from pydantic import Field
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
-from typing import Any, ClassVar, Dict, List, Optional
-from typing_extensions import Annotated
-from openapi_client.models.boost_send200_response_inbox_refresh_refresh_service_authorization import BoostSend200ResponseInboxRefreshRefreshServiceAuthorization
-from typing import Optional, Set
-from typing_extensions import Self
-from pydantic_core import to_jsonable_python
+BOOSTSEND200RESPONSEINBOXREFRESHREFRESHSERVICE_ANY_OF_SCHEMAS = ["BoostSend200ResponseInboxRefreshRefreshServiceAnyOf", "List[BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf]"]
 
 class BoostSend200ResponseInboxRefreshRefreshService(BaseModel):
     """
     BoostSend200ResponseInboxRefreshRefreshService
-    """ # noqa: E501
-    id: Annotated[str, Field(min_length=1, strict=True)]
-    type: StrictStr
-    authorization: Optional[BoostSend200ResponseInboxRefreshRefreshServiceAuthorization] = None
-    additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["id", "type", "authorization"]
+    """
 
-    @field_validator('type')
-    def type_validate_enum(cls, value):
-        """Validates the enum"""
-        if value not in set(['LearnCardCredentialRefresh2026']):
-            raise ValueError("must be one of enum values ('LearnCardCredentialRefresh2026')")
-        return value
+    # data type: BoostSend200ResponseInboxRefreshRefreshServiceAnyOf
+    anyof_schema_1_validator: Optional[BoostSend200ResponseInboxRefreshRefreshServiceAnyOf] = None
+    # data type: List[BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf]
+    anyof_schema_2_validator: Optional[List[BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf]] = None
+    if TYPE_CHECKING:
+        actual_instance: Optional[Union[BoostSend200ResponseInboxRefreshRefreshServiceAnyOf, List[BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf]]] = None
+    else:
+        actual_instance: Any = None
+    any_of_schemas: Set[str] = { "BoostSend200ResponseInboxRefreshRefreshServiceAnyOf", "List[BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf]" }
 
-    model_config = ConfigDict(
-        validate_by_name=True,
-        validate_by_alias=True,
-        validate_assignment=True,
-        protected_namespaces=(),
-    )
+    model_config = {
+        "validate_assignment": True,
+        "protected_namespaces": (),
+    }
 
+    def __init__(self, *args, **kwargs) -> None:
+        if args:
+            if len(args) > 1:
+                raise ValueError("If a position argument is used, only 1 is allowed to set `actual_instance`")
+            if kwargs:
+                raise ValueError("If a position argument is used, keyword arguments cannot be used.")
+            super().__init__(actual_instance=args[0])
+        else:
+            super().__init__(**kwargs)
 
-    def to_str(self) -> str:
-        """Returns the string representation of the model using alias"""
-        return pprint.pformat(self.model_dump(by_alias=True))
+    @field_validator('actual_instance')
+    def actual_instance_must_validate_anyof(cls, v):
+        instance = BoostSend200ResponseInboxRefreshRefreshService.model_construct()
+        error_messages = []
+        # validate data type: BoostSend200ResponseInboxRefreshRefreshServiceAnyOf
+        if not isinstance(v, BoostSend200ResponseInboxRefreshRefreshServiceAnyOf):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `BoostSend200ResponseInboxRefreshRefreshServiceAnyOf`")
+        else:
+            return v
+
+        # validate data type: List[BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf]
+        try:
+            instance.anyof_schema_2_validator = v
+            return v
+        except (ValidationError, ValueError) as e:
+            error_messages.append(str(e))
+        if error_messages:
+            # no match
+            raise ValueError("No match found when setting the actual_instance in BoostSend200ResponseInboxRefreshRefreshService with anyOf schemas: BoostSend200ResponseInboxRefreshRefreshServiceAnyOf, List[BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf]. Details: " + ", ".join(error_messages))
+        else:
+            return v
+
+    @classmethod
+    def from_dict(cls, obj: Dict[str, Any]) -> Self:
+        return cls.from_json(json.dumps(obj))
+
+    @classmethod
+    def from_json(cls, json_str: str) -> Self:
+        """Returns the object represented by the json string"""
+        instance = cls.model_construct()
+        error_messages = []
+        # anyof_schema_1_validator: Optional[BoostSend200ResponseInboxRefreshRefreshServiceAnyOf] = None
+        try:
+            instance.actual_instance = BoostSend200ResponseInboxRefreshRefreshServiceAnyOf.from_json(json_str)
+            return instance
+        except (ValidationError, ValueError) as e:
+             error_messages.append(str(e))
+        # deserialize data into List[BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf]
+        try:
+            # validation
+            instance.anyof_schema_2_validator = json.loads(json_str)
+            # assign value to actual_instance
+            instance.actual_instance = instance.anyof_schema_2_validator
+            return instance
+        except (ValidationError, ValueError) as e:
+            error_messages.append(str(e))
+
+        if error_messages:
+            # no match
+            raise ValueError("No match found when deserializing the JSON string into BoostSend200ResponseInboxRefreshRefreshService with anyOf schemas: BoostSend200ResponseInboxRefreshRefreshServiceAnyOf, List[BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf]. Details: " + ", ".join(error_messages))
+        else:
+            return instance
 
     def to_json(self) -> str:
-        """Returns the JSON representation of the model using alias"""
-        return json.dumps(to_jsonable_python(self.to_dict()))
+        """Returns the JSON representation of the actual instance"""
+        if self.actual_instance is None:
+            return "null"
 
-    @classmethod
-    def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of BoostSend200ResponseInboxRefreshRefreshService from a JSON string"""
-        return cls.from_dict(json.loads(json_str))
+        if hasattr(self.actual_instance, "to_json") and callable(self.actual_instance.to_json):
+            return self.actual_instance.to_json()
+        else:
+            return json.dumps(self.actual_instance)
 
-    def to_dict(self) -> Dict[str, Any]:
-        """Return the dictionary representation of the model using alias.
-
-        This has the following differences from calling pydantic's
-        `self.model_dump(by_alias=True)`:
-
-        * Unset `None` defaults and nonnullable optional values are omitted.
-          Nullable values and explicitly marked strict inputs preserve supplied `None`.
-        * Fields in `self.additional_properties` are added to the output dict.
-        """
-        excluded_fields: Set[str] = set([
-            "additional_properties",
-        ])
-
-        _dict = self.model_dump(
-            by_alias=True,
-            exclude=excluded_fields,
-            exclude_none=True,
-        )
-        # override the default output from pydantic by calling `to_dict()` of authorization
-        if self.authorization:
-            _dict['authorization'] = self.authorization.to_dict()
-        # puts key-value pairs in additional_properties in the top level
-        if self.additional_properties is not None:
-            for _key, _value in self.additional_properties.items():
-                _dict[_key] = _value
-
-        return _dict
-
-    @classmethod
-    def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of BoostSend200ResponseInboxRefreshRefreshService from a dict"""
-        if obj is None:
+    def to_dict(self) -> Optional[Union[Dict[str, Any], BoostSend200ResponseInboxRefreshRefreshServiceAnyOf, List[BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf]]]:
+        """Returns the dict representation of the actual instance"""
+        if self.actual_instance is None:
             return None
 
-        if not isinstance(obj, dict):
-            return cls.model_validate(obj)
+        if hasattr(self.actual_instance, "to_dict") and callable(self.actual_instance.to_dict):
+            return self.actual_instance.to_dict()
+        else:
+            return self.actual_instance
 
-        _values = {
-            "id": obj.get("id"),
-            "type": obj.get("type"),
-            "authorization": BoostSend200ResponseInboxRefreshRefreshServiceAuthorization.from_dict(obj["authorization"]) if obj.get("authorization") is not None else None
-        }
-        # Missing properties must remain unset; explicit nulls still participate in validation.
-        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
-        # store additional fields in additional_properties
-        for _key in obj.keys():
-            if _key not in cls.__properties:
-                _obj.additional_properties[_key] = obj.get(_key)
-
-        return _obj
+    def to_str(self) -> str:
+        """Returns the string representation of the actual instance"""
+        return pprint.pformat(self.model_dump())
 
 
