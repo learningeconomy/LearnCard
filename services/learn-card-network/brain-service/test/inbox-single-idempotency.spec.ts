@@ -1475,13 +1475,15 @@ describe('single inbox durable idempotency', () => {
         const input = await inputFor(issuer, key);
         const atCheckpoint = gate();
         const go = gate();
+        const deliver = gate();
         const own = await admit(input, true);
         const itemId = `${own}:0`;
         const start = batchStore.markBatchIssuanceStarted;
         vi.spyOn(batchStore, 'markBatchIssuanceStarted').mockImplementationOnce(async (...step) => {
             atCheckpoint.open();
             await go.opened;
-            return start(...step);
+            await start(...step);
+            await deliver.opened; // Held right after its checkpoint.
         });
         const working = processInboxQueueMessage(JSON.stringify({ itemId }));
         await atCheckpoint.opened;
@@ -1519,9 +1521,13 @@ describe('single inbox durable idempotency', () => {
         const between = landed;
         await holder.rollback();
         await session.close();
+        // The worker stays right after its checkpoint until the refusal has been answered:
+        // its completion cannot come first and turn that answer into a written refusal.
+        const written = await closing;
+        deliver.open();
         await working;
         expect(between).toBe(false); // It waited for the request lock instead of landing.
-        expect(await closing).toBe(false); // Then it met a winner that is delivering.
+        expect(written).toBe(false); // Then it met a winner that is delivering.
         await expectCounts(1);
     }, 30000);
 
