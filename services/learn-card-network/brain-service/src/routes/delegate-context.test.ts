@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
 import { TRPCError } from '@trpc/server';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { resolveTenantFromRequest } from '@learncard/email-templates';
@@ -13,6 +16,10 @@ const mocks = vi.hoisted(() => ({
     getDelegateAuthGrantByChallenge: vi.fn(),
     getDelegateGrantAudience: vi.fn(),
     issueToInbox: vi.fn(),
+    assertInboxRefreshEnabled: vi.fn(),
+    getInboxRefreshReplay: vi.fn(),
+    resumeInboxRefreshDelivery: vi.fn(),
+    getInboxRefreshReceipt: vi.fn(),
     createDelegateGrantAudit: vi.fn(),
     completeDelegateGrantAudit: vi.fn(),
 }));
@@ -58,6 +65,16 @@ vi.mock('@accesslayer/delegate-grant-audit/create', () => ({
 vi.mock('@helpers/inbox.helpers', async importOriginal => ({
     ...(await importOriginal<typeof import('@helpers/inbox.helpers')>()),
     issueToInbox: mocks.issueToInbox,
+}));
+
+// The paths of `inbox.issue` that can answer before a credential is issued: a delegated request
+// must be refused without any of them being consulted.
+vi.mock('@helpers/inbox-refresh.helpers', async importOriginal => ({
+    ...(await importOriginal<typeof import('@helpers/inbox-refresh.helpers')>()),
+    assertInboxRefreshEnabled: mocks.assertInboxRefreshEnabled,
+    getInboxRefreshReplay: mocks.getInboxRefreshReplay,
+    resumeInboxRefreshDelivery: mocks.resumeInboxRefreshDelivery,
+    getInboxRefreshReceipt: mocks.getInboxRefreshReceipt,
 }));
 
 import {
@@ -582,6 +599,103 @@ describe('the delegate boundary', () => {
                     recipient,
                     credential,
                 ]);
+            });
+
+            // An `idempotencyKey` is only valid with `refresh: true`, so this is also the keyed
+            // request. A stored replay is waiting: answered first, it would hand the delegate the
+            // organisation's earlier issuance.
+            it('a delegated refresh request with an idempotencyKey is refused with BAD_REQUEST before the replay helpers are consulted', async () => {
+                const ctx = await delegateContext();
+                const credential = signer.invoke.getTestVc();
+
+                mocks.getInboxRefreshReplay.mockResolvedValue({
+                    claimUrl: 'https://network.example.com/claim/earlier',
+                    inbox: { id: 'inbox-credential-0', currentStatus: 'ISSUED', refreshId: 'r-0' },
+                });
+                mocks.getInboxRefreshReceipt.mockResolvedValue({ holderDid: 'did:key:z6Mkholder' });
+
+                await expect(
+                    appRouter.createCaller(ctx).inbox.issue({
+                        recipient,
+                        credential,
+                        refresh: true,
+                        idempotencyKey: 'key-1',
+                    })
+                ).rejects.toMatchObject({
+                    code: 'BAD_REQUEST',
+                    message: expect.stringContaining('managed refresh'),
+                });
+
+                expect(mocks.assertInboxRefreshEnabled).not.toHaveBeenCalled();
+                expect(mocks.getInboxRefreshReplay).not.toHaveBeenCalled();
+                expect(mocks.resumeInboxRefreshDelivery).not.toHaveBeenCalled();
+                expect(mocks.getInboxRefreshReceipt).not.toHaveBeenCalled();
+                expect(mocks.issueToInbox).not.toHaveBeenCalled();
+            });
+
+            describe('the source of the inbox.issue mutation', () => {
+                const ASSERTION = 'assertDelegatedInboxIssuance(';
+                const MUTATION = '.mutation(async ({ ctx, input }) => {';
+                const DELEGATE_BLOCK = 'if (ctx.user.delegate !== undefined) {';
+                const OWN_RESOLUTION = 'await resolveInboxCredentialInput(input, ctx)';
+
+                /**
+                 * Everything in the body of `inbox.issue` that could answer, read or branch before
+                 * the delegate assertion, other than the assertion's own block and the one read it
+                 * needs. An empty list means the delegate assertion is decided first.
+                 */
+                const pathsBeforeDelegateAssertion = (source: string): string[] => {
+                    const route = source.indexOf('    issue: profileRoute');
+                    const body = source.indexOf(MUTATION, route) + MUTATION.length;
+                    const assertion = source.indexOf(ASSERTION, body);
+                    const nextMutation = source.indexOf('.mutation(', body);
+
+                    if (route < 0 || body < MUTATION.length || assertion < 0) {
+                        return ['inbox.issue or its delegate assertion was not found'];
+                    }
+                    if (nextMutation >= 0 && assertion > nextMutation) {
+                        return ['the delegate assertion is not in the inbox.issue mutation'];
+                    }
+
+                    const before = source
+                        .slice(body, assertion)
+                        .replace(/\/\/.*$/gm, '')
+                        .replace(/\/\*[\s\S]*?\*\//g, '');
+
+                    if (!before.includes(DELEGATE_BLOCK) || !before.includes(OWN_RESOLUTION)) {
+                        return ['the delegate block does not open the mutation'];
+                    }
+
+                    return (
+                        before
+                            .replace(DELEGATE_BLOCK, '')
+                            .replace(OWN_RESOLUTION, '')
+                            .match(/\b(return|await|throw|if|switch|for|while|try)\b[^\n]*/g) ?? []
+                    );
+                };
+
+                const source = readFileSync(
+                    fileURLToPath(new URL('./inbox.ts', import.meta.url)),
+                    'utf8'
+                );
+
+                it('nothing returns, awaits another path or branches before the delegate assertion', () => {
+                    expect(pathsBeforeDelegateAssertion(source)).toEqual([]);
+                });
+
+                // Control: the same check on the same source with a keyed path merged in above it.
+                it('an earlier path added above the delegate assertion is reported', () => {
+                    const earlier =
+                        'if (input.idempotencyKey) return await replayKeyedIssue(input);';
+                    const body =
+                        source.indexOf(MUTATION, source.indexOf('    issue: profileRoute')) +
+                        MUTATION.length;
+                    const merged = `${source.slice(0, body)}\n            ${earlier}${source.slice(
+                        body
+                    )}`;
+
+                    expect(pathsBeforeDelegateAssertion(merged)).toEqual([earlier]);
+                });
             });
         });
 
