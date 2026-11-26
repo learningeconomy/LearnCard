@@ -23,6 +23,10 @@ import { getNotificationMessage } from '@helpers/notificationMessages';
 import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
 import { getLearnCard, getEmptyLearnCard } from '@helpers/learnCard.helpers';
 import { logCredentialClaimed, logCredentialFailed } from '@helpers/activity.helpers';
+import {
+    assertDelegatedInboxClaim,
+    DelegatedInboxClaimRefused,
+} from '@helpers/delegate-auth-request.helpers';
 import { handleConnectionPromptsForCredentialClaim } from '@helpers/connectionPrompt.helpers';
 import { decryptInboxCredential } from '@helpers/inbox-encryption.helpers';
 import { setCredentialSubjectIds } from '@helpers/credentialSubject.helpers';
@@ -190,6 +194,8 @@ export async function finalizeInboxCredentialsForProfile(
             }
 
             try {
+                await assertDelegatedInboxClaim(inboxCredential);
+
                 let finalCredential: VC | JWE;
                 let issued: IssuedCredential | undefined;
                 const credentialPayload = inboxCredential.refreshId
@@ -400,7 +406,10 @@ export async function finalizeInboxCredentialsForProfile(
                             data: {
                                 inbox: {
                                     issuanceId: inboxCredential.id,
-                                    status: LCNInboxStatusEnumValidator.enum.PENDING,
+                                    status:
+                                        error instanceof DelegatedInboxClaimRefused
+                                            ? LCNInboxStatusEnumValidator.enum.EXPIRED
+                                            : LCNInboxStatusEnumValidator.enum.PENDING,
                                     recipient: {
                                         contactMethod: { type: cm.type, value: cm.value },
                                         learnCardId: profile.did,

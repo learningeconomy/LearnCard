@@ -1,8 +1,15 @@
 import { TRPCError } from '@trpc/server';
 import type { IssueInboxCredentialType, UnsignedVC, VC, VP } from '@learncard/types';
 
-import { getDelegateAuthGrantByChallenge } from '@accesslayer/delegate-auth-grant/read';
-import type { NewDelegateGrantAudit } from '@accesslayer/delegate-grant-audit/create';
+import {
+    getDelegateAuthGrantByChallenge,
+    getDelegateAuthGrantForOwner,
+} from '@accesslayer/delegate-auth-grant/read';
+import {
+    createDelegateGrantAudit,
+    type NewDelegateGrantAudit,
+} from '@accesslayer/delegate-grant-audit/create';
+import { updateInboxCredential } from '@accesslayer/inbox-credential/update';
 import type { Context } from '@routes';
 import type { ProfileType } from 'types/profile';
 
@@ -219,4 +226,100 @@ export const assertDelegatedInboxIssuance = (
                 "A delegate submits unsigned credential content; the organisation's signing authority signs it.",
         });
     }
+};
+
+/** What a delegated `inbox.issue` leaves on the unsigned credential it stores for the claim. */
+export type DelegatedInboxCredential = {
+    id: string;
+    delegateGrantId?: string;
+    delegateDid?: string;
+    delegateOwnerProfileId?: string;
+};
+
+/** The claim of a delegated inbox credential was refused: it is then `EXPIRED`, not `PENDING`. */
+export class DelegatedInboxClaimRefused extends Error {}
+
+const DELEGATED_INBOX_ROUTE = 'inbox.issue';
+
+/**
+ * A delegate's unsigned inbox credential is signed only when the recipient claims it, which may
+ * be long after the request was admitted. So the grant is decided again here, by the policy that
+ * admitted the request, before anything is signed. Does nothing for a credential no delegate
+ * asked for.
+ *
+ * A grant that is revoked, expired, gone or held by another delegate: the credential becomes
+ * `EXPIRED`, a denied record is written as for a refused request, and this throws
+ * `DelegatedInboxClaimRefused`. A grant that cannot be read throws the read's own error and
+ * changes nothing: the credential stays `PENDING` for a later claim.
+ */
+export const assertDelegatedInboxClaim = async (
+    inboxCredential: DelegatedInboxCredential
+): Promise<void> => {
+    const {
+        delegateGrantId: grantId,
+        delegateDid,
+        delegateOwnerProfileId: ownerProfileId,
+    } = inboxCredential;
+
+    if (grantId === undefined) return;
+
+    const requiredScope = getPinnedScope(DELEGATED_INBOX_ROUTE);
+    let reason = 'its record of the delegate is incomplete';
+
+    if (delegateDid && ownerProfileId && requiredScope) {
+        // Not caught: an outage must not look like a revoked grant, and must not sign either.
+        const grant = await getDelegateAuthGrantForOwner(grantId, ownerProfileId);
+        const now = Date.now();
+        const audience = getDelegateGrantAudience();
+
+        // No token is presented at a claim. The signer is the delegate recorded at admission,
+        // the audience is the server's own, and the challenge is the stored grant's.
+        const decision = evaluateDelegateAuthGrant(grant, {
+            signerDid: delegateDid,
+            issuerDid: delegateDid,
+            holderDid: delegateDid,
+            audience,
+            expectedAudience: audience,
+            challenge: grant?.challenge ?? '',
+            requiredScope,
+            requestedProfileId: ownerProfileId,
+            now,
+        });
+
+        if (decision.allowed) return;
+
+        // For the owner's reading only: the decision above is the policy's.
+        if (!grant) reason = 'the grant no longer exists';
+        else if (grant.status !== 'active') reason = `the grant is ${grant.status}`;
+        else if (!(Date.parse(grant.expiresAt) > now)) reason = 'the grant has expired';
+        else if (grant.delegateDid !== delegateDid) reason = 'another delegate holds the grant';
+        else reason = 'the grant no longer allows this issuance';
+    }
+
+    // `EXPIRED` is the only terminal state an unclaimed inbox credential has.
+    await updateInboxCredential(inboxCredential.id, {
+        currentStatus: 'EXPIRED',
+        expiredAt: new Date().toISOString(),
+    });
+
+    if (delegateDid && ownerProfileId) {
+        try {
+            await createDelegateGrantAudit(
+                delegateAuditRecord({
+                    actorDid: delegateDid,
+                    grantId,
+                    ownerProfileId,
+                    path: DELEGATED_INBOX_ROUTE,
+                    requiredScope,
+                    stage: 'policy',
+                })
+            );
+        } catch (error) {
+            console.error('Failed to record the refused claim of a delegated credential:', error);
+        }
+    }
+
+    throw new DelegatedInboxClaimRefused(
+        `Delegate grant ${grantId} does not authorise this issuance any more (${reason}); the credential was not signed.`
+    );
 };

@@ -508,6 +508,16 @@ export const issueToInbox = async (
             expiresInDays,
             ...(guardianEmail ? { guardianEmail } : {}),
             ...(needsGuardianGate ? { guardianStatus: 'AWAITING_GUARDIAN' as const } : {}),
+            // Nothing is signed until the recipient claims: the claim checks this grant again.
+            ...(ctx.user?.delegate
+                ? {
+                      delegation: {
+                          grantId: ctx.user.delegate.grantId,
+                          delegateDid: ctx.user.delegate.actorDid,
+                          ownerProfileId: ctx.user.delegate.ownerProfileId,
+                      },
+                  }
+                : {}),
         });
 
         const refresh = inboxCredential.refreshId

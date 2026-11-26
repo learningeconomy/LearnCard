@@ -26,6 +26,8 @@ import { getInboxCredentialById } from '@accesslayer/inbox-credential/read';
 import { createContactMethod } from '@accesslayer/contact-method/create';
 import { createProfileContactMethodRelationship } from '@accesslayer/contact-method/relationships/create';
 import * as notifications from '@helpers/notifications.helpers';
+import * as activity from '@helpers/activity.helpers';
+import * as grantReads from '@accesslayer/delegate-auth-grant/read';
 import * as signing from '@helpers/signingAuthority.helpers';
 import { DELEGATE_GRANT_CHALLENGE_PREFIX } from '@helpers/delegate-auth-grant.schema';
 import * as learnCards from '@helpers/learnCard.helpers';
@@ -44,7 +46,7 @@ type User = Awaited<ReturnType<typeof getUser>>;
 type Reply<T> = { status: number; body: T };
 type Grant = { grantId: string; challenge: string; audience: string };
 type StoredGrant = { id: string; status: string; expiresAt: string; audience: string };
-type Issued = { issuanceId: string; status: string };
+type Issued = { issuanceId: string; status: string; claimUrl?: string };
 type IssueOverrides = {
     credential?: Record<string, unknown>;
     recipient?: string;
@@ -624,6 +626,225 @@ describe('Delegate-bound issuance over HTTP', () => {
         expect(listed.status, JSON.stringify(listed.body)).toBe(200);
         expect(listed.body.map(grant => grant.id)).toEqual([accepted.grantId]);
         expect(listed.body[0]?.audience).toBe(accepted.audience);
+    });
+
+    // An unsigned credential for a recipient without a profile is signed only at the claim,
+    // which may be long after the request was admitted.
+    describe('the grant is checked again when the recipient claims', () => {
+        let holder: User;
+
+        beforeEach(async () => {
+            holder = await getUser('c3'.repeat(32));
+            await holder.clients.fullAuth.profile.createProfile({ profileId: HOLDER_ID });
+        });
+
+        const pendingIssuance = async (token?: string) => {
+            const grant = await createGrant();
+            const reply = await issueAs(token ?? (await delegateToken(grant)));
+
+            expect(reply.status, JSON.stringify(reply.body)).toBe(200);
+            expect(reply.body).toMatchObject({ status: 'PENDING', claimUrl: expect.any(String) });
+
+            return { grant, issuanceId: reply.body.issuanceId, claimUrl: reply.body.claimUrl! };
+        };
+
+        /** The claim link's exchange, as a wallet runs it. Returns what was delivered. */
+        const claim = async (claimUrl: string): Promise<unknown[]> => {
+            const exchange = {
+                localWorkflowId: 'inbox-claim',
+                localExchangeId: new URL(claimUrl).pathname.split('/').pop()!,
+            };
+            const start = await holder.clients.fullAuth.workflows.participateInExchange(exchange);
+            const verifiablePresentation = await holder.learnCard.invoke.getDidAuthVp({
+                challenge: start.verifiablePresentationRequest?.challenge,
+                domain: start.verifiablePresentationRequest?.domain,
+            });
+            const result = await holder.clients.fullAuth.workflows.participateInExchange({
+                ...exchange,
+                verifiablePresentation,
+            });
+
+            return [result.verifiablePresentation?.verifiableCredential ?? []].flat();
+        };
+
+        const storedNode = async (issuanceId: string): Promise<Record<string, unknown>> => {
+            const result = await neogma.queryRunner.run(
+                'MATCH (i:InboxCredential {id: $issuanceId}) RETURN properties(i) AS stored',
+                { issuanceId }
+            );
+
+            return result.records[0]?.get('stored');
+        };
+
+        const changeGrant = async (cypher: string, params: Record<string, unknown>) => {
+            const changed = await neogma.queryRunner.run(
+                `MATCH (g:DelegateAuthGrant {id: $id}) ${cypher} RETURN count(g) AS changed`,
+                params
+            );
+            expect(changed.records[0]?.get('changed').toNumber()).toBe(1);
+        };
+
+        const claimDenials = async () =>
+            (await audits()).filter(audit => audit.decision === 'denied');
+
+        const CHANGES: [string, string, (grant: Grant) => Promise<void>][] = [
+            ['revoked', 'the grant is revoked', grant => revokeGrant(grant)],
+            [
+                'expired',
+                'the grant has expired',
+                grant =>
+                    changeGrant('SET g.createdAt = $createdAt, g.expiresAt = $expiresAt', {
+                        id: grant.grantId,
+                        createdAt: new Date(Date.now() - 5 * DAY_MS).toISOString(),
+                        expiresAt: new Date(Date.now() - DAY_MS).toISOString(),
+                    }),
+            ],
+            [
+                'moved to another delegate',
+                'another delegate holds the grant',
+                async grant =>
+                    changeGrant('SET g.delegateDid = $did', {
+                        id: grant.grantId,
+                        did: (await getLearnCard('d2'.repeat(32))).id.did(),
+                    }),
+            ],
+            [
+                'deleted',
+                'the grant no longer exists',
+                grant =>
+                    changeGrant('WITH g, 1 AS kept DETACH DELETE g WITH kept AS g', {
+                        id: grant.grantId,
+                    }),
+            ],
+        ];
+
+        it.each(CHANGES)(
+            'a grant %s between admission and claim: nothing is signed, the credential is EXPIRED, the failure names the grant and a denied record is written',
+            async (_change, reason, change) => {
+                const { grant, issuanceId, claimUrl } = await pendingIssuance();
+                await neogma.queryRunner.run(
+                    'MATCH (i:InboxCredential {id: $issuanceId}) SET i.webhookUrl = $webhookUrl',
+                    { issuanceId, webhookUrl: 'https://owner.example.com/hook' }
+                );
+                const sign = vi.spyOn(signing, 'issueCredentialWithSigningAuthority');
+                const failed = vi.spyOn(activity, 'logCredentialFailed');
+
+                await change(grant);
+
+                expect(await claim(claimUrl)).toEqual([]);
+
+                expect(sign).not.toHaveBeenCalled();
+                expect(await storedNode(issuanceId)).toMatchObject({
+                    currentStatus: 'EXPIRED',
+                    expiredAt: expect.any(String),
+                });
+
+                const message = `Delegate grant ${grant.grantId} does not authorise this issuance any more (${reason}); the credential was not signed.`;
+                expect(failed).toHaveBeenCalledTimes(1);
+                expect(failed.mock.calls[0]?.[0]).toMatchObject({
+                    actorProfileId: OWNER_ID,
+                    metadata: { error: message },
+                });
+                expect(addNotificationToQueueSpy).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        type: 'ISSUANCE_ERROR',
+                        message: expect.objectContaining({ body: message }),
+                        data: { inbox: expect.objectContaining({ issuanceId, status: 'EXPIRED' }) },
+                    })
+                );
+                expect(await claimDenials()).toEqual([
+                    expect.objectContaining({
+                        decision: 'denied',
+                        stage: 'policy',
+                        route: 'inbox.issue',
+                        requiredScope: 'inbox:write',
+                        actorDid: delegate.id.did(),
+                        grantId: grant.grantId,
+                        ownerProfileId: OWNER_ID,
+                    }),
+                ]);
+            }
+        );
+
+        it('the other signer of a pending credential, inbox.finalize, refuses a revoked grant the same way', async () => {
+            const { grant, issuanceId } = await pendingIssuance();
+            const accepted = await neogma.queryRunner.run(
+                'MATCH (i:InboxCredential {id: $issuanceId})-[:ADDRESSED_TO]->(c:ContactMethod) SET i.isAccepted = true, c.isVerified = true RETURN c.id AS id',
+                { issuanceId }
+            );
+            await createProfileContactMethodRelationship(HOLDER_ID, accepted.records[0]?.get('id'));
+            const sign = vi.spyOn(signing, 'issueCredentialWithSigningAuthority');
+
+            await revokeGrant(grant);
+
+            expect(await holder.clients.fullAuth.inbox.finalize()).toMatchObject({
+                processed: 1,
+                claimed: 0,
+                errors: 1,
+            });
+            expect(sign).not.toHaveBeenCalled();
+            expect(await storedNode(issuanceId)).toMatchObject({ currentStatus: 'EXPIRED' });
+            expect(await claimDenials()).toHaveLength(1);
+        });
+
+        it('a grant that cannot be read: nothing is signed, the credential stays PENDING and the failure is logged', async () => {
+            const { issuanceId, claimUrl } = await pendingIssuance();
+            const sign = vi.spyOn(signing, 'issueCredentialWithSigningAuthority');
+            const failed = vi.spyOn(activity, 'logCredentialFailed');
+            vi.spyOn(grantReads, 'getDelegateAuthGrantForOwner').mockRejectedValue(
+                new Error('neo4j unavailable')
+            );
+
+            expect(await claim(claimUrl)).toEqual([]);
+
+            expect(sign).not.toHaveBeenCalled();
+            expect(await storedNode(issuanceId)).toMatchObject({ currentStatus: 'PENDING' });
+            expect(failed.mock.calls.map(([logged]) => logged.metadata)).toEqual([
+                { error: 'neo4j unavailable' },
+            ]);
+            expect(await claimDenials()).toEqual([]);
+        });
+
+        it('an unchanged grant still signs at the claim, and what was recorded for the claim is in no public output', async () => {
+            const { grant, issuanceId, claimUrl } = await pendingIssuance();
+            const recorded = {
+                delegateGrantId: grant.grantId,
+                delegateDid: delegate.id.did(),
+                delegateOwnerProfileId: OWNER_ID,
+            };
+            expect(await storedNode(issuanceId)).toMatchObject({ ...recorded, isSigned: false });
+
+            const publicOutputs = JSON.stringify([
+                await owner.clients.fullAuth.inbox.getMyIssuedCredentials(),
+                await owner.clients.fullAuth.inbox.getInboxCredential({ credentialId: issuanceId }),
+            ]);
+            expect(publicOutputs).toContain(issuanceId);
+            for (const value of ['delegateGrantId', ...Object.values(recorded).slice(0, 2)]) {
+                expect(publicOutputs).not.toContain(value);
+            }
+
+            const delivered = await claim(claimUrl);
+
+            expect(delivered).toEqual([expect.objectContaining({ proof: expect.anything() })]);
+            expect(await storedNode(issuanceId)).toMatchObject({ currentStatus: 'ISSUED' });
+            expect(await claimDenials()).toEqual([]);
+        });
+
+        it("the organisation's own pending credential carries no grant and is claimed without a grant being read", async () => {
+            const { issuanceId, claimUrl } = await pendingIssuance(await sessionToken(owner));
+            const read = vi.spyOn(grantReads, 'getDelegateAuthGrantForOwner');
+
+            const stored = await storedNode(issuanceId);
+            expect(stored).toMatchObject({ currentStatus: 'PENDING', isSigned: false });
+            expect(Object.keys(stored).filter(key => key.startsWith('delegate'))).toEqual([]);
+
+            expect(await claim(claimUrl)).toEqual([
+                expect.objectContaining({ proof: expect.anything() }),
+            ]);
+            expect(read).not.toHaveBeenCalled();
+            expect(await storedNode(issuanceId)).toMatchObject({ currentStatus: 'ISSUED' });
+            expect(await audits()).toEqual([]);
+        });
     });
 
     describe('contract write through the signing authority', () => {
