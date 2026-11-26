@@ -72,6 +72,7 @@ services:
             - 'localhost:host-gateway'
         environment:
             IS_OFFLINE: true
+            EMAIL_APP_ORIGINS: '{"learncard":"http://localhost:3000"}'
             PORT: 4000
             SEED: a
             DOMAIN_NAME: 'localhost%3A4000'

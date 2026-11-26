@@ -46,6 +46,7 @@ services:
             SEED: a
 
             IS_OFFLINE: true
+            EMAIL_APP_ORIGINS: '{"learncard":"http://localhost:3000"}'
             IS_E2E_TEST: true
             SKIP_DIDKIT_NAPI: '1'
 

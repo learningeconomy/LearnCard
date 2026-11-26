@@ -1,6 +1,7 @@
 import { appRouter } from '../../src/app';
 import { SeedLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
 import { AUTH_GRANT_FULL_ACCESS_SCOPE } from 'src/constants/auth-grant';
+import { resolveTenantFromRequest } from '@learncard/email-templates';
 
 export const getClient = (options?: {
     did?: string;
@@ -10,11 +11,15 @@ export const getClient = (options?: {
 }) => {
     const { did, isChallengeValid, scope, guardianApproval } = options ?? {};
     const domain = 'localhost%3A3000';
+    // Production createContext always resolves a tenant, including in-process calls.
+    const tenant = resolveTenantFromRequest({});
 
-    if (!did) return appRouter.createCaller({ domain, _guardianApprovalToken: guardianApproval });
+    if (!did)
+        return appRouter.createCaller({ domain, tenant, _guardianApprovalToken: guardianApproval });
 
     return appRouter.createCaller({
         domain,
+        tenant,
         user: { did, isChallengeValid: Boolean(isChallengeValid), scope },
         _guardianApprovalToken: guardianApproval,
     });
@@ -35,6 +40,7 @@ export const getVerifiedContactMethodClient = (options?: {
 
     return appRouter.createCaller({
         domain,
+        tenant: resolveTenantFromRequest({}),
         contactMethod,
     });
 };

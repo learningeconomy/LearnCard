@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
     localName: '',
     occupiedHandle: '',
     createProfile: vi.fn(),
+    getIdToken: vi.fn(),
     updateProfile: vi.fn(),
     updateCurrentUser: vi.fn(),
     setCurrentUser: vi.fn(),
@@ -34,6 +35,7 @@ const stableAdapter = vi.hoisted(() => ({
     getCurrentUser: () => ({ displayName: mocks.authName }),
     updateProfile: mocks.updateProfile,
 }));
+const stableAuthProvider = vi.hoisted(() => ({ getIdToken: mocks.getIdToken }));
 vi.mock('learn-card-base', () => ({
     useSignInAdapter: () => stableAdapter,
     authUserStore: { use: { currentUser: () => ({ displayName: mocks.authName }) } },
@@ -104,7 +106,7 @@ vi.mock('learn-card-base/config/TenantConfigProvider', () => ({
     useBrandingConfig: () => ({ name: 'LearnCard' }),
 }));
 vi.mock('../../../providers/AuthCoordinatorProvider', () => ({
-    useAppAuth: () => ({ state: { status: 'ready' } }),
+    useAppAuth: () => ({ state: { status: 'ready' }, authProvider: stableAuthProvider }),
 }));
 vi.mock('@learncard/sss-key-manager', () => ({ generateEd25519PrivateKey: vi.fn() }));
 vi.mock('@tanstack/react-query', () => ({ useQueryClient: () => ({ resetQueries: vi.fn() }) }));
@@ -178,6 +180,7 @@ beforeEach(() => {
     mocks.country = 'US';
     mocks.dob = '1990-01-01';
     mocks.createProfile.mockResolvedValue('did:web:example.com');
+    mocks.getIdToken.mockReset().mockResolvedValue('verified-email-id-token');
     mocks.isClassLinkStudent = false;
     mocks.transcriptFlag = false;
     mocks.transcriptsGetStatus.mockResolvedValue({
@@ -205,6 +208,40 @@ describe('onboarding open flag', () => {
         } finally {
             mocks.track = originalTrack;
         }
+    });
+});
+
+describe('email signup profile creation', () => {
+    const submitEmailProfile = async (): Promise<void> => {
+        mocks.loginType = 'email';
+        await openProfile();
+        fireEvent.change(screen.getByLabelText('Full Name'), {
+            target: { value: 'Email Learner' },
+        });
+        await waitFor(() => expect(createButton()).toBeEnabled());
+        fireEvent.click(createButton());
+    };
+
+    it('forwards the signed-in provider token when creating the profile', async () => {
+        await submitEmailProfile();
+
+        await waitFor(() =>
+            expect(mocks.createProfile).toHaveBeenCalledWith(
+                expect.objectContaining({ authToken: 'verified-email-id-token' })
+            )
+        );
+        expect(mocks.getIdToken).toHaveBeenCalledWith(false);
+    });
+
+    it('keeps profile creation available when the provider token is unavailable', async () => {
+        mocks.getIdToken.mockRejectedValueOnce(new Error('Session expired'));
+        await submitEmailProfile();
+
+        await waitFor(() =>
+            expect(mocks.createProfile).toHaveBeenCalledWith(
+                expect.objectContaining({ authToken: undefined })
+            )
+        );
     });
 });
 

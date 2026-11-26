@@ -153,3 +153,4 @@ export * from './consent-flow-contract-updates';
 
 export * from './credential-materialization';
 export * from './age-policy';
+export * from './firebase-otp-email-proof';

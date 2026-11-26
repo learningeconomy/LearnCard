@@ -179,6 +179,7 @@ describe('Contact Methods', () => {
 
             expect(sendArgs.templateId).toBe('contact-method-verification');
             expect(verificationToken).toBeDefined();
+            expect(sendArgs.branding.appUrl).toBe('https://learncard.app');
 
             // Use the retrieved token to complete the verification
             await userB.clients.fullAuth.contactMethods.verifyContactMethod({

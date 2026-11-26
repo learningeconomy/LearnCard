@@ -25,7 +25,7 @@ async function createSignedJwt(
     options?: { expiresIn?: string; privateKey?: KeyLike }
 ) {
     const key = options?.privateKey ?? rsaPrivateKey;
-    return new SignJWT(claims as any)
+    return new SignJWT(claims)
         .setProtectedHeader({ alg: 'RS256', kid: 'test-key-1' })
         .setIssuedAt()
         .setExpirationTime(options?.expiresIn ?? '1h')
@@ -46,14 +46,15 @@ describe('verifyAuthToken', () => {
         // Mock fetch for OIDC discovery (getJWKS still calls it for the discovery doc)
         vi.stubGlobal(
             'fetch',
-            vi.fn(async () =>
-                new Response(
-                    JSON.stringify({
-                        issuer: TEST_ISSUER,
-                        jwks_uri: `${TEST_ISSUER}/jwks`,
-                    }),
-                    { status: 200, headers: { 'content-type': 'application/json' } }
-                )
+            vi.fn(
+                async () =>
+                    new Response(
+                        JSON.stringify({
+                            issuer: TEST_ISSUER,
+                            jwks_uri: `${TEST_ISSUER}/jwks`,
+                        }),
+                        { status: 200, headers: { 'content-type': 'application/json' } }
+                    )
             )
         );
     });
@@ -162,7 +163,7 @@ describe('verifyAuthToken', () => {
             sub: 'user-123',
             email: 'alice@example.com',
             email_verified: true,
-        } as any)
+        })
             .setProtectedHeader({ alg: 'RS256', kid: 'test-key-1' })
             .setIssuedAt(Math.floor(Date.now() / 1000) - 7200)
             .setExpirationTime(Math.floor(Date.now() / 1000) - 3600)
@@ -202,6 +203,83 @@ describe('verifyAuthToken', () => {
         expect(result).not.toBeNull();
         expect(result!.email).toBe('alice@example.com');
         expect(result!.emailVerified).toBe(false);
+    });
+
+    it('accepts a fresh OTP-bound email claim from a signed Firebase custom ID token', async () => {
+        const verifyAuthToken = await loadVerifyAuthToken();
+        const token = await createSignedJwt({
+            iss: TEST_ISSUER,
+            aud: TEST_AUDIENCE,
+            sub: 'user-otp',
+            email: 'Alice@Example.com',
+            email_verified: false,
+            firebase: { sign_in_provider: 'custom' },
+            lc_otp_verified_email: 'alice@example.com',
+            lc_otp_verified_at: Math.floor(Date.now() / 1000),
+        });
+
+        expect(await verifyAuthToken(token)).toMatchObject({
+            email: 'Alice@Example.com',
+            emailVerified: true,
+            uid: 'user-otp',
+        });
+    });
+
+    it.each([
+        ['different email', { lc_otp_verified_email: 'other@example.com' }],
+        ['stale proof', { lc_otp_verified_at: Math.floor(Date.now() / 1000) - 3700 }],
+        ['future proof', { lc_otp_verified_at: Math.floor(Date.now() / 1000) + 300 }],
+        ['non-custom sign-in', { firebase: { sign_in_provider: 'password' } }],
+        ['missing proof', { lc_otp_verified_email: undefined }],
+    ])('does not accept %s from a signed Firebase token', async (_label, overrides) => {
+        const verifyAuthToken = await loadVerifyAuthToken();
+        const token = await createSignedJwt({
+            iss: TEST_ISSUER,
+            aud: TEST_AUDIENCE,
+            sub: 'user-otp',
+            email: 'alice@example.com',
+            email_verified: false,
+            firebase: { sign_in_provider: 'custom' },
+            lc_otp_verified_email: 'alice@example.com',
+            lc_otp_verified_at: Math.floor(Date.now() / 1000),
+            ...overrides,
+        });
+
+        expect(await verifyAuthToken(token)).toMatchObject({ emailVerified: false });
+    });
+
+    it('does not accept OTP-bound claims from a non-Firebase trusted issuer', async () => {
+        const otherIssuer = 'https://keycloak.example.com/realms/test';
+        process.env.OIDC_TRUSTED_ISSUERS = `${TEST_ISSUER}, ${otherIssuer}`;
+        const verifyAuthToken = await loadVerifyAuthToken();
+        const token = await createSignedJwt({
+            iss: otherIssuer,
+            aud: TEST_AUDIENCE,
+            sub: 'user-otp',
+            email: 'alice@example.com',
+            email_verified: false,
+            firebase: { sign_in_provider: 'custom' },
+            lc_otp_verified_email: 'alice@example.com',
+            lc_otp_verified_at: Math.floor(Date.now() / 1000),
+        });
+
+        expect(await verifyAuthToken(token)).toMatchObject({ emailVerified: false });
+    });
+
+    it('rejects a signed OTP proof whose audience does not match the configured Firebase project', async () => {
+        const verifyAuthToken = await loadVerifyAuthToken();
+        const token = await createSignedJwt({
+            iss: TEST_ISSUER,
+            aud: 'other-project',
+            sub: 'user-otp',
+            email: 'alice@example.com',
+            email_verified: false,
+            firebase: { sign_in_provider: 'custom' },
+            lc_otp_verified_email: 'alice@example.com',
+            lc_otp_verified_at: Math.floor(Date.now() / 1000),
+        });
+
+        expect(await verifyAuthToken(token)).toBeNull();
     });
 
     it('should support multiple configured issuers', async () => {

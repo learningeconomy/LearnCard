@@ -1,6 +1,8 @@
 {
     "CAMPAIGN_APP_ORIGINS": "{\"scoutpass\":\"https://staging.pass.scout.org\"}",
+    "EMAIL_APP_ORIGINS": "{\"scoutpass\":\"https://staging.pass.scout.org\"}",
     "CLIENT_APP_DOMAIN_NAME": "staging.pass.scout.org",
+    "DEFAULT_TENANT_ID": "scoutpass",
     "CREDENTIAL_REFRESH_ENABLED": "false",
     "CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS": "24",
     "DOMAIN_NAME": "staging.scoutnetwork.org",

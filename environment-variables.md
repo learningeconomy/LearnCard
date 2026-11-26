@@ -145,6 +145,16 @@ must supply their own mapping. Missing or invalid origins reject in-app campaign
 email preparation before reserving a send. Runtime bundle overrides use the same
 JSON string value; GitHub per-key wiring is unnecessary in bundle mode.
 
+Contact-verification and contract-invitation email links use the separate
+`EMAIL_APP_ORIGINS` JSON map of trusted tenant IDs to frontend origins. Checked-in
+Brain stage configs supply LearnCard, VetPass and ScoutPass staging and production
+origins. A local offline setup can use
+`EMAIL_APP_ORIGINS={"learncard":"http://localhost:3000"}`. Custom deployments
+must configure every tenant they support. Missing tenants, malformed origins or
+missing configuration block these email sends rather than silently sending a link
+to another environment. A queued invitation with no tenant ID cannot safely select
+an origin and will not be emailed until its tenant identity is resolved.
+
 The visible unsubscribe footer opens the sending Brain service's anonymous
 `/campaigns/unsubscribe/browser` confirmation page. This works for LearnCard,
 VetPass and ScoutPass and keeps staging links on staging Brain. The separate

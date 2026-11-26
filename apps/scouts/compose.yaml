@@ -74,6 +74,8 @@ services:
             - 'localhost:host-gateway'
         environment:
             IS_OFFLINE: true
+            DEFAULT_TENANT_ID: scoutpass
+            EMAIL_APP_ORIGINS: '{"learncard":"http://localhost:3000","scoutpass":"http://localhost:3000"}'
             PORT: 4000
             SEED: a
             DOMAIN_NAME: 'localhost%3A4000'
