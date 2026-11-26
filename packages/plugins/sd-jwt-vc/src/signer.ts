@@ -1,6 +1,6 @@
 import { compactVerify, importJWK, base64url, type JWK } from 'jose';
 import { ed25519 } from '@noble/curves/ed25519';
-import type { Signer as SdJwtLibSigner } from '@sd-jwt/types';
+import type { Signer as SdJwtLibSigner } from '@sd-jwt/core';
 
 import { SdJwtVcError } from './types';
 

@@ -239,9 +239,13 @@ export const verifySdJwtVc = async (
         hashAlg: 'sha-256',
         saltGenerator: randomSalt,
         verifier,
+        // 0.20 no longer falls back to `verifier` for the status list JWT, so keep 0.19's issuer-key check.
+        statusVerifier: verifier,
     });
 
     try {
+        // Preserve 0.19 behavior: skipStatusCheck only suppresses the legacy
+        // warning below; a status list declared by the credential is still checked.
         await instance.verify(compact);
         checks.push('issuer_signature');
     } catch (e) {

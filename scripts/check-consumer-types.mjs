@@ -53,14 +53,6 @@ const KNOWN_ISSUES = [
         message: "has no exported member 'InitInput'",
     },
     { file: '@learncard/didkit-plugin/dist/types.d.ts', message: "Cannot find module 'dids'" },
-    {
-        file: '@learncard/sd-jwt-vc-plugin/dist/present.d.ts',
-        message: "Cannot find module '@sd-jwt/types'",
-    },
-    {
-        file: '@learncard/sd-jwt-vc-plugin/dist/signer.d.ts',
-        message: "Cannot find module '@sd-jwt/types'",
-    },
 ];
 
 const INSTALLED_FIELDS = ['dependencies', 'optionalDependencies', 'peerDependencies'];

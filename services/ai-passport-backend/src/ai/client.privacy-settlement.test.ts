@@ -122,7 +122,7 @@ for (const mode of ['structured', 'streaming', 'structured-streaming'] as const)
             systemPrompt: 'synthetic-system',
             message: 'synthetic-message',
             output: z.object({ answer: z.string() }),
-            model: 'gpt-6.1-sol',
+            model: 'gpt-6.2-sol',
             toolName: 'synthetic_answer',
             onPartial: () => {},
             timeoutMs: 1000,

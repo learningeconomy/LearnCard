@@ -78,7 +78,7 @@ beforeEach(() => {
     mocks.rate.mockResolvedValue(true);
     mocks.find.mockResolvedValue(null);
     mocks.findDid.mockResolvedValue(null);
-    mocks.release.mockResolvedValue({ privateKey: 'a'.repeat(64), did });
+    mocks.release.mockResolvedValue({ status: 'released', privateKey: 'a'.repeat(64), did });
     mocks.activate.mockResolvedValue(true);
     mocks.exhausted.mockResolvedValue(undefined);
     vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -130,8 +130,16 @@ describe('getArchivedKey', () => {
         expect(mocks.rate).toHaveBeenCalledWith(`archived-key:uid:${uid}`, 20, 3600);
         expect(mocks.rate).toHaveBeenCalledWith('archived-key:ip:127.0.0.1', 200, 3600);
     });
-    it('returns unavailable for missing archive material', async () => {
-        mocks.release.mockResolvedValue(null);
+    it('confirms only a missing archive as not archived', async () => {
+        mocks.release.mockResolvedValue({ status: 'missing' });
+        expect(await caller.getArchivedKey(input)).toEqual({
+            available: false,
+            reason: 'not_archived',
+        });
+        expect(mocks.released).not.toHaveBeenCalled();
+    });
+    it('returns unavailable without a reason for unusable archive material', async () => {
+        mocks.release.mockResolvedValue({ status: 'unusable' });
         expect(await caller.getArchivedKey(input)).toEqual({ available: false });
         expect(mocks.released).not.toHaveBeenCalled();
     });

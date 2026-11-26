@@ -268,26 +268,26 @@ describe('required Bedrock generation models', () => {
     );
 
     it.each([
-        'gpt-6.1-sol',
-        'gpt-6.1-sol-low',
-        'gpt-6.1-sol-medium',
-        'gpt-6.1-sol-max',
-        'us.openai.gpt-6.1-sol',
-        'us.openai.gpt-6.1-sol-low',
-        'us.openai.gpt-6.1-sol-max',
+        'gpt-6.2-sol',
+        'gpt-6.2-sol-low',
+        'gpt-6.2-sol-medium',
+        'gpt-6.2-sol-max',
+        'us.openai.gpt-6.2-sol',
+        'us.openai.gpt-6.2-sol-low',
+        'us.openai.gpt-6.2-sol-max',
     ])(
         'attributes the documented Sol profile but keeps its native contract closed for %s',
         model => {
-            expect(getBedrockGenerationModelForAudit(model)).toBe('us.openai.gpt-6.1-sol');
+            expect(getBedrockGenerationModelForAudit(model)).toBe('us.openai.gpt-6.2-sol');
             expect(() => resolveBedrockGenerationModel(model)).toThrow(AiProviderError);
         }
     );
 
     it.each([
-        'gpt-6.1-sol-none',
-        'us.openai.gpt-6.1-sol-none',
-        'gpt-6.1-sol-minimal',
-        'us.openai.gpt-6.1-sol-minimal',
+        'gpt-6.2-sol-none',
+        'us.openai.gpt-6.2-sol-none',
+        'gpt-6.2-sol-minimal',
+        'us.openai.gpt-6.2-sol-minimal',
         'gpt-6-luna-minimal',
         'us.openai.gpt-6-luna-minimal',
     ])('rejects unsupported effort aliases before audit attribution for %s', model => {
@@ -309,7 +309,7 @@ describe('required Bedrock generation models', () => {
         'global.openai.gpt-6-luna',
         'eu.openai.gpt-6-luna',
         'apac.openai.gpt-5.6-terra',
-        'global.openai.gpt-6.1-sol',
+        'global.openai.gpt-6.2-sol',
     ])('rejects substitutions or fabricated profiles %s', model => {
         expect(() => resolveBedrockGenerationModel(model)).toThrow();
         expect(() => getBedrockGenerationModelForAudit(model)).toThrow();

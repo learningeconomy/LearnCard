@@ -130,12 +130,9 @@ const callPluginVerify = async (
         );
     }
     try {
-        // Receipt-time verification covers signature + disclosure-hash integrity
-        // ONLY. Status (Token Status List) is intentionally skipped here because
-        // freshness checks belong at display / re-verify time — at receipt the
-        // issuer may not have published the status list yet, especially in
-        // integration / staging. The wallet's existing verifyCredential call on
-        // display will catch revocation when status checking ships in Slice 4.
+        // Verify signature, disclosure integrity, and any declared Token Status
+        // List before storing the credential. The legacy option suppresses the
+        // status warning; it does not disable the verifier's status-list check.
         return (await (
             verifyFn as (c: string, opts: Record<string, unknown>) => Promise<VerificationCheckLike>
         )(compact, { skipStatusCheck: true })) as VerificationCheckLike;
