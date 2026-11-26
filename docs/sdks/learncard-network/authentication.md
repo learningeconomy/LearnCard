@@ -233,7 +233,7 @@ An organisation profile can create a delegate grant to let a separate service is
     );
     ```
 
-    `learnCard` here is the delegate service's own wallet; its DID must be the `delegateDid` the owner named. Sign a fresh token for each request: the server refuses a token without a `validUntil` in the form `toISOString()` writes, an expired one, and one whose `validUntil` is more than five minutes ahead.
+    `learnCard` here is the delegate service's own wallet; its DID must be the `delegateDid` the owner named. Sign a fresh token for each request: the server refuses a token without a `validUntil` in the form `toISOString()` writes, an expired one, and one whose `validUntil` is more than five minutes (plus thirty seconds allowed for clock skew) ahead of the server's clock. A request is accepted only during that last window before its `validUntil`; the signer chooses `validUntil`, so this bounds how long a captured request stays usable after it first becomes acceptable, not how long after signing.
 
 4. **Issue credentials:** The delegate may call `POST /inbox/issue` (scope `inbox:write`) with UNSIGNED credential content, which the owner's registered signing authority signs, and `POST /consent-flow-contract/write/via-signing-authority` (scope `contracts-data:write`).
 5. **Revoke:** The owner revokes the grant with `POST /delegate-grant/{id}/revoke`, and the next request is refused.

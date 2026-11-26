@@ -68,8 +68,12 @@ const verifyDelegatePresentation = async (
     if (typeof aud !== 'string' || !aud) return undefined;
 
     // The SDK's presentation JWT carries no `exp`, `iat` or `nbf`, so the time bound is a date
-    // inside the signed presentation, which the signature check below covers. The upper bound
-    // makes every accepted token expire within about five minutes, whatever its signer wrote.
+    // inside the signed presentation, which the signature check below covers. A request is
+    // accepted only during the last `DELEGATE_TOKEN_MAX_LIFETIME_MS` (plus
+    // `DELEGATE_TOKEN_CLOCK_SKEW_MS`) before its `validUntil`. The signer chooses `validUntil`,
+    // so this bounds how long a captured request stays usable after it first becomes
+    // acceptable, not how long after signing: a far-future `validUntil` is refused now and
+    // accepted during that last window before it.
     const validUntil = vp?.validUntil;
 
     if (typeof validUntil !== 'string' || !DELEGATE_TOKEN_VALID_UNTIL_FORMAT.test(validUntil)) {
@@ -114,7 +118,9 @@ const verifyDelegatePresentation = async (
  * exactly this `challenge` and this single `audience`. It also guarantees that the signed
  * `vp.validUntil` is later than `now` and at most `DELEGATE_TOKEN_MAX_LIFETIME_MS` (plus
  * `DELEGATE_TOKEN_CLOCK_SKEW_MS`) ahead of it. That does NOT make a token one-use: until
- * its bound passes, the same token is accepted again.
+ * its bound passes, the same token is accepted again. Nor does it bound how long after
+ * signing a token is accepted: the signer chooses `validUntil`, and a token is accepted
+ * only during that last window before it, whenever it was signed.
  *
  * It says nothing about any stored grant: whether the challenge names a grant, whether
  * that grant belongs to this signer and audience, is unexpired, unrevoked or in scope is

@@ -129,6 +129,14 @@ const buildTokens = async () => {
     const withValidUntil = (validUntil: unknown): Promise<string> =>
         resign(delegate, fixed, { claims: { vp: { ...fixedClaims.vp, validUntil } } });
 
+    // Signed today with a bound ten years ahead: nothing about the token records when.
+    const farFutureUntil = Date.now() + 10 * 365 * 24 * 60 * 60 * 1000;
+    const farFuture = await delegateToken(delegate, {
+        challenge: CHALLENGE,
+        audience: AUDIENCE,
+        validUntil: new Date(farFutureUntil).toISOString(),
+    });
+
     const solanaDid = delegate.id.did('pkh:sol');
     const solanaKid = await delegate.invoke.didToVerificationMethod(solanaDid);
 
@@ -163,6 +171,8 @@ const buildTokens = async () => {
             header: { kid: solanaKid },
         }),
         fixed,
+        farFuture,
+        farFutureUntil,
         fixedResigned: await withValidUntil(VALID_UNTIL),
         unbounded: await delegateToken(delegate, {
             challenge: CHALLENGE,
@@ -301,6 +311,51 @@ describe('readDelegatePresentation', () => {
         await expect(
             readDelegatePresentation(tokens.fixed, UNTIL - FURTHEST_AHEAD_MS - 1)
         ).resolves.toEqual(DELEGATE_TOKEN_WITHOUT_PRESENTATION);
+    });
+
+    // The window is anchored on `validUntil`, which the signer chooses, not on the moment of
+    // signing: these pin what the verifier enforces, and that it is not "five minutes after signing".
+    it('a token signed with a far-future validUntil is refused now', async () => {
+        const { farFuture, farFutureUntil } = tokens;
+
+        expect(farFutureUntil - Date.now()).toBeGreaterThan(FURTHEST_AHEAD_MS);
+
+        await expect(readDelegatePresentation(farFuture)).resolves.toEqual(
+            DELEGATE_TOKEN_WITHOUT_PRESENTATION
+        );
+        await expect(readDelegatePresentation(farFuture, Date.now())).resolves.toEqual(
+            DELEGATE_TOKEN_WITHOUT_PRESENTATION
+        );
+    });
+
+    it('a token signed with a far-future validUntil is accepted only during the last window before that validUntil', async () => {
+        const { farFuture, farFutureUntil, delegateDid } = tokens;
+        const accepted = { presentation: { signerDid: delegateDid } };
+
+        // Opening boundary: one millisecond before the window it is refused, at its first
+        // millisecond it is accepted, years after it was signed.
+        await expect(
+            readDelegatePresentation(farFuture, farFutureUntil - FURTHEST_AHEAD_MS - 1)
+        ).resolves.toEqual(DELEGATE_TOKEN_WITHOUT_PRESENTATION);
+        await expect(
+            readDelegatePresentation(farFuture, farFutureUntil - FURTHEST_AHEAD_MS)
+        ).resolves.toMatchObject(accepted);
+
+        // Just inside the window.
+        await expect(
+            readDelegatePresentation(farFuture, farFutureUntil - 60_000)
+        ).resolves.toMatchObject(accepted);
+
+        // Closing boundary: accepted one millisecond before validUntil, refused at it and after it.
+        await expect(
+            readDelegatePresentation(farFuture, farFutureUntil - 1)
+        ).resolves.toMatchObject(accepted);
+        await expect(readDelegatePresentation(farFuture, farFutureUntil)).resolves.toEqual(
+            DELEGATE_TOKEN_WITHOUT_PRESENTATION
+        );
+        await expect(readDelegatePresentation(farFuture, farFutureUntil + 1)).resolves.toEqual(
+            DELEGATE_TOKEN_WITHOUT_PRESENTATION
+        );
     });
 
     it('validUntil in another date format, with an offset, or as a number has no presentation', async () => {
