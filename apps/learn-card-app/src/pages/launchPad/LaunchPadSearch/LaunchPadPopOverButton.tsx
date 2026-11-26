@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 
-import { IonPopover } from '@ionic/react';
+import { AppPopover } from '../../../components/overlays/AppPopover';
 import { AppItem, AppList } from '../../../components/list';
 import SortIcon from 'learn-card-base/svgs/SortButton';
 import { Checkmark } from '@learncard/react';
@@ -82,7 +82,7 @@ export const LaunchPadPopOverButton: React.FC<LaunchPadPopOverButtonProps> = ({
                 />
             </button>
             {!isMobile && (
-                <IonPopover
+                <AppPopover
                     onDidDismiss={() => setShowSortPopover(false)}
                     reference="trigger"
                     trigger="trigger-button"
@@ -133,7 +133,7 @@ export const LaunchPadPopOverButton: React.FC<LaunchPadPopOverButtonProps> = ({
                             );
                         })}
                     </AppList>
-                </IonPopover>
+                </AppPopover>
             )}
         </>
     );

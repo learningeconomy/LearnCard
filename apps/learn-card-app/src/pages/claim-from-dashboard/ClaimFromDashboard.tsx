@@ -4,7 +4,8 @@ import { useHistory, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
 import { VC, UnsignedVP } from '@learncard/types';
 import { getVCDisplayCardVariant } from '@learncard/react';
-import { IonLoading, IonContent, IonPage, IonFooter, IonToolbar, useIonModal } from '@ionic/react';
+import { IonContent, IonPage, IonFooter, IonToolbar, useIonModal } from '@ionic/react';
+import { AppLoading } from '../../components/overlays/AppLoading';
 import { AppRow } from '../../components/layout';
 
 import { getLogger } from 'learn-card-base';
@@ -484,7 +485,7 @@ const ClaimFromDashboard: React.FC = () => {
     return (
         <IonPage>
             {duplicateCredentialPrompt}
-            <IonLoading
+            <AppLoading
                 mode="ios"
                 message={loadingText}
                 isOpen={loading || claimingCredential || isCheckingDuplicate}

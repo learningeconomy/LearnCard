@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import moment from 'moment';
 
-import { IonPopover, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
+import { AppPopover } from '../overlays/AppPopover';
 import { AppItem, AppList } from '../list';
 import ResumeHistoryIcon from '../../assets/images/resume-history-icon.svg';
 import ResumeHistoryIconPublished from '../../assets/images/resume-builder-icon-published.svg';
@@ -78,7 +79,7 @@ export const ResumeBuilderHistoryDropdownButton: React.FC<{
                 )}
             </button>
 
-            <IonPopover
+            <AppPopover
                 isOpen={isOpen}
                 event={popoverEvent}
                 reference="event"
@@ -223,7 +224,7 @@ export const ResumeBuilderHistoryDropdownButton: React.FC<{
                         </div>
                     )}
                 </div>
-            </IonPopover>
+            </AppPopover>
         </>
     );
 };

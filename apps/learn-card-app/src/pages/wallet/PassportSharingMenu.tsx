@@ -1,6 +1,7 @@
 import React, { Suspense, useState } from 'react';
 
-import { IonPage, IonContent, IonPopover, IonSpinner } from '@ionic/react';
+import { IonPage, IonContent, IonSpinner } from '@ionic/react';
+import { AppPopover } from '../../components/overlays/AppPopover';
 import { AppIcon } from '../../components/icon';
 import { chevronDownOutline, eyeOutline, shareOutline } from 'ionicons/icons';
 import { lazyWithRetry, ModalTypes, useDeviceTypeByWidth, useModal } from 'learn-card-base';
@@ -171,7 +172,7 @@ const PassportSharingMenu: React.FC<PassportSharingMenuProps> = ({ onViewShared 
             </button>
 
             {!isMobile && (
-                <IonPopover
+                <AppPopover
                     isOpen={popoverOpen}
                     event={popoverEvent}
                     reference="event"
@@ -185,7 +186,7 @@ const PassportSharingMenu: React.FC<PassportSharingMenuProps> = ({ onViewShared 
                         onShare={() => openShareModal()}
                         onViewShared={() => viewShared()}
                     />
-                </IonPopover>
+                </AppPopover>
             )}
         </>
     );

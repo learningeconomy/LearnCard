@@ -20,8 +20,8 @@ vi.mock('../../i18n', () => ({
     SUPPORTED_LANGUAGES: ['en', 'es', 'fr', 'ar'],
 }));
 
-vi.mock('@ionic/react', () => ({
-    IonPopover: ({ isOpen, children }: { isOpen: boolean; children: React.ReactNode }) =>
+vi.mock('../../components/overlays/AppPopover', () => ({
+    AppPopover: ({ isOpen, children }: { isOpen: boolean; children: React.ReactNode }) =>
         isOpen ? <div role="dialog">{children}</div> : null,
 }));
 

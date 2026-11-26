@@ -28,7 +28,7 @@ import {
     BoostCategoryOptionsEnum,
 } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
-import { IonLoading } from '@ionic/react';
+import { AppLoading } from '../../components/overlays/AppLoading';
 
 import useTheme from '../../theme/hooks/useTheme';
 
@@ -278,7 +278,7 @@ const PostConsentFlowSyncCard: React.FC<PostConsentFlowSyncCardProps> = ({
                 >
                     {returnTo ? 'Back' : 'Cancel'}
                 </button>
-                <IonLoading
+                <AppLoading
                     isOpen={updatingTerms || consentingToContract}
                     message={isDisconnected ? 'Reconnecting...' : 'Updating Terms...'}
                     mode="ios"

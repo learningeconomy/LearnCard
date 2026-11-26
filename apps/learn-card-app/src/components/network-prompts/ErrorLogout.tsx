@@ -1,5 +1,5 @@
 import useLogout from '../../hooks/useLogout';
-import { IonLoading } from '@ionic/react';
+import { AppLoading } from '../overlays/AppLoading';
 import { AppRow } from '../layout';
 
 const ErrorLogout: React.FC = () => {
@@ -29,7 +29,7 @@ const ErrorLogout: React.FC = () => {
                             Logout
                         </button>
                     </div>
-                    <IonLoading mode="ios" message="Logging out..." isOpen={isLoggingOut} />
+                    <AppLoading mode="ios" message="Logging out..." isOpen={isLoggingOut} />
                 </div>
             </AppRow>
         </div>

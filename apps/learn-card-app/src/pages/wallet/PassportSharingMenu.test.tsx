@@ -29,8 +29,6 @@ vi.mock('@ionic/react', () => ({
     IonPage: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
     IonContent: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
     IonSpinner: () => <div>Loading</div>,
-    IonPopover: ({ children, isOpen }: React.PropsWithChildren<{ isOpen: boolean }>) =>
-        isOpen ? <div>{children}</div> : null,
 }));
 
 vi.mock('../../paraglide/messages.js', () => ({
@@ -53,11 +51,11 @@ describe('PassportSharingMenu', () => {
 
     afterEach(cleanup);
 
-    it('opens a desktop menu and launches the share flow', () => {
+    it('opens a desktop menu and launches the share flow', async () => {
         render(<PassportSharingMenu onViewShared={vi.fn()} />);
 
         fireEvent.click(screen.getByRole('button', { name: 'Share' }));
-        fireEvent.click(screen.getByRole('menuitem', { name: /Share credentials/i }));
+        fireEvent.click(await screen.findByRole('menuitem', { name: /Share credentials/i }));
 
         expect(mocks.newModal).toHaveBeenCalledOnce();
         expect(mocks.newModal.mock.calls[0][2]).toEqual({
@@ -66,18 +64,18 @@ describe('PassportSharingMenu', () => {
         });
     });
 
-    it('routes to shared credentials from the desktop menu', () => {
+    it('routes to shared credentials from the desktop menu', async () => {
         const onViewShared = vi.fn();
         render(<PassportSharingMenu onViewShared={onViewShared} />);
 
         fireEvent.click(screen.getByRole('button', { name: 'Share' }));
-        fireEvent.click(screen.getByRole('menuitem', { name: /View shared credentials/i }));
+        fireEvent.click(await screen.findByRole('menuitem', { name: /View shared credentials/i }));
 
         expect(onViewShared).toHaveBeenCalledOnce();
         expect(mocks.newModal).not.toHaveBeenCalled();
     });
 
-    it('uses a bottom sheet on mobile and replaces it with the share flow', () => {
+    it('uses a bottom sheet on mobile and replaces it with the share flow', async () => {
         mocks.isMobile = true;
         render(<PassportSharingMenu onViewShared={vi.fn()} />);
 
@@ -91,7 +89,7 @@ describe('PassportSharingMenu', () => {
 
         const sheet = mocks.newModal.mock.calls[0][0] as React.ReactElement;
         render(sheet);
-        fireEvent.click(screen.getByRole('menuitem', { name: /Share credentials/i }));
+        fireEvent.click(await screen.findByRole('menuitem', { name: /Share credentials/i }));
 
         expect(mocks.replaceModal).toHaveBeenCalledOnce();
         expect(mocks.replaceModal.mock.calls[0][2]).toEqual({

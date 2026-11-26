@@ -1,4 +1,5 @@
-.launchpad-popover::part(content) {
+// AppPopover's content box (formerly `::part(content)`); :is(.md, .ios) outranks its mode rules.
+.launchpad-popover.app-popover:is(.md, .ios) .app-popover-wrapper .app-popover-content {
     border-radius: 20px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     padding: 0;
@@ -6,11 +7,10 @@
     border: solid 1px #6366f1;
 }
 
-.launchpad-formal::part(content) {
+.launchpad-formal.app-popover:is(.md, .ios) .app-popover-wrapper .app-popover-content {
     border-radius: 20px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     padding: 0;
     margin-top: 10px;
     border: solid 1px #3b82f6;
 }
-

@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import ClrSourceInfo from './ClrSourceInfo';
 
 describe('ClrSourceInfo', () => {
-    it('opens provenance details in an Ionic popover', async () => {
+    it('opens provenance details in an AppPopover', async () => {
         render(
             <ClrSourceInfo
                 field={{
@@ -24,6 +24,6 @@ describe('ClrSourceInfo', () => {
         expect(trigger).toHaveAttribute('aria-expanded', 'true');
         expect(await screen.findByText('result.resultDescription')).toBeVisible();
         expect(screen.getByText('credentialSubject.result[0].resultDescription')).toBeVisible();
-        expect(document.querySelector('ion-popover')).toBeInTheDocument();
+        expect(document.querySelector('.app-popover')).toBeInTheDocument();
     });
 });

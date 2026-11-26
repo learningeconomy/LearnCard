@@ -4,7 +4,8 @@ import type { AppStoreListing, InstalledApp } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('app-store-detail-modal');
 
-import { IonPage, IonContent, IonSpinner, IonFooter, IonHeader, IonToast } from '@ionic/react';
+import { IonPage, IonContent, IonSpinner, IonFooter, IonHeader } from '@ionic/react';
+import { AppToast } from '../../components/overlays/AppToast';
 import {
     useModal,
     ModalTypes,
@@ -1054,7 +1055,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                 </div>
             </IonFooter>
 
-            <IonToast
+            <AppToast
                 isOpen={showCopiedToast}
                 onDidDismiss={() => setShowCopiedToast(false)}
                 message={m['launchpad.detail.linkCopied']()}

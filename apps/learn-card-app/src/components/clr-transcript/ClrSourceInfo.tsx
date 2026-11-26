@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IonPopover } from '@ionic/react';
+import { AppPopover } from '../overlays/AppPopover';
 import { Info } from 'lucide-react';
 
 import type { SourceMappedField } from 'learn-card-base/helpers/credentials/clr/renderer';
@@ -27,7 +27,7 @@ const ClrSourceInfo: React.FC<{
             >
                 <Info className="h-3.5 w-3.5" />
             </button>
-            <IonPopover
+            <AppPopover
                 isOpen={isOpen}
                 event={popoverEvent}
                 reference="event"
@@ -45,7 +45,7 @@ const ClrSourceInfo: React.FC<{
                         {field.sourcePath}
                     </p>
                 </div>
-            </IonPopover>
+            </AppPopover>
         </>
     );
 };

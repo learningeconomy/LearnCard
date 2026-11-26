@@ -3,7 +3,7 @@ import React, { useState, useRef } from 'react';
 import { m } from '../../../paraglide/messages.js';
 
 import AiSessionsFilterSortingOptionsModal from './AiSessionsFilterSortingOptionsModal';
-import { IonPopover } from '@ionic/react';
+import { AppPopover } from '../../overlays/AppPopover';
 import { AppItem, AppList } from '../../list';
 import SortIcon from 'learn-card-base/svgs/SortButton';
 import { Checkmark } from '@learncard/react';
@@ -75,7 +75,7 @@ export const AiSessionsPopOverButton: React.FC<{
                 />
             </button>
             {!isMobile && (
-                <IonPopover
+                <AppPopover
                     onDidDismiss={() => setShowSortPopover(false)}
                     reference="trigger"
                     trigger="trigger-button"
@@ -132,7 +132,7 @@ export const AiSessionsPopOverButton: React.FC<{
                                 );
                             })}
                     </AppList>
-                </IonPopover>
+                </AppPopover>
             )}
         </>
     );

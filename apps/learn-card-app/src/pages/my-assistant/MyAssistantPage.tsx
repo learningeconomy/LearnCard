@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { IonContent, IonPage, IonPopover } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
+import { AppPopover } from '../../components/overlays/AppPopover';
 import { AppIcon } from '../../components/icon';
 import { alertCircleOutline, chevronDownOutline, filterOutline } from 'ionicons/icons';
 import { useFlags } from 'launchdarkly-react-client-sdk';
@@ -389,7 +390,7 @@ const MyAssistantPageContent: React.FC = () => {
                                 <AppIcon icon={chevronDownOutline} className="text-base" />
                             </button>
 
-                            <IonPopover
+                            <AppPopover
                                 isOpen={filterOpen}
                                 event={filterPopoverEvent}
                                 reference="event"
@@ -470,7 +471,7 @@ const MyAssistantPageContent: React.FC = () => {
                                         </select>
                                     </div>
                                 </div>
-                            </IonPopover>
+                            </AppPopover>
                         </div>
                     </div>
 

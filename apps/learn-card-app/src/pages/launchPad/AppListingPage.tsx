@@ -6,7 +6,8 @@ import numeral from 'numeral';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('app-listing-page');
 
-import { IonPage, IonContent, IonSpinner, IonToast } from '@ionic/react';
+import { IonPage, IonContent, IonSpinner } from '@ionic/react';
+import { AppToast } from '../../components/overlays/AppToast';
 import {
     useModal,
     ModalTypes,
@@ -1042,7 +1043,7 @@ const AppListingPage: React.FC = () => {
                     </div>
                 </div>
 
-                <IonToast
+                <AppToast
                     isOpen={showCopiedToast}
                     onDidDismiss={() => setShowCopiedToast(false)}
                     message="Link copied to clipboard!"

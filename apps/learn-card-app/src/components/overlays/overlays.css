@@ -1,0 +1,515 @@
+/*
+ * App-owned overlays: ports of @ionic/core 8.7.2 ion-popover, ion-loading, ion-toast and the
+ * ion-backdrop they render, for the props and modes the app uses.
+ *
+ * Cascade, matching what Ionic's encapsulation did:
+ * - ion-popover and ion-toast `:host` rules lost to every light-DOM author rule; they live in
+ *   `@layer app-overlays-host`. ion-loading is scoped, so its host rules were unlayered
+ *   `.sc-ion-loading-*-h` rules; they are layered here too so the call sites' unlayered
+ *   `[--background:none]` keeps winning, as it did. The one host property where that matters
+ *   (`font-family`, which beat index.scss's `* { font-family }`) is unlayered below.
+ * - Parts that were inside the popover / toast shadow roots (backdrop, wrapper, arrow, content,
+ *   toast container / content / message) were out of the app CSS's reach. They are unlayered with
+ *   two-class selectors and reset Tailwind's preflight (`box-sizing`, `border`) back to the UA
+ *   defaults they had. ion-loading's parts were light DOM and keep preflight, as before.
+ * - Call-site `::part(content)` rules (launchpad.scss, modals.scss) target `.app-popover-content`.
+ * - Ionic theme variables are `--app-*` tokens with the values they resolved to (variables.css
+ *   sets none of them except `--ion-backdrop-color`; its dark-mode block is commented out).
+ * - Safe-area insets come from the surface-layer `--app-safe-area-*` tokens in variables.css.
+ */
+
+:root {
+    /* --ion-backdrop-color (variables.css). */
+    --app-backdrop-color: #ffffff;
+    /* --ion-background-color / --ion-text-color: unset, Ionic's fallbacks. */
+    --app-overlay-background: #fff;
+    --app-overlay-text-color: #000;
+    /* ion-toast color="success" / "danger" (variables.css --ion-color-success / -danger). */
+    --app-color-success: #2dd36f;
+    --app-color-success-contrast: #ffffff;
+    --app-color-danger-contrast: #ffffff;
+    /* --ion-font-family: Ionic core.css's per-mode --ion-default-font. */
+    --app-platform-font: 'Roboto', 'Helvetica Neue', sans-serif;
+}
+
+:root[mode='ios'] {
+    --app-platform-font: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Roboto', sans-serif;
+}
+
+@layer app-overlays-host {
+    /* ------------------------------------------------------------------ ion-popover :host */
+    .app-popover {
+        --background: var(--app-overlay-background);
+        --min-width: 0;
+        --min-height: 0;
+        --max-width: auto;
+        --height: auto;
+        --offset-x: 0px;
+        --offset-y: 0px;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        display: flex;
+        position: fixed;
+        align-items: center;
+        justify-content: center;
+        outline: none;
+        color: var(--app-overlay-text-color);
+        z-index: 1001;
+    }
+
+    .app-popover.md {
+        --width: 250px;
+        --max-height: 90%;
+        --box-shadow:
+            0 5px 5px -3px rgba(0, 0, 0, 0.2), 0 8px 10px 1px rgba(0, 0, 0, 0.14),
+            0 3px 14px 2px rgba(0, 0, 0, 0.12);
+        --backdrop-opacity: 0.32;
+    }
+
+    .app-popover.ios {
+        --width: 200px;
+        --max-height: 90%;
+        --box-shadow: none;
+        --backdrop-opacity: 0.08;
+    }
+
+    .app-popover.ios.app-popover-desktop {
+        --box-shadow: 0px 4px 16px 0px rgba(0, 0, 0, 0.12);
+    }
+
+    /* ------------------------------------------------------------------ ion-loading :host */
+    .app-loading {
+        --min-width: auto;
+        --width: auto;
+        --min-height: auto;
+        --height: auto;
+        -moz-osx-font-smoothing: grayscale;
+        -webkit-font-smoothing: antialiased;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        display: flex;
+        position: fixed;
+        align-items: center;
+        justify-content: center;
+        outline: none;
+        contain: strict;
+        touch-action: none;
+        user-select: none;
+        z-index: 1001;
+    }
+
+    .app-loading.ios {
+        --background: #f9f9f9;
+        --max-width: 270px;
+        --max-height: 90%;
+        --spinner-color: #666666;
+        --backdrop-opacity: 0.3;
+        color: var(--app-overlay-text-color);
+        font-size: 0.875rem;
+    }
+
+    .app-loading.md {
+        --background: #f2f2f2;
+        --max-width: 280px;
+        --max-height: 90%;
+        --spinner-color: var(--app-color-primary, #3880ff);
+        --backdrop-opacity: 0.32;
+        color: #262626;
+        font-size: 0.875rem;
+    }
+
+    /* -------------------------------------------------------------------- ion-toast :host */
+    .app-toast {
+        --border-width: 0;
+        --border-style: none;
+        --border-color: initial;
+        --box-shadow: none;
+        --min-width: auto;
+        --width: auto;
+        --min-height: auto;
+        --height: auto;
+        --max-height: auto;
+        --white-space: normal;
+        top: 0;
+        inset-inline-start: 0;
+        display: block;
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        outline: none;
+        color: var(--color);
+        font-family: var(--app-platform-font, inherit);
+        contain: strict;
+        z-index: 1001;
+        pointer-events: none;
+    }
+
+    .app-toast.md {
+        --background: #333333;
+        --border-radius: 4px;
+        --box-shadow:
+            0 3px 5px -1px rgba(0, 0, 0, 0.2), 0 6px 10px 0 rgba(0, 0, 0, 0.14),
+            0 1px 18px 0 rgba(0, 0, 0, 0.12);
+        --button-color: #0054e9;
+        --color: #f2f2f2;
+        --max-width: 700px;
+        --start: 8px;
+        --end: 8px;
+        font-size: 0.875rem;
+    }
+
+    .app-toast.ios {
+        --background: #f2f2f2;
+        --border-radius: 14px;
+        --box-shadow: none;
+        --button-color: #0054e9;
+        --color: #262626;
+        --max-width: 700px;
+        --max-height: 478px;
+        --start: 10px;
+        --end: 10px;
+        font-size: clamp(14px, 0.875rem, 43.4px);
+    }
+
+    .app-toast.app-color {
+        --button-color: inherit;
+        color: var(--app-color-contrast);
+    }
+
+    /* ---------------------------------------------------------- hidden (`overlay-hidden`) */
+    .app-popover.app-overlay-hidden,
+    .app-loading.app-overlay-hidden,
+    .app-toast.app-overlay-hidden {
+        display: none;
+    }
+}
+
+/* `.ion-color-success` / `.ion-color-danger` for the toast. */
+.app-toast.app-color-success {
+    --app-color-base: var(--app-color-success);
+    --app-color-contrast: var(--app-color-success-contrast);
+}
+
+.app-toast.app-color-danger {
+    --app-color-base: var(--app-color-danger);
+    --app-color-contrast: var(--app-color-danger-contrast);
+}
+
+/* ion-loading's scoped host font beat index.scss's `* { font-family }`. */
+.app-loading.app-loading {
+    font-family: var(--app-platform-font, inherit);
+}
+
+/* ------------------------------------------------------------------------ ion-backdrop */
+.app-popover > .app-backdrop,
+.app-loading > .app-backdrop {
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    display: block;
+    position: absolute;
+    transform: translateZ(0);
+    contain: strict;
+    cursor: pointer;
+    opacity: 0.01;
+    touch-action: none;
+    z-index: 2;
+    background-color: var(--app-backdrop-color);
+}
+
+/* Inside ion-popover's shadow root the backdrop kept the UA box model. */
+.app-popover > .app-backdrop {
+    box-sizing: content-box;
+    border: none;
+}
+
+.app-popover > .app-backdrop.app-backdrop-hide,
+.app-loading > .app-backdrop.app-backdrop-hide {
+    background: transparent;
+}
+
+.app-popover > .app-backdrop.app-backdrop-no-tappable,
+.app-loading > .app-backdrop.app-backdrop-no-tappable {
+    cursor: auto;
+}
+
+/* ------------------------------------------------------------- ion-popover shadow parts */
+.app-popover > .app-popover-wrapper,
+.app-popover .app-popover-arrow,
+.app-popover .app-popover-arrow::after,
+.app-popover .app-popover-content {
+    box-sizing: content-box;
+    border: none;
+}
+
+.app-popover > .app-popover-wrapper {
+    z-index: 10;
+}
+
+.app-popover .app-popover-content {
+    display: flex;
+    position: absolute;
+    flex-direction: column;
+    width: var(--width);
+    min-width: var(--min-width);
+    max-width: var(--max-width);
+    height: var(--height);
+    min-height: var(--min-height);
+    max-height: var(--max-height);
+    background: var(--background);
+    box-shadow: var(--box-shadow);
+    overflow: auto;
+    z-index: 10;
+}
+
+/* md */
+.app-popover.md .app-popover-content {
+    border-radius: 4px;
+    transform-origin: left top;
+}
+
+[dir='rtl'] .app-popover.md .app-popover-content {
+    transform-origin: right top;
+}
+
+.app-popover.md > .app-popover-wrapper {
+    opacity: 0;
+}
+
+/* ios */
+.app-popover.ios .app-popover-content {
+    border-radius: 10px;
+}
+
+.app-popover.ios.app-popover-desktop .app-popover-content {
+    border: 0.5px solid #e6e6e6;
+}
+
+.app-popover.ios .app-popover-arrow {
+    display: block;
+    position: absolute;
+    width: 20px;
+    height: 10px;
+    overflow: hidden;
+    z-index: 11;
+}
+
+.app-popover.ios .app-popover-arrow::after {
+    top: 3px;
+    inset-inline-start: 3px;
+    border-radius: 3px;
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    transform: rotate(45deg);
+    background: var(--background);
+    content: '';
+    z-index: 10;
+}
+
+.app-popover.ios.app-popover-bottom .app-popover-arrow {
+    top: auto;
+    bottom: -10px;
+}
+
+.app-popover.ios.app-popover-bottom .app-popover-arrow::after {
+    top: -6px;
+}
+
+.app-popover.ios.app-popover-side-left .app-popover-arrow,
+.app-popover.ios.app-popover-side-start .app-popover-arrow {
+    transform: rotate(90deg);
+}
+
+.app-popover.ios.app-popover-side-right .app-popover-arrow,
+.app-popover.ios.app-popover-side-end .app-popover-arrow {
+    transform: rotate(-90deg);
+}
+
+.app-popover.ios.app-popover-side-top .app-popover-arrow {
+    transform: rotate(180deg);
+}
+
+[dir='rtl'] .app-popover.ios.app-popover-side-start .app-popover-arrow {
+    transform: rotate(-90deg);
+}
+
+[dir='rtl'] .app-popover.ios.app-popover-side-end .app-popover-arrow {
+    transform: rotate(90deg);
+}
+
+.app-popover.ios .app-popover-arrow,
+.app-popover.ios .app-popover-content {
+    opacity: 0;
+}
+
+/* ------------------------------------------------------------------ ion-loading parts */
+.app-loading > .app-loading-wrapper {
+    display: flex;
+    align-items: inherit;
+    justify-content: inherit;
+    width: var(--width);
+    min-width: var(--min-width);
+    max-width: var(--max-width);
+    height: var(--height);
+    min-height: var(--min-height);
+    max-height: var(--max-height);
+    background: var(--background);
+    opacity: 0;
+    z-index: 10;
+}
+
+.app-loading .app-loading-spinner > ion-spinner {
+    color: var(--spinner-color);
+}
+
+.app-loading.ios > .app-loading-wrapper {
+    border-radius: 8px;
+    padding-inline-start: 34px;
+    padding-inline-end: 34px;
+    padding-top: 24px;
+    padding-bottom: 24px;
+}
+
+.app-loading.ios .app-loading-content {
+    font-weight: bold;
+}
+
+.app-loading.md > .app-loading-wrapper {
+    border-radius: 2px;
+    padding-inline-start: 24px;
+    padding-inline-end: 24px;
+    padding-top: 24px;
+    padding-bottom: 24px;
+    box-shadow: 0 16px 20px rgba(0, 0, 0, 0.4);
+}
+
+.app-loading .app-loading-spinner + .app-loading-content {
+    margin-inline-start: 16px;
+}
+
+/* -------------------------------------------------------------- ion-toast shadow parts */
+.app-toast .app-toast-wrapper,
+.app-toast .app-toast-container,
+.app-toast .app-toast-content,
+.app-toast .app-toast-header,
+.app-toast .app-toast-message {
+    box-sizing: content-box;
+    border: none;
+}
+
+.app-toast .app-toast-wrapper {
+    border-radius: var(--border-radius);
+    width: var(--width);
+    min-width: var(--min-width);
+    max-width: var(--max-width);
+    height: var(--height);
+    min-height: var(--min-height);
+    max-height: var(--max-height);
+    border-width: var(--border-width);
+    border-style: var(--border-style);
+    border-color: var(--border-color);
+    background: var(--background);
+    box-shadow: var(--box-shadow);
+    pointer-events: auto;
+    inset-inline-start: var(--start);
+    inset-inline-end: var(--end);
+    margin-inline: auto;
+    margin-top: auto;
+    margin-bottom: auto;
+    display: block;
+    position: absolute;
+    z-index: 10;
+}
+
+.app-toast.md .app-toast-wrapper {
+    opacity: 0.01;
+}
+
+.app-toast.ios .app-toast-wrapper.app-toast-middle {
+    opacity: 0.01;
+}
+
+.app-toast.app-color .app-toast-wrapper {
+    background: var(--app-color-base);
+}
+
+.app-toast .app-toast-wrapper.app-toast-top {
+    transform: translate3d(0, -100%, 0);
+    top: 0;
+}
+
+.app-toast .app-toast-wrapper.app-toast-bottom {
+    transform: translate3d(0, 100%, 0);
+    bottom: 0;
+}
+
+.app-toast .app-toast-container {
+    display: flex;
+    align-items: center;
+    height: inherit;
+    min-height: inherit;
+    max-height: inherit;
+    contain: content;
+}
+
+.app-toast .app-toast-layout-baseline .app-toast-content {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.app-toast .app-toast-content {
+    min-width: 0;
+}
+
+.app-toast .app-toast-message {
+    flex: 1;
+    white-space: var(--white-space);
+}
+
+.app-toast.md .app-toast-content {
+    padding-inline-start: 16px;
+    padding-inline-end: 16px;
+    padding-top: 14px;
+    padding-bottom: 14px;
+}
+
+.app-toast.md .app-toast-header {
+    margin-bottom: 2px;
+    font-weight: 500;
+    line-height: 1.25rem;
+}
+
+.app-toast.md .app-toast-message {
+    line-height: 1.25rem;
+}
+
+.app-toast.ios .app-toast-content {
+    padding-inline-start: 15px;
+    padding-inline-end: 15px;
+    padding-top: 15px;
+    padding-bottom: 15px;
+}
+
+.app-toast.ios .app-toast-header {
+    margin-bottom: 2px;
+    font-weight: 500;
+}
+
+/* ------------------------------------------------------------------------ translucent */
+@supports (backdrop-filter: blur(0)) {
+    .app-popover.ios.app-popover-translucent .app-popover-content,
+    .app-popover.ios.app-popover-translucent .app-popover-arrow::after,
+    .app-loading.ios.app-loading-translucent > .app-loading-wrapper,
+    .app-toast.ios.app-toast-translucent .app-toast-wrapper {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: saturate(180%) blur(20px);
+    }
+}

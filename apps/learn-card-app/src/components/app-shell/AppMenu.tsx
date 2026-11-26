@@ -4,6 +4,7 @@ import { flushSync } from 'react-dom';
 import { appMenuController, type AppMenuHandle } from './appMenuController';
 import { useAppSplitPane } from './AppSplitPane';
 import { getIonMode } from './ionMode';
+import { getPresentedOverlay } from '../overlays/overlayStack';
 import './app-shell.css';
 
 // Ionic 8.7 ion-menu (overlay type) timings, easings and backdrop opacities.
@@ -31,8 +32,6 @@ const BACKDROP_MIN_OPACITY = 0.01;
 
 const BODY_NO_SCROLL = 'app-menu-no-scroll';
 const MENU_CONTENT_OPEN = 'menu-content-open';
-const IONIC_OVERLAYS =
-    'ion-alert,ion-action-sheet,ion-loading,ion-modal,ion-picker-legacy,ion-popover,ion-toast';
 const FOCUSABLE =
     '[tabindex]:not([tabindex^="-"]):not([hidden]):not([disabled]), input:not([type=hidden]):not([tabindex^="-"]):not([hidden]):not([disabled]), textarea:not([tabindex^="-"]):not([hidden]):not([disabled]), button:not([tabindex^="-"]):not([hidden]):not([disabled]), select:not([tabindex^="-"]):not([hidden]):not([disabled]), ion-checkbox:not([tabindex^="-"]):not([hidden]):not([disabled]), ion-radio:not([tabindex^="-"]):not([hidden]):not([disabled]), .ion-focusable:not([tabindex^="-"]):not([hidden]):not([disabled]), .ion-focusable[disabled="false"]:not([tabindex^="-"]):not([hidden])';
 
@@ -48,16 +47,6 @@ const focusInContext = (target: Element | null, fallback: HTMLElement): void => 
     const shadowTarget = (target as HTMLElement | null)?.shadowRoot?.querySelector(FOCUSABLE);
     const element = (shadowTarget ?? target ?? fallback) as HTMLElement;
     element.focus();
-};
-
-/** The top-most presented Ionic overlay, using the same rule as Ionic's `getPresentedOverlay`. */
-const getPresentedIonicOverlay = (): Element | undefined => {
-    const overlays = Array.from(document.querySelectorAll(IONIC_OVERLAYS)).filter(
-        overlay =>
-            ((overlay as HTMLElement & { overlayIndex?: number }).overlayIndex ?? 0) > 0 &&
-            !overlay.classList.contains('overlay-hidden')
-    );
-    return overlays[overlays.length - 1];
 };
 
 type PointerSample = { x: number; t: number };
@@ -154,7 +143,7 @@ export const AppMenu: React.FC<AppMenuProps> = ({
         const host = hostRef.current;
         const target = event.target as Node | null;
         if (!host || !target) return;
-        const overlay = getPresentedIonicOverlay();
+        const overlay = getPresentedOverlay();
         if (overlay && !overlay.contains(host)) return;
 
         if (host.contains(target)) {

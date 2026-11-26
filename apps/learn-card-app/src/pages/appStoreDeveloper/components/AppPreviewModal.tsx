@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { IonPage, IonContent, IonToast } from '@ionic/react';
+import { IonPage, IonContent } from '@ionic/react';
+import { AppToast } from '../../../components/overlays/AppToast';
 import { X, Maximize2, Play, AlertCircle } from 'lucide-react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('app-preview-modal');
@@ -369,7 +370,7 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                 </div>
             </IonContent>
 
-            <IonToast
+            <AppToast
                 isOpen={showErrorToast}
                 onDidDismiss={() => setShowErrorToast(false)}
                 message={errorMessage}

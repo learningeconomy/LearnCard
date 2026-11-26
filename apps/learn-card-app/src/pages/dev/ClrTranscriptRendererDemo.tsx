@@ -6,7 +6,7 @@ import {
     type SupportedLanguage,
 } from '../../i18n';
 import * as m from '../../paraglide/messages.js';
-import { IonPopover } from '@ionic/react';
+import { AppPopover } from '../../components/overlays/AppPopover';
 import { AppItem, AppLabel, AppList } from '../../components/list';
 import type { VC } from '@learncard/types';
 
@@ -78,7 +78,7 @@ const ClrTranscriptRendererDemo = () => {
                         </span>
                     </button>
 
-                    <IonPopover
+                    <AppPopover
                         isOpen={fixturePopoverOpen}
                         event={fixturePopoverEvent}
                         reference="event"
@@ -111,7 +111,7 @@ const ClrTranscriptRendererDemo = () => {
                                 ))}
                             </AppList>
                         </div>
-                    </IonPopover>
+                    </AppPopover>
 
                     {/* Viewer picker */}
                     <button
@@ -126,7 +126,7 @@ const ClrTranscriptRendererDemo = () => {
                         <span className="text-grayscale-400 text-xs">▾</span>
                     </button>
 
-                    <IonPopover
+                    <AppPopover
                         isOpen={viewerPopoverOpen}
                         event={viewerPopoverEvent}
                         reference="event"
@@ -159,7 +159,7 @@ const ClrTranscriptRendererDemo = () => {
                                 ))}
                             </AppList>
                         </div>
-                    </IonPopover>
+                    </AppPopover>
                 </div>
 
                 <label className="flex items-center gap-2 text-xs font-medium text-grayscale-700">

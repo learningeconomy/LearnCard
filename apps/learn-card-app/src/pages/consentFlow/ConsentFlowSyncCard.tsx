@@ -5,7 +5,8 @@ import { useHistory, useLocation } from 'react-router-dom';
 
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 
-import { IonLoading, IonSkeletonText } from '@ionic/react';
+import { IonSkeletonText } from '@ionic/react';
+import { AppLoading } from '../../components/overlays/AppLoading';
 import { AppCol, AppRow } from '../../components/layout';
 import RightArrow from 'learn-card-base/svgs/RightArrow';
 import HandshakeIcon from '../../components/svgs/HandshakeIcon';
@@ -282,7 +283,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                     >
                         {loading ? m['consentFlow.allowing']() : m['consentFlow.allow']()}
                     </button>
-                    <IonLoading isOpen={isPending} message="Consenting..." mode="ios" />
+                    <AppLoading isOpen={isPending} message="Consenting..." mode="ios" />
                     <button
                         onClick={closeModal}
                         type="button"

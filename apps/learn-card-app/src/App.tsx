@@ -5,6 +5,8 @@ import { AppShellRouter } from './components/app-shell/AppShellRouter';
 import { QueryClient } from '@tanstack/react-query';
 import * as Sentry from '@sentry/react';
 import { IonApp, setupIonicReact } from '@ionic/react';
+// Eager: registers the app-overlay Escape / back-button listeners before Ionic's (FullApp is lazy).
+import './components/overlays/overlayStack';
 import LoginLoadingPage from './pages/login/LoginPageLoader/LoginLoader';
 
 import { lazyWithRetry, useIsLoggedIn } from 'learn-card-base';

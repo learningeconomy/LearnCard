@@ -15,7 +15,8 @@ import {
 } from 'learn-card-base';
 import { Network } from '@capacitor/network';
 import { AppEmbedOfflineState } from './AppEmbedOfflineState';
-import { IonPage, IonContent, IonToast, IonHeader, IonToolbar } from '@ionic/react';
+import { IonPage, IonContent, IonHeader, IonToolbar } from '@ionic/react';
+import { AppToast } from '../../components/overlays/AppToast';
 
 import { useLearnCardPostMessage } from '../../hooks/post-message/useLearnCardPostMessage';
 import { useLearnCardMessageHandlers } from '../../hooks/post-message/useLearnCardMessageHandlers';
@@ -229,7 +230,7 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
                     />
                 </>
             ) : null}
-            <IonToast
+            <AppToast
                 isOpen={showErrorToast}
                 onDidDismiss={() => setShowErrorToast(false)}
                 message={errorMessage}
