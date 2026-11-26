@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { IonRow, IonCol } from '@ionic/react';
+import { AppCol, AppRow } from '../../../../layout';
 import { AppToggle } from '../../../../controls/AppToggle';
 
 import { BoostCMSState } from '../../../boost';
@@ -29,8 +29,8 @@ const BoostCMSAIMissionForm: React.FC<{
     };
 
     return (
-        <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
-            <IonCol size="12" className="w-full bg-white">
+        <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
+            <AppCol size="12" className="w-full bg-white">
                 <div className="w-full flex items-center justify-between px-[8px] py-[8px]">
                     <h1 className="text-black text-2xl p-0 m-0">
                         {m['boost.cms.aiMission.title']()}
@@ -50,8 +50,8 @@ const BoostCMSAIMissionForm: React.FC<{
                         disabled={disabled}
                     />
                 </div>
-            </IonCol>
-        </IonRow>
+            </AppCol>
+        </AppRow>
     );
 };
 

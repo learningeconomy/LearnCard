@@ -20,7 +20,6 @@ const loggerHost = vi.hoisted(() => ({ error: vi.fn() }));
 vi.mock('@ionic/react', () => ({
     IonPage: ({ children }: { children: React.ReactNode }) => <>{children}</>,
     IonContent: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-    IonCol: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 vi.mock('learn-card-base', () => ({

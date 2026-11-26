@@ -7,7 +7,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import authStore from 'learn-card-base/stores/authStore';
 
-import { IonPage, IonCol, IonRow, IonSkeletonText, IonSpinner } from '@ionic/react';
+import { IonPage, IonSkeletonText, IonSpinner } from '@ionic/react';
+import { AppCol, AppRow } from '../../components/layout';
 import FullScreenGameFlow from './GameFlow/FullScreenGameFlow';
 import ConsentFlowCredFrontDoor from './ConsentFlowCredFrontDoor';
 
@@ -396,8 +397,8 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                     <span className="text-grayscale-700 text-[14px]">
                         Universal Learning & Work Portfolio
                     </span>
-                    <IonRow className="flex items-center justify-center">
-                        <IonCol className="flex items-center justify-center">
+                    <AppRow className="flex items-center justify-center">
+                        <AppCol className="flex items-center justify-center">
                             <button
                                 onClick={openPP}
                                 className={`text-${primaryColor} font-semibold text-[12px]`}
@@ -413,8 +414,8 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                             >
                                 {m['legal.termsOfService']()}
                             </button>
-                        </IonCol>
-                    </IonRow>
+                        </AppCol>
+                    </AppRow>
                 </div>
             </div>
         </IonPage>

@@ -3,7 +3,8 @@ import * as m from '../../../paraglide/messages.js';
 import Typewriter from 'typewriter-effect';
 import _ from 'lodash-es';
 
-import { IonContent, IonPage, IonRow } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
+import { AppRow } from '../../../components/layout';
 
 import { useTenantBrandingAssets } from '../../../config/brandingAssets';
 import { useTheme } from '../../../theme/hooks/useTheme';
@@ -31,7 +32,7 @@ export const LogoutLoadingPage: React.FC = () => {
                 className="flex items-center justify-center"
                 style={{ '--background': colors[currentColorIndex] } as React.CSSProperties}
             >
-                <IonRow
+                <AppRow
                     className="h-full w-full transition-colors duration-1000 ease-in-out flex items-center justify-center text-white text-2xl"
                     style={{ backgroundColor: colors[currentColorIndex] }}
                 >
@@ -53,7 +54,7 @@ export const LogoutLoadingPage: React.FC = () => {
                             />
                         </div>
                     </div>
-                </IonRow>
+                </AppRow>
             </IonContent>
         </IonPage>
     );

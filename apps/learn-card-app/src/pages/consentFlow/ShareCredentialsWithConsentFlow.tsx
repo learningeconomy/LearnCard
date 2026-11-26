@@ -6,16 +6,8 @@ import { useCurrentUser } from 'learn-card-base';
 import ConsentFlowShareCredentialCards from './ConsentFlowShareCredentialCards';
 import ProfilePicture from 'learn-card-base/components/profilePicture/ProfilePicture';
 
-import {
-    IonContent,
-    IonPage,
-    IonToolbar,
-    IonHeader,
-    IonSpinner,
-    IonGrid,
-    IonRow,
-    IonCol,
-} from '@ionic/react';
+import { IonContent, IonPage, IonToolbar, IonHeader, IonSpinner } from '@ionic/react';
+import { AppCol, AppGrid, AppRow } from '../../components/layout';
 import CaretLeft from '../../components/svgs/CaretLeft';
 import { AppToggle } from '../../components/controls/AppToggle';
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
@@ -49,10 +41,10 @@ const ShareCredentialsWithConsentFlow: React.FC<{
         <IonPage>
             <IonHeader className="ion-no-border">
                 <IonToolbar className="ion-no-border" color="light">
-                    <IonGrid className="white">
-                        <IonRow className="w-full flex flex-col items-center justify-center">
-                            <IonRow className="w-full max-w-[600px] flex items-center justify-between">
-                                <IonCol className="flex flex-1 justify-start items-center">
+                    <AppGrid className="white">
+                        <AppRow className="w-full flex flex-col items-center justify-center">
+                            <AppRow className="w-full max-w-[600px] flex items-center justify-between">
+                                <AppCol className="flex flex-1 justify-start items-center">
                                     <button
                                         className="text-grayscale-900 p-0 mr-[10px]"
                                         aria-label="Back button"
@@ -75,14 +67,14 @@ const ShareCredentialsWithConsentFlow: React.FC<{
                                             Share data with {contractDetails.owner.displayName}
                                         </h3>
                                     </div>
-                                </IonCol>
-                            </IonRow>
-                        </IonRow>
-                    </IonGrid>
+                                </AppCol>
+                            </AppRow>
+                        </AppRow>
+                    </AppGrid>
                 </IonToolbar>
             </IonHeader>
             <IonContent>
-                <IonGrid className="flex items-center justify-center p-[20px] pb-[100px] max-w-[700px]">
+                <AppGrid className="flex items-center justify-center p-[20px] pb-[100px] max-w-[700px]">
                     <section className="w-full">
                         <section className="">
                             <div className="flex flex-col items-center justify-center bg-white gap-[10px] text-[14px] leading-[18px] py-[20px] px-[40px] mt-[7px] mx-[7px] shadow-[0_0_7px_0px_rgba(0,0,0,0.2)] rounded-[10px]">
@@ -182,7 +174,7 @@ const ShareCredentialsWithConsentFlow: React.FC<{
                             />
                         </section>
                     </section>
-                </IonGrid>
+                </AppGrid>
             </IonContent>
         </IonPage>
     );

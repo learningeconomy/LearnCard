@@ -3,7 +3,8 @@ import { useHistory } from 'react-router-dom';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('loading-page');
 
-import { IonCol, IonContent, IonPage, IonRow, IonSpinner } from '@ionic/react';
+import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { AppCol, AppRow } from '../../components/layout';
 
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import { useTheme } from '../../theme/hooks/useTheme';
@@ -26,18 +27,18 @@ const LoadingPage: React.FC = () => {
     return (
         <IonPage>
             <IonContent fullscreen className="flex items-center justify-center">
-                <IonRow
+                <AppRow
                     className="h-full w-full flex items-center justify-center"
                     style={{ backgroundColor: loaderColor }}
                 >
-                    <IonCol className="w-full flex items-center justify-center flex-col">
+                    <AppCol className="w-full flex items-center justify-center flex-col">
                         <img
                             src={textLogo}
                             alt="Logo"
                             className="mb-8 max-w-[300px] max-h-[80px] object-contain"
                         />
-                    </IonCol>
-                </IonRow>
+                    </AppCol>
+                </AppRow>
             </IonContent>
         </IonPage>
     );
@@ -53,18 +54,18 @@ export const LoadingPageDumb: React.FC = () => {
     return (
         <IonPage>
             <IonContent fullscreen className="flex items-center justify-center">
-                <IonRow
+                <AppRow
                     className="h-full w-full flex items-center justify-center"
                     style={{ backgroundColor: loaderColor }}
                 >
-                    <IonCol className="w-full flex items-center justify-center flex-col">
+                    <AppCol className="w-full flex items-center justify-center flex-col">
                         <img
                             src={textLogo}
                             alt="Logo"
                             className="mb-8 max-w-[300px] max-h-[80px] object-contain"
                         />
-                    </IonCol>
-                </IonRow>
+                    </AppCol>
+                </AppRow>
             </IonContent>
         </IonPage>
     );

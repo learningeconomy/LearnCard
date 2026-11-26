@@ -3,7 +3,8 @@ import React, { useState } from 'react';
 import { useImageUpload, UploadRes } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
-import { IonRow, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
+import { AppRow } from '../../../../layout';
 import { AppToggle } from '../../../../controls/AppToggle';
 
 import Pencil from '../../../../svgs/Pencil';
@@ -51,7 +52,7 @@ const BoostIDCardCMSIssuerThumbnailForm: React.FC<{
     });
 
     return (
-        <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-2 mb-4 rounded-[20px]">
+        <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-2 mb-4 rounded-[20px]">
             <div className="w-full flex items-center justify-between px-[8px] py-[8px]">
                 <p className="text-grayscale-900 font-medium w-10/12">Show Issuer Thumbnail</p>
                 <AppToggle
@@ -119,7 +120,7 @@ const BoostIDCardCMSIssuerThumbnailForm: React.FC<{
                     </div>
                 </div>
             </div>
-        </IonRow>
+        </AppRow>
     );
 };
 

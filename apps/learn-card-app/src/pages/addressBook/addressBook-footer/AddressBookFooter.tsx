@@ -8,7 +8,8 @@ import keyboardStore from 'learn-card-base/stores/keyboardStore';
 import User from '../../../components/svgs/User';
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
 import AddressBookContactOptions from '../addressBook-contact-options/AddressBookContactOptions';
-import { IonFooter, IonToolbar, IonGrid, IonRow, IonCol, useIonModal } from '@ionic/react';
+import { IonFooter, IonToolbar, useIonModal } from '@ionic/react';
+import { AppCol, AppGrid, AppRow } from '../../../components/layout';
 
 import { useIsCurrentUserLCNUser } from 'learn-card-base';
 import useLCNGatedAction from 'apps/learn-card-app/src/components/network-prompts/hooks/useLCNGatedAction';
@@ -41,9 +42,9 @@ export const AddressBookFooter: React.FC<{
     return (
         <IonFooter className="learn-card-header ion-no-border" ref={bottomBarRef}>
             <IonToolbar className="ion-no-border" color="light">
-                <IonGrid className="bg-white">
-                    <IonRow className="w-full mt-4 flex items-center justify-center">
-                        <IonCol className="flex items-center justify-between max-w-[600px]">
+                <AppGrid className="bg-white">
+                    <AppRow className="w-full mt-4 flex items-center justify-center">
+                        <AppCol className="flex items-center justify-between max-w-[600px]">
                             <button
                                 onClick={async () => {
                                     const { prompted } = await gate();
@@ -74,9 +75,9 @@ export const AddressBookFooter: React.FC<{
                                 Boost
                                 <GearPlusIcon className="ml-1 text-grayscale-800" />
                             </button>
-                        </IonCol>
-                    </IonRow>
-                </IonGrid>
+                        </AppCol>
+                    </AppRow>
+                </AppGrid>
             </IonToolbar>
         </IonFooter>
     );

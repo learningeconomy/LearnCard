@@ -28,7 +28,7 @@ import {
     BoostCategoryOptionsEnum,
     newCredsStore,
 } from 'learn-card-base';
-import { IonCol } from '@ionic/react';
+import { AppCol } from '../../layout';
 
 import BadgeSkeleton from 'learn-card-base/components/boost/boostSkeletonLoaders/BadgeSkeleton';
 
@@ -593,11 +593,11 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     if (verifierState) {
         return (
             <ErrorBoundary fallback={<div>Something went wrong</div>}>
-                <IonCol
+                <AppCol
                     size={isCardView && !isInSkillsModal ? '6' : '12'}
-                    size-sm={isCardView && !isInSkillsModal ? '4' : undefined}
-                    size-md={isCardView && !isInSkillsModal ? '4' : undefined}
-                    size-lg={isCardView && !isInSkillsModal ? '3' : undefined}
+                    sizeSm={isCardView && !isInSkillsModal ? '4' : undefined}
+                    sizeMd={isCardView && !isInSkillsModal ? '4' : undefined}
+                    sizeLg={isCardView && !isInSkillsModal ? '3' : undefined}
                     className={`flex justify-center items-center relative ${
                         isCardView ? '' : 'p-0'
                     }`}
@@ -662,7 +662,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                         isCLR={isClrCredential}
                         trustedVerifierOnly
                     />
-                </IonCol>
+                </AppCol>
             </ErrorBoundary>
         );
     }
@@ -673,11 +673,11 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
 
     return (
         <ErrorBoundary fallback={<div>Something went wrong</div>}>
-            <IonCol
+            <AppCol
                 size={isCardView && !isInSkillsModal ? '6' : '12'}
-                size-sm={isCardView && !isInSkillsModal ? sizeSm : undefined}
-                size-md={isCardView && !isInSkillsModal ? sizeMd : undefined}
-                size-lg={isCardView && !isInSkillsModal ? sizeLg : undefined}
+                sizeSm={isCardView && !isInSkillsModal ? sizeSm : undefined}
+                sizeMd={isCardView && !isInSkillsModal ? sizeMd : undefined}
+                sizeLg={isCardView && !isInSkillsModal ? sizeLg : undefined}
                 className={`flex justify-center items-center relative ${isCardView ? '' : 'p-0'}`}
             >
                 <BoostGenericCardWrapper
@@ -771,7 +771,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     isCLR={isClrCredential}
                     trustedVerifierOnly
                 />
-            </IonCol>
+            </AppCol>
         </ErrorBoundary>
     );
 };

@@ -3,17 +3,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('family-guardian-issue-to-list');
 
-import {
-    IonCol,
-    IonContent,
-    IonFooter,
-    IonGrid,
-    IonHeader,
-    IonPage,
-    IonRow,
-    IonToolbar,
-    useIonAlert,
-} from '@ionic/react';
+import { IonContent, IonFooter, IonHeader, IonPage, IonToolbar, useIonAlert } from '@ionic/react';
+import { AppCol, AppGrid, AppRow } from '../../../layout';
 import Plus from 'learn-card-base/svgs/Plus';
 import BoostAddressBookContactItem from '../../../boost/boostCMS/boostCMSForms/boostCMSIssueTo/BoostAddressBookContactItem';
 
@@ -93,7 +84,7 @@ const FamilyGuardianIssueToList: React.FC<{
     return (
         <IonPage>
             <IonHeader className="ion-no-border bg-white pt-4 border-b-solid border-b-grayscale-100 border-b-2 pb-4 vc-preview-modal-safe-area">
-                <IonCol className="w-full flex items-center justify-center">
+                <AppCol className="w-full flex items-center justify-center">
                     <div className="boost-issue-container w-full flex items-center justify-between mx-[20px] max-w-[600px]">
                         <p className="boost-issue-to-text font-poppins text-2xl text-grayscale-900">
                             {m['family.guardianInvite.inviteGuardians']()}
@@ -102,18 +93,18 @@ const FamilyGuardianIssueToList: React.FC<{
                             <Plus className="text-grayscale-900 round-bottom-shadow-btn w-[50px] h-[50px] shrink-0 p-[8px] flex justify-center items-center" />
                         </div>
                     </div>
-                </IonCol>
+                </AppCol>
             </IonHeader>
             <IonContent fullscreen>
-                <IonGrid className="pl-4 bg-white pt-0">
-                    <IonCol className="pt-0 w-full flex items-center justify-center">
+                <AppGrid className="pl-4 bg-white pt-0">
+                    <AppCol className="pt-0 w-full flex items-center justify-center">
                         {renderIssuedTo}
-                    </IonCol>
-                </IonGrid>
+                    </AppCol>
+                </AppGrid>
             </IonContent>
             <IonFooter>
                 <IonToolbar color="light" className="ion-no-border">
-                    <IonRow className="w-full flex items-center justify-center px-4">
+                    <AppRow className="w-full flex items-center justify-center px-4">
                         <div className="boost-issue-container w-full flex items-center justify-center max-w-[600px]">
                             <button
                                 onClick={handleCancel}
@@ -132,7 +123,7 @@ const FamilyGuardianIssueToList: React.FC<{
                                 {isLoading ? m['common.loading']() : m['common.invite']()}
                             </button>
                         </div>
-                    </IonRow>
+                    </AppRow>
                 </IonToolbar>
             </IonFooter>
         </IonPage>

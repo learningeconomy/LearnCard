@@ -1,7 +1,8 @@
 import React from 'react';
 import { useHistory } from 'react-router-dom';
 
-import { IonGrid, IonRow, IonCol, useIonModal } from '@ionic/react';
+import { useIonModal } from '@ionic/react';
+import { AppCol, AppGrid, AppRow } from '../../../components/layout';
 
 import { AddressBookTabsEnum } from '../addressBookHelpers';
 
@@ -58,10 +59,10 @@ export const AddressBookHeader: React.FC<{
     });
 
     return (
-        <IonGrid className="flex w-full items-center justify-center bg-grayscale-100">
-            <IonRow className="flex w-full max-w-[650px] flex-col items-center justify-center px-2">
-                <IonRow className="flex w-full max-w-[600px] items-center justify-between">
-                    <IonCol className="flex items-center justify-start">
+        <AppGrid className="flex w-full items-center justify-center bg-grayscale-100">
+            <AppRow className="flex w-full max-w-[650px] flex-col items-center justify-center px-2">
+                <AppRow className="flex w-full max-w-[600px] items-center justify-between">
+                    <AppCol className="flex items-center justify-start">
                         <button
                             className="text-grayscale-50 p-0 mr-[2px] flex items-center justify-start"
                             onClick={() => {
@@ -74,7 +75,7 @@ export const AddressBookHeader: React.FC<{
                                 {m['contacts.title']()}
                             </span>
                         </button>
-                    </IonCol>
+                    </AppCol>
                     <button
                         onClick={async () => {
                             const { prompted } = await gate();
@@ -95,10 +96,10 @@ export const AddressBookHeader: React.FC<{
                             className={`ml-[5px] w-[24px] h-[24px] text-${colorSet.primaryColor}`}
                         />
                     </button>
-                </IonRow>
+                </AppRow>
                 {children}
-            </IonRow>
-        </IonGrid>
+            </AppRow>
+        </AppGrid>
     );
 };
 

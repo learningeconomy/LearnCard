@@ -5,7 +5,8 @@ import { useHistory } from 'react-router-dom';
 import { useLoadingLine } from '../../../stores/loadingStore';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
-import { IonRow, IonCol, IonGrid, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
+import { AppCol, AppGrid, AppRow } from '../../layout';
 import BoostManagedCard from '../../../components/boost/boost-managed-card/BoostManagedCard';
 import BoostErrorsDisplay from '../../../components/boost/boostErrors/BoostErrorsDisplay';
 import NewBoostButton from '../NewBoostButton';
@@ -144,19 +145,19 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
             )}
             {!managedBoostsLoading && !boostError && managedBoostsList && (
                 <>
-                    <IonCol className="flex m-auto items-center flex-wrap w-full achievements-list-container ">
+                    <AppCol className="flex m-auto items-center flex-wrap w-full achievements-list-container ">
                         {isCardView && (
-                            <IonGrid className="max-w-[600px]">
+                            <AppGrid className="max-w-[600px]">
                                 {searchActive && searchResultsElement}
-                                <IonRow>
+                                <AppRow>
                                     {managedBoostsList}
                                     <NewBoostButton
                                         credentialType={category}
                                         onClick={handleNewBoost}
                                     />
-                                </IonRow>
+                                </AppRow>
                                 <div role="presentation" ref={managedBoostInfiniteScrollRef} />
-                            </IonGrid>
+                            </AppGrid>
                         )}
                         {!isCardView && (
                             <>
@@ -184,7 +185,7 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
                         <div
                             className={`bg-filler absolute h-full top-[0px] left-[0px] w-full mt-[110px] -z-50 ${bgFillerColor}`}
                         />
-                    </IonCol>
+                    </AppCol>
                 </>
             )}
             {!managedBoostsLoading &&

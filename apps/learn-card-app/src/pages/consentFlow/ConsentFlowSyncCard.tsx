@@ -5,7 +5,8 @@ import { useHistory, useLocation } from 'react-router-dom';
 
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 
-import { IonCol, IonLoading, IonRow, IonSkeletonText } from '@ionic/react';
+import { IonLoading, IonSkeletonText } from '@ionic/react';
+import { AppCol, AppRow } from '../../components/layout';
 import RightArrow from 'learn-card-base/svgs/RightArrow';
 import HandshakeIcon from '../../components/svgs/HandshakeIcon';
 import { getMinimumTermsForContract } from '../../helpers/contract.helpers';
@@ -291,16 +292,16 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                     </button>
                 </div>
             </div>
-            <IonRow className="flex items-center justify-center mt-4 w-full">
-                <IonCol className="flex flex-col items-center justify-center text-center">
+            <AppRow className="flex items-center justify-center mt-4 w-full">
+                <AppCol className="flex flex-col items-center justify-center text-center">
                     <p className="text-center text-sm font-normal w-[90%] px-16 text-grayscale-600 border-t border-t-grayscale-200 pb-[30px] pt-[20px]">
                         All connections are{' '}
                         <b>
                             <u>encrypted.</u>
                         </b>
                     </p>
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
         </section>
     );
 };

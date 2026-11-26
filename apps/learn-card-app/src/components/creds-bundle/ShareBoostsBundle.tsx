@@ -11,7 +11,8 @@ import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credent
 import ProfilePicture from 'learn-card-base/components/profilePicture/ProfilePicture';
 import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarnedCard';
 
-import { IonContent, IonPage, IonSpinner, IonGrid, useIonAlert } from '@ionic/react';
+import { IonContent, IonPage, IonSpinner, useIonAlert } from '@ionic/react';
+import { AppGrid } from '../layout';
 import { AppToggle } from '../controls/AppToggle';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation } from 'swiper/modules';
@@ -108,7 +109,7 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
     return (
         <IonPage>
             <IonContent>
-                <IonGrid className="flex items-center justify-center p-[20px] pb-[100px] max-w-[700px]">
+                <AppGrid className="flex items-center justify-center p-[20px] pb-[100px] max-w-[700px]">
                     <section className="w-full">
                         <div className="flex flex-col gap-[15px] text-grayscale-900">
                             <h1 className="text-[17px] font-medium leading-[21px]">
@@ -265,7 +266,7 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
 
                         {/* <section className="bottom-spacer-offset h-[150px] w-full"></section> */}
                     </section>
-                </IonGrid>
+                </AppGrid>
                 {!credentialsLoading && !readOnly && (
                     <section className="fixed-bottom-container fixed w-full bottom-[0px] px-[20px] py-[10px] z-[3] h-fit bg-grayscale-50 flex flex items-start justify-center">
                         <button

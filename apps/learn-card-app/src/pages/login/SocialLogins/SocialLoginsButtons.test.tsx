@@ -8,12 +8,6 @@ import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBr
 
 import SocialLoginsButtons from './SocialLoginsButtons';
 
-vi.mock('@ionic/react', () => ({
-    IonRow: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-        <div {...props}>{children}</div>
-    ),
-}));
-
 vi.mock('learn-card-base/hooks/useSocialLogins', () => ({
     default: () => [],
 }));

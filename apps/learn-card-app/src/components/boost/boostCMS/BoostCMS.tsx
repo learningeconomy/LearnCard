@@ -8,7 +8,8 @@ import {
     boostCategoryMetadata,
     BoostCategoryOptionsEnum,
 } from 'learn-card-base';
-import { IonCol, IonContent, IonGrid, IonPage, IonRow } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
+import { AppCol, AppGrid, AppRow } from '../../layout';
 
 import {
     BoostAddressBookEditMode,
@@ -1114,17 +1115,17 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
             />
 
             <IonContent fullscreen color="grayscale-800">
-                <IonGrid className="flex items-center justify-center flex-col w-full px-4">
+                <AppGrid className="flex items-center justify-center flex-col w-full px-4">
                     {activeBoostCMSStep}
-                </IonGrid>
+                </AppGrid>
                 {currentStep !== BoostCMSStepsEnum.confirmation && (
-                    <IonRow className="w-full flex items-center justify-center pb-[200px]">
-                        <IonCol className="w-full flex items-center justify-center">
+                    <AppRow className="w-full flex items-center justify-center pb-[200px]">
+                        <AppCol className="w-full flex items-center justify-center">
                             <button onClick={handleConfirmationModal} className="mt-4 pb-4">
                                 {m['boost.cms.quit']()}
                             </button>
-                        </IonCol>
-                    </IonRow>
+                        </AppCol>
+                    </AppRow>
                 )}
             </IonContent>
         </IonPage>

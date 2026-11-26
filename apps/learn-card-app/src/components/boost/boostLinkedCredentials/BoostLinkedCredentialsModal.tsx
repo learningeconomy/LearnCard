@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-import { IonFooter, IonCol, IonGrid, IonRow } from '@ionic/react';
+import { IonFooter } from '@ionic/react';
+import { AppCol, AppGrid, AppRow } from '../../layout';
 import { AppInput } from '../../controls/AppInput';
 import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
 import BoostEarnedCard from '../boost-earned-card/BoostEarnedCard';
@@ -238,11 +239,11 @@ export const BoostLinkedCredentialsModal: React.FC<{
                     </div>
                 )}
 
-                <IonCol className="flex m-auto items-center flex-wrap w-full  achievements-list-container">
+                <AppCol className="flex m-auto items-center flex-wrap w-full  achievements-list-container">
                     {isCardView && (
-                        <IonGrid className="max-w-[600px] pt-[25px]">
-                            <IonRow>{credentials}</IonRow>
-                        </IonGrid>
+                        <AppGrid className="max-w-[600px] pt-[25px]">
+                            <AppRow>{credentials}</AppRow>
+                        </AppGrid>
                     )}
                     {!isCardView && (
                         <>
@@ -251,7 +252,7 @@ export const BoostLinkedCredentialsModal: React.FC<{
                             </div>
                         </>
                     )}
-                </IonCol>
+                </AppCol>
             </div>
 
             <IonFooter

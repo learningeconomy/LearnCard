@@ -1,15 +1,7 @@
 import React from 'react';
 
-import {
-    IonCol,
-    IonContent,
-    IonRow,
-    IonToolbar,
-    IonFooter,
-    IonHeader,
-    IonPage,
-    useIonModal,
-} from '@ionic/react';
+import { IonContent, IonToolbar, IonFooter, IonHeader, IonPage, useIonModal } from '@ionic/react';
+import { AppCol, AppRow } from '../layout';
 import { AppItem, AppList } from '../list';
 import X from 'learn-card-base/svgs/X';
 import DeleteUserConfirmationPrompt from './DeleteUserConfirmationPrompt';
@@ -62,15 +54,15 @@ const UserOptions: React.FC<{
     return (
         <IonPage id="user-options-modal">
             <IonHeader className="ion-no-border">
-                <IonRow className="w-full bg-white">
-                    <IonCol className="w-full flex items-center justify-end">
+                <AppRow className="w-full bg-white">
+                    <AppCol className="w-full flex items-center justify-end">
                         {showCloseButton && (
                             <button onClick={handleCloseModal}>
                                 <X className="text-grayscale-600 h-8 w-8" />
                             </button>
                         )}
-                    </IonCol>
-                </IonRow>
+                    </AppCol>
+                </AppRow>
                 {title && <IonToolbar>{title}</IonToolbar>}
             </IonHeader>
             <IonContent>

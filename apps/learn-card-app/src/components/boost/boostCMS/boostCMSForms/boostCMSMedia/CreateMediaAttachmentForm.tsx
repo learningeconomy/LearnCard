@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Updater } from 'use-immer';
 import { curriedStateSlice } from '@learncard/helpers';
 
-import { IonCol, IonRow, IonProgressBar } from '@ionic/react';
+import { IonProgressBar } from '@ionic/react';
+import { AppCol, AppRow } from '../../../../layout';
 
 import BoostCMSMediaPhotoUpload from './BoostCMSMediaPhotoUpload';
 import BoostCMSMediaDocumentUpload from './BoostCMSMediaDocumentUpload';
@@ -79,8 +80,8 @@ const BoostCMSMediaTypeSelector: React.FC<BoostCMSMediaTypeSelectorProps> = ({
     const attachment = attachments?.[0];
 
     return (
-        <IonRow className="flex w-full pb-[20px]">
-            <IonCol className="flex items-center justify-center flex-wrap">
+        <AppRow className="flex w-full pb-[20px]">
+            <AppCol className="flex items-center justify-center flex-wrap">
                 {boostMediaOptions.map(({ id, type, title, color, Icon }) => {
                     let styles = '';
                     if (
@@ -146,8 +147,8 @@ const BoostCMSMediaTypeSelector: React.FC<BoostCMSMediaTypeSelectorProps> = ({
                         </button>
                     );
                 })}
-            </IonCol>
-        </IonRow>
+            </AppCol>
+        </AppRow>
     );
 };
 

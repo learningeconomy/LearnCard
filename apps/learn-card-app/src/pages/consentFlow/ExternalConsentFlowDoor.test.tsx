@@ -66,8 +66,6 @@ vi.mock('@ionic/react', () => ({
             {children}
         </div>
     ),
-    IonCol: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-    IonRow: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
     IonSkeletonText: () => <div data-testid="skeleton" />,
     IonSpinner: () => <div data-testid="spinner" />,
 }));

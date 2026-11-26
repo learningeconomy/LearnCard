@@ -3,9 +3,6 @@ import moment from 'moment';
 
 import {
     useIonModal,
-    IonRow,
-    IonCol,
-    IonGrid,
     IonSpinner,
     IonContent,
     IonPage,
@@ -13,6 +10,7 @@ import {
     IonToolbar,
     IonFooter,
 } from '@ionic/react';
+import { AppCol, AppGrid, AppRow } from '../../../../layout';
 import { AppItem, AppList } from '../../../../list';
 import { AppInput } from '../../../../controls/AppInput';
 
@@ -238,10 +236,10 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
             <IonPage className="bg-white">
                 <IonHeader className="learn-card-header ion-no-border bg-white w-full">
                     <IonToolbar color="white" className="ion-no-border w-full">
-                        <IonGrid className="bg-white">
-                            <IonRow className="w-full flex items-center justify-center bg-white">
-                                <IonRow className="flex flex-col w-full max-w-[600px]">
-                                    <IonCol className="flex flex-1 justify-start items-center">
+                        <AppGrid className="bg-white">
+                            <AppRow className="w-full flex items-center justify-center bg-white">
+                                <AppRow className="flex flex-col w-full max-w-[600px]">
+                                    <AppCol className="flex flex-1 justify-start items-center">
                                         <button
                                             className="text-grayscale-50 p-0 mr-[10px]"
                                             onClick={() => {
@@ -257,7 +255,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                                 count: contactCount ?? 0,
                                             })}
                                         </h3>
-                                    </IonCol>
+                                    </AppCol>
 
                                     <div className="flex items-center justify-start w-full">
                                         <AppInput
@@ -272,9 +270,9 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                             type="text"
                                         />
                                     </div>
-                                </IonRow>
-                            </IonRow>
-                        </IonGrid>
+                                </AppRow>
+                            </AppRow>
+                        </AppGrid>
                     </IonToolbar>
                 </IonHeader>
                 <IonContent fullscreen>
@@ -338,9 +336,9 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                 </IonContent>
                 <IonFooter className="bg-white">
                     <IonToolbar className="w-full ion-no-border bg-white pt-5">
-                        <IonRow className="w-full flex items-center justify-center">
+                        <AppRow className="w-full flex items-center justify-center">
                             <div className="w-full max-w-[600px] flex items-center justify-center">
-                                <IonCol
+                                <AppCol
                                     size="12"
                                     className="w-full flex items-center justify-between"
                                 >
@@ -350,9 +348,9 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                     >
                                         {m['common.save']()}
                                     </button>
-                                </IonCol>
+                                </AppCol>
                             </div>
-                        </IonRow>
+                        </AppRow>
                     </IonToolbar>
                 </IonFooter>
             </IonPage>
@@ -361,9 +359,9 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
 
     return (
         <>
-            <IonGrid className="w-full flex items-center justify-center flex-col">
-                <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
-                    <IonCol size="12" className="w-full bg-white rounded-[20px]">
+            <AppGrid className="w-full flex items-center justify-center flex-col">
+                <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
+                    <AppCol size="12" className="w-full bg-white rounded-[20px]">
                         <div className="flex items-center justify-between w-full ion-padding">
                             <h1 className="font-poppins text-black text-xl p-0 m-0">{title}</h1>
 
@@ -467,19 +465,19 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                             collectionPropName={collectionKey}
                             showRecipientAttachments={collectionKey === 'issueTo'}
                         />
-                    </IonCol>
-                </IonRow>
+                    </AppCol>
+                </AppRow>
 
                 {recipientsLoading && recipients?.length === 0 && (
-                    <IonRow className="w-full flex flex-col items-center justify-center max-w-[600px] mt-8 rounded-[20px]">
+                    <AppRow className="w-full flex flex-col items-center justify-center max-w-[600px] mt-8 rounded-[20px]">
                         <section className="loading-spinner-container flex items-center justify-center h-[80%] w-full ">
                             <IonSpinner color="light" />
                         </section>
-                    </IonRow>
+                    </AppRow>
                 )}
                 {!recipientsLoading && recipients?.length > 0 && (
-                    <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
-                        <IonCol size="12" className="w-full bg-white rounded-[20px]">
+                    <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
+                        <AppCol size="12" className="w-full bg-white rounded-[20px]">
                             <div className="flex items-center justify-between w-full ion-padding">
                                 <h1 className="font-poppins text-black text-xl p-0 m-0">
                                     Issue Log
@@ -526,10 +524,10 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                     );
                                 })}
                             </AppList>
-                        </IonCol>
-                    </IonRow>
+                        </AppCol>
+                    </AppRow>
                 )}
-            </IonGrid>
+            </AppGrid>
 
             {!hideBoostShareableCode && (
                 <BoostShareableCode

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-import { IonContent, IonPage, IonCol } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
+import { AppCol } from '../../components/layout';
 import { useHistory, useLocation } from 'react-router-dom';
 import { getLogger, useWallet } from 'learn-card-base';
 import MainHeader from '../../components/main-header/MainHeader';
@@ -71,13 +72,13 @@ const NotificationsPage: React.FC = () => {
                     scrollEvents
                     onIonScroll={onHeaderScroll}
                 >
-                    <IonCol className="flex mx-auto relative items-start flex-wrap w-full h-auto min-h-full notifications-list-container bg-white px-[20px]">
+                    <AppCol className="flex mx-auto relative items-start flex-wrap w-full h-auto min-h-full notifications-list-container bg-white px-[20px]">
                         <NotificationsListView
                             isEmptyState={isEmptyState}
                             setIsEmptyState={setIsEmptyState}
                             tab={tab}
                         />
-                    </IonCol>
+                    </AppCol>
                 </IonContent>
             </GenericErrorBoundary>
         </IonPage>

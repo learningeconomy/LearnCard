@@ -21,7 +21,8 @@ import {
     useNetworkConsentMutation,
 } from 'learn-card-base';
 
-import { IonCol, IonRow, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
+import { AppCol, AppRow } from '../layout';
 import { AppInput } from '../controls/AppInput';
 import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 import HeaderBranding from 'learn-card-base/components/headerBranding/HeaderBranding';
@@ -343,8 +344,8 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
             )}
 
             <section className="pt-[36px] pb-[16px]">
-                <IonRow class="w-full">
-                    <IonRow className="flex w-full flex-col items-center justify-center mb-2">
+                <AppRow className="w-full">
+                    <AppRow className="flex w-full flex-col items-center justify-center mb-2">
                         <div className="flex w-full items-center justify-center">
                             <h6
                                 className={`font-poppins select-none text-xl font-medium tracking-wider text-center text-black`}
@@ -365,8 +366,8 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                                 Set up your profile to get started!
                             </h1>
                         </div>
-                    </IonRow>
-                    <IonCol size="12" className="flex items-center justify-center">
+                    </AppRow>
+                    <AppCol size="12" className="flex items-center justify-center">
                         <div className="bg-grayscale-100/40 relative m-0 flex items-center justify-between rounded-[40px] object-fill p-0 pb-[3px] pr-[10px] pt-[3px]">
                             <ProfilePicture
                                 customContainerClass="flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-xl min-w-[70px] min-h-[70px]"
@@ -393,12 +394,12 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                                 <Pencil className="h-[60%]" />
                             </button>
                         </div>
-                    </IonCol>
-                </IonRow>
+                    </AppCol>
+                </AppRow>
 
                 <div className="flex flex-col items-center justify-center w-full px-6 mt-4">
                     {/* profile setup */}
-                    <IonRow className="flex flex-col items-center justify-center w-full">
+                    <AppRow className="flex flex-col items-center justify-center w-full">
                         {lcNetworkProfile && lcNetworkProfile?.profileId && (
                             <AppInput
                                 autocapitalize="on"
@@ -428,10 +429,10 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                                 </p>
                             )}
                         </div>
-                    </IonRow>
+                    </AppRow>
 
                     {/* network setup */}
-                    <IonRow className="w-full flex flex-col items-center justify-center">
+                    <AppRow className="w-full flex flex-col items-center justify-center">
                         <div className="w-full flex items-center justify-between">
                             <p className="text-grayscale-900 font-normal text-base w-10/12 text-left pr-2 font-poppins">
                                 Join the LearnCard Network
@@ -452,11 +453,11 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                                 </span>
                             </p>
                         )}
-                    </IonRow>
+                    </AppRow>
 
                     {/* opting into network */}
                     {networkToggle && (
-                        <IonRow className="flex flex-col items-center justify-center w-full mt-4">
+                        <AppRow className="flex flex-col items-center justify-center w-full mt-4">
                             <div className="flex flex-col items-center justify-center w-full mb-4">
                                 <AppInput
                                     autocapitalize="on"
@@ -481,12 +482,12 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                                     </p>
                                 )}
                             </div>
-                        </IonRow>
+                        </AppRow>
                     )}
 
                     {/* opting out of network */}
                     {!networkToggle && (
-                        <IonRow className="w-full flex flex-col items-center justify-center mt-4">
+                        <AppRow className="w-full flex flex-col items-center justify-center mt-4">
                             <p className="text-grayscale-900 font-normal text-base w-full text-left font-poppins">
                                 You can still use LearnCard without joining the network.
                             </p>
@@ -494,10 +495,10 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                                 You won't be able to send Boosts or connect with others, but you can
                                 still sync credentials. You can join later anytime.
                             </p>
-                        </IonRow>
+                        </AppRow>
                     )}
 
-                    <IonRow className="w-full flex items-center justify-center mt-8">
+                    <AppRow className="w-full flex items-center justify-center mt-8">
                         <button
                             type="button"
                             onClick={handleClick}
@@ -506,11 +507,11 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                         >
                             {isLoading ? m['common.loading']() : m['common.letsGo']()}
                         </button>
-                    </IonRow>
+                    </AppRow>
                 </div>
 
-                <IonRow className="flex items-center justify-center mt-4 w-full">
-                    <IonCol className="flex flex-col items-center justify-center text-center">
+                <AppRow className="flex items-center justify-center mt-4 w-full">
+                    <AppCol className="flex flex-col items-center justify-center text-center">
                         <p className="text-center text-sm font-normal px-16 text-grayscale-600">
                             {m['legal.dataOwnership']()}
                             <br />
@@ -519,11 +520,11 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                         <button className={`text-${primaryColor} font-bold`}>
                             {m['common.learnMore']()}
                         </button>
-                    </IonCol>
-                </IonRow>
+                    </AppCol>
+                </AppRow>
 
-                <IonRow className="flex items-center justify-center w-full">
-                    <IonCol className="flex items-center justify-center">
+                <AppRow className="flex items-center justify-center w-full">
+                    <AppCol className="flex items-center justify-center">
                         <button
                             onClick={openPP}
                             className={`text-${primaryColor} font-bold text-sm`}
@@ -537,8 +538,8 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                         >
                             {m['legal.termsOfService']()}
                         </button>
-                    </IonCol>
-                </IonRow>
+                    </AppCol>
+                </AppRow>
             </section>
         </>
     );

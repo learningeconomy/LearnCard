@@ -1,7 +1,7 @@
 import React from 'react';
 import { useHistory } from 'react-router-dom';
 
-import { IonRow } from '@ionic/react';
+import { AppRow } from '../../../layout';
 import BoostCMSAppearanceController from '../boostCMSForms/boostCMSAppearance/BoostCMSAppearanceController';
 
 import { BoostCMSState } from '../../boost';
@@ -32,17 +32,17 @@ export const BoostSuccessConfirmation: React.FC<{
     const isMembership = state?.basicInfo?.type === BoostCategoryOptionsEnum.membership;
 
     return (
-        <IonRow className="w-full flex flex-col items-center justify-center">
+        <AppRow className="w-full flex flex-col items-center justify-center">
             <div className="w-full bg-white rounded-[20px] shadow-3xl max-w-[600px]">
                 <div className="flex items-center justify-center">
                     {isID || isMembership ? (
-                        <IonRow className="w-full flex flex-col items-center justify-center">
+                        <AppRow className="w-full flex flex-col items-center justify-center">
                             <BoostCMSIDCard
                                 state={state}
                                 idClassName="p-0 m-0 mt-4 boost-id-preview-body min-h-[160px]"
                                 idFooterClassName="p-0 m-0 boost-id-preview-footer mb-4"
                             />
-                        </IonRow>
+                        </AppRow>
                     ) : (
                         <BoostCMSAppearanceController
                             state={state}
@@ -114,7 +114,7 @@ export const BoostSuccessConfirmation: React.FC<{
                     </button>
                 </div>
             </div>
-        </IonRow>
+        </AppRow>
     );
 };
 

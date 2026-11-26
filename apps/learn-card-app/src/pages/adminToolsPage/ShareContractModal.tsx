@@ -1,7 +1,7 @@
 import React from 'react';
 import { Clipboard } from '@capacitor/clipboard';
 
-import { IonCol, IonRow } from '@ionic/react';
+import { AppCol, AppRow } from '../../components/layout';
 import { QRCodeSVG } from 'qrcode.react';
 import CopyStack from '../../components/svgs/CopyStack';
 
@@ -76,8 +76,8 @@ const ShareContractModal: React.FC<ShareContractModalProps> = ({ contract }) => 
                 </div>
             </div>
 
-            <IonRow className="flex items-center justify-center w-full bg-grayscale-100 rounded-[15px] max-w-[400px]">
-                <IonCol className="w-full flex items-center justify-between px-4 rounded-2xl">
+            <AppRow className="flex items-center justify-center w-full bg-grayscale-100 rounded-[15px] max-w-[400px]">
+                <AppCol className="w-full flex items-center justify-between px-4 rounded-2xl">
                     <div className="w-[80%] flex flex-col justify-center items-start text-left">
                         <p className="text-grayscale-500 font-medium text-sm">Share URL</p>
                         <p className="w-full text-grayscale-900 line-clamp-1 tracking-widest">
@@ -90,11 +90,11 @@ const ShareContractModal: React.FC<ShareContractModalProps> = ({ contract }) => 
                     >
                         <CopyStack className="w-[32px] h-[32px] text-grayscale-900" />
                     </div>
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
 
-            <IonRow className="flex items-center justify-center w-full bg-grayscale-100 rounded-[15px] max-w-[400px]">
-                <IonCol className="w-full flex items-center justify-between px-4 rounded-2xl">
+            <AppRow className="flex items-center justify-center w-full bg-grayscale-100 rounded-[15px] max-w-[400px]">
+                <AppCol className="w-full flex items-center justify-between px-4 rounded-2xl">
                     <div className="w-[80%] flex flex-col justify-center items-start text-left">
                         <p className="text-grayscale-500 font-medium text-sm">Contract URI</p>
                         <p className="w-full text-grayscale-900 line-clamp-1 tracking-widest">
@@ -107,8 +107,8 @@ const ShareContractModal: React.FC<ShareContractModalProps> = ({ contract }) => 
                     >
                         <CopyStack className="w-[32px] h-[32px] text-grayscale-900" />
                     </div>
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
         </div>
     );
 };

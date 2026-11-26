@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { z } from 'zod';
 
-import { IonRow, IonGrid } from '@ionic/react';
+import { AppGrid, AppRow } from '../../../../layout';
 import { AppInput } from '../../../../controls/AppInput';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 
@@ -133,10 +133,10 @@ const BoostCMSCategoryAndTypeSelector: React.FC<CategoryAndTypeSelectorProps> = 
     };
 
     return (
-        <IonGrid
+        <AppGrid
             className={`w-full h-full ion-no-padding bg-${color} flex justify-center items-start overflow-y-auto`}
         >
-            <IonRow
+            <AppRow
                 className={`w-full flex flex-col items-center justify-center max-w-[600px] ion-padding bg-${color}`}
             >
                 <div className="w-full ion-padding bg-white rounded-tr-[20px] rounded-tl-[20px] mb-0 relative">
@@ -292,8 +292,8 @@ const BoostCMSCategoryAndTypeSelector: React.FC<CategoryAndTypeSelectorProps> = 
                                 );
                             })}
                 </div>
-            </IonRow>
-        </IonGrid>
+            </AppRow>
+        </AppGrid>
     );
 };
 

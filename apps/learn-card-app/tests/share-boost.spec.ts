@@ -12,7 +12,7 @@ test.describe('Share boost link', () => {
         await page.getByRole('button', { name: 'Charmer' }).click();
         await page.getByRole('button', { name: 'Next' }).click();
         await page.getByRole('button', { name: 'Publish & Issue' }).click();
-        await page.locator('ion-col').filter({ hasText: 'Issue To' }).getByRole('button').click();
+        await page.locator('.app-col').filter({ hasText: 'Issue To' }).getByRole('button').click();
         await page.getByRole('button', { name: 'Boost Myself' }).click();
         await page.getByRole('button', { name: 'Save' }).click();
         try {

@@ -1,5 +1,6 @@
 import useLogout from '../../hooks/useLogout';
-import { IonLoading, IonRow } from '@ionic/react';
+import { IonLoading } from '@ionic/react';
+import { AppRow } from '../layout';
 
 const ErrorLogout: React.FC = () => {
     const { handleLogout, isLoggingOut } = useLogout();
@@ -12,7 +13,7 @@ const ErrorLogout: React.FC = () => {
 
     return (
         <div className="w-full h-full transparent flex items-center justify-center">
-            <IonRow className="flex h-full flex-col items-center justify-center px-[20px]">
+            <AppRow className="flex h-full flex-col items-center justify-center px-[20px]">
                 <div
                     className={`shadow-3xl relative p-[20px] flex w-full max-w-[400px] flex-col items-start justify-start overflow-hidden rounded-[20px] bg-white`}
                 >
@@ -30,7 +31,7 @@ const ErrorLogout: React.FC = () => {
                     </div>
                     <IonLoading mode="ios" message="Logging out..." isOpen={isLoggingOut} />
                 </div>
-            </IonRow>
+            </AppRow>
         </div>
     );
 };

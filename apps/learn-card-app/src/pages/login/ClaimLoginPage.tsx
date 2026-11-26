@@ -6,7 +6,8 @@ import {
     useDeviceTypeByWidth,
 } from 'learn-card-base';
 
-import { IonContent, IonGrid, IonPage } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
+import { AppGrid } from '../../components/layout';
 
 import {
     SomeoneSentYouACredentialRequest,
@@ -41,7 +42,7 @@ const ClaimLoginPage: React.FC<{
                 className="flex flex-col grow"
                 style={{ '--background': loginBgColor } as React.CSSProperties}
             >
-                <IonGrid
+                <AppGrid
                     className="h-full w-full flex items-center justify-center"
                     style={{ backgroundColor: loginBgColor }}
                 >
@@ -61,7 +62,7 @@ const ClaimLoginPage: React.FC<{
                             </div>
                         </>
                     )}
-                </IonGrid>
+                </AppGrid>
             </IonContent>
         </IonPage>
     );

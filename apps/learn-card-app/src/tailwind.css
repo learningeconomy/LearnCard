@@ -2,6 +2,8 @@
 @import 'tailwindcss/theme.css' layer(theme);
 @import 'tailwindcss/preflight.css';
 @import '../../../packages/learn-card-base/src/assets/styles/tailwind-ionic-compat.css';
+/* AppGrid / AppRow / AppCol host rules: same cascade position as the compat sheet (see layout.css). */
+@import './components/layout/layout.css';
 @import 'tailwindcss/utilities.css' source(none);
 @import '../../../packages/learn-card-base/src/assets/styles/tailwind-v3-compat.css';
 @source "./**/*.{js,jsx,ts,tsx}";

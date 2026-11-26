@@ -1,7 +1,8 @@
 import * as m from '../../paraglide/messages.js';
 import React from 'react';
 
-import { IonLabel, IonRow, IonSegment, IonSegmentButton } from '@ionic/react';
+import { IonLabel, IonSegment, IonSegmentButton } from '@ionic/react';
+import { AppRow } from '../layout';
 
 export enum LearnCardIDCMSTabsEnum {
     dark = 'dark',
@@ -14,7 +15,7 @@ const LearnCardIDCMSTabs: React.FC<{
     handleTabSwitch: (tab: LearnCardIDCMSTabsEnum) => void;
 }> = ({ activeTab, handleTabSwitch }) => {
     return (
-        <IonRow className="flex w-full items-center justify-center bg-white mt-4">
+        <AppRow className="flex w-full items-center justify-center bg-white mt-4">
             <IonSegment
                 onIonChange={e => {
                     handleTabSwitch(e.detail.value);
@@ -60,7 +61,7 @@ const LearnCardIDCMSTabs: React.FC<{
                     </IonLabel>
                 </IonSegmentButton>
             </IonSegment>
-        </IonRow>
+        </AppRow>
     );
 };
 

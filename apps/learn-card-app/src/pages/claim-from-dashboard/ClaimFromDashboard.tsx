@@ -4,15 +4,8 @@ import { useHistory, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
 import { VC, UnsignedVP } from '@learncard/types';
 import { getVCDisplayCardVariant } from '@learncard/react';
-import {
-    IonLoading,
-    IonContent,
-    IonPage,
-    IonRow,
-    IonFooter,
-    IonToolbar,
-    useIonModal,
-} from '@ionic/react';
+import { IonLoading, IonContent, IonPage, IonFooter, IonToolbar, useIonModal } from '@ionic/react';
+import { AppRow } from '../../components/layout';
 
 import { getLogger } from 'learn-card-base';
 const log = getLogger('claim-from-dashboard');
@@ -542,7 +535,7 @@ const ClaimFromDashboard: React.FC = () => {
                 className="w-full flex justify-center items-center p-[15px] ion-no-border absolute bottom-0"
             >
                 <IonToolbar color="transparent" mode="ios">
-                    <IonRow className="relative z-10 w-full flex flex-nowrap justify-center items-center gap-4">
+                    <AppRow className="relative z-10 w-full flex flex-nowrap justify-center items-center gap-4">
                         <button
                             onClick={() => {
                                 completeClaimAttempt(
@@ -593,7 +586,7 @@ const ClaimFromDashboard: React.FC = () => {
                                 <FatArrow direction="left" />
                             )}
                         </button>
-                    </IonRow>
+                    </AppRow>
                 </IonToolbar>
             </IonFooter>
         </IonPage>

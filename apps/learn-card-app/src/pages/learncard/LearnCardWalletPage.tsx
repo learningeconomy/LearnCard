@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import * as m from '../../paraglide/messages.js';
-import { IonContent, IonPage, IonRow, IonCol } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
+import { AppCol, AppRow } from '../../components/layout';
 
 import {
     LearnCard,
@@ -14,17 +15,17 @@ import MainHeader from '../../components/main-header/MainHeader';
 
 const LearnCardWalletPage: React.FC = () => {
     const [isActivityHeaderFixed, setIsActivityHeaderFixed] = useState<boolean>(false);
-    const activityContainer = useRef<HTMLIonRowElement>(null);
+    const activityContainer = useRef<HTMLDivElement>(null);
 
     const activityHeader = (
-        <IonRow className="w-full flex items-center justify-center">
-            <IonCol className="flex items-center justify-between w-full z-10 max-w-[500px]">
+        <AppRow className="w-full flex items-center justify-center">
+            <AppCol className="flex items-center justify-between w-full z-10 max-w-[500px]">
                 <h2 className="text-grayscale-900 font-bold text-lg">Recent Activity</h2>
                 <button className="text-grayscale-900 font-bold text-lg">
                     {m['common.viewAll']()}
                 </button>
-            </IonCol>
-        </IonRow>
+            </AppCol>
+        </AppRow>
     );
 
     return (

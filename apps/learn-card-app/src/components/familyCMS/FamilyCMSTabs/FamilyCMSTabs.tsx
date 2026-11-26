@@ -1,6 +1,7 @@
 import React from 'react';
 
-import { IonLabel, IonRow, IonSegment, IonSegmentButton } from '@ionic/react';
+import { IonLabel, IonSegment, IonSegmentButton } from '@ionic/react';
+import { AppRow } from '../../layout';
 import { m } from '../../../paraglide/messages.js';
 
 export enum FamilyCMSTabsEnum {
@@ -13,7 +14,7 @@ const FamilyCMSTabs: React.FC<{
     setActiveTab: React.Dispatch<React.SetStateAction<FamilyCMSTabsEnum>>;
 }> = ({ activeTab, setActiveTab }) => {
     return (
-        <IonRow className="flex w-full items-center justify-center bg-white">
+        <AppRow className="flex w-full items-center justify-center bg-white">
             <IonSegment
                 onIonChange={e => {
                     setActiveTab(e.detail.value);
@@ -47,7 +48,7 @@ const FamilyCMSTabs: React.FC<{
                     </IonLabel>
                 </IonSegmentButton>
             </IonSegment>
-        </IonRow>
+        </AppRow>
     );
 };
 

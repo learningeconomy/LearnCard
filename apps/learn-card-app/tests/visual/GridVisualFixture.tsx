@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { IonApp, IonCol, IonGrid, IonRow } from '@ionic/react';
+import { IonApp } from '@ionic/react';
+import { AppCol, AppGrid, AppRow } from '../../src/components/layout';
 import { CredentialCategoryEnum } from 'learn-card-base';
 
 import LaunchPadHeaderTitle from '../../src/pages/launchPad/LaunchPadHeader/LaunchPadHeaderTitle';
@@ -61,13 +62,13 @@ const Frame: React.FC<{
 const ClickRow: React.FC = () => {
     const [clicks, setClicks] = useState(0);
     return (
-        <IonGrid>
-            <IonRow role="button" onClick={() => setClicks(c => c + 1)} data-testid="click-row">
-                <IonCol>
+        <AppGrid>
+            <AppRow role="button" onClick={() => setClicks(c => c + 1)} data-testid="click-row">
+                <AppCol>
                     <Box label={`role=button row, clicks: ${clicks}`} />
-                </IonCol>
-            </IonRow>
-        </IonGrid>
+                </AppCol>
+            </AppRow>
+        </AppGrid>
     );
 };
 
@@ -77,99 +78,99 @@ export const GridVisualFixture: React.FC = () => (
 
         <Block testId="g1-sizes" title="Column sizes (synthetic)">
             <Frame label="equal">
-                <IonGrid>
-                    <IonRow>
-                        <IonCol>
+                <AppGrid>
+                    <AppRow>
+                        <AppCol>
                             <Box i={0} label="auto-equal" />
-                        </IonCol>
-                        <IonCol>
+                        </AppCol>
+                        <AppCol>
                             <Box i={1} label="auto-equal" />
-                        </IonCol>
-                        <IonCol>
+                        </AppCol>
+                        <AppCol>
                             <Box i={2} label="auto-equal" />
-                        </IonCol>
-                    </IonRow>
-                    <IonRow>
-                        <IonCol size="12">
+                        </AppCol>
+                    </AppRow>
+                    <AppRow>
+                        <AppCol size="12">
                             <Box i={3} label="12" />
-                        </IonCol>
-                        <IonCol size="6">
+                        </AppCol>
+                        <AppCol size="6">
                             <Box i={4} label="6" />
-                        </IonCol>
-                        <IonCol size="6">
+                        </AppCol>
+                        <AppCol size="6">
                             <Box i={5} label="6" />
-                        </IonCol>
-                        <IonCol size="9">
+                        </AppCol>
+                        <AppCol size="9">
                             <Box i={0} label="9" />
-                        </IonCol>
-                        <IonCol size="3">
+                        </AppCol>
+                        <AppCol size="3">
                             <Box i={1} label="3" />
-                        </IonCol>
-                        <IonCol size="2">
+                        </AppCol>
+                        <AppCol size="2">
                             <Box i={2} label="2" />
-                        </IonCol>
-                        <IonCol size="10">
+                        </AppCol>
+                        <AppCol size="10">
                             <Box i={3} label="10" />
-                        </IonCol>
-                        <IonCol size="11">
+                        </AppCol>
+                        <AppCol size="11">
                             <Box i={4} label="11" />
-                        </IonCol>
-                        <IonCol>
+                        </AppCol>
+                        <AppCol>
                             <Box i={5} label="rest" />
-                        </IonCol>
-                    </IonRow>
-                    <IonRow>
-                        <IonCol size="auto">
+                        </AppCol>
+                    </AppRow>
+                    <AppRow>
+                        <AppCol size="auto">
                             <Box i={0} label="auto: shrink to content" />
-                        </IonCol>
-                        <IonCol>
+                        </AppCol>
+                        <AppCol>
                             <Box i={1} label="grow" />
-                        </IonCol>
-                        <IonCol size="auto">
+                        </AppCol>
+                        <AppCol size="auto">
                             <Box i={2} label="auto" />
-                        </IonCol>
-                    </IonRow>
-                </IonGrid>
+                        </AppCol>
+                    </AppRow>
+                </AppGrid>
             </Frame>
         </Block>
 
         <Block testId="g1-responsive" title="Breakpoint sizes, offset, push, pull (synthetic)">
             <Frame label="responsive">
-                <IonGrid>
-                    <IonRow>
-                        <IonCol sizeXs="12" sizeSm="10" sizeMd="8" sizeLg="6">
+                <AppGrid>
+                    <AppRow>
+                        <AppCol sizeXs="12" sizeSm="10" sizeMd="8" sizeLg="6">
                             <Box i={0} label="xs12 sm10 md8 lg6" />
-                        </IonCol>
-                        <IonCol size="6" size-sm={4} size-md={4} size-lg={3}>
+                        </AppCol>
+                        <AppCol size="6" sizeSm={4} sizeMd={4} sizeLg={3}>
                             <Box i={1} label="6 / size-sm 4 / size-md 4 / size-lg 3 (kebab)" />
-                        </IonCol>
-                        <IonCol size="6" size-sm="4" size-md="4" size-lg="3">
+                        </AppCol>
+                        <AppCol size="6" sizeSm="4" sizeMd="4" sizeLg="3">
                             <Box i={2} label="kebab strings" />
-                        </IonCol>
-                        <IonCol size="12" sizeMd="auto" sizeXl="4">
+                        </AppCol>
+                        <AppCol size="12" sizeMd="auto" sizeXl="4">
                             <Box i={3} label="12 / md auto / xl 4" />
-                        </IonCol>
-                    </IonRow>
-                    <IonRow>
-                        <IonCol size="4" offset="2">
+                        </AppCol>
+                    </AppRow>
+                    <AppRow>
+                        <AppCol size="4" offset="2">
                             <Box i={4} label="4 offset 2" />
-                        </IonCol>
-                        <IonCol size="4" offsetMd="4" offsetXl="0">
+                        </AppCol>
+                        <AppCol size="4" offsetMd="4" offsetXl="0">
                             <Box i={5} label="4 offset-md 4 offset-xl 0" />
-                        </IonCol>
-                    </IonRow>
-                    <IonRow>
-                        <IonCol size="9" push="3">
+                        </AppCol>
+                    </AppRow>
+                    <AppRow>
+                        <AppCol size="9" push="3">
                             <Box i={0} label="9 push 3" />
-                        </IonCol>
-                        <IonCol size="3" pull="9" pullLg="0">
+                        </AppCol>
+                        <AppCol size="3" pull="9" pullLg="0">
                             <Box i={1} label="3 pull 9 pull-lg 0" />
-                        </IonCol>
-                        <IonCol size="6" pushSm="6" sizeSm="3">
+                        </AppCol>
+                        <AppCol size="6" pushSm="6" sizeSm="3">
                             <Box i={2} label="6 / sm 3 push-sm 6" />
-                        </IonCol>
-                    </IonRow>
-                </IonGrid>
+                        </AppCol>
+                    </AppRow>
+                </AppGrid>
             </Frame>
         </Block>
 
@@ -178,19 +179,19 @@ export const GridVisualFixture: React.FC = () => (
             title="Grid fixed, custom properties and padding classes (synthetic)"
         >
             <Frame label="fixed">
-                <IonGrid fixed>
-                    <IonRow>
-                        <IonCol>
+                <AppGrid fixed>
+                    <AppRow>
+                        <AppCol>
                             <Box i={0} label="fixed grid" />
-                        </IonCol>
-                        <IonCol>
+                        </AppCol>
+                        <AppCol>
                             <Box i={1} label="fixed grid" />
-                        </IonCol>
-                    </IonRow>
-                </IonGrid>
+                        </AppCol>
+                    </AppRow>
+                </AppGrid>
             </Frame>
             <Frame label="fixed-vars">
-                <IonGrid
+                <AppGrid
                     fixed
                     style={
                         {
@@ -199,15 +200,15 @@ export const GridVisualFixture: React.FC = () => (
                         } as React.CSSProperties
                     }
                 >
-                    <IonRow>
-                        <IonCol>
+                    <AppRow>
+                        <AppCol>
                             <Box i={2} label="--ion-grid-width 300 / md 600" />
-                        </IonCol>
-                    </IonRow>
-                </IonGrid>
+                        </AppCol>
+                    </AppRow>
+                </AppGrid>
             </Frame>
             <Frame label="padding-vars">
-                <IonGrid
+                <AppGrid
                     style={
                         {
                             '--ion-grid-padding': '12px',
@@ -217,78 +218,78 @@ export const GridVisualFixture: React.FC = () => (
                         } as React.CSSProperties
                     }
                 >
-                    <IonRow>
-                        <IonCol>
+                    <AppRow>
+                        <AppCol>
                             <Box i={3} label="grid 12/md24, col 9/lg2" />
-                        </IonCol>
-                        <IonCol>
+                        </AppCol>
+                        <AppCol>
                             <Box i={4} label="grid 12/md24, col 9/lg2" />
-                        </IonCol>
-                    </IonRow>
-                </IonGrid>
+                        </AppCol>
+                    </AppRow>
+                </AppGrid>
             </Frame>
             <Frame label="columns-var">
-                <IonGrid style={{ '--ion-grid-columns': '6' } as React.CSSProperties}>
-                    <IonRow>
-                        <IonCol size="2">
+                <AppGrid style={{ '--ion-grid-columns': '6' } as React.CSSProperties}>
+                    <AppRow>
+                        <AppCol size="2">
                             <Box i={5} label="2 of 6" />
-                        </IonCol>
-                        <IonCol size="4">
+                        </AppCol>
+                        <AppCol size="4">
                             <Box i={0} label="4 of 6" />
-                        </IonCol>
-                        <IonCol size="3" offset="3">
+                        </AppCol>
+                        <AppCol size="3" offset="3">
                             <Box i={1} label="3 offset 3 of 6" />
-                        </IonCol>
-                    </IonRow>
-                </IonGrid>
+                        </AppCol>
+                    </AppRow>
+                </AppGrid>
             </Frame>
             <Frame label="no-padding">
-                <IonGrid className="ion-no-padding">
-                    <IonRow>
-                        <IonCol>
+                <AppGrid className="ion-no-padding">
+                    <AppRow>
+                        <AppCol>
                             <Box i={2} label="ion-no-padding grid" />
-                        </IonCol>
-                        <IonCol className="ion-padding">
+                        </AppCol>
+                        <AppCol className="ion-padding">
                             <Box i={3} label="ion-padding col" />
-                        </IonCol>
-                    </IonRow>
-                </IonGrid>
+                        </AppCol>
+                    </AppRow>
+                </AppGrid>
             </Frame>
             {/* tests/visual/main.tsx credential-gutters / explicit-grid-spacing */}
             <Frame label="gutters">
-                <IonGrid className="max-w-[600px] pt-[20px]">
-                    <IonRow>
+                <AppGrid className="max-w-[600px] pt-[20px]">
+                    <AppRow>
                         {[0, 1, 2, 3].map(index => (
-                            <IonCol size="6" key={index}>
+                            <AppCol size="6" key={index}>
                                 <Box i={index} label="gutter card" h={60} />
-                            </IonCol>
+                            </AppCol>
                         ))}
-                    </IonRow>
-                </IonGrid>
-                <IonGrid className="p-0 m-0">
-                    <IonRow>
-                        <IonCol className="p-0">
+                    </AppRow>
+                </AppGrid>
+                <AppGrid className="p-0 m-0">
+                    <AppRow>
+                        <AppCol className="p-0">
                             <Box i={4} label="p-0 m-0 grid, p-0 col" />
-                        </IonCol>
-                    </IonRow>
-                </IonGrid>
+                        </AppCol>
+                    </AppRow>
+                </AppGrid>
             </Frame>
             <Frame label="space-y">
                 <div className="space-y-4">
-                    <IonGrid>
-                        <IonRow>
-                            <IonCol>
+                    <AppGrid>
+                        <AppRow>
+                            <AppCol>
                                 <Box i={5} label="space-y-4 child grid 1" />
-                            </IonCol>
-                        </IonRow>
-                    </IonGrid>
-                    <IonGrid>
-                        <IonRow>
-                            <IonCol>
+                            </AppCol>
+                        </AppRow>
+                    </AppGrid>
+                    <AppGrid>
+                        <AppRow>
+                            <AppCol>
                                 <Box i={0} label="space-y-4 child grid 2" />
-                            </IonCol>
-                        </IonRow>
-                    </IonGrid>
+                            </AppCol>
+                        </AppRow>
+                    </AppGrid>
                 </div>
             </Frame>
         </Block>
@@ -298,58 +299,58 @@ export const GridVisualFixture: React.FC = () => (
             title="Row alignment classes, nesting, styles and clicks (synthetic)"
         >
             <Frame label="align">
-                <IonGrid>
-                    <IonRow
+                <AppGrid>
+                    <AppRow
                         className="ion-align-items-center ion-justify-content-between"
                         style={{ height: 80 }}
                     >
-                        <IonCol size="3">
+                        <AppCol size="3">
                             <Box i={1} label="center / between" />
-                        </IonCol>
-                        <IonCol size="3">
+                        </AppCol>
+                        <AppCol size="3">
                             <Box i={2} label="center / between" h={48} />
-                        </IonCol>
-                    </IonRow>
-                    <IonRow className="ion-nowrap">
-                        <IonCol size="8">
+                        </AppCol>
+                    </AppRow>
+                    <AppRow className="ion-nowrap">
+                        <AppCol size="8">
                             <Box i={3} label="ion-nowrap 8" />
-                        </IonCol>
-                        <IonCol size="8">
+                        </AppCol>
+                        <AppCol size="8">
                             <Box i={4} label="ion-nowrap 8" />
-                        </IonCol>
-                    </IonRow>
-                    <IonRow className="flex items-center justify-center flex-col w-full px-4">
-                        <IonCol className="flex items-center justify-start w-full max-w-[600px]">
+                        </AppCol>
+                    </AppRow>
+                    <AppRow className="flex items-center justify-center flex-col w-full px-4">
+                        <AppCol className="flex items-center justify-start w-full max-w-[600px]">
                             <Box i={5} label="Tailwind flex-col row" />
-                        </IonCol>
-                    </IonRow>
-                    <IonRow className="w-full max-w-[600px]">
-                        <IonCol className="flex items-center justify-between w-full ion-padding">
+                        </AppCol>
+                    </AppRow>
+                    <AppRow className="w-full max-w-[600px]">
+                        <AppCol className="flex items-center justify-between w-full ion-padding">
                             <Box i={0} label="class= excerpt (ConsentFlowShareDurationModal)" />
-                        </IonCol>
-                    </IonRow>
-                </IonGrid>
+                        </AppCol>
+                    </AppRow>
+                </AppGrid>
             </Frame>
             <Frame label="nested" style={{ height: 200 }}>
-                <IonGrid style={{ height: '100%' }}>
-                    <IonRow
+                <AppGrid style={{ height: '100%' }}>
+                    <AppRow
                         style={{ height: '100%' }}
                         className="ion-justify-content-center ion-align-items-center"
                     >
-                        <IonCol size="8" style={{ backgroundColor: '#e2e8f0' }}>
-                            <IonGrid>
-                                <IonRow>
-                                    <IonCol size="6">
+                        <AppCol size="8" style={{ backgroundColor: '#e2e8f0' }}>
+                            <AppGrid>
+                                <AppRow>
+                                    <AppCol size="6">
                                         <Box i={1} label="nested 6" />
-                                    </IonCol>
-                                    <IonCol size="6">
+                                    </AppCol>
+                                    <AppCol size="6">
                                         <Box i={2} label="nested 6" />
-                                    </IonCol>
-                                </IonRow>
-                            </IonGrid>
-                        </IonCol>
-                    </IonRow>
-                </IonGrid>
+                                    </AppCol>
+                                </AppRow>
+                            </AppGrid>
+                        </AppCol>
+                    </AppRow>
+                </AppGrid>
             </Frame>
             <ClickRow />
         </Block>
@@ -357,46 +358,46 @@ export const GridVisualFixture: React.FC = () => (
         {/* InteractionsPage.tsx:184-192, MainHeader.tsx:133-169, WalletPage.tsx:268-276 */}
         <Block testId="g1-excerpts" title="Call-site excerpts">
             <Frame label="interactions" style={{ height: 220 }}>
-                <IonGrid style={{ height: '100%' }}>
-                    <IonRow
+                <AppGrid style={{ height: '100%' }}>
+                    <AppRow
                         className="ion-justify-content-center ion-align-items-center"
                         style={{ height: '100%' }}
                     >
-                        <IonCol sizeXs="12" sizeSm="10" sizeMd="8" sizeLg="6">
+                        <AppCol sizeXs="12" sizeSm="10" sizeMd="8" sizeLg="6">
                             <Box i={0} label="Interaction error card" h={120} />
-                        </IonCol>
-                    </IonRow>
-                </IonGrid>
+                        </AppCol>
+                    </AppRow>
+                </AppGrid>
             </Frame>
             <Frame label="main-header">
-                <IonGrid className="bg-white" style={{ paddingTop: 5 }}>
-                    <IonRow>
-                        <IonCol size="2" className="flex justify-start items-center">
+                <AppGrid className="bg-white" style={{ paddingTop: 5 }}>
+                    <AppRow>
+                        <AppCol size="2" className="flex justify-start items-center">
                             <Box i={1} label="menu" />
-                        </IonCol>
-                        <IonCol size="10" className="flex justify-end items-center gap-2">
+                        </AppCol>
+                        <AppCol size="10" className="flex justify-end items-center gap-2">
                             <Box i={2} label="actions" />
                             <Box i={3} label="avatar" />
-                        </IonCol>
-                    </IonRow>
-                </IonGrid>
+                        </AppCol>
+                    </AppRow>
+                </AppGrid>
             </Frame>
             <Frame label="wallet">
-                <IonRow className="wallet-squares-wrapper max-w-[840px] mx-auto mt-[16px]">
-                    <IonCol className="wallet-squares-container grid">
+                <AppRow className="wallet-squares-wrapper max-w-[840px] mx-auto mt-[16px]">
+                    <AppCol className="wallet-squares-container grid">
                         <Box i={4} label="wallet squares" h={60} />
-                    </IonCol>
-                </IonRow>
+                    </AppCol>
+                </AppRow>
             </Frame>
             <Frame label="login-bg">
-                <IonGrid
+                <AppGrid
                     className="flex items-center justify-center flex-col w-full px-4 pb-14"
                     style={{ backgroundColor: '#1e293b' }}
                 >
-                    <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4">
+                    <AppRow className="w-full max-w-[500px] flex items-center justify-center px-4">
                         <Box i={5} label="login form row" />
-                    </IonRow>
-                </IonGrid>
+                    </AppRow>
+                </AppGrid>
             </Frame>
         </Block>
 
@@ -410,17 +411,17 @@ export const GridVisualFixture: React.FC = () => (
                 <CenteredSubHeader subheaderType={SubheaderTypeEnum.Skill} />
             </Frame>
             <Frame label="new-boost">
-                <IonGrid>
-                    <IonRow>
+                <AppGrid>
+                    <AppRow>
                         <NewBoostButton
                             credentialType={CredentialCategoryEnum.achievement}
                             onClick={() => undefined}
                         />
-                        <IonCol size="6" size-sm={4} size-md={4} size-lg={4}>
+                        <AppCol size="6" sizeSm={4} sizeMd={4} sizeLg={4}>
                             <Box i={0} label="sibling card" h={280} />
-                        </IonCol>
-                    </IonRow>
-                </IonGrid>
+                        </AppCol>
+                    </AppRow>
+                </AppGrid>
             </Frame>
         </Block>
     </main>

@@ -5,7 +5,7 @@ import { useHistory } from 'react-router-dom';
 import useBoost from '../hooks/useBoost';
 import useManagedBoost from 'apps/learn-card-app/src/hooks/useManagedBoost';
 
-import { IonCol } from '@ionic/react';
+import { AppCol } from '../../layout';
 
 import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 import { BoostSmallCard } from '@learncard/react';
@@ -227,11 +227,11 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
     return (
         <ErrorBoundary fallback={<div>Something went wrong</div>}>
             {isCardView && (
-                <IonCol
+                <AppCol
                     size="6"
-                    size-sm={sizeSm}
-                    size-md={sizeMd}
-                    size-lg={sizeLg}
+                    sizeSm={sizeSm}
+                    sizeMd={sizeMd}
+                    sizeLg={sizeLg}
                     className="flex justify-center items-center relative"
                 >
                     <BoostSmallCard
@@ -308,7 +308,7 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
                         issueHistory={issueHistory}
                         type={type}
                     />
-                </IonCol>
+                </AppCol>
             )}
             {!isCardView && (
                 <BoostListItem

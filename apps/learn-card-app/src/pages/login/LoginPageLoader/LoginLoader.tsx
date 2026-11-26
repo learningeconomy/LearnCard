@@ -5,7 +5,8 @@ import { shuffle } from 'lodash-es';
 import * as m from '../../../paraglide/messages.js';
 import { useLocale } from '../../../i18n';
 
-import { IonContent, IonPage, IonRow } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
+import { AppRow } from '../../../components/layout';
 import { useTenantBrandingAssets } from '../../../config/brandingAssets';
 
 import themeStore from '../../../theme/store/themeStore';
@@ -50,7 +51,7 @@ export const LoginLoadingPage: React.FC = () => {
     return (
         <IonPage>
             <IonContent fullscreen className="flex items-center justify-center">
-                <IonRow
+                <AppRow
                     className="h-full w-full transition-colors duration-1000 ease-in-out flex items-center justify-center text-white text-2xl"
                     style={{ backgroundColor: colors[currentColorIndex] }}
                 >
@@ -72,7 +73,7 @@ export const LoginLoadingPage: React.FC = () => {
                             />
                         </div>
                     </div>
-                </IonRow>
+                </AppRow>
             </IonContent>
         </IonPage>
     );

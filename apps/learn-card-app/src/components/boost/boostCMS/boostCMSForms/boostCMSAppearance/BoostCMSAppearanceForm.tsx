@@ -15,7 +15,8 @@ import {
 } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
-import { IonRow, IonSpinner, IonGrid } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
+import { AppGrid, AppRow } from '../../../../layout';
 import { CATEGORY_TO_SUBCATEGORY_LIST } from '../../../boost-options/boostOptions';
 
 import BoostCMSIDCard from '../../../boost-id-card/BoostIDCard';
@@ -171,13 +172,13 @@ const BoostCMSAppearanceForm: React.FC<BoostCMSAppearanceFormProps> = ({
     formTitle = m['boost.cms.appearance.title']();
 
     return (
-        <IonGrid
+        <AppGrid
             className="w-full h-full ion-no-padding flex justify-center items-start"
             style={{
                 backgroundColor: formBackgroundColor,
             }}
         >
-            <IonRow
+            <AppRow
                 className="w-full flex flex-col items-center justify-center max-w-[600px] ion-padding"
                 style={{
                     backgroundColor: state?.appearance?.backgroundColor
@@ -347,8 +348,8 @@ const BoostCMSAppearanceForm: React.FC<BoostCMSAppearanceFormProps> = ({
                         {m['common.cancel']()}
                     </button>
                 </div>
-            </IonRow>
-        </IonGrid>
+            </AppRow>
+        </AppGrid>
     );
 };
 

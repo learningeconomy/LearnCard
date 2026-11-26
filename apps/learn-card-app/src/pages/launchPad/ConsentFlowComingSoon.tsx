@@ -2,7 +2,8 @@ import React from 'react';
 
 import { ConsentFlowContractDetails } from '@learncard/types';
 
-import { IonCol, IonRow, IonSkeletonText } from '@ionic/react';
+import { IonSkeletonText } from '@ionic/react';
+import { AppCol, AppRow } from '../../components/layout';
 import RightArrow from 'learn-card-base/svgs/RightArrow';
 import HandshakeIcon from '../../components/svgs/HandshakeIcon';
 
@@ -135,16 +136,16 @@ const ConsentFlowComingSoon: React.FC<ConsentFlowComingSoonProps> = ({
                 <div className="bg-grayscale-200 w-[90%] h-[1px]" />
             </div>
 
-            <IonRow className="flex items-center justify-center mt-4 w-full">
-                <IonCol className="flex flex-col items-center justify-center text-center">
+            <AppRow className="flex items-center justify-center mt-4 w-full">
+                <AppCol className="flex flex-col items-center justify-center text-center">
                     <p className="text-center text-sm font-normal text-grayscale-600">
                         All connections are{' '}
                         <b>
                             <u>encrypted.</u>
                         </b>
                     </p>
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
         </section>
     );
 };

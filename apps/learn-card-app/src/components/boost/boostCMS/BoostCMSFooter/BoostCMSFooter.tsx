@@ -1,7 +1,8 @@
 import React, { useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 
-import { IonToolbar, IonRow, IonCol, IonFooter, IonSpinner } from '@ionic/react';
+import { IonToolbar, IonFooter, IonSpinner } from '@ionic/react';
+import { AppCol, AppRow } from '../../../layout';
 
 import { BoostUserTypeEnum } from '../../boost-options/boostOptions';
 
@@ -46,9 +47,9 @@ const BoostCMSFooter: React.FC<{
     return (
         <IonFooter ref={bottomBarRef}>
             <IonToolbar color={color} className="ion-no-border pt-5">
-                <IonRow className="w-full flex items-center justify-center">
+                <AppRow className="w-full flex items-center justify-center">
                     <div className="w-full max-w-[600px] flex items-center justify-center">
-                        <IonCol size="12" className="w-full flex items-center">
+                        <AppCol size="12" className="w-full flex items-center">
                             <button
                                 onClick={handleSaveAndQuit}
                                 className="flex items-center justify-center bg-white rounded-full px-[18px] py-[8px] text-grayscale-900 font-poppins text-xl shadow-lg normal tracking-wide mr-3 text-center boost-save-quit-btn"
@@ -121,9 +122,9 @@ const BoostCMSFooter: React.FC<{
                                     </p>
                                 )}
                             </button>
-                        </IonCol>
+                        </AppCol>
                     </div>
-                </IonRow>
+                </AppRow>
             </IonToolbar>
         </IonFooter>
     );

@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 
 import useGoogle from 'react-google-autocomplete/lib/usePlacesAutocompleteService';
 
-import { IonCol, IonContent, IonGrid, IonHeader, IonPage, IonRow, IonToolbar } from '@ionic/react';
+import { IonContent, IonHeader, IonPage, IonToolbar } from '@ionic/react';
+import { AppCol, AppGrid, AppRow } from '../layout';
 import { AppInput } from '../controls/AppInput';
 import GoogleLogo from 'learn-card-base/assets/images/google-logo.png';
 import X from 'learn-card-base/svgs/X';
@@ -53,15 +54,15 @@ const LocationSearch: React.FC<{
         <IonPage className="bg-white">
             <IonHeader className="learn-card-header ion-no-border my-[0px]">
                 <IonToolbar className="ion-no-border bg-white " color="white">
-                    <IonGrid className="bg-white">
-                        <IonRow className="w-full flex items-center justify-center">
-                            <IonRow className="flex flex-col w-full max-w-[600px]">
+                    <AppGrid className="bg-white">
+                        <AppRow className="w-full flex items-center justify-center">
+                            <AppRow className="flex flex-col w-full max-w-[600px]">
                                 {showCloseButton && (
-                                    <IonCol className="flex flex-1 justify-end items-center">
+                                    <AppCol className="flex flex-1 justify-end items-center">
                                         <button onClick={handleCloseModal}>
                                             <X className="text-grayscale-600 h-6 w-6" />
                                         </button>
-                                    </IonCol>
+                                    </AppCol>
                                 )}
 
                                 <div className="flex items-center justify-start w-full mt-4">
@@ -77,9 +78,9 @@ const LocationSearch: React.FC<{
                                         type="text"
                                     />
                                 </div>
-                            </IonRow>
-                        </IonRow>
-                    </IonGrid>
+                            </AppRow>
+                        </AppRow>
+                    </AppGrid>
                 </IonToolbar>
             </IonHeader>
             <IonContent fullscreen>

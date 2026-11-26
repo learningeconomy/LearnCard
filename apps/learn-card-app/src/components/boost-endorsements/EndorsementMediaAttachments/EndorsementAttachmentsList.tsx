@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { IonRow } from '@ionic/react';
+import { AppRow } from '../../layout';
 import EndorsementAttachmentListItem from './EndorsementAttachmentListItem';
 
 import {
@@ -32,7 +32,7 @@ export const EndorsementAttachmentsList: React.FC<{
     const attachments = [...photos, ...videos, ...documents, ...links];
 
     return (
-        <IonRow className="w-full flex flex-col items-center justify-center gap-2">
+        <AppRow className="w-full flex flex-col items-center justify-center gap-2">
             {attachments.map((attachment, index) => (
                 <EndorsementAttachmentListItem
                     key={attachment?.url || index}
@@ -42,7 +42,7 @@ export const EndorsementAttachmentsList: React.FC<{
                     showDeleteButton={showDeleteButton}
                 />
             ))}
-        </IonRow>
+        </AppRow>
     );
 };
 

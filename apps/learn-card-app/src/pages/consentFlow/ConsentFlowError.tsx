@@ -1,5 +1,6 @@
 import React from 'react';
-import { IonFooter, IonRow } from '@ionic/react';
+import { IonFooter } from '@ionic/react';
+import { AppRow } from '../../components/layout';
 
 import SadCloud from '../../components/svgs/SadCloud';
 import CloudWarning from '../../components/svgs/CloudWarning';
@@ -65,9 +66,9 @@ const ConsentFlowError: React.FC<ConsentFlowErrorProps> = ({ errorType, uri }) =
                 mode="ios"
                 className="flex justify-center items-center ion-no-border absolute bottom-0"
             >
-                <IonRow className="relative z-10 w-full flex justify-center items-center gap-8">
+                <AppRow className="relative z-10 w-full flex justify-center items-center gap-8">
                     <ConsentFlowErrorFooter hideRetry={hideRetry} buttonAction={handleRetry} />
-                </IonRow>
+                </AppRow>
             </IonFooter>
         </div>
     );

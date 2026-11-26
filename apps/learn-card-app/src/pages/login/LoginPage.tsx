@@ -46,7 +46,8 @@ import { useSignInAdapter } from 'learn-card-base';
 import { readKeycloakReauth } from '../../auth/keycloakReauth';
 import { getConfigCapabilities } from 'learn-card-base/config/authConfig';
 
-import { IonContent, IonGrid, IonPage, IonRow } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
+import { AppGrid, AppRow } from '../../components/layout';
 import EmailForm from './forms/EmailForm';
 import PhoneForm from './forms/PhoneForm';
 import LoginFooter from './LoginFooter';
@@ -416,7 +417,7 @@ export const LoginContent: React.FC = () => {
 
     return (
         <div className="w-full h-full flex flex-col items-center justify-center p-0 m-0 px-[30px] overflow-y-auto  pt-[150px] pb-[100px] sm:pt-[0px] sm:pb-[0px] ">
-            <IonRow className="p-0 m-0 w-full flex items-center justify-center relative pb-[20px]">
+            <AppRow className="p-0 m-0 w-full flex items-center justify-center relative pb-[20px]">
                 <div className="flex flex-col items-center justify-center w-full">
                     {fullLogoDark ? (
                         <img
@@ -439,9 +440,9 @@ export const LoginContent: React.FC = () => {
                         </>
                     )}
                 </div>
-            </IonRow>
+            </AppRow>
             {showQrLogin && !qrApproved ? (
-                <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4">
+                <AppRow className="w-full max-w-[500px] flex items-center justify-center px-4">
                     <div className="w-full bg-white rounded-[20px] shadow-2xl">
                         <QrLoginRequester
                             serverUrl={getSSSConfig().serverUrl}
@@ -473,9 +474,9 @@ export const LoginContent: React.FC = () => {
                             renderQrCode={data => <QRCodeSVG value={data} size={192} level="M" />}
                         />
                     </div>
-                </IonRow>
+                </AppRow>
             ) : showQrLogin && qrApproved ? (
-                <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4">
+                <AppRow className="w-full max-w-[500px] flex items-center justify-center px-4">
                     <div className="w-full bg-white rounded-[20px] shadow-2xl p-8 text-center font-poppins animate-fade-in-up">
                         <div className="w-16 h-16 mx-auto mb-4 bg-emerald-50 rounded-full flex items-center justify-center">
                             <svg
@@ -522,10 +523,10 @@ export const LoginContent: React.FC = () => {
                             {m['login.qrApproved.continueButton']()}
                         </button>
                     </div>
-                </IonRow>
+                </AppRow>
             ) : (
                 <>
-                    <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
+                    <AppRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
                         <p className="w-full text-center text-sm font-medium text-white">
                             {isNewUserSetup
                                 ? m['login.prompt.newUser']()
@@ -533,10 +534,10 @@ export const LoginContent: React.FC = () => {
                                   ? m['login.prompt.returning']()
                                   : m['login.prompt.default']()}
                         </p>
-                    </IonRow>
+                    </AppRow>
 
                     {showLinkedBanner && (
-                        <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
+                        <AppRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
                             <div className="w-full p-3 bg-black/10 backdrop-blur-xs rounded-[20px] flex items-center justify-center gap-2.5">
                                 <svg
                                     width="16"
@@ -566,11 +567,11 @@ export const LoginContent: React.FC = () => {
                                     )}
                                 </span>
                             </div>
-                        </IonRow>
+                        </AppRow>
                     )}
 
                     {coordinatorState.status === 'awaiting_rebind' && (
-                        <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
+                        <AppRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
                             <div className="w-full p-4 bg-white rounded-[20px] shadow-xl text-center">
                                 <p className="text-sm font-medium text-grayscale-900">
                                     {m['recovery.identity.signInPrompt']()}
@@ -579,11 +580,11 @@ export const LoginContent: React.FC = () => {
                                     {m['recovery.identity.signInPromptDescription']()}
                                 </p>
                             </div>
-                        </IonRow>
+                        </AppRow>
                     )}
 
                     {installIntent?.listingId && (
-                        <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
+                        <AppRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
                             <div className="w-full p-3 bg-black/10 backdrop-blur-xs rounded-[20px] flex items-center gap-3 justify-center">
                                 {installIntent.appIcon && (
                                     <img
@@ -604,12 +605,12 @@ export const LoginContent: React.FC = () => {
                                     />
                                 </span>
                             </div>
-                        </IonRow>
+                        </AppRow>
                     )}
 
                     {((query.get('redirectTo') ?? '').includes('createFamily=true') ||
                         Boolean(query.get('underageFamily'))) && (
-                        <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
+                        <AppRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
                             <div className="w-full p-3 bg-black/10 backdrop-blur-xs rounded-[20px] flex items-start gap-2.5">
                                 <svg
                                     viewBox="0 0 24 24"
@@ -631,10 +632,10 @@ export const LoginContent: React.FC = () => {
                                     add your child.
                                 </span>
                             </div>
-                        </IonRow>
+                        </AppRow>
                     )}
 
-                    <IonRow className="w-full flex flex-col items-center justify-center">
+                    <AppRow className="w-full flex flex-col items-center justify-center">
                         <GenericErrorBoundary hideGoHome>
                             {showSocialLogins && (
                                 <SocialLoginsButtons
@@ -646,7 +647,7 @@ export const LoginContent: React.FC = () => {
                                 />
                             )}
                         </GenericErrorBoundary>
-                        <IonRow className="w-full max-w-[500px] flex items-center justify-center">
+                        <AppRow className="w-full max-w-[500px] flex items-center justify-center">
                             <GenericErrorBoundary hideGoHome>
                                 {activeLoginType === LoginTypesEnum.email &&
                                     (adapter.capabilities.emailOtp ||
@@ -665,14 +666,14 @@ export const LoginContent: React.FC = () => {
                                         />
                                     )}
                             </GenericErrorBoundary>
-                        </IonRow>
-                    </IonRow>
+                        </AppRow>
+                    </AppRow>
 
                     <div className="w-full max-w-[500px] px-4">
                         {adapter.providerType === 'keycloak' && <SignInPersistenceError />}
                     </div>
                     {isWeb && configCapabilities.localKeyPersistence && (
-                        <IonRow className="w-full max-w-[500px] flex items-center justify-center mt-3">
+                        <AppRow className="w-full max-w-[500px] flex items-center justify-center mt-3">
                             <button
                                 role="switch"
                                 aria-checked={isPublicMode}
@@ -719,29 +720,29 @@ export const LoginContent: React.FC = () => {
                                     )}
                                 </span>
                             </button>
-                        </IonRow>
+                        </AppRow>
                     )}
 
                     {configCapabilities.deviceLinking && (
-                        <IonRow className="w-full max-w-[500px] flex items-center justify-center mt-4">
+                        <AppRow className="w-full max-w-[500px] flex items-center justify-center mt-4">
                             <button
                                 onClick={() => setShowQrLogin(true)}
                                 className="text-sm text-white hover:text-white underline transition-colors"
                             >
                                 {m['login.signInFromAnotherDevice']()}
                             </button>
-                        </IonRow>
+                        </AppRow>
                     )}
 
                     {configCapabilities.recovery && coordinatorState.status === 'idle' && (
-                        <IonRow className="w-full max-w-[500px] flex items-center justify-center mt-3">
+                        <AppRow className="w-full max-w-[500px] flex items-center justify-center mt-3">
                             <button
                                 onClick={beginIdentityRecovery}
                                 className="text-sm text-white hover:text-white underline transition-colors"
                             >
                                 {m['recovery.identity.lostSchoolLogin']()}
                             </button>
-                        </IonRow>
+                        </AppRow>
                     )}
 
                     <GenericErrorBoundary hideGoHome>
@@ -798,7 +799,7 @@ const LoginPage: React.FC<{ alternateBgComponent?: React.ReactNode }> = ({
                 <div className="absolute top-0 inset-e-0 z-10 pe-4 pt-[max(env(safe-area-inset-top),12px)]">
                     <LanguagePickerCompact />
                 </div>
-                <IonGrid
+                <AppGrid
                     className="h-full w-full flex items-center justify-center"
                     style={{ backgroundColor: loginBgColor }}
                 >
@@ -827,7 +828,7 @@ const LoginPage: React.FC<{ alternateBgComponent?: React.ReactNode }> = ({
                                 <EndorsementSuccessfullRequestModal />
                             </>
                         )}
-                </IonGrid>
+                </AppGrid>
             </IonContent>
         </IonPage>
     );

@@ -2,7 +2,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { ModalTypes, ProfilePicture, currentUserStore, useCurrentUser } from 'learn-card-base';
 import Backspace from '../../../svgs/Backspace';
-import { IonCol, IonRow } from '@ionic/react';
+import { AppCol, AppRow } from '../../../layout';
 import { AppIcon } from '../../../icon';
 import { alertCircleOutline } from 'ionicons/icons';
 import { FamilyPinViewModeEnum } from './FamilyPinWrapper';
@@ -113,8 +113,8 @@ export const FamilyPinModal: React.FC<FamilyPinModalProps> = ({
     const isDisabled = pin?.length !== 5 || isVerifying;
 
     const actionButton = (
-        <IonRow className="flex w-full items-center justify-center">
-            <IonCol className="mt-4 flex w-full max-w-[600px] items-center justify-center p-0">
+        <AppRow className="flex w-full items-center justify-center">
+            <AppCol className="mt-4 flex w-full max-w-[600px] items-center justify-center p-0">
                 <button
                     disabled={isDisabled}
                     onClick={handleOnClick}
@@ -124,24 +124,24 @@ export const FamilyPinModal: React.FC<FamilyPinModalProps> = ({
                 >
                     {actionButtonText}
                 </button>
-            </IonCol>
-        </IonRow>
+            </AppCol>
+        </AppRow>
     );
 
     const buttons = (
         <div className="overflow-hidden">
             {actionButton}
 
-            <IonRow className="flex w-full items-center justify-center">
-                <IonCol className="flex w-full max-w-[600px] items-center justify-center p-0 mb-[-20px] mt-3">
+            <AppRow className="flex w-full items-center justify-center">
+                <AppCol className="flex w-full max-w-[600px] items-center justify-center p-0 mb-[-20px] mt-3">
                     <button
                         onClick={handleCloseModal}
                         className="text-grayscale-900 bg-white w-full flex flex-1 items-center justify-center py-2 text-lg font-notoSans h-full rounded-[20px] mb-[40px]"
                     >
                         {closeButtonText || m['common.close']()}
                     </button>
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
         </div>
     );
 

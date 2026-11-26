@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 
 import Plus from 'learn-card-base/svgs/Plus';
 import LockBold from 'learn-card-base/svgs/LockBold';
-import { IonCol, IonRow } from '@ionic/react';
+import { AppCol, AppRow } from '../../../../layout';
 import { AppToggle } from '../../../../controls/AppToggle';
 import BoostCMSMediaOptions from './BoostCMSMediaOptions';
 import BoostMediaCMSFormLinkItem from './BoostMediaCMSFormLinkItem';
@@ -108,8 +108,8 @@ export const BoostCMSMediaForm: React.FC<BoostCMSMediaFormProps> = ({
     if (isToggleDisabled && !isMediaDisplayType) lockIconPosition = 'left-[6px]';
 
     return (
-        <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
-            <IonCol size="12" className="w-full bg-white rounded-[20px]">
+        <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
+            <AppCol size="12" className="w-full bg-white rounded-[20px]">
                 <button className="flex items-center justify-between w-full ion-padding">
                     <h1 className="font-poppins text-grayscale-900 text-xl p-0 m-0 flex items-center justify-center">
                         <PaperClip className="h-[30px] w-[30px] mr-1" />{' '}
@@ -263,8 +263,8 @@ export const BoostCMSMediaForm: React.FC<BoostCMSMediaFormProps> = ({
                         ))}
                     </div>
                 </div>
-            </IonCol>
-        </IonRow>
+            </AppCol>
+        </AppRow>
     );
 };
 

@@ -24,7 +24,6 @@ vi.mock('learn-card-base', () => ({
 }));
 vi.mock('@ionic/react', () => ({
     IonPage: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
-    IonRow: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
 }));
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
     getDefaultCategoryForCredential: () => 'Achievement',

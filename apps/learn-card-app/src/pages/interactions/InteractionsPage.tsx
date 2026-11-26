@@ -10,10 +10,8 @@ import {
     IonCard,
     IonCardContent,
     IonText,
-    IonGrid,
-    IonRow,
-    IonCol,
 } from '@ionic/react';
+import { AppCol, AppGrid, AppRow } from '../../components/layout';
 import { AppIcon } from '../../components/icon';
 import {
     refreshOutline,
@@ -151,12 +149,12 @@ const InteractionsPage: React.FC = () => {
                     </IonToolbar>
                 </IonHeader>
                 <IonContent fullscreen className="ion-padding">
-                    <IonGrid style={{ height: '100%' }}>
-                        <IonRow
+                    <AppGrid style={{ height: '100%' }}>
+                        <AppRow
                             className="ion-justify-content-center ion-align-items-center"
                             style={{ height: '100%' }}
                         >
-                            <IonCol size="auto" className="ion-text-center">
+                            <AppCol size="auto" className="ion-text-center">
                                 <IonSpinner
                                     name="crescent"
                                     style={{ width: '50px', height: '50px' }}
@@ -166,9 +164,9 @@ const InteractionsPage: React.FC = () => {
                                         Processing interaction...
                                     </p>
                                 </IonText>
-                            </IonCol>
-                        </IonRow>
-                    </IonGrid>
+                            </AppCol>
+                        </AppRow>
+                    </AppGrid>
                 </IonContent>
             </IonPage>
         );
@@ -183,12 +181,12 @@ const InteractionsPage: React.FC = () => {
                     </IonToolbar>
                 </IonHeader>
                 <IonContent fullscreen className="ion-padding">
-                    <IonGrid style={{ height: '100%' }}>
-                        <IonRow
+                    <AppGrid style={{ height: '100%' }}>
+                        <AppRow
                             className="ion-justify-content-center ion-align-items-center"
                             style={{ height: '100%' }}
                         >
-                            <IonCol sizeXs="12" sizeSm="10" sizeMd="8" sizeLg="6">
+                            <AppCol sizeXs="12" sizeSm="10" sizeMd="8" sizeLg="6">
                                 <IonCard color="light" className="ion-padding">
                                     <IonCardContent className="ion-text-center">
                                         <AppIcon
@@ -228,9 +226,9 @@ const InteractionsPage: React.FC = () => {
                                         </AppButton>
                                     </IonCardContent>
                                 </IonCard>
-                            </IonCol>
-                        </IonRow>
-                    </IonGrid>
+                            </AppCol>
+                        </AppRow>
+                    </AppGrid>
                 </IonContent>
             </IonPage>
         );
@@ -246,12 +244,12 @@ const InteractionsPage: React.FC = () => {
                 </IonToolbar>
             </IonHeader>
             <IonContent fullscreen className="ion-padding">
-                <IonGrid style={{ height: '100%' }}>
-                    <IonRow
+                <AppGrid style={{ height: '100%' }}>
+                    <AppRow
                         className="ion-justify-content-center ion-align-items-center"
                         style={{ height: '100%' }}
                     >
-                        <IonCol size="auto">
+                        <AppCol size="auto">
                             <AppIcon
                                 icon={informationCircleOutline}
                                 color="primary"
@@ -262,9 +260,9 @@ const InteractionsPage: React.FC = () => {
                                     Finalizing interaction...
                                 </p>
                             </IonText>
-                        </IonCol>
-                    </IonRow>
-                </IonGrid>
+                        </AppCol>
+                    </AppRow>
+                </AppGrid>
             </IonContent>
         </IonPage>
     );

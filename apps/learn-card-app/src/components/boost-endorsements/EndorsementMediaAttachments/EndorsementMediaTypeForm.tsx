@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Keyboard } from '@capacitor/keyboard';
 
-import { IonCol, IonRow } from '@ionic/react';
+import { AppCol, AppRow } from '../../layout';
 import { AppInput } from '../../controls/AppInput';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import FileIcon from 'learn-card-base/svgs/FileIcon';
@@ -79,8 +79,8 @@ const EndorsementMediaTypeForm: React.FC<{
 
     return (
         <div className="px-4 py-4">
-            <IonRow className="flex flex-col pb-4">
-                <IonCol className="w-full flex items-center justify-between mt-8 mb-2">
+            <AppRow className="flex flex-col pb-4">
+                <AppCol className="w-full flex items-center justify-between mt-8 mb-2">
                     <h6 className="flex items-center justify-center font-medium text-grayscale-800 font-poppins text-xl tracking-wide">
                         {handleGoBack && (
                             <button
@@ -95,8 +95,8 @@ const EndorsementMediaTypeForm: React.FC<{
                     {Icon && (
                         <Icon className={`text-${color} h-[40px] max-h-[40px] max-w-[40px]`} />
                     )}
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
             <div className="flex flex-col items-center justify-center w-full mb-4">
                 {isPhoto && (
                     <div className="image-preview max-h-[250px] mb-[20px]">

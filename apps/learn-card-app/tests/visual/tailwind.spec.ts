@@ -160,8 +160,8 @@ for (const state of [
             } else {
                 await expect(fixture.locator('[data-app-tab-bar]').first()).toBeVisible();
                 const header = fixture.locator('.learn-card-header').first();
-                await expect(header.locator('ion-grid').first()).toHaveCSS('padding-top', '5px');
-                await expect(header.locator('ion-col').first()).toHaveCSS('padding-left', '5px');
+                await expect(header.locator('.app-grid').first()).toHaveCSS('padding-top', '5px');
+                await expect(header.locator('.app-col').first()).toHaveCSS('padding-left', '5px');
             }
         }
         if (state.startsWith('credential')) {

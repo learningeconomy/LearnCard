@@ -5,15 +5,13 @@ import {
     IonButtons,
     IonCard,
     IonCardContent,
-    IonCol,
     IonDatetime,
-    IonGrid,
     IonHeader,
-    IonRow,
     IonText,
     IonTitle,
     IonToolbar,
 } from '@ionic/react';
+import { AppCol, AppGrid, AppRow } from '../../src/components/layout';
 import { AppIcon } from '../../src/components/icon';
 import { alertCircleOutline, homeOutline, refreshOutline } from 'ionicons/icons';
 import type { ConsentFlowContract } from '@learncard/types';
@@ -280,9 +278,9 @@ const ApproveAccountButtons: React.FC = () => (
 /** src/pages/interactions/InteractionsPage.tsx:186-232 (error card). */
 const InteractionsErrorCard: React.FC = () => (
     <div className="ion-padding">
-        <IonGrid>
-            <IonRow className="ion-justify-content-center ion-align-items-center">
-                <IonCol sizeXs="12" sizeSm="10" sizeMd="8" sizeLg="6">
+        <AppGrid>
+            <AppRow className="ion-justify-content-center ion-align-items-center">
+                <AppCol sizeXs="12" sizeSm="10" sizeMd="8" sizeLg="6">
                     <IonCard color="light" className="ion-padding">
                         <IonCardContent className="ion-text-center">
                             <AppIcon
@@ -319,9 +317,9 @@ const InteractionsErrorCard: React.FC = () => (
                             </AppButton>
                         </IonCardContent>
                     </IonCard>
-                </IonCol>
-            </IonRow>
-        </IonGrid>
+                </AppCol>
+            </AppRow>
+        </AppGrid>
     </div>
 );
 
@@ -469,8 +467,8 @@ const ConsentSharingCheckboxes: React.FC = () => {
     };
 
     return (
-        <IonRow className="w-full">
-            <IonCol
+        <AppRow className="w-full">
+            <AppCol
                 size="12"
                 className="w-full bg-white rounded-[15px] shadow-box-bottom py-2 px-5"
             >
@@ -557,8 +555,8 @@ const ConsentSharingCheckboxes: React.FC = () => {
                 >
                     []
                 </output>
-            </IonCol>
-        </IonRow>
+            </AppCol>
+        </AppRow>
     );
 };
 

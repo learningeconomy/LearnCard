@@ -54,9 +54,6 @@ vi.mock('learn-card-base', () => {
         getLogger: () => ({ error: vi.fn() }),
     };
 });
-vi.mock('@ionic/react', () => ({
-    IonCol: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-}));
 vi.mock('react-phone-number-input', () => ({
     default: ({ value, onChange }: { value: string; onChange: (value: string) => void }) => (
         <input aria-label="Phone" value={value} onChange={event => onChange(event.target.value)} />

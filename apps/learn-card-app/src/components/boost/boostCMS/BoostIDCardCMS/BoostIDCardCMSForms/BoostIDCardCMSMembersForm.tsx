@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { IonRow, IonCol } from '@ionic/react';
+import { AppCol, AppRow } from '../../../../layout';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import { AppToggle } from '../../../../controls/AppToggle';
 
@@ -29,8 +29,8 @@ const BoostIDCardCMSMembersForm: React.FC<{
     };
 
     return (
-        <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
-            <IonCol size="12" className="w-full bg-white flex items-center justify-between">
+        <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
+            <AppCol size="12" className="w-full bg-white flex items-center justify-between">
                 <h1 className="font-poppins text-black text-xl p-0 m-0">Member Options</h1>
                 <button onClick={() => setShowAbout(!showAbout)}>
                     <CaretLeft
@@ -39,7 +39,7 @@ const BoostIDCardCMSMembersForm: React.FC<{
                         }`}
                     />
                 </button>
-            </IonCol>
+            </AppCol>
             {showAbout && (
                 <>
                     <div className="w-full flex items-center justify-between px-[8px] py-[8px]">
@@ -79,7 +79,7 @@ const BoostIDCardCMSMembersForm: React.FC<{
                     </div>
                 </>
             )}
-        </IonRow>
+        </AppRow>
     );
 };
 

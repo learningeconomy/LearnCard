@@ -12,7 +12,7 @@ import { useSignInAdapter, useToast, ToastTypeEnum } from 'learn-card-base';
 import { useFirebase } from '../../../hooks/useFirebase';
 import { useTheme } from '../../../theme/hooks/useTheme';
 
-import { IonCol } from '@ionic/react';
+import { AppCol } from '../../../components/layout';
 import AppStoreDownloadButtons from '../appStoreButtons/AppStoreDownloadButtons';
 import AccessibleCodeInput from './AccessibleCodeInput';
 import LoginErrorMessage from './LoginErrorMessage';
@@ -325,7 +325,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
         formTitle = null;
 
         activeStep = (
-            <IonCol size="12" className="ion-no-padding">
+            <AppCol size="12" className="ion-no-padding">
                 <label htmlFor="login-phone" className="sr-only">
                     {m['login.phone.placeholder']()}
                 </label>
@@ -343,7 +343,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                     }}
                     className={`login-phone-input ${phoneInputClassNameOverride ?? ''}`}
                 />
-            </IonCol>
+            </AppCol>
         );
         buttonTitle = isLoading ? m['common.loading']() : m['login.phone.button']();
         disabled = !phone || isLoading;
@@ -363,7 +363,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
             />
         );
         activeStep = (
-            <IonCol
+            <AppCol
                 size="12"
                 className="w-full flex flex-col items-center justify-center ion-no-padding ion-no-margin mb-[20px]"
             >
@@ -381,7 +381,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                         verificationCodeInputClassName ?? ''
                     }`}
                 />
-            </IonCol>
+            </AppCol>
         );
         buttonTitle = isLoading ? m['common.verifying']() : m['common.verify']();
         disabled = code?.length < 6 || isLoading || isVerifyLocked;
@@ -390,9 +390,9 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
     return (
         <form onSubmit={e => handleOnClick(e)} className="w-full !margin-0 !padding-0">
             {formTitle && (
-                <IonCol size="12">
+                <AppCol size="12">
                     <p className={formTitleClassNameOverride ?? ''}>{formTitle}</p>
-                </IonCol>
+                </AppCol>
             )}
             {activeStep}
             {activeError && (

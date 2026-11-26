@@ -2,16 +2,8 @@ import React, { useEffect, useRef } from 'react';
 import { ConsentFlowTerms, ConsentFlowContractDetails, LCNProfile } from '@learncard/types';
 import moment from 'moment';
 
-import {
-    IonCol,
-    IonDatetime,
-    IonGrid,
-    IonHeader,
-    IonRow,
-    IonSkeletonText,
-    IonSpinner,
-    IonToolbar,
-} from '@ionic/react';
+import { IonDatetime, IonHeader, IonSkeletonText, IonSpinner, IonToolbar } from '@ionic/react';
+import { AppCol, AppGrid, AppRow } from '../../components/layout';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import { useModal, useTermsTransactions } from 'learn-card-base';
 import TransactionHistoryItem from '../consentFlow/TransactionHistoryItem';
@@ -131,10 +123,10 @@ const PostConsentFlowActivityFeed: React.FC<PostConsentFlowActivityFeedProps> = 
         <section className="bg-white min-h-full w-full pt-[15px]">
             <IonHeader className="ion-no-border">
                 <IonToolbar className="ion-no-border" color="white">
-                    <IonGrid>
-                        <IonRow className="w-full flex flex-col items-center justify-center">
-                            <IonRow className="w-full max-w-[600px] flex items-center justify-between">
-                                <IonCol className="flex flex-1 justify-start items-center">
+                    <AppGrid>
+                        <AppRow className="w-full flex flex-col items-center justify-center">
+                            <AppRow className="w-full max-w-[600px] flex items-center justify-between">
+                                <AppCol className="flex flex-1 justify-start items-center">
                                     <button
                                         className="text-white p-0 mr-[10px]"
                                         aria-label="Back button"
@@ -145,21 +137,21 @@ const PostConsentFlowActivityFeed: React.FC<PostConsentFlowActivityFeedProps> = 
                                     <h3 className="text-grayscale-900 flex items-center justify-start font-poppins text-xl font-medium">
                                         Activity Feed
                                     </h3>
-                                </IonCol>
-                            </IonRow>
-                        </IonRow>
-                    </IonGrid>
+                                </AppCol>
+                            </AppRow>
+                        </AppRow>
+                    </AppGrid>
                 </IonToolbar>
             </IonHeader>
-            <IonGrid className="flex items-center justify-center flex-col w-full max-w-[600px] px-4 pb-14">
-                <IonRow className="w-full">
+            <AppGrid className="flex items-center justify-center flex-col w-full max-w-[600px] px-4 pb-14">
+                <AppRow className="w-full">
                     <ol className="px-1 pt-4 w-full flex flex-col items-center">
                         {transactions}
                         <div role="presentation" ref={infiniteScrollRef} />
                         {isFetching && <IonSpinner className="mt-8" name="lines" />}
                     </ol>
-                </IonRow>
-            </IonGrid>
+                </AppRow>
+            </AppGrid>
         </section>
     );
 };

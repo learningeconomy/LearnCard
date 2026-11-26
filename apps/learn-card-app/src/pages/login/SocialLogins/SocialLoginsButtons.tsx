@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import * as m from '../../../paraglide/messages.js';
-import { IonRow } from '@ionic/react';
+import { AppRow } from '../../../components/layout';
 
 import useSocialLogins from 'learn-card-base/hooks/useSocialLogins';
 
@@ -113,7 +113,7 @@ export const SocialLoginsButtons: React.FC<{
     return (
         <>
             {keycloakOverlayPhase && <KeycloakSignInOverlay phase={keycloakOverlayPhase} />}
-            <IonRow className="w-full flex items-center justify-center social-logins-container">
+            <AppRow className="w-full flex items-center justify-center social-logins-container">
                 <div className="w-full flex items-center justify-center">
                     <div className="w-full pl-[12px] pr-[12px] items-center justify-center flex flex-col max-w-[500px]">
                         <div className="w-full flex items-center justify-center gap-[20px]">
@@ -189,7 +189,7 @@ export const SocialLoginsButtons: React.FC<{
                         )}
                     </div>
                 </div>
-            </IonRow>
+            </AppRow>
         </>
     );
 };

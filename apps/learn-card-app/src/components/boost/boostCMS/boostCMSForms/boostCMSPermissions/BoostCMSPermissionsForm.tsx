@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IonCol, IonRow } from '@ionic/react';
+import { AppCol, AppRow } from '../../../../layout';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import { AppToggle } from '../../../../controls/AppToggle';
 
@@ -14,8 +14,8 @@ const BoostCMSPermissionsForm: React.FC<{
     const [showPermissions, setShowPermissions] = useState<boolean>(true);
 
     return (
-        <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
-            <IonCol size="12" className="w-full bg-white flex items-center justify-between">
+        <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
+            <AppCol size="12" className="w-full bg-white flex items-center justify-between">
                 <h1 className="font-poppins font-medium text-grayscale-900 text-lg p-0 m-0">
                     {m['boost.cms.permissions.title']()}
                 </h1>
@@ -26,9 +26,9 @@ const BoostCMSPermissionsForm: React.FC<{
                         }`}
                     />
                 </button>
-            </IonCol>
+            </AppCol>
             {showPermissions && (
-                <IonCol size="12" className="w-full bg-white">
+                <AppCol size="12" className="w-full bg-white">
                     <div className="pb-[12px]">
                         <p className="text-grayscale-600 text-xs m-0">
                             {m['boost.cms.permissions.description']()}
@@ -123,9 +123,9 @@ const BoostCMSPermissionsForm: React.FC<{
                             }}
                         />
                     </div>
-                </IonCol>
+                </AppCol>
             )}
-        </IonRow>
+        </AppRow>
     );
 };
 

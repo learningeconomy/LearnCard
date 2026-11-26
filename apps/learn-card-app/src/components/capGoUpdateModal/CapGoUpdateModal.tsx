@@ -4,7 +4,7 @@ import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('cap-go-update-modal');
 
-import { IonRow } from '@ionic/react';
+import { AppRow } from '../layout';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 
 export const CapGoUpdateModal: React.FC<{
@@ -38,7 +38,7 @@ export const CapGoUpdateModal: React.FC<{
     };
 
     return (
-        <IonRow className="flex flex-col pb-4 w-full">
+        <AppRow className="flex flex-col pb-4 w-full">
             <div className="w-full flex flex-col items-center justify-center pt-2">
                 <img
                     src={appIcon}
@@ -59,7 +59,7 @@ export const CapGoUpdateModal: React.FC<{
                     Update to {updateVersion}
                 </button>
             </div>
-        </IonRow>
+        </AppRow>
     );
 };
 

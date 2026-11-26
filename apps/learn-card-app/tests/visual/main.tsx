@@ -2,7 +2,8 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { setupIonicReact, IonGrid, IonRow, IonCol } from '@ionic/react';
+import { setupIonicReact } from '@ionic/react';
+import { AppCol, AppGrid, AppRow } from '../../src/components/layout';
 import {
     ModalsProvider,
     TenantConfigProvider,
@@ -142,29 +143,29 @@ createRoot(document.getElementById('root')!).render(
                                                 onClick={() => undefined}
                                             />
                                         </div>
-                                        <IonGrid
+                                        <AppGrid
                                             data-testid="credential-gutters"
                                             className="max-w-[600px] pt-[20px]"
                                         >
-                                            <IonRow>
+                                            <AppRow>
                                                 {[0, 1, 2, 3].map(index => (
-                                                    <IonCol size="6" key={index}>
+                                                    <AppCol size="6" key={index}>
                                                         <div
                                                             data-testid="gutter-card"
                                                             className="bg-white h-[100px] w-full"
                                                         />
-                                                    </IonCol>
+                                                    </AppCol>
                                                 ))}
-                                            </IonRow>
-                                        </IonGrid>
-                                        <IonGrid
+                                            </AppRow>
+                                        </AppGrid>
+                                        <AppGrid
                                             data-testid="explicit-grid-spacing"
                                             className="p-0 m-0"
                                         >
-                                            <IonRow>
-                                                <IonCol className="p-0">No padding</IonCol>
-                                            </IonRow>
-                                        </IonGrid>
+                                            <AppRow>
+                                                <AppCol className="p-0">No padding</AppCol>
+                                            </AppRow>
+                                        </AppGrid>
                                         <button
                                             data-testid="ionic-border"
                                             className="border border-grayscale-200"

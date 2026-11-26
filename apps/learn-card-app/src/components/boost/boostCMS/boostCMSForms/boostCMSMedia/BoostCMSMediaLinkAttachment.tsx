@@ -5,7 +5,7 @@ import { Keyboard } from '@capacitor/keyboard';
 
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 
-import { IonCol, IonRow } from '@ionic/react';
+import { AppCol, AppRow } from '../../../../layout';
 import { AppInput } from '../../../../controls/AppInput';
 
 import { BoostCMSMediaAttachment, BoostCMSMediaState } from 'learn-card-base';
@@ -57,8 +57,8 @@ const BoostCMSMediaLinkAttachment: React.FC<BoostCMSMediaLinkAttachmentProps> = 
 
     return (
         <>
-            <IonRow className="flex flex-col pb-4">
-                <IonCol className="w-full flex items-center justify-between mt-8 mb-2">
+            <AppRow className="flex flex-col pb-4">
+                <AppCol className="w-full flex items-center justify-between mt-8 mb-2">
                     <Icon
                         version="outlined"
                         className={`text-grayscale-800 h-[30px] max-h-[30px] max-w-[30px] mr-2`}
@@ -66,8 +66,8 @@ const BoostCMSMediaLinkAttachment: React.FC<BoostCMSMediaLinkAttachmentProps> = 
                     <h6 className="flex items-center justify-center font-medium text-grayscale-800 font-poppins text-xl tracking-wide">
                         {title}
                     </h6>
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
             <div className="flex flex-col items-center justify-center w-full mb-4 px-[20px]">
                 <AppInput
                     autocapitalize="on"

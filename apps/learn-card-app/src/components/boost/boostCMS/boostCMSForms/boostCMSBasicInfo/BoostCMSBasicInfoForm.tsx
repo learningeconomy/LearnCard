@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import moment from 'moment';
 
-import { IonRow, IonCol, IonDatetime, useIonModal } from '@ionic/react';
+import { IonDatetime, useIonModal } from '@ionic/react';
+import { AppCol, AppRow } from '../../../../layout';
 import { AppTextarea } from '../../../../controls/AppTextarea';
 import { AppToggle } from '../../../../controls/AppToggle';
 import Calendar from '../../../../svgs/Calendar';
@@ -93,8 +94,8 @@ const BoostCMSBasicInfoForm: React.FC<{
     const isMembership = boostType === BoostCategoryOptionsEnum.membership;
 
     return (
-        <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
-            <IonCol size="12" className="w-full bg-white flex items-center justify-between">
+        <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
+            <AppCol size="12" className="w-full bg-white flex items-center justify-between">
                 <h1 className="font-poppins font-medium text-grayscale-900 text-lg p-0 m-0">
                     {m['common.about']()}
                 </h1>
@@ -105,9 +106,9 @@ const BoostCMSBasicInfoForm: React.FC<{
                         }`}
                     />
                 </button>
-            </IonCol>
+            </AppCol>
             {showAbout && (
-                <IonCol size="12" className="w-full bg-white">
+                <AppCol size="12" className="w-full bg-white">
                     {isID ||
                         (isMembership && (
                             <div className="flex flex-col items-start justify-center w-full mt-2 bg-grayscale-100 px-[16px] py-[8px] rounded-[15px]">
@@ -222,9 +223,9 @@ const BoostCMSBasicInfoForm: React.FC<{
                             </button>
                         )}
                     </div>
-                </IonCol>
+                </AppCol>
             )}
-        </IonRow>
+        </AppRow>
     );
 };
 

@@ -4,7 +4,8 @@ import { QRCodeSVG } from 'qrcode.react';
 import moment from 'moment';
 
 import X from 'learn-card-base/svgs/X';
-import { IonGrid, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
+import { AppGrid } from '../../layout';
 import { AppIcon } from '../../icon';
 import { alertCircleOutline } from 'ionicons/icons';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
@@ -377,7 +378,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
 
     return (
         <>
-            <IonGrid
+            <AppGrid
                 className={`w-full max-w-[480px] px-[20px] ${customClassName} overflow-y-scroll pb-[50px] disable-scrollbars`}
             >
                 <div
@@ -695,7 +696,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                         <CredentialVerificationDisplay credential={cred} showText />
                     </div>
                 </div>
-            </IonGrid>
+            </AppGrid>
         </>
     );
 };

@@ -63,9 +63,6 @@ vi.mock('learn-card-base/stores/credentialSearchStore', () => ({
     default: { use: { isSearchActive: () => false, searchString: () => '' } },
 }));
 vi.mock('@ionic/react', () => ({
-    IonCol: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    IonGrid: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    IonRow: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     IonSpinner: () => null,
 }));
 vi.mock('ionicons/icons', () => ({ closeOutline: 'close' }));

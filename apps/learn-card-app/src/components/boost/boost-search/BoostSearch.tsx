@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-    IonCol,
     IonContent,
-    IonRow,
-    IonGrid,
     IonToolbar,
     IonHeader,
     IonPage,
@@ -11,6 +8,7 @@ import {
     IonSpinner,
     useIonModal,
 } from '@ionic/react';
+import { AppCol, AppGrid, AppRow } from '../../layout';
 import { AppInput } from '../../controls/AppInput';
 
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
@@ -111,10 +109,10 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
         <IonPage className="bg-white">
             <IonHeader className="learn-card-header ion-no-border my-[0px]">
                 <IonToolbar className="ion-no-border bg-white " color="white">
-                    <IonGrid className="bg-white">
-                        <IonRow className="w-full flex items-center justify-center pt-[20px]">
-                            <IonRow className="flex flex-col w-full max-w-[600px]">
-                                <IonCol className="flex flex-1 justify-start items-center">
+                    <AppGrid className="bg-white">
+                        <AppRow className="w-full flex items-center justify-center pt-[20px]">
+                            <AppRow className="flex flex-col w-full max-w-[600px]">
+                                <AppCol className="flex flex-1 justify-start items-center">
                                     <button
                                         className="text-grayscale-50 p-0 mr-[10px]"
                                         onClick={() => {
@@ -128,7 +126,7 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
                                     <h3 className="text-grayscale-900 flex items-center justify-start font-poppins font-medium text-xl">
                                         {contactCount ?? 0} Contacts
                                     </h3>
-                                </IonCol>
+                                </AppCol>
 
                                 <div className="flex items-center justify-start w-full">
                                     <AppInput
@@ -141,9 +139,9 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
                                         type="text"
                                     />
                                 </div>
-                            </IonRow>
-                        </IonRow>
-                    </IonGrid>
+                            </AppRow>
+                        </AppRow>
+                    </AppGrid>
                 </IonToolbar>
             </IonHeader>
             <IonContent>
@@ -225,18 +223,18 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
             </IonContent>
             <IonFooter className="ion-no-border pb-[15px] bg-white" color="white">
                 <IonToolbar color="white" className="ion-no-border pt-5 bg-white">
-                    <IonRow className="w-full flex items-center justify-center">
+                    <AppRow className="w-full flex items-center justify-center">
                         <div className="w-full max-w-[600px] flex items-center justify-center px-4">
-                            <IonCol size="12" className="w-full flex items-center justify-between">
+                            <AppCol size="12" className="w-full flex items-center justify-between">
                                 <button
                                     onClick={handleSaveContacts}
                                     className="relative flex flex-1 items-center justify-center bg-emerald-700 rounded-full px-[18px] py-[8px] text-white font-poppins text-xl w-full shadow-lg normal tracking-wide text-center"
                                 >
                                     {buttonText}
                                 </button>
-                            </IonCol>
+                            </AppCol>
                         </div>
-                    </IonRow>
+                    </AppRow>
                 </IonToolbar>
             </IonFooter>
         </IonPage>

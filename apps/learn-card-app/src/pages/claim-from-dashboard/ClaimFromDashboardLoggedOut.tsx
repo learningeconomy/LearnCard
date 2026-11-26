@@ -1,6 +1,7 @@
 import React from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
-import { IonPage, IonCol, IonRow } from '@ionic/react';
+import { IonPage } from '@ionic/react';
+import { AppCol, AppRow } from '../../components/layout';
 
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 
@@ -74,8 +75,8 @@ const ClaimFromDashboardLoggedOut: React.FC<ClaimFromDashboardLoggedOutProps> = 
                         {brandingConfig?.name}
                     </span>
                     <span className="text-grayscale-700 text-[14px]">{m['common.tagline']()}</span>
-                    <IonRow className="flex items-center justify-center">
-                        <IonCol className="flex items-center justify-center">
+                    <AppRow className="flex items-center justify-center">
+                        <AppCol className="flex items-center justify-center">
                             <button
                                 onClick={openPP}
                                 className={`text-${primaryColor} font-[600] text-[12px]`}
@@ -91,8 +92,8 @@ const ClaimFromDashboardLoggedOut: React.FC<ClaimFromDashboardLoggedOutProps> = 
                             >
                                 {m['legal.termsOfService']()}
                             </button>
-                        </IonCol>
-                    </IonRow>
+                        </AppCol>
+                    </AppRow>
                 </div>
             </div>
         </IonPage>

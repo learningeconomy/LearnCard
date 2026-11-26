@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouteMatch } from 'react-router-dom';
-import { IonContent, IonPage, IonSpinner, IonRow, IonGrid } from '@ionic/react';
+import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { AppGrid, AppRow } from '../../components/layout';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('address-book');
 
@@ -201,7 +202,7 @@ const AddressBook: React.FC = () => {
                     <AddressBookContactCard />
 
                     <div className="w-full max-w-[400px] sm:max-w-[600px] mx-auto my-4 rounded-2xl bg-white shadow-lg">
-                        <IonGrid className="flex flex-col items-center justify-center w-full">
+                        <AppGrid className="flex flex-col items-center justify-center w-full">
                             <AddressBookTabs
                                 activeTab={activeTab}
                                 setActiveTab={setActiveTab}
@@ -213,7 +214,7 @@ const AddressBook: React.FC = () => {
                                 blockedCount={blockedCount}
                                 requestCount={requestCount}
                             />
-                            <IonRow className="flex items-center justify-center w-full max-w-[650px]">
+                            <AppRow className="flex items-center justify-center w-full max-w-[650px]">
                                 <GenericErrorBoundary>
                                     {showLoadingSpinner && (
                                         <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full my-4">
@@ -276,8 +277,8 @@ const AddressBook: React.FC = () => {
                                         />
                                     )}
                                 </GenericErrorBoundary>
-                            </IonRow>
-                        </IonGrid>
+                            </AppRow>
+                        </AppGrid>
                     </div>
                 </GenericErrorBoundary>
             </IonContent>

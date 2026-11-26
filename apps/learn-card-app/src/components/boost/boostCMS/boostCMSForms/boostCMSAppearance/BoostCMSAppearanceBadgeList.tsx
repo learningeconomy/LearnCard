@@ -11,7 +11,8 @@ import {
 import { useLCAStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
-import { IonCol, IonGrid, IonRow, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
+import { AppCol, AppGrid, AppRow } from '../../../../layout';
 import TransparentGrid from 'learn-card-base/assets/images/transparent-grid.png';
 import Camera from 'learn-card-base/svgs/Camera';
 import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
@@ -155,9 +156,9 @@ export const BoostCMSAppearanceBadgeList: React.FC<BoostCMSAppearanceBadgeListPr
         const boostOptions = boostVCTypeOptions[boostUserType];
 
         activeStep = (
-            <IonGrid>
-                <IonRow className="w-full flex items-center justify-center pb-6 mt-4">
-                    <IonCol className="w-full flex flex-col items-center justify-center">
+            <AppGrid>
+                <AppRow className="w-full flex items-center justify-center pb-6 mt-4">
+                    <AppCol className="w-full flex flex-col items-center justify-center">
                         <button
                             onClick={() => {
                                 setActiveStylePackCategory(StylePackCategories.all);
@@ -208,7 +209,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<BoostCMSAppearanceBadgeListPr
                                 );
                             }
                         )}
-                    </IonCol>
+                    </AppCol>
                     <div className="w-full flex items-center justify-center mt-4">
                         <button
                             onClick={() => setShowStylePackCategoryList(false)}
@@ -217,8 +218,8 @@ export const BoostCMSAppearanceBadgeList: React.FC<BoostCMSAppearanceBadgeListPr
                             {m['common.cancel']()}
                         </button>
                     </div>
-                </IonRow>
-            </IonGrid>
+                </AppRow>
+            </AppGrid>
         );
     } else {
         // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
@@ -329,8 +330,8 @@ export const BoostCMSAppearanceBadgeList: React.FC<BoostCMSAppearanceBadgeListPr
     }
 
     return (
-        <IonRow className="flex w-full">
-            <IonCol className="boost-cms-badge-container">
+        <AppRow className="flex w-full">
+            <AppCol className="boost-cms-badge-container">
                 {isLoading ? (
                     <div className="flex flex-col w-full h-full items-center justify-center">
                         <div className="max-w-[160px] m-auto flex justify-center">
@@ -341,8 +342,8 @@ export const BoostCMSAppearanceBadgeList: React.FC<BoostCMSAppearanceBadgeListPr
                 ) : (
                     activeStep
                 )}
-            </IonCol>
-        </IonRow>
+            </AppCol>
+        </AppRow>
     );
 };
 

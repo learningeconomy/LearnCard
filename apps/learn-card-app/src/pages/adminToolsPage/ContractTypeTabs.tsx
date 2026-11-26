@@ -1,5 +1,6 @@
 import React from 'react';
-import { IonLabel, IonRow, IonSegment, IonSegmentButton } from '@ionic/react';
+import { IonLabel, IonSegment, IonSegmentButton } from '@ionic/react';
+import { AppRow } from '../../components/layout';
 import { ContractType } from './CreateContractModal';
 import { SetState } from 'packages/shared-types/dist';
 
@@ -10,7 +11,7 @@ type ContractTypeTabsProps = {
 
 const ContractTypeTabs: React.FC<ContractTypeTabsProps> = ({ contractType, setContractType }) => {
     return (
-        <IonRow className="flex w-full items-center justify-center bg-white">
+        <AppRow className="flex w-full items-center justify-center bg-white">
             <IonSegment
                 onIonChange={e => {
                     setContractType(e.detail.value);
@@ -56,7 +57,7 @@ const ContractTypeTabs: React.FC<ContractTypeTabsProps> = ({ contractType, setCo
                     </IonLabel>
                 </IonSegmentButton>
             </IonSegment>
-        </IonRow>
+        </AppRow>
     );
 };
 

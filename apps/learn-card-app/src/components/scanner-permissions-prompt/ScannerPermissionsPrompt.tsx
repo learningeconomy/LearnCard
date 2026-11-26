@@ -2,7 +2,8 @@ import React from 'react';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
-import { IonRow, IonCol, IonPage } from '@ionic/react';
+import { IonPage } from '@ionic/react';
+import { AppCol, AppRow } from '../layout';
 import ModalLayout from '../../layout/ModalLayout';
 import Camera from 'learn-card-base/svgs/Camera';
 
@@ -53,33 +54,33 @@ export const ScannerPermissionsPrompt: React.FC<{
     return (
         <div className="mt-[10px] h-full flex flex-col items-center justify-end">
             <div className="bg-white py-6 rounded-t-3xl">
-                <IonRow className="flex flex-col pb-6 pt-2 w-full">
-                    <IonCol className="w-full flex items-center justify-center">
+                <AppRow className="flex flex-col pb-6 pt-2 w-full">
+                    <AppCol className="w-full flex items-center justify-center">
                         <h6 className="tracking-[12px] text-base font-bold text-black">
                             {brandingConfig?.name}
                         </h6>
-                    </IonCol>
-                </IonRow>
-                <IonRow className="w-full flex items-center justify-center mb-2">
-                    <IonCol className="flex items-center justify-around w-full max-w-[600px]">
+                    </AppCol>
+                </AppRow>
+                <AppRow className="w-full flex items-center justify-center mb-2">
+                    <AppCol className="flex items-center justify-around w-full max-w-[600px]">
                         <div className="relative flex items-center justify-center p-2 rounded-3xl flex-1">
                             <div className="absolute top-0 left-[50%] translate-x-[-50%] w-[70px] h-[70px] bg-grayscale-200 rounded-full" />
                             <Camera className="z-50 h-[50px] w-[50px] text-grayscale-700" />
                         </div>
-                    </IonCol>
-                </IonRow>
-                <IonRow className="flex items-center justify-center w-full">
-                    <IonCol className="text-center">
+                    </AppCol>
+                </AppRow>
+                <AppRow className="flex items-center justify-center w-full">
+                    <AppCol className="text-center">
                         <p className="text-center text-sm font-semibold px-[16px] text-grayscale-600">
                             <span className="font-bold text-grayscale-800">
                                 {m['scanner.cameraPermission']()}
                             </span>
                         </p>
                         <br />
-                    </IonCol>
-                </IonRow>
-                <IonRow className="w-full flex items-center justify-center mt-4">
-                    <IonCol className="flex items-center flex-col max-w-[90%] border-b border-grayscale-200">
+                    </AppCol>
+                </AppRow>
+                <AppRow className="w-full flex items-center justify-center mt-4">
+                    <AppCol className="flex items-center flex-col max-w-[90%] border-b border-grayscale-200">
                         <button
                             onClick={async () => {
                                 handleScan();
@@ -100,10 +101,10 @@ export const ScannerPermissionsPrompt: React.FC<{
                                 {m['common.close']()}
                             </button>
                         </div>
-                    </IonCol>
-                </IonRow>
-                <IonRow className="flex items-center justify-center mt-4 w-full">
-                    <IonCol className="flex items-center justify-center w-full">
+                    </AppCol>
+                </AppRow>
+                <AppRow className="flex items-center justify-center mt-4 w-full">
+                    <AppCol className="flex items-center justify-center w-full">
                         <button
                             onClick={openPP}
                             className={`text-${primaryColor} font-bold text-sm`}
@@ -117,8 +118,8 @@ export const ScannerPermissionsPrompt: React.FC<{
                         >
                             {m['legal.termsOfService']()}
                         </button>
-                    </IonCol>
-                </IonRow>
+                    </AppCol>
+                </AppRow>
             </div>
         </div>
     );

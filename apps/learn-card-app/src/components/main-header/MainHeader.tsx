@@ -2,7 +2,8 @@ import React from 'react';
 import { useLocation, useHistory } from 'react-router-dom';
 import * as m from '../../paraglide/messages.js';
 
-import { IonCol, IonGrid, IonHeader, IonProgressBar, IonRow, IonToolbar } from '@ionic/react';
+import { IonHeader, IonProgressBar, IonToolbar } from '@ionic/react';
+import { AppCol, AppGrid, AppRow } from '../layout';
 import { AppMenuToggle } from '../app-shell/AppMenuToggle';
 import HeaderBranding from '../headerBranding/HeaderBranding';
 
@@ -130,9 +131,9 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
                         : undefined
                 }
             >
-                <IonGrid className={`${customClassName} ${backgroundPrimaryColor}`} style={style}>
-                    <IonRow>
-                        <IonCol size="2" className="flex justify-start items-center">
+                <AppGrid className={`${customClassName} ${backgroundPrimaryColor}`} style={style}>
+                    <AppRow>
+                        <AppCol size="2" className="flex justify-start items-center">
                             {resolvedShowBackButton && (
                                 <button
                                     aria-label="Go back"
@@ -150,9 +151,9 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
                                 </AppMenuToggle>
                             )}
                             {mainHeaderBranding}
-                        </IonCol>
+                        </AppCol>
 
-                        <IonCol size="10" className="flex justify-end items-center gap-2">
+                        <AppCol size="10" className="flex justify-end items-center gap-2">
                             {isLoggedIn ? (
                                 <ProfileAlertsIsland
                                     branding={branding}
@@ -165,11 +166,11 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
                             ) : (
                                 <div className="w-full pt-[3px] pb-[3px]">&nbsp;</div>
                             )}
-                        </IonCol>
-                    </IonRow>
+                        </AppCol>
+                    </AppRow>
                     {subheader}
                     {children}
-                </IonGrid>
+                </AppGrid>
             </IonToolbar>
             <div
                 role="presentation"

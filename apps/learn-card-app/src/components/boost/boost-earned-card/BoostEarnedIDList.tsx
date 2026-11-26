@@ -5,7 +5,8 @@ import { useLoadingLine } from '../../../stores/loadingStore';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
 
-import { IonCol, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
+import { AppCol } from '../../layout';
 import BoostEarnedIDCard from './BoostEarnedIDCard';
 
 import {
@@ -170,7 +171,7 @@ const BoostEarnedIDList: React.FC<{
                         </div>
                     )}
                     {!isCardView && (
-                        <IonCol className="flex m-auto items-center flex-wrap w-full achievements-list-container">
+                        <AppCol className="flex m-auto items-center flex-wrap w-full achievements-list-container">
                             <div
                                 className={`bg-filler absolute h-full mt-[200px] w-[3000px] -z-10 ${bgFillerColor}`}
                             />
@@ -187,7 +188,7 @@ const BoostEarnedIDList: React.FC<{
                                     />
                                 </div>
                             )}
-                        </IonCol>
+                        </AppCol>
                     )}
                     {/* Keep the observed node stable across Card/List switches. */}
                     <div role="presentation" ref={infiniteScrollRef} className="h-px w-full" />

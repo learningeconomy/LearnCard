@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { IonApp, IonCol, IonRow } from '@ionic/react';
+import { IonApp } from '@ionic/react';
+import { AppCol, AppRow } from '../../src/components/layout';
 import { AppLabel } from '../../src/components/list';
 import { useImmer } from 'use-immer';
 import { Lock } from 'lucide-react';
@@ -267,7 +268,7 @@ const IdCardIssuerThumbnail: React.FC = () => {
         setState(prev => ({ ...prev, appearance: { ...prev.appearance, [propName]: value } }));
 
     return (
-        <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-2 mb-4 rounded-[20px]">
+        <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-2 mb-4 rounded-[20px]">
             <div className="w-full flex items-center justify-between px-[8px] py-[8px]">
                 <p className="text-grayscale-900 font-medium w-10/12">Show Issuer Thumbnail</p>
                 <AppToggle
@@ -283,7 +284,7 @@ const IdCardIssuerThumbnail: React.FC = () => {
                 />
             </div>
             <Value testId="t1b-a-idcard-issuer-thumbnail-value" value={state.appearance} />
-        </IonRow>
+        </AppRow>
     );
 };
 
@@ -387,13 +388,13 @@ const UserPermissionsRows: React.FC = () => {
     };
 
     return (
-        <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
-            <IonCol size="12" className="w-full bg-white flex items-center justify-between">
+        <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
+            <AppCol size="12" className="w-full bg-white flex items-center justify-between">
                 <h1 className="text-black text-2xl p-0 m-0">
                     {m['boost.cms.userPermissions.title']()}
                 </h1>
-            </IonCol>
-            <IonCol size="12" className="w-full bg-white">
+            </AppCol>
+            <AppCol size="12" className="w-full bg-white">
                 <div className="w-full flex items-center justify-between py-[8px]">
                     <p className="text-grayscale-900 font-medium w-10/12">
                         {m['boost.cms.userPermissions.createCustomBoosts']()}
@@ -407,8 +408,8 @@ const UserPermissionsRows: React.FC = () => {
                         disabled={disabled}
                     />
                 </div>
-            </IonCol>
-            <IonCol size="12" className="w-full bg-white">
+            </AppCol>
+            <AppCol size="12" className="w-full bg-white">
                 <div className="w-full flex items-center justify-between py-[8px]">
                     <p className="text-grayscale-900 font-medium w-10/12">
                         {m['boost.cms.userPermissions.createIDs']()}
@@ -422,11 +423,11 @@ const UserPermissionsRows: React.FC = () => {
                         disabled={disabled}
                     />
                 </div>
-            </IonCol>
-            <IonCol size="12">
+            </AppCol>
+            <AppCol size="12">
                 <Value testId="t1b-b-user-permissions-value" value={basicInfo} />
-            </IonCol>
-        </IonRow>
+            </AppCol>
+        </AppRow>
     );
 };
 
@@ -533,8 +534,8 @@ const MediaOnlyToggle: React.FC<{
     if (isToggleDisabled && !isMediaDisplayType) lockIconPosition = 'left-[6px]';
 
     return (
-        <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
-            <IonCol size="12" className="w-full bg-white rounded-[20px] py-4">
+        <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
+            <AppCol size="12" className="w-full bg-white rounded-[20px] py-4">
                 <div className="w-full flex items-center justify-between px-4">
                     <div>
                         <p className="font-poppins text-grayscale-900 text-[17px] p-0 m-0">
@@ -575,8 +576,8 @@ const MediaOnlyToggle: React.FC<{
                         value={{ previewType, isChecked, isToggleDisabled }}
                     />
                 </div>
-            </IonCol>
-        </IonRow>
+            </AppCol>
+        </AppRow>
     );
 };
 
@@ -955,8 +956,8 @@ const EditAccessAnonymizeCard: React.FC = () => {
 
     return (
         <div className="bg-grayscale-900 p-4 rounded-[20px]">
-            <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] rounded-[20px]">
-                <IonCol
+            <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] rounded-[20px]">
+                <AppCol
                     size="12"
                     className="flex items-center justify-between w-full bg-white rounded-[20px] ion-padding"
                 >
@@ -973,8 +974,8 @@ const EditAccessAnonymizeCard: React.FC = () => {
                         onClick={handleToggleAnonymize}
                         checked={anonymize}
                     />
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
             <div className="bg-white rounded-[10px] mt-2 px-2">
                 <Value testId="t1b-h-edit-access-anonymize-value" value={anonymize} />
                 <HandlerLog testId="t1b-h-edit-access-anonymize-handler-calls" logRef={ref} />
@@ -1250,8 +1251,8 @@ const EditAccessDarkToggles: React.FC = () => {
 
     return (
         <div className="bg-grayscale-900 rounded-[20px] px-4 py-2">
-            <IonRow className="w-full max-w-[600px]">
-                <IonCol
+            <AppRow className="w-full max-w-[600px]">
+                <AppCol
                     size="12"
                     className="flex flex-col gap-5 py-2 items-center justify-between w-full"
                 >
@@ -1283,10 +1284,10 @@ const EditAccessDarkToggles: React.FC = () => {
                             />
                         </section>
                     </fieldset>
-                </IonCol>
-            </IonRow>
-            <IonRow className="w-full max-w-[600px]">
-                <IonCol
+                </AppCol>
+            </AppRow>
+            <AppRow className="w-full max-w-[600px]">
+                <AppCol
                     size="12"
                     className="flex flex-col gap-5 py-2 items-center justify-between w-full"
                 >
@@ -1316,8 +1317,8 @@ const EditAccessDarkToggles: React.FC = () => {
                             />
                         </section>
                     </fieldset>
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
             <div className="bg-white rounded-[10px] my-2 px-2">
                 <Value
                     testId="t1b-i-edit-access-dark-value"
@@ -1671,8 +1672,8 @@ const UncontrolledObserver: React.FC<{ testId: string; children: React.ReactNode
 const MyDataSettingsToggles: React.FC = () => (
     <UncontrolledObserver testId="t1b-m-my-data-value">
         <div className="bg-grayscale-900 rounded-[20px] p-4">
-            <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
-                <IonCol
+            <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
+                <AppCol
                     size="12"
                     className="flex items-center justify-between w-full bg-white rounded-[20px] ion-padding"
                 >
@@ -1691,11 +1692,11 @@ const MyDataSettingsToggles: React.FC = () => (
                         // }}
                         // checked={toggle}
                     />
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
 
-            <IonRow className="w-full flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
-                <IonCol
+            <AppRow className="w-full flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
+                <AppCol
                     size="12"
                     className="flex flex-col w-full bg-white rounded-[20px] ion-padding"
                 >
@@ -1731,8 +1732,8 @@ const MyDataSettingsToggles: React.FC = () => (
                             </div>
                         );
                     })}
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
         </div>
     </UncontrolledObserver>
 );

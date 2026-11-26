@@ -10,7 +10,8 @@ import useDebounce from 'apps/learn-card-app/src/hooks/useDebounce';
 import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantConfig';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 
-import { IonRow, IonCol, useIonModal, IonGrid, IonSpinner, IonDatetime } from '@ionic/react';
+import { useIonModal, IonSpinner, IonDatetime } from '@ionic/react';
+import { AppCol, AppGrid, AppRow } from '../../../../layout';
 import { AppInput } from '../../../../controls/AppInput';
 import { AppToggle } from '../../../../controls/AppToggle';
 
@@ -388,7 +389,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
 
     return (
         <>
-            <IonGrid
+            <AppGrid
                 className={`flex flex-col gap-[20px] items-center justify-center bg-white w-full max-w-[600px] rounded-[20px] ion-padding  ${customClassName}`}
             >
                 <div className="flex items-center justify-between w-full">
@@ -427,12 +428,12 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                 {toggle && (
                     <>
                         {isPermissionsLoading && (
-                            <IonRow className="flex items-center justify-center w-full bg-grayscale-100 rounded-[15px] p-4 mb-2">
+                            <AppRow className="flex items-center justify-center w-full bg-grayscale-100 rounded-[15px] p-4 mb-2">
                                 <IonSpinner name="crescent" color="dark" className="mr-2" />
                                 <p className="text-grayscale-700 font-medium text-sm m-0">
                                     Checking template permissions...
                                 </p>
-                            </IonRow>
+                            </AppRow>
                         )}
 
                         {!isPermissionsLoading && !canViewEnabled && (
@@ -471,8 +472,8 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                                         <>
                                             {/* <div className="flex items-center justify-center w-full divider-with-text" /> */}
 
-                                            <IonRow className="flex items-center justify-center w-full bg-grayscale-100 rounded-[15px]">
-                                                <IonCol className="w-full flex items-center justify-between px-4 py-3 rounded-2xl">
+                                            <AppRow className="flex items-center justify-center w-full bg-grayscale-100 rounded-[15px]">
+                                                <AppCol className="w-full flex items-center justify-between px-4 py-3 rounded-2xl">
                                                     <div className="w-[80%] flex justify-start items-center text-left">
                                                         {isLinkLoading ||
                                                         getCurrentClaimLink().length === 0 ? (
@@ -510,8 +511,8 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                                                     >
                                                         <CopyStack className="w-[32px] h-[32px] text-grayscale-900" />
                                                     </div>
-                                                </IonCol>
-                                            </IonRow>
+                                                </AppCol>
+                                            </AppRow>
                                             <div className="w-full flex items-center justify-center">
                                                 <button
                                                     onClick={() => {
@@ -690,7 +691,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                         )}
                     </>
                 )}
-            </IonGrid>
+            </AppGrid>
 
             {sectionPortal &&
                 createPortal(

@@ -3,7 +3,8 @@ import React from 'react';
 import * as m from '../../paraglide/messages.js';
 import { getSideMenuTranslationKey } from 'learn-card-base/components/sidemenu/sidemenuHelpers';
 
-import { IonRow, IonCol, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
+import { AppCol, AppRow } from '../layout';
 
 import AiPassportPersonalizationContainer from '../../components/ai-passport/AiPassportPersonalizationContainer';
 import CategoryDescriptorModal from '../category-descriptor/CategoryDescriptorModal';
@@ -149,8 +150,8 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
     }
 
     return (
-        <IonRow className="max-w-[700px] mx-auto">
-            <IonCol size={'9'} className="flex items-center justify-start gap-[10px]">
+        <AppRow className="max-w-[700px] mx-auto">
+            <AppCol size={'9'} className="flex items-center justify-start gap-[10px]">
                 {Icon && (
                     <Icon
                         className={`h-[60px] w-[60px] shrink-0 ${
@@ -185,12 +186,12 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
                         </div>
                     )}
                 </h2>
-            </IonCol>
+            </AppCol>
 
-            <IonCol size="3" className="flex items-center justify-end">
+            <AppCol size="3" className="flex items-center justify-end">
                 {!hidePlusBtn && plusButtonOverride}
-            </IonCol>
-        </IonRow>
+            </AppCol>
+        </AppRow>
     );
 };
 
