@@ -130,11 +130,10 @@ const buildTokens = async () => {
         resign(delegate, fixed, { claims: { vp: { ...fixedClaims.vp, validUntil } } });
 
     // Signed today with a bound ten years ahead: nothing about the token records when.
-    const farFutureUntil = Date.now() + 10 * 365 * 24 * 60 * 60 * 1000;
     const farFuture = await delegateToken(delegate, {
         challenge: CHALLENGE,
         audience: AUDIENCE,
-        validUntil: new Date(farFutureUntil).toISOString(),
+        validUntil: new Date(Date.now() + 10 * 365 * 24 * 60 * 60 * 1000).toISOString(),
     });
 
     const solanaDid = delegate.id.did('pkh:sol');
@@ -172,7 +171,6 @@ const buildTokens = async () => {
         }),
         fixed,
         farFuture,
-        farFutureUntil,
         fixedResigned: await withValidUntil(VALID_UNTIL),
         unbounded: await delegateToken(delegate, {
             challenge: CHALLENGE,
@@ -315,8 +313,12 @@ describe('readDelegatePresentation', () => {
 
     // The window is anchored on `validUntil`, which the signer chooses, not on the moment of
     // signing: these pin what the verifier enforces, and that it is not "five minutes after signing".
+    const validUntilMsOf = (jwt: string): number =>
+        Date.parse(String(jwtDecode<{ vp: JwtClaims }>(jwt).vp.validUntil));
+
     it('a token signed with a far-future validUntil is refused now', async () => {
-        const { farFuture, farFutureUntil } = tokens;
+        const { farFuture } = tokens;
+        const farFutureUntil = validUntilMsOf(farFuture);
 
         expect(farFutureUntil - Date.now()).toBeGreaterThan(FURTHEST_AHEAD_MS);
 
@@ -329,7 +331,8 @@ describe('readDelegatePresentation', () => {
     });
 
     it('a token signed with a far-future validUntil is accepted only during the last window before that validUntil', async () => {
-        const { farFuture, farFutureUntil, delegateDid } = tokens;
+        const { farFuture, delegateDid } = tokens;
+        const farFutureUntil = validUntilMsOf(farFuture);
         const accepted = { presentation: { signerDid: delegateDid } };
 
         // Opening boundary: one millisecond before the window it is refused, at its first
