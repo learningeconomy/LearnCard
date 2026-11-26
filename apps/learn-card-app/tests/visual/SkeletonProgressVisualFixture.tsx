@@ -1,12 +1,5 @@
 import React from 'react';
-import {
-    IonAvatar,
-    IonItem,
-    IonLabel,
-    IonProgressBar,
-    IonSkeletonText,
-    IonThumbnail,
-} from '@ionic/react';
+import { IonAvatar, IonItem, IonLabel, IonThumbnail } from '@ionic/react';
 
 import TopicsItemSkeleton from '../../src/components/ai-passport-apps/AiPassportAppProfileTopics/TopicsItemSkeleton';
 import AiSessionItemSkeleton from '../../src/components/ai-sessions/AiSessions/AiSessionItemSkeleton';
@@ -25,6 +18,8 @@ import AiPathwayCourseItemSkeletonLoader from '../../src/pages/ai-pathways/ai-pa
 import AiPathwayContentListItemSkeleton from '../../src/pages/ai-pathways/ai-pathway-explore-content/AiPathwayContentItemSkeletonLoader';
 import AiPathwaySessionItemSkeleton from '../../src/pages/ai-pathways/ai-pathway-sessions/AiPathwaySessionItemSkeleton';
 import AiPathwaySessionsSkeletonLoader from '../../src/pages/ai-pathways/ai-pathway-sessions/AiPathwaySessionsSkeletonLoader';
+import { AppProgressBar } from '../../src/components/feedback/AppProgressBar';
+import { AppSkeletonText } from '../../src/components/feedback/AppSkeletonText';
 
 /**
  * `feedback-2`: the app's IonSkeletonText and IonProgressBar call sites (phase 4 feedback, skeleton and
@@ -78,64 +73,64 @@ export const SkeletonProgressVisualFixture: React.FC = () => (
         <Block testId="f2-skel-matrix" title="IonSkeletonText states (synthetic)">
             <Row>
                 <Cell label="static (default)">
-                    <IonSkeletonText />
+                    <AppSkeletonText />
                 </Cell>
                 <Cell label="animated">
-                    <IonSkeletonText animated />
+                    <AppSkeletonText animated />
                 </Cell>
                 <Cell label="animated={false}">
-                    <IonSkeletonText animated={false} />
+                    <AppSkeletonText animated={false} />
                 </Cell>
                 <Cell label="style w60% h20 r4">
-                    <IonSkeletonText
+                    <AppSkeletonText
                         animated
                         style={{ width: '70%', height: '20px', borderRadius: '4px' }}
                     />
                 </Cell>
                 <Cell label="style 35x35 r999 (numbers)">
-                    <IonSkeletonText
+                    <AppSkeletonText
                         animated
                         style={{ width: 35, height: 35, borderRadius: 999 }}
                     />
                 </Cell>
                 <Cell label="style margin 0">
-                    <IonSkeletonText
+                    <AppSkeletonText
                         animated
                         style={{ width: '90%', height: '22px', margin: '0' }}
                     />
                 </Cell>
                 <Cell label="className w h rounded">
-                    <IonSkeletonText animated className="w-[85%] h-[14px] rounded-sm" />
+                    <AppSkeletonText animated className="w-[85%] h-[14px] rounded-sm" />
                 </Cell>
                 <Cell label="className mt-2 w-24">
-                    <IonSkeletonText animated className="mt-2 w-24" />
+                    <AppSkeletonText animated className="mt-2 w-24" />
                 </Cell>
                 <Cell label="className h-[45px] r25">
-                    <IonSkeletonText animated className="h-[45px] w-full rounded-[25px]" />
+                    <AppSkeletonText animated className="h-[45px] w-full rounded-[25px]" />
                 </Cell>
                 <Cell label="inline-block (span text)">
                     <span>
-                        a <IonSkeletonText animated className="inline-block w-10" /> b
+                        a <AppSkeletonText animated className="inline-block w-10" /> b
                     </span>
                 </Cell>
                 <Cell label="in h2 / p (ion-label)">
                     <IonLabel>
                         <h2>
-                            <IonSkeletonText animated style={{ width: '150px', height: '14px' }} />
+                            <AppSkeletonText animated style={{ width: '150px', height: '14px' }} />
                         </h2>
                         <p>
-                            <IonSkeletonText animated style={{ width: '100px', height: '12px' }} />
+                            <AppSkeletonText animated style={{ width: '100px', height: '12px' }} />
                         </p>
                     </IonLabel>
                 </Cell>
                 <Cell label="in ion-avatar (in-media)">
                     <IonAvatar style={{ width: 60, height: 60 }}>
-                        <IonSkeletonText animated style={{ width: '100%', height: '100%' }} />
+                        <AppSkeletonText animated style={{ width: '100%', height: '100%' }} />
                     </IonAvatar>
                 </Cell>
                 <Cell label="in ion-thumbnail (in-media)">
                     <IonThumbnail>
-                        <IonSkeletonText
+                        <AppSkeletonText
                             animated
                             style={{ width: '55px', height: '55px', borderRadius: '8px' }}
                         />
@@ -143,11 +138,11 @@ export const SkeletonProgressVisualFixture: React.FC = () => (
                 </Cell>
                 <Cell label="in ion-avatar, no size">
                     <IonAvatar>
-                        <IonSkeletonText />
+                        <AppSkeletonText />
                     </IonAvatar>
                 </Cell>
                 <Cell label="--background">
-                    <IonSkeletonText
+                    <AppSkeletonText
                         style={
                             {
                                 '--background': 'rgba(255, 0, 0, 0.3)',
@@ -157,7 +152,7 @@ export const SkeletonProgressVisualFixture: React.FC = () => (
                     />
                 </Cell>
                 <Cell label="--background-rgb animated">
-                    <IonSkeletonText
+                    <AppSkeletonText
                         animated
                         style={
                             {
@@ -168,22 +163,22 @@ export const SkeletonProgressVisualFixture: React.FC = () => (
                     />
                 </Cell>
                 <Cell label="--border-radius">
-                    <IonSkeletonText
+                    <AppSkeletonText
                         animated
                         style={{ '--border-radius': '8px', height: '16px' } as React.CSSProperties}
                     />
                 </Cell>
                 <Cell label="inherited radius">
                     <div className="rounded-full overflow-hidden w-12 h-12">
-                        <IonSkeletonText animated className="h-full m-0" />
+                        <AppSkeletonText animated className="h-full m-0" />
                     </div>
                 </Cell>
                 <Cell label="dark background" dark>
-                    <IonSkeletonText animated style={{ width: '80%', height: '14px' }} />
+                    <AppSkeletonText animated style={{ width: '80%', height: '14px' }} />
                 </Cell>
                 <Cell label="in ion-item">
                     <IonItem lines="none">
-                        <IonSkeletonText animated className="w-36 h-[15px]" />
+                        <AppSkeletonText animated className="w-36 h-[15px]" />
                     </IonItem>
                 </Cell>
             </Row>
@@ -220,15 +215,15 @@ export const SkeletonProgressVisualFixture: React.FC = () => (
             <div className="px-4 pb-6 gap-4 flex flex-col bg-white">
                 <section>
                     <div className="flex flex-col gap-2">
-                        <IonSkeletonText animated style={{ width: '85%', height: 28 }} />
-                        <IonSkeletonText animated style={{ width: '60%', height: 28 }} />
+                        <AppSkeletonText animated style={{ width: '85%', height: 28 }} />
+                        <AppSkeletonText animated style={{ width: '60%', height: 28 }} />
                     </div>
                 </section>
                 <section>
                     <div className="flex flex-col gap-2">
-                        <IonSkeletonText animated />
-                        <IonSkeletonText animated />
-                        <IonSkeletonText animated />
+                        <AppSkeletonText animated />
+                        <AppSkeletonText animated />
+                        <AppSkeletonText animated />
                     </div>
                 </section>
                 <section className="flex flex-col gap-8 mt-4">
@@ -237,7 +232,7 @@ export const SkeletonProgressVisualFixture: React.FC = () => (
                     </h2>
                     <div className="flex flex-wrap gap-2">
                         {[1, 2, 3].map(i => (
-                            <IonSkeletonText
+                            <AppSkeletonText
                                 key={i}
                                 animated
                                 style={{
@@ -252,9 +247,9 @@ export const SkeletonProgressVisualFixture: React.FC = () => (
                 <ul className="list-decimal list-inside flex flex-col gap-3 text-grayscale-900">
                     <li>
                         <div className="flex flex-col gap-2">
-                            <IonSkeletonText animated style={{ width: '60%' }} />
-                            <IonSkeletonText animated style={{ width: '80%' }} />
-                            <IonSkeletonText animated style={{ width: '70%' }} />
+                            <AppSkeletonText animated style={{ width: '60%' }} />
+                            <AppSkeletonText animated style={{ width: '80%' }} />
+                            <AppSkeletonText animated style={{ width: '70%' }} />
                         </div>
                     </li>
                 </ul>
@@ -264,7 +259,7 @@ export const SkeletonProgressVisualFixture: React.FC = () => (
         {/* src/components/boost/boost-template/BoostTemplateListItem.tsx:89-120 (showSkeleton). */}
         <Block testId="f2-x-boost-template" title="BoostTemplateListItem skeleton (excerpt)">
             <div className="flex items-center gap-[10px] w-full p-[10px] rounded-[15px] bg-white shadow-bottom-2-4">
-                <IonSkeletonText
+                <AppSkeletonText
                     animated={true}
                     style={{
                         width: '40px',
@@ -275,11 +270,11 @@ export const SkeletonProgressVisualFixture: React.FC = () => (
                     }}
                 />
                 <div className="flex flex-col font-poppins grow">
-                    <IonSkeletonText
+                    <AppSkeletonText
                         animated={true}
                         style={{ width: '90%', height: '22px', margin: '0' }}
                     />
-                    <IonSkeletonText
+                    <AppSkeletonText
                         animated={true}
                         style={{
                             width: '60%',
@@ -299,18 +294,18 @@ export const SkeletonProgressVisualFixture: React.FC = () => (
                 <div className="flex items-center justify-center rounded-full mt-1 relative h-[30px] w-[60px] bg-grayscale-200">
                     <div className="absolute top-[-3px] right-[-3px] border-2 rounded-full border-solid z-10 border-white w-[20px] h-[20px]">
                         <div className="relative w-full h-full rounded-full overflow-hidden">
-                            <IonSkeletonText className="h-full m-0" animated />
+                            <AppSkeletonText className="h-full m-0" animated />
                         </div>
                     </div>
                 </div>
                 <div className="w-full flex flex-col items-center justify-center mt-8 px-4">
                     <div className="h-[60px] w-[60px] rounded-[12px] overflow-hidden">
-                        <IonSkeletonText animated className="h-full w-full m-0" />
+                        <AppSkeletonText animated className="h-full w-full m-0" />
                     </div>
-                    <IonSkeletonText animated className="mt-2 w-64" />
-                    <IonSkeletonText animated className="mt-4 w-[calc(100%-32px)]" />
-                    <IonSkeletonText animated className="w-[calc(100%-32px)]" />
-                    <IonSkeletonText animated className="h-[45px] w-full rounded-[25px]" />
+                    <AppSkeletonText animated className="mt-2 w-64" />
+                    <AppSkeletonText animated className="mt-4 w-[calc(100%-32px)]" />
+                    <AppSkeletonText animated className="w-[calc(100%-32px)]" />
+                    <AppSkeletonText animated className="h-[45px] w-full rounded-[25px]" />
                 </div>
             </div>
             <IonItem
@@ -319,12 +314,12 @@ export const SkeletonProgressVisualFixture: React.FC = () => (
             >
                 <div className="flex items-center justify-start w-full bg-white">
                     <div className="rounded-lg shadow-3xl w-[50px] h-[50px] mr-3 min-w-[50px] min-h-[50px]">
-                        <IonSkeletonText animated className="w-full h-full" />
+                        <AppSkeletonText animated className="w-full h-full" />
                     </div>
                     <div className="right-side flex justify-between w-full">
                         <div className="flex flex-col items-start justify-center text-left w-full">
-                            <IonSkeletonText animated className="w-36 h-[15px]" />
-                            <IonSkeletonText animated className="w-5/6 h-[12px]" />
+                            <AppSkeletonText animated className="w-36 h-[15px]" />
+                            <AppSkeletonText animated className="w-5/6 h-[12px]" />
                         </div>
                     </div>
                 </div>
@@ -334,58 +329,58 @@ export const SkeletonProgressVisualFixture: React.FC = () => (
         <Block testId="f2-bar-matrix" title="IonProgressBar states (synthetic)">
             <Row>
                 <Cell label="determinate 0 (default)">
-                    <IonProgressBar />
+                    <AppProgressBar />
                 </Cell>
                 <Cell label="value 0.25">
-                    <IonProgressBar value={0.25} />
+                    <AppProgressBar value={0.25} />
                 </Cell>
                 <Cell label="value 0.5">
-                    <IonProgressBar value={0.5} />
+                    <AppProgressBar value={0.5} />
                 </Cell>
                 <Cell label="value 1">
-                    <IonProgressBar value={1} />
+                    <AppProgressBar value={1} />
                 </Cell>
                 <Cell label="value 1.4 (clamped)">
-                    <IonProgressBar value={1.4} />
+                    <AppProgressBar value={1.4} />
                 </Cell>
                 <Cell label="value -0.2 (clamped)">
-                    <IonProgressBar value={-0.2} />
+                    <AppProgressBar value={-0.2} />
                 </Cell>
                 <Cell label="value NaN">
-                    <IonProgressBar value={Number.NaN} />
+                    <AppProgressBar value={Number.NaN} />
                 </Cell>
                 <Cell label="buffer 0.6 value 0.3">
-                    <IonProgressBar value={0.3} buffer={0.6} />
+                    <AppProgressBar value={0.3} buffer={0.6} />
                 </Cell>
                 <Cell label="buffer 0 value 0">
-                    <IonProgressBar value={0} buffer={0} />
+                    <AppProgressBar value={0} buffer={0} />
                 </Cell>
                 <Cell label="reversed 0.3">
-                    <IonProgressBar value={0.3} reversed />
+                    <AppProgressBar value={0.3} reversed />
                 </Cell>
                 <Cell label="reversed buffer">
-                    <IonProgressBar value={0.3} buffer={0.6} reversed />
+                    <AppProgressBar value={0.3} buffer={0.6} reversed />
                 </Cell>
                 <Cell label="indeterminate">
-                    <IonProgressBar type="indeterminate" />
+                    <AppProgressBar type="indeterminate" />
                 </Cell>
                 <Cell label="indeterminate reversed">
-                    <IonProgressBar type="indeterminate" reversed />
+                    <AppProgressBar type="indeterminate" reversed />
                 </Cell>
                 <Cell label="grayscale-800 0.42">
-                    <IonProgressBar color="grayscale-800" value={0.42} />
+                    <AppProgressBar color="grayscale-800" value={0.42} />
                 </Cell>
                 <Cell label="danger buffer">
-                    <IonProgressBar color="danger" value={0.3} buffer={0.6} />
+                    <AppProgressBar color="danger" value={0.3} buffer={0.6} />
                 </Cell>
                 <Cell label="primary indeterminate">
-                    <IonProgressBar color="primary" type="indeterminate" />
+                    <AppProgressBar color="primary" type="indeterminate" />
                 </Cell>
                 <Cell label="dark" dark>
-                    <IonProgressBar color="light" value={0.6} />
+                    <AppProgressBar color="light" value={0.6} />
                 </Cell>
                 <Cell label="--progress-background --background">
-                    <IonProgressBar
+                    <AppProgressBar
                         value={0.5}
                         style={
                             {
@@ -396,10 +391,10 @@ export const SkeletonProgressVisualFixture: React.FC = () => (
                     />
                 </Cell>
                 <Cell label="className h-2 rounded">
-                    <IonProgressBar value={0.7} className="h-2 rounded-full" />
+                    <AppProgressBar value={0.7} className="h-2 rounded-full" />
                 </Cell>
                 <Cell label="aria-label value 0.5">
-                    <IonProgressBar value={0.5} aria-label="Upload progress" />
+                    <AppProgressBar value={0.5} aria-label="Upload progress" />
                 </Cell>
             </Row>
         </Block>
@@ -408,10 +403,10 @@ export const SkeletonProgressVisualFixture: React.FC = () => (
         <Block testId="f2-x-upload" title="Upload progress (excerpts)">
             <div className="w-full flex flex-col items-start gap-2 justify-start py-4 px-4 bg-white rounded-[20px] shadow-bottom-2-4">
                 <div className="w-full px-4">
-                    <IonProgressBar color="grayscale-800" value={42 / 100} />
+                    <AppProgressBar color="grayscale-800" value={42 / 100} />
                 </div>
                 <div className="w-full px-4">
-                    <IonProgressBar color="grayscale-800" value={87 / 100} />
+                    <AppProgressBar color="grayscale-800" value={87 / 100} />
                 </div>
             </div>
         </Block>
@@ -419,7 +414,7 @@ export const SkeletonProgressVisualFixture: React.FC = () => (
         {/* src/components/main-header/MainHeader.tsx:110-118 (loading and idle). */}
         <Block testId="f2-x-main-header" title="MainHeader loading bar (excerpt)">
             <div className="relative h-[56px] bg-white">
-                <IonProgressBar
+                <AppProgressBar
                     type="indeterminate"
                     aria-label="Loading"
                     aria-hidden={false}
@@ -427,7 +422,7 @@ export const SkeletonProgressVisualFixture: React.FC = () => (
                 />
             </div>
             <div className="relative h-[56px] bg-white">
-                <IonProgressBar
+                <AppProgressBar
                     type="indeterminate"
                     aria-label="Loading"
                     aria-hidden={true}
@@ -438,9 +433,9 @@ export const SkeletonProgressVisualFixture: React.FC = () => (
 
         <Block testId="f2-app-router" title="Inside #app-router (index.scss reduced-motion rule)">
             <div id="app-router" className="flex flex-col gap-3 bg-white p-3">
-                <IonSkeletonText animated style={{ width: '80%', height: '14px' }} />
-                <IonProgressBar type="indeterminate" />
-                <IonProgressBar value={0.3} buffer={0.6} />
+                <AppSkeletonText animated style={{ width: '80%', height: '14px' }} />
+                <AppProgressBar type="indeterminate" />
+                <AppProgressBar value={0.3} buffer={0.6} />
             </div>
         </Block>
     </main>

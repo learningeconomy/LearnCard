@@ -17,7 +17,7 @@ import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers
 import { useHistory } from 'react-router-dom';
 
 import 'swiper/css';
-import { IonSkeletonText } from '@ionic/react';
+import { AppSkeletonText } from '../../components/feedback/AppSkeletonText';
 
 type PathwayStep = {
     title?: string;
@@ -140,27 +140,27 @@ export const AiSessionLearningPathways: React.FC<{ isLoading: boolean }> = ({ is
                     {[...Array(3)].map((_, i) => (
                         <div key={i} className="w-full mb-6">
                             <div className="flex items-center justify-between w-full">
-                                <IonSkeletonText
+                                <AppSkeletonText
                                     animated
                                     style={{ width: '70%', height: '20px', borderRadius: '4px' }}
                                 />
 
-                                <IonSkeletonText
+                                <AppSkeletonText
                                     animated
                                     style={{ width: '24px', height: '20px', borderRadius: '4px' }}
                                 />
                             </div>
 
                             <div className="w-full mt-4 space-y-v3-2">
-                                <IonSkeletonText
+                                <AppSkeletonText
                                     animated
                                     style={{ width: '100%', height: '14px' }}
                                 />
-                                <IonSkeletonText
+                                <AppSkeletonText
                                     animated
                                     style={{ width: '90%', height: '14px' }}
                                 />
-                                <IonSkeletonText
+                                <AppSkeletonText
                                     animated
                                     style={{ width: '80%', height: '14px' }}
                                 />
@@ -178,7 +178,7 @@ export const AiSessionLearningPathways: React.FC<{ isLoading: boolean }> = ({ is
                                             overflow: 'hidden',
                                         }}
                                     >
-                                        <IonSkeletonText
+                                        <AppSkeletonText
                                             animated
                                             style={{ width: '100%', height: '100%' }}
                                         />

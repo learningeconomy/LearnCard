@@ -59,9 +59,6 @@ vi.mock('learn-card-base/hooks/useConsentedContracts', () => ({
 vi.mock('learn-card-base/hooks/useGetCredentialRecordForBoost', () => ({
     getOrFetchCredentialRecordForBoost: vi.fn(),
 }));
-vi.mock('@ionic/react', () => ({
-    IonSkeletonText: () => null,
-}));
 vi.mock('../../theme/hooks/useTheme', () => ({
     useTheme: () => ({
         theme: { id: 'colorful' },

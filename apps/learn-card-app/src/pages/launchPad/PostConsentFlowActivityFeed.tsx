@@ -2,20 +2,13 @@ import React, { useEffect, useRef } from 'react';
 import { ConsentFlowTerms, ConsentFlowContractDetails, LCNProfile } from '@learncard/types';
 import moment from 'moment';
 
-import {
-    IonCol,
-    IonDatetime,
-    IonGrid,
-    IonHeader,
-    IonRow,
-    IonSkeletonText,
-    IonToolbar,
-} from '@ionic/react';
+import { IonCol, IonDatetime, IonGrid, IonHeader, IonRow, IonToolbar } from '@ionic/react';
 import { AppSpinner } from '../../components/feedback/AppSpinner';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import { useModal, useTermsTransactions } from 'learn-card-base';
 import TransactionHistoryItem from '../consentFlow/TransactionHistoryItem';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
+import { AppSkeletonText } from '../../components/feedback/AppSkeletonText';
 
 const defaultDate = moment().add(6, 'months').toISOString(); // sets the shareable expiration date 6 months from today
 
@@ -109,10 +102,10 @@ const PostConsentFlowActivityFeed: React.FC<PostConsentFlowActivityFeedProps> = 
                       className="w-full py-4 not-last-of-type:border-b flex flex-col gap-2"
                   >
                       <header className="flex gap-1 text-sm font-poppins">
-                          <IonSkeletonText animated className="w-64" />
+                          <AppSkeletonText animated className="w-64" />
                       </header>
                       <section className="text-xs font-poppins text-grayscale-700">
-                          <IonSkeletonText animated />
+                          <AppSkeletonText animated />
                       </section>
                   </li>
               ))

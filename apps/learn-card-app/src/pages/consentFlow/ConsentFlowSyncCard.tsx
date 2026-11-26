@@ -5,7 +5,7 @@ import { useHistory, useLocation } from 'react-router-dom';
 
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 
-import { IonCol, IonLoading, IonRow, IonSkeletonText } from '@ionic/react';
+import { IonCol, IonLoading, IonRow } from '@ionic/react';
 import RightArrow from 'learn-card-base/svgs/RightArrow';
 import HandshakeIcon from '../../components/svgs/HandshakeIcon';
 import { getMinimumTermsForContract } from '../../helpers/contract.helpers';
@@ -33,6 +33,7 @@ import {
 
 import useTheme from '../../theme/hooks/useTheme';
 import * as m from '../../paraglide/messages.js';
+import { AppSkeletonText } from '../../components/feedback/AppSkeletonText';
 
 export type ConsentFlowWriteAccessType = {
     [BoostCategoryOptionsEnum.socialBadge]: boolean;
@@ -131,7 +132,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                                 className="h-full w-full m-0 object-cover"
                             />
                         ) : (
-                            <IonSkeletonText animated className="h-full w-full m-0" />
+                            <AppSkeletonText animated className="h-full w-full m-0" />
                         )}
                     </div>
                     {contractDetails?.contract ? (
@@ -139,7 +140,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                             {contractDetails?.name}
                         </h3>
                     ) : (
-                        <IonSkeletonText animated className="mt-2 w-64" />
+                        <AppSkeletonText animated className="mt-2 w-64" />
                     )}
                     {contractDetails?.contract ? (
                         <>
@@ -154,8 +155,8 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                         </>
                     ) : (
                         <>
-                            <IonSkeletonText animated className="mt-4 w-[calc(100%-32px)]" />
-                            <IonSkeletonText animated className="w-[calc(100%-32px)]" />
+                            <AppSkeletonText animated className="mt-4 w-[calc(100%-32px)]" />
+                            <AppSkeletonText animated className="w-[calc(100%-32px)]" />
                         </>
                     )}
                 </div>

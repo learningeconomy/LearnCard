@@ -7,7 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import authStore from 'learn-card-base/stores/authStore';
 
-import { IonPage, IonCol, IonRow, IonSkeletonText } from '@ionic/react';
+import { IonPage, IonCol, IonRow } from '@ionic/react';
 import { AppSpinner } from '../../components/feedback/AppSpinner';
 import FullScreenGameFlow from './GameFlow/FullScreenGameFlow';
 import ConsentFlowCredFrontDoor from './ConsentFlowCredFrontDoor';
@@ -45,6 +45,7 @@ import {
     ACCOUNT_CREATED_AT_KEY,
     SESSION_START_KEY,
 } from '@analytics';
+import { AppSkeletonText } from '../../components/feedback/AppSkeletonText';
 
 enum Step {
     landing,
@@ -259,7 +260,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
         <IonPage className="bg-emerald-700 p-[30px]">
             <div className="flex flex-col gap-[15px] items-center px-[40px] pb-[30px] pt-[40px] bg-white shadow-bottom rounded-[24px] m-auto max-w-[400px]">
                 {isPending && !error ? (
-                    <IonSkeletonText animated className="h-[60px] w-[60px] rounded-[10px]" />
+                    <AppSkeletonText animated className="h-[60px] w-[60px] rounded-[10px]" />
                 ) : (
                     <img
                         className="w-[60px] h-[60px] object-cover rounded-[10px]"
@@ -271,8 +272,8 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                 <div className="flex flex-col items-center font-poppins w-full gap-[2px]">
                     {isPending && !error ? (
                         <>
-                            <IonSkeletonText animated className="h-[20px]" />
-                            <IonSkeletonText animated className="h-[17px]" />
+                            <AppSkeletonText animated className="h-[20px]" />
+                            <AppSkeletonText animated className="h-[17px]" />
                         </>
                     ) : (
                         <>

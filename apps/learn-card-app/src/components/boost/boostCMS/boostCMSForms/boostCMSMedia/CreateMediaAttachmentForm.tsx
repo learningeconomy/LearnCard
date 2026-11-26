@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Updater } from 'use-immer';
 import { curriedStateSlice } from '@learncard/helpers';
 
-import { IonCol, IonRow, IonProgressBar } from '@ionic/react';
+import { IonCol, IonRow } from '@ionic/react';
 
 import BoostCMSMediaPhotoUpload from './BoostCMSMediaPhotoUpload';
 import BoostCMSMediaDocumentUpload from './BoostCMSMediaDocumentUpload';
@@ -28,6 +28,7 @@ import {
 import * as m from '../../../../../paraglide/messages.js';
 
 import { IMAGE_MIME_TYPES, VIEWER_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
+import { AppProgressBar } from '../../../../feedback/AppProgressBar';
 
 type CreateMediaAttachmentFormProps = {
     initialState?: BoostCMSState;
@@ -344,7 +345,7 @@ export const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps>
         <>
             {uploadProgress !== false && (
                 <div className="w-full px-4">
-                    <IonProgressBar
+                    <AppProgressBar
                         color="grayscale-800"
                         value={(uploadProgress as number) / 100}
                     />
