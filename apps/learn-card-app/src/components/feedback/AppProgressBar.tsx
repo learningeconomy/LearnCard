@@ -109,7 +109,7 @@ export const AppProgressBar: React.FC<AppProgressBarProps> = ({
         <div
             {...rest}
             role="progressbar"
-            aria-valuenow={type === 'determinate' ? String(value) : undefined}
+            aria-valuenow={type === 'determinate' ? value : undefined}
             aria-valuemin={0}
             aria-valuemax={1}
             className={classes}
