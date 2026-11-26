@@ -23,11 +23,6 @@ vi.mock('../../i18n', () => ({
 vi.mock('@ionic/react', () => ({
     IonPopover: ({ isOpen, children }: { isOpen: boolean; children: React.ReactNode }) =>
         isOpen ? <div role="dialog">{children}</div> : null,
-    IonList: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    IonItem: ({ children, onClick }: { children: React.ReactNode; onClick: () => void }) => (
-        <button onClick={onClick}>{children}</button>
-    ),
-    IonLabel: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
 }));
 
 vi.mock('../../components/clr-transcript', () => ({

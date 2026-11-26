@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { IonApp, IonItem, IonLabel, IonList } from '@ionic/react';
+import { IonApp } from '@ionic/react';
+import { AppItem, AppLabel, AppList } from '../../src/components/list';
 
 import { CheckListItemSkeleton } from '../../src/components/learncard/checklist/checklist-steps/CheckListItemSkeleton';
 
@@ -70,60 +71,60 @@ export const ListVisualFixture: React.FC = () => {
             <Block testId="l1-list-matrix" title="IonList lines / role (synthetic)">
                 <div className="flex flex-wrap gap-2">
                     <Cell label="list default, items default">
-                        <IonList>
-                            <IonItem>Item one</IonItem>
-                            <IonItem>Item two</IonItem>
-                        </IonList>
+                        <AppList>
+                            <AppItem>Item one</AppItem>
+                            <AppItem>Item two</AppItem>
+                        </AppList>
                     </Cell>
                     <Cell label='list lines="none"'>
-                        <IonList lines="none">
-                            <IonItem>Item one</IonItem>
-                            <IonItem>Item two</IonItem>
-                        </IonList>
+                        <AppList lines="none">
+                            <AppItem>Item one</AppItem>
+                            <AppItem>Item two</AppItem>
+                        </AppList>
                     </Cell>
                     <Cell label='list lines="full"'>
-                        <IonList lines="full">
-                            <IonItem>Item one</IonItem>
-                            <IonItem>Item two</IonItem>
-                        </IonList>
+                        <AppList lines="full">
+                            <AppItem>Item one</AppItem>
+                            <AppItem>Item two</AppItem>
+                        </AppList>
                     </Cell>
                     <Cell label='list lines="inset"'>
-                        <IonList lines="inset">
-                            <IonItem>Item one</IonItem>
-                            <IonItem>Item two</IonItem>
-                        </IonList>
+                        <AppList lines="inset">
+                            <AppItem>Item one</AppItem>
+                            <AppItem>Item two</AppItem>
+                        </AppList>
                     </Cell>
                     <Cell label='list none, item lines="full"'>
-                        <IonList lines="none">
-                            <IonItem lines="full">Item full</IonItem>
-                            <IonItem>Item default</IonItem>
-                        </IonList>
+                        <AppList lines="none">
+                            <AppItem lines="full">Item full</AppItem>
+                            <AppItem>Item default</AppItem>
+                        </AppList>
                     </Cell>
                     <Cell label="list classes (py-4 rounded bg-white)">
-                        <IonList className="py-4 rounded-[20px] bg-white">
-                            <IonItem lines="none">Item</IonItem>
-                        </IonList>
+                        <AppList className="py-4 rounded-[20px] bg-white">
+                            <AppItem lines="none">Item</AppItem>
+                        </AppList>
                     </Cell>
                     <Cell label="list bg-transparent, empty">
-                        <IonList lines="none" className="bg-transparent" />
+                        <AppList lines="none" className="bg-transparent" />
                     </Cell>
                     <Cell label='role="navigation" aria-label'>
-                        <IonList
+                        <AppList
                             role="navigation"
                             aria-label="Primary navigation"
                             className="m-4 rounded-2xl py-3"
                         >
                             <a href="#nav">Link</a>
-                        </IonList>
+                        </AppList>
                     </Cell>
                     <Cell label='role="presentation"'>
-                        <IonList className="w-full h-full bg-transparent" role="presentation">
+                        <AppList className="w-full h-full bg-transparent" role="presentation">
                             <ul className="m-0 p-0 list-none">
                                 <li>
                                     <button type="button">Wallet</button>
                                 </li>
                             </ul>
-                        </IonList>
+                        </AppList>
                     </Cell>
                 </div>
             </Block>
@@ -131,30 +132,30 @@ export const ListVisualFixture: React.FC = () => {
             <Block testId="l1-item-matrix" title="IonItem states (synthetic)">
                 <div className="flex flex-wrap gap-2">
                     <Cell label="item outside list">
-                        <IonItem>Plain item</IonItem>
+                        <AppItem>Plain item</AppItem>
                     </Cell>
                     <Cell label='lines="none"'>
-                        <IonItem lines="none">No lines</IonItem>
+                        <AppItem lines="none">No lines</AppItem>
                     </Cell>
                     <Cell label='lines="full"'>
-                        <IonItem lines="full">Full line</IonItem>
+                        <AppItem lines="full">Full line</AppItem>
                     </Cell>
                     <Cell label='lines="inset"'>
-                        <IonItem lines="inset">Inset line</IonItem>
+                        <AppItem lines="inset">Inset line</AppItem>
                     </Cell>
                     <Cell label="button detail={false}">
-                        <IonItem
+                        <AppItem
                             data-testid="m-button"
                             button
                             detail={false}
                             onClick={onMatrix('button')}
                         >
                             Button item
-                        </IonItem>
+                        </AppItem>
                     </Cell>
                     <Cell label="button lines none, in list">
-                        <IonList>
-                            <IonItem
+                        <AppList>
+                            <AppItem
                                 data-testid="m-button-in-list"
                                 button={true}
                                 detail={false}
@@ -162,11 +163,11 @@ export const ListVisualFixture: React.FC = () => {
                                 onClick={onMatrix('button-in-list')}
                             >
                                 Button in list
-                            </IonItem>
-                        </IonList>
+                            </AppItem>
+                        </AppList>
                     </Cell>
                     <Cell label="button disabled">
-                        <IonItem
+                        <AppItem
                             data-testid="m-disabled"
                             button
                             detail={false}
@@ -174,37 +175,37 @@ export const ListVisualFixture: React.FC = () => {
                             onClick={onMatrix('disabled')}
                         >
                             Disabled button
-                        </IonItem>
+                        </AppItem>
                     </Cell>
                     <Cell label="not button, onClick">
-                        <IonItem
+                        <AppItem
                             data-testid="m-plain-click"
                             lines="none"
                             onClick={onMatrix('plain')}
                         >
                             Plain, clickable
-                        </IonItem>
+                        </AppItem>
                     </Cell>
                     <Cell label="--vars via Tailwind">
-                        <IonItem
+                        <AppItem
                             button
                             detail={false}
                             className="rounded-[12px] [--background:transparent] [--inner-padding-end:0] [--padding-start:12px] [--padding-end:12px] bg-grayscale-100"
                         >
                             Custom padding
-                        </IonItem>
+                        </AppItem>
                     </Cell>
                     <Cell label="--border-color inline">
-                        <IonList>
-                            <IonItem
+                        <AppList>
+                            <AppItem
                                 style={{ '--border-color': 'transparent' } as React.CSSProperties}
                             >
                                 Transparent line
-                            </IonItem>
-                        </IonList>
+                            </AppItem>
+                        </AppList>
                     </Cell>
                     <Cell label="--background --min-height">
-                        <IonItem
+                        <AppItem
                             lines="none"
                             style={
                                 {
@@ -214,24 +215,24 @@ export const ListVisualFixture: React.FC = () => {
                             }
                         >
                             Amber, 64px
-                        </IonItem>
+                        </AppItem>
                     </Cell>
                     <Cell label="notificaion-list-item">
-                        <IonItem
+                        <AppItem
                             lines="none"
                             className="w-full ion-no-border px-[12px] py-[10px] flex items-center justify-between notificaion-list-item"
                         >
                             No padding vars
-                        </IonItem>
+                        </AppItem>
                     </Cell>
                     <Cell label="ion-label in item">
-                        <IonItem lines="none">
-                            <IonLabel>Label inside item with a long text that wraps</IonLabel>
-                        </IonItem>
+                        <AppItem lines="none">
+                            <AppLabel>Label inside item with a long text that wraps</AppLabel>
+                        </AppItem>
                     </Cell>
                     <Cell label="ion-label outside item">
                         <span>
-                            a <IonLabel className="text-sm">inline label</IonLabel> b
+                            a <AppLabel className="text-sm">inline label</AppLabel> b
                         </span>
                     </Cell>
                 </div>
@@ -242,9 +243,9 @@ export const ListVisualFixture: React.FC = () => {
                 popovers and the three FilterSortingOptions modals). */}
             <Block testId="l1-x-sort-popover" title="Sort popover list (excerpt)">
                 <div className="w-[260px] bg-white rounded-[12px] shadow-xs">
-                    <IonList>
+                    <AppList>
                         {SORT_OPTIONS.map(option => (
-                            <IonItem
+                            <AppItem
                                 className="font-notoSans text-sm flex items-center justify-start text-left"
                                 key={option.id}
                                 data-testid={`sort-${option.id}`}
@@ -264,22 +265,22 @@ export const ListVisualFixture: React.FC = () => {
                                     <div className="w-[24px] h-[24px] mr-1" />
                                 )}
                                 Sort by {option.title}
-                            </IonItem>
+                            </AppItem>
                         ))}
-                    </IonList>
+                    </AppList>
                 </div>
                 <div className="w-[300px]">
                     {/* LaunchPadFilterSortingOptionsModal.tsx:33-58 */}
-                    <IonList className="py-4 rounded-[20px] bg-white">
-                        <IonItem
+                    <AppList className="py-4 rounded-[20px] bg-white">
+                        <AppItem
                             className="font-notoSans text-sm flex items-center justify-start text-left"
                             lines="none"
                             button={true}
                             detail={false}
                         >
                             Filter: All apps
-                        </IonItem>
-                    </IonList>
+                        </AppItem>
+                    </AppList>
                 </div>
                 <Clicks clicks={sortClicks} />
             </Block>
@@ -287,9 +288,9 @@ export const ListVisualFixture: React.FC = () => {
             {/* ResumeBuilderHistoryDropdownButton.tsx:132-175 (active, idle and selecting rows). */}
             <Block testId="l1-x-resume-history" title="Resume history rows (excerpt)">
                 <div className="max-h-[360px] overflow-y-auto pr-1 w-[360px] bg-white rounded-[20px] p-2">
-                    <IonList lines="none" className="bg-transparent">
+                    <AppList lines="none" className="bg-transparent">
                         {['active', 'idle', 'selecting'].map(state => (
-                            <IonItem
+                            <AppItem
                                 key={state}
                                 data-testid={`resume-${state}`}
                                 button
@@ -313,9 +314,9 @@ export const ListVisualFixture: React.FC = () => {
                                         </div>
                                     </div>
                                 </div>
-                            </IonItem>
+                            </AppItem>
                         ))}
-                    </IonList>
+                    </AppList>
                 </div>
                 <Clicks clicks={resumeClicks} />
             </Block>
@@ -326,12 +327,12 @@ export const ListVisualFixture: React.FC = () => {
                 title="Contacts / notifications / user options (excerpts)"
             >
                 <div className="bg-grayscale-100 p-2">
-                    <IonList
+                    <AppList
                         lines="none"
                         className="flex flex-col items-center justify-center w-full"
                     >
                         {['Ada Lovelace', 'Grace Hopper'].map(name => (
-                            <IonItem
+                            <AppItem
                                 key={name}
                                 lines="none"
                                 className="w-[95%] max-w-3xl ion-no-border px-[12px] py-[10px] flex items-center justify-between notificaion-list-item cursor-pointer last:border-b-0"
@@ -341,29 +342,29 @@ export const ListVisualFixture: React.FC = () => {
                                     <p className="grow text-grayscale-900 font-medium">{name}</p>
                                     <span className="text-grayscale-400">›</span>
                                 </div>
-                            </IonItem>
+                            </AppItem>
                         ))}
-                    </IonList>
-                    <IonList
+                    </AppList>
+                    <AppList
                         lines="none"
                         className="flex flex-col items-center justify-center px-2 w-[90%] max-w-[600px] pt-4"
                     >
-                        <IonItem
+                        <AppItem
                             lines="none"
                             className="w-full max-w-3xl mb-2 mt-2 p-0 shadow-3xl rounded-3xl notificaion-list-item"
                         >
                             <div className="w-full p-4 bg-white">
                                 New credential from Synthetic Academy
                             </div>
-                        </IonItem>
-                    </IonList>
-                    <IonList lines="none">
-                        <IonItem className="w-full">
+                        </AppItem>
+                    </AppList>
+                    <AppList lines="none">
+                        <AppItem className="w-full">
                             <button className="w-full flex items-center justify-center px-[15px] my-[10px] font-medium text-lg">
                                 Delete account
                             </button>
-                        </IonItem>
-                    </IonList>
+                        </AppItem>
+                    </AppList>
                 </div>
             </Block>
 
@@ -371,9 +372,9 @@ export const ListVisualFixture: React.FC = () => {
             <Block testId="l1-x-labels" title="Items with labels (excerpts)">
                 <div className="flex gap-4 items-start">
                     <div className="bg-white rounded-[16px] p-1.5 w-[260px]">
-                        <IonList lines="none" className="bg-transparent">
+                        <AppList lines="none" className="bg-transparent">
                             {['Basic', 'Detailed'].map((key, i) => (
-                                <IonItem
+                                <AppItem
                                     key={key}
                                     data-testid={`demo-${key}`}
                                     button
@@ -383,17 +384,17 @@ export const ListVisualFixture: React.FC = () => {
                                     }`}
                                     onClick={onDemo(`demo-${key}`)}
                                 >
-                                    <IonLabel className="text-sm font-medium text-grayscale-900 font-poppins py-1">
+                                    <AppLabel className="text-sm font-medium text-grayscale-900 font-poppins py-1">
                                         {key} transcript
-                                    </IonLabel>
-                                </IonItem>
+                                    </AppLabel>
+                                </AppItem>
                             ))}
-                        </IonList>
+                        </AppList>
                     </div>
                     <div className="w-[300px] bg-white">
-                        <IonList>
+                        <AppList>
                             {['Read', 'Write'].map(scope => (
-                                <IonItem
+                                <AppItem
                                     button
                                     data-testid={`scope-${scope}`}
                                     style={
@@ -404,12 +405,12 @@ export const ListVisualFixture: React.FC = () => {
                                     onClick={onScope(`scope-${scope}`)}
                                 >
                                     {scope}
-                                </IonItem>
+                                </AppItem>
                             ))}
-                        </IonList>
+                        </AppList>
                         <div className="p-2">
-                            <IonLabel className="w-full">Scope*: Read</IonLabel>
-                            <IonLabel className="w-full">read:profile</IonLabel>
+                            <AppLabel className="w-full">Scope*: Read</AppLabel>
+                            <AppLabel className="w-full">read:profile</AppLabel>
                         </div>
                     </div>
                 </div>
@@ -424,23 +425,23 @@ export const ListVisualFixture: React.FC = () => {
             >
                 <div className="flex flex-col gap-3 bg-white p-3">
                     <div className="flex gap-[10px] items-center">
-                        <IonLabel
+                        <AppLabel
                             className="font-medium text-base text-grayscale-800 font-notoSans tracking-wide"
                             title="If this contract is (potentially) intended for minors."
                         >
                             Needs Guardian Consent (GameFlow)
-                        </IonLabel>
+                        </AppLabel>
                         <span className="w-10 h-6 rounded-full bg-emerald-700" />
                     </div>
                     <div className="flex items-center">
-                        <IonLabel className="text-grayscale-600 font-poppins text-sm">
+                        <AppLabel className="text-grayscale-600 font-poppins text-sm">
                             Explore pathways
-                        </IonLabel>
+                        </AppLabel>
                     </div>
                     <div>
-                        <IonLabel className="text-grayscale-900 font-poppins text-xl">
+                        <AppLabel className="text-grayscale-900 font-poppins text-xl">
                             What would you like to do?
-                        </IonLabel>
+                        </AppLabel>
                     </div>
                     <CheckListItemSkeleton />
                 </div>

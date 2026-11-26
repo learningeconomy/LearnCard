@@ -1,0 +1,509 @@
+/*
+ * AppList / AppItem / AppLabel: ports of @ionic/core 8.7.2 ion-list (list.ios/md.css, global CSS),
+ * ion-item (item.ios/md.css, shadow DOM) and ion-label (label.ios/md.css, scoped CSS).
+ *
+ * Cascade, matching what Ionic's encapsulation did:
+ * - ion-item's `:host` / `::slotted` rules (shadow DOM) lost to all of the app's light-DOM CSS
+ *   (Tailwind preflight and utilities, call-site classes, `.notificaion-list-item`). They live in
+ *   `@layer app-list-host`, which every unlayered rule beats.
+ * - ion-list's global rules and ion-label's scoped rules were ordinary page CSS; see their sections.
+ * - The former shadow parts (native row, inner, input wrapper, detail icon, ripple) were out of the
+ *   app CSS's reach. They are unlayered with two-class selectors so that preflight and Ionic's
+ *   normalize.css element rules (`button { line-height: 1 }` and so on) cannot restyle them.
+ * - States: `[data-activated]` (set by useTapActivation) is Ionic's `.ion-activated`, and
+ *   `:has(> .app-item-native:focus-visible)` on a button item is its `.ion-focused`.
+ */
+
+@layer app-list-host {
+    /* ------------------------------------------------------------------ ion-item :host */
+    .app-item {
+        --border-radius: 0px;
+        --border-width: 0px;
+        --border-style: solid;
+        --padding-top: 0px;
+        --padding-bottom: 0px;
+        --padding-end: 0px;
+        --padding-start: 0px;
+        --inner-border-width: 0px;
+        --inner-padding-top: 0px;
+        --inner-padding-bottom: 0px;
+        --inner-padding-start: 0px;
+        --inner-padding-end: 0px;
+        --inner-box-shadow: none;
+        --detail-icon-color: initial;
+        --detail-icon-font-size: 1.25em;
+        --detail-icon-opacity: 0.25;
+        --color-activated: var(--color);
+        --color-focused: var(--color);
+        --color-hover: var(--color);
+        --ripple-color: currentColor;
+        -moz-osx-font-smoothing: grayscale;
+        -webkit-font-smoothing: antialiased;
+        display: block;
+        position: relative;
+        align-items: center;
+        justify-content: space-between;
+        outline: none;
+        color: var(--color);
+        font-family: var(--ion-font-family, inherit);
+        text-align: initial;
+        text-decoration: none;
+        overflow: hidden;
+        box-sizing: border-box;
+    }
+
+    .app-item.app-item-disabled {
+        cursor: default;
+        opacity: 0.3;
+        pointer-events: none;
+    }
+
+    .app-item.app-item-ios {
+        --min-height: 44px;
+        --transition: background-color 200ms linear, opacity 200ms linear;
+        --padding-start: 16px;
+        --inner-padding-end: 16px;
+        --inner-border-width: 0px 0px 0.55px 0px;
+        --background: var(--ion-item-background, var(--ion-background-color, #fff));
+        --background-activated: var(--ion-text-color, #000);
+        --background-focused: var(--ion-text-color, #000);
+        --background-hover: currentColor;
+        --background-activated-opacity: 0.12;
+        --background-focused-opacity: 0.15;
+        --background-hover-opacity: 0.04;
+        --border-color: var(
+            --ion-item-border-color,
+            var(
+                --ion-border-color,
+                var(--ion-color-step-250, var(--ion-background-color-step-250, #c8c7cc))
+            )
+        );
+        --color: var(--ion-item-color, var(--ion-text-color, #000));
+        font-size: 1rem;
+    }
+
+    .app-item.app-item-ios[data-activated] {
+        --transition: none;
+    }
+
+    .app-item.app-item-md {
+        --min-height: 48px;
+        --background: var(--ion-item-background, var(--ion-background-color, #fff));
+        --background-activated: transparent;
+        --background-focused: currentColor;
+        --background-hover: currentColor;
+        --background-activated-opacity: 0;
+        --background-focused-opacity: 0.12;
+        --background-hover-opacity: 0.04;
+        --border-color: var(
+            --ion-item-border-color,
+            var(
+                --ion-border-color,
+                var(--ion-color-step-150, var(--ion-background-color-step-150, rgba(0, 0, 0, 0.13)))
+            )
+        );
+        --color: var(--ion-item-color, var(--ion-text-color, #000));
+        --transition: opacity 15ms linear, background-color 15ms linear;
+        --padding-start: 16px;
+        --inner-padding-end: 16px;
+        --inner-border-width: 0 0 1px 0;
+        font-size: 1rem;
+        font-weight: normal;
+        text-transform: none;
+    }
+
+    /* `lines` after the mode defaults: Ionic's :host(.item-lines-*) outranked plain :host. */
+    .app-item.app-item-ios.app-item-lines-full {
+        --border-width: 0px 0px 0.55px 0px;
+    }
+
+    .app-item.app-item-ios.app-item-lines-inset {
+        --inner-border-width: 0px 0px 0.55px 0px;
+    }
+
+    .app-item.app-item-md.app-item-lines-full {
+        --border-width: 0 0 1px 0;
+    }
+
+    .app-item.app-item-md.app-item-lines-inset {
+        --inner-border-width: 0 0 1px 0;
+    }
+
+    .app-item.app-item-lines-inset,
+    .app-item.app-item-lines-none {
+        --border-width: 0px;
+    }
+
+    .app-item.app-item-lines-full,
+    .app-item.app-item-lines-none {
+        --inner-border-width: 0px;
+    }
+
+    /* ion-list's global `lines` defaults for items without their own (list.ios/md.css). */
+    .app-list.app-list-ios.app-list-lines-none .app-item-lines-default,
+    .app-list.app-list-md.app-list-lines-none .app-item-lines-default {
+        --inner-border-width: 0px;
+        --border-width: 0px;
+    }
+
+    .app-list.app-list-ios.app-list-lines-full .app-item-lines-default {
+        --inner-border-width: 0px;
+        --border-width: 0 0 0.55px 0;
+    }
+
+    .app-list.app-list-ios.app-list-lines-inset .app-item-lines-default {
+        --inner-border-width: 0 0 0.55px 0;
+        --border-width: 0px;
+    }
+
+    .app-list.app-list-md.app-list-lines-full .app-item-lines-default {
+        --inner-border-width: 0px;
+        --border-width: 0 0 1px 0;
+    }
+
+    .app-list.app-list-md.app-list-lines-inset .app-item-lines-default {
+        --inner-border-width: 0 0 1px 0;
+        --border-width: 0px;
+    }
+
+    .app-list.app-list-inset .app-item:last-child {
+        --border-width: 0;
+        --inner-border-width: 0;
+    }
+
+    /* ------------------------------------------------------------------ ion-label in an item */
+    /* ion-item ::slotted(ion-label:not([slot=end])) and ::slotted(ion-label) */
+    .app-item-input-wrapper > .app-label {
+        flex: 1;
+        width: min-content;
+        max-width: 100%;
+    }
+
+    .app-item-ios .app-item-input-wrapper > .app-label {
+        margin: 10px 8px 10px 0;
+    }
+
+    .app-item-md .app-item-input-wrapper > .app-label {
+        margin: 10px 0;
+    }
+}
+
+/* ---------------------------------------------------------------------- ion-list (global CSS) */
+/*
+ * ion-list had no shadow DOM: its rules were global (`ion-list`, `.list-md`), so they beat preflight's
+ * `* { padding: 0 }` but lost to call-site utilities (`py-4`, `bg-transparent`). `div:where(…)` keeps
+ * that in any stylesheet order: specificity (0,0,1), above `*` and below every class.
+ */
+div:where(.app-list) {
+    margin: 0;
+    padding: 0;
+    display: block;
+    contain: content;
+    list-style-type: none;
+}
+
+div:where(.app-list.app-list-inset) {
+    transform: translateZ(0);
+    overflow: hidden;
+}
+
+div:where(.app-list-ios) {
+    background: var(--ion-item-background, var(--ion-background-color, #fff));
+}
+
+div:where(.app-list-ios.app-list-inset) {
+    margin: 16px;
+    border-radius: 10px;
+}
+
+div:where(.app-list-md) {
+    margin: 0;
+    padding: 8px 0;
+    background: var(--ion-item-background, var(--ion-background-color, #fff));
+}
+
+div:where(.app-list-md.app-list-inset) {
+    margin: 16px;
+    border-radius: 2px;
+}
+
+div:where(.app-list-inset + .app-list-inset) {
+    margin-top: 0;
+}
+
+div:where(ion-card .app-list) {
+    margin: 0;
+}
+
+/* ---------------------------------------------------------------------- ion-label (scoped CSS) */
+/*
+ * ion-label used Stencil's scoped CSS, not shadow DOM: `:host-context(.item)` compiled to the global
+ * `.item .sc-ion-label-*-h` (0,2,0), which beat call-site utilities such as `text-sm` or
+ * `text-grayscale-900` on the label. Kept unlayered at the same specificity.
+ */
+.app-item .app-label {
+    --color: initial;
+    display: block;
+    color: var(--color);
+    font-family: var(--ion-font-family, inherit);
+    font-size: inherit;
+    text-overflow: ellipsis;
+    box-sizing: border-box;
+}
+
+/*
+ * ion-label's slotted-content rules. Scoped CSS compiled `::slotted(*) h2` to `.sc-ion-label-md-s h2`,
+ * and the label host carried that class, so they styled every heading / paragraph inside a label
+ * at (0,1,1) (CheckListItemSkeleton's h2 / p).
+ */
+.app-label.ion-text-nowrap {
+    overflow: hidden;
+}
+
+.app-label-md.ion-text-wrap {
+    line-height: 1.5;
+}
+
+.app-label-ios.ion-text-wrap {
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+.app-label :is(h1, h2, h3, h4, h5, h6) {
+    text-overflow: inherit;
+    overflow: inherit;
+}
+
+.app-label-md h1 {
+    margin: 0 0 2px;
+    font-size: 1.5rem;
+    font-weight: normal;
+}
+
+.app-label-md h2 {
+    margin: 2px 0;
+    font-size: 1rem;
+    font-weight: normal;
+}
+
+.app-label-md :is(h3, h4, h5, h6) {
+    margin: 2px 0;
+    font-size: 0.875rem;
+    font-weight: normal;
+    line-height: normal;
+}
+
+.app-label-md p {
+    margin: 0 0 2px;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    text-overflow: inherit;
+    overflow: inherit;
+}
+
+.app-label-ios h1 {
+    margin: 3px 0 2px;
+    font-size: 1.375rem;
+    font-weight: normal;
+}
+
+.app-label-ios h2 {
+    margin: 0 0 2px;
+    font-size: 1.0625rem;
+    font-weight: normal;
+}
+
+.app-label-ios :is(h3, h4, h5, h6) {
+    margin: 0 0 3px;
+    font-size: 0.875rem;
+    font-weight: normal;
+    line-height: normal;
+}
+
+.app-label-ios p {
+    margin: 0 0 2px;
+    font-size: 0.875rem;
+    line-height: normal;
+    text-overflow: inherit;
+    overflow: inherit;
+}
+
+.app-label-ios > p {
+    color: var(--ion-color-step-400, var(--ion-text-color-step-600, #999999));
+}
+
+.app-label-ios :is(h2, h3, h4, h5, h6, p):last-child {
+    margin-bottom: 0;
+}
+
+/* ---------------------------------------------------------------------- ion-item parts */
+.app-item > .app-item-native {
+    border-radius: var(--border-radius);
+    margin: 0;
+    padding-top: var(--padding-top);
+    padding-bottom: var(--padding-bottom);
+    padding-right: var(--padding-end);
+    padding-left: calc(var(--padding-start) + var(--ion-safe-area-left, 0px));
+    font-family: inherit;
+    font-size: inherit;
+    font-style: inherit;
+    font-weight: inherit;
+    letter-spacing: inherit;
+    text-decoration: inherit;
+    text-indent: inherit;
+    text-overflow: inherit;
+    text-transform: inherit;
+    text-align: inherit;
+    white-space: inherit;
+    color: inherit;
+    display: flex;
+    position: relative;
+    align-items: inherit;
+    justify-content: inherit;
+    width: 100%;
+    min-height: var(--min-height);
+    transition: var(--transition);
+    border-width: var(--border-width);
+    border-style: var(--border-style);
+    border-color: var(--border-color);
+    outline: none;
+    background: var(--background);
+    overflow: inherit;
+    z-index: 1;
+    box-sizing: border-box;
+}
+
+.app-item > .app-item-native:dir(rtl) {
+    padding-right: calc(var(--padding-start) + var(--ion-safe-area-right, 0px));
+    padding-left: var(--padding-end);
+}
+
+/* A shadow-DOM <button> kept the UA `line-height: normal`; normalize.css and preflight reach this one. */
+.app-item > button.app-item-native {
+    line-height: normal;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+.app-item > .app-item-native::after {
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    position: absolute;
+    content: '';
+    opacity: 0;
+    transition: var(--transition);
+    z-index: -1;
+}
+
+.app-item[data-activated] > .app-item-native {
+    color: var(--color-activated);
+}
+
+.app-item[data-activated] > .app-item-native::after {
+    background: var(--background-activated);
+    opacity: var(--background-activated-opacity);
+}
+
+/* Ionic only marked clickable items `.ion-focused` (no app item hosts an Ionic `.ion-focusable` control). */
+.app-item.app-item-activatable:has(> .app-item-native:focus-visible) > .app-item-native {
+    color: var(--color-focused);
+}
+
+.app-item.app-item-activatable:has(> .app-item-native:focus-visible) > .app-item-native::after {
+    background: var(--background-focused);
+    opacity: var(--background-focused-opacity);
+}
+
+@media (any-hover: hover) {
+    .app-item.app-item-activatable:not(:has(> .app-item-native:focus-visible)):hover
+        > .app-item-native {
+        color: var(--color-hover);
+    }
+
+    .app-item.app-item-activatable:not(:has(> .app-item-native:focus-visible)):hover
+        > .app-item-native::after {
+        background: var(--background-hover);
+        opacity: var(--background-hover-opacity);
+    }
+}
+
+.app-item-native > .app-item-inner {
+    margin: 0;
+    /* index.scss sets `* { font-family }`; Ionic's shadow parts inherited the item's font instead. */
+    font-family: inherit;
+    padding-top: var(--inner-padding-top);
+    padding-bottom: var(--inner-padding-bottom);
+    padding-right: calc(var(--ion-safe-area-right, 0px) + var(--inner-padding-end));
+    padding-left: var(--inner-padding-start);
+    display: flex;
+    position: relative;
+    flex: 1;
+    flex-direction: inherit;
+    align-items: inherit;
+    align-self: stretch;
+    min-height: inherit;
+    border-width: var(--inner-border-width);
+    border-style: var(--border-style);
+    border-color: var(--border-color);
+    box-shadow: var(--inner-box-shadow);
+    overflow: inherit;
+    box-sizing: border-box;
+}
+
+.app-item-native > .app-item-inner:dir(rtl) {
+    padding-right: var(--inner-padding-start);
+    padding-left: calc(var(--ion-safe-area-left, 0px) + var(--inner-padding-end));
+}
+
+.app-item-inner > .app-item-input-wrapper {
+    font-family: inherit;
+    display: flex;
+    flex: 1;
+    flex-direction: inherit;
+    align-items: inherit;
+    align-self: stretch;
+    text-overflow: ellipsis;
+    overflow: inherit;
+    box-sizing: border-box;
+}
+
+/* ion-icon host + `.item-detail-icon` */
+.app-item-inner > .app-item-detail-icon {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    contain: strict;
+    fill: currentColor;
+    box-sizing: content-box;
+    margin: 0;
+    margin-inline-start: calc(var(--inner-padding-end) / 2);
+    margin-inline-end: -6px;
+    color: var(--detail-icon-color);
+    font-size: var(--detail-icon-font-size);
+    opacity: var(--detail-icon-opacity);
+}
+
+.app-item-detail-icon > svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.app-item-detail-icon:dir(rtl) > svg {
+    transform: scaleX(-1);
+}
+
+/* ion-ripple-effect host inside the item */
+.app-item > .app-item-native > .app-ripple-effect {
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    position: absolute;
+    contain: strict;
+    pointer-events: none;
+    color: var(--ripple-color);
+}

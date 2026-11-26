@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 
-import { IonList, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
+import { AppList } from '../../../components/list';
 import AddressBookContactItem from './AddressBookContactItem';
 
 import { LCNProfile } from '@learncard/types';
@@ -76,7 +77,7 @@ export const AddressBookContactList: React.FC<AddressBookContactListProps> = ({
 
     if (!pages) {
         return (
-            <IonList lines="none" className="flex flex-col items-center justify-center w-full">
+            <AppList lines="none" className="flex flex-col items-center justify-center w-full">
                 {contacts?.map((contact, index) => {
                     return (
                         <AddressBookContactItem
@@ -101,13 +102,13 @@ export const AddressBookContactList: React.FC<AddressBookContactListProps> = ({
                         />
                     );
                 })}
-            </IonList>
+            </AppList>
         );
     }
 
     return (
         <>
-            <IonList lines="none" className="flex flex-col items-center justify-center w-full">
+            <AppList lines="none" className="flex flex-col items-center justify-center w-full">
                 {pages?.flatMap(page => (
                     <>
                         {page?.records?.map((record: LCNProfile, index: number) => (
@@ -144,7 +145,7 @@ export const AddressBookContactList: React.FC<AddressBookContactListProps> = ({
                     </div>
                 )}
                 <div role="presentation" ref={infiniteScrollRef} />
-            </IonList>
+            </AppList>
         </>
     );
 };

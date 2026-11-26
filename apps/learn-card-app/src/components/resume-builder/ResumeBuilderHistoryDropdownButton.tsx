@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import moment from 'moment';
 
-import { IonItem, IonList, IonPopover, IonSpinner } from '@ionic/react';
+import { IonPopover, IonSpinner } from '@ionic/react';
+import { AppItem, AppList } from '../list';
 import ResumeHistoryIcon from '../../assets/images/resume-history-icon.svg';
 import ResumeHistoryIconPublished from '../../assets/images/resume-builder-icon-published.svg';
 
@@ -129,7 +130,7 @@ export const ResumeBuilderHistoryDropdownButton: React.FC<{
                         </div>
                     ) : (
                         <div className="max-h-[360px] overflow-y-auto pr-1">
-                            <IonList lines="none" className="bg-transparent">
+                            <AppList lines="none" className="bg-transparent">
                                 {sortedResumes.map(resume => {
                                     const summary = getResumeDisplaySummary(resume);
                                     const isActive = resume.record.id === activeResumeRecordId;
@@ -144,7 +145,7 @@ export const ResumeBuilderHistoryDropdownButton: React.FC<{
                                         : m['passport.resumeBuilder.history.noEditDate']();
 
                                     return (
-                                        <IonItem
+                                        <AppItem
                                             key={resume.record.id}
                                             button
                                             detail={false}
@@ -215,10 +216,10 @@ export const ResumeBuilderHistoryDropdownButton: React.FC<{
                                                     </span>
                                                 </p>
                                             </div>
-                                        </IonItem>
+                                        </AppItem>
                                     );
                                 })}
-                            </IonList>
+                            </AppList>
                         </div>
                     )}
                 </div>

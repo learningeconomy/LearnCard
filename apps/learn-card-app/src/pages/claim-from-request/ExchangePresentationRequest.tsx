@@ -6,9 +6,6 @@ import {
     IonToolbar,
     IonTitle,
     IonLoading,
-    IonList,
-    IonItem,
-    IonLabel,
     IonSpinner,
 } from '@ionic/react';
 import { useWallet } from 'learn-card-base';

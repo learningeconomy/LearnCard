@@ -22,7 +22,7 @@ import {
 } from 'learn-card-base/components/sidemenu/sidemenuHelpers';
 import CustomSpinner from '../svgs/CustomSpinner';
 
-import { IonList } from '@ionic/react';
+import { AppList } from '../list';
 import { AppMenuToggle } from '../app-shell/AppMenuToggle';
 import AiPassportPersonalizationContainer from '../ai-passport/AiPassportPersonalizationContainer';
 
@@ -296,9 +296,9 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
     });
 
     return (
-        <IonList role="navigation" aria-label="Primary navigation" className="m-4 rounded-2xl py-3">
+        <AppList role="navigation" aria-label="Primary navigation" className="m-4 rounded-2xl py-3">
             {rootLinks}
-        </IonList>
+        </AppList>
     );
 };
 

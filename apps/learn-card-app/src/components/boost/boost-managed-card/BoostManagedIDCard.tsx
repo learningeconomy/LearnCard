@@ -6,7 +6,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 
 import { VC, Boost } from '@learncard/types';
 
-import { IonList, IonItem } from '@ionic/react';
+import { AppItem, AppList } from '../../list';
 import BoostPreview from '../../boost/boostCMS/BoostPreview/BoostPreview';
 import BoostPreviewBody from '../../boost/boostCMS/BoostPreview/BoostPreviewBody';
 import BoostPreviewFooter from '../../boost/boostCMS/BoostPreview/BoostPreviewFooter';
@@ -264,10 +264,10 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
                 />
             ),
             customIssueHistoryComponent: (
-                <IonList lines="none" className="flex flex-col items-center justify-center w-full">
+                <AppList lines="none" className="flex flex-col items-center justify-center w-full">
                     {recipients?.map((recipient, index) => {
                         return (
-                            <IonItem
+                            <AppItem
                                 key={recipient?.recieved || index}
                                 lines="none"
                                 className={`w-full max-w-[600px] ion-no-border px-[4px] flex items-center justify-between notificaion-list-item py-[8px] border-b-2`}
@@ -291,10 +291,10 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
                                         </p>
                                     </div>
                                 </div>
-                            </IonItem>
+                            </AppItem>
                         );
                     })}
-                </IonList>
+                </AppList>
             ),
             hideQRCode: true,
         };

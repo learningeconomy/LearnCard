@@ -7,14 +7,13 @@ import {
     IonCol,
     IonGrid,
     IonSpinner,
-    IonList,
-    IonItem,
     IonContent,
     IonPage,
     IonHeader,
     IonToolbar,
     IonFooter,
 } from '@ionic/react';
+import { AppItem, AppList } from '../../../../list';
 import { AppInput } from '../../../../controls/AppInput';
 
 import Plus from 'learn-card-base/svgs/Plus';
@@ -487,14 +486,14 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                 </h1>
                             </div>
 
-                            <IonList
+                            <AppList
                                 lines="none"
                                 className="flex flex-col items-center justify-center w-full"
                             >
                                 {recipients?.map(recipient => {
                                     return (
                                         // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
-                                        <IonItem
+                                        <AppItem
                                             lines="none"
                                             className={`w-[95%] max-w-[600px] ion-no-border px-[4px] flex items-center justify-between notificaion-list-item py-[8px]`}
                                         >
@@ -523,10 +522,10 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                                     </p>
                                                 </div>
                                             </div>
-                                        </IonItem>
+                                        </AppItem>
                                     );
                                 })}
-                            </IonList>
+                            </AppList>
                         </IonCol>
                     </IonRow>
                 )}

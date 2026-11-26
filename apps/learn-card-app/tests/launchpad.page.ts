@@ -43,8 +43,9 @@ export class LaunchPadPage {
 
         const uri = await initGameFlowContract({ includeRedirectUrl });
 
-        let url = `/launchpad?uri=${uri}${suppressContractModal ? '&suppressContractModal=true' : ''
-            }`;
+        let url = `/launchpad?uri=${uri}${
+            suppressContractModal ? '&suppressContractModal=true' : ''
+        }`;
 
         if (includeReturnToUrlParam) {
             url = `${url}&returnTo=${gameRedirectUrl}`;
@@ -55,7 +56,7 @@ export class LaunchPadPage {
 
     async clickConnect(name: string) {
         await this.page
-            .locator('ion-item')
+            .locator('.app-item')
             .filter({ hasText: name })
             .getByRole('button', { name: 'Connect' })
             .click();
@@ -63,7 +64,7 @@ export class LaunchPadPage {
 
     async clickView(name: string) {
         await this.page
-            .locator('ion-item')
+            .locator('.app-item')
             .filter({ hasText: name })
             .getByRole('button', { name: 'View' })
             .click();
@@ -71,7 +72,7 @@ export class LaunchPadPage {
 
     async clickOpen(name: string) {
         await this.page
-            .locator('ion-item')
+            .locator('.app-item')
             .filter({ hasText: name })
             .getByRole('button', { name: 'Open' })
             .click();
@@ -79,7 +80,7 @@ export class LaunchPadPage {
 
     async clickGet(name: string) {
         await this.page
-            .locator('ion-item')
+            .locator('.app-item')
             .filter({ hasText: name })
             .getByRole('button', { name: 'Get' })
             .click();

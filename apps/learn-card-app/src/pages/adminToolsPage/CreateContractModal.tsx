@@ -9,7 +9,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import useAutosave from '../../hooks/useAutosave';
 import RecoveryPrompt from '../../components/common/RecoveryPrompt';
 
-import { IonDatetime, IonLabel, IonSpinner } from '@ionic/react';
+import { IonDatetime, IonSpinner } from '@ionic/react';
+import { AppLabel } from '../../components/list';
 import { AppInput } from '../../components/controls/AppInput';
 import { AppTextarea } from '../../components/controls/AppTextarea';
 import { AppToggle } from '../../components/controls/AppToggle';
@@ -579,12 +580,12 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
 
                         {!isFrontDoorCred && (
                             <div className="flex gap-[10px] items-center">
-                                <IonLabel
+                                <AppLabel
                                     className="font-medium text-base text-grayscale-800 font-notoSans tracking-wide"
                                     title="If this contract is (potentially) intended for minors. Triggers a flow where users are asked to get a guardian/adult when viewing the contract."
                                 >
                                     Needs Guardian Consent (GameFlow)
-                                </IonLabel>
+                                </AppLabel>
                                 <AppToggle
                                     mode="ios"
                                     color="emerald-700"

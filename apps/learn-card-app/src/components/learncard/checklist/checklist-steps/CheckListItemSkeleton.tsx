@@ -1,5 +1,6 @@
 import React from 'react';
-import { IonLabel, IonSkeletonText, IonThumbnail } from '@ionic/react';
+import { IonSkeletonText, IonThumbnail } from '@ionic/react';
+import { AppLabel } from '../../../list';
 
 export const CheckListItemSkeleton: React.FC = () => {
     return (
@@ -12,14 +13,14 @@ export const CheckListItemSkeleton: React.FC = () => {
                     />
                 </IonThumbnail>
 
-                <IonLabel className="ml-6">
+                <AppLabel className="ml-6">
                     <h2>
                         <IonSkeletonText animated style={{ width: '150px', height: '14px' }} />
                     </h2>
                     <p>
                         <IonSkeletonText animated style={{ width: '100px', height: '12px' }} />
                     </p>
-                </IonLabel>
+                </AppLabel>
             </div>
 
             <div slot="end" className="mr-2">

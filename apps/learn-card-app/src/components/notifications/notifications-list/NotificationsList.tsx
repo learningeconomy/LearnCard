@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 
-import { IonItem, IonList } from '@ionic/react';
+import { AppItem, AppList } from '../../list';
 
 import { Notification, NotificationProps } from '@learncard/react';
 import CredentialClaimModal from '../../../pages/launchPad/CredentialClaimModal';
@@ -42,7 +42,7 @@ export const NotificationItem: React.FC<{
     }, []);
 
     return (
-        <IonItem
+        <AppItem
             lines="none"
             className="w-full max-w-3xl mb-2 mt-2 p-0 shadow-3xl rounded-3xl notificaion-list-item"
         >
@@ -56,7 +56,7 @@ export const NotificationItem: React.FC<{
                 claimStatus={false}
                 loadingState={false}
             />
-        </IonItem>
+        </AppItem>
     );
 };
 
@@ -69,12 +69,12 @@ export const NotificationsList: React.FC<{
     ));
 
     return (
-        <IonList
+        <AppList
             lines="none"
             className="flex flex-col items-center justify-center px-2 w-[90%] max-w-[600px] pt-4"
         >
             {notificationItems}
-        </IonList>
+        </AppList>
     );
 };
 

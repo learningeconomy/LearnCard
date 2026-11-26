@@ -1,6 +1,7 @@
 import React from 'react';
 import { ConsentFlowContractDetails } from '@learncard/types';
-import { IonItem, IonSkeletonText } from '@ionic/react';
+import { IonSkeletonText } from '@ionic/react';
+import { AppItem } from '../../components/list';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import { ModalTypes, useModal } from 'learn-card-base';
 
@@ -44,7 +45,7 @@ const LaunchPadContractListItem: React.FC<LaunchPadContractListItemProps> = ({
     const hasImage = !!image;
 
     return (
-        <IonItem
+        <AppItem
             lines="none"
             className="w-full max-w-[600px] ion-no-border px-[12px] py-[12px] max-h-[76px] border-gray-200 border-b-2 last:border-b-0 flex  bg-white items-center justify-between notificaion-list-item overflow-visible rounded-[12px] mt-2 first:mt-4 shadow-xs"
         >
@@ -95,7 +96,7 @@ const LaunchPadContractListItem: React.FC<LaunchPadContractListItemProps> = ({
                     </div>
                 </div>
             </div>
-        </IonItem>
+        </AppItem>
     );
 };
 

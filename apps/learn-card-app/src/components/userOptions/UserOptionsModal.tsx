@@ -4,14 +4,13 @@ import {
     IonCol,
     IonContent,
     IonRow,
-    IonList,
     IonToolbar,
     IonFooter,
-    IonItem,
     IonHeader,
     IonPage,
     useIonModal,
 } from '@ionic/react';
+import { AppItem, AppList } from '../list';
 import X from 'learn-card-base/svgs/X';
 import DeleteUserConfirmationPrompt from './DeleteUserConfirmationPrompt';
 import * as m from '../../paraglide/messages.js';
@@ -75,9 +74,9 @@ const UserOptions: React.FC<{
                 {title && <IonToolbar>{title}</IonToolbar>}
             </IonHeader>
             <IonContent>
-                <IonList lines="none">
+                <AppList lines="none">
                     {userOptions.map(link => (
-                        <IonItem className="w-full" key={link.id}>
+                        <AppItem className="w-full" key={link.id}>
                             {/* desktop */}
                             <button
                                 onClick={() =>
@@ -106,9 +105,9 @@ const UserOptions: React.FC<{
                             >
                                 {link.title}
                             </button>
-                        </IonItem>
+                        </AppItem>
                     ))}
-                </IonList>
+                </AppList>
             </IonContent>
             {footer && (
                 <IonFooter className={fixedFooterStyles}>

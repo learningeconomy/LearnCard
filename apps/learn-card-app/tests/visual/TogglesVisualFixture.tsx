@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { IonApp, IonCol, IonLabel, IonRow } from '@ionic/react';
+import { IonApp, IonCol, IonRow } from '@ionic/react';
+import { AppLabel } from '../../src/components/list';
 import { useImmer } from 'use-immer';
 import { Lock } from 'lucide-react';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
@@ -782,12 +783,12 @@ const CreateContractToggles: React.FC = () => {
     return (
         <div className="bg-white rounded-[20px] ion-padding flex flex-col gap-[20px]">
             <div className="flex gap-[10px] items-center">
-                <IonLabel
+                <AppLabel
                     className="font-medium text-base text-grayscale-800 font-notoSans tracking-wide"
                     title="If this contract is (potentially) intended for minors. Triggers a flow where users are asked to get a guardian/adult when viewing the contract."
                 >
                     Needs Guardian Consent (GameFlow)
-                </IonLabel>
+                </AppLabel>
                 <AppToggle
                     data-testid="t1b-h-create-contract-guardian-toggle"
                     mode="ios"

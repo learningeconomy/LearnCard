@@ -4,7 +4,8 @@ import moment from 'moment';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('create-api-token-modal');
 
-import { IonItem, IonList, IonLabel, IonDatetime, IonButtons, IonButton } from '@ionic/react';
+import { IonDatetime, IonButtons, IonButton } from '@ionic/react';
+import { AppItem, AppLabel, AppList } from '../../../components/list';
 import { AppInput } from '../../../components/controls/AppInput';
 import { AppTextarea } from '../../../components/controls/AppTextarea';
 import Calendar from '../../../components/svgs/Calendar';
@@ -213,9 +214,9 @@ const CreateAPITokenModal: React.FC<{
                 className="flex items-start justify-start flex-col bg-white text-grayscale-800 border border-grayscale-100 rounded-[15px] ion-padding font-medium tracking-widest text-base mt-[10px] cursor-pointer mb-[10px]"
                 onClick={() =>
                     newModal(
-                        <IonList>
+                        <AppList>
                             {scopeOptions.map(option => (
-                                <IonItem
+                                <AppItem
                                     button
                                     style={{ '--border-color': 'transparent' }}
                                     className="border-b-grayscale-100! !border-b-solid border-b! last:border-0! p-1"
@@ -227,18 +228,18 @@ const CreateAPITokenModal: React.FC<{
                                     }}
                                 >
                                     {option.displayName}
-                                </IonItem>
+                                </AppItem>
                             ))}
-                        </IonList>,
+                        </AppList>,
                         { sectionClassName: 'max-w-[400px]!' }
                     )
                 }
             >
-                <IonLabel className="w-full">
+                <AppLabel className="w-full">
                     Scope*: {scopeDisplayValue || 'None selected'}
-                </IonLabel>
+                </AppLabel>
                 {scopeDisplayValue !== '' && scopeDisplayValue !== 'Custom' && (
-                    <IonLabel className="w-full">{scopeTechnicalValue}</IonLabel>
+                    <AppLabel className="w-full">{scopeTechnicalValue}</AppLabel>
                 )}
             </div>
             {scopeDisplayValue !== '' && scopeDisplayValue === 'Custom' && (

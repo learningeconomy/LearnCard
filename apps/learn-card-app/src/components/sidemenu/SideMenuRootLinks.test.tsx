@@ -10,9 +10,6 @@ const mocks = vi.hoisted(() => ({
     initWallet: vi.fn(),
 }));
 
-vi.mock('@ionic/react', () => ({
-    IonList: ({ children }: React.PropsWithChildren) => <nav>{children}</nav>,
-}));
 vi.mock('../app-shell/AppMenuToggle', () => ({
     AppMenuToggle: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
 }));

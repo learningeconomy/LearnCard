@@ -5,7 +5,7 @@ import { useFlags } from 'launchdarkly-react-client-sdk';
 import * as m from '../../paraglide/messages.js';
 
 import CustomSpinner from '../svgs/CustomSpinner';
-import { IonList } from '@ionic/react';
+import { AppList } from '../list';
 import { AppMenuToggle } from '../app-shell/AppMenuToggle';
 
 import {
@@ -210,7 +210,7 @@ const SideMenuSecondaryLinks: React.FC<{
         );
     });
 
-    return <IonList className="m-4 rounded-2xl h-auto pt-4 pb-4">{secondaryLinks}</IonList>;
+    return <AppList className="m-4 rounded-2xl h-auto pt-4 pb-4">{secondaryLinks}</AppList>;
 };
 
 export default SideMenuSecondaryLinks;

@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 
-import { IonItem, IonList, IonPopover } from '@ionic/react';
+import { IonPopover } from '@ionic/react';
+import { AppItem, AppList } from '../../../components/list';
 import SortIcon from 'learn-card-base/svgs/SortButton';
 import { Checkmark } from '@learncard/react';
 
@@ -89,10 +90,10 @@ export const LearnerInsightsPopOverButton: React.FC<RequestInsightsPopOverButton
                         theme.id === 'formal' ? 'launchpad-formal' : 'launchpad-popover'
                     }`}
                 >
-                    <IonList>
+                    <AppList>
                         {getLearnerInsightsSortOptions().map(option => {
                             return (
-                                <IonItem
+                                <AppItem
                                     className="font-notoSans text-sm flex items-center justify-start text-left"
                                     key={option.id}
                                     lines="none"
@@ -106,7 +107,7 @@ export const LearnerInsightsPopOverButton: React.FC<RequestInsightsPopOverButton
                                         <div className="w-[24px] h-[24px] mr-1" />
                                     )}
                                     Sort by {option.title}
-                                </IonItem>
+                                </AppItem>
                             );
                         })}
                         <div className="w-full flex items-center justify-center">
@@ -114,7 +115,7 @@ export const LearnerInsightsPopOverButton: React.FC<RequestInsightsPopOverButton
                         </div>
                         {getLearnerInsightsFilterOptions().map(option => {
                             return (
-                                <IonItem
+                                <AppItem
                                     className="font-notoSans text-sm flex items-center justify-start text-left"
                                     key={option.id}
                                     lines="none"
@@ -128,10 +129,10 @@ export const LearnerInsightsPopOverButton: React.FC<RequestInsightsPopOverButton
                                         <div className="w-[24px] h-[24px] mr-1" />
                                     )}
                                     {option.title}
-                                </IonItem>
+                                </AppItem>
                             );
                         })}
-                    </IonList>
+                    </AppList>
                 </IonPopover>
             )}
         </>
