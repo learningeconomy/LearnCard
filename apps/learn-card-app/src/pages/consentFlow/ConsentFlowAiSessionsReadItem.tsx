@@ -3,7 +3,7 @@ import { Updater } from 'use-immer';
 import { LaunchPadAppListItem, ModalTypes, useModal } from 'learn-card-base';
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 
-import { IonRippleEffect } from '@ionic/react';
+import { AppRippleEffect } from '../../components/widgets';
 import BlueMagicWand from 'learn-card-base/svgs/BlueMagicWand';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 import ConsentFlowAiSessionsDetailsModal from './ConsentFlowAiSessionsDetailsModal';
@@ -89,7 +89,7 @@ const ConsentFlowAiSessionsReadItem: React.FC<ConsentFlowAiSessionsReadItemProps
                     <SkinnyCaretRight className="h-[20px] w-[20px] text-grayscale-400" />
                 </section>
 
-                <IonRippleEffect />
+                <AppRippleEffect />
             </button>
         </li>
     );

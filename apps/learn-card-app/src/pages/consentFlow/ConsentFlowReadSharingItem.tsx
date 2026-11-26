@@ -1,7 +1,7 @@
 import React from 'react';
 import { ConsentFlowTerms } from '@learncard/types';
 import { Updater } from 'use-immer';
-import { IonRippleEffect } from '@ionic/react';
+import { AppRippleEffect } from '../../components/widgets';
 
 import { useGetCredentialCount, CredentialCategory, ModalTypes, useModal } from 'learn-card-base';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
@@ -128,7 +128,7 @@ const ConsentFlowReadSharingItem: React.FC<ConsentFlowReadSharingItemProps> = ({
                     )}
                 </section>
 
-                {!required && <IonRippleEffect />}
+                {!required && <AppRippleEffect />}
             </button>
         </li>
     );

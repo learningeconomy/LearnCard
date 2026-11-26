@@ -6,8 +6,8 @@
  *   call-site classes), so they live in `@layer app-icon-host`, which every unlayered rule beats.
  *   Its `!important` declarations beat light-DOM `!important` in the shadow DOM; layered
  *   `!important` beats unlayered `!important` the same way.
- * - Ionic parents' `::slotted(ion-icon)` rules (ion-fab-button) also lost to light-DOM CSS and sit
- *   in the same layer.
+ * - Ionic parents' `::slotted(ion-icon)` rules (ion-fab-button, now AppFabButton) also lost to
+ *   light-DOM CSS and sit in the same layer.
  * - The SVG used to be inside the shadow root, out of the app CSS's reach. Its rules are unlayered
  *   with class selectors so that preflight's `svg { display: block; vertical-align: middle }`
  *   changes nothing.
@@ -66,18 +66,15 @@
         --ion-color-base: #222428;
     }
 
-    /* ion-fab-button (fab-button.md/ios.css) `::slotted(ion-icon)`. */
-    ion-fab-button > .app-icon {
+    /* ion-fab-button (fab-button.md/ios.css) `::slotted(ion-icon)`, now AppFabButton (widgets/). */
+    .app-fab-button-inner > .app-icon {
         line-height: 1;
     }
-    ion-fab-button.md > .app-icon {
+    .app-fab-button-md .app-fab-button-inner > .app-icon {
         font-size: 24px;
     }
-    ion-fab-button.ios > .app-icon {
+    .app-fab-button-ios .app-fab-button-inner > .app-icon {
         font-size: 28px;
-    }
-    ion-fab-button.fab-button-in-list > .app-icon {
-        font-size: 18px;
     }
 }
 

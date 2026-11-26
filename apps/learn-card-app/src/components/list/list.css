@@ -231,7 +231,7 @@ div:where(.app-list-inset + .app-list-inset) {
     margin-top: 0;
 }
 
-div:where(ion-card .app-list) {
+div:where(:is(ion-card, .app-card) .app-list) {
     margin: 0;
 }
 

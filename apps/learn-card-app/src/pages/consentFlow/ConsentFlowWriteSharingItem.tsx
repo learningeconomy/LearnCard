@@ -1,7 +1,7 @@
 import React from 'react';
 import { Updater } from 'use-immer';
 import { ConsentFlowTerms } from '@learncard/types';
-import { IonRippleEffect } from '@ionic/react';
+import { AppRippleEffect } from '../../components/widgets';
 
 import AnonymousIcon from '../../components/svgs/AnonymousIcon';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
@@ -179,7 +179,7 @@ const ConsentFlowWriteSharingItem: React.FC<ConsentFlowWriteSharingItemProps> = 
                     )}
                 </section>
 
-                {!disabled && <IonRippleEffect />}
+                {!disabled && <AppRippleEffect />}
             </button>
         </li>
     );

@@ -1,17 +1,18 @@
 import React from 'react';
-import { IonSkeletonText, IonThumbnail } from '@ionic/react';
+import { IonSkeletonText } from '@ionic/react';
+import { AppThumbnail } from '../../../widgets';
 import { AppLabel } from '../../../list';
 
 export const CheckListItemSkeleton: React.FC = () => {
     return (
         <div className="mt-4 pb-4 w-full flex items-center justify-between">
             <div className="flex items-center justify-start">
-                <IonThumbnail slot="start">
+                <AppThumbnail slot="start">
                     <IonSkeletonText
                         animated
                         style={{ width: '55px', height: '55px', borderRadius: '8px' }}
                     />
-                </IonThumbnail>
+                </AppThumbnail>
 
                 <AppLabel className="ml-6">
                     <h2>

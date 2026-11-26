@@ -1,18 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useLocation, useHistory } from 'react-router-dom';
-import {
-    IonPage,
-    IonHeader,
-    IonToolbar,
-    IonTitle,
-    IonContent,
-    IonSpinner,
-    IonCard,
-    IonCardContent,
-    IonText,
-} from '@ionic/react';
+import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonSpinner } from '@ionic/react';
 import { AppCol, AppGrid, AppRow } from '../../components/layout';
 import { AppIcon } from '../../components/icon';
+import { AppCard, AppCardContent, AppText } from '../../components/widgets';
 import {
     refreshOutline,
     homeOutline,
@@ -159,11 +150,11 @@ const InteractionsPage: React.FC = () => {
                                     name="crescent"
                                     style={{ width: '50px', height: '50px' }}
                                 />
-                                <IonText color="medium">
+                                <AppText color="medium">
                                     <p className="ion-text-center ion-margin-top">
                                         Processing interaction...
                                     </p>
-                                </IonText>
+                                </AppText>
                             </AppCol>
                         </AppRow>
                     </AppGrid>
@@ -187,8 +178,8 @@ const InteractionsPage: React.FC = () => {
                             style={{ height: '100%' }}
                         >
                             <AppCol sizeXs="12" sizeSm="10" sizeMd="8" sizeLg="6">
-                                <IonCard color="light" className="ion-padding">
-                                    <IonCardContent className="ion-text-center">
+                                <AppCard color="light" className="ion-padding">
+                                    <AppCardContent className="ion-text-center">
                                         <AppIcon
                                             icon={alertCircleOutline}
                                             color="danger"
@@ -200,12 +191,12 @@ const InteractionsPage: React.FC = () => {
                                         >
                                             Interaction Error
                                         </IonTitle>
-                                        <IonText
+                                        <AppText
                                             color="medium"
                                             className="ion-margin-top ion-margin-bottom"
                                         >
                                             <p>{error}</p>
-                                        </IonText>
+                                        </AppText>
                                         <AppButton
                                             expand="block"
                                             onClick={handleTryAgain}
@@ -224,8 +215,8 @@ const InteractionsPage: React.FC = () => {
                                             <AppIcon slot="start" icon={homeOutline} />
                                             Go to Home
                                         </AppButton>
-                                    </IonCardContent>
-                                </IonCard>
+                                    </AppCardContent>
+                                </AppCard>
                             </AppCol>
                         </AppRow>
                     </AppGrid>
@@ -255,11 +246,11 @@ const InteractionsPage: React.FC = () => {
                                 color="primary"
                                 style={{ fontSize: '48px' }}
                             />
-                            <IonText color="medium">
+                            <AppText color="medium">
                                 <p className="ion-text-center ion-margin-top">
                                     Finalizing interaction...
                                 </p>
-                            </IonText>
+                            </AppText>
                         </AppCol>
                     </AppRow>
                 </AppGrid>

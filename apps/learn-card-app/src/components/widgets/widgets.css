@@ -1,0 +1,826 @@
+/*
+ * App-owned small widgets: ports of @ionic/core 8.7.2 ion-segment / ion-segment-button (ios
+ * button look), ion-fab / ion-fab-button, ion-ripple-effect, ion-text, ion-thumbnail,
+ * ion-avatar, ion-card and ion-card-content.
+ *
+ * Cascade, matching what Ionic's encapsulation did:
+ * - `:host` / `::slotted` rules (shadow DOM) lost to all of the app's light-DOM CSS (Tailwind's
+ *   unlayered preflight and utilities, call-site classes, boost-cms.scss's `ion-segment*` rules,
+ *   now `div:where(.app-segment*)`). They live in `@layer app-widgets-host`, which every unlayered
+ *   rule beats. Preflight still zeroes ion-card's margins, as it did before.
+ * - The former shadow parts (segment button native / inner / indicator, FAB native / inner /
+ *   ripple) were out of the app CSS's reach. They are unlayered with two-class selectors so
+ *   preflight and normalize.css element rules (`button { ... }`) cannot restyle them.
+ * - ion-card-content's styles were global document CSS; they stay unlayered at the same
+ *   specificity (`ion-card-content` -> `div:where(.app-card-content)`).
+ * - States: `[data-activated]` (useTapActivation) is Ionic's `.ion-activated`, and
+ *   `:has(> native:focus-visible)` is its `.ion-focused`.
+ */
+
+:root {
+    /* ion-fab-button color="indigo-500" (variables.css --ion-color-indigo-500-*). */
+    --app-color-indigo-500-contrast: #ffffff;
+    --app-color-indigo-500-shade: #575ad4;
+    --app-color-indigo-500-tint: #7375f2;
+}
+
+@layer app-widgets-host {
+    /* ------------------------------------------------------------- ion-segment :host */
+    .app-segment {
+        --ripple-color: currentColor;
+        -moz-osx-font-smoothing: grayscale;
+        -webkit-font-smoothing: antialiased;
+        display: grid;
+        grid-auto-columns: 1fr;
+        position: relative;
+        align-items: stretch;
+        justify-content: center;
+        width: 100%;
+        background: var(--background);
+        font-family: var(--ion-font-family, inherit);
+        text-align: center;
+        contain: paint;
+        user-select: none;
+    }
+
+    .app-segment-ios {
+        --background: rgba(var(--ion-text-color-rgb, 0, 0, 0), 0.065);
+        border-radius: 8px;
+        overflow: hidden;
+        z-index: 0;
+    }
+
+    .app-segment-md {
+        --background: transparent;
+        grid-auto-columns: minmax(auto, 360px);
+    }
+
+    /* ------------------------------------------ ion-segment-button :host (ios look) */
+    .app-segment-button {
+        --color: initial;
+        --color-hover: var(--color);
+        --color-checked: var(--color);
+        --color-disabled: var(--color);
+        --background: none;
+        --background-checked: none;
+        --background-hover: none;
+        --background-hover-opacity: 0;
+        --background-focused: none;
+        --background-focused-opacity: 0;
+        --border-radius: 7px;
+        --border-width: 1px;
+        --border-color: rgba(var(--ion-text-color-rgb, 0, 0, 0), 0.12);
+        --border-style: solid;
+        --indicator-box-shadow: 0 0 5px rgba(0, 0, 0, 0.16);
+        --indicator-color: var(
+            --ion-color-step-350,
+            var(--ion-background-color-step-350, var(--ion-background-color, #fff))
+        );
+        --indicator-height: 100%;
+        --indicator-transition: transform 260ms cubic-bezier(0.4, 0, 0.2, 1);
+        --indicator-transform: none;
+        --transition: 100ms all linear;
+        --padding-top: 0;
+        --padding-end: 13px;
+        --padding-bottom: 0;
+        --padding-start: 13px;
+        border-radius: var(--border-radius);
+        display: flex;
+        position: relative;
+        flex-direction: row;
+        height: auto;
+        background: var(--background);
+        color: var(--color);
+        text-decoration: none;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        cursor: pointer;
+        grid-row: 1;
+        font-kerning: none;
+        margin-top: 2px;
+        margin-bottom: 2px;
+        min-width: 70px;
+        min-height: 28px;
+        transform: translate3d(0, 0, 0);
+        font-size: 13px;
+        font-weight: 450;
+        line-height: 37px;
+    }
+
+    .app-segment-button.app-segment-button-checked {
+        background: var(--background-checked);
+        color: var(--color-checked);
+        z-index: -1;
+    }
+
+    .app-segment-button::before {
+        margin-left: 0;
+        margin-right: 0;
+        margin-top: 5px;
+        margin-bottom: 5px;
+        transition: 160ms opacity ease-in-out;
+        transition-delay: 100ms;
+        border-left: var(--border-width) var(--border-style) var(--border-color);
+        content: '';
+        opacity: 1;
+        will-change: opacity;
+    }
+
+    .app-segment-button:first-of-type::before {
+        border-left-color: transparent;
+    }
+
+    .app-segment-button.app-segment-button-checked::before,
+    .app-segment-button.app-segment-button-after-checked::before {
+        opacity: 0;
+    }
+
+    .app-segment-button.app-segment-button-activated {
+        --indicator-transform: scale(0.95);
+    }
+
+    /* ::slotted(ion-label) */
+    .app-segment-button-inner > .app-label {
+        display: block;
+        align-self: center;
+        max-width: 100%;
+        line-height: 22px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow: hidden;
+        box-sizing: border-box;
+        pointer-events: none;
+    }
+
+    /* ----------------------------------------------------------------- ion-fab :host */
+    .app-fab {
+        position: absolute;
+        width: fit-content;
+        height: fit-content;
+        z-index: 999;
+    }
+
+    .app-fab.app-fab-horizontal-center {
+        left: 0px;
+        right: 0px;
+        margin-inline-start: auto;
+        margin-inline-end: auto;
+    }
+
+    .app-fab.app-fab-horizontal-start {
+        left: calc(10px + var(--ion-safe-area-left, 0px));
+    }
+
+    .app-fab.app-fab-horizontal-start:dir(rtl) {
+        right: calc(10px + var(--ion-safe-area-right, 0px));
+        left: unset;
+    }
+
+    .app-fab.app-fab-horizontal-end {
+        right: calc(10px + var(--ion-safe-area-right, 0px));
+    }
+
+    .app-fab.app-fab-horizontal-end:dir(rtl) {
+        left: calc(10px + var(--ion-safe-area-left, 0px));
+        right: unset;
+    }
+
+    .app-fab.app-fab-vertical-top {
+        top: 10px;
+    }
+
+    .app-fab.app-fab-vertical-bottom {
+        bottom: 10px;
+    }
+
+    .app-fab.app-fab-vertical-center {
+        top: 0px;
+        bottom: 0px;
+        margin-top: auto;
+        margin-bottom: auto;
+    }
+
+    /* ---------------------------------------------------------- ion-fab-button :host */
+    .app-fab-button {
+        --color-activated: var(--color);
+        --color-focused: var(--color);
+        --color-hover: var(--color);
+        --background-hover: var(--ion-color-primary-contrast, #fff);
+        --background-hover-opacity: 0.08;
+        --transition: background-color, opacity 100ms linear;
+        --ripple-color: currentColor;
+        --border-radius: 50%;
+        --border-width: 0;
+        --border-style: none;
+        --border-color: initial;
+        --padding-top: 0;
+        --padding-end: 0;
+        --padding-bottom: 0;
+        --padding-start: 0;
+        margin-left: 0;
+        margin-right: 0;
+        margin-top: 0;
+        margin-bottom: 0;
+        display: block;
+        width: 56px;
+        height: 56px;
+        font-size: 14px;
+        text-align: center;
+        text-overflow: ellipsis;
+        text-transform: none;
+        white-space: nowrap;
+        font-kerning: none;
+    }
+
+    .app-fab-button.app-fab-button-md {
+        --background: var(--ion-color-primary, #0054e9);
+        --background-activated: transparent;
+        --background-focused: currentColor;
+        --background-hover: currentColor;
+        --background-activated-opacity: 0;
+        --background-focused-opacity: 0.24;
+        --background-hover-opacity: 0.08;
+        --color: var(--ion-color-primary-contrast, #fff);
+        --box-shadow:
+            0 3px 5px -1px rgba(0, 0, 0, 0.2), 0 6px 10px 0 rgba(0, 0, 0, 0.14),
+            0 1px 18px 0 rgba(0, 0, 0, 0.12);
+        --transition:
+            box-shadow 280ms cubic-bezier(0.4, 0, 0.2, 1),
+            background-color 280ms cubic-bezier(0.4, 0, 0.2, 1),
+            color 280ms cubic-bezier(0.4, 0, 0.2, 1), opacity 15ms linear 30ms,
+            transform 270ms cubic-bezier(0, 0, 0.2, 1) 0ms;
+        --close-icon-font-size: 24px;
+    }
+
+    .app-fab-button.app-fab-button-md[data-activated] {
+        --box-shadow:
+            0 7px 8px -4px rgba(0, 0, 0, 0.2), 0 12px 17px 2px rgba(0, 0, 0, 0.14),
+            0 5px 22px 4px rgba(0, 0, 0, 0.12);
+    }
+
+    .app-fab-button.app-fab-button-ios {
+        --background: var(--ion-color-primary, #0054e9);
+        --background-activated: var(--ion-color-primary-shade, #004acd);
+        --background-focused: var(--ion-color-primary-shade, #004acd);
+        --background-hover: var(--ion-color-primary-tint, #1a65eb);
+        --background-activated-opacity: 1;
+        --background-focused-opacity: 1;
+        --background-hover-opacity: 1;
+        --color: var(--ion-color-primary-contrast, #fff);
+        --box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+        --transition: 0.2s transform cubic-bezier(0.25, 1.11, 0.78, 1.59);
+        --close-icon-font-size: 28px;
+    }
+
+    .app-fab-button.app-fab-button-ios[data-activated] {
+        --box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+        --transform: scale(1.1);
+        --transition: 0.2s transform ease-out;
+    }
+
+    .app-fab-button.app-fab-button-small {
+        margin-inline-start: 8px;
+        margin-inline-end: 8px;
+        margin-top: 8px;
+        margin-bottom: 8px;
+        width: 40px;
+        height: 40px;
+    }
+
+    .app-fab-button.app-fab-button-disabled {
+        cursor: default;
+        opacity: 0.5;
+        pointer-events: none;
+    }
+
+    /* ------------------------------------------------------------ ion-ripple-effect */
+    .app-ripple-effect.app-ripple-effect-standalone {
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        position: absolute;
+        contain: strict;
+        pointer-events: none;
+    }
+
+    /* ---------------------------------------------------------------- ion-text :host */
+    .app-text.app-color {
+        color: var(--app-color-base);
+    }
+
+    /* ----------------------------------------------------------- ion-thumbnail :host */
+    .app-thumbnail {
+        --size: 48px;
+        --border-radius: 0;
+        border-radius: var(--border-radius);
+        display: block;
+        width: var(--size);
+        height: var(--size);
+    }
+
+    /* -------------------------------------------------------------- ion-avatar :host */
+    .app-avatar {
+        --border-radius: 50%;
+        border-radius: var(--border-radius);
+        display: block;
+    }
+
+    .app-avatar.app-avatar-md {
+        width: 64px;
+        height: 64px;
+    }
+
+    .app-avatar.app-avatar-ios {
+        width: 48px;
+        height: 48px;
+    }
+
+    /* ::slotted(ion-img), ::slotted(img) */
+    :is(.app-thumbnail, .app-avatar) > img {
+        border-radius: var(--border-radius);
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        overflow: hidden;
+    }
+
+    /* ---------------------------------------------------------------- ion-card :host */
+    .app-card {
+        --ion-safe-area-left: 0px;
+        --ion-safe-area-right: 0px;
+        -moz-osx-font-smoothing: grayscale;
+        -webkit-font-smoothing: antialiased;
+        display: block;
+        position: relative;
+        background: var(--background);
+        color: var(--color);
+        font-family: var(--ion-font-family, inherit);
+        contain: content;
+        overflow: hidden;
+        font-size: 0.875rem;
+    }
+
+    .app-card.app-card-md {
+        --background: var(
+            --ion-card-background,
+            var(--ion-item-background, var(--ion-background-color, #fff))
+        );
+        --color: var(
+            --ion-card-color,
+            var(
+                --ion-item-color,
+                var(--ion-color-step-550, var(--ion-text-color-step-450, #737373))
+            )
+        );
+        margin-inline-start: 10px;
+        margin-inline-end: 10px;
+        margin-top: 10px;
+        margin-bottom: 10px;
+        border-radius: 4px;
+        box-shadow:
+            0 3px 1px -2px rgba(0, 0, 0, 0.2),
+            0 2px 2px 0 rgba(0, 0, 0, 0.14),
+            0 1px 5px 0 rgba(0, 0, 0, 0.12);
+    }
+
+    .app-card.app-card-ios {
+        --background: var(
+            --ion-card-background,
+            var(--ion-item-background, var(--ion-background-color, #fff))
+        );
+        --color: var(
+            --ion-card-color,
+            var(
+                --ion-item-color,
+                var(--ion-color-step-600, var(--ion-text-color-step-400, #666666))
+            )
+        );
+        margin-inline-start: 16px;
+        margin-inline-end: 16px;
+        margin-top: 24px;
+        margin-bottom: 24px;
+        border-radius: 8px;
+        /* Ionic's runtime bundle is autoprefixed; keep its computed list. */
+        transition:
+            transform 500ms cubic-bezier(0.12, 0.72, 0.29, 1),
+            -webkit-transform 500ms cubic-bezier(0.12, 0.72, 0.29, 1);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    }
+
+    .app-card.app-color {
+        background: var(--app-color-base);
+        color: var(--app-color-contrast);
+    }
+}
+
+/* ===================================================== former shadow parts (unlayered) */
+
+/*
+ * Tailwind preflight (`*, ::before, ::after { box-sizing: border-box; border: 0 solid }`) never
+ * reached Ionic's shadow parts. Undo it here with single-class selectors so the part rules
+ * below (two or more classes) still win. Border width is 0 either way; this keeps the computed
+ * style identical to Ionic's.
+ */
+.app-segment-button-inner,
+.app-segment-button-indicator-background,
+.app-fab-button-inner {
+    box-sizing: content-box;
+}
+
+.app-segment-button-inner,
+.app-segment-button-indicator,
+.app-segment-button-indicator-background,
+.app-fab-button-inner,
+.app-segment-button-native::before,
+.app-segment-button-native::after,
+.app-segment-button-inner::before,
+.app-segment-button-inner::after,
+.app-segment-button-indicator::before,
+.app-segment-button-indicator::after,
+.app-segment-button-indicator-background::before,
+.app-segment-button-indicator-background::after,
+.app-fab-button-native::before,
+.app-fab-button-native::after,
+.app-fab-button-inner::before,
+.app-fab-button-inner::after {
+    border: none;
+}
+
+/* ion-segment-button .button-native */
+.app-segment-button > .app-segment-button-native {
+    border-radius: 0;
+    font-family: inherit;
+    font-size: inherit;
+    font-style: inherit;
+    font-weight: inherit;
+    letter-spacing: inherit;
+    text-decoration: inherit;
+    text-indent: inherit;
+    text-overflow: inherit;
+    text-transform: inherit;
+    text-align: inherit;
+    white-space: inherit;
+    color: inherit;
+    margin-inline-start: var(--margin-start);
+    margin-inline-end: var(--margin-end);
+    margin-top: var(--margin-top);
+    margin-bottom: var(--margin-bottom);
+    padding-inline-start: var(--padding-start);
+    padding-inline-end: var(--padding-end);
+    padding-top: var(--padding-top);
+    padding-bottom: var(--padding-bottom);
+    transform: translate3d(0, 0, 0);
+    display: flex;
+    position: relative;
+    /* flex-direction: inherit, then :host(.segment-button-layout-icon-top) (the default layout). */
+    flex-direction: column;
+    flex-grow: 1;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-width: inherit;
+    max-width: inherit;
+    height: auto;
+    min-height: inherit;
+    max-height: inherit;
+    transition: var(--transition);
+    border: none;
+    outline: none;
+    background: transparent;
+    contain: content;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 2;
+    /* The UA's button defaults Ionic's shadow <button> kept (preflight / normalize reach this one). */
+    line-height: normal;
+    font-kerning: auto;
+    cursor: default;
+    box-sizing: border-box;
+}
+
+.app-segment-button > .app-segment-button-native::after {
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    position: absolute;
+    content: '';
+    opacity: 0;
+}
+
+.app-segment-button > .app-segment-button-native > .app-segment-button-inner {
+    display: flex;
+    position: relative;
+    flex-flow: inherit;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+.app-segment-button:has(> .app-segment-button-native:focus-visible) > .app-segment-button-native {
+    color: var(--color-focused);
+    opacity: 0.7;
+}
+
+.app-segment-button:has(> .app-segment-button-native:focus-visible)
+    > .app-segment-button-native::after {
+    background: var(--background-focused);
+    opacity: var(--background-focused-opacity);
+}
+
+@media (any-hover: hover) {
+    .app-segment-button:hover > .app-segment-button-native {
+        color: var(--color-hover);
+        opacity: 0.5;
+    }
+
+    .app-segment-button:hover > .app-segment-button-native::after {
+        background: var(--background-hover);
+        opacity: var(--background-hover-opacity);
+    }
+
+    .app-segment-button.app-segment-button-checked:hover > .app-segment-button-native {
+        color: var(--color-checked);
+        opacity: 1;
+    }
+}
+
+.app-segment-button > .app-segment-button-indicator {
+    transform-origin: left;
+    position: absolute;
+    opacity: 0;
+    box-sizing: border-box;
+    will-change: transform, opacity;
+    pointer-events: none;
+    padding-inline-start: 2px;
+    padding-inline-end: 2px;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+}
+
+.app-segment-button > .app-segment-button-indicator > .app-segment-button-indicator-background {
+    width: 100%;
+    height: var(--indicator-height);
+    transform: var(--indicator-transform);
+    box-shadow: var(--indicator-box-shadow);
+    pointer-events: none;
+    border-radius: var(--border-radius);
+    background: var(--indicator-color);
+    transition: var(--indicator-transition);
+}
+
+.app-segment-button > .app-segment-button-indicator.app-segment-button-indicator-animated {
+    transition: var(--indicator-transition);
+}
+
+.app-segment-button.app-segment-button-checked > .app-segment-button-indicator {
+    opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .app-segment-button > .app-segment-button-indicator > .app-segment-button-indicator-background {
+        transform: none;
+    }
+
+    .app-segment-button > .app-segment-button-indicator.app-segment-button-indicator-animated {
+        transition: none;
+    }
+}
+
+/* ion-fab-button .button-native */
+.app-fab-button > .app-fab-button-native {
+    border-radius: var(--border-radius);
+    padding-inline-start: var(--padding-start);
+    padding-inline-end: var(--padding-end);
+    padding-top: var(--padding-top);
+    padding-bottom: var(--padding-bottom);
+    font-family: inherit;
+    font-size: inherit;
+    font-style: inherit;
+    font-weight: inherit;
+    letter-spacing: inherit;
+    text-decoration: inherit;
+    text-indent: inherit;
+    text-overflow: inherit;
+    text-transform: inherit;
+    text-align: inherit;
+    white-space: inherit;
+    display: block;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    transform: var(--transform);
+    transition: var(--transition);
+    border-width: var(--border-width);
+    border-style: var(--border-style);
+    border-color: var(--border-color);
+    outline: none;
+    background: var(--background);
+    background-clip: padding-box;
+    color: var(--color);
+    box-shadow: var(--box-shadow);
+    contain: strict;
+    cursor: pointer;
+    overflow: hidden;
+    z-index: 0;
+    appearance: none;
+    box-sizing: border-box;
+    /* The UA's button defaults Ionic's shadow <button> kept (preflight / normalize reach this one). */
+    line-height: normal;
+    font-kerning: auto;
+}
+
+.app-fab-button > .app-fab-button-native::after {
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    position: absolute;
+    content: '';
+    opacity: 0;
+}
+
+.app-fab-button > .app-fab-button-native > .app-fab-button-inner {
+    left: 0;
+    right: 0;
+    top: 0;
+    display: flex;
+    position: absolute;
+    flex-flow: row nowrap;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    transition: all ease-in-out 300ms;
+    transition-property:
+        transform,
+        opacity,
+        -webkit-transform;
+    z-index: 1;
+}
+
+.app-fab-button > .app-fab-button-native > .app-ripple-effect {
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    position: absolute;
+    contain: strict;
+    pointer-events: none;
+    color: var(--ripple-color);
+}
+
+@media (any-hover: hover) {
+    .app-fab-button:hover > .app-fab-button-native {
+        color: var(--color-hover);
+    }
+
+    .app-fab-button:hover > .app-fab-button-native::after {
+        background: var(--background-hover);
+        opacity: var(--background-hover-opacity);
+    }
+}
+
+.app-fab-button:has(> .app-fab-button-native:focus-visible) > .app-fab-button-native {
+    color: var(--color-focused);
+}
+
+.app-fab-button:has(> .app-fab-button-native:focus-visible) > .app-fab-button-native::after {
+    background: var(--background-focused);
+    opacity: var(--background-focused-opacity);
+}
+
+.app-fab-button[data-activated] > .app-fab-button-native {
+    color: var(--color-activated);
+}
+
+.app-fab-button[data-activated] > .app-fab-button-native::after {
+    background: var(--background-activated);
+    opacity: var(--background-activated-opacity);
+}
+
+/* :host(.ion-color) .button-native */
+.app-fab-button.app-color > .app-fab-button-native {
+    background: var(--app-color-base);
+    color: var(--app-color-contrast);
+}
+
+.app-fab-button.app-color-indigo-500 {
+    --app-color-contrast: var(--app-color-indigo-500-contrast);
+    --app-color-shade: var(--app-color-indigo-500-shade);
+    --app-color-tint: var(--app-color-indigo-500-tint);
+}
+
+.app-fab-button-md.app-color:has(> .app-fab-button-native:focus-visible) > .app-fab-button-native,
+.app-fab-button-md.app-color[data-activated] > .app-fab-button-native {
+    color: var(--app-color-contrast);
+}
+
+.app-fab-button-md.app-color:has(> .app-fab-button-native:focus-visible)
+    > .app-fab-button-native::after {
+    background: var(--app-color-contrast);
+}
+
+.app-fab-button-md.app-color[data-activated] > .app-fab-button-native::after {
+    background: transparent;
+}
+
+.app-fab-button-ios.app-color:has(> .app-fab-button-native:focus-visible) > .app-fab-button-native,
+.app-fab-button-ios.app-color[data-activated] > .app-fab-button-native {
+    color: var(--app-color-contrast);
+}
+
+.app-fab-button-ios.app-color:has(> .app-fab-button-native:focus-visible)
+    > .app-fab-button-native::after,
+.app-fab-button-ios.app-color[data-activated] > .app-fab-button-native::after {
+    background: var(--app-color-shade);
+}
+
+@media (any-hover: hover) {
+    .app-fab-button.app-color:hover > .app-fab-button-native {
+        color: var(--app-color-contrast);
+    }
+
+    .app-fab-button-md.app-color:hover > .app-fab-button-native::after {
+        background: var(--app-color-contrast);
+    }
+
+    .app-fab-button-ios.app-color:hover > .app-fab-button-native::after {
+        background: var(--app-color-tint);
+    }
+}
+
+/* ion-text color="danger" (the medium / primary classes are in controls.css). */
+.app-text.app-color-danger {
+    --app-color-base: var(--app-color-danger);
+}
+
+/* ion-card-content (global CSS in Ionic, same specificity here) */
+div:where(.app-card-content) {
+    display: block;
+    position: relative;
+}
+
+.app-card-content-md {
+    padding-inline-start: 16px;
+    padding-inline-end: 16px;
+    padding-top: 13px;
+    padding-bottom: 13px;
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+.app-card-content-ios {
+    padding-inline-start: 20px;
+    padding-inline-end: 20px;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    font-size: 1rem;
+    line-height: 1.4;
+}
+
+:is(.app-card-content-md, .app-card-content-ios) h1 {
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 2px;
+    font-size: 1.5rem;
+    font-weight: normal;
+}
+
+:is(.app-card-content-md, .app-card-content-ios) h2 {
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 2px;
+    margin-bottom: 2px;
+    font-size: 1rem;
+    font-weight: normal;
+}
+
+:is(.app-card-content-md, .app-card-content-ios) :is(h3, h4, h5, h6) {
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 2px;
+    margin-bottom: 2px;
+    font-size: 0.875rem;
+    font-weight: normal;
+}
+
+:is(.app-card-content-md, .app-card-content-ios) p {
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 2px;
+    font-size: 0.875rem;
+}
+
+.app-card-content-md p {
+    font-weight: normal;
+    line-height: 1.5;
+}

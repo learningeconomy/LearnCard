@@ -1,8 +1,9 @@
 import * as m from '../../paraglide/messages.js';
 import React from 'react';
 
-import { IonLabel, IonSegment, IonSegmentButton } from '@ionic/react';
 import { AppRow } from '../layout';
+import { AppLabel } from '../list';
+import { AppSegment, AppSegmentButton } from '../widgets';
 
 export enum LearnCardIDCMSTabsEnum {
     dark = 'dark',
@@ -16,51 +17,45 @@ const LearnCardIDCMSTabs: React.FC<{
 }> = ({ activeTab, handleTabSwitch }) => {
     return (
         <AppRow className="flex w-full items-center justify-center bg-white mt-4">
-            <IonSegment
-                onIonChange={e => {
-                    handleTabSwitch(e.detail.value);
-                    e.stopPropagation();
-                }}
+            <AppSegment
+                onValueChange={value => handleTabSwitch(value)}
                 value={activeTab}
                 className="fix-ripple bg-grayscale-100 z-10 flex-1 overflow-hidden rounded-full py-[2px] px-[1px]"
             >
-                <IonSegmentButton
-                    mode="ios"
+                <AppSegmentButton
                     value={LearnCardIDCMSTabsEnum.dark}
                     className="py-[12px]"
                     onClick={e => {
                         e.stopPropagation();
                     }}
                 >
-                    <IonLabel className="font-normal text-[17px] text-grayscale-800 font-poppins">
+                    <AppLabel className="font-normal text-[17px] text-grayscale-800 font-poppins">
                         {m['learnCardId.dark']()}
-                    </IonLabel>
-                </IonSegmentButton>
-                <IonSegmentButton
-                    mode="ios"
+                    </AppLabel>
+                </AppSegmentButton>
+                <AppSegmentButton
                     value={LearnCardIDCMSTabsEnum.light}
                     className="py-[12px]"
                     onClick={e => {
                         e.stopPropagation();
                     }}
                 >
-                    <IonLabel className="font-normal text-[17px] text-grayscale-800 font-poppins">
+                    <AppLabel className="font-normal text-[17px] text-grayscale-800 font-poppins">
                         {m['learnCardId.light']()}
-                    </IonLabel>
-                </IonSegmentButton>
-                <IonSegmentButton
-                    mode="ios"
+                    </AppLabel>
+                </AppSegmentButton>
+                <AppSegmentButton
                     value={LearnCardIDCMSTabsEnum.custom}
                     className="py-[12px]"
                     onClick={e => {
                         e.stopPropagation();
                     }}
                 >
-                    <IonLabel className="font-normal text-[17px] text-grayscale-800 font-poppins">
+                    <AppLabel className="font-normal text-[17px] text-grayscale-800 font-poppins">
                         {m['learnCardId.custom']()}
-                    </IonLabel>
-                </IonSegmentButton>
-            </IonSegment>
+                    </AppLabel>
+                </AppSegmentButton>
+            </AppSegment>
         </AppRow>
     );
 };

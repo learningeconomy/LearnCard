@@ -127,3 +127,62 @@ export const useTapActivation = (
         };
     };
 };
+
+/**
+ * Ionic's tap-click ripple for a plain `.ion-activatable` element that holds an ion-ripple-effect
+ * (no `data-activated`: the element's own classes and Ionic's `ion-activated` are untouched).
+ * Ripple 100ms after pointerdown at the press point, or at pointerup if released sooner; removed
+ * on pointerup (after the 325ms minimum) and on pointercancel. Returns a cleanup function.
+ */
+export const attachActivatableRipple = (
+    host: HTMLElement,
+    container: HTMLElement
+): (() => void) => {
+    let pressing = false;
+    let activated = false;
+    let activeDefer: ReturnType<typeof setTimeout> | undefined;
+    let activeRipple: Promise<() => void> | undefined;
+
+    const removeRipple = (): void => {
+        void activeRipple?.then(remove => remove());
+        activeRipple = undefined;
+    };
+    const activate = (x: number, y: number): void => {
+        activated = true;
+        removeRipple();
+        activeRipple = addRipple(container, x, y);
+    };
+    const detach = (): void => {
+        document.removeEventListener('pointerup', onPointerUp, true);
+        document.removeEventListener('pointercancel', onPointerCancel, true);
+        pressing = false;
+    };
+    const onPointerUp = (up: PointerEvent): void => {
+        clearTimeout(activeDefer);
+        if (!activated) activate(up.clientX, up.clientY);
+        removeRipple();
+        detach();
+    };
+    const onPointerCancel = (): void => {
+        clearTimeout(activeDefer);
+        removeRipple();
+        detach();
+    };
+    const onPointerDown = (down: PointerEvent): void => {
+        if (pressing || down.button === 2) return;
+        pressing = true;
+        activated = false;
+        const { clientX, clientY } = down;
+        activeDefer = setTimeout(() => activate(clientX, clientY), ADD_ACTIVATED_DEFERS);
+        document.addEventListener('pointerup', onPointerUp, true);
+        document.addEventListener('pointercancel', onPointerCancel, true);
+    };
+
+    host.addEventListener('pointerdown', onPointerDown);
+    return () => {
+        host.removeEventListener('pointerdown', onPointerDown);
+        clearTimeout(activeDefer);
+        removeRipple();
+        detach();
+    };
+};

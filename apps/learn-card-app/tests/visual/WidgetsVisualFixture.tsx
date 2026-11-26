@@ -1,19 +1,17 @@
 import React, { useState } from 'react';
-import {
-    IonApp,
-    IonAvatar,
-    IonCard,
-    IonCardContent,
-    IonContent,
-    IonRippleEffect,
-    IonText,
-    IonThumbnail,
-    IonTitle,
-} from '@ionic/react';
+import { IonApp, IonContent, IonTitle } from '@ionic/react';
 import { alertCircleOutline, homeOutline, refreshOutline } from 'ionicons/icons';
 
 import { AppButton } from '../../src/components/controls/AppButton';
 import { AppIcon } from '../../src/components/icon';
+import {
+    AppAvatar,
+    AppCard,
+    AppCardContent,
+    AppRippleEffect,
+    AppText,
+    AppThumbnail,
+} from '../../src/components/widgets';
 import FamilyCMSTabs, {
     FamilyCMSTabsEnum,
 } from '../../src/components/familyCMS/FamilyCMSTabs/FamilyCMSTabs';
@@ -158,7 +156,7 @@ const RippleRow: React.FC<{
                         {`clicks: ${clicks}`}
                     </p>
                 </div>
-                {ripple && <IonRippleEffect />}
+                {ripple && <AppRippleEffect />}
             </button>
         </li>
     );
@@ -209,16 +207,16 @@ export const WidgetsVisualFixture: React.FC = () => (
         <Block testId="w1-text" title="IonText (InteractionsPage excerpts + colors)">
             {/* InteractionsPage.tsx:162 and :258 */}
             <div className="ion-text-center" style={{ background: '#fff' }}>
-                <IonText color="medium">
+                <AppText color="medium">
                     <p className="ion-text-center ion-margin-top">Processing interaction...</p>
-                </IonText>
+                </AppText>
             </div>
             <p style={{ fontSize: 15 }}>
-                Inline <IonText color="danger">danger</IonText>,{' '}
-                <IonText color="primary">primary</IonText>, <IonText>uncolored</IonText> and{' '}
-                <IonText color="medium" className="ion-margin-top ion-margin-bottom">
+                Inline <AppText color="danger">danger</AppText>,{' '}
+                <AppText color="primary">primary</AppText>, <AppText>uncolored</AppText> and{' '}
+                <AppText color="medium" className="ion-margin-top ion-margin-bottom">
                     medium with margins
-                </IonText>{' '}
+                </AppText>{' '}
                 text.
             </p>
         </Block>
@@ -231,28 +229,28 @@ export const WidgetsVisualFixture: React.FC = () => (
                 <EndorsementRequestModalSkeletonLoader />
             </div>
             <div className="flex items-center gap-4" style={{ background: '#fff', padding: 8 }}>
-                <IonThumbnail>
+                <AppThumbnail>
                     <img alt="thumb" src={IMG} />
-                </IonThumbnail>
-                <IonThumbnail
+                </AppThumbnail>
+                <AppThumbnail
                     style={{ '--size': '72px', '--border-radius': '12px' } as React.CSSProperties}
                 >
                     <img alt="thumb custom" src={IMG} />
-                </IonThumbnail>
-                <IonAvatar>
+                </AppThumbnail>
+                <AppAvatar>
                     <img alt="avatar" src={IMG} />
-                </IonAvatar>
-                <IonAvatar style={{ width: 60, height: 60, background: '#c7d2fe' }}>
+                </AppAvatar>
+                <AppAvatar style={{ width: 60, height: 60, background: '#c7d2fe' }}>
                     <span />
-                </IonAvatar>
+                </AppAvatar>
             </div>
         </Block>
 
         <Block testId="w1-card" title="IonCard / IonCardContent (InteractionsPage error state)">
             {/* InteractionsPage.tsx:190-232 */}
             <div style={{ background: '#e2e8f0', padding: 1 }}>
-                <IonCard color="light" className="ion-padding">
-                    <IonCardContent className="ion-text-center">
+                <AppCard color="light" className="ion-padding">
+                    <AppCardContent className="ion-text-center">
                         <AppIcon
                             icon={alertCircleOutline}
                             color="danger"
@@ -261,9 +259,9 @@ export const WidgetsVisualFixture: React.FC = () => (
                         <IonTitle color="danger" style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
                             Interaction Error
                         </IonTitle>
-                        <IonText color="medium" className="ion-margin-top ion-margin-bottom">
+                        <AppText color="medium" className="ion-margin-top ion-margin-bottom">
                             <p>Something went wrong while processing the interaction.</p>
-                        </IonText>
+                        </AppText>
                         <AppButton expand="block" className="ion-margin-top">
                             <AppIcon slot="start" icon={refreshOutline} />
                             Try Again
@@ -277,16 +275,16 @@ export const WidgetsVisualFixture: React.FC = () => (
                             <AppIcon slot="start" icon={homeOutline} />
                             Go to Home
                         </AppButton>
-                    </IonCardContent>
-                </IonCard>
-                <IonCard>
-                    <IonCardContent>
+                    </AppCardContent>
+                </AppCard>
+                <AppCard>
+                    <AppCardContent>
                         <h1>Heading one</h1>
                         <h2>Heading two</h2>
                         <h3>Heading three</h3>
                         <p>Paragraph in an uncolored card.</p>
-                    </IonCardContent>
-                </IonCard>
+                    </AppCardContent>
+                </AppCard>
             </div>
         </Block>
     </main>

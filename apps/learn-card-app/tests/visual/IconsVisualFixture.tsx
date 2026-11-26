@@ -1,5 +1,6 @@
 import React from 'react';
-import { IonApp, IonCard, IonCardContent, IonFabButton } from '@ionic/react';
+import { IonApp } from '@ionic/react';
+import { AppCard, AppCardContent, AppFabButton } from '../../src/components/widgets';
 import { AppIcon } from '../../src/components/icon';
 import {
     alertCircleOutline,
@@ -229,8 +230,8 @@ export const IconsVisualFixture: React.FC = () => (
         <Block testId="i1-x-buttons" title="AppButton slots, IonCard and IonFabButton (excerpts)">
             <div className="flex gap-4 items-start">
                 <div className="w-[320px]">
-                    <IonCard color="light" className="ion-padding">
-                        <IonCardContent className="ion-text-center">
+                    <AppCard color="light" className="ion-padding">
+                        <AppCardContent className="ion-text-center">
                             <AppIcon
                                 icon={alertCircleOutline}
                                 color="danger"
@@ -249,16 +250,16 @@ export const IconsVisualFixture: React.FC = () => (
                                 <AppIcon slot="start" icon={homeOutline} />
                                 Go to Home
                             </AppButton>
-                        </IonCardContent>
-                    </IonCard>
+                        </AppCardContent>
+                    </AppCard>
                 </div>
                 <div className="flex gap-3 p-3">
-                    <IonFabButton color="light">
+                    <AppFabButton color="light">
                         <AppIcon icon={eyeOutline} />
-                    </IonFabButton>
-                    <IonFabButton color="light" size="small">
+                    </AppFabButton>
+                    <AppFabButton color="light" size="small">
                         <AppIcon icon={eyeOutline} />
-                    </IonFabButton>
+                    </AppFabButton>
                 </div>
             </div>
         </Block>

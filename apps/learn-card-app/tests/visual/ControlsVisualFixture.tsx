@@ -3,16 +3,14 @@ import {
     IonApp,
     IonButton,
     IonButtons,
-    IonCard,
-    IonCardContent,
     IonDatetime,
     IonHeader,
-    IonText,
     IonTitle,
     IonToolbar,
 } from '@ionic/react';
 import { AppCol, AppGrid, AppRow } from '../../src/components/layout';
 import { AppIcon } from '../../src/components/icon';
+import { AppCard, AppCardContent, AppText } from '../../src/components/widgets';
 import { alertCircleOutline, homeOutline, refreshOutline } from 'ionicons/icons';
 import type { ConsentFlowContract } from '@learncard/types';
 
@@ -281,8 +279,8 @@ const InteractionsErrorCard: React.FC = () => (
         <AppGrid>
             <AppRow className="ion-justify-content-center ion-align-items-center">
                 <AppCol sizeXs="12" sizeSm="10" sizeMd="8" sizeLg="6">
-                    <IonCard color="light" className="ion-padding">
-                        <IonCardContent className="ion-text-center">
+                    <AppCard color="light" className="ion-padding">
+                        <AppCardContent className="ion-text-center">
                             <AppIcon
                                 icon={alertCircleOutline}
                                 color="danger"
@@ -294,9 +292,9 @@ const InteractionsErrorCard: React.FC = () => (
                             >
                                 Interaction Error
                             </IonTitle>
-                            <IonText color="medium" className="ion-margin-top ion-margin-bottom">
+                            <AppText color="medium" className="ion-margin-top ion-margin-bottom">
                                 <p>Interaction not found or expired.</p>
-                            </IonText>
+                            </AppText>
                             <AppButton
                                 expand="block"
                                 onClick={() => undefined}
@@ -315,8 +313,8 @@ const InteractionsErrorCard: React.FC = () => (
                                 <AppIcon slot="start" icon={homeOutline} />
                                 Go to Home
                             </AppButton>
-                        </IonCardContent>
-                    </IonCard>
+                        </AppCardContent>
+                    </AppCard>
                 </AppCol>
             </AppRow>
         </AppGrid>

@@ -1,13 +1,14 @@
 import React from 'react';
-import { IonAvatar, IonSkeletonText } from '@ionic/react';
+import { IonSkeletonText } from '@ionic/react';
+import { AppAvatar } from '../../widgets';
 
 export const EndorsementRequestModalSkeletonLoader: React.FC = () => {
     return (
         <div className="flex flex-col items-center justify-center bg-white w-full max-w-[375px] rounded-[20px] pt-4 relative">
             <div className="w-full flex flex-col items-center justify-center gap-3 pt-[50px]">
-                <IonAvatar style={{ width: 60, height: 60 }}>
+                <AppAvatar style={{ width: 60, height: 60 }}>
                     <IonSkeletonText animated style={{ width: '100%', height: '100%' }} />
-                </IonAvatar>
+                </AppAvatar>
 
                 <div className="w-full flex flex-col items-center justify-center pb-4 px-[12px] gap-2">
                     <IonSkeletonText
