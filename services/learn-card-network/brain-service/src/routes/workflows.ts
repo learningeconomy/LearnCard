@@ -54,6 +54,10 @@ import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { getNotificationMessage } from '@helpers/notificationMessages';
 import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
 import { logCredentialClaimed, logCredentialFailed } from '@helpers/activity.helpers';
+import {
+    assertDelegatedInboxClaim,
+    DelegatedInboxClaimRefused,
+} from '@helpers/delegate-auth-request.helpers';
 import { handleConnectionPromptsForCredentialClaim } from '@helpers/connectionPrompt.helpers';
 import { decryptInboxCredential } from '@helpers/inbox-encryption.helpers';
 import { getBitstringStatusListEntries } from '@learncard/helpers';
@@ -620,6 +624,8 @@ async function handleInboxClaimPresentation(
     // Process each pending credential in parallel
     const credentialProcessingPromises = pendingCredentials.map(async inboxCredential => {
         try {
+            await assertDelegatedInboxClaim(inboxCredential);
+
             let finalCredential: VC;
             const credentialPayload = inboxCredential.refreshId
                 ? undefined
@@ -912,7 +918,10 @@ async function handleInboxClaimPresentation(
                         data: {
                             inbox: {
                                 issuanceId: inboxCredential.id,
-                                status: LCNInboxStatusEnumValidator.enum.PENDING,
+                                status:
+                                    error instanceof DelegatedInboxClaimRefused
+                                        ? LCNInboxStatusEnumValidator.enum.EXPIRED
+                                        : LCNInboxStatusEnumValidator.enum.PENDING,
                                 recipient: {
                                     contactMethod: {
                                         type: contactMethod.type,

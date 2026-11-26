@@ -22,6 +22,7 @@ export const openApiDocument = generateOpenApiDocument(appRouter, {
         'DID Metadata',
         'Claim Hooks',
         'Auth Grants',
+        'Delegate Grants',
         'Utilities',
     ],
 });

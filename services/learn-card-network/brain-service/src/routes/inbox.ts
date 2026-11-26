@@ -32,6 +32,7 @@ import {
     GuardianApprovalRequestStatusValidator,
 } from '@learncard/types';
 import { getInboxCredentialMeta } from '@helpers/credential-meta.helpers';
+import { assertDelegatedInboxIssuance } from '@helpers/delegate-auth-request.helpers';
 import { claimIntoInbox, issueToInbox, resolveInboxCredentialInput } from '@helpers/inbox.helpers';
 import {
     hasMustacheVariables,
@@ -619,6 +620,16 @@ export const inboxRouter = t.router({
         .input(IssueInboxCredentialValidator)
         .output(IssueInboxCredentialResponseValidator)
         .mutation(async ({ ctx, input }) => {
+            // A delegated request is decided here, before any other path of this mutation can
+            // answer it: the refresh replay below returns early, and so may a path a later
+            // change adds. The organisation's own request skips this block and runs as before.
+            let delegatedResolution:
+                Awaited<ReturnType<typeof resolveInboxCredentialInput>> | undefined;
+            if (ctx.user.delegate !== undefined) {
+                delegatedResolution = await resolveInboxCredentialInput(input, ctx);
+                assertDelegatedInboxIssuance(ctx.user, input, delegatedResolution.credential);
+            }
+
             const { profile } = ctx.user;
             const { recipient, configuration } = input;
 
@@ -650,7 +661,8 @@ export const inboxRouter = t.router({
                 }
             }
 
-            const { credential, resolvedBoostUri } = await resolveInboxCredentialInput(input, ctx);
+            const { credential, resolvedBoostUri } =
+                delegatedResolution ?? (await resolveInboxCredentialInput(input, ctx));
 
             // Normalize signing authority name if provided
             const normalizedConfiguration = configuration?.signingAuthority

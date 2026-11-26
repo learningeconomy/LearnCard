@@ -32,11 +32,25 @@ import { invalidateChallengeForDid, isChallengeValidForDid } from '@cache/challe
 import { ProfileType } from 'types/profile';
 import { getProfileManagerById } from '@accesslayer/profile-manager/read';
 import { isAuthGrantChallengeValidForDID } from '@accesslayer/auth-grant/read';
+import {
+    completeDelegateGrantAudit,
+    createDelegateGrantAudit,
+} from '@accesslayer/delegate-grant-audit/create';
 import { AUTH_GRANT_FULL_ACCESS_SCOPE, AUTH_GRANT_NO_ACCESS_SCOPE } from 'src/constants/auth-grant';
 import { userHasRequiredScopes } from '@helpers/auth-grant.helpers';
 import { getContactMethodById } from '@accesslayer/contact-method/read';
 import { VC } from '@learncard/types';
 import { CONTACT_METHOD_SESSION_PREFIX } from '@helpers/contact-method.helpers';
+import {
+    readDelegatePresentation,
+    type DelegatePresentation,
+} from '@helpers/delegate-auth-presentation.helpers';
+import {
+    delegateAuditRecord,
+    delegateResultRef,
+    isDelegateUser,
+    resolveDelegateRequest,
+} from '@helpers/delegate-auth-request.helpers';
 
 export type DidAuthVP = {
     iss: string;
@@ -57,9 +71,19 @@ export type Context = {
         isAuthGrant?: boolean;
         actAsPolicy?: string;
         onBehalfOf?: string;
+        /**
+         * Set only by the delegate boundary: the request is made by `actorDid` under the grant
+         * `grantId` and runs as that grant's owner profile.
+         */
+        delegate?: { actorDid: string; grantId: string; ownerProfileId: string };
     };
     actAs?: string;
     contactMethod?: ContactMethodType;
+    /**
+     * Set only for a bearer token that carries the delegate challenge prefix, with the
+     * presentation only when the token verifies. Such a request never has `user`.
+     */
+    delegateRequest?: { presentation?: DelegatePresentation };
     domain: string;
     tenant: ResolvedTenant;
     _guardianApprovalToken?: string;
@@ -154,6 +178,20 @@ export const createContext = async (
         const [scheme, jwt] = authHeader.split(' ');
 
         if (scheme === 'Bearer' && jwt) {
+            // First on purpose: the delegate prefix decides, valid or not. A delegate token is
+            // never resolved through the legacy grant check or the cached-challenge check below,
+            // a refused one has nothing to fall back to, and no per-user input is carried along.
+            const delegate = await readDelegatePresentation(jwt);
+
+            if (delegate.isDelegateToken) {
+                return {
+                    delegateRequest: { presentation: delegate.presentation },
+                    domain,
+                    tenant,
+                    sourceIp,
+                };
+            }
+
             const learnCard = await getEmptyLearnCard();
 
             const result = await learnCard.invoke.verifyPresentation(jwt, { proofFormat: 'jwt' });
@@ -291,7 +329,73 @@ const enforceShareLinkRequestByteBound = t.middleware(async ({ ctx, next, getRaw
     return next({ ctx });
 });
 
-export const openRoute = t.procedure
+/** The one answer to every refused delegate request: a caller must not learn why. */
+export const DELEGATE_REQUEST_REFUSED_MESSAGE = 'Delegate token not accepted';
+
+/**
+ * A request that carries a delegate token is refused on every procedure, except that a valid
+ * delegate reaches the routes of `DELEGATE_ROUTE_ALLOWLIST` as the owner profile of its grant.
+ * Composed into the one base every procedure starts from, so it runs before input parsing and
+ * before any handler, and a route added later is closed to delegates by default.
+ */
+const enforceDelegateBoundary = t.middleware(async ({ ctx, next, path, meta }) => {
+    if (!ctx.delegateRequest) return next();
+
+    const requiredScope: unknown = meta?.requiredScope;
+    const resolution = await resolveDelegateRequest({
+        presentation: ctx.delegateRequest.presentation,
+        path,
+        requiredScope,
+    });
+
+    if (!resolution.allowed) {
+        // Recorded only when a stored grant was found and its own delegate key signed the token.
+        // Best effort: the refusal is the same fixed answer whether or not its record could be
+        // written.
+        if (resolution.attribution) {
+            try {
+                await createDelegateGrantAudit(
+                    delegateAuditRecord({ ...resolution.attribution, path, requiredScope })
+                );
+            } catch (error) {
+                console.error('A refused delegate request was not recorded', error);
+            }
+        }
+
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: DELEGATE_REQUEST_REFUSED_MESSAGE });
+    }
+
+    const { user } = resolution;
+
+    // No delegated issuance without its record: written before the handler runs, and an error
+    // here propagates, so the handler does not run.
+    const auditId = await createDelegateGrantAudit(
+        delegateAuditRecord({ ...user.delegate, path, requiredScope })
+    );
+
+    // Typed as the plain context: `user` stays optional for every procedure built on this base.
+    const delegated: Context = { ...ctx, user, delegateRequest: undefined };
+
+    const result = await next({ ctx: delegated });
+
+    // Best effort: the handler has answered, and a record without an outcome reads "not known".
+    try {
+        await completeDelegateGrantAudit(
+            auditId,
+            result.ok ? 'succeeded' : 'failed',
+            result.ok ? delegateResultRef(path, result.data) : undefined
+        );
+    } catch (error) {
+        console.error('The outcome of a delegated request was not recorded', error);
+    }
+
+    return result;
+});
+
+/** Every procedure chain starts here, never from `t.procedure`. */
+const baseProcedure = t.procedure.use(enforceDelegateBoundary);
+
+export const openRoute = baseProcedure
     .use(t.middleware(sentryInputCaptureMiddleware))
     .use(sentryTransactionNameMiddleware);
 
@@ -320,7 +424,7 @@ export const publicShareLinkCacheControlHeaders = (
  * unauthenticated or failing — can capture the payload, and it enforces the
  * complete-request byte bound before input parsing.
  */
-export const openRouteWithoutInputCapture = t.procedure
+export const openRouteWithoutInputCapture = baseProcedure
     .use(t.middleware(sentryNoInputCaptureMiddleware))
     .use(sentryTransactionNameMiddleware)
     .use(enforceShareLinkRequestByteBound);
@@ -421,6 +525,10 @@ const withDid = (base: typeof openRoute) =>
             throw new TRPCError({ code: 'UNAUTHORIZED' });
         }
 
+        // The owner comes from the stored grant, never from a lookup by DID or from the act-as
+        // header, and no manager relationship is consulted.
+        if (isDelegateUser(ctx.user)) return next({ ctx: { ...ctx, user: ctx.user } });
+
         const profile = await resolveProfileFromContextDid(ctx.user.did, ctx.domain);
 
         if (profile) Sentry.setUser({ id: profile.profileId, username: profile.displayName });
@@ -515,7 +623,7 @@ export const profileRouteWithoutInputCapture = withProfile(didAndChallengeRouteW
 export const credentialProfileRoute = withProfile(
     withChallenge(
         withDid(
-            t.procedure
+            baseProcedure
                 .use(t.middleware(sentryNoInputCaptureMiddleware))
                 .use(sentryTransactionNameMiddleware)
         )

@@ -12,6 +12,7 @@ import { utilitiesRouter, UtilitiesRouter } from '@routes/utilities';
 import { contractsRouter, ContractsRouter } from '@routes/contracts';
 import { didMetadataRouter, DidMetadataRouter } from '@routes/did-metadata';
 import { authGrantsRouter, AuthGrantsRouter } from '@routes/auth-grants';
+import { delegateGrantsRouter, DelegateGrantsRouter } from '@routes/delegate-grants';
 import { workflowsRouter, WorkflowsRouter } from '@routes/workflows';
 import { contactMethodsRouter, ContactMethodsRouter } from '@routes/contact-methods';
 import { inboxRouter, InboxRouter } from '@routes/inbox';
@@ -50,6 +51,7 @@ export const appRouter = t.router<{
     contracts: ContractsRouter;
     didMetadata: DidMetadataRouter;
     authGrants: AuthGrantsRouter;
+    delegateGrants: DelegateGrantsRouter;
     workflows: WorkflowsRouter;
     contactMethods: ContactMethodsRouter;
     inbox: InboxRouter;
@@ -78,6 +80,7 @@ export const appRouter = t.router<{
     contracts: contractsRouter,
     didMetadata: didMetadataRouter,
     authGrants: authGrantsRouter,
+    delegateGrants: delegateGrantsRouter,
     workflows: workflowsRouter,
     contactMethods: contactMethodsRouter,
     inbox: inboxRouter,

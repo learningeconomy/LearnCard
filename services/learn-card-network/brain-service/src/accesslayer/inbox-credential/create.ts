@@ -36,6 +36,8 @@ export const createInboxCredential = async (input: {
     expiresInDays?: number;
     guardianEmail?: string;
     guardianStatus?: 'AWAITING_GUARDIAN' | 'GUARDIAN_APPROVED' | 'GUARDIAN_REJECTED';
+    /** The grant under which a delegate asked for this credential, when one did. */
+    delegation?: { grantId: string; delegateDid: string; ownerProfileId: string };
 }): Promise<InboxCredentialType> => {
     if (
         input.expiresInDays !== undefined &&
@@ -82,6 +84,13 @@ export const createInboxCredential = async (input: {
             : {}),
         ...(input.guardianEmail ? { guardianEmail: input.guardianEmail } : {}),
         ...(input.guardianStatus ? { guardianStatus: input.guardianStatus } : {}),
+        ...(input.delegation
+            ? {
+                  delegateGrantId: input.delegation.grantId,
+                  delegateDid: input.delegation.delegateDid,
+                  delegateOwnerProfileId: input.delegation.ownerProfileId,
+              }
+            : {}),
     };
 
     if (input.refresh) {
