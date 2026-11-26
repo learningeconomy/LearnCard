@@ -25,11 +25,11 @@ describe('inbox batch schema readiness', () => {
         await first;
         await ensure();
         expect(driver.session).toHaveBeenCalledTimes(1);
-        expect(executeWrite).toHaveBeenCalledTimes(10);
-        expect(run).toHaveBeenCalledTimes(10);
+        expect(executeWrite).toHaveBeenCalledTimes(11);
+        expect(run).toHaveBeenCalledTimes(11);
         expect(
             run.mock.calls.filter(([query]) => query.startsWith('CREATE CONSTRAINT'))
-        ).toHaveLength(4);
+        ).toHaveLength(5);
         expect(run.mock.calls.filter(([query]) => query.startsWith('CREATE INDEX'))).toHaveLength(
             6
         );
@@ -56,8 +56,8 @@ describe('inbox batch schema readiness', () => {
         const firstQuery =
             'CREATE CONSTRAINT inboxbatch_id IF NOT EXISTS FOR (n:InboxBatch) REQUIRE n.id IS UNIQUE';
         expect(api.run.mock.calls.slice(0, 2)).toEqual([[firstQuery], [firstQuery]]);
-        expect(api.run).toHaveBeenCalledTimes(11);
-        expect(worker.run).toHaveBeenCalledTimes(10);
+        expect(api.run).toHaveBeenCalledTimes(12);
+        expect(worker.run).toHaveBeenCalledTimes(11);
     });
 
     it.each([0, 4])('accepts equivalent-schema races for statement %i', async position => {
@@ -67,7 +67,7 @@ describe('inbox batch schema readiness', () => {
             code: 'Neo.ClientError.Schema.EquivalentSchemaRuleAlreadyExists',
         });
         await expect(ensure()).resolves.toBeUndefined();
-        expect(run).toHaveBeenCalledTimes(10);
+        expect(run).toHaveBeenCalledTimes(11);
     });
 
     it.each([
@@ -84,7 +84,7 @@ describe('inbox batch schema readiness', () => {
             expect(close).toHaveBeenCalledTimes(1);
             await expect(ensure()).resolves.toBeUndefined();
             expect(driver.session).toHaveBeenCalledTimes(2);
-            expect(run).toHaveBeenCalledTimes(10);
+            expect(run).toHaveBeenCalledTimes(11);
             expect(close).toHaveBeenCalledTimes(2);
         }
     );

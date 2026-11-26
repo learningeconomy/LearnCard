@@ -6,11 +6,14 @@ import {
     DeleteMessageCommand,
 } from '@aws-sdk/client-sqs';
 import { TRPCError } from '@trpc/server';
+import { TRPC_ERROR_CODES_BY_KEY } from '@trpc/server/rpc';
+import { IssueInboxCredentialResponseValidator } from '@learncard/types';
 import type {
     InboxBatchReceipt,
     InboxBatchStatus,
     IssueInboxCredentialBatch,
     IssueInboxCredentialBatchItemResult,
+    IssueInboxCredentialType,
 } from '@learncard/types';
 import { getInboxBatchRuntimeEnvironment } from '@environment';
 import type { Context } from '@routes';
@@ -20,16 +23,32 @@ import { getProfileByProfileId } from '@accesslayer/profile/read';
 import {
     batchReplayStore,
     claimBatchItem,
+    closeBatchRequest,
     createBatchJob,
     finishBatchItem,
     markBatchIssuanceStarted,
+    hasNewerBatchJob,
+    InboxBatchRequestIdConflict,
+    InboxItemLeaseLost,
+    OUTSTANDING_ITEMS_LIMIT,
+    readOutstandingBatchItems,
     readBatchJob,
+    readBatchReplay,
     recoverInboxJobs,
+    rejectWaitingBatchItem,
+    settleQueuedBatchItem,
     takeInboxDispatches,
 } from '@accesslayer/inbox-batch/store';
 import { acknowledgeInboxDispatches, deadLetterBatchItem } from '@accesslayer/inbox-batch/store';
 import { encryptInboxCredential, decryptInboxCredential } from './inbox-encryption.helpers';
-import { fingerprint, issueInboxBatch } from './inbox-batch.helpers';
+import {
+    InboxBatchConflict,
+    fingerprint,
+    issueInboxBatch,
+    inboxItemReplayKey,
+    inboxItemRequestHash,
+    replayResult,
+} from './inbox-batch.helpers';
 import { INBOX_BATCH_MAX_BYTES } from './inbox-batch-http.helpers';
 import { getInboxBatchState } from './inbox-batch-status.helpers';
 
@@ -54,11 +73,17 @@ const queue = (): { client: SQSClient; url: string } => {
     };
 };
 
+/** One admission fingerprint, for submission and for recognising a caller's own waiting job. */
+const batchRequestHash = (batch: IssueInboxCredentialBatch, ctx: Context): string =>
+    fingerprint({ batch, domain: ctx.domain, tenant: ctx.tenant?.id });
+
 /** Only durable admission happens here. The dispatcher owns publication, including retries. */
 export const submitInboxBatch = async (
     profile: ProfileType,
     batch: IssueInboxCredentialBatch,
-    ctx: Context
+    ctx: Context,
+    /** Keyed single calls only: the outcome recorded on waiting items of older jobs. */
+    superseded?: IssueInboxCredentialBatchItemResult
 ): Promise<InboxBatchReceipt> => {
     if (Buffer.byteLength(JSON.stringify(batch), 'utf8') > INBOX_BATCH_MAX_BYTES)
         throw new TRPCError({
@@ -86,7 +111,7 @@ export const submitInboxBatch = async (
                 replayKey:
                     item.idempotencyKey === undefined
                         ? `internal:${randomUUID()}`
-                        : `client:${fingerprint([profile.profileId, item.idempotencyKey])}`,
+                        : inboxItemReplayKey(profile.profileId, item.idempotencyKey),
             };
         })
     );
@@ -94,7 +119,7 @@ export const submitInboxBatch = async (
     return createBatchJob({
         issuer: profile.profileId,
         requestId: batch.requestId,
-        requestHash: fingerprint({ batch, domain: ctx.domain, tenant: ctx.tenant?.id }),
+        requestHash: batchRequestHash(batch, ctx),
         payload: await encryptInboxCredential(
             JSON.stringify({
                 batch,
@@ -105,6 +130,9 @@ export const submitInboxBatch = async (
         items,
         limit:
             Number.isSafeInteger(configuredLimit) && configuredLimit > 0 ? configuredLimit : 10_000,
+        ...(superseded
+            ? { superseded: await encryptInboxCredential(JSON.stringify(superseded)) }
+            : {}),
     });
 };
 
@@ -172,7 +200,7 @@ export const getInboxBatch = async (issuer: string, batchId: string): Promise<In
 };
 
 /** SQS is at-least-once. Ownership and issuance checkpoints, not delivery count, control execution. */
-export const processInboxQueueMessage = async (body: string): Promise<void> => {
+export const processInboxQueueMessage = async (body: string, inline = false): Promise<void> => {
     const message: unknown = JSON.parse(body);
     if (
         !message ||
@@ -182,7 +210,7 @@ export const processInboxQueueMessage = async (body: string): Promise<void> => {
     )
         throw new Error('Invalid inbox queue message');
     const owner = randomUUID();
-    const claimed = await claimBatchItem(message.itemId, owner);
+    const claimed = await claimBatchItem(message.itemId, owner, inline);
     if (!claimed) return;
     const { job, item } = claimed;
     const fail = (code: string, text: string): IssueInboxCredentialBatchItemResult => ({
@@ -205,6 +233,13 @@ export const processInboxQueueMessage = async (body: string): Promise<void> => {
         );
         return;
     }
+    // A keyed single request is its newest job's. An older item that was held when that job
+    // was admitted ends here, at its next claim: after a recovery or a requeue, and whether or
+    // not the newer job's receipt still exists.
+    if (await hasNewerBatchJob(job.id, INBOX_ISSUE_REQUEST_ID_PREFIX)) {
+        await finishBatchItem(item.id, owner, fail('CONFLICT', SUPERSEDED_MESSAGE));
+        return;
+    }
     const payload = JSON.parse(await decryptInboxCredential(job.payload)) as BatchJobPayload;
     const profile = await getProfileByProfileId(job.issuer);
     if (!profile) {
@@ -216,6 +251,16 @@ export const processInboxQueueMessage = async (body: string): Promise<void> => {
         return;
     }
     const input = payload.batch.items[Number(item.index)]!;
+    // A keyed single request is decided once, at the checkpoint, on its own identity.
+    const request =
+        job.requestId?.startsWith(INBOX_ISSUE_REQUEST_ID_PREFIX) && job.requestHash
+            ? {
+                  issuer: job.issuer,
+                  requestId: job.requestId,
+                  requestHash: job.requestHash,
+                  seq: Number(job.requestSeq ?? 0),
+              }
+            : undefined;
     const result = await issueInboxBatch(
         profile,
         {
@@ -228,8 +273,12 @@ export const processInboxQueueMessage = async (body: string): Promise<void> => {
             user: { did: profile.did, isChallengeValid: true, scope: payload.scope },
         },
         {
-            cache: batchReplayStore(item.id, owner, item.replayKey),
-            beforeIssue: () => markBatchIssuanceStarted(item.id, owner),
+            cache: batchReplayStore(item.id, owner, item.replayKey, request),
+            // Batch items keep the plain checkpoint; a keyed request is decided in it.
+            beforeIssue: () =>
+                request
+                    ? markBatchIssuanceStarted(item.id, owner, request)
+                    : markBatchIssuanceStarted(item.id, owner),
         }
     );
     await finishBatchItem(item.id, owner, {
@@ -243,6 +292,188 @@ export const processInboxQueueMessage = async (body: string): Promise<void> => {
         success: result.results[0]!.success,
         queueAgeMs: Date.now() - Number(job.createdAt),
     });
+};
+
+/**
+ * Admission request ids of keyed inbox.issue calls live in this namespace. It is reserved:
+ * the batch route refuses a caller-supplied requestId that starts with it.
+ */
+export const INBOX_ISSUE_REQUEST_ID_PREFIX = 'inbox.issue:';
+const SUPERSEDED_MESSAGE = 'Superseded by a later admission of this idempotency key.';
+const IN_PROGRESS_MESSAGE =
+    'Issuance is in progress. Retry this same idempotency key; do not issue with a new key.';
+
+/**
+ * Single-request adapter over the existing durable batch lifecycle. A concurrent
+ * queue worker and this request compete for the same item lease, never two sends.
+ */
+export const issueKeyedInboxCredential = async (
+    profile: ProfileType,
+    input: IssueInboxCredentialType,
+    ctx: Context
+): Promise<ReturnType<typeof IssueInboxCredentialResponseValidator.parse>> => {
+    if (!input.idempotencyKey || input.refresh) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'An ordinary issuance key is required.',
+        });
+    }
+    const idempotencyKey = input.idempotencyKey;
+    const replayKey = inboxItemReplayKey(profile.profileId, idempotencyKey);
+    // Namespace admission replay without changing the shared issuer/item-key identity.
+    const request = {
+        requestId: `${INBOX_ISSUE_REQUEST_ID_PREFIX}${fingerprint(idempotencyKey)}`,
+        items: [input],
+    };
+    // An earlier call under this key may have left its item waiting. Once the key's outcome
+    // is known, record it there as a worker would, so that no later worker issues the item.
+    // A job holding another payload under this request id is not this caller's to settle.
+    // There is no age limit: an item stays dispatchable for as long as it is QUEUED.
+    const identity = {
+        issuer: profile.profileId,
+        requestId: request.requestId,
+        requestHash: batchRequestHash(request, ctx),
+    };
+    const ownOutstanding = async (): ReturnType<typeof readOutstandingBatchItems> =>
+        readOutstandingBatchItems(identity.issuer, identity.requestId, identity.requestHash);
+    const settleWaiting = async (result: IssueInboxCredentialBatchItemResult): Promise<void> => {
+        for (const item of await ownOutstanding())
+            if (item.state === 'QUEUED') await settleQueuedBatchItem(item.itemId, result);
+    };
+    // A refusal must also hold against a worker that has claimed the item and has not reserved
+    // the key yet: if the record this call was refused against is released, that worker would
+    // find the key free and issue the refused payload. The store decides in one guarded step.
+    // False: the worker of one of the items has already reserved the key, or there were more
+    // items than one call looks at.
+    const rejectWaiting = async (result: IssueInboxCredentialBatchItemResult): Promise<boolean> => {
+        const items = await ownOutstanding();
+        let rejected = items.length < OUTSTANDING_ITEMS_LIMIT;
+        for (const item of items)
+            rejected = (await rejectWaitingBatchItem(item.itemId, result)) && rejected;
+        return rejected;
+    };
+    // The key belongs to another payload: from its record, or from a job that holds the
+    // request id. Both go through the same fence and the same second look at the key.
+    const refuse = async (
+        error: InboxBatchConflict
+    ): Promise<ReturnType<typeof IssueInboxCredentialResponseValidator.parse>> => {
+        const rejected = await rejectWaiting({
+            success: false,
+            index: 0,
+            error: { code: 'CONFLICT', message: error.message, reason: error.reason },
+            idempotencyKey,
+            recipient: input.recipient,
+        });
+        // The refusal is decided again after the fence, from the record that holds the key
+        // now. Since the first look, an own item may have reserved the key, or delivered and
+        // completed: then the answer is that item's.
+        const current = await readBatchReplay(replayKey);
+        let own: IssueInboxCredentialBatchItemResult | undefined;
+        if (current !== null) {
+            try {
+                own = replayResult(current, inboxItemRequestHash(input), 0);
+            } catch (again) {
+                const foreign =
+                    again instanceof InboxBatchConflict && again.reason === 'IDEMPOTENCY_MISMATCH';
+                if (!foreign) throw again;
+            }
+        }
+        if (own) {
+            await closeBatchRequest(identity, false);
+            await settleWaiting({ ...own, index: 0, idempotencyKey });
+            return IssueInboxCredentialResponseValidator.parse(own);
+        }
+        // An own item that could not be fenced can still issue, even if it has let go of the
+        // key in the meantime: a mismatch would be a stale answer.
+        if (!rejected) throw new InboxBatchConflict('IN_PROGRESS', IN_PROGRESS_MESSAGE);
+        // The answer itself is the durable decision of this request, under the request lock:
+        // no item admitted so far passes its checkpoint afterwards. Not written while one is
+        // past it.
+        if (!(await closeBatchRequest(identity, true)))
+            throw new InboxBatchConflict('IN_PROGRESS', IN_PROGRESS_MESSAGE);
+        throw error;
+    };
+    const replay = async (
+        stored: string
+    ): Promise<ReturnType<typeof IssueInboxCredentialResponseValidator.parse>> => {
+        let result: IssueInboxCredentialBatchItemResult;
+        try {
+            result = replayResult(stored, inboxItemRequestHash(input), 0);
+        } catch (error) {
+            // IN_PROGRESS is rethrown as is: the owner's outcome is not known yet, so a
+            // waiting item must stay queued.
+            if (error instanceof InboxBatchConflict && error.reason === 'IDEMPOTENCY_MISMATCH')
+                return refuse(error);
+            throw error;
+        }
+        // Decided under the request lock for every job admitted so far, whatever their number;
+        // the settle below only makes the outcome readable on the first waiting items.
+        await closeBatchRequest(identity, false);
+        await settleWaiting({ ...result, index: 0, idempotencyKey });
+        return IssueInboxCredentialResponseValidator.parse(result);
+    };
+    // Answer a known key before admission: an item admitted for a call that only replays
+    // or is rejected would outlive the answer and could be issued by a later worker.
+    const known = await readBatchReplay(replayKey);
+    if (known !== null) return replay(known);
+    // The request id is derived from the key, so a job holding another payload under it
+    // means the key was reused. This caller never sent a requestId: answer about its key.
+    // The admission lookup forgets a job after a day, so this can be a newer job for a request
+    // whose earlier item is still waiting. Admission retires such an item in its own
+    // transaction; nothing is retired from here, where two calls could retire each other's job.
+    let receipt: InboxBatchReceipt;
+    try {
+        receipt = await submitInboxBatch(profile, request, ctx, {
+            success: false,
+            index: 0,
+            error: { code: 'CONFLICT', message: SUPERSEDED_MESSAGE },
+            idempotencyKey,
+            recipient: input.recipient,
+        });
+    } catch (error) {
+        if (!(error instanceof InboxBatchRequestIdConflict)) throw error;
+        return refuse(
+            new InboxBatchConflict(
+                'IDEMPOTENCY_MISMATCH',
+                'This idempotency key was used for a different issuance.'
+            )
+        );
+    }
+    // A separate job's IN_PROGRESS snapshot is not authoritative once its owner
+    // commits the shared receipt. Validate the live record before trusting that job.
+    const stored = await readBatchReplay(replayKey);
+    if (stored !== null) return replay(stored);
+    await processInboxQueueMessage(JSON.stringify({ itemId: `${receipt.batchId}:0` }), true).catch(
+        (error: unknown) => {
+            // This attempt lost its item to a refusal recorded by another call, or to recovery.
+            // That is an outcome, not a failure: the item read below holds it.
+            if (!(error instanceof InboxItemLeaseLost)) throw error;
+        }
+    );
+    const batch = await getInboxBatch(profile.profileId, receipt.batchId);
+    const result = batch.items[0]?.result;
+    if (!result) {
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message: IN_PROGRESS_MESSAGE,
+        });
+    }
+    if (!result.success) {
+        const code = Object.prototype.hasOwnProperty.call(
+            TRPC_ERROR_CODES_BY_KEY,
+            result.error.code
+        )
+            ? (result.error.code as keyof typeof TRPC_ERROR_CODES_BY_KEY)
+            : 'INTERNAL_SERVER_ERROR';
+        throw new TRPCError({
+            code,
+            message: result.issuanceId
+                ? `${result.error.message} Issuance ID: ${result.issuanceId}.`
+                : result.error.message,
+        });
+    }
+    // Strip batch-only metadata so first response and replay have the single-route shape.
+    return IssueInboxCredentialResponseValidator.parse(result);
 };
 
 export const processInboxDeadLetter = async (body: string): Promise<void> => {

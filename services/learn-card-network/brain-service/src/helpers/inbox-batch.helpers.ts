@@ -6,6 +6,7 @@ import type {
     IssueInboxCredentialBatch,
     IssueInboxCredentialBatchItemResult,
     IssueInboxCredentialBatchResponse,
+    IssueInboxCredentialType,
 } from '@learncard/types';
 import {
     IssueInboxCredentialValidator,
@@ -50,7 +51,7 @@ export const fingerprint = (input: unknown): string =>
         )
         .digest('hex');
 
-class InboxBatchConflict extends TRPCError {
+export class InboxBatchConflict extends TRPCError {
     constructor(
         readonly reason: InboxBatchErrorReason,
         message: string
@@ -59,7 +60,7 @@ class InboxBatchConflict extends TRPCError {
     }
 }
 
-const replayResult = (
+export const replayResult = (
     stored: string,
     requestHash: string,
     index: number
@@ -93,6 +94,26 @@ const replayResult = (
         });
     }
     return { ...result, index, deduplicated: true };
+};
+
+/** The durable item identity shared by batch and ordinary single requests. */
+export const inboxItemReplayKey = (issuer: string, key: string): string =>
+    `client:${fingerprint([issuer, key])}`;
+
+/** Use the same parsed effective input for worker and read-only replay checks. */
+export const inboxItemRequestHash = (input: IssueInboxCredentialType): string => {
+    const { idempotencyKey: _key, ...withoutKey } = input;
+    // Batch merging always materializes an empty configuration, even when the
+    // single request omitted it. Preserve that existing fingerprint representation.
+    const parsed = IssueInboxCredentialValidator.parse({
+        ...withoutKey,
+        configuration: withoutKey.configuration ?? {},
+    });
+    if (parsed.configuration?.signingAuthority) {
+        parsed.configuration.signingAuthority.name =
+            parsed.configuration.signingAuthority.name.toLowerCase();
+    }
+    return fingerprint(parsed);
 };
 
 /**
@@ -164,9 +185,8 @@ export const issueInboxBatch = async (
                 }
                 // Parse only after merging. Parsing each partial configuration first would apply
                 // defaults too early and make an omitted item field override the batch default.
-                // Batch idempotency predates refresh issuance and is handled by this worker's
-                // replay cache. Do not pass that key through the single-issue validator, where
-                // idempotencyKey is reserved for refresh requests.
+                // This worker owns batch and ordinary single-request replay keys. Strip the
+                // key before fingerprinting/issuance so managed refresh does not also own it.
                 const { idempotencyKey: _batchIdempotencyKey, ...issueInput } = item;
                 const parsed = IssueInboxCredentialValidator.safeParse({
                     ...issueInput,
@@ -186,7 +206,7 @@ export const issueInboxBatch = async (
                     input.configuration.signingAuthority.name =
                         input.configuration.signingAuthority.name.toLowerCase();
                 }
-                const requestHash = key ? fingerprint(input) : '';
+                const requestHash = key ? inboxItemRequestHash(input) : '';
                 if (key) {
                     const stored = await replayCache.get(key);
                     if (stored === undefined) throw unavailable();

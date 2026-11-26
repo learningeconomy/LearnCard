@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { TRPCError } from '@trpc/server';
 import type { ManagedTransaction } from 'neo4j-driver';
 import type { InboxBatchReceipt, IssueInboxCredentialBatchItemResult } from '@learncard/types';
@@ -13,6 +13,68 @@ export const LEASE_MS = 360_000;
 const CLEANUP_MARGIN_MS = 5_000;
 
 export { ensureInboxBatchConstraints } from './schema';
+
+/**
+ * A request id that already holds another payload. Typed so that a caller which derives the
+ * request id itself can recognise this refusal without reading its message.
+ */
+export class InboxBatchRequestIdConflict extends TRPCError {
+    constructor() {
+        super({ code: 'CONFLICT', message: 'requestId was used for a different batch.' });
+    }
+}
+
+/** A step by a worker that no longer holds its item: recovery took an expired lease, or a
+ * refusal was recorded on the item. Typed so that a caller can tell it from a failure.
+ */
+export class InboxItemLeaseLost extends Error {
+    constructor() {
+        super('Inbox item lease lost');
+    }
+}
+
+/** A keyed single request: the identity its durable decision is recorded on. */
+export type BatchRequestIdentity = { issuer: string; requestId: string; requestHash: string };
+
+/** An item of a keyed single request that reached its checkpoint after the request was decided
+ * for every job admitted up to its own: another item passed first, or a call was answered.
+ */
+export class InboxBatchRequestDecided extends TRPCError {
+    constructor() {
+        super({
+            code: 'CONFLICT',
+            message: 'This request was already decided by another attempt of its idempotency key.',
+        });
+    }
+}
+
+const requestDecisionId = (request: BatchRequestIdentity): string =>
+    createHash('sha256')
+        .update(JSON.stringify([request.issuer, request.requestId, request.requestHash]))
+        .digest('hex');
+
+/** The REQUEST lock: the property write holds the decision node exclusively until commit.
+ * Lock order everywhere: issuer, request, item, replay, job. No node means undecided.
+ */
+const lockRequestDecision = async (
+    tx: ManagedTransaction,
+    request: BatchRequestIdentity
+): Promise<{ id: string; winner: string | null; decidedSeq: number | null }> => {
+    const id = requestDecisionId(request);
+    const rows = await tx.run(
+        `MERGE (d:InboxBatchRequest {id: $id})
+        ON CREATE SET d.issuer = $issuer, d.requestId = $requestId,
+            d.requestHash = $requestHash, d.admitted = 0
+        SET d.lock = coalesce(d.lock, 0) + 1 RETURN d`,
+        { id, ...request }
+    );
+    const decision = rows.records[0]!.get('d').properties;
+    return {
+        id,
+        winner: decision.winner ?? null,
+        decidedSeq: decision.decidedSeq == null ? null : Number(decision.decidedSeq),
+    };
+};
 
 const transaction = async <T>(fn: (tx: ManagedTransaction) => Promise<T>): Promise<T> => {
     await ensureInboxBatchConstraints();
@@ -32,10 +94,39 @@ export const createBatchJob = async (input: {
     payload: string;
     items: { replayKey: string; duplicate: boolean; correlation?: string }[];
     limit: number;
+    /** Encrypted outcome for waiting items of strictly older jobs of this request. */
+    superseded?: string;
 }): Promise<InboxBatchReceipt> => {
     const now = Date.now();
     const id = randomUUID();
     return transaction(async tx => {
+        // The jobs of one request are ordered by (createdAt, id), which never change, and only
+        // the newest may issue. Retiring in the transaction that selected the job, under the
+        // issuer lock, means two admissions can never retire each other's job. Each item is
+        // decided again under its own lock: one a worker has claimed is left to that worker,
+        // which retires it at its next claim (hasNewerBatchJob).
+        const retireOlder = async (selected: string, createdAt: number): Promise<void> => {
+            if (!input.requestId || !input.superseded) return;
+            const retired = await tx.run(
+                `MATCH (b:InboxBatch {issuer: $issuer, requestId: $requestId, requestHash: $hash})
+                WHERE b.createdAt < $createdAt OR (b.createdAt = $createdAt AND b.id < $selected)
+                MATCH (b)-[:HAS_ITEM]->(i:InboxBatchItem) WHERE i.state = 'QUEUED'
+                WITH b, i LIMIT 100 SET i.lock = coalesce(i.lock, 0) + 1
+                WITH b, i WHERE i.state = 'QUEUED'
+                SET i.state = 'COMPLETED', i.result = $result, i.owner = null,
+                    i.leaseUntil = null, i.dispatchAt = 0
+                RETURN DISTINCT b.id AS id`,
+                {
+                    issuer: input.issuer,
+                    requestId: input.requestId,
+                    hash: input.requestHash,
+                    selected,
+                    createdAt,
+                    result: input.superseded,
+                }
+            );
+            for (const record of retired.records) await finalizeSettledBatch(tx, record.get('id'));
+        };
         // The property write acquires Neo4j's exclusive node lock until commit. Concurrent
         // admissions therefore cannot read quota between this statement and the update below.
         const locked = await tx.run(
@@ -50,22 +141,38 @@ export const createBatchJob = async (input: {
             const prior = await tx.run(
                 `MATCH (b:InboxBatch {issuer: $issuer, requestId: $requestId})
                 WHERE b.createdAt > $cutoff
-                MATCH (b)-[:HAS_ITEM]->(i:InboxBatchItem) RETURN b, collect(i.state) AS states`,
+                MATCH (b)-[:HAS_ITEM]->(i:InboxBatchItem)
+                RETURN b, collect(i.state) AS states ORDER BY b.createdAt DESC, b.id DESC LIMIT 1`,
                 { issuer: input.issuer, requestId: input.requestId, cutoff: now - DAY }
             );
             const batch = prior.records[0]?.get('b').properties;
             if (batch) {
                 if (batch.requestHash !== input.requestHash)
-                    throw new TRPCError({
-                        code: 'CONFLICT',
-                        message: 'requestId was used for a different batch.',
-                    });
+                    throw new InboxBatchRequestIdConflict();
+                await retireOlder(batch.id, Number(batch.createdAt));
                 return {
                     batchId: batch.id,
                     status: getInboxBatchState(prior.records[0]!.get('states')),
                     createdAt: new Date(Number(batch.createdAt)).toISOString(),
                 };
             }
+        }
+        // Keyed single calls only. REQUEST lock, taken after the issuer lock: the new job's
+        // ordinal is counted where every decision of this request is written, so "admitted
+        // before the decision" is a fact of that lock and not of a clock.
+        let requestSeq: number | null = null;
+        if (input.requestId && input.superseded) {
+            const decision = await lockRequestDecision(tx, {
+                issuer: input.issuer,
+                requestId: input.requestId,
+                requestHash: input.requestHash,
+            });
+            const counted = await tx.run(
+                `MATCH (d:InboxBatchRequest {id: $id}) SET d.admitted = coalesce(d.admitted, 0) + 1
+                RETURN d.admitted AS seq`,
+                { id: decision.id }
+            );
+            requestSeq = Number(counted.records[0]!.get('seq'));
         }
         const quota = locked.records[0]!.get('q').properties;
         const expired = now - Number(quota.window) >= 3_600_000;
@@ -78,7 +185,7 @@ export const createBatchJob = async (input: {
         await tx.run(
             `MATCH (q:InboxBatchIssuer {id: $issuer}) SET q.used = $used, q.window = $window
             CREATE (b:InboxBatch {id: $id, issuer: $issuer, createdAt: $now, requestHash: $hash, payload: $payload})
-            SET b.requestId = $requestId
+            SET b.requestId = $requestId, b.requestSeq = $requestSeq
             WITH b UNWIND $items AS item
             CREATE (b)-[:HAS_ITEM]->(:InboxBatchItem {id: item.id, batchId: $id,
                 index: item.index, replayKey: item.replayKey, duplicate: item.duplicate,
@@ -93,9 +200,11 @@ export const createBatchJob = async (input: {
                 hash: input.requestHash,
                 payload: input.payload,
                 requestId: input.requestId ?? null,
+                requestSeq,
                 items: input.items.map((item, index) => ({ ...item, index, id: `${id}:${index}` })),
             }
         );
+        await retireOlder(id, now);
         return { batchId: id, status: 'QUEUED', createdAt: new Date(now).toISOString() };
     });
 };
@@ -116,10 +225,55 @@ export const readBatchJob = async (
     };
 };
 
+/** Most waiting items one keyed call looks at. Admission leaves one QUEUED item per request
+ * and a held older item ends at its next claim, so this is a backstop, not a working size.
+ */
+export const OUTSTANDING_ITEMS_LIMIT = 20;
+
+/** Read-only: the items of this request (same payload fingerprint) that could still be issued,
+ * oldest job first, whatever the age of the job. createBatchJob looks one day back when it
+ * decides whether to admit, but a QUEUED item has no age limit and stays eligible for dispatch.
+ */
+export const readOutstandingBatchItems = async (
+    issuer: string,
+    requestId: string,
+    requestHash: string
+): Promise<{ batchId: string; itemId: string; state: BatchItem['state'] }[]> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (b:InboxBatch {issuer: $issuer, requestId: $requestId, requestHash: $requestHash})
+            -[:HAS_ITEM]->(i:InboxBatchItem)
+        WHERE i.state IN ['QUEUED', 'PROCESSING']
+        RETURN b.id AS batchId, i.id AS itemId, i.state AS state
+        ORDER BY b.createdAt, b.id LIMIT toInteger($limit)`,
+        { issuer, requestId, requestHash, limit: OUTSTANDING_ITEMS_LIMIT }
+    );
+    return result.records.map(record => ({
+        batchId: String(record.get('batchId')),
+        itemId: String(record.get('itemId')),
+        state: record.get('state') as BatchItem['state'],
+    }));
+};
+
+/** True once a strictly newer job of the same request exists: (createdAt, id) is the order.
+ * Both are immutable and jobs are only added, so the answer never goes back to false while
+ * that job is kept. Only request ids in the given namespace are looked at.
+ */
+export const hasNewerBatchJob = async (batchId: string, namespace: string): Promise<boolean> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (b:InboxBatch {id: $batchId}) WHERE b.requestId STARTS WITH $namespace
+        MATCH (n:InboxBatch {issuer: b.issuer, requestId: b.requestId, requestHash: b.requestHash})
+        WHERE n.createdAt > b.createdAt OR (n.createdAt = b.createdAt AND n.id > b.id)
+        RETURN n.id AS id LIMIT 1`,
+        { batchId, namespace }
+    );
+    return result.records.length > 0;
+};
+
 /** Lock before testing ownership: concurrent SQS deliveries must not both enter issuance. */
 export const claimBatchItem = async (
     id: string,
-    owner: string
+    owner: string,
+    respectDispatchAt = false
 ): Promise<{ job: BatchJob; item: BatchItem } | undefined> =>
     transaction(async tx => {
         const result = await tx.run(
@@ -128,8 +282,11 @@ export const claimBatchItem = async (
             { id }
         );
         if (!result.records.length) return;
-        const item = result.records[0]!.get('i').properties as BatchItem;
+        const item = result.records[0]!.get('i').properties as BatchItem & { dispatchAt?: number };
         if (item.state !== 'QUEUED') return;
+        // SQS workers already have a dispatch lease; only direct HTTP attempts
+        // must wait for the persisted schedule rather than spending retry attempts.
+        if (respectDispatchAt && Number(item.dispatchAt ?? 0) > Date.now()) return;
         await tx.run(
             `MATCH (i:InboxBatchItem {id: $id}) SET i.state = 'PROCESSING', i.phase = 'PREPARING',
         i.owner = $owner, i.leaseUntil = $lease, i.attempts = i.attempts + 1`,
@@ -154,34 +311,92 @@ const lockOwnedItem = async (
         item.state !== 'PROCESSING' ||
         Number(item.leaseUntil) <= Date.now()
     )
-        throw new Error('Inbox item lease lost');
+        throw new InboxItemLeaseLost();
     return item;
 };
 
-export const markBatchIssuanceStarted = async (id: string, owner: string): Promise<void> =>
+/** The issuance checkpoint. For an item of a keyed single request it is also where the request
+ * is decided: one conditional write under the REQUEST lock (then the item lock), which every
+ * item of the request takes here and every answering call takes in closeBatchRequest. An item
+ * whose job the decision already covers loses, unless it is the winner itself; otherwise it
+ * wins and the decision covers every job admitted so far.
+ */
+export const markBatchIssuanceStarted = async (
+    id: string,
+    owner: string,
+    request?: BatchRequestIdentity & { seq: number }
+): Promise<void> =>
     transaction(async tx => {
+        const decision = request ? await lockRequestDecision(tx, request) : undefined;
         await lockOwnedItem(tx, id, owner);
+        if (request && decision) {
+            const covered = decision.decidedSeq !== null && request.seq <= decision.decidedSeq;
+            if (covered && decision.winner !== id) throw new InboxBatchRequestDecided();
+            await tx.run(
+                `MATCH (d:InboxBatchRequest {id: $decision})
+                SET d.winner = $id, d.decidedSeq = d.admitted`,
+                { decision: decision.id, id }
+            );
+        }
         await tx.run(`MATCH (i:InboxBatchItem {id: $id}) SET i.phase = 'ISSUING'`, { id });
+    });
+
+/** A keyed call that answers from the key's record decides its request for every job admitted
+ * so far: none of their items may pass the checkpoint afterwards, however many there are and
+ * whenever they run. One conditional write under the REQUEST lock, the lock of the checkpoint.
+ * A refusal is not written while an item of the request is past its checkpoint (false: that
+ * delivery is in flight). Nothing is stored for a request that has no job.
+ */
+export const closeBatchRequest = async (
+    request: BatchRequestIdentity,
+    refusal: boolean
+): Promise<boolean> =>
+    transaction(async tx => {
+        const jobs = await tx.run(
+            `MATCH (b:InboxBatch {issuer: $issuer, requestId: $requestId})
+            WHERE b.requestHash = $requestHash RETURN b.id AS id LIMIT 1`,
+            request
+        );
+        if (!jobs.records.length) return true;
+        const decision = await lockRequestDecision(tx, request);
+        if (refusal && decision.winner) {
+            const issuing = await tx.run(
+                `MATCH (i:InboxBatchItem {id: $id})
+                WHERE i.state = 'PROCESSING' AND i.phase = 'ISSUING' RETURN i.id AS id`,
+                { id: decision.winner }
+            );
+            if (issuing.records.length) return false;
+        }
+        await tx.run(
+            `MATCH (d:InboxBatchRequest {id: $id}) SET d.winner = null, d.decidedSeq = d.admitted`,
+            { id: decision.id }
+        );
+        return true;
     });
 
 /** Adapter retains the existing request fingerprint/CAS protocol with durable, encrypted records.
  * Processing markers have no expiry. Orphaned internal markers are removed after job retention;
  * client-keyed markers remain blocked. Only confirmed successes get the 24-hour replay expiry.
  */
+export const readBatchReplay = async (replayKey: string): Promise<string | null> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (r:InboxBatchReplay {id: $id})
+         WHERE r.expiresAt IS NULL OR r.expiresAt > $now RETURN r.value AS value`,
+        { id: replayKey, now: Date.now() }
+    );
+    const value = result.records[0]?.get('value');
+    return value ? decryptInboxCredential(value) : null;
+};
+
 export const batchReplayStore = (
     itemId: string,
     owner: string,
-    replayKey: string
+    replayKey: string,
+    /** Keyed single requests only: a stored receipt extends the decision of this request, and
+     * a release by the item that holds it gives it back. */
+    request?: BatchRequestIdentity & { seq: number }
 ): BatchReplayStore => ({
-    get: async (_key: string): Promise<string | null> => {
-        const result = await neogma.queryRunner.run(
-            `MATCH (r:InboxBatchReplay {id: $id})
-            WHERE r.expiresAt IS NULL OR r.expiresAt > $now RETURN r.value AS value`,
-            { id: replayKey, now: Date.now() }
-        );
-        const value = result.records[0]?.get('value');
-        return value ? decryptInboxCredential(value) : null;
-    },
+    get: async (_key: string): Promise<string | null> => readBatchReplay(replayKey),
     setIfAbsent: async (_key: string, value: string, _ttl: number): Promise<'OK' | null> => {
         const encrypted = await encryptInboxCredential(value);
         return transaction(async tx => {
@@ -209,6 +424,9 @@ export const batchReplayStore = (
     ): Promise<boolean> => {
         const encrypted = value === null ? null : await encryptInboxCredential(value);
         return transaction(async tx => {
+            // REQUEST lock first (request, item, replay): a receipt also covers a job admitted
+            // between this item's checkpoint and this write; a release gives the decision back.
+            const decision = request ? await lockRequestDecision(tx, request) : undefined;
             await lockOwnedItem(tx, itemId, owner);
             const rows = await tx.run(
                 `MATCH (r:InboxBatchReplay {id: $id}) SET r.lock = coalesce(r.lock, 0) + 1 RETURN r.marker AS marker`,
@@ -221,12 +439,31 @@ export const batchReplayStore = (
                 await tx.run(`MATCH (i:InboxBatchItem {id: $itemId}) SET i.phase = 'PREPARING'`, {
                     itemId,
                 });
+                // Nothing was delivered and the key is free again in this same transaction. An
+                // item that holds the decision (its checkpoint committed) gives it back with
+                // the key: its own job and every later one are undecided again; earlier jobs
+                // stay decided, as they were before it won. Any other item changes nothing.
+                if (decision && request)
+                    await tx.run(
+                        `MATCH (d:InboxBatchRequest {id: $id}) WHERE d.winner = $itemId
+                        SET d.winner = null, d.decidedSeq =
+                            CASE WHEN $seq > 0 THEN toInteger($seq) - 1 ELSE null END`,
+                        { id: decision.id, itemId, seq: request.seq }
+                    );
             } else {
                 await tx.run(
                     `MATCH (r:InboxBatchReplay {id: $id}) SET r.value = $value,
                     r.marker = null, r.expiresAt = $expiry`,
                     { id: replayKey, value: encrypted, expiry: Date.now() + ttl * 1000 }
                 );
+                // The stored receipt is this item's own proof of delivery, so it covers every
+                // job admitted so far whoever the decision names by now: a call that replayed
+                // an older receipt may have cleared the winner since the checkpoint.
+                if (decision)
+                    await tx.run(
+                        `MATCH (d:InboxBatchRequest {id: $id}) SET d.decidedSeq = d.admitted`,
+                        { id: decision.id }
+                    );
             }
             return true;
         });
@@ -281,6 +518,68 @@ export const finishBatchItem = async (
             }
         );
         await finalizeSettledBatch(tx, item.batchId);
+    });
+};
+
+/** Records an already known outcome on an item nobody has claimed. No owner lease is needed
+ * because nothing is issued here; the lock bump serialises this with claimBatchItem, which
+ * starts with the same statement. Only an unowned QUEUED item is written: a PROCESSING item
+ * is left to its owner, whose reserve step meets the same replay record.
+ */
+export const settleQueuedBatchItem = async (
+    id: string,
+    result: IssueInboxCredentialBatchItemResult
+): Promise<boolean> => {
+    const encrypted = await encryptInboxCredential(JSON.stringify(result));
+    return transaction(async tx => {
+        const locked = await tx.run(
+            `MATCH (i:InboxBatchItem {id: $id}) SET i.lock = coalesce(i.lock, 0) + 1 RETURN i`,
+            { id }
+        );
+        const item = locked.records[0]?.get('i').properties as BatchItem | undefined;
+        if (item?.state !== 'QUEUED') return false;
+        await tx.run(
+            `MATCH (i:InboxBatchItem {id: $id}) SET i.state = 'COMPLETED', i.result = $encrypted,
+            i.owner = null, i.leaseUntil = null, i.dispatchAt = 0`,
+            { id, encrypted }
+        );
+        await finalizeSettledBatch(tx, item.batchId);
+        return true;
+    });
+};
+
+/** Records a refusal on a waiting item so that it can no longer issue: an unowned QUEUED item,
+ * and also one a worker has claimed but that has not reserved the key yet. One guarded statement
+ * under the item lock decides it, so it is serialised with claimBatchItem and with every step of
+ * an owner, including its reservation: each takes the same lock and then tests ownership.
+ * Clearing the owner fences that worker as recovery does: its next step fails with a lost lease.
+ * Returns false only for a claimed item that holds a replay record: it is left to its worker,
+ * and the key's record is then that item's own.
+ */
+export const rejectWaitingBatchItem = async (
+    id: string,
+    result: IssueInboxCredentialBatchItemResult
+): Promise<boolean> => {
+    const encrypted = await encryptInboxCredential(JSON.stringify(result));
+    return transaction(async tx => {
+        const rejected = await tx.run(
+            `MATCH (i:InboxBatchItem {id: $id}) SET i.lock = coalesce(i.lock, 0) + 1
+            WITH i WHERE i.state = 'QUEUED' OR (i.state = 'PROCESSING'
+                AND NOT EXISTS { MATCH (r:InboxBatchReplay {itemId: i.id}) })
+            SET i.state = 'COMPLETED', i.result = $encrypted, i.owner = null,
+                i.leaseUntil = null, i.dispatchAt = 0
+            RETURN i.batchId AS batchId`,
+            { id, encrypted }
+        );
+        const batchId = rejected.records[0]?.get('batchId');
+        if (batchId) {
+            await finalizeSettledBatch(tx, batchId);
+            return true;
+        }
+        const left = await tx.run(`MATCH (i:InboxBatchItem {id: $id}) RETURN i.state AS state`, {
+            id,
+        });
+        return left.records[0]?.get('state') !== 'PROCESSING';
     });
 };
 
@@ -417,6 +716,22 @@ export const recoverInboxJobs = async (deadline = Date.now() + 20_000): Promise<
             await tx.run(
                 `MATCH (r:InboxBatchReplay) WHERE r.expiresAt < $now WITH r LIMIT 1000 DELETE r`,
                 { now: Date.now() }
+            );
+        });
+    if (deadline - Date.now() > CLEANUP_MARGIN_MS)
+        await transaction(async tx => {
+            // A request's decision is kept while any job of the request exists: an item that
+            // is still outstanding keeps its job, so the decision outlives it. Decided again
+            // under the REQUEST lock, which admission holds while it creates a job.
+            await tx.run(
+                `MATCH (d:InboxBatchRequest) WHERE NOT EXISTS {
+                    MATCH (b:InboxBatch {issuer: d.issuer, requestId: d.requestId})
+                    WHERE b.requestHash = d.requestHash }
+                WITH d LIMIT 1000 SET d.lock = coalesce(d.lock, 0) + 1
+                WITH d WHERE NOT EXISTS {
+                    MATCH (b:InboxBatch {issuer: d.issuer, requestId: d.requestId})
+                    WHERE b.requestHash = d.requestHash }
+                DELETE d`
             );
         });
     if (deadline - Date.now() > CLEANUP_MARGIN_MS)

@@ -2,7 +2,13 @@ import type { Driver } from 'neo4j-driver';
 import { neogma } from '@instance';
 
 const SCHEMA_QUERIES = [
-    ...['InboxBatch', 'InboxBatchItem', 'InboxBatchIssuer', 'InboxBatchReplay'].map(
+    ...[
+        'InboxBatch',
+        'InboxBatchItem',
+        'InboxBatchIssuer',
+        'InboxBatchReplay',
+        'InboxBatchRequest',
+    ].map(
         label =>
             `CREATE CONSTRAINT ${label.toLowerCase()}_id IF NOT EXISTS FOR (n:${label}) REQUIRE n.id IS UNIQUE`
     ),
