@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 
-import { IonRow, IonCol, IonToggle } from '@ionic/react';
+import { IonRow, IonCol } from '@ionic/react';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
+import { AppToggle } from '../../../../controls/AppToggle';
 
 import { BoostCMSState } from '../../../boost';
 
@@ -45,10 +46,10 @@ const BoostIDCardCMSMembersForm: React.FC<{
                         <p className="text-grayscale-900 font-medium w-10/12">
                             Publicly display members
                         </p>
-                        <IonToggle
+                        <AppToggle
                             mode="ios"
                             color="emerald-700"
-                            onIonChange={() => {
+                            onCheckedChange={() => {
                                 const publiclyDisplayMembers =
                                     !memberOptions?.publiclyDisplayMembers;
                                 handleStateChange('publiclyDisplayMembers', publiclyDisplayMembers);
@@ -61,10 +62,10 @@ const BoostIDCardCMSMembersForm: React.FC<{
                         <p className="text-grayscale-900 font-medium w-10/12">
                             Automatically connect members in contacts
                         </p>
-                        <IonToggle
+                        <AppToggle
                             mode="ios"
                             color="emerald-700"
-                            onIonChange={() => {
+                            onCheckedChange={() => {
                                 const autoConnectMembersInContacts =
                                     !memberOptions?.autoConnectMembersInContacts;
                                 handleStateChange(

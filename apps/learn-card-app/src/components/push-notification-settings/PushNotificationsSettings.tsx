@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { IonToggle } from '@ionic/react';
+import { AppToggle } from '../controls/AppToggle';
 import CaretLeft from '../svgs/CaretLeft';
 
 import {
@@ -33,7 +33,7 @@ const PushNotificationsSettings: React.FC<{
                 <div className="w-full py-4 border-b border-grayscale-200">
                     <div className="w-full flex items-center justify-between">
                         <p className="text-grayscale-900 font-semibold w-10/12">{setting.title}</p>
-                        <IonToggle
+                        <AppToggle
                             mode="ios"
                             checked={settings[PushNotificationSettingsEnum[setting.type]]}
                             onClick={() =>

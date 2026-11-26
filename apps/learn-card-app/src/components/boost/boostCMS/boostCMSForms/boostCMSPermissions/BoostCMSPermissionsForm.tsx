@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { IonCol, IonRow, IonToggle } from '@ionic/react';
+import { IonCol, IonRow } from '@ionic/react';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
+import { AppToggle } from '../../../../controls/AppToggle';
 
 import { BoostCMSState } from '../../../boost';
 import * as m from '../../../../../paraglide/messages.js';
@@ -43,13 +44,13 @@ const BoostCMSPermissionsForm: React.FC<{
                                 {m['boost.cms.permissions.viewTemplateDescription']()}
                             </p>
                         </div>
-                        <IonToggle
+                        <AppToggle
                             mode="ios"
                             color="emerald-700"
                             checked={Boolean(state?.boostPermissions?.canView)}
                             disabled={disabled}
-                            onIonChange={e => {
-                                const canView = Boolean(e.detail.checked);
+                            onCheckedChange={checked => {
+                                const canView = Boolean(checked);
                                 setState(prevState => ({
                                     ...prevState,
                                     boostPermissions: {
@@ -70,7 +71,7 @@ const BoostCMSPermissionsForm: React.FC<{
                                 {m['boost.cms.permissions.editTemplateDescription']()}
                             </p>
                         </div>
-                        <IonToggle
+                        <AppToggle
                             mode="ios"
                             color="emerald-700"
                             checked={
@@ -79,8 +80,8 @@ const BoostCMSPermissionsForm: React.FC<{
                                     : true
                             }
                             disabled={disabled}
-                            onIonChange={e => {
-                                const canEdit = Boolean(e.detail.checked);
+                            onCheckedChange={checked => {
+                                const canEdit = Boolean(checked);
                                 setState(prevState => ({
                                     ...prevState,
                                     boostPermissions: {
@@ -101,7 +102,7 @@ const BoostCMSPermissionsForm: React.FC<{
                                 {m['boost.cms.permissions.sendTemplateDescription']()}
                             </p>
                         </div>
-                        <IonToggle
+                        <AppToggle
                             mode="ios"
                             color="emerald-700"
                             checked={
@@ -110,8 +111,8 @@ const BoostCMSPermissionsForm: React.FC<{
                                     : true
                             }
                             disabled={disabled}
-                            onIonChange={e => {
-                                const canIssue = Boolean(e.detail.checked);
+                            onCheckedChange={checked => {
+                                const canIssue = Boolean(checked);
                                 setState(prevState => ({
                                     ...prevState,
                                     boostPermissions: {

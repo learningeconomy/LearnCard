@@ -1,7 +1,8 @@
 import * as m from '../../paraglide/messages.js';
 import React, { useEffect, useState } from 'react';
 
-import { IonPage, IonToggle } from '@ionic/react';
+import { IonPage } from '@ionic/react';
+import { AppToggle } from '../controls/AppToggle';
 import LearnCardIDCMSLayout from './LearnCardIDCMSLayout';
 import LearnCardIDCMSFooter from './LearCardIDCMSFooter';
 import IDSleeve from 'learn-card-base/svgs/IDSleeve';
@@ -170,10 +171,10 @@ export const LearnCardIDCMS: React.FC<{
                                         <p className="text-grayscale-900 font-poppins text-lg flex items-center justify-start w-[80%]">
                                             {m['learnCardId.fadeImage']()}
                                         </p>
-                                        <IonToggle
+                                        <AppToggle
                                             mode="ios"
                                             className="family-cms-toggle"
-                                            onIonChange={e => {
+                                            onCheckedChange={() => {
                                                 handleSetState(
                                                     'dimIdBackgroundImage',
                                                     !_learnCardID?.dimIdBackgroundImage
@@ -188,10 +189,10 @@ export const LearnCardIDCMS: React.FC<{
                                         <p className="text-grayscale-900 font-poppins text-lg flex items-center justify-start w-[80%]">
                                             {m['learnCardId.darkText']()}
                                         </p>
-                                        <IonToggle
+                                        <AppToggle
                                             mode="ios"
                                             className="family-cms-toggle"
-                                            onIonChange={e => {
+                                            onCheckedChange={() => {
                                                 handleSetState(
                                                     'fontColor',
                                                     _learnCardID.fontColor === '#EFF0F5'
@@ -267,10 +268,10 @@ export const LearnCardIDCMS: React.FC<{
                                 <p className="text-grayscale-900 font-poppins text-lg flex items-center justify-start w-[80%]">
                                     {m['learnCardId.repeatBackground']()}
                                 </p>
-                                <IonToggle
+                                <AppToggle
                                     mode="ios"
                                     className="family-cms-toggle"
-                                    onIonChange={e => {
+                                    onCheckedChange={() => {
                                         handleSetState(
                                             'repeatBackgroundImage',
                                             !_learnCardID?.repeatBackgroundImage

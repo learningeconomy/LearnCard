@@ -9,7 +9,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import useAutosave from '../../hooks/useAutosave';
 import RecoveryPrompt from '../../components/common/RecoveryPrompt';
 
-import { IonDatetime, IonInput, IonLabel, IonSpinner, IonTextarea, IonToggle } from '@ionic/react';
+import { IonDatetime, IonInput, IonLabel, IonSpinner, IonTextarea } from '@ionic/react';
+import { AppToggle } from '../../components/controls/AppToggle';
 import ContractTypeTabs from './ContractTypeTabs';
 import FullScreenGameFlow from '../consentFlow/GameFlow/FullScreenGameFlow';
 import AdminManagedBoostRow from './AdminManagedBoostRow';
@@ -581,7 +582,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
                                 >
                                     Needs Guardian Consent (GameFlow)
                                 </IonLabel>
-                                <IonToggle
+                                <AppToggle
                                     mode="ios"
                                     color="emerald-700"
                                     onClick={() =>
@@ -651,7 +652,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
                                         - Anonymize
                                     </span>
                                 </h3>
-                                <IonToggle
+                                <AppToggle
                                     mode="ios"
                                     color="emerald-700"
                                     onClick={() =>

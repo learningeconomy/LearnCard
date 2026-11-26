@@ -1,7 +1,7 @@
 /*
- * Styles for the app-owned controls (AppButton, AppButtons, AppCheckbox, AppRadioGroup/AppRadio).
- * Ported from @ionic/core 8.7.2 (ion-button, ion-buttons, ion-checkbox, ion-radio,
- * ion-radio-group, ion-ripple-effect) for the colors, fills and modes the app uses.
+ * Styles for the app-owned controls (AppButton, AppButtons, AppCheckbox, AppRadioGroup/AppRadio,
+ * AppToggle). Ported from @ionic/core 8.7.2 (ion-button, ion-buttons, ion-checkbox, ion-radio,
+ * ion-radio-group, ion-ripple-effect, ion-toggle) for the colors, fills and modes the app uses.
  *
  * Cascade, as in app-shell.css:
  * - Ionic's `:host` and `::slotted` rules lost to every light-DOM author rule (Tailwind's unlayered
@@ -39,6 +39,20 @@
     --app-color-emerald-700-contrast: #ffffff;
     --app-color-emerald-700-shade: #00a478;
     --app-color-emerald-700-tint: #1ac194;
+
+    /* AppToggle: ios paints the checked track with the base color, md with `rgba(<rgb>, 0.5)`. */
+    --app-color-primary-rgb: 56, 128, 255;
+    --app-color-emerald-700-rgb: 0, 186, 136;
+    --app-color-emerald-500: #40cba6;
+    --app-color-emerald-500-rgb: 64, 203, 166;
+    --app-color-indigo-700: #4338ca;
+    --app-color-indigo-700-rgb: 67, 56, 202;
+    /* Theme primaryColor: colorful indigo-500, formal blue-500. */
+    --app-color-indigo-500: #6366f1;
+    --app-color-indigo-500-rgb: 99, 102, 241;
+    /* variables.css defines blue-500's rgb as 0, 0, 0 (md track paints rgba(0, 0, 0, 0.5)); kept. */
+    --app-color-blue-500: oklch(62.3% 0.214 259.815);
+    --app-color-blue-500-rgb: 0, 0, 0;
 }
 
 /* `.ion-color-X` equivalents: the per-color base the components read. */
@@ -65,9 +79,35 @@
 
 .app-color-emerald-700 {
     --app-color-base: var(--app-color-emerald-700);
+    --app-color-base-rgb: var(--app-color-emerald-700-rgb);
     --app-color-contrast: var(--app-color-emerald-700-contrast);
     --app-color-shade: var(--app-color-emerald-700-shade);
     --app-color-tint: var(--app-color-emerald-700-tint);
+}
+
+/*
+ * Toggle-only colors: base and rgb are all ion-toggle reads. There is deliberately no
+ * `.app-color-baltic-blue-500` (vetpass primaryColor): variables.css has no `.ion-color-*` class
+ * for it either, so the checked track stays transparent, as it rendered under Ionic.
+ */
+.app-color-emerald-500 {
+    --app-color-base: var(--app-color-emerald-500);
+    --app-color-base-rgb: var(--app-color-emerald-500-rgb);
+}
+
+.app-color-indigo-700 {
+    --app-color-base: var(--app-color-indigo-700);
+    --app-color-base-rgb: var(--app-color-indigo-700-rgb);
+}
+
+.app-color-indigo-500 {
+    --app-color-base: var(--app-color-indigo-500);
+    --app-color-base-rgb: var(--app-color-indigo-500-rgb);
+}
+
+.app-color-blue-500 {
+    --app-color-base: var(--app-color-blue-500);
+    --app-color-base-rgb: var(--app-color-blue-500-rgb);
 }
 
 @layer app-controls-host {
@@ -389,6 +429,71 @@
         --border-width: 0.125rem;
         --border-style: solid;
         --border-radius: 50%;
+    }
+
+    /*
+     * -------------------------------------------------------------------- ion-toggle :host
+     * The custom properties keep ion-toggle's names, so `.family-cms-toggle` / `.ds-toggle`
+     * (unlayered) still override them. A host `opacity-*` utility still beats the disabled opacity
+     * (BoostCMSMediaForm), as a light-DOM rule beat Ionic's `:host(.toggle-disabled)`.
+     */
+    .app-toggle {
+        box-sizing: content-box !important;
+        display: inline-block;
+        position: relative;
+        max-width: 100%;
+        cursor: pointer;
+        user-select: none;
+        z-index: 2;
+    }
+
+    .app-toggle.app-toggle-disabled {
+        pointer-events: none;
+    }
+
+    /* Ionic: rgba(var(--ion-text-color-rgb, 0, 0, 0), …); the app does not set the rgb var. */
+    .app-toggle.ios {
+        --track-background: rgba(0, 0, 0, 0.088);
+        --track-background-checked: var(--app-color-primary);
+        --border-radius: 15.5px;
+        --handle-background: #ffffff;
+        --handle-background-checked: #ffffff;
+        --handle-border-radius: 25.5px;
+        --handle-box-shadow: 0 3px 4px rgba(0, 0, 0, 0.06), 0 3px 8px rgba(0, 0, 0, 0.06);
+        --handle-height: calc(31px - (2px * 2));
+        --handle-max-height: calc(100% - var(--handle-spacing) * 2);
+        --handle-width: calc(31px - (2px * 2));
+        --handle-spacing: 2px;
+        --handle-transition:
+            transform 300ms, width 120ms ease-in-out 80ms, left 110ms ease-in-out 80ms,
+            right 110ms ease-in-out 80ms;
+    }
+
+    .app-toggle.ios.app-toggle-disabled {
+        opacity: 0.3;
+    }
+
+    .app-toggle.md {
+        --track-background: rgba(0, 0, 0, 0.39);
+        --track-background-checked: rgba(var(--app-color-primary-rgb), 0.5);
+        --border-radius: 14px;
+        --handle-background: #ffffff;
+        --handle-background-checked: var(--app-color-primary);
+        --handle-border-radius: 50%;
+        --handle-box-shadow:
+            0 3px 1px -2px rgba(0, 0, 0, 0.2), 0 2px 2px 0 rgba(0, 0, 0, 0.14),
+            0 1px 5px 0 rgba(0, 0, 0, 0.12);
+        --handle-width: 20px;
+        --handle-height: 20px;
+        --handle-max-height: calc(100% + 6px);
+        --handle-spacing: 0;
+        --handle-transition:
+            transform 160ms cubic-bezier(0.4, 0, 0.2, 1),
+            background-color 160ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .app-toggle.md.app-toggle-disabled {
+        opacity: 0.38;
     }
 }
 
@@ -908,4 +1013,139 @@ ion-toolbar:not([color]) .app-button.app-button-solid:not(.app-color) > .app-but
 /* ion-radio-group: `ion-radio-group { vertical-align: top }` (global, not shadow). */
 .app-radio-group {
     vertical-align: top;
+}
+
+/* ----------------------------------------------------------------- ion-toggle shadow parts */
+.app-toggle > .app-toggle-wrapper {
+    display: flex;
+    position: relative;
+    flex-grow: 1;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    height: inherit;
+    transition: background-color 15ms linear;
+    cursor: inherit;
+}
+
+.app-toggle-wrapper > .app-toggle-native-wrapper {
+    display: flex;
+    align-items: center;
+}
+
+/* part="track", the drag gesture's element. pan-y keeps vertical page scrolling on touch. */
+.app-toggle-native-wrapper > .app-toggle-icon {
+    border-radius: var(--border-radius);
+    display: block;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: var(--track-background);
+    overflow: inherit;
+    touch-action: pan-y pinch-zoom;
+}
+
+.app-toggle.app-toggle-checked .app-toggle-icon {
+    background: var(--track-background-checked);
+}
+
+.app-toggle-icon > .app-toggle-icon-wrapper {
+    display: flex;
+    position: relative;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    transition: var(--handle-transition);
+    will-change: transform;
+}
+
+/* part="handle" */
+.app-toggle-icon-wrapper > .app-toggle-inner {
+    border-radius: var(--handle-border-radius);
+    position: absolute;
+    left: var(--handle-spacing);
+    width: var(--handle-width);
+    height: var(--handle-height);
+    max-height: var(--handle-max-height);
+    transition: var(--handle-transition);
+    background: var(--handle-background);
+    box-shadow: var(--handle-box-shadow);
+    contain: strict;
+}
+
+.app-toggle.app-toggle-rtl .app-toggle-inner {
+    right: var(--handle-spacing);
+}
+
+.app-toggle.app-toggle-ltr.app-toggle-checked .app-toggle-icon-wrapper {
+    transform: translate3d(calc(100% - var(--handle-width)), 0, 0);
+}
+
+.app-toggle.app-toggle-rtl.app-toggle-checked .app-toggle-icon-wrapper {
+    transform: translate3d(calc(-100% + var(--handle-width)), 0, 0);
+}
+
+.app-toggle.app-toggle-checked .app-toggle-inner {
+    background: var(--handle-background-checked);
+}
+
+.app-toggle.app-toggle-ltr.app-toggle-checked .app-toggle-inner {
+    transform: translate3d(calc(var(--handle-spacing) * -2), 0, 0);
+}
+
+.app-toggle.app-toggle-rtl.app-toggle-checked .app-toggle-inner {
+    transform: translate3d(calc(var(--handle-spacing) * 2), 0, 0);
+}
+
+.app-toggle.ios .app-toggle-native-wrapper > .app-toggle-icon {
+    width: 51px;
+    height: 31px;
+    overflow: hidden;
+}
+
+/*
+ * `:host(.ion-color.toggle-checked) .toggle-icon` outranks `--track-background-checked`, so
+ * ResumeBuilderToggle (color + family-cms-toggle) paints emerald-500, not #00ba88.
+ */
+.app-toggle.ios.app-color.app-toggle-checked .app-toggle-icon {
+    background: var(--app-color-base);
+}
+
+.app-toggle.ios .app-toggle-icon {
+    transform: translate3d(0, 0, 0);
+    transition: background-color 300ms;
+}
+
+.app-toggle.ios .app-toggle-inner {
+    will-change: transform;
+}
+
+/* `toggle-activated`: set while dragging; the handle widens by 6px. */
+.app-toggle.ios.app-toggle-activated .app-toggle-inner {
+    width: calc(var(--handle-width) + 6px);
+}
+
+.app-toggle.ios.app-toggle-ltr.app-toggle-activated.app-toggle-checked .app-toggle-icon-wrapper {
+    transform: translate3d(calc(100% - var(--handle-width) - 6px), 0, 0);
+}
+
+.app-toggle.ios.app-toggle-rtl.app-toggle-activated.app-toggle-checked .app-toggle-icon-wrapper {
+    transform: translate3d(calc(-100% + var(--handle-width) + 6px), 0, 0);
+}
+
+.app-toggle.md .app-toggle-native-wrapper > .app-toggle-icon {
+    width: 36px;
+    height: 14px;
+}
+
+.app-toggle.md.app-color.app-toggle-checked .app-toggle-icon {
+    background: rgba(var(--app-color-base-rgb), 0.5);
+}
+
+.app-toggle.md.app-color.app-toggle-checked .app-toggle-inner {
+    background: var(--app-color-base);
+}
+
+.app-toggle.md .app-toggle-icon {
+    transition: background-color 160ms;
 }

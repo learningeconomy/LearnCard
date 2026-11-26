@@ -2,9 +2,10 @@ import React from 'react';
 import { Updater, useImmer } from 'use-immer';
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 
-import { IonGrid, IonCol, IonRow, IonToolbar, IonHeader, IonToggle } from '@ionic/react';
+import { IonGrid, IonCol, IonRow, IonToolbar, IonHeader } from '@ionic/react';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import BrokenLink from '../../components/svgs/BrokenLink';
+import { AppToggle } from '../../components/controls/AppToggle';
 import ConsentFlowReadSharing from '../consentFlow/ConsentFlowReadSharing';
 import ConsentFlowWriteSharing from '../consentFlow/ConsentFlowWriteSharing';
 
@@ -257,7 +258,7 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                                         </p>
                                     </label>
 
-                                    <IonToggle
+                                    <AppToggle
                                         mode="ios"
                                         className="[--background:white]"
                                         color="emerald-700"
@@ -325,7 +326,7 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                                         </p>
                                     </label>
 
-                                    <IonToggle
+                                    <AppToggle
                                         mode="ios"
                                         className="[--background:white]"
                                         color="emerald-700"
@@ -370,7 +371,7 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                                 </h1>
                             </div>
 
-                            <IonToggle
+                            <AppToggle
                                 mode="ios"
                                 color="emerald-700"
                                 onClick={handleToggleAnonymize}

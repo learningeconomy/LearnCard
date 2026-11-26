@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { IonApp, IonCol, IonLabel, IonRow, IonToggle } from '@ionic/react';
+import { IonApp, IonCol, IonLabel, IonRow } from '@ionic/react';
 import { useImmer } from 'use-immer';
 import { Lock } from 'lucide-react';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
@@ -25,6 +25,7 @@ import {
 import ConsentFlowCredentialAccessToggles from '../../src/pages/consentFlow/ConsentFlowCredentialAccessToggles';
 import ConsentFlowPersonalAccessToggles from '../../src/pages/consentFlow/ConsentFlowPersonalAccessToggles';
 import SettingRow from '../../src/pages/privacy-settings/components/SettingRow';
+import { AppToggle } from '../../src/components/controls/AppToggle';
 import GlassCard from '../../src/pages/privacy-settings/components/GlassCard';
 // Not global in the app: only DataSharingCenterView / SharedLinksAllSheet import it, so `ds-toggle`
 // (T-K) is styled on the privacy page and unstyled on any other mount. The fixture imports it so
@@ -42,6 +43,9 @@ import '../../src/pages/privacy-settings/dataSharingCenter.scss';
  * is a faithful excerpt: the toggle, its props, classes and handler shape, and its immediate row
  * wrappers, copied from the source line cited in each block. Page state those handlers touch is
  * reduced to the fields the toggle reads.
+ *
+ * The call sites now render the app-owned AppToggle, and the excerpts mirror them. Group headers
+ * and the matrix title keep the inventory's Ionic wording, so before/after captures stay comparable.
  *
  * Each call site is its own component with local state, as in the source. Ionic React re-applies
  * `checked` to an IonToggle whenever its parent re-renders, so a shared page-level state would
@@ -134,7 +138,7 @@ const MatrixRow: React.FC<{ variant: MatrixVariant; mode: 'ios' | 'md' }> = ({ v
                 <span className="block text-grayscale-500">{variant.note}</span>
             </span>
             {cells.map(cell => (
-                <IonToggle
+                <AppToggle
                     key={cell.state}
                     data-testid={`${prefix}-${cell.state}`}
                     mode={mode}
@@ -142,7 +146,7 @@ const MatrixRow: React.FC<{ variant: MatrixVariant; mode: 'ios' | 'md' }> = ({ v
                     className={variant.className}
                     checked={cell.checked}
                     disabled={cell.disabled}
-                    onIonChange={e => cell.set?.(e.detail.checked)}
+                    onCheckedChange={checked => cell.set?.(checked)}
                     aria-label={`${variant.name} ${mode} ${cell.state}`}
                 />
             ))}
@@ -209,11 +213,11 @@ const BasicInfoCredentialExpires: React.FC<{ testId: string; disabled?: boolean 
                 <p className="text-grayscale-900 font-medium w-10/12">
                     {m['boost.cms.basicInfo.credentialExpires']()}
                 </p>
-                <IonToggle
+                <AppToggle
                     data-testid={`${testId}-toggle`}
                     mode="ios"
                     color="emerald-700"
-                    onIonChange={() => {
+                    onCheckedChange={() => {
                         const expiresValue = !basicInfo?.credentialExpires;
                         handleStateChange('credentialExpires', expiresValue);
                         //if we are toggling the value to false (eg does not expire, clear expiration date if exists)
@@ -239,11 +243,11 @@ const ShareableGenerateClaimLink: React.FC = () => {
                 <p className="text-grayscale-900 font-medium w-10/12">
                     {m['boost.cms.issueTo.generateClaimLink']()}
                 </p>
-                <IonToggle
+                <AppToggle
                     data-testid="t1b-a-shareable-claim-link-toggle"
                     mode="ios"
                     color="emerald-700"
-                    onIonChange={() => {
+                    onCheckedChange={() => {
                         setToggle(!toggle);
                     }}
                     checked={toggle}
@@ -265,11 +269,11 @@ const IdCardIssuerThumbnail: React.FC = () => {
         <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-2 mb-4 rounded-[20px]">
             <div className="w-full flex items-center justify-between px-[8px] py-[8px]">
                 <p className="text-grayscale-900 font-medium w-10/12">Show Issuer Thumbnail</p>
-                <IonToggle
+                <AppToggle
                     data-testid="t1b-a-idcard-issuer-thumbnail-toggle"
                     mode="ios"
                     color="emerald-700"
-                    onIonChange={() => {
+                    onCheckedChange={() => {
                         const showIdIssuerImage = !state?.appearance?.showIdIssuerImage;
                         handleStateChange('showIdIssuerImage', showIdIssuerImage);
                     }}
@@ -307,11 +311,11 @@ const EndorsementShowToggle: React.FC = () => {
                         </h1>
                     </div>
 
-                    <IonToggle
+                    <AppToggle
                         data-testid="t1b-a-endorsement-toggle"
                         mode="ios"
                         color="emerald-700"
-                        onIonChange={() => {
+                        onCheckedChange={() => {
                             const showEndorsementValue = showEndorsement;
                             setShowEndorsement(!showEndorsementValue);
                             setVisibility?.(!showEndorsementValue);
@@ -372,7 +376,7 @@ const UserPermissionsRows: React.FC = () => {
     const disabled = false;
     const handleStateChange = (propName: string, value: boolean | null): void =>
         setBasicInfo(prev => ({ ...prev, [propName]: value }));
-    const onIonChange = (): void => {
+    const onCheckedChange = (): void => {
         const expiresValue = !basicInfo?.credentialExpires;
         handleStateChange('credentialExpires', expiresValue);
         //if we are toggling the value to false (eg does not expire, clear expiration date if exists)
@@ -393,11 +397,11 @@ const UserPermissionsRows: React.FC = () => {
                     <p className="text-grayscale-900 font-medium w-10/12">
                         {m['boost.cms.userPermissions.createCustomBoosts']()}
                     </p>
-                    <IonToggle
+                    <AppToggle
                         data-testid="t1b-b-user-permissions-custom-toggle"
                         mode="ios"
                         color="indigo-700"
-                        onIonChange={onIonChange}
+                        onCheckedChange={onCheckedChange}
                         checked={basicInfo?.credentialExpires}
                         disabled={disabled}
                     />
@@ -408,11 +412,11 @@ const UserPermissionsRows: React.FC = () => {
                     <p className="text-grayscale-900 font-medium w-10/12">
                         {m['boost.cms.userPermissions.createIDs']()}
                     </p>
-                    <IonToggle
+                    <AppToggle
                         data-testid="t1b-b-user-permissions-ids-toggle"
                         mode="ios"
                         color="indigo-700"
-                        onIonChange={onIonChange}
+                        onCheckedChange={onCheckedChange}
                         checked={basicInfo?.credentialExpires}
                         disabled={disabled}
                     />
@@ -475,13 +479,13 @@ const ShareableCanViewAmber: React.FC<{ testId: string; updating?: boolean }> = 
                     <p className="text-amber-900 font-medium w-10/12 m-0">
                         {m['boost.cms.issueTo.anyoneCanView']()}
                     </p>
-                    <IonToggle
+                    <AppToggle
                         data-testid={`${testId}-toggle`}
                         mode="ios"
                         color="emerald-700"
                         checked={canViewEnabled}
                         disabled={isUpdatingPermissions}
-                        onIonChange={e => handleCanViewToggle(Boolean(e.detail.checked))}
+                        onCheckedChange={checked => handleCanViewToggle(Boolean(checked))}
                     />
                 </div>
             </div>
@@ -541,10 +545,10 @@ const MediaOnlyToggle: React.FC<{
                     </div>
 
                     <div className="flex items-center justify-center relative rounded-full">
-                        <IonToggle
+                        <AppToggle
                             data-testid={`${testId}-toggle`}
-                            onIonChange={e => {
-                                if (e.detail.checked) {
+                            onCheckedChange={checked => {
+                                if (checked) {
                                     setPreviewType(BoostCMSAppearancePreviewTypeEnum.Media);
                                 } else {
                                     setPreviewType(BoostCMSAppearancePreviewTypeEnum.Default);
@@ -599,11 +603,11 @@ const FamilyAppearanceToggles: React.FC = () => {
                         <p className="text-grayscale-900 font-poppins text-lg flex items-center justify-start w-[80%]">
                             {m['family.appearance.fadeBackground']()}
                         </p>
-                        <IonToggle
+                        <AppToggle
                             data-testid="t1b-f-family-appearance-fade-toggle"
                             mode="ios"
                             className="family-cms-toggle"
-                            onIonChange={() => {
+                            onCheckedChange={() => {
                                 setFadeBackground(!fadeBackground);
                                 handleSetState(
                                     'appearance',
@@ -621,11 +625,11 @@ const FamilyAppearanceToggles: React.FC = () => {
                         <p className="text-grayscale-900 font-poppins text-lg flex items-center justify-start w-[80%]">
                             {m['family.appearance.repeatBackground']()}
                         </p>
-                        <IonToggle
+                        <AppToggle
                             data-testid="t1b-f-family-appearance-repeat-toggle"
                             mode="ios"
                             className="family-cms-toggle"
-                            onIonChange={() => {
+                            onCheckedChange={() => {
                                 setRepeatBackground(!repeatBackground);
                                 handleSetState(
                                     'appearance',
@@ -659,11 +663,11 @@ const LearnCardIdDarkText: React.FC = () => {
                     <p className="text-grayscale-900 font-poppins text-lg flex items-center justify-start w-[80%]">
                         {m['learnCardId.darkText']()}
                     </p>
-                    <IonToggle
+                    <AppToggle
                         data-testid="t1b-f-learncardid-dark-text-toggle"
                         mode="ios"
                         className="family-cms-toggle"
-                        onIonChange={() => {
+                        onCheckedChange={() => {
                             handleSetState(
                                 'fontColor',
                                 learnCardID.fontColor === '#EFF0F5' ? '#353E64' : '#EFF0F5'
@@ -784,7 +788,7 @@ const CreateContractToggles: React.FC = () => {
                 >
                     Needs Guardian Consent (GameFlow)
                 </IonLabel>
-                <IonToggle
+                <AppToggle
                     data-testid="t1b-h-create-contract-guardian-toggle"
                     mode="ios"
                     color="emerald-700"
@@ -803,7 +807,7 @@ const CreateContractToggles: React.FC = () => {
                         - Anonymize
                     </span>
                 </h3>
-                <IonToggle
+                <AppToggle
                     data-testid="t1b-h-create-contract-anonymize-toggle"
                     mode="ios"
                     color="emerald-700"
@@ -915,7 +919,7 @@ const ReadSharingExpiration: React.FC = () => {
                         >
                             {m['arabicFixes.setExpirationDate']()}
                         </label>
-                        <IonToggle
+                        <AppToggle
                             data-testid="t1b-h-read-sharing-expiration-toggle"
                             color="emerald-700"
                             className="shrink-0"
@@ -961,7 +965,7 @@ const EditAccessAnonymizeCard: React.FC = () => {
                         </h1>
                     </div>
 
-                    <IonToggle
+                    <AppToggle
                         data-testid="t1b-h-edit-access-anonymize-toggle"
                         mode="ios"
                         color="emerald-700"
@@ -996,7 +1000,7 @@ const ShareableUnlimitedClaims: React.FC = () => {
                     <p className="text-grayscale-900 font-poppins text-[17px] font-[600]">
                         Unlimited Claims
                     </p>
-                    <IonToggle
+                    <AppToggle
                         data-testid="t1b-h-shareable-unlimited-toggle"
                         mode="ios"
                         color="emerald-700"
@@ -1107,7 +1111,7 @@ const PrivacyAndDataCards: React.FC = () => {
                             </p>
                         </label>
 
-                        <IonToggle
+                        <AppToggle
                             data-testid="t1b-i-privacy-and-data-live-sync-toggle"
                             mode="ios"
                             className="[--background:white]"
@@ -1140,7 +1144,7 @@ const PrivacyAndDataCards: React.FC = () => {
                             </p>
                         </label>
 
-                        <IonToggle
+                        <AppToggle
                             data-testid="t1b-i-privacy-and-data-anonymize-toggle"
                             mode="ios"
                             className="[--background:white]"
@@ -1176,7 +1180,7 @@ const PrivacyAndDataCards: React.FC = () => {
                             </p>
                         </label>
 
-                        <IonToggle
+                        <AppToggle
                             data-testid="t1b-i-privacy-and-data-allow-all-toggle"
                             mode="ios"
                             className="[--background:white]"
@@ -1268,7 +1272,7 @@ const EditAccessDarkToggles: React.FC = () => {
                                 </p>
                             </label>
 
-                            <IonToggle
+                            <AppToggle
                                 data-testid="t1b-i-edit-access-dark-live-sync-toggle"
                                 mode="ios"
                                 className="[--background:white]"
@@ -1301,7 +1305,7 @@ const EditAccessDarkToggles: React.FC = () => {
                                 <p className="font-poppins text-grayscale-100 text-xl">Allow All</p>
                             </label>
 
-                            <IonToggle
+                            <AppToggle
                                 data-testid="t1b-i-edit-access-dark-allow-all-toggle"
                                 mode="ios"
                                 className="[--background:white]"
@@ -1356,9 +1360,8 @@ const ShareBoostsBundleToggles: React.FC = () => {
         <div className="bg-white rounded-[20px] p-4">
             <div className="flex items-center justify-center text-[13px] mt-[25px]">
                 <span className="mr-[10px] text-[14px] font-semibold">Share all {name}s</span>
-                <IonToggle
+                <AppToggle
                     data-testid="t1b-j-share-boosts-all-toggle"
-                    slot="end"
                     checked={allSelected}
                     onClick={() => handleToggleSelectAll()}
                 />
@@ -1368,10 +1371,9 @@ const ShareBoostsBundleToggles: React.FC = () => {
                 <h2 className="text-[20px] font-bold text-gray-900">Achievements</h2>
                 <span className="flex justify-center items-center font-medium">
                     All
-                    <IonToggle
+                    <AppToggle
                         data-testid="t1b-j-share-boosts-type-toggle"
                         onClick={() => handleToggleSelectAllType(vcType)}
-                        slot="end"
                         className="ml-[5px]"
                         checked={getAllSelected(vcType)}
                         aria-label={`${vcType} toggle`}
@@ -1405,7 +1407,7 @@ const ConsentShareCredentialCardsToggle: React.FC = () => {
 
                     <span className="flex justify-center items-center font-medium">
                         All
-                        <IonToggle
+                        <AppToggle
                             data-testid="t1b-j-consent-share-cards-toggle"
                             onClick={() => {
                                 record('shareAll');
@@ -1424,7 +1426,6 @@ const ConsentShareCredentialCardsToggle: React.FC = () => {
                                 }
                                 setCategory(prev => ({ ...prev, shareAll: !category?.shareAll }));
                             }}
-                            slot="end"
                             className="ml-[10px]"
                             checked={category?.shareAll}
                             aria-label={`${vcType} toggle`}
@@ -1502,12 +1503,12 @@ const DataSharingCards: React.FC<{ saving?: boolean }> = ({ saving = false }) =>
                             {m['settings.privacy.showEmailHint']()}
                         </p>
                     </div>
-                    <IonToggle
+                    <AppToggle
                         data-testid={`t1b-k-profile-visibility${suffix}-toggle`}
                         className="ds-toggle"
                         checked={showEmail}
                         disabled={savingField === 'showEmail'}
-                        onIonChange={e => setShowEmail(e.detail.checked)}
+                        onCheckedChange={checked => setShowEmail(checked)}
                         aria-label={m['settings.privacy.showEmail']()}
                     />
                 </div>
@@ -1529,12 +1530,12 @@ const DataSharingCards: React.FC<{ saving?: boolean }> = ({ saving = false }) =>
                                 </p>
                             )}
                         </div>
-                        <IonToggle
+                        <AppToggle
                             data-testid="t1b-k-ai-personalization-toggle"
                             className="ds-toggle"
                             checked={aiToggleChecked}
                             disabled={disabled}
-                            onIonChange={e => !disabled && setAiToggleChecked(e.detail.checked)}
+                            onCheckedChange={checked => !disabled && setAiToggleChecked(checked)}
                             aria-label={m['settings.aiFeatures']()}
                         />
                     </div>
@@ -1569,10 +1570,10 @@ const LaunchConfigSkipInstallation: React.FC = () => {
                         {m['developerPortal.components.launchConfigStep.skipInstallationDesc']()}
                     </p>
                 </div>
-                <IonToggle
+                <AppToggle
                     data-testid="t1b-l-launch-config-toggle"
                     checked={config.skipInstallation || false}
-                    onIonChange={e => updateConfig({ skipInstallation: e.detail.checked })}
+                    onCheckedChange={checked => updateConfig({ skipInstallation: checked })}
                     aria-label={m['developerPortal.components.launchConfigStep.skipInstallation']()}
                 />
             </div>
@@ -1601,11 +1602,11 @@ const PrivacyModalShowEmail: React.FC<{ testId: string; saving?: boolean }> = ({
                         {m['settings.privacy.showEmailDesc']()}
                     </p>
                 </div>
-                <IonToggle
+                <AppToggle
                     data-testid={`${testId}-toggle`}
                     checked={showEmail}
                     disabled={savingProfileField === 'showEmail'}
-                    onIonChange={e => handleShowEmailToggle(e.detail.checked)}
+                    onCheckedChange={checked => handleShowEmailToggle(checked)}
                     aria-label={m['settings.privacy.showEmail']()}
                 />
             </div>
@@ -1680,7 +1681,7 @@ const MyDataSettingsToggles: React.FC = () => (
                         </h1>
                     </div>
 
-                    <IonToggle
+                    <AppToggle
                         data-testid="t1b-m-my-data-turn-all-on-toggle"
                         mode="ios"
                         color="emerald-700"
@@ -1717,7 +1718,7 @@ const MyDataSettingsToggles: React.FC = () => (
                                     </h3>
                                 </div>
 
-                                <IonToggle
+                                <AppToggle
                                     data-testid={`t1b-m-my-data-${type}-toggle`}
                                     mode="ios"
                                     color="emerald-700"

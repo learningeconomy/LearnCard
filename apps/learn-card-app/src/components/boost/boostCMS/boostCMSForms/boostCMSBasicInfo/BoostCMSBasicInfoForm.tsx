@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import moment from 'moment';
 
-import { IonRow, IonCol, IonTextarea, IonToggle, IonDatetime, useIonModal } from '@ionic/react';
+import { IonRow, IonCol, IonTextarea, IonDatetime, useIonModal } from '@ionic/react';
+import { AppToggle } from '../../../../controls/AppToggle';
 import Calendar from '../../../../svgs/Calendar';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import LocationIcon from 'learn-card-base/svgs/LocationIcon';
@@ -185,10 +186,10 @@ const BoostCMSBasicInfoForm: React.FC<{
                         <p className="text-grayscale-900 font-medium w-10/12">
                             {m['boost.cms.basicInfo.credentialExpires']()}
                         </p>
-                        <IonToggle
+                        <AppToggle
                             mode="ios"
                             color="emerald-700"
-                            onIonChange={() => {
+                            onCheckedChange={() => {
                                 const expiresValue = !basicInfo?.credentialExpires;
                                 handleStateChange('credentialExpires', expiresValue);
                                 //if we are toggling the value to false (eg does not expire, clear expiration date if exists)

@@ -3,7 +3,8 @@ import React, { useState } from 'react';
 import { useImageUpload, UploadRes } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
-import { IonSpinner, IonToggle } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
+import { AppToggle } from '../../../../controls/AppToggle';
 
 import Pencil from '../../../../svgs/Pencil';
 import EmptyImage from 'learn-card-base/assets/images/empty-image.png';
@@ -100,10 +101,10 @@ const BoostIDCardCMSBackgroundImageForm: React.FC<{
 
             <div className="w-full flex items-center justify-between px-[8px] py-[8px]">
                 <p className="text-grayscale-900 font-medium w-10/12">Dim Background Image</p>
-                <IonToggle
+                <AppToggle
                     mode="ios"
                     color="emerald-700"
-                    onIonChange={() => {
+                    onCheckedChange={() => {
                         const dimIdBackgroundImage = !state?.appearance?.dimIdBackgroundImage;
                         handleStateChange('dimIdBackgroundImage', dimIdBackgroundImage);
                     }}

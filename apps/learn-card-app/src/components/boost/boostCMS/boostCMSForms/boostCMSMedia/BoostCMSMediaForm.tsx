@@ -2,7 +2,8 @@ import React, { useEffect } from 'react';
 
 import Plus from 'learn-card-base/svgs/Plus';
 import LockBold from 'learn-card-base/svgs/LockBold';
-import { IonCol, IonRow, IonToggle } from '@ionic/react';
+import { IonCol, IonRow } from '@ionic/react';
+import { AppToggle } from '../../../../controls/AppToggle';
 import BoostCMSMediaOptions from './BoostCMSMediaOptions';
 import BoostMediaCMSFormLinkItem from './BoostMediaCMSFormLinkItem';
 import BoostMediaCMSFormPhotoItem from './BoostMediaCMSFormPhotoItem';
@@ -127,9 +128,9 @@ export const BoostCMSMediaForm: React.FC<BoostCMSMediaFormProps> = ({
                     </div>
 
                     <div className="flex items-center justify-center relative rounded-full">
-                        <IonToggle
-                            onIonChange={e => {
-                                if (e.detail.checked) {
+                        <AppToggle
+                            onCheckedChange={checked => {
+                                if (checked) {
                                     setState(state => ({
                                         ...state,
                                         appearance: {

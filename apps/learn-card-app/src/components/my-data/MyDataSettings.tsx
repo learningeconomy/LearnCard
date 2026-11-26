@@ -1,16 +1,9 @@
 import React from 'react';
 
-import {
-    IonPage,
-    IonGrid,
-    IonCol,
-    IonRow,
-    IonToolbar,
-    IonHeader,
-    IonContent,
-    IonToggle,
-} from '@ionic/react';
+import { IonPage, IonGrid, IonCol, IonRow, IonToolbar, IonHeader, IonContent } from '@ionic/react';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
+
+import { AppToggle } from '../controls/AppToggle';
 
 import { boostVCTypeOptions } from '../boost/boost-options/boostOptions';
 import { ProfilePicture } from 'learn-card-base';
@@ -81,7 +74,7 @@ const MyDataSettings: React.FC<{
                                 </h1>
                             </div>
 
-                            <IonToggle
+                            <AppToggle
                                 mode="ios"
                                 color="emerald-700"
                                 // onIonInput={() => {
@@ -128,7 +121,7 @@ const MyDataSettings: React.FC<{
                                             </h3>
                                         </div>
 
-                                        <IonToggle
+                                        <AppToggle
                                             mode="ios"
                                             color="emerald-700"
                                             // onIonInput={() => {
@@ -178,7 +171,7 @@ const MyDataSettings: React.FC<{
                                             </h3>
                                         </div>
 
-                                        <IonToggle
+                                        <AppToggle
                                             mode="ios"
                                             color="emerald-700"
                                             // onIonInput={() => {
@@ -201,7 +194,7 @@ const MyDataSettings: React.FC<{
                                     </h3>
                                 </div>
 
-                                <IonToggle
+                                <AppToggle
                                     mode="ios"
                                     color="emerald-700"
                                     // onIonInput={() => {
@@ -222,7 +215,7 @@ const MyDataSettings: React.FC<{
                                     </h3>
                                 </div>
 
-                                <IonToggle
+                                <AppToggle
                                     mode="ios"
                                     color="emerald-700"
                                     // onIonInput={() => {
@@ -243,7 +236,7 @@ const MyDataSettings: React.FC<{
                                     </h3>
                                 </div>
 
-                                <IonToggle
+                                <AppToggle
                                     mode="ios"
                                     color="emerald-700"
                                     // onIonInput={() => {
@@ -264,7 +257,7 @@ const MyDataSettings: React.FC<{
                                     </h3>
                                 </div>
 
-                                <IonToggle
+                                <AppToggle
                                     mode="ios"
                                     color="emerald-700"
                                     // onIonInput={() => {
@@ -285,7 +278,7 @@ const MyDataSettings: React.FC<{
                                     </h3>
                                 </div>
 
-                                <IonToggle
+                                <AppToggle
                                     mode="ios"
                                     color="emerald-700"
                                     // onIonInput={() => {
@@ -306,7 +299,7 @@ const MyDataSettings: React.FC<{
                                     </h3>
                                 </div>
 
-                                <IonToggle
+                                <AppToggle
                                     mode="ios"
                                     color="emerald-700"
                                     // onIonInput={() => {

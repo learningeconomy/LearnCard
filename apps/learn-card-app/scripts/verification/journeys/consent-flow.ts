@@ -117,11 +117,11 @@ export const consentFlowFeature: FeatureDefinition = {
             await dialog.getByRole('button', { name: 'Privacy & Data', exact: true }).click();
             const privacy = page.getByTestId('consent-privacy-and-data');
             await expect(privacy).toBeVisible({ timeout: UI_TIMEOUT });
-            // This IonToggle has no label association; scope it to its actual labelled row.
+            // This switch has no label association; scope it to its actual labelled row.
             const anonymizeToggle = privacy
                 .getByText('Anonymize', { exact: true })
                 .locator('../..')
-                .locator('ion-toggle');
+                .getByRole('switch');
             await expect(anonymizeToggle).toHaveAttribute('aria-checked', 'true');
             await anonymizeToggle.click();
             await expect(anonymizeToggle).toHaveAttribute('aria-checked', 'false');

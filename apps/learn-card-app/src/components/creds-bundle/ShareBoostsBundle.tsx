@@ -11,7 +11,8 @@ import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credent
 import ProfilePicture from 'learn-card-base/components/profilePicture/ProfilePicture';
 import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarnedCard';
 
-import { IonContent, IonPage, IonToggle, IonSpinner, IonGrid, useIonAlert } from '@ionic/react';
+import { IonContent, IonPage, IonSpinner, IonGrid, useIonAlert } from '@ionic/react';
+import { AppToggle } from '../controls/AppToggle';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation } from 'swiper/modules';
 import 'swiper/css/navigation';
@@ -183,8 +184,7 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
                                             <span className="mr-[10px] text-[14px] font-semibold">
                                                 Share all {name}s
                                             </span>
-                                            <IonToggle
-                                                slot="end"
+                                            <AppToggle
                                                 checked={allSelected}
                                                 onClick={() => handleToggleSelectAll()}
                                             />
@@ -209,13 +209,12 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
                                                     {!readOnly && (
                                                         <span className="flex justify-center items-center font-medium">
                                                             All
-                                                            <IonToggle
+                                                            <AppToggle
                                                                 onClick={() =>
                                                                     handleToggleSelectAllType(
                                                                         vcType
                                                                     )
                                                                 }
-                                                                slot="end"
                                                                 className="ml-[5px]"
                                                                 checked={getAllSelected(vcType)}
                                                                 aria-label={`${vcType} toggle`}

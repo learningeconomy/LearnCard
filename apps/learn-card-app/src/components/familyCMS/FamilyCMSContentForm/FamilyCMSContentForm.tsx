@@ -1,7 +1,8 @@
 import React, { useEffect, Suspense, useState } from 'react';
 import type { EmojiClickData } from 'emoji-picker-react';
 
-import { IonInput, IonTextarea, IonToggle, useIonModal } from '@ionic/react';
+import { IonInput, IonTextarea, useIonModal } from '@ionic/react';
+import { AppToggle } from '../../controls/AppToggle';
 const FamilyEmojiPicker = React.lazy(() => import('../FamilyCMSEmojiPicker/FamilyEmojiPicker'));
 import EmojiRenderer from '../FamilyCMSEmojiPicker/FamilyCMSEmojiRenderer';
 import X from '../../svgs/X';
@@ -138,10 +139,10 @@ export const FamilyCMSContentForm: React.FC<FamilyCMSContentFormProps> = ({
                 <div className="text-grayscale-900 text-lg flex items-center justify-start w-[80%]">
                     {m['family.editor.addEmoji']()}
                 </div>
-                <IonToggle
+                <AppToggle
                     mode="ios"
                     className="family-cms-toggle"
-                    onIonChange={e => {
+                    onCheckedChange={() => {
                         setToggleFamilyEmoji(!toggleFamilyEmoji);
                         handleSetState('appearance', 'toggleFamilyEmoji', !toggleFamilyEmoji);
                     }}

@@ -9,7 +9,6 @@ import ProfilePicture from 'learn-card-base/components/profilePicture/ProfilePic
 import {
     IonContent,
     IonPage,
-    IonToggle,
     IonToolbar,
     IonHeader,
     IonSpinner,
@@ -18,6 +17,7 @@ import {
     IonCol,
 } from '@ionic/react';
 import CaretLeft from '../../components/svgs/CaretLeft';
+import { AppToggle } from '../../components/controls/AppToggle';
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 import { useConsentFlowCredentials } from './useConsentFlowCredentials';
 import { curriedStateSlice } from '@learncard/helpers';
@@ -134,8 +134,7 @@ const ShareCredentialsWithConsentFlow: React.FC<{
                                     <span className="mr-[10px] text-[14px] font-semibold">
                                         {m['consentFlow.shareAll']()}
                                     </span>
-                                    <IonToggle
-                                        slot="end"
+                                    <AppToggle
                                         checked={credentials.shareAll}
                                         onClick={() => {
                                             if (!credentials.shareAll) {

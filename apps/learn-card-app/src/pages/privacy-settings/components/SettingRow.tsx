@@ -1,6 +1,7 @@
 import React from 'react';
-import { IonToggle } from '@ionic/react';
 import { Lock } from 'lucide-react';
+
+import { AppToggle } from '../../../components/controls/AppToggle';
 
 type SettingRowProps = {
     title: string;
@@ -39,11 +40,11 @@ const SettingRow: React.FC<SettingRowProps> = ({
                     </p>
                 )}
             </div>
-            <IonToggle
+            <AppToggle
                 className="ds-toggle"
                 checked={checked}
                 disabled={disabled}
-                onIonChange={e => !disabled && onChange(e.detail.checked)}
+                onCheckedChange={nextChecked => !disabled && onChange(nextChecked)}
                 aria-label={ariaLabel ?? title}
             />
         </div>

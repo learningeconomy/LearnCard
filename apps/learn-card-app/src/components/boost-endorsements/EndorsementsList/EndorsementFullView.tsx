@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 
 // import Pencil from '../../svgs/Pencil';
-import { IonToggle, IonRow } from '@ionic/react';
+import { IonRow } from '@ionic/react';
+import { AppToggle } from '../../controls/AppToggle';
 import TrashBin from 'learn-card-base/svgs/TrashBin';
 import EndorsementDeletedCard from './EndorsementDeletedCard';
 import DeleteEndorsementOverlay from './DeleteEndorsementOverlay';
@@ -211,10 +212,10 @@ export const EndorsementFullView: React.FC<{
                             </h1>
                         </div>
 
-                        <IonToggle
+                        <AppToggle
                             mode="ios"
                             color="emerald-700"
-                            onIonChange={() => {
+                            onCheckedChange={() => {
                                 const showEndorsementValue = showEndorsement;
                                 setShowEndorsement(!showEndorsementValue);
                                 setVisibility?.(!showEndorsementValue);

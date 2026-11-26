@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import moment from 'moment';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
-import { IonRow, IonCol, IonToggle } from '@ionic/react';
+import { IonRow, IonCol } from '@ionic/react';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
+import { AppToggle } from '../../../../controls/AppToggle';
 
 import { BoostCMSState } from '../../../boost';
 import * as m from '../../../../../paraglide/messages.js';
@@ -53,10 +54,10 @@ const BoostCMSUserPermissions: React.FC<{
                             <p className="text-grayscale-900 font-medium w-10/12">
                                 {m['boost.cms.userPermissions.createCustomBoosts']()}
                             </p>
-                            <IonToggle
+                            <AppToggle
                                 mode="ios"
                                 color="indigo-700"
-                                onIonChange={() => {
+                                onCheckedChange={() => {
                                     const expiresValue = !basicInfo?.credentialExpires;
                                     handleStateChange('credentialExpires', expiresValue);
                                     //if we are toggling the value to false (eg does not expire, clear expiration date if exists)
@@ -74,10 +75,10 @@ const BoostCMSUserPermissions: React.FC<{
                             <p className="text-grayscale-900 font-medium w-10/12">
                                 {m['boost.cms.userPermissions.createIDs']()}
                             </p>
-                            <IonToggle
+                            <AppToggle
                                 mode="ios"
                                 color="indigo-700"
-                                onIonChange={() => {
+                                onCheckedChange={() => {
                                     const expiresValue = !basicInfo?.credentialExpires;
                                     handleStateChange('credentialExpires', expiresValue);
                                     //if we are toggling the value to false (eg does not expire, clear expiration date if exists)
@@ -95,10 +96,10 @@ const BoostCMSUserPermissions: React.FC<{
                             <p className="text-grayscale-900 font-medium w-10/12">
                                 {m['boost.cms.userPermissions.createMemberships']()}
                             </p>
-                            <IonToggle
+                            <AppToggle
                                 mode="ios"
                                 color="indigo-700"
-                                onIonChange={() => {
+                                onCheckedChange={() => {
                                     const expiresValue = !basicInfo?.credentialExpires;
                                     handleStateChange('credentialExpires', expiresValue);
                                     //if we are toggling the value to false (eg does not expire, clear expiration date if exists)

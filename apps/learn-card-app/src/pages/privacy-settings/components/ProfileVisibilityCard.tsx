@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react';
-import { IonToggle } from '@ionic/react';
 import { AllowConnectionRequestsEnum, ProfileVisibilityEnum } from '@learncard/types';
 
 import { RadioGroup } from 'learn-card-base';
@@ -8,6 +7,7 @@ import * as m from '../../../paraglide/messages.js';
 import { useLocale } from '../../../i18n';
 import type { DataSharingProfileViewModel } from '../DataSharingCenter.types';
 import GlassCard from './GlassCard';
+import { AppToggle } from '../../../components/controls/AppToggle';
 
 type ProfileVisibilityCardProps = DataSharingProfileViewModel & { delay?: number };
 
@@ -100,11 +100,11 @@ const ProfileVisibilityCard: React.FC<ProfileVisibilityCardProps> = ({
                             {m['settings.privacy.showEmailHint']()}
                         </p>
                     </div>
-                    <IonToggle
+                    <AppToggle
                         className="ds-toggle"
                         checked={showEmail}
                         disabled={savingField === 'showEmail'}
-                        onIonChange={e => onToggleShowEmail(e.detail.checked)}
+                        onCheckedChange={checked => onToggleShowEmail(checked)}
                         aria-label={m['settings.privacy.showEmail']()}
                     />
                 </div>

@@ -12,9 +12,9 @@ import {
     HelpCircle,
     Server,
 } from 'lucide-react';
-import { IonToggle } from '@ionic/react';
 
 import { IntegrationGuidePanel } from './IntegrationGuidePanel';
+import { AppToggle } from '../../../components/controls/AppToggle';
 
 import type { AppStoreListingCreate, LaunchConfig, AppPermission } from '../types';
 import type { ConsentFlowContractDetails } from '@learncard/types';
@@ -264,10 +264,10 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                         ]()}
                                     </p>
                                 </div>
-                                <IonToggle
+                                <AppToggle
                                     checked={config.skipInstallation || false}
-                                    onIonChange={e =>
-                                        updateConfig({ skipInstallation: e.detail.checked })
+                                    onCheckedChange={checked =>
+                                        updateConfig({ skipInstallation: checked })
                                     }
                                     aria-label={m[
                                         'developerPortal.components.launchConfigStep.skipInstallation'

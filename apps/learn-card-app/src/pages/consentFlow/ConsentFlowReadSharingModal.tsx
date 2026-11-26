@@ -11,9 +11,9 @@ import {
     IonHeader,
     IonPage,
     IonRow,
-    IonToggle,
     IonToolbar,
 } from '@ionic/react';
+import { AppToggle } from '../../components/controls/AppToggle';
 
 import {
     useGetCredentialList,
@@ -271,7 +271,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                         >
                                             {m['arabicFixes.setExpirationDate']()}
                                         </label>
-                                        <IonToggle
+                                        <AppToggle
                                             color="emerald-700"
                                             className="shrink-0"
                                             mode="ios"

@@ -16,10 +16,10 @@ import {
     useIonModal,
     IonGrid,
     IonSpinner,
-    IonToggle,
     IonDatetime,
     IonInput,
 } from '@ionic/react';
+import { AppToggle } from '../../../../controls/AppToggle';
 
 import {
     ModalTypes,
@@ -420,10 +420,10 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                         <p className="text-grayscale-900 font-medium w-10/12">
                             {m['boost.cms.issueTo.generateClaimLink']()}
                         </p>
-                        <IonToggle
+                        <AppToggle
                             mode="ios"
                             color="emerald-700"
-                            onIonChange={() => {
+                            onCheckedChange={() => {
                                 setToggle(!toggle);
                             }}
                             checked={toggle}
@@ -457,13 +457,13 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                                     <p className="text-amber-900 font-medium w-10/12 m-0">
                                         {m['boost.cms.issueTo.anyoneCanView']()}
                                     </p>
-                                    <IonToggle
+                                    <AppToggle
                                         mode="ios"
                                         color="emerald-700"
                                         checked={canViewEnabled}
                                         disabled={isUpdatingPermissions}
-                                        onIonChange={e =>
-                                            handleCanViewToggle(Boolean(e.detail.checked))
+                                        onCheckedChange={checked =>
+                                            handleCanViewToggle(Boolean(checked))
                                         }
                                     />
                                 </div>
@@ -625,7 +625,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                                         <p className="text-grayscale-900 font-poppins text-[17px] font-[600]">
                                             Unlimited Claims
                                         </p>
-                                        <IonToggle
+                                        <AppToggle
                                             mode="ios"
                                             color="emerald-700"
                                             onClick={() => {

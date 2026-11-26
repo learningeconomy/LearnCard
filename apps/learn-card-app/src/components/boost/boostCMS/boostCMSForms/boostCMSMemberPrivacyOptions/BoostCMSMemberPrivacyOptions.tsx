@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import moment from 'moment';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
-import { IonRow, IonCol, IonToggle } from '@ionic/react';
+import { IonRow, IonCol } from '@ionic/react';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import { AppCheckbox } from '../../../../controls/AppCheckbox';
+import { AppToggle } from '../../../../controls/AppToggle';
 
 import { BoostCMSState } from '../../../boost';
 import * as m from '../../../../../paraglide/messages.js';
@@ -80,10 +81,10 @@ const BoostCMSMemberOptions: React.FC<{
                             <p className="text-grayscale-900 font-medium w-10/12">
                                 {m['boost.cms.privacy.autoConnectMembers']()}
                             </p>
-                            <IonToggle
+                            <AppToggle
                                 mode="ios"
                                 color={primaryColor}
-                                onIonChange={() => {
+                                onCheckedChange={() => {
                                     const expiresValue = !basicInfo?.credentialExpires;
                                     handleStateChange('credentialExpires', expiresValue);
                                     //if we are toggling the value to false (eg does not expire, clear expiration date if exists)

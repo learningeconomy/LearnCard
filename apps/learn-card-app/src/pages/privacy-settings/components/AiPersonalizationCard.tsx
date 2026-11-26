@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { IonToggle } from '@ionic/react';
 import { Check, Lock } from 'lucide-react';
 
 import * as m from '../../../paraglide/messages.js';
 import type { DataSharingAiViewModel } from '../DataSharingCenter.types';
 import GlassCard from './GlassCard';
+import { AppToggle } from '../../../components/controls/AppToggle';
 
 type AiConnectionStatus = 'idle' | 'connecting' | 'connected' | 'disconnecting' | 'disconnected';
 
@@ -136,11 +136,11 @@ const AiPersonalizationCard: React.FC<AiPersonalizationCardProps> = ({
                             </p>
                         )}
                     </div>
-                    <IonToggle
+                    <AppToggle
                         className="ds-toggle"
                         checked={aiToggleChecked}
                         disabled={disabled || isSyncingAiConsent || retryingAiConsent}
-                        onIonChange={e => !disabled && handleAiFeatureToggle(e.detail.checked)}
+                        onCheckedChange={checked => !disabled && handleAiFeatureToggle(checked)}
                         aria-label={m['settings.aiFeatures']()}
                     />
                 </div>

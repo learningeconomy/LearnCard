@@ -1,6 +1,7 @@
 import React from 'react';
 
-import { IonRow, IonCol, IonToggle } from '@ionic/react';
+import { IonRow, IonCol } from '@ionic/react';
+import { AppToggle } from '../../../../controls/AppToggle';
 
 import { BoostCMSState } from '../../../boost';
 import * as m from '../../../../../paraglide/messages.js';
@@ -34,10 +35,10 @@ const BoostCMSAIMissionForm: React.FC<{
                     <h1 className="text-black text-2xl p-0 m-0">
                         {m['boost.cms.aiMission.title']()}
                     </h1>
-                    <IonToggle
+                    <AppToggle
                         mode="ios"
                         color="indigo-700"
-                        onIonChange={() => {
+                        onCheckedChange={() => {
                             const expiresValue = !basicInfo?.credentialExpires;
                             handleStateChange('credentialExpires', expiresValue);
                             //if we are toggling the value to false (eg does not expire, clear expiration date if exists)
