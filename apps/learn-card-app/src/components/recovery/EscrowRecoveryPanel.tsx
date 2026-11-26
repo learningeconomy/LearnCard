@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { getLogger, type EscrowEmailSenderNote } from 'learn-card-base';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../icon';
 import {
     alertCircleOutline,
     timeOutline,
@@ -549,7 +549,7 @@ export const EscrowRecoveryPanel = ({
                     role="alert"
                     className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5"
                 >
-                    <IonIcon
+                    <AppIcon
                         icon={alertCircleOutline}
                         className="text-red-400 text-lg mt-0.5 shrink-0"
                     />
@@ -569,7 +569,7 @@ export const EscrowRecoveryPanel = ({
                     <div className="rounded-2xl border border-grayscale-200 bg-white p-5 space-y-v3-4">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-amber-50 text-amber-600">
-                                <IonIcon icon={timeOutline} className="text-xl" />
+                                <AppIcon icon={timeOutline} className="text-xl" />
                             </div>
                             <div>
                                 <h3 className="text-base font-semibold text-grayscale-900">
@@ -609,7 +609,7 @@ export const EscrowRecoveryPanel = ({
 
                         {restartError && (
                             <div className="p-3 bg-amber-50 border border-amber-100 rounded-2xl flex items-start gap-2.5">
-                                <IonIcon
+                                <AppIcon
                                     icon={alertCircleOutline}
                                     className="text-amber-500 text-lg mt-0.5 shrink-0"
                                 />
@@ -695,7 +695,7 @@ export const EscrowRecoveryPanel = ({
                                   <div className="rounded-2xl border border-grayscale-200 bg-white p-5 space-y-v3-5">
                                       <div className="flex items-center gap-3">
                                           <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-amber-50 text-amber-600">
-                                              <IonIcon icon={mailOutline} className="text-xl" />
+                                              <AppIcon icon={mailOutline} className="text-xl" />
                                           </div>
                                           <div>
                                               <h3 className="text-base font-semibold text-grayscale-900">
@@ -779,7 +779,7 @@ export const EscrowRecoveryPanel = ({
                                       <div
                                           className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${isReady ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}
                                       >
-                                          <IonIcon
+                                          <AppIcon
                                               icon={isReady ? checkmarkCircleOutline : timeOutline}
                                               className="text-xl"
                                           />
@@ -822,7 +822,7 @@ export const EscrowRecoveryPanel = ({
 
                                   {notice && (
                                       <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-2.5">
-                                          <IonIcon
+                                          <AppIcon
                                               icon={checkmarkCircleOutline}
                                               className="text-emerald-500 text-lg mt-0.5 shrink-0"
                                           />
@@ -835,7 +835,7 @@ export const EscrowRecoveryPanel = ({
                                   {!saved && (
                                       <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl space-y-v3-3">
                                           <div className="flex items-start gap-2.5">
-                                              <IonIcon
+                                              <AppIcon
                                                   icon={alertCircleOutline}
                                                   className="text-amber-500 text-lg mt-0.5 shrink-0"
                                               />
@@ -962,7 +962,7 @@ export const EscrowRecoveryPanel = ({
                   view === 'start' && (
                       <>
                           <div className="p-4 bg-grayscale-10 border border-grayscale-200 rounded-2xl flex items-start gap-3 mb-5">
-                              <IonIcon
+                              <AppIcon
                                   icon={shieldCheckmarkOutline}
                                   className="text-grayscale-900 text-xl mt-0.5 shrink-0"
                               />

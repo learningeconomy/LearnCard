@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../icon';
 import { calendarOutline, closeOutline } from 'ionicons/icons';
 import type { SharePayload } from '@learncard/types';
 
@@ -45,7 +45,7 @@ export const SavedCollectionPreview = ({ collection, onDismiss }: SavedCollectio
                     onClick={onDismiss}
                     className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-grayscale-300 bg-white text-xl text-grayscale-700 transition-colors hover:bg-grayscale-10"
                 >
-                    <IonIcon icon={closeOutline} />
+                    <AppIcon icon={closeOutline} />
                 </button>
             </header>
 
@@ -63,7 +63,7 @@ export const SavedCollectionPreview = ({ collection, onDismiss }: SavedCollectio
                         countLabel={credentialCountLabel(collection.credentialCount)}
                         summaryExtra={
                             <div className="flex items-center gap-1.5 border-t border-grayscale-100 pt-4 text-xs text-grayscale-500">
-                                <IonIcon icon={calendarOutline} />
+                                <AppIcon icon={calendarOutline} />
                                 <time dateTime={collection.receivedAt}>
                                     {m['dataShareCenter.shared.savedOn']({
                                         date: formatShortDate(collection.receivedAt),

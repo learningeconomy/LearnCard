@@ -27,7 +27,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import type { AppStoreListing, InstalledApp } from '@learncard/types';
 import { useModal, ModalTypes } from 'learn-card-base';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import { openOutline, downloadOutline, playCircleOutline } from 'ionicons/icons';
 
 import AppStoreDetailModal from '../../launchPad/AppStoreDetailModal';
@@ -277,7 +277,7 @@ const AppListingCard: React.FC<AppListingCardProps> = ({
                             "
                             aria-label={`${openLabel} ${listing.display_name}`}
                         >
-                            <IonIcon icon={buttonIcon} className="text-base" aria-hidden />
+                            <AppIcon icon={buttonIcon} className="text-base" aria-hidden />
                             <span>
                                 {openLabel} {listing.display_name}
                             </span>
@@ -296,7 +296,7 @@ const AppListingCard: React.FC<AppListingCardProps> = ({
                             "
                             aria-label={`${installLabel} ${listing.display_name}`}
                         >
-                            <IonIcon icon={buttonIcon} className="text-base" aria-hidden />
+                            <AppIcon icon={buttonIcon} className="text-base" aria-hidden />
                             <span>
                                 {installLabel} {listing.display_name}
                             </span>

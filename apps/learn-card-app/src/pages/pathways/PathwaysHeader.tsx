@@ -41,7 +41,7 @@
 
 import React from 'react';
 
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../components/icon';
 import { constructOutline, sparklesOutline } from 'ionicons/icons';
 import { NavLink, useRouteMatch } from 'react-router-dom';
 
@@ -180,7 +180,7 @@ const PathwaysHeader: React.FC<PathwaysHeaderProps> = () => {
                                             : 'text-grayscale-700 hover:bg-grayscale-100'
                                     }`}
                     >
-                        <IonIcon icon={constructOutline} className="text-base" aria-hidden />
+                        <AppIcon icon={constructOutline} className="text-base" aria-hidden />
                     </NavLink>
 
                     {/*
@@ -213,7 +213,7 @@ const PathwaysHeader: React.FC<PathwaysHeaderProps> = () => {
                                                 : 'bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200'
                                         }`}
                         >
-                            <IonIcon
+                            <AppIcon
                                 icon={sparklesOutline}
                                 className="text-base sm:hidden"
                                 aria-hidden

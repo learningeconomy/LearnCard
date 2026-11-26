@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../../components/icon';
 import { checkmark, copyOutline } from 'ionicons/icons';
 import { Capacitor } from '@capacitor/core';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
@@ -50,7 +50,7 @@ const CopyIconButton: React.FC<CopyIconButtonProps> = ({
     };
 
     const icon = (
-        <IonIcon
+        <AppIcon
             key={copied ? 'check' : 'copy'}
             icon={copied ? checkmark : copyOutline}
             className={copied ? 'sl-copy-pop' : undefined}

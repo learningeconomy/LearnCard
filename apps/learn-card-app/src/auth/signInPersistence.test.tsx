@@ -6,7 +6,6 @@ import { InMemoryWebStorage, User, UserManager, WebStorageStateStore } from 'oid
 import { createKeycloakUserStorage } from '../../../../packages/learn-card-base/src/auth-providers/keycloakUserStorage';
 
 vi.mock('learn-card-base', () => ({ getLogger: () => ({ warn: vi.fn(), info: vi.fn() }) }));
-vi.mock('@ionic/react', () => ({ IonIcon: (): React.ReactElement => <span /> }));
 
 const authority = 'https://auth.example.com/realms/test';
 const clientId = 'app';

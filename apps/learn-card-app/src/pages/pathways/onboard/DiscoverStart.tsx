@@ -44,7 +44,7 @@
 import React, { useState } from 'react';
 import * as m from '../../../paraglide/messages.js';
 
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import { cloudDownloadOutline, sparklesOutline } from 'ionicons/icons';
 import { useHistory } from 'react-router-dom';
 
@@ -189,7 +189,7 @@ const DiscoverStart: React.FC<DiscoverStartProps> = ({
                         className="shrink-0 w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600
                                    flex items-center justify-center group-hover:bg-emerald-100 transition-colors"
                     >
-                        <IonIcon icon={sparklesOutline} className="text-2xl" />
+                        <AppIcon icon={sparklesOutline} className="text-2xl" />
                     </div>
 
                     <div className="flex-1 min-w-0 space-y-v3-0.5">
@@ -281,7 +281,7 @@ const DiscoverStart: React.FC<DiscoverStartProps> = ({
                                text-grayscale-500 hover:text-grayscale-900 transition-colors
                                disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                    <IonIcon icon={cloudDownloadOutline} aria-hidden className="text-base" />
+                    <AppIcon icon={cloudDownloadOutline} aria-hidden className="text-base" />
                     Or browse the Credential Engine Registry
                 </button>
             </div>

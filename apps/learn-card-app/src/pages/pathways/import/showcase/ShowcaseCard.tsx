@@ -26,7 +26,7 @@
 
 import React from 'react';
 
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../../components/icon';
 import {
     analyticsOutline,
     briefcaseOutline,
@@ -112,7 +112,7 @@ export const ShowcaseCard: React.FC<ShowcaseCardProps> = ({
                 {loading ? (
                     <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                 ) : (
-                    <IonIcon icon={iconSrc} className="text-2xl" />
+                    <AppIcon icon={iconSrc} className="text-2xl" />
                 )}
             </div>
 
@@ -150,13 +150,13 @@ export const ShowcaseCard: React.FC<ShowcaseCardProps> = ({
 
                 <div className="flex items-center gap-3 text-[11px] text-grayscale-500 pt-0.5">
                     <span className="inline-flex items-center gap-1">
-                        <IonIcon icon={layersOutline} className="text-[12px]" aria-hidden />
+                        <AppIcon icon={layersOutline} className="text-[12px]" aria-hidden />
                         {preview.totalStepCount} steps
                     </span>
 
                     {preview.estimatedDuration && (
                         <span className="inline-flex items-center gap-1">
-                            <IonIcon icon={timeOutline} className="text-[12px]" aria-hidden />
+                            <AppIcon icon={timeOutline} className="text-[12px]" aria-hidden />
                             {preview.estimatedDuration}
                         </span>
                     )}

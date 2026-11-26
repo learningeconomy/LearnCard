@@ -86,7 +86,6 @@ vi.mock('react-router-dom', () => ({
     }),
 }));
 vi.mock('@ionic/react', () => ({
-    IonIcon: () => null,
     IonHeader: ({ children }: { children: React.ReactNode }) => <header>{children}</header>,
     IonToolbar: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     IonContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,

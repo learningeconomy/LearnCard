@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import { star } from 'ionicons/icons';
 import { DEFAULT_APP_ICON_URL } from './constants';
 import { DEFAULT_HERO_COLOR } from './listingForm';
@@ -128,7 +128,7 @@ export const StoreListingPreview: React.FC<StoreListingPreviewProps> = ({
                                     key={i}
                                     className="flex items-start gap-2 text-sm text-grayscale-600"
                                 >
-                                    <IonIcon
+                                    <AppIcon
                                         icon={star}
                                         className="text-emerald-500 mt-0.5 shrink-0"
                                     />

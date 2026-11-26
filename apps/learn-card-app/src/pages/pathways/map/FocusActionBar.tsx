@@ -30,16 +30,12 @@
 
 import React from 'react';
 
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import { arrowForwardOutline, openOutline } from 'ionicons/icons';
 import { AnimatePresence, motion } from 'motion/react';
 
 import { mcpRegistryStore } from '../../../stores/pathways';
-import {
-    getNodeEarnLink,
-    policyLabel,
-    resolveNodeCallToAction,
-} from '../today/presentation';
+import { getNodeEarnLink, policyLabel, resolveNodeCallToAction } from '../today/presentation';
 import type { PathwayNode } from '../types';
 
 import { formatEta, nodeEffortMinutes } from './route';
@@ -76,8 +72,7 @@ const FocusActionBar: React.FC<FocusActionBarProps> = ({ node, nextOnRoute, onOp
     // a button) keeps the UI honest and lets the learner's eye go back
     // to the graph itself.
     const status = node?.progress.status;
-    const isActionable =
-        !!node && status !== 'completed' && status !== 'skipped';
+    const isActionable = !!node && status !== 'completed' && status !== 'skipped';
 
     return (
         /*
@@ -118,117 +113,118 @@ const FocusActionBar: React.FC<FocusActionBarProps> = ({ node, nextOnRoute, onOp
                                    rounded-[28px] bg-white/80 backdrop-blur-xl
                                    border border-white shadow-xl shadow-grayscale-900/10"
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-1.5 mb-0.5">
-                                <span
-                                    aria-hidden
-                                    className="w-1.5 h-1.5 rounded-full bg-emerald-500"
-                                />
+                        <div className="flex items-center gap-3">
+                            <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5 mb-0.5">
+                                    <span
+                                        aria-hidden
+                                        className="w-1.5 h-1.5 rounded-full bg-emerald-500"
+                                    />
 
-                                <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-grayscale-500">
-                                    {policyLabel(node.stage.policy.kind)}
-                                </span>
+                                    <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-grayscale-500">
+                                        {policyLabel(node.stage.policy.kind)}
+                                    </span>
 
-                                <span
-                                    aria-hidden
-                                    className="text-grayscale-300 text-[10px]"
-                                >
-                                    ·
-                                </span>
+                                    <span aria-hidden className="text-grayscale-300 text-[10px]">
+                                        ·
+                                    </span>
 
-                                <span className="text-[10px] font-medium uppercase tracking-wide text-emerald-700">
-                                    {status === 'in-progress'
-                                        ? 'In progress'
-                                        : status === 'stalled'
-                                            ? 'Needs attention'
-                                            : 'Up next'}
-                                </span>
+                                    <span className="text-[10px] font-medium uppercase tracking-wide text-emerald-700">
+                                        {status === 'in-progress'
+                                            ? 'In progress'
+                                            : status === 'stalled'
+                                              ? 'Needs attention'
+                                              : 'Up next'}
+                                    </span>
+                                </div>
+
+                                <p className="text-sm font-semibold text-grayscale-900 truncate">
+                                    {node.title}
+                                </p>
                             </div>
 
-                            <p className="text-sm font-semibold text-grayscale-900 truncate">
-                                {node.title}
-                            </p>
-                        </div>
+                            {(() => {
+                                // Resolve the CTA once — label and external
+                                // target are orthogonal concerns, so we
+                                // render the same inner content whether the
+                                // button is an `<a>` (earn-link present) or
+                                // a plain `<button>`.
+                                const ctaLabel =
+                                    status === 'in-progress' || status === 'stalled'
+                                        ? 'Keep going'
+                                        : resolveNodeCallToAction(
+                                              node,
+                                              node.stage.policy.kind === 'external'
+                                                  ? (mcpServers[node.stage.policy.mcp.serverId]
+                                                        ?.label ?? null)
+                                                  : null
+                                          );
 
-                        {(() => {
-                            // Resolve the CTA once — label and external
-                            // target are orthogonal concerns, so we
-                            // render the same inner content whether the
-                            // button is an `<a>` (earn-link present) or
-                            // a plain `<button>`.
-                            const ctaLabel =
-                                status === 'in-progress' || status === 'stalled'
-                                    ? 'Keep going'
-                                    : resolveNodeCallToAction(
-                                          node,
-                                          node.stage.policy.kind === 'external'
-                                              ? mcpServers[node.stage.policy.mcp.serverId]?.label ?? null
-                                              : null,
-                                      );
+                                // `earnLink` is only surfaced when the node
+                                // is a credential projection with a real
+                                // http(s) URL (see `getNodeEarnLink`). For
+                                // `in-progress` / `stalled` nodes we keep
+                                // the in-app flow so the learner can record
+                                // progress rather than being kicked out.
+                                const earnLink =
+                                    status === 'not-started' ? getNodeEarnLink(node) : null;
 
-                            // `earnLink` is only surfaced when the node
-                            // is a credential projection with a real
-                            // http(s) URL (see `getNodeEarnLink`). For
-                            // `in-progress` / `stalled` nodes we keep
-                            // the in-app flow so the learner can record
-                            // progress rather than being kicked out.
-                            const earnLink =
-                                status === 'not-started' ? getNodeEarnLink(node) : null;
-
-                            const ctaClass =
-                                `group shrink-0 py-2.5 px-4 rounded-full
+                                const ctaClass = `group shrink-0 py-2.5 px-4 rounded-full
                                  bg-emerald-600 text-white text-sm font-semibold
                                  shadow-md shadow-emerald-600/30
                                  hover:bg-emerald-700 transition-colors
                                  flex items-center gap-1.5 whitespace-nowrap`;
 
-                            const icon = (
-                                <IonIcon
-                                    icon={earnLink ? openOutline : arrowForwardOutline}
-                                    className="text-base transition-transform duration-200 group-hover:translate-x-0.5"
-                                    aria-hidden
-                                />
-                            );
+                                const icon = (
+                                    <AppIcon
+                                        icon={earnLink ? openOutline : arrowForwardOutline}
+                                        className="text-base transition-transform duration-200 group-hover:translate-x-0.5"
+                                        aria-hidden
+                                    />
+                                );
 
-                            if (earnLink) {
+                                if (earnLink) {
+                                    return (
+                                        <motion.a
+                                            href={earnLink.href}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            // Fire the in-app open alongside so the
+                                            // learner lands on the node detail when
+                                            // they switch back from the new tab —
+                                            // that's where they mark it complete.
+                                            onClick={() => onOpen(node.id)}
+                                            whileTap={{ scale: 0.96 }}
+                                            transition={{
+                                                type: 'spring',
+                                                stiffness: 400,
+                                                damping: 25,
+                                            }}
+                                            className={ctaClass}
+                                            aria-label={`${ctaLabel} (opens in a new tab)`}
+                                        >
+                                            <span>{ctaLabel}</span>
+                                            {icon}
+                                        </motion.a>
+                                    );
+                                }
+
                                 return (
-                                    <motion.a
-                                        href={earnLink.href}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        // Fire the in-app open alongside so the
-                                        // learner lands on the node detail when
-                                        // they switch back from the new tab —
-                                        // that's where they mark it complete.
+                                    <motion.button
+                                        type="button"
                                         onClick={() => onOpen(node.id)}
                                         whileTap={{ scale: 0.96 }}
                                         transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                                         className={ctaClass}
-                                        aria-label={`${ctaLabel} (opens in a new tab)`}
                                     >
                                         <span>{ctaLabel}</span>
                                         {icon}
-                                    </motion.a>
+                                    </motion.button>
                                 );
-                            }
+                            })()}
+                        </div>
 
-                            return (
-                                <motion.button
-                                    type="button"
-                                    onClick={() => onOpen(node.id)}
-                                    whileTap={{ scale: 0.96 }}
-                                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                                    className={ctaClass}
-                                >
-                                    <span>{ctaLabel}</span>
-                                    {icon}
-                                </motion.button>
-                            );
-                        })()}
-                      </div>
-
-                      {/*
+                        {/*
                           "Then" peek — the Waze next-turn preview.
                           Renders a second row beneath the main CTA
                           with the next uncompleted node on the
@@ -240,37 +236,37 @@ const FocusActionBar: React.FC<FocusActionBarProps> = ({ node, nextOnRoute, onOp
                           the pill "expanding" to show the next
                           instruction.
                       */}
-                      {nextOnRoute && (
-                          <motion.div
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: 'auto' }}
-                              exit={{ opacity: 0, height: 0 }}
-                              transition={{ duration: 0.25, ease: 'easeOut' }}
-                              className="mt-2 pt-2 pr-2 border-t border-grayscale-100 flex items-center gap-2 overflow-hidden"
-                          >
-                              <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-grayscale-400 shrink-0">
-                                  Then
-                              </span>
+                        {nextOnRoute && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.25, ease: 'easeOut' }}
+                                className="mt-2 pt-2 pr-2 border-t border-grayscale-100 flex items-center gap-2 overflow-hidden"
+                            >
+                                <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-grayscale-400 shrink-0">
+                                    Then
+                                </span>
 
-                              <span
-                                  title={nextOnRoute.title}
-                                  className="text-xs text-grayscale-700 truncate flex-1 min-w-0"
-                              >
-                                  {nextOnRoute.title}
-                              </span>
+                                <span
+                                    title={nextOnRoute.title}
+                                    className="text-xs text-grayscale-700 truncate flex-1 min-w-0"
+                                >
+                                    {nextOnRoute.title}
+                                </span>
 
-                              <span
-                                  aria-hidden
-                                  className="text-grayscale-300 text-[10px] shrink-0"
-                              >
-                                  ·
-                              </span>
+                                <span
+                                    aria-hidden
+                                    className="text-grayscale-300 text-[10px] shrink-0"
+                                >
+                                    ·
+                                </span>
 
-                              <span className="text-[10px] font-medium text-grayscale-500 shrink-0">
-                                  {formatEta(nodeEffortMinutes(nextOnRoute))}
-                              </span>
-                          </motion.div>
-                      )}
+                                <span className="text-[10px] font-medium text-grayscale-500 shrink-0">
+                                    {formatEta(nodeEffortMinutes(nextOnRoute))}
+                                </span>
+                            </motion.div>
+                        )}
                     </motion.div>
                 )}
             </AnimatePresence>

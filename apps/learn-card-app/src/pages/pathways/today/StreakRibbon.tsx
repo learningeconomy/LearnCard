@@ -14,7 +14,7 @@
 
 import React from 'react';
 
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import { flame } from 'ionicons/icons';
 import { motion } from 'motion/react';
 
@@ -35,11 +35,9 @@ const StreakRibbon: React.FC<StreakRibbonProps> = ({ current, longest, inGraceWi
                 : 'bg-emerald-50/80 border-emerald-100'
         }`}
     >
-        <IonIcon
+        <AppIcon
             icon={flame}
-            className={`text-sm ${
-                inGraceWindow ? 'text-amber-500' : 'text-emerald-600'
-            }`}
+            className={`text-sm ${inGraceWindow ? 'text-amber-500' : 'text-emerald-600'}`}
             aria-hidden
         />
 
@@ -51,16 +49,10 @@ const StreakRibbon: React.FC<StreakRibbonProps> = ({ current, longest, inGraceWi
             {current}-day streak
         </span>
 
-        {longest > current && (
-            <span className="text-xs text-grayscale-500">
-                · best {longest}
-            </span>
-        )}
+        {longest > current && <span className="text-xs text-grayscale-500">· best {longest}</span>}
 
         {inGraceWindow && (
-            <span className="text-[11px] text-amber-700/90 ml-auto">
-                Grace window
-            </span>
+            <span className="text-[11px] text-amber-700/90 ml-auto">Grace window</span>
         )}
     </motion.div>
 );

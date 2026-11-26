@@ -1,7 +1,7 @@
 import * as m from '../../../../paraglide/messages.js';
 import { useLocale } from '../../../../i18n';
 import React, { useEffect, useState } from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../../components/icon';
 import {
     checkmarkCircleOutline,
     checkmarkOutline,
@@ -293,7 +293,7 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
             </div>
 
             <div className="p-3 bg-grayscale-10 border border-grayscale-200 rounded-2xl flex items-start gap-2.5">
-                <IonIcon
+                <AppIcon
                     icon={informationCircleOutline}
                     aria-hidden
                     className="text-grayscale-900 text-lg mt-0.5 shrink-0"
@@ -307,7 +307,7 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
                         className="mt-1 inline-flex items-center gap-1 font-medium text-grayscale-900 underline"
                     >
                         {m['developerPortal.dashboards.tabs.webhooks.docsLink']()}
-                        <IonIcon icon={openOutline} aria-hidden className="text-sm" />
+                        <AppIcon icon={openOutline} aria-hidden className="text-sm" />
                     </a>
                 </div>
             </div>
@@ -334,7 +334,7 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
             >
                 <div className="flex items-start gap-3">
                     <div className="w-10 h-10 bg-grayscale-100 rounded-xl flex items-center justify-center shrink-0">
-                        <IonIcon
+                        <AppIcon
                             icon={linkOutline}
                             aria-hidden
                             className="text-xl text-grayscale-900"
@@ -391,7 +391,7 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
                             disabled={isSaving}
                             className="flex items-center justify-center gap-2 py-3 px-4 rounded-[20px] border border-solid border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                            <IonIcon icon={trashOutline} aria-hidden className="text-base" />
+                            <AppIcon icon={trashOutline} aria-hidden className="text-base" />
                             {m['developerPortal.dashboards.tabs.webhooks.removeUrl']()}
                         </button>
                     )}
@@ -406,7 +406,7 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
                 <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-3">
                         <div className="w-10 h-10 bg-grayscale-100 rounded-xl flex items-center justify-center shrink-0">
-                            <IonIcon
+                            <AppIcon
                                 icon={radioOutline}
                                 aria-hidden
                                 className="text-xl text-grayscale-900"
@@ -456,7 +456,7 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
             >
                 <div className="flex items-start gap-3">
                     <div className="w-10 h-10 bg-grayscale-100 rounded-xl flex items-center justify-center shrink-0">
-                        <IonIcon
+                        <AppIcon
                             icon={keyOutline}
                             aria-hidden
                             className="text-xl text-grayscale-900"
@@ -495,18 +495,18 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
                                 className="p-2 text-grayscale-500 hover:text-grayscale-900 hover:bg-grayscale-10 rounded-full transition-colors shrink-0"
                             >
                                 {secretCopied ? (
-                                    <IonIcon
+                                    <AppIcon
                                         icon={checkmarkOutline}
                                         aria-hidden
                                         className="text-base text-emerald-500"
                                     />
                                 ) : (
-                                    <IonIcon icon={copyOutline} aria-hidden className="text-base" />
+                                    <AppIcon icon={copyOutline} aria-hidden className="text-base" />
                                 )}
                             </button>
                         </div>
                         <p className="flex items-start gap-2 text-sm font-medium text-amber-800">
-                            <IonIcon
+                            <AppIcon
                                 icon={warningOutline}
                                 aria-hidden
                                 className="text-base shrink-0 mt-0.5"
@@ -570,7 +570,7 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
                 <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-3">
                         <div className="w-10 h-10 bg-grayscale-100 rounded-xl flex items-center justify-center shrink-0">
-                            <IonIcon
+                            <AppIcon
                                 icon={pulseOutline}
                                 aria-hidden
                                 className="text-xl text-grayscale-900"
@@ -597,7 +597,7 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
                         title={m['developerPortal.dashboards.tabs.webhooks.healthRefresh']()}
                         className="p-2 text-grayscale-500 hover:text-grayscale-900 hover:bg-grayscale-10 rounded-full transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                        <IonIcon
+                        <AppIcon
                             icon={refreshOutline}
                             aria-hidden
                             className={`text-base ${health.isFetching ? 'animate-spin' : ''}`}
@@ -713,7 +713,7 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
             >
                 <div className="flex items-start gap-3">
                     <div className="w-10 h-10 bg-grayscale-100 rounded-xl flex items-center justify-center shrink-0">
-                        <IonIcon
+                        <AppIcon
                             icon={sendOutline}
                             aria-hidden
                             className="text-xl text-grayscale-900"
@@ -762,13 +762,13 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
                         }`}
                     >
                         {testResult.delivered ? (
-                            <IonIcon
+                            <AppIcon
                                 icon={checkmarkCircleOutline}
                                 aria-hidden
                                 className="text-emerald-500 text-lg mt-0.5 shrink-0"
                             />
                         ) : (
-                            <IonIcon
+                            <AppIcon
                                 icon={closeCircleOutline}
                                 aria-hidden
                                 className="text-red-400 text-lg mt-0.5 shrink-0"

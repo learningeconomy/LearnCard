@@ -4,9 +4,7 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 
 import CopyIconButton from './CopyIconButton';
 
-vi.mock('@ionic/react', () => ({
-    IonIcon: ({ icon }: { icon: string }) => <span data-icon={icon} />,
-}));
+vi.mock('@ionic/react', () => ({}));
 vi.mock('ionicons/icons', () => ({ copyOutline: 'copy', checkmark: 'check' }));
 
 afterEach(() => {

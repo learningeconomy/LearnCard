@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import {
     checkmarkOutline,
     copyOutline,
@@ -116,7 +116,7 @@ const ProgressTracker: React.FC<{ steps: Step[] }> = ({ steps }) => {
                             }`}
                         >
                             {step.state === 'done' ? (
-                                <IonIcon icon={checkmarkOutline} className="text-base" />
+                                <AppIcon icon={checkmarkOutline} className="text-base" />
                             ) : step.state === 'current' ? (
                                 <span className="w-2.5 h-2.5 rounded-full bg-white motion-safe:animate-pulse" />
                             ) : (
@@ -202,7 +202,7 @@ export const AppStatusView: React.FC<AppStatusViewProps> = ({
 
                 {hasNewAppChanges && mode === 'live' && (
                     <div className="mt-6 p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center gap-3 text-left">
-                        <IonIcon
+                        <AppIcon
                             icon={sparklesOutline}
                             className="text-emerald-600 text-xl shrink-0"
                         />
@@ -249,13 +249,13 @@ export const AppStatusView: React.FC<AppStatusViewProps> = ({
                                 onClick={() => setConfirmingWithdraw(true)}
                                 className={secondaryClass}
                             >
-                                <IonIcon icon={createOutline} />
+                                <AppIcon icon={createOutline} />
                                 Make Changes
                             </button>
                         )}
                         {mode === 'live' && (
                             <button type="button" onClick={onEdit} className={secondaryClass}>
-                                <IonIcon icon={createOutline} />
+                                <AppIcon icon={createOutline} />
                                 Edit Listing
                             </button>
                         )}
@@ -269,7 +269,7 @@ export const AppStatusView: React.FC<AppStatusViewProps> = ({
                             </button>
                         ) : (
                             <button type="button" onClick={onViewInStore} className={primaryClass}>
-                                <IonIcon icon={openOutline} />
+                                <AppIcon icon={openOutline} />
                                 {mode === 'live' ? 'View in Store' : 'Preview Store Page'}
                             </button>
                         )}
@@ -303,7 +303,7 @@ export const AppStatusView: React.FC<AppStatusViewProps> = ({
                     onClick={copyLink}
                     className="flex items-center gap-1.5 font-medium text-grayscale-700 hover:text-grayscale-900 transition-colors"
                 >
-                    <IonIcon icon={copied ? checkmarkOutline : copyOutline} />
+                    <AppIcon icon={copied ? checkmarkOutline : copyOutline} />
                     {copied ? 'Copied' : 'Copy Link'}
                 </button>
             </div>

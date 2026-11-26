@@ -7,7 +7,7 @@
  * - Ionic's `:host` and `::slotted` rules lost to every light-DOM author rule (Tailwind's unlayered
  *   preflight `* { margin: 0 }`, `index.scss`'s `* { font-family }`, call-site utilities). They
  *   live in the `app-controls-host` layer here so that stays true. For example, preflight still
- *   zeroes the button's 4px/2px margin and the ion-icon start margin, exactly as it did before.
+ *   zeroes the button's 4px/2px margin and the slotted icon's start margin, exactly as it did before.
  * - Rules for elements that were inside Ionic's shadow roots (.button-native, .checkbox-icon,
  *   .radio-inner, ...) were unreachable by app CSS. They stay unlayered with class selectors that
  *   outrank the global element resets (preflight/normalize `button`, `svg`, `*`).
@@ -200,19 +200,19 @@
         order: 1;
     }
 
-    .app-button-inner > ion-icon {
+    .app-button-inner > .app-icon {
         font-size: 1.35em;
         pointer-events: none;
     }
 
-    .app-button-inner > ion-icon[slot='start'] {
+    .app-button-inner > .app-icon[slot='start'] {
         margin-inline-start: -0.3em;
         margin-inline-end: 0.3em;
         margin-top: 0;
         margin-bottom: 0;
     }
 
-    .app-button-inner > ion-icon[slot='end'] {
+    .app-button-inner > .app-icon[slot='end'] {
         margin-inline-start: 0.3em;
         margin-inline-end: -0.2em;
         margin-top: 0;
@@ -548,8 +548,8 @@
     touch-action: auto;
 }
 
-/* normalize.css `button span, button div, button ion-icon { touch-action: manipulation }`. */
-.app-button-native :is(span, div, ion-icon) {
+/* normalize.css `button span, button div, button ion-icon { touch-action: manipulation }` (AppIcon is a span). */
+.app-button-native :is(span, div) {
     touch-action: auto;
 }
 

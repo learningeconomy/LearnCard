@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef } from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../../components/icon';
 import { arrowBack, refreshOutline } from 'ionicons/icons';
 import type { ShareLink } from '@learncard/types';
 
@@ -27,7 +27,7 @@ export const SheetChrome: React.FC<{
                     onClick={onClose}
                     className="inline-flex h-9 w-9 items-center justify-center rounded-full text-xl text-grayscale-700 hover:bg-white/70"
                 >
-                    <IonIcon icon={arrowBack} aria-hidden="true" className="rtl:-scale-x-100" />
+                    <AppIcon icon={arrowBack} aria-hidden="true" className="rtl:-scale-x-100" />
                 </button>
                 <h2 className="flex-1 truncate text-lg font-semibold text-grayscale-900">
                     {title}
@@ -39,7 +39,7 @@ export const SheetChrome: React.FC<{
                     onClick={onRefresh}
                     className="inline-flex h-9 w-9 items-center justify-center rounded-full text-lg text-grayscale-600 hover:bg-white/70 disabled:opacity-60"
                 >
-                    <IonIcon
+                    <AppIcon
                         icon={refreshOutline}
                         aria-hidden="true"
                         className={refreshing ? 'motion-safe:animate-spin' : undefined}

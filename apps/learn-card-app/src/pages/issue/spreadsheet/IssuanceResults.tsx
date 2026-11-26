@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import { alertCircleOutline, checkmarkCircleOutline, chevronForwardOutline } from 'ionicons/icons';
 import * as m from '../../../paraglide/messages.js';
 import type { IssuanceRun } from './issuanceTypes';
@@ -105,7 +105,7 @@ export const IssuanceResults: React.FC<{
                     <span
                         className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${allSent ? 'bg-white text-emerald-700' : 'bg-red-50 text-red-600'}`}
                     >
-                        <IonIcon
+                        <AppIcon
                             icon={allSent ? checkmarkCircleOutline : alertCircleOutline}
                             className="h-7 w-7"
                             aria-hidden="true"
@@ -165,7 +165,7 @@ export const IssuanceResults: React.FC<{
                     className={`${BUTTON} inline-flex items-center gap-2`}
                 >
                     {m['issueFlow.sheet.design.viewDeliveryStatus']()}
-                    <IonIcon
+                    <AppIcon
                         icon={chevronForwardOutline}
                         className="rtl:rotate-180"
                         aria-hidden="true"
@@ -226,7 +226,7 @@ export const IssuanceResults: React.FC<{
                     onClick={openIssues}
                     className="flex w-full items-center gap-2 rounded-[20px] bg-grayscale-100 px-4 py-3 text-start text-sm font-medium text-grayscale-900 hover:bg-grayscale-200 transition-colors"
                 >
-                    <IonIcon
+                    <AppIcon
                         icon={alertCircleOutline}
                         className="text-red-600"
                         aria-hidden="true"
@@ -236,7 +236,7 @@ export const IssuanceResults: React.FC<{
                             count: failed + confirming,
                         })}
                     </span>
-                    <IonIcon
+                    <AppIcon
                         icon={chevronForwardOutline}
                         className="rtl:rotate-180"
                         aria-hidden="true"

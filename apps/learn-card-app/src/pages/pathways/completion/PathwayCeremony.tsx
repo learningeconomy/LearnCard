@@ -33,7 +33,7 @@
 
 import React, { useState } from 'react';
 
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import { arrowForwardOutline, closeOutline, sparklesOutline } from 'ionicons/icons';
 import { motion } from 'motion/react';
 import { useHistory } from 'react-router-dom';
@@ -188,7 +188,7 @@ const PathwayCeremony: React.FC<PathwayCeremonyProps> = ({ pathway, subPathways,
                            transition-colors"
                     style={{ top: 'max(1rem, calc(env(safe-area-inset-top) + 0.5rem))' }}
                 >
-                    <IonIcon icon={closeOutline} className="text-2xl" />
+                    <AppIcon icon={closeOutline} className="text-2xl" />
                 </button>
 
                 <div
@@ -226,7 +226,7 @@ const PathwayCeremony: React.FC<PathwayCeremonyProps> = ({ pathway, subPathways,
                                    bg-linear-to-br/srgb from-emerald-400 to-emerald-600
                                    shadow-xl shadow-emerald-500/30"
                         >
-                            <IonIcon
+                            <AppIcon
                                 icon={sparklesOutline}
                                 className="text-white text-4xl"
                                 aria-hidden
@@ -348,7 +348,7 @@ const PathwayCeremony: React.FC<PathwayCeremonyProps> = ({ pathway, subPathways,
                                                 border border-emerald-200
                                                 flex items-center justify-center"
                                     >
-                                        <IonIcon
+                                        <AppIcon
                                             icon={sparklesOutline}
                                             className="text-emerald-700 text-xl"
                                             aria-hidden
@@ -485,7 +485,7 @@ const PathwayCeremony: React.FC<PathwayCeremonyProps> = ({ pathway, subPathways,
                                    inline-flex items-center justify-center gap-2"
                         >
                             Start a new chapter
-                            <IonIcon icon={arrowForwardOutline} className="text-base" aria-hidden />
+                            <AppIcon icon={arrowForwardOutline} className="text-base" aria-hidden />
                         </button>
 
                         <button

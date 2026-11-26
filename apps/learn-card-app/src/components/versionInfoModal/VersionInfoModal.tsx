@@ -27,7 +27,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import * as m from '../../paraglide/messages.js';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../icon';
 import {
     chevronDownOutline,
     chevronUpOutline,
@@ -192,7 +192,7 @@ const VersionInfoRow: React.FC<VersionInfoRowProps> = ({ label, value, copyValue
                         aria-label={`Copy ${label}`}
                         className="shrink-0 text-grayscale-400 hover:text-grayscale-700 transition-colors p-1 -mr-1"
                     >
-                        <IonIcon icon={copyOutline} className="text-base" />
+                        <AppIcon icon={copyOutline} className="text-base" />
                     </button>
                 ) : null}
             </div>
@@ -247,7 +247,7 @@ const ChannelRow: React.FC<ChannelRowProps> = ({
                     : 'border-grayscale-200 bg-white hover:bg-grayscale-10 disabled:opacity-60'
             }`}
         >
-            <IonIcon
+            <AppIcon
                 icon={radioButtonOnOutline}
                 className={`text-base shrink-0 ${
                     isCurrent ? 'text-emerald-500' : 'text-grayscale-300'
@@ -557,7 +557,7 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
 
             {/* ---- Friendly reassurance ------------------------------------------ */}
             <div className="mt-4 w-full flex items-start gap-2 bg-emerald-50 border border-emerald-100 rounded-2xl py-2.5 px-3">
-                <IonIcon
+                <AppIcon
                     icon={informationCircleOutline}
                     className="text-emerald-500 text-base mt-0.5 shrink-0"
                 />
@@ -622,12 +622,12 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
             >
                 {copyState === 'copied' ? (
                     <>
-                        <IonIcon icon={checkmarkCircleOutline} className="text-base" />
+                        <AppIcon icon={checkmarkCircleOutline} className="text-base" />
                         {m['versionInfo.copiedToClipboard']()}
                     </>
                 ) : (
                     <>
-                        <IonIcon icon={copyOutline} className="text-base" />
+                        <AppIcon icon={copyOutline} className="text-base" />
                         {m['versionInfo.copyDetails']()}
                     </>
                 )}
@@ -645,7 +645,7 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                     className="w-full flex items-center justify-between py-2 px-1 text-xs font-medium text-grayscale-500 hover:text-grayscale-700 transition-colors"
                 >
                     <span className="uppercase tracking-wide">{m['versionInfo.advanced']()}</span>
-                    <IonIcon
+                    <AppIcon
                         icon={advancedOpen ? chevronUpOutline : chevronDownOutline}
                         className="text-base"
                     />
@@ -768,7 +768,7 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                                     </>
                                 ) : (
                                     <>
-                                        <IonIcon
+                                        <AppIcon
                                             icon={cloudDownloadOutline}
                                             className="text-base"
                                         />
@@ -785,13 +785,13 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                                     onClick={() => setShowChannelPicker(true)}
                                     className="w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors flex items-center justify-center gap-2"
                                 >
-                                    <IonIcon icon={swapHorizontalOutline} className="text-base" />
+                                    <AppIcon icon={swapHorizontalOutline} className="text-base" />
                                     Switch update channel…
                                 </button>
                             ) : (
                                 <div className="w-full bg-white border border-grayscale-200 rounded-2xl p-3 flex flex-col gap-3">
                                     <div className="flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-xl p-2.5">
-                                        <IonIcon
+                                        <AppIcon
                                             icon={warningOutline}
                                             className="text-amber-600 text-base mt-0.5 shrink-0"
                                         />
@@ -810,7 +810,7 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                                             aria-label="Refresh channels"
                                             className="text-grayscale-400 hover:text-grayscale-700 transition-colors p-1"
                                         >
-                                            <IonIcon
+                                            <AppIcon
                                                 icon={refreshOutline}
                                                 className={`text-base ${
                                                     channelsLoading ? 'animate-spin' : ''

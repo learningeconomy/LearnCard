@@ -40,7 +40,6 @@ vi.mock('react-router-dom', () => ({
     useHistory: () => mocks.history,
 }));
 vi.mock('@ionic/react', () => ({
-    IonIcon: () => null,
     IonPage: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     IonHeader: ({ children }: { children: React.ReactNode }) => <header>{children}</header>,
     IonToolbar: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,

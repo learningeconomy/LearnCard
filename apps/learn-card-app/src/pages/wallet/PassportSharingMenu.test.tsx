@@ -26,7 +26,6 @@ vi.mock('learn-card-base', () => ({
 }));
 
 vi.mock('@ionic/react', () => ({
-    IonIcon: () => null,
     IonPage: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
     IonContent: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
     IonSpinner: () => <div>Loading</div>,

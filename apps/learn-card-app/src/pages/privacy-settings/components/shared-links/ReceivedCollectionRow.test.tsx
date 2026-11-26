@@ -11,7 +11,6 @@ vi.mock('learn-card-base', () => ({
     useGetProfile: (id: string) => ({ data: profiles.get(id) }),
 }));
 vi.mock('learn-card-base/hooks/useGetCurrentUser', () => ({ default: () => null }));
-vi.mock('@ionic/react', () => ({ IonIcon: () => null }));
 afterEach(() => {
     cleanup();
     profiles.clear();

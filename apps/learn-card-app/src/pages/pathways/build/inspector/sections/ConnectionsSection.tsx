@@ -42,7 +42,7 @@
 import React, { useMemo, useState } from 'react';
 import * as m from '../../../../../paraglide/messages.js';
 
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../../../components/icon';
 import { informationCircleOutline, linkOutline, peopleOutline } from 'ionicons/icons';
 
 import { detectCollections } from '../../../map/collectionDetection';
@@ -178,7 +178,7 @@ const ConnectionsSection: React.FC<ConnectionsSectionProps> = ({
                 */}
                 {collection && (
                     <div className="flex items-start gap-2 p-3 rounded-xl bg-emerald-50 border border-emerald-100">
-                        <IonIcon
+                        <AppIcon
                             icon={peopleOutline}
                             className="shrink-0 text-emerald-600 text-base mt-0.5"
                             aria-hidden
@@ -308,7 +308,7 @@ const ConnectionsSection: React.FC<ConnectionsSectionProps> = ({
                         */}
                         {collection && !applyToAll && (
                             <p className="flex items-start gap-1.5 pt-1 text-[11px] text-amber-800 leading-relaxed">
-                                <IonIcon
+                                <AppIcon
                                     icon={informationCircleOutline}
                                     className="shrink-0 text-sm mt-0.5"
                                     aria-hidden

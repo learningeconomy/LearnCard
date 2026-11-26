@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../components/icon';
 import { alertCircleOutline, closeOutline } from 'ionicons/icons';
 
 import {
@@ -75,7 +75,7 @@ export const AssistantMemoriesModal: React.FC<{
                         className="p-2 rounded-full text-grayscale-500 hover:text-grayscale-900 hover:bg-grayscale-10 transition-colors"
                         aria-label="Close memories"
                     >
-                        <IonIcon icon={closeOutline} className="text-xl" />
+                        <AppIcon icon={closeOutline} className="text-xl" />
                     </button>
                 </div>
 
@@ -119,7 +119,7 @@ export const AssistantMemoriesModal: React.FC<{
                     ) : isError ? (
                         <div className="space-y-v3-3">
                             <div className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
-                                <IonIcon
+                                <AppIcon
                                     icon={alertCircleOutline}
                                     className="text-red-400 text-lg mt-0.5 shrink-0"
                                 />

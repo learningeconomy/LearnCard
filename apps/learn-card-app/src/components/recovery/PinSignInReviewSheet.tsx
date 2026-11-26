@@ -1,5 +1,5 @@
 import React, { useId } from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../icon';
 import { checkmarkCircleOutline, warningOutline } from 'ionicons/icons';
 import { Overlay } from 'learn-card-base';
 import { focusOnMount } from './focusOnMount';
@@ -68,7 +68,7 @@ export const PinSignInReviewSheet: React.FC<PinSignInReviewSheetProps> = ({
             <Overlay aria-describedby={bodyId}>
                 <div className="p-8 text-center space-y-v3-5">
                     <div className="mx-auto w-14 h-14 rounded-full bg-emerald-50 flex items-center justify-center">
-                        <IonIcon
+                        <AppIcon
                             icon={checkmarkCircleOutline}
                             aria-hidden="true"
                             data-testid="pin-review-success-icon"
@@ -106,7 +106,7 @@ export const PinSignInReviewSheet: React.FC<PinSignInReviewSheetProps> = ({
         <Overlay aria-describedby={bodyId}>
             <div className="p-8 text-center space-y-v3-5">
                 <div className="mx-auto w-14 h-14 rounded-full bg-amber-50 flex items-center justify-center">
-                    <IonIcon
+                    <AppIcon
                         icon={warningOutline}
                         aria-hidden="true"
                         data-testid="pin-review-warning-icon"

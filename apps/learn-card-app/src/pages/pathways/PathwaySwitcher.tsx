@@ -44,7 +44,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as m from '../../paraglide/messages.js';
 
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../components/icon';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
     addOutline,
@@ -171,7 +171,7 @@ const PathwayRow: React.FC<PathwayRowProps> = ({
                     }`}
                     aria-hidden
                 >
-                    {isActive && <IonIcon icon={checkmarkOutline} className="text-[10px]" />}
+                    {isActive && <AppIcon icon={checkmarkOutline} className="text-[10px]" />}
                 </span>
 
                 <span className="min-w-0 flex-1">
@@ -180,8 +180,8 @@ const PathwayRow: React.FC<PathwayRowProps> = ({
                             isActive
                                 ? 'font-medium text-grayscale-900'
                                 : isChild
-                                ? 'text-grayscale-700'
-                                : 'text-grayscale-800'
+                                  ? 'text-grayscale-700'
+                                  : 'text-grayscale-800'
                         }`}
                     >
                         {pathway.title}
@@ -203,7 +203,7 @@ const PathwayRow: React.FC<PathwayRowProps> = ({
                                              text-[11px] font-semibold uppercase
                                              tracking-wide text-emerald-700"
                             >
-                                <IonIcon
+                                <AppIcon
                                     icon={sparklesOutline}
                                     className="text-[11px]"
                                     aria-hidden
@@ -266,7 +266,7 @@ const PathwayRow: React.FC<PathwayRowProps> = ({
                                transition-colors
                                opacity-0 group-hover:opacity-100 focus:opacity-100"
                 >
-                    <IonIcon icon={sparklesOutline} className="text-sm" />
+                    <AppIcon icon={sparklesOutline} className="text-sm" />
                 </button>
             )}
 
@@ -281,7 +281,7 @@ const PathwayRow: React.FC<PathwayRowProps> = ({
                            hover:bg-red-50 transition-colors
                            opacity-0 group-hover:opacity-100 focus:opacity-100"
             >
-                <IonIcon icon={trashOutline} className="text-sm" />
+                <AppIcon icon={trashOutline} className="text-sm" />
             </button>
         </li>
     );
@@ -545,7 +545,7 @@ const PathwaySwitcher: React.FC<PathwaySwitcherProps> = ({ variant = 'chip' }) =
             >
                 <span className="truncate">No pathways yet</span>
 
-                <IonIcon
+                <AppIcon
                     icon={addOutline}
                     className={`text-sm shrink-0 ${addIconColorClass}`}
                     aria-hidden
@@ -599,7 +599,7 @@ const PathwaySwitcher: React.FC<PathwaySwitcherProps> = ({ variant = 'chip' }) =
                     <span className="truncate">{fullTitle}</span>
                 )}
 
-                <IonIcon
+                <AppIcon
                     icon={chevronDownOutline}
                     className={`${chevronSizeClass} shrink-0 transition-transform ${
                         isTitle ? 'text-grayscale-400' : ''
@@ -667,7 +667,7 @@ const PathwaySwitcher: React.FC<PathwaySwitcherProps> = ({ variant = 'chip' }) =
                                        text-sm text-grayscale-700 hover:bg-grayscale-10
                                        transition-colors"
                         >
-                            <IonIcon
+                            <AppIcon
                                 icon={addOutline}
                                 className="text-base text-grayscale-500"
                                 aria-hidden

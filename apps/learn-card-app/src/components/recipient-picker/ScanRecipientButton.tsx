@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Capacitor } from '@capacitor/core';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../icon';
 import { qrCodeOutline } from 'ionicons/icons';
 
 import {
@@ -223,7 +223,7 @@ export const ScanRecipientButton: React.FC<ScanRecipientButtonProps> = ({
             className={`absolute top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full text-grayscale-500 hover:bg-grayscale-100 hover:text-grayscale-900 transition-colors ${className}`}
             aria-label={m['scanner.recipientAria']()}
         >
-            <IonIcon icon={qrCodeOutline} className="text-xl" />
+            <AppIcon icon={qrCodeOutline} className="text-xl" />
         </button>
     );
 };

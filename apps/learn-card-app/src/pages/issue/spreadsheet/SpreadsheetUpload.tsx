@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import {
     cloudUploadOutline,
     downloadOutline,
@@ -153,7 +153,7 @@ export const SpreadsheetReview: React.FC<{
                     <span
                         className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 ${invalid || !people.length ? 'bg-grayscale-100 text-grayscale-700' : 'bg-emerald-50 text-emerald-700'}`}
                     >
-                        <IonIcon
+                        <AppIcon
                             icon={
                                 invalid || !people.length
                                     ? alertCircleOutline
@@ -193,7 +193,7 @@ export const SpreadsheetReview: React.FC<{
                                 </span>
                                 {!isValidRosterEmail(row.email) && (
                                     <span className="inline-flex shrink-0 items-center gap-1 text-xs text-red-700">
-                                        <IonIcon icon={alertCircleOutline} aria-hidden="true" />
+                                        <AppIcon icon={alertCircleOutline} aria-hidden="true" />
                                         {m['issueFlow.sheet.invalidEmail']()}
                                     </span>
                                 )}
@@ -288,7 +288,7 @@ export const SpreadsheetUpload: React.FC<{
                     onClick={() => fileInput.current?.click()}
                     className="flex gap-1.5 items-center text-sm text-grayscale-600 hover:text-grayscale-900 disabled:opacity-40"
                 >
-                    <IonIcon icon={cloudUploadOutline} />
+                    <AppIcon icon={cloudUploadOutline} />
                     {busy ? m['issueFlow.sheet.importing']() : m['issueFlow.sheet.upload']()}
                 </button>
                 <button
@@ -297,7 +297,7 @@ export const SpreadsheetUpload: React.FC<{
                     onClick={download}
                     className="flex gap-1.5 items-center text-sm text-grayscale-600 hover:text-grayscale-900 disabled:opacity-40"
                 >
-                    <IonIcon icon={downloadOutline} />
+                    <AppIcon icon={downloadOutline} />
                     {m['issueFlow.sheet.getTemplate']()}
                 </button>
             </div>

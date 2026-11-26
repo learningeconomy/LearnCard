@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import { checkmarkCircleOutline, timeOutline } from 'ionicons/icons';
 
 import type { ListingMode } from './listingLifecycle';
@@ -57,7 +57,7 @@ export const ListingStatusBanner: React.FC<ListingStatusBannerProps> = ({
     return (
         <div className="mb-6 p-4 bg-white border border-grayscale-200 rounded-2xl font-poppins">
             <div className="flex items-start gap-2.5">
-                <IonIcon
+                <AppIcon
                     icon={inReview ? timeOutline : checkmarkCircleOutline}
                     className={`text-lg mt-0.5 shrink-0 ${
                         inReview ? 'text-amber-500' : 'text-emerald-500'

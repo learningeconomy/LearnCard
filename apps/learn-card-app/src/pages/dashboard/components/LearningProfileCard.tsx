@@ -1,5 +1,5 @@
 import React from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import { shieldCheckmarkOutline } from 'ionicons/icons';
 import { formatDistanceToNow } from 'date-fns';
 import { ChevronRight } from 'lucide-react';
@@ -156,7 +156,7 @@ const LearningProfileCard: React.FC<LearningProfileCardProps> = ({ vm }) => {
             <div className="flex items-center justify-between pt-3 border-t border-grayscale-100 mt-1">
                 {state !== 'empty' && verifiedRecords !== null ? (
                     <div className="flex items-center gap-1.5">
-                        <IonIcon
+                        <AppIcon
                             icon={shieldCheckmarkOutline}
                             aria-hidden="true"
                             className="text-grayscale-400 text-sm"

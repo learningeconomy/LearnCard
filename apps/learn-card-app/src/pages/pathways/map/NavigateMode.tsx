@@ -47,7 +47,7 @@
 
 import React, { useEffect } from 'react';
 
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import {
     arrowBackOutline,
     arrowForwardOutline,
@@ -149,13 +149,13 @@ const NavigateMode: React.FC<NavigateModeProps> = ({
                                        text-xs font-medium text-grayscale-700"
                             aria-label="Exit navigation"
                         >
-                            <IonIcon icon={arrowBackOutline} className="text-sm" />
+                            <AppIcon icon={arrowBackOutline} className="text-sm" />
                             <span>Map</span>
                         </button>
 
                         <div className="flex-1 min-w-0 flex flex-col items-end">
                             <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-grayscale-500">
-                                <IonIcon icon={flagOutline} className="text-sm" />
+                                <AppIcon icon={flagOutline} className="text-sm" />
                                 <span>Destination</span>
                             </div>
 
@@ -177,7 +177,7 @@ const NavigateMode: React.FC<NavigateModeProps> = ({
                     */}
                     <div className="w-full max-w-md mb-6">
                         <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-grayscale-500 mb-2">
-                            <IonIcon icon={hourglassOutline} className="text-sm" />
+                            <AppIcon icon={hourglassOutline} className="text-sm" />
                             <span>
                                 {allComplete
                                     ? 'Route complete'
@@ -357,7 +357,7 @@ const CurrentStepCard: React.FC<{
     const ctaInner = (
         <>
             <span>{ctaLabel}</span>
-            <IonIcon
+            <AppIcon
                 icon={earnLink ? openOutline : arrowForwardOutline}
                 className="text-lg transition-transform duration-200 group-hover:translate-x-0.5"
                 aria-hidden
@@ -440,7 +440,7 @@ const RouteCompleteCard: React.FC<{
                    bg-white shadow-xl shadow-grayscale-900/10 border border-white"
     >
         <div className="mx-auto w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center mb-4">
-            <IonIcon icon={checkmarkCircle} className="text-emerald-600 text-4xl" aria-hidden />
+            <AppIcon icon={checkmarkCircle} className="text-emerald-600 text-4xl" aria-hidden />
         </div>
 
         <h2 className="text-xl font-semibold text-grayscale-900 mb-1">You made it.</h2>
@@ -488,7 +488,7 @@ const NavigateAvatar: React.FC<{ node: PathwayNode }> = ({ node }) => {
             aria-hidden
             className="shrink-0 w-14 h-14 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center ring-2 ring-emerald-200"
         >
-            <IonIcon icon={flagOutline} className="text-2xl" />
+            <AppIcon icon={flagOutline} className="text-2xl" />
         </span>
     );
 };

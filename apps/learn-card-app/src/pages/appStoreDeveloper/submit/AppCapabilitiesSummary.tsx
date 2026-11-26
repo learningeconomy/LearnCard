@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import { chevronDownOutline } from 'ionicons/icons';
 
 interface AppCapabilitiesSummaryProps {
@@ -43,7 +43,7 @@ export const AppCapabilitiesSummary: React.FC<AppCapabilitiesSummaryProps> = ({
                             : "Try your app and we'll list what it does here."}
                     </p>
                 </div>
-                <IonIcon
+                <AppIcon
                     icon={chevronDownOutline}
                     className={`text-grayscale-500 text-xl shrink-0 ml-4 transition-transform ${
                         open ? 'rotate-180' : ''

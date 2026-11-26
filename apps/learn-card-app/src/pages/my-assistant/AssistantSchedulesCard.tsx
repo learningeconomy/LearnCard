@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../components/icon';
 import { alertCircleOutline, informationCircleOutline } from 'ionicons/icons';
 import { Toggle } from 'learn-card-base';
 
@@ -164,7 +164,7 @@ const AssistantSchedulesCard: React.FC<AssistantSchedulesCardProps> = ({
                 </div>
 
                 <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl flex items-start gap-3">
-                    <IonIcon
+                    <AppIcon
                         icon={informationCircleOutline}
                         className="text-amber-700 text-xl mt-0.5 shrink-0"
                     />
@@ -205,7 +205,7 @@ const AssistantSchedulesCard: React.FC<AssistantSchedulesCardProps> = ({
 
             {displayedError && (
                 <div className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
-                    <IonIcon
+                    <AppIcon
                         icon={alertCircleOutline}
                         className="text-red-400 text-lg mt-0.5 shrink-0"
                     />

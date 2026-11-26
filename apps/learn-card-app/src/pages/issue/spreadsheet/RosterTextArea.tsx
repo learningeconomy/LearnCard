@@ -1,5 +1,5 @@
 import React, { useId, useMemo, useState } from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import { expandOutline, contractOutline } from 'ionicons/icons';
 import * as m from '../../../paraglide/messages.js';
 import { useLocale } from '../../../i18n';
@@ -52,7 +52,7 @@ export const RosterTextArea: React.FC<
                     onClick={() => setExpanded(!expanded)}
                     className="inline-flex items-center gap-1 rounded-[20px] px-2 py-1 font-medium text-grayscale-600 hover:bg-grayscale-100 hover:text-grayscale-900"
                 >
-                    <IonIcon icon={expanded ? contractOutline : expandOutline} aria-hidden="true" />
+                    <AppIcon icon={expanded ? contractOutline : expandOutline} aria-hidden="true" />
                     {expanded
                         ? m['issueFlow.sheet.reviewWorkspace.collapse']()
                         : m['issueFlow.sheet.reviewWorkspace.expand']()}

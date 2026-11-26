@@ -20,7 +20,7 @@
 
 import React from 'react';
 
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import { arrowForwardOutline, openOutline } from 'ionicons/icons';
 import { motion } from 'motion/react';
 import { useHistory } from 'react-router-dom';
@@ -30,12 +30,7 @@ import { mcpRegistryStore } from '../../../stores/pathways';
 import { buildInAppHref, resolveNodeAction } from '../core/action';
 import type { PathwayNode, ScoredCandidate } from '../types';
 
-import {
-    type Journey,
-    journeyLabel,
-    policyLabel,
-    resolveNodeCallToAction,
-} from './presentation';
+import { type Journey, journeyLabel, policyLabel, resolveNodeCallToAction } from './presentation';
 
 interface NextActionCardProps {
     node: PathwayNode;
@@ -73,9 +68,7 @@ const NextActionCard: React.FC<NextActionCardProps> = ({
     // label reactive if the learner connects the server mid-session.
     const mcpServers = mcpRegistryStore.use.servers();
     const mcpLabel =
-        policy.kind === 'external'
-            ? mcpServers[policy.mcp.serverId]?.label ?? null
-            : null;
+        policy.kind === 'external' ? (mcpServers[policy.mcp.serverId]?.label ?? null) : null;
 
     // Resolve the action once and dispatch on its kind. The resolver
     // falls back from an explicit `node.action` to the legacy
@@ -106,10 +99,7 @@ const NextActionCard: React.FC<NextActionCardProps> = ({
             <div className="flex items-center justify-between mb-4">
                 {routeStep ? (
                     <div className="flex items-center gap-2 min-w-0">
-                        <span
-                            aria-hidden
-                            className="w-1.5 h-1.5 rounded-full bg-emerald-500"
-                        />
+                        <span aria-hidden className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
 
                         <span className="text-[10px] font-semibold text-emerald-700 uppercase tracking-[0.08em] whitespace-nowrap">
                             Step {routeStep.position} of {routeStep.total}
@@ -123,7 +113,7 @@ const NextActionCard: React.FC<NextActionCardProps> = ({
                                 className="absolute inset-y-0 left-0 bg-emerald-500 rounded-full"
                                 style={{
                                     width: `${Math.round(
-                                        (routeStep.position / routeStep.total) * 100,
+                                        (routeStep.position / routeStep.total) * 100
                                     )}%`,
                                 }}
                             />
@@ -131,10 +121,7 @@ const NextActionCard: React.FC<NextActionCardProps> = ({
                     </div>
                 ) : (
                     <div className="flex items-center gap-1.5">
-                        <span
-                            aria-hidden
-                            className="w-1.5 h-1.5 rounded-full bg-emerald-500"
-                        />
+                        <span aria-hidden className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
 
                         <span className="text-[10px] font-semibold text-grayscale-500 uppercase tracking-[0.08em]">
                             {policyLabel(policyKind)}
@@ -202,8 +189,7 @@ const NextActionCard: React.FC<NextActionCardProps> = ({
                 const label = resolveNodeCallToAction(node, mcpLabel);
                 const active = node.progress.status === 'not-started';
 
-                const ctaClass =
-                    `group w-full py-3.5 px-5 rounded-[20px] bg-grayscale-900 text-white
+                const ctaClass = `group w-full py-3.5 px-5 rounded-[20px] bg-grayscale-900 text-white
                      font-medium text-sm hover:bg-grayscale-800 transition-colors
                      flex items-center justify-center gap-2
                      shadow-md shadow-grayscale-900/20`;
@@ -215,7 +201,7 @@ const NextActionCard: React.FC<NextActionCardProps> = ({
                 const leavesApp = active && resolved.kind === 'external-url';
 
                 const icon = (
-                    <IonIcon
+                    <AppIcon
                         icon={leavesApp ? openOutline : arrowForwardOutline}
                         className="text-base transition-transform duration-200 group-hover:translate-x-0.5"
                         aria-hidden

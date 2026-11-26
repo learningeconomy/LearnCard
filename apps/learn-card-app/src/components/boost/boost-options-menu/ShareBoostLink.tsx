@@ -4,7 +4,8 @@ import { QRCodeSVG } from 'qrcode.react';
 import moment from 'moment';
 
 import X from 'learn-card-base/svgs/X';
-import { IonGrid, IonIcon, IonSpinner } from '@ionic/react';
+import { IonGrid, IonSpinner } from '@ionic/react';
+import { AppIcon } from '../../icon';
 import { alertCircleOutline } from 'ionicons/icons';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import IDSleeve from '../../../assets/images/id-sleeve.png';
@@ -345,7 +346,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                                 title={m['toasts.boost.shareLinkGenerationFailed']()}
                                 className="flex h-[50px] w-[50px] flex-col items-center justify-center rounded-[20px] text-red-700 hover:bg-red-50 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                             >
-                                <IonIcon icon={alertCircleOutline} aria-hidden="true" />
+                                <AppIcon icon={alertCircleOutline} aria-hidden="true" />
                                 <span className="text-[10px] font-medium leading-tight text-center">
                                     {m['common.tryAgain']()}
                                 </span>
@@ -428,7 +429,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                                         role="alert"
                                         className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5"
                                     >
-                                        <IonIcon
+                                        <AppIcon
                                             icon={alertCircleOutline}
                                             aria-hidden="true"
                                             className="text-red-400 text-lg mt-0.5 shrink-0"

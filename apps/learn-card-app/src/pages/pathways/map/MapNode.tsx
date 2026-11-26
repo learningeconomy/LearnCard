@@ -18,7 +18,7 @@
 
 import React from 'react';
 
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import { Handle, Position } from '@xyflow/react';
 import {
     chevronForwardOutline,
@@ -281,7 +281,7 @@ const NodeAvatar: React.FC<{
             aria-hidden
             className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${tone.bg} ${tone.fg} ${dimClass}`}
         >
-            <IonIcon icon={glyph} className="text-base" />
+            <AppIcon icon={glyph} className="text-base" />
         </span>
     );
 };
@@ -458,7 +458,7 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
                                     }
                                   `}
                     >
-                        <IonIcon
+                        <AppIcon
                             icon={
                                 childInfo.missing || childInfo.renderStyle === 'inline-expandable'
                                     ? gitBranchOutline
@@ -518,7 +518,7 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
                                    hover:border-grayscale-300
                                    transition-colors"
                     >
-                        <IonIcon icon={gitBranchOutline} className="text-[11px]" />
+                        <AppIcon icon={gitBranchOutline} className="text-[11px]" />
                         <span>
                             {data.detourCount} {data.detourCount === 1 ? 'detour' : 'detours'}
                         </span>
@@ -539,7 +539,7 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
                                    flex items-center justify-center
                                    shadow-xs shadow-emerald-600/40"
                     >
-                        <IonIcon icon={chevronForwardOutline} className="text-[10px]" />
+                        <AppIcon icon={chevronForwardOutline} className="text-[10px]" />
                     </span>
                 )}
 
@@ -671,7 +671,7 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
                                     )}
 
                                     {isGated && (
-                                        <IonIcon
+                                        <AppIcon
                                             aria-hidden
                                             icon={lockClosedOutline}
                                             className="shrink-0 text-[10px] text-grayscale-400"

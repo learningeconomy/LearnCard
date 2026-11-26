@@ -53,7 +53,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import { checkmarkCircleOutline } from 'ionicons/icons';
 
 import { usePathwayProgressForCredential } from './usePathwayProgressForCredential';
@@ -405,7 +405,7 @@ const CredentialClaimedPathwayCta: React.FC<CredentialClaimedPathwayCtaProps> = 
             `}
         >
             <div className="flex items-start gap-3">
-                <IonIcon
+                <AppIcon
                     icon={checkmarkCircleOutline}
                     className={`
                         shrink-0

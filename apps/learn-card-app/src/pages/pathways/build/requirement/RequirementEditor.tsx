@@ -43,7 +43,7 @@
 
 import React from 'react';
 
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../../components/icon';
 import { addOutline, closeOutline } from 'ionicons/icons';
 
 import type { NodeRequirement } from '../../types';
@@ -405,7 +405,7 @@ const CompositeEditor: React.FC<CompositeEditorProps> = ({
                                 transition-colors
                             `}
                         >
-                            <IonIcon
+                            <AppIcon
                                 icon={closeOutline}
                                 aria-hidden
                                 className="text-base"
@@ -450,7 +450,7 @@ const CompositeEditor: React.FC<CompositeEditorProps> = ({
                     transition-colors
                 "
             >
-                <IonIcon icon={addOutline} aria-hidden className="text-sm" />
+                <AppIcon icon={addOutline} aria-hidden className="text-sm" />
                 Add requirement
             </button>
         </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../../components/icon';
 import { chevronForward, hourglassOutline, lockClosed } from 'ionicons/icons';
 import type { ShareLink } from '@learncard/types';
 
@@ -58,7 +58,7 @@ const ShareLinkRow: React.FC<ShareLinkRowProps> = ({
                     ) : (
                         <>
                             {meta.locked && (
-                                <IonIcon
+                                <AppIcon
                                     icon={lockClosed}
                                     role="img"
                                     aria-label={m['dataShareCenter.shared.passcodeOnIcon']()}
@@ -74,7 +74,7 @@ const ShareLinkRow: React.FC<ShareLinkRowProps> = ({
                                         className={`min-w-0 truncate inline-flex items-center gap-1 ${meta.hint.tone === 'soon' ? 'text-amber-800' : ''}`}
                                     >
                                         {meta.hint.tone === 'soon' && (
-                                            <IonIcon icon={hourglassOutline} aria-hidden="true" />
+                                            <AppIcon icon={hourglassOutline} aria-hidden="true" />
                                         )}
                                         {meta.hint.tone === 'fresh' && (
                                             <span
@@ -100,7 +100,7 @@ const ShareLinkRow: React.FC<ShareLinkRowProps> = ({
                     onCopy={() => onCopy(share)}
                 />
             )}
-            <IonIcon
+            <AppIcon
                 icon={chevronForward}
                 aria-hidden="true"
                 className="shrink-0 text-grayscale-400 pointer-events-none transition-transform group-hover:translate-x-0.5 rtl:-scale-x-100 rtl:group-hover:-translate-x-0.5"

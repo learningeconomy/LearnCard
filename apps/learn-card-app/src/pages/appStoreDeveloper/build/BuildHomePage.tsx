@@ -1,6 +1,7 @@
 import React from 'react';
 import { useHistory } from 'react-router-dom';
-import { IonContent, IonIcon, IonPage, IonSpinner } from '@ionic/react';
+import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import {
     appsOutline,
     arrowForwardOutline,
@@ -63,14 +64,14 @@ const GuideCard: React.FC<{ id: UseCaseId; onOpen: () => void }> = ({ id, onOpen
         >
             <div className="flex items-start justify-between">
                 <span className="w-11 h-11 rounded-2xl bg-grayscale-100 flex items-center justify-center">
-                    <IonIcon icon={icon} className="text-xl text-grayscale-700" />
+                    <AppIcon icon={icon} className="text-xl text-grayscale-700" />
                 </span>
                 {comingSoon ? (
                     <span className="px-2.5 py-0.5 rounded-full bg-grayscale-100 text-grayscale-500 text-xs font-medium">
                         Coming soon
                     </span>
                 ) : (
-                    <IonIcon
+                    <AppIcon
                         icon={chevronForwardOutline}
                         className="text-grayscale-400 group-hover:text-grayscale-700 transition-colors"
                     />
@@ -121,7 +122,7 @@ const ProjectRow: React.FC<{ project: ProjectSummary; onOpen: () => void }> = ({
             >
                 {STATE_LABEL[project.state]}
             </span>
-            <IonIcon
+            <AppIcon
                 icon={chevronForwardOutline}
                 className="text-grayscale-400 group-hover:text-grayscale-700 transition-colors shrink-0"
             />
@@ -158,7 +159,7 @@ const BuildHomePage: React.FC = () => {
                         className="group mt-8 w-full text-left rounded-[20px] bg-grayscale-900 p-6 sm:p-8 hover:opacity-95 transition-opacity"
                     >
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 text-white text-xs font-medium">
-                            <IonIcon icon={sparklesOutline} />
+                            <AppIcon icon={sparklesOutline} />
                             Most popular
                         </span>
                         <h2 className="mt-4 text-xl font-semibold text-white">
@@ -170,7 +171,7 @@ const BuildHomePage: React.FC = () => {
                         </p>
                         <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-white">
                             Start building
-                            <IonIcon
+                            <AppIcon
                                 icon={arrowForwardOutline}
                                 className="transition-transform group-hover:translate-x-0.5"
                             />
@@ -219,7 +220,7 @@ const BuildHomePage: React.FC = () => {
                                 {appCount === 1
                                     ? 'Your app is in the Apps tab'
                                     : `Your ${appCount} apps are in the Apps tab`}
-                                <IonIcon icon={arrowForwardOutline} />
+                                <AppIcon icon={arrowForwardOutline} />
                             </button>
                         )}
                     </div>

@@ -1,5 +1,5 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../icon';
 import { alertCircleOutline, codeSlashOutline } from 'ionicons/icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { currentUserStore, switchedProfileStore, useWallet } from 'learn-card-base';
@@ -163,7 +163,7 @@ const DeveloperRoleConfirmation: React.FC<DeveloperRoleConfirmationProps> = ({
         >
             <div className="mb-4 flex items-center gap-3">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-grayscale-100">
-                    <IonIcon icon={codeSlashOutline} aria-hidden="true" className="text-2xl" />
+                    <AppIcon icon={codeSlashOutline} aria-hidden="true" className="text-2xl" />
                 </div>
                 <h2 id={titleId} className="min-w-0 text-xl font-semibold leading-snug">
                     {m['profile.developerProgram.confirmTitle']()}
@@ -177,7 +177,7 @@ const DeveloperRoleConfirmation: React.FC<DeveloperRoleConfirmationProps> = ({
                     role="alert"
                     className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5"
                 >
-                    <IonIcon
+                    <AppIcon
                         icon={alertCircleOutline}
                         aria-hidden="true"
                         className="text-red-400 text-lg mt-0.5 shrink-0"

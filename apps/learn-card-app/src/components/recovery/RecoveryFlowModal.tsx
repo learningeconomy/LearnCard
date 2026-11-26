@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../icon';
 import {
     fingerPrint,
     documentTextOutline,
@@ -225,7 +225,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
             role="alert"
             className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5"
         >
-            <IonIcon icon={alertCircleOutline} className="text-red-400 text-lg mt-0.5 shrink-0" />
+            <AppIcon icon={alertCircleOutline} className="text-red-400 text-lg mt-0.5 shrink-0" />
             <span className="text-sm text-red-700 leading-relaxed">{pinBlockedMessage}</span>
         </div>
     );
@@ -331,7 +331,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
     const identityErrorMessage = error ?? coordinatorIdentityError ?? null;
     const identityError = identityErrorMessage && (
         <div className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
-            <IonIcon icon={alertCircleOutline} className="text-red-400 text-lg mt-0.5 shrink-0" />
+            <AppIcon icon={alertCircleOutline} className="text-red-400 text-lg mt-0.5 shrink-0" />
             <span className="text-sm text-red-700 leading-relaxed">{identityErrorMessage}</span>
         </div>
     );
@@ -341,7 +341,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
             <div className="p-6 max-w-md mx-auto font-poppins">
                 <div className="text-center mb-6">
                     <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center">
-                        <IonIcon icon={mailOutline} className="text-2xl" />
+                        <AppIcon icon={mailOutline} className="text-2xl" />
                     </div>
                     <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
                         {m['recovery.identity.title']()}
@@ -465,7 +465,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
         const content = (
             <div className="p-8 max-w-md mx-auto text-center font-poppins">
                 <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center">
-                    <IonIcon icon={checkmarkCircleOutline} className="text-2xl" />
+                    <AppIcon icon={checkmarkCircleOutline} className="text-2xl" />
                 </div>
                 <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
                     {m['recovery.identity.keyVerified']()}
@@ -488,7 +488,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
         const content = (
             <div className="p-8 max-w-md mx-auto text-center font-poppins">
                 <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                    <IonIcon icon={checkmarkCircleOutline} className="text-3xl" />
+                    <AppIcon icon={checkmarkCircleOutline} className="text-3xl" />
                 </div>
                 <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
                     {m['recovery.identity.successTitle']()}
@@ -616,7 +616,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                                 : 'bg-grayscale-200 text-grayscale-400'
                         }`}
                     >
-                        <IonIcon icon={method.icon} className="text-lg" />
+                        <AppIcon icon={method.icon} className="text-lg" />
                     </div>
 
                     <div className="flex-1 text-left">
@@ -681,7 +681,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                                         aria-controls="unavailable-methods"
                                         className="flex items-center gap-1.5 px-1 py-2 min-h-[44px] text-xs font-medium text-grayscale-500 hover:text-grayscale-800 transition-colors rounded-lg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                                     >
-                                        <IonIcon
+                                        <AppIcon
                                             icon={chevronDownOutline}
                                             aria-hidden="true"
                                             className={`text-sm transition-transform motion-reduce:transition-none ${
@@ -761,14 +761,14 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                                 onClick={() => setScreen(1)}
                                 className="flex items-center gap-1 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors mb-5"
                             >
-                                <IonIcon icon={chevronBackOutline} className="text-xs" />
+                                <AppIcon icon={chevronBackOutline} className="text-xs" />
                                 {m['common.back']()}
                             </button>
                         )}
 
                         <div className="text-center mb-6">
                             <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
-                                <IonIcon icon={shieldOutline} className="text-2xl" />
+                                <AppIcon icon={shieldOutline} className="text-2xl" />
                             </div>
                             <h2
                                 ref={screen2HeadingRef}
@@ -829,13 +829,13 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                 disabled={loading}
                 className="flex items-center gap-1 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors mb-5 disabled:opacity-40 disabled:cursor-not-allowed"
             >
-                <IonIcon icon={chevronBackOutline} className="text-xs" />
+                <AppIcon icon={chevronBackOutline} className="text-xs" />
                 {m['common.back']()}
             </button>
 
             {error && (
                 <div className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
-                    <IonIcon
+                    <AppIcon
                         icon={alertCircleOutline}
                         className="text-red-400 text-lg mt-0.5 shrink-0"
                     />
@@ -857,7 +857,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                     </div>
 
                     <div className="p-6 bg-emerald-50 rounded-2xl text-center">
-                        <IonIcon icon={fingerPrint} className="text-5xl text-emerald-600 mb-3" />
+                        <AppIcon icon={fingerPrint} className="text-5xl text-emerald-600 mb-3" />
 
                         <p className="text-sm text-emerald-800">
                             {m['recovery.passkeyVerifyDesc']()}
@@ -1079,7 +1079,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                         />
 
                         <label htmlFor="backup-file-input" className="cursor-pointer block">
-                            <IonIcon
+                            <AppIcon
                                 icon={cloudUploadOutline}
                                 className={`text-4xl mb-2 ${
                                     backupFile ? 'text-emerald-600' : 'text-grayscale-400'

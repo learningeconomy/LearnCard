@@ -9,12 +9,12 @@ import {
     IonDatetime,
     IonGrid,
     IonHeader,
-    IonIcon,
     IonRow,
     IonText,
     IonTitle,
     IonToolbar,
 } from '@ionic/react';
+import { AppIcon } from '../../src/components/icon';
 import { alertCircleOutline, homeOutline, refreshOutline } from 'ionicons/icons';
 import type { ConsentFlowContract } from '@learncard/types';
 
@@ -285,7 +285,7 @@ const InteractionsErrorCard: React.FC = () => (
                 <IonCol sizeXs="12" sizeSm="10" sizeMd="8" sizeLg="6">
                     <IonCard color="light" className="ion-padding">
                         <IonCardContent className="ion-text-center">
-                            <IonIcon
+                            <AppIcon
                                 icon={alertCircleOutline}
                                 color="danger"
                                 style={{ fontSize: '48px', marginBottom: '16px' }}
@@ -304,7 +304,7 @@ const InteractionsErrorCard: React.FC = () => (
                                 onClick={() => undefined}
                                 className="ion-margin-top"
                             >
-                                <IonIcon slot="start" icon={refreshOutline} />
+                                <AppIcon slot="start" icon={refreshOutline} />
                                 Try Again
                             </AppButton>
                             <AppButton
@@ -314,7 +314,7 @@ const InteractionsErrorCard: React.FC = () => (
                                 onClick={() => undefined}
                                 className="ion-margin-top"
                             >
-                                <IonIcon slot="start" icon={homeOutline} />
+                                <AppIcon slot="start" icon={homeOutline} />
                                 Go to Home
                             </AppButton>
                         </IonCardContent>

@@ -18,9 +18,7 @@ vi.mock('@learncard/sss-key-manager', () => ({
     isWebAuthnSupported: () => mocks.webAuthnSupported,
 }));
 
-vi.mock('@ionic/react', () => ({
-    IonIcon: ({ className }: { className?: string }) => <span className={className} />,
-}));
+vi.mock('@ionic/react', () => ({}));
 
 vi.mock('@analytics', () => ({
     AnalyticsEvents: {

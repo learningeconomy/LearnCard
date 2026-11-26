@@ -1,5 +1,5 @@
 import React from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../icon';
 import { checkmarkOutline, trashOutline } from 'ionicons/icons';
 import DocIcon from 'learn-card-base/svgs/DocIcon';
 import { useUploadedDocumentPreview } from '../../../../hooks/useUploadedDocumentPreview';
@@ -51,7 +51,7 @@ export const UploadedOriginalDocument: React.FC<UploadedOriginalDocumentProps> =
                     role="status"
                     className="mb-4 flex items-center gap-2 text-lg font-semibold leading-snug text-emerald-700"
                 >
-                    <IonIcon
+                    <AppIcon
                         icon={checkmarkOutline}
                         aria-hidden="true"
                         className="h-6 w-6 shrink-0"
@@ -97,7 +97,7 @@ export const UploadedOriginalDocument: React.FC<UploadedOriginalDocumentProps> =
                     aria-label={`${m['common.delete']()}: ${displayName}`}
                     className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[20px] border border-grayscale-200 bg-white text-grayscale-700 shadow-sm transition-colors hover:bg-grayscale-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                    <IonIcon icon={trashOutline} aria-hidden="true" className="h-5 w-5" />
+                    <AppIcon icon={trashOutline} aria-hidden="true" className="h-5 w-5" />
                 </button>
             </div>
         </section>

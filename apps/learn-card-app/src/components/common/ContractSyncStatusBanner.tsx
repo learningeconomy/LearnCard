@@ -1,5 +1,5 @@
 import React from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../icon';
 import { checkmarkCircleOutline, closeOutline } from 'ionicons/icons';
 
 import type { PendingContractSyncJob } from 'learn-card-base';
@@ -33,7 +33,7 @@ export const ContractSyncStatusBanner: React.FC<ContractSyncStatusBannerProps> =
         >
             <div className="flex items-center gap-2 whitespace-nowrap">
                 {isComplete ? (
-                    <IonIcon
+                    <AppIcon
                         icon={checkmarkCircleOutline}
                         className="text-emerald-600 text-sm shrink-0 w-3 h-3"
                     />
@@ -53,7 +53,7 @@ export const ContractSyncStatusBanner: React.FC<ContractSyncStatusBannerProps> =
                         className="ml-2 rounded-full p-1 text-emerald-500 hover:bg-emerald-100 transition-colors"
                         aria-label="Dismiss sync complete"
                     >
-                        <IonIcon icon={closeOutline} className="text-sm" />
+                        <AppIcon icon={closeOutline} className="text-sm" />
                     </button>
                 )}
             </div>

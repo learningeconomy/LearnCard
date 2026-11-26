@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
-import { IonContent, IonIcon, IonPage } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import { alertCircleOutline, checkmarkCircle, rocketOutline } from 'ionicons/icons';
 
 import { redirectStore } from 'learn-card-base';
@@ -115,7 +116,7 @@ const PublishSignInGate: React.FC = () => {
                                                     key={line}
                                                     className="flex items-start gap-2 text-sm text-grayscale-700"
                                                 >
-                                                    <IonIcon
+                                                    <AppIcon
                                                         icon={checkmarkCircle}
                                                         className="text-emerald-500 text-base mt-0.5 shrink-0"
                                                     />
@@ -131,7 +132,7 @@ const PublishSignInGate: React.FC = () => {
                                     onClick={continueToSignIn}
                                     className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                                 >
-                                    <IonIcon icon={rocketOutline} className="text-lg" />
+                                    <AppIcon icon={rocketOutline} className="text-lg" />
                                     Create Free Account
                                 </button>
 
@@ -153,7 +154,7 @@ const PublishSignInGate: React.FC = () => {
                         ) : (
                             <div className="flex flex-col items-center text-center">
                                 <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mb-4">
-                                    <IonIcon
+                                    <AppIcon
                                         icon={alertCircleOutline}
                                         className="text-red-400 text-2xl"
                                     />

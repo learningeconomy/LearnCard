@@ -34,7 +34,6 @@ const mocks = vi.hoisted(() => {
     };
 });
 
-vi.mock('@ionic/react', () => ({ IonIcon: () => null }));
 vi.mock('./EndorsementRequestFormFooter', () => ({
     default: ({ handleCloseModal }: { handleCloseModal: () => void }) => (
         <button type="button" onClick={handleCloseModal}>

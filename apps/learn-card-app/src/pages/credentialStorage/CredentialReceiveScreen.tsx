@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { IonContent, IonIcon, IonPage } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
+import { AppIcon } from '../../components/icon';
 import { alertCircleOutline, checkmarkCircleOutline, documentTextOutline } from 'ionicons/icons';
 import type { VC } from '@learncard/types';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
@@ -44,7 +45,7 @@ export const CredentialReceiveScreen = ({
                     <div className="bg-white rounded-[20px] border border-grayscale-200 overflow-hidden shadow-xs">
                         <header className="p-6 border-b border-grayscale-200">
                             <div className="w-12 h-12 mb-4 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                                <IonIcon
+                                <AppIcon
                                     icon={documentTextOutline}
                                     className="text-2xl"
                                     aria-hidden="true"
@@ -83,7 +84,7 @@ export const CredentialReceiveScreen = ({
                                     role="alert"
                                     className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5"
                                 >
-                                    <IonIcon
+                                    <AppIcon
                                         icon={alertCircleOutline}
                                         className="text-red-400 text-lg mt-0.5 shrink-0"
                                         aria-hidden="true"
@@ -108,7 +109,7 @@ export const CredentialReceiveScreen = ({
                                     role="status"
                                     className="p-3 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-2.5"
                                 >
-                                    <IonIcon
+                                    <AppIcon
                                         icon={checkmarkCircleOutline}
                                         className="text-emerald-500 text-lg mt-0.5 shrink-0"
                                         aria-hidden="true"
@@ -133,7 +134,7 @@ export const CredentialReceiveScreen = ({
                                 >
                                     <summary className="p-4 flex items-center gap-3 cursor-pointer list-none hover:bg-grayscale-10 transition-colors">
                                         <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-grayscale-100 text-grayscale-600 shrink-0">
-                                            <IonIcon
+                                            <AppIcon
                                                 icon={documentTextOutline}
                                                 aria-hidden="true"
                                             />

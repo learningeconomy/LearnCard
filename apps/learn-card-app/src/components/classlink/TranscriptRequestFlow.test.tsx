@@ -28,7 +28,6 @@ const mocks = vi.hoisted(() => ({
     recordType: undefined as 'official' | 'unofficial' | undefined,
 }));
 
-vi.mock('@ionic/react', () => ({ IonIcon: () => null }));
 vi.mock('learn-card-base', () => ({
     useTranscriptStatus: () => ({
         data: {

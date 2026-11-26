@@ -112,7 +112,6 @@ vi.mock('../../pages/consentFlow/FullScreenConsentFlow', () => ({
         return <div data-testid="consent-review">Consent review</div>;
     },
 }));
-vi.mock('@ionic/react', () => ({ IonIcon: () => null }));
 const show = (element = <ContractRequest contractUri={state.contract.uri} requestId="req-1" />) => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
     const view = render(<QueryClientProvider client={client}>{element}</QueryClientProvider>);

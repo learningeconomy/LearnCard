@@ -146,7 +146,7 @@ describe('campaign composer', () => {
             if (enabled) {
                 expect(heading).toHaveClass('border-t', 'border-solid', 'border-grayscale-200');
                 expect(heading).toHaveClass('text-sm', 'text-grayscale-900');
-                expect(heading?.querySelector('ion-icon')).toHaveAttribute('aria-hidden', 'true');
+                expect(heading?.querySelector('.app-icon')).toHaveAttribute('aria-hidden', 'true');
             } else {
                 expect(heading).not.toBeInTheDocument();
             }

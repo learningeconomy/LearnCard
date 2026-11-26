@@ -1,5 +1,5 @@
 import React from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../icon';
 import { closeOutline, pencilOutline } from 'ionicons/icons';
 
 import * as m from '../../../paraglide/messages.js';
@@ -22,7 +22,7 @@ export const ResumePreiewEditBlockButton: React.FC<{
                     : m['passport.resumeBuilder.editBlock.edit']()
             }
         >
-            <IonIcon icon={isEditing ? closeOutline : pencilOutline} />
+            <AppIcon icon={isEditing ? closeOutline : pencilOutline} />
         </button>
     );
 };

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import { alertCircleOutline, arrowBackOutline } from 'ionicons/icons';
 import type { LCNIntegration } from '@learncard/types';
 
@@ -66,7 +66,7 @@ export const GuideProjectPicker: React.FC<GuideProjectPickerProps> = ({
                 onClick={() => history.push('/app-store/developer/build')}
                 className="flex items-center gap-1.5 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
             >
-                <IonIcon icon={arrowBackOutline} />
+                <AppIcon icon={arrowBackOutline} />
                 All guides
             </button>
 
@@ -79,7 +79,7 @@ export const GuideProjectPicker: React.FC<GuideProjectPickerProps> = ({
 
                 {error && (
                     <div className="mt-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
-                        <IonIcon
+                        <AppIcon
                             icon={alertCircleOutline}
                             className="text-red-400 text-lg mt-0.5 shrink-0"
                         />

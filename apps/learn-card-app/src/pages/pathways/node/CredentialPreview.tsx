@@ -22,7 +22,7 @@
 
 import React, { useMemo, useState } from 'react';
 
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import { chevronDownOutline, chevronUpOutline, ribbonOutline } from 'ionicons/icons';
 import { AnimatePresence, motion } from 'motion/react';
 
@@ -81,7 +81,7 @@ const CredentialPreview: React.FC<CredentialPreviewProps> = ({ node, ownerDid })
                     className="shrink-0 w-8 h-8 rounded-full bg-emerald-100
                                flex items-center justify-center"
                 >
-                    <IonIcon icon={ribbonOutline} className="text-emerald-700 text-base" />
+                    <AppIcon icon={ribbonOutline} className="text-emerald-700 text-base" />
                 </span>
 
                 <div className="min-w-0 flex-1">
@@ -94,7 +94,7 @@ const CredentialPreview: React.FC<CredentialPreviewProps> = ({ node, ownerDid })
                     </p>
                 </div>
 
-                <IonIcon
+                <AppIcon
                     icon={expanded ? chevronUpOutline : chevronDownOutline}
                     className="shrink-0 text-grayscale-500 text-base"
                     aria-hidden

@@ -7,9 +7,7 @@ import type { DataSharingSharedLinksViewModel } from '../../DataSharingCenter.ty
 import { useSharedLinksStore } from './sharedLinksStore';
 import SharedLinksSection from './SharedLinksSection';
 
-vi.mock('@ionic/react', () => ({
-    IonIcon: ({ icon, ...rest }: Record<string, unknown>) => <span {...rest} />,
-}));
+vi.mock('@ionic/react', () => ({}));
 
 vi.mock('learn-card-base', () => ({
     useGetProfile: () => ({ data: undefined }),

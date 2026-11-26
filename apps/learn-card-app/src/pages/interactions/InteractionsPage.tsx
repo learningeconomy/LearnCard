@@ -9,12 +9,12 @@ import {
     IonSpinner,
     IonCard,
     IonCardContent,
-    IonIcon,
     IonText,
     IonGrid,
     IonRow,
     IonCol,
 } from '@ionic/react';
+import { AppIcon } from '../../components/icon';
 import {
     refreshOutline,
     homeOutline,
@@ -191,7 +191,7 @@ const InteractionsPage: React.FC = () => {
                             <IonCol sizeXs="12" sizeSm="10" sizeMd="8" sizeLg="6">
                                 <IonCard color="light" className="ion-padding">
                                     <IonCardContent className="ion-text-center">
-                                        <IonIcon
+                                        <AppIcon
                                             icon={alertCircleOutline}
                                             color="danger"
                                             style={{ fontSize: '48px', marginBottom: '16px' }}
@@ -213,7 +213,7 @@ const InteractionsPage: React.FC = () => {
                                             onClick={handleTryAgain}
                                             className="ion-margin-top"
                                         >
-                                            <IonIcon slot="start" icon={refreshOutline} />
+                                            <AppIcon slot="start" icon={refreshOutline} />
                                             Try Again
                                         </AppButton>
                                         <AppButton
@@ -223,7 +223,7 @@ const InteractionsPage: React.FC = () => {
                                             onClick={handleGoHome}
                                             className="ion-margin-top"
                                         >
-                                            <IonIcon slot="start" icon={homeOutline} />
+                                            <AppIcon slot="start" icon={homeOutline} />
                                             Go to Home
                                         </AppButton>
                                     </IonCardContent>
@@ -252,7 +252,7 @@ const InteractionsPage: React.FC = () => {
                         style={{ height: '100%' }}
                     >
                         <IonCol size="auto">
-                            <IonIcon
+                            <AppIcon
                                 icon={informationCircleOutline}
                                 color="primary"
                                 style={{ fontSize: '48px' }}

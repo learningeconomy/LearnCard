@@ -7,7 +7,6 @@ import { IonSpinner } from '@ionic/react';
 import VerifiedBadge from 'learn-card-base/svgs/VerifiedBadge';
 import AiSessionAssessmentPreviewContainer from '../../ai-assessment/AiSessionAssessmentPreviewContainer';
 import { ellipsisVertical } from 'ionicons/icons';
-import { IonIcon } from '@ionic/react';
 
 import { VC } from '@learncard/types';
 import { getAiSessionTitle } from '../aiSessions.helpers';

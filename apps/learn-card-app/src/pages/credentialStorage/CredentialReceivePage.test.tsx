@@ -31,7 +31,6 @@ vi.mock('learn-card-base/components/vcmodal/VCDisplayCardWrapper2', () => ({
 vi.mock('@ionic/react', () => ({
     IonPage: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     IonContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    IonIcon: () => null,
 }));
 vi.mock('../../paraglide/messages.js', () => ({
     'chapi.receive.title': () => 'Add to Passport',

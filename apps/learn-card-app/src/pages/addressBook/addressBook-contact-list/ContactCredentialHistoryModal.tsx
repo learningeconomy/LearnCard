@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { IonIcon, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import { alertCircleOutline } from 'ionicons/icons';
 
 import type { LCNProfile } from '@learncard/types';
@@ -127,7 +128,7 @@ const ContactCredentialHistoryModal: React.FC<ContactCredentialHistoryModalProps
 
                 {isError && (
                     <div className="flex items-start gap-2.5 rounded-2xl border border-red-100 bg-red-50 p-3">
-                        <IonIcon
+                        <AppIcon
                             icon={alertCircleOutline}
                             className="mt-0.5 shrink-0 text-lg text-red-400"
                         />

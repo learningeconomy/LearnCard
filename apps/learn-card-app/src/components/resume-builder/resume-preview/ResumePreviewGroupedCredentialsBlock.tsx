@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { VC } from '@learncard/types';
 
-import { IonIcon, IonReorderGroup, ReorderEndCustomEvent } from '@ionic/react';
+import { IonReorderGroup, ReorderEndCustomEvent } from '@ionic/react';
+import { AppIcon } from '../../icon';
 import { chevronDownOutline, chevronUpOutline } from 'ionicons/icons';
 import ResumePreviewCredentialToTextBlock from './ResumePreviewCredentialToTextBlock';
 import ResumePreviewCredentialActionRail from './ResumePreviewCredentialActionRail';
@@ -54,7 +55,7 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
             <h2 className="text-xs font-bold uppercase tracking-widest text-grayscale-500">
                 {getSectionLabel(sectionKey)}
             </h2>
-            <IonIcon
+            <AppIcon
                 icon={isCollapsed ? chevronDownOutline : chevronUpOutline}
                 className="text-grayscale-500 h-4 w-4 shrink-0"
             />

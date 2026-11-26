@@ -1,5 +1,5 @@
 import React from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../icon';
 import { timeOutline } from 'ionicons/icons';
 
 import { m } from '../../../../paraglide/messages.js';
@@ -30,7 +30,7 @@ export const ActiveAiSessionPrompt: React.FC<ActiveAiSessionPromptProps> = ({
             >
                 <div className="flex items-start gap-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700">
-                        <IonIcon icon={timeOutline} className="text-xl" aria-hidden="true" />
+                        <AppIcon icon={timeOutline} className="text-xl" aria-hidden="true" />
                     </div>
 
                     <div className="min-w-0">

@@ -6,7 +6,6 @@ import type { VP } from '@learncard/types';
 import type { SavedCredentialCollection } from '../../pages/privacy-settings/DataSharingCenter.types';
 import SavedCollectionPreview from './SavedCollectionPreview';
 
-vi.mock('@ionic/react', () => ({ IonIcon: () => null }));
 vi.mock('./ShareLinkPreview', () => ({
     ShareLinkPreview: ({
         payload,

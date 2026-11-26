@@ -1,6 +1,6 @@
 import React from 'react';
 import type { VC } from '@learncard/types';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../icon';
 import { documentTextOutline, downloadOutline } from 'ionicons/icons';
 import { getProtectedResumePdf } from '../../helpers/resume-publishing/protectedPdf';
 import * as m from '../../paraglide/messages.js';
@@ -25,7 +25,7 @@ export const ProtectedResumePreview = ({ credential, proof, onDownload, download
                     className="inline-flex items-center justify-center rounded-[20px] bg-grayscale-100 p-4 text-grayscale-700"
                     aria-hidden
                 >
-                    <IonIcon icon={documentTextOutline} className="h-7 w-7" />
+                    <AppIcon icon={documentTextOutline} className="h-7 w-7" />
                 </span>
                 <div className="min-w-0 space-y-v3-1">
                     <h2 className="text-lg font-semibold text-grayscale-900">
@@ -55,7 +55,7 @@ export const ProtectedResumePreview = ({ credential, proof, onDownload, download
                             disabled={downloading}
                             className="inline-flex items-center justify-center gap-2 py-3 px-4 rounded-[20px] bg-grayscale-900 text-white text-sm font-medium disabled:opacity-40"
                         >
-                            <IonIcon icon={downloadOutline} aria-hidden />
+                            <AppIcon icon={downloadOutline} aria-hidden />
                             {downloading
                                 ? m['shareLinks.preparingPdf']()
                                 : m['resumePublishing.downloadToView']()}

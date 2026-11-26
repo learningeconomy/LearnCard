@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useHistory } from 'react-router-dom';
 import queryString from 'query-string';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../components/icon';
 import { alertCircleOutline, checkmarkCircleOutline } from 'ionicons/icons';
 import { networkStore, getSSSConfig } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
@@ -94,7 +94,7 @@ const CancelRecoveryPage: React.FC = () => {
             <div className="w-full max-w-md bg-white rounded-[20px] shadow-xs p-8 space-y-v3-5 animate-fade-in-up">
                 {status === 'error' && errorMessage && (
                     <div className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
-                        <IonIcon
+                        <AppIcon
                             icon={alertCircleOutline}
                             className="text-red-400 text-lg mt-0.5 shrink-0"
                         />
@@ -119,7 +119,7 @@ const CancelRecoveryPage: React.FC = () => {
                 ) : status === 'success' ? (
                     <div className="space-y-v3-5 text-center">
                         <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
-                            <IonIcon icon={checkmarkCircleOutline} className="text-2xl" />
+                            <AppIcon icon={checkmarkCircleOutline} className="text-2xl" />
                         </div>
                         <div>
                             <h1 className="text-xl font-semibold text-grayscale-900 mb-1">

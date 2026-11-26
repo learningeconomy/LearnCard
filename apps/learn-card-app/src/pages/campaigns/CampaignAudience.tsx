@@ -1,4 +1,4 @@
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../components/icon';
 import { cloudUploadOutline, ribbonOutline } from 'ionicons/icons';
 import React, { useEffect, useRef, useState } from 'react';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
@@ -167,7 +167,7 @@ export const CampaignAudience: React.FC<{
                 </div>
                 <div className="min-w-0 space-y-4 rounded-2xl border border-grayscale-200 p-5">
                     <div className="flex items-center gap-3">
-                        <IonIcon
+                        <AppIcon
                             icon={cloudUploadOutline}
                             className="text-xl text-emerald-700"
                             aria-hidden="true"
@@ -251,7 +251,7 @@ export const CampaignAudience: React.FC<{
                 </div>
                 <div className="min-w-0 space-y-4 rounded-2xl border border-grayscale-200 p-5">
                     <div className="flex items-center gap-3">
-                        <IonIcon
+                        <AppIcon
                             icon={ribbonOutline}
                             className="text-xl text-emerald-700"
                             aria-hidden="true"

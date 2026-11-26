@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../icon';
 import { documentTextOutline } from 'ionicons/icons';
 import type { VC } from '@learncard/types';
 import type { CredentialCategoryEnum } from 'learn-card-base';
@@ -45,7 +45,7 @@ export const ShareCredentialThumbnail = ({
             ) : CategoryIcon ? (
                 <CategoryIcon className="h-10 w-10" />
             ) : (
-                <IonIcon icon={documentTextOutline} className="h-6 w-6 text-grayscale-600" />
+                <AppIcon icon={documentTextOutline} className="h-6 w-6 text-grayscale-600" />
             )}
             {showImage && CategoryIcon && (
                 <span className="absolute -bottom-1 -inset-e-1 flex h-6 w-6 items-center justify-center rounded-full bg-white ring-2 ring-white">

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../icon';
 import { menuOutline } from 'ionicons/icons';
 import ResumeIframePreview from './ResumeIframePreview';
 import ResumeBuilderLoader from './ResumeBuilderLoader';
@@ -658,7 +658,7 @@ const ResumeBuilderContent: React.FC = () => {
                     onClick={() => openResumeConfigPanel()}
                     className="absolute top-4 right-4 z-20 bg-white border border-grayscale-200 shadow-xs rounded-full p-2 h-[40px] w-[40px] text-grayscale-600 hover:text-grayscale-900"
                 >
-                    <IonIcon icon={menuOutline} className="w-[20px] h-[20px]" />
+                    <AppIcon icon={menuOutline} className="w-[20px] h-[20px]" />
                 </button>
             )}
         </div>

@@ -86,7 +86,6 @@ import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 
 import { useQueryClient } from '@tanstack/react-query';
-import { IonIcon } from '@ionic/react';
 import { alertCircleOutline } from 'ionicons/icons';
 
 import {

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../icon';
 import {
     cloudOfflineOutline,
     warningOutline,
@@ -120,7 +120,7 @@ export const OfflineBanner: React.FC = () => {
                         </>
                     ) : (
                         <>
-                            <IonIcon
+                            <AppIcon
                                 icon={cloudOfflineOutline}
                                 className="text-amber-500 text-lg shrink-0"
                             />
@@ -130,7 +130,7 @@ export const OfflineBanner: React.FC = () => {
                                     : m['connectivity.limitedTitle']()}
                             </span>
                             <span className="flex items-center gap-1 text-xs font-semibold text-amber-900 border-l border-amber-200 pl-2.5 ml-0.5">
-                                <IonIcon icon={refreshOutline} className="text-sm" />
+                                <AppIcon icon={refreshOutline} className="text-sm" />
                                 {m['connectivity.reconnect']()}
                             </span>
                         </>
@@ -147,7 +147,7 @@ export const OfflineBanner: React.FC = () => {
                 style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)' }}
             >
                 <div className="pointer-events-auto flex items-center gap-2.5 px-4 py-2.5 rounded-full shadow-lg bg-emerald-50 border border-emerald-200 text-emerald-800 font-poppins animate-fade-in-up">
-                    <IonIcon icon={wifiOutline} className="text-emerald-500 text-lg shrink-0" />
+                    <AppIcon icon={wifiOutline} className="text-emerald-500 text-lg shrink-0" />
                     <span className="text-xs font-medium">{m['connectivity.backOnline']()}</span>
                     <button
                         type="button"
@@ -155,7 +155,7 @@ export const OfflineBanner: React.FC = () => {
                         onClick={() => setShowReconnected(false)}
                         className="flex items-center justify-center min-w-11 min-h-11 -my-2 -me-2 rounded-full focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-current"
                     >
-                        <IonIcon icon={closeOutline} className="text-lg" aria-hidden="true" />
+                        <AppIcon icon={closeOutline} className="text-lg" aria-hidden="true" />
                     </button>
                 </div>
             </div>
@@ -173,7 +173,7 @@ export const OfflineBanner: React.FC = () => {
                     aria-live="polite"
                     className="pointer-events-auto flex items-center gap-2.5 px-4 py-2.5 rounded-full shadow-lg bg-amber-50 border border-amber-200 text-amber-800 font-poppins animate-fade-in-up"
                 >
-                    <IonIcon
+                    <AppIcon
                         icon={warningOutline}
                         className="text-amber-500 text-lg shrink-0"
                         aria-hidden="true"
@@ -185,7 +185,7 @@ export const OfflineBanner: React.FC = () => {
                         onClick={() => setShowSlowWarning(false)}
                         className="flex items-center justify-center min-w-11 min-h-11 -my-2 -me-2 rounded-full focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-current"
                     >
-                        <IonIcon icon={closeOutline} className="text-lg" aria-hidden="true" />
+                        <AppIcon icon={closeOutline} className="text-lg" aria-hidden="true" />
                     </button>
                 </div>
             </div>

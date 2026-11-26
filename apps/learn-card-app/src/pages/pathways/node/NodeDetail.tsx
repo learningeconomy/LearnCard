@@ -22,7 +22,7 @@
 import React, { useState } from 'react';
 import * as m from '../../../paraglide/messages.js';
 
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import { closeOutline, mapOutline, openOutline } from 'ionicons/icons';
 import { AnimatePresence, motion } from 'motion/react';
 import { useHistory, useLocation, useParams } from 'react-router-dom';
@@ -131,7 +131,7 @@ const LaunchRow: React.FC<{
                 <p className="text-sm font-medium text-grayscale-900 truncate">{copy.label}</p>
             </div>
 
-            <IonIcon
+            <AppIcon
                 icon={iconGlyph}
                 className="shrink-0 text-grayscale-500 text-lg
                            group-hover:text-grayscale-900 transition-colors"
@@ -275,7 +275,7 @@ const OverlayFrame: React.FC<{
                            transition-all duration-200 z-10"
                     style={{ top: 'max(0.75rem, calc(env(safe-area-inset-top) + 0.5rem))' }}
                 >
-                    <IonIcon icon={closeOutline} className="text-grayscale-700 text-xl" />
+                    <AppIcon icon={closeOutline} className="text-grayscale-700 text-xl" />
                 </button>
 
                 {children}
@@ -958,7 +958,7 @@ const NodeDetail: React.FC = () => {
                                                hover:bg-grayscale-10 transition-colors
                                                flex items-center gap-1.5"
                                 >
-                                    <IonIcon icon={mapOutline} className="text-base" aria-hidden />
+                                    <AppIcon icon={mapOutline} className="text-base" aria-hidden />
                                     <span>Map</span>
                                 </button>
                             </div>

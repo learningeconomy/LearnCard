@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../components/icon';
 import { cloudOfflineOutline } from 'ionicons/icons';
 
 interface AppEmbedOfflineStateProps {
@@ -29,7 +29,7 @@ export const AppEmbedOfflineState: React.FC<AppEmbedOfflineStateProps> = ({
             className={`flex flex-col items-center justify-center p-8 text-center h-full w-full font-poppins bg-white ${className}`}
         >
             <div className="mx-auto w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mb-6">
-                <IonIcon icon={cloudOfflineOutline} className="text-amber-500 text-3xl" />
+                <AppIcon icon={cloudOfflineOutline} className="text-amber-500 text-3xl" />
             </div>
 
             <div className="space-y-v3-1 mb-6 max-w-xs">

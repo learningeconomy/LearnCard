@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
-import { IonContent, IonIcon, IonPage, IonSpinner } from '@ionic/react';
+import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import {
     addOutline,
     alertCircleOutline,
@@ -79,7 +80,7 @@ const AppCard: React.FC<{ app: MyApp; onOpen: () => void }> = ({ app, onOpen }) 
                                 displayName={listing.display_name}
                                 mode={mode}
                             />
-                            <IonIcon
+                            <AppIcon
                                 icon={chevronForwardOutline}
                                 className="text-grayscale-400 group-hover:text-grayscale-700 transition-colors"
                             />
@@ -111,7 +112,7 @@ const AppCard: React.FC<{ app: MyApp; onOpen: () => void }> = ({ app, onOpen }) 
             {nudge && (
                 <p className="mt-3 text-xs font-medium text-grayscale-700 flex items-center gap-1">
                     {nudge}
-                    <IonIcon icon={arrowForwardOutline} />
+                    <AppIcon icon={arrowForwardOutline} />
                 </p>
             )}
         </div>
@@ -149,7 +150,7 @@ const MyAppsPage: React.FC = () => {
                                 onClick={openNewApp}
                                 className="shrink-0 flex items-center gap-1.5 py-2.5 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
                             >
-                                <IonIcon icon={addOutline} className="text-base" />
+                                <AppIcon icon={addOutline} className="text-base" />
                                 New App
                             </button>
                         )}
@@ -161,7 +162,7 @@ const MyAppsPage: React.FC = () => {
                         </div>
                     ) : isError ? (
                         <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
-                            <IonIcon
+                            <AppIcon
                                 icon={alertCircleOutline}
                                 className="text-red-400 text-lg mt-0.5 shrink-0"
                             />
@@ -179,7 +180,7 @@ const MyAppsPage: React.FC = () => {
                     ) : apps.length === 0 ? (
                         <div className="bg-white rounded-[20px] border border-grayscale-200 p-10 text-center animate-fade-in-up">
                             <div className="w-16 h-16 rounded-full bg-grayscale-100 flex items-center justify-center mx-auto mb-4">
-                                <IonIcon
+                                <AppIcon
                                     icon={rocketOutline}
                                     className="text-3xl text-grayscale-700"
                                 />

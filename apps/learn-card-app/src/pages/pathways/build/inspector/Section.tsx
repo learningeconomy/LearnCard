@@ -36,7 +36,7 @@
 
 import React, { useState } from 'react';
 
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../../components/icon';
 import { AnimatePresence, motion } from 'framer-motion';
 import { chevronDownOutline } from 'ionicons/icons';
 
@@ -148,7 +148,7 @@ const Section: React.FC<SectionProps> = ({
                     ${open ? 'border-b border-grayscale-200/60' : 'hover:bg-grayscale-10'}
                 `}
             >
-                <IonIcon
+                <AppIcon
                     icon={icon}
                     aria-hidden
                     className={`text-lg shrink-0 ${ICON_TONE[iconTone]}`}
@@ -181,7 +181,7 @@ const Section: React.FC<SectionProps> = ({
                     transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                     className="shrink-0 text-grayscale-400"
                 >
-                    <IonIcon icon={chevronDownOutline} className="text-sm" />
+                    <AppIcon icon={chevronDownOutline} className="text-sm" />
                 </motion.span>
             </button>
 

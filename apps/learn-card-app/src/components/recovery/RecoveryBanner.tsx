@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../icon';
 import {
     checkmarkCircleOutline,
     closeOutline,
@@ -367,7 +367,7 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({
                         aria-live="polite"
                         className="animate-fade-in-up w-full flex items-center gap-3 p-4 rounded-[20px] border border-emerald-100 bg-emerald-50 text-start"
                     >
-                        <IonIcon
+                        <AppIcon
                             icon={checkmarkCircleOutline}
                             className="text-emerald-600 text-xl shrink-0"
                         />
@@ -397,7 +397,7 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({
                                 <span
                                     className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-colors ${styles.iconContainer}`}
                                 >
-                                    <IonIcon
+                                    <AppIcon
                                         icon={styles.icon}
                                         className={`text-lg ${styles.iconColor}`}
                                     />
@@ -461,7 +461,7 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({
                                 aria-label={m['recovery.prompt.snoozeAria']()}
                                 className="self-center me-3 p-2 rounded-full text-grayscale-500 hover:text-grayscale-700 hover:bg-grayscale-100 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 shrink-0"
                             >
-                                <IonIcon icon={closeOutline} className="text-lg" />
+                                <AppIcon icon={closeOutline} className="text-lg" />
                             </button>
                         )}
                     </div>

@@ -9,7 +9,6 @@ import {
     type LearnCardAssistantAgentRunResponse,
 } from './learnCardAssistant.api';
 
-vi.mock('@ionic/react', () => ({ IonIcon: () => null }));
 vi.mock('./AssistantAvatar', () => ({ default: () => null }));
 vi.mock('./learnCardAssistant.api', () => ({ runLearnCardAssistantAgent: vi.fn() }));
 

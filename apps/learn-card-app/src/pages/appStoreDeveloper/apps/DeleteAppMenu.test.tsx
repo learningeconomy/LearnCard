@@ -10,7 +10,6 @@ const mocks = vi.hoisted(() => ({
     closeModal: vi.fn(),
 }));
 
-vi.mock('@ionic/react', () => ({ IonIcon: () => <span /> }));
 vi.mock('learn-card-base', () => ({
     useModal: () => ({ newModal: mocks.newModal, closeModal: mocks.closeModal }),
     ModalTypes: { Center: 'center', BottomSheet: 'bottom-sheet' },

@@ -1,6 +1,7 @@
 import React from 'react';
 
-import { IonFab, IonFabButton, IonIcon } from '@ionic/react';
+import { IonFab, IonFabButton } from '@ionic/react';
+import { AppIcon } from '../../icon';
 import { pencilOutline } from 'ionicons/icons';
 
 export const ResumeConfigPanelFAB: React.FC<{ openResumeConfigPanel: () => void }> = ({
@@ -9,7 +10,7 @@ export const ResumeConfigPanelFAB: React.FC<{ openResumeConfigPanel: () => void 
     return (
         <IonFab slot="fixed" vertical="bottom" horizontal="end">
             <IonFabButton onClick={openResumeConfigPanel} color="indigo-500">
-                <IonIcon icon={pencilOutline} />
+                <AppIcon icon={pencilOutline} />
             </IonFabButton>
         </IonFab>
     );

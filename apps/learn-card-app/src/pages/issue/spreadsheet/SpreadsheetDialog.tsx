@@ -5,7 +5,7 @@ import React, {
     useRef,
     useSyncExternalStore,
 } from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import { closeOutline } from 'ionicons/icons';
 import { ModalTypes, useModal } from 'learn-card-base';
 import * as m from '../../../paraglide/messages.js';
@@ -31,7 +31,7 @@ export const SpreadsheetDialog: React.FC<{
             <span
                 className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${iconTone === 'neutral' ? 'bg-grayscale-100 text-grayscale-700' : 'bg-emerald-50 text-emerald-700'}`}
             >
-                <IonIcon icon={icon} className="h-6 w-6" aria-hidden="true" />
+                <AppIcon icon={icon} className="h-6 w-6" aria-hidden="true" />
             </span>
             <div className="min-w-0 flex-1">
                 <h2 className="text-xl font-semibold">{title}</h2>
@@ -45,7 +45,7 @@ export const SpreadsheetDialog: React.FC<{
                 aria-label={m['common.close']()}
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[20px] text-grayscale-600 hover:bg-grayscale-100 focus-visible:ring-2 focus-visible:ring-emerald-500"
             >
-                <IonIcon icon={closeOutline} className="h-5 w-5" aria-hidden="true" />
+                <AppIcon icon={closeOutline} className="h-5 w-5" aria-hidden="true" />
             </button>
         </header>
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-7">

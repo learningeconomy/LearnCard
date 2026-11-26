@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import { addOutline, chevronDownOutline, closeOutline } from 'ionicons/icons';
 
 import { ImageUpload, ScreenshotUpload } from '../components/ImageUpload';
@@ -174,7 +174,7 @@ export const ListingDetailsFields: React.FC<ListingDetailsFieldsProps> = ({
                         onClick={() => onChange({ screenshots: [...details.screenshots, ''] })}
                         className={ADD_BUTTON_CLASS}
                     >
-                        <IonIcon icon={addOutline} />
+                        <AppIcon icon={addOutline} />
                         Add screenshot
                     </button>
                 )}
@@ -217,7 +217,7 @@ export const StandOutSection: React.FC<StandOutSectionProps> = ({
                         Optional details that help people find and trust your app.
                     </p>
                 </div>
-                <IonIcon
+                <AppIcon
                     icon={chevronDownOutline}
                     className={`text-grayscale-500 text-xl shrink-0 ml-4 transition-transform ${
                         open ? 'rotate-180' : ''
@@ -260,7 +260,7 @@ export const StandOutSection: React.FC<StandOutSectionProps> = ({
                                         }
                                         className="px-3 text-grayscale-400 hover:text-red-500 transition-colors"
                                     >
-                                        <IonIcon icon={closeOutline} className="text-xl" />
+                                        <AppIcon icon={closeOutline} className="text-xl" />
                                     </button>
                                 </div>
                             ))}
@@ -273,7 +273,7 @@ export const StandOutSection: React.FC<StandOutSectionProps> = ({
                                 }
                                 className={ADD_BUTTON_CLASS}
                             >
-                                <IonIcon icon={addOutline} />
+                                <AppIcon icon={addOutline} />
                                 Add highlight
                             </button>
                         )}

@@ -6,7 +6,8 @@ import LearnCardTextLogo from '../svgs/LearnCardTextLogo';
 import { ShareCredentialsIllustration } from './ShareCredentialsIllustration';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useLocation, useHistory } from 'react-router-dom';
-import { IonIcon, IonPage, IonHeader, IonToolbar, IonContent } from '@ionic/react';
+import { IonPage, IonHeader, IonToolbar, IonContent } from '@ionic/react';
+import { AppIcon } from '../icon';
 import {
     checkmarkOutline,
     closeOutline,
@@ -624,7 +625,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                         </a>
                         <div className="flex items-center gap-4">
                             <span className="hidden sm:flex items-center gap-2 text-right">
-                                <IonIcon icon={lockClosedOutline} className="shrink-0" />
+                                <AppIcon icon={lockClosedOutline} className="shrink-0" />
                                 {m['shareLinks.sharedCredentials']()}
                             </span>
                             <a
@@ -633,7 +634,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                 className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-[20px] border border-grayscale-300 px-4 py-3 text-sm font-medium text-grayscale-700 transition-colors hover:bg-grayscale-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
                             >
                                 <span>{m['shareLinks.close']()}</span>
-                                <IonIcon
+                                <AppIcon
                                     icon={closeOutline}
                                     aria-hidden="true"
                                     className="h-4 w-4 shrink-0"
@@ -652,7 +653,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                 className="bg-white rounded-[20px] p-8 md:p-12 text-center space-y-v3-4"
                             >
                                 <span className="inline-flex p-4 rounded-2xl bg-grayscale-100 text-grayscale-600">
-                                    <IonIcon
+                                    <AppIcon
                                         icon={
                                             state === 'loading'
                                                 ? documentTextOutline
@@ -766,7 +767,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                                     className="pt-4 border-t border-grayscale-100 space-y-v3-3"
                                                 >
                                                     <div className="flex items-start gap-3">
-                                                        <IonIcon
+                                                        <AppIcon
                                                             icon={bookmarkOutline}
                                                             className="mt-0.5 text-grayscale-600 shrink-0"
                                                         />
@@ -887,7 +888,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                                             }
                                                             onClick={() => void copyLink()}
                                                         >
-                                                            <IonIcon
+                                                            <AppIcon
                                                                 icon={
                                                                     copyState === 'copied'
                                                                         ? checkmarkOutline
@@ -906,7 +907,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                                             disabled={downloading}
                                                             onClick={() => void download()}
                                                         >
-                                                            <IonIcon icon={downloadOutline} />
+                                                            <AppIcon icon={downloadOutline} />
                                                             {downloading
                                                                 ? m['shareLinks.downloading']()
                                                                 : m['shareLinks.download']()}
@@ -955,7 +956,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                                                 )
                                                             }
                                                         >
-                                                            <IonIcon icon={qrCodeOutline} />
+                                                            <AppIcon icon={qrCodeOutline} />
                                                             {m['shareLinks.showQr']()}
                                                         </button>
                                                         <button
@@ -964,7 +965,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                                             disabled={pdfDownloading}
                                                             onClick={() => void downloadPdf()}
                                                         >
-                                                            <IonIcon icon={downloadOutline} />
+                                                            <AppIcon icon={downloadOutline} />
                                                             {pdfDownloading
                                                                 ? m['shareLinks.preparingPdf']()
                                                                 : protectedResume

@@ -1,4 +1,4 @@
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../icon';
 import { star, starOutline } from 'ionicons/icons';
 
 interface StaticStarRatingProps {
@@ -24,7 +24,7 @@ const StaticStarRating: React.FC<StaticStarRatingProps> = ({
     return (
         <div className="flex items-center">
             {Array.from({ length: starCount }, (_, index) => (
-                <IonIcon
+                <AppIcon
                     key={index}
                     icon={index < roundedRating ? star : starOutline}
                     color={color}

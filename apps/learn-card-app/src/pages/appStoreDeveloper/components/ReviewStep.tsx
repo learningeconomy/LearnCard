@@ -6,7 +6,7 @@ import { CheckCircle2, FileText, Settings, Link2, ExternalLink, Smartphone } fro
 import type { AppStoreListingCreate } from '../types';
 import { LAUNCH_TYPE_INFO, CATEGORY_OPTIONS } from '../types';
 import type { CapturedAppManifest } from '@learncard/partner-connect-core';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import { shieldCheckmarkOutline } from 'ionicons/icons';
 
 interface ReviewStepProps {
@@ -224,7 +224,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data, capturedManifest }
                                                             key={`read-pf-${f}`}
                                                             className="px-1.5 py-0.5 bg-indigo-50 text-indigo-700 rounded-sm text-xs flex items-center gap-1"
                                                         >
-                                                            <IonIcon
+                                                            <AppIcon
                                                                 icon={shieldCheckmarkOutline}
                                                                 className="w-3 h-3"
                                                             />{' '}
@@ -236,7 +236,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data, capturedManifest }
                                                             key={`read-cat-${cat}`}
                                                             className="px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded-sm text-xs flex items-center gap-1"
                                                         >
-                                                            <IonIcon
+                                                            <AppIcon
                                                                 icon={shieldCheckmarkOutline}
                                                                 className="w-3 h-3"
                                                             />{' '}

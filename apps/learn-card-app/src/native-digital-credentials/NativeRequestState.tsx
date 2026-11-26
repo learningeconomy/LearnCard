@@ -1,5 +1,5 @@
 import React from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../components/icon';
 import { documentTextOutline, alertCircleOutline } from 'ionicons/icons';
 import * as m from '../paraglide/messages.js';
 
@@ -26,7 +26,7 @@ export const NativeRequestState: React.FC<NativeRequestStateProps> = ({
             <div
                 className={`mb-5 flex h-14 w-14 items-center justify-center rounded-2xl ${unavailable ? 'bg-grayscale-100 text-grayscale-600' : 'bg-emerald-50 text-emerald-700'}`}
             >
-                <IonIcon icon={documentTextOutline} aria-hidden="true" className="text-2xl" />
+                <AppIcon icon={documentTextOutline} aria-hidden="true" className="text-2xl" />
             </div>
             <h1 className="mb-2 text-xl font-semibold text-grayscale-900">
                 {unavailable
@@ -38,7 +38,7 @@ export const NativeRequestState: React.FC<NativeRequestStateProps> = ({
                     role="alert"
                     className="mt-3 flex items-start gap-2.5 rounded-2xl border border-red-100 bg-red-50 p-3 text-start"
                 >
-                    <IonIcon
+                    <AppIcon
                         icon={alertCircleOutline}
                         aria-hidden="true"
                         className="mt-0.5 shrink-0 text-lg text-red-400"

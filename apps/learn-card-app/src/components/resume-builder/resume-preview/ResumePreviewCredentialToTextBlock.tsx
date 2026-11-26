@@ -3,13 +3,8 @@ import { add } from 'ionicons/icons';
 import moment from 'moment';
 import type { UnsignedVC, VC } from '@learncard/types';
 
-import {
-    IonDatetime,
-    IonIcon,
-    IonReorder,
-    IonReorderGroup,
-    ReorderEndCustomEvent,
-} from '@ionic/react';
+import { IonDatetime, IonReorder, IonReorderGroup, ReorderEndCustomEvent } from '@ionic/react';
+import { AppIcon } from '../../icon';
 import ResumeBuilderToggle from '../ResumeBuilderToggle';
 import { TrustedIcon } from 'learn-card-base/svgs/TrustedIcon';
 import VerticalArrowsIcon from '../../../components/svgs/VerticalArrowsIcon';
@@ -362,7 +357,7 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
                                                     className="shrink-0 w-[32px] h-[32px] rounded-xl bg-grayscale-100 flex items-center justify-center text-grayscale-700"
                                                     title={metadataPlaceholder}
                                                 >
-                                                    <IonIcon icon={add} className="w-6 h-6" />
+                                                    <AppIcon icon={add} className="w-6 h-6" />
                                                 </button>
                                             ) : (
                                                 field.type === 'metadata' &&

@@ -1,5 +1,5 @@
 import React from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../icon';
 import { shieldCheckmarkOutline, calendarOutline, ribbonOutline } from 'ionicons/icons';
 
 const PreviewVerificationBox: React.FC = () => {
@@ -20,7 +20,7 @@ const PreviewVerificationBox: React.FC = () => {
 
             <div className="w-full flex flex-col gap-2.5">
                 <div className="flex items-start gap-2.5 p-3 bg-emerald-50 border border-emerald-100 rounded-2xl">
-                    <IonIcon
+                    <AppIcon
                         icon={shieldCheckmarkOutline}
                         className="text-emerald-500 text-lg mt-0.5 shrink-0"
                     />
@@ -29,7 +29,7 @@ const PreviewVerificationBox: React.FC = () => {
                     </span>
                 </div>
                 <div className="flex items-start gap-2.5 p-3 bg-grayscale-10 border border-grayscale-200 rounded-2xl">
-                    <IonIcon
+                    <AppIcon
                         icon={calendarOutline}
                         className="text-grayscale-500 text-lg mt-0.5 shrink-0"
                     />
@@ -38,7 +38,7 @@ const PreviewVerificationBox: React.FC = () => {
                     </span>
                 </div>
                 <div className="flex items-start gap-2.5 p-3 bg-grayscale-10 border border-grayscale-200 rounded-2xl">
-                    <IonIcon
+                    <AppIcon
                         icon={ribbonOutline}
                         className="text-grayscale-500 text-lg mt-0.5 shrink-0"
                     />

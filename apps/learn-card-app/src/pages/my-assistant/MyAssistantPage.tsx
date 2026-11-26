@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { IonContent, IonIcon, IonPage, IonPopover } from '@ionic/react';
+import { IonContent, IonPage, IonPopover } from '@ionic/react';
+import { AppIcon } from '../../components/icon';
 import { alertCircleOutline, chevronDownOutline, filterOutline } from 'ionicons/icons';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -332,7 +333,7 @@ const MyAssistantPageContent: React.FC = () => {
 
                 {actionError && (
                     <div className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
-                        <IonIcon
+                        <AppIcon
                             icon={alertCircleOutline}
                             className="text-red-400 text-lg mt-0.5 shrink-0"
                         />
@@ -383,9 +384,9 @@ const MyAssistantPageContent: React.FC = () => {
                                 }}
                                 className="shrink-0 inline-flex items-center gap-2 py-3 px-4 rounded-[20px] border border-grayscale-300 bg-white text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
                             >
-                                <IonIcon icon={filterOutline} className="text-lg" />
+                                <AppIcon icon={filterOutline} className="text-lg" />
                                 Filter
-                                <IonIcon icon={chevronDownOutline} className="text-base" />
+                                <AppIcon icon={chevronDownOutline} className="text-base" />
                             </button>
 
                             <IonPopover
@@ -478,7 +479,7 @@ const MyAssistantPageContent: React.FC = () => {
                     ) : cardsError ? (
                         <div className="space-y-v3-3">
                             <div className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
-                                <IonIcon
+                                <AppIcon
                                     icon={alertCircleOutline}
                                     className="text-red-400 text-lg mt-0.5 shrink-0"
                                 />

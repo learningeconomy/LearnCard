@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { IonPage, IonContent, IonHeader, IonToolbar, IonTitle, IonIcon } from '@ionic/react';
+import { IonPage, IonContent, IonHeader, IonToolbar, IonTitle } from '@ionic/react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';

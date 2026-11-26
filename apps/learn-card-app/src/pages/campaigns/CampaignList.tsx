@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../components/icon';
 import { addOutline, refreshOutline, chevronForwardOutline } from 'ionicons/icons';
 import { Link } from 'react-router-dom';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
@@ -38,7 +38,7 @@ const CampaignRow: React.FC<{ api: CampaignApi; campaign: Campaign }> = ({ api, 
                     to={`/admin/campaigns/${encodeURIComponent(campaign.id)}`}
                 >
                     {campaign.name}
-                    <IonIcon
+                    <AppIcon
                         icon={chevronForwardOutline}
                         className="shrink-0 text-grayscale-400 transition-transform group-hover:translate-x-1"
                         aria-hidden="true"
@@ -123,7 +123,7 @@ export const CampaignList: React.FC<{ api: CampaignApi }> = ({ api }) => {
                     </div>
                 </div>
                 <Link className={primaryClass} to="/admin/campaigns?create=1">
-                    <IonIcon icon={addOutline} className="text-lg" aria-hidden="true" />
+                    <AppIcon icon={addOutline} className="text-lg" aria-hidden="true" />
                     Create campaign
                 </Link>
             </header>
@@ -176,7 +176,7 @@ export const CampaignList: React.FC<{ api: CampaignApi }> = ({ api }) => {
                             <Busy>Refreshing campaigns...</Busy>
                         ) : (
                             <>
-                                <IonIcon icon={refreshOutline} aria-hidden="true" />
+                                <AppIcon icon={refreshOutline} aria-hidden="true" />
                                 Refresh campaigns
                             </>
                         )}

@@ -20,7 +20,6 @@ vi.mock('learn-card-base', async () => ({
     ToastTypeEnum: { Error: 'error' },
 }));
 vi.mock('./types', () => ({ notificationCardStyles: { shell: 'notification-shell' } }));
-vi.mock('@ionic/react', () => ({ IonIcon: () => null }));
 vi.mock('../../../paraglide/runtime.js', () => ({ getLocale: () => 'en' }));
 vi.mock('../../../paraglide/messages.js', () => ({
     'notifications.viewCampaign': () => 'View',

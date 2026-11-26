@@ -14,7 +14,7 @@
 
 import React, { useState } from 'react';
 
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../../components/icon';
 import {
     gitBranchOutline,
     searchOutline,
@@ -97,7 +97,7 @@ const CompositeEditor: React.FC<PolicyEditorProps<'composite'>> = ({
                         onClick={() => setPickerOpen(true)}
                         className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-dashed border-grayscale-300 text-sm font-medium text-grayscale-700 hover:bg-grayscale-10 transition-colors"
                     >
-                        <IonIcon
+                        <AppIcon
                             icon={searchOutline}
                             aria-hidden
                             className="text-base"
@@ -202,7 +202,7 @@ const SelectedCard: React.FC<{
                 ${invalid ? 'border-red-200 bg-red-50' : 'border-grayscale-300 bg-white'}
             `}
         >
-            <IonIcon
+            <AppIcon
                 icon={gitBranchOutline}
                 aria-hidden
                 className={`
@@ -234,7 +234,7 @@ const SelectedCard: React.FC<{
                 onClick={onChange}
                 className="shrink-0 inline-flex items-center gap-1 py-1.5 px-3 rounded-full border border-grayscale-300 text-xs font-medium text-grayscale-700 hover:bg-grayscale-10 transition-colors"
             >
-                <IonIcon
+                <AppIcon
                     icon={swapHorizontalOutline}
                     aria-hidden
                     className="text-xs"

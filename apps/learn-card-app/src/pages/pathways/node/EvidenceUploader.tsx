@@ -19,7 +19,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import { addOutline, attachOutline } from 'ionicons/icons';
 import { AnimatePresence, motion } from 'motion/react';
 import { v4 as uuid } from 'uuid';
@@ -179,7 +179,7 @@ const EvidenceUploader: React.FC<EvidenceUploaderProps> = ({
                                            disabled:opacity-40 disabled:cursor-not-allowed
                                            flex items-center justify-center gap-2"
                             >
-                                <IonIcon icon={attachOutline} className="text-base" aria-hidden />
+                                <AppIcon icon={attachOutline} className="text-base" aria-hidden />
                                 <span>{copy.cta}</span>
                             </motion.button>
 
@@ -214,7 +214,7 @@ const EvidenceUploader: React.FC<EvidenceUploaderProps> = ({
                                    transition-colors flex items-center justify-center gap-2
                                    disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                        <IonIcon
+                        <AppIcon
                             icon={addOutline}
                             className="text-base text-emerald-600"
                             aria-hidden

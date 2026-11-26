@@ -9,7 +9,8 @@ import { TransP } from '../../../i18n/TransP';
 import RequestInsightsSkeletonLoader from './RequestInsightsSkeletonLoader';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 import ConnectIcon from 'learn-card-base/svgs/ConnectIcon';
-import { IonFooter, IonIcon } from '@ionic/react';
+import { IonFooter } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import X from 'learn-card-base/svgs/X';
 
 import {
@@ -105,7 +106,7 @@ export const RequestInsightsFromUserModal: React.FC<{
                             />
                         ) : (
                             <div className="bg-grayscale-200 text-grayscale-700 h-[64px] w-[64px] min-h-[64px] min-w-[64px] rounded-full flex items-center justify-center text-sm font-semibold">
-                                <IonIcon icon={person} className="h-4 w-4" />
+                                <AppIcon icon={person} className="h-4 w-4" />
                             </div>
                         )}
 

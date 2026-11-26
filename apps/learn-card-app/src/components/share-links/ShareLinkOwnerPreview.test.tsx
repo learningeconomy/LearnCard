@@ -18,7 +18,6 @@ vi.mock('../../helpers/resume-publishing/protectedPdf', () => ({
     hasProtectedResumePdf: (vc: { protected?: boolean }) => vc?.protected === true,
     getProtectedResumePdf: () => ({ byteLength: 3315 }),
 }));
-vi.mock('@ionic/react', () => ({ IonIcon: () => null }));
 vi.mock('learn-card-base', () => ({
     useWallet: () => ({ initWallet: mocks.initWallet }),
 }));

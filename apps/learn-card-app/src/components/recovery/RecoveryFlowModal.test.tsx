@@ -26,9 +26,7 @@ vi.mock('@learncard/sss-key-manager', async importOriginal => ({
     isWebAuthnSupported: () => true,
 }));
 
-vi.mock('@ionic/react', () => ({
-    IonIcon: ({ className }: { className?: string }) => <span className={className} />,
-}));
+vi.mock('@ionic/react', () => ({}));
 
 vi.mock('learn-card-base', async () => {
     const { Overlay } = await import('learn-card-base/auth-coordinator/components/Overlay');

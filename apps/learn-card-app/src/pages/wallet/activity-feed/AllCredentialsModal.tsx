@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef } from 'react';
-import { IonIcon, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import { closeOutline } from 'ionicons/icons';
 import { useCredentialCollection } from 'learn-card-base';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
@@ -48,7 +49,7 @@ export const AllCredentialsModal: React.FC<{ onClose: () => void }> = ({ onClose
                     aria-label={m['common.close']()}
                     className="w-8 h-8 flex items-center justify-center bg-grayscale-100 hover:bg-grayscale-200 rounded-full text-grayscale-700 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
-                    <IonIcon icon={closeOutline} className="text-xl" />
+                    <AppIcon icon={closeOutline} className="text-xl" />
                 </button>
             </div>
 

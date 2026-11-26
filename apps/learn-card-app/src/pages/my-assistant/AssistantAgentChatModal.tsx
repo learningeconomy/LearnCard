@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../components/icon';
 import { closeOutline, sendOutline } from 'ionicons/icons';
 
 import AssistantAvatar from './AssistantAvatar';
@@ -121,7 +121,7 @@ export const AssistantAgentChatModal: React.FC<{
                         className="p-2 rounded-full text-grayscale-500 hover:text-grayscale-900 hover:bg-grayscale-10 transition-colors"
                         aria-label="Close assistant chat"
                     >
-                        <IonIcon icon={closeOutline} className="text-xl" />
+                        <AppIcon icon={closeOutline} className="text-xl" />
                     </button>
                 </div>
 
@@ -203,7 +203,7 @@ export const AssistantAgentChatModal: React.FC<{
                             className="py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                             aria-label="Send message"
                         >
-                            <IonIcon icon={sendOutline} className="text-lg" />
+                            <AppIcon icon={sendOutline} className="text-lg" />
                         </button>
                     </div>
                 </div>

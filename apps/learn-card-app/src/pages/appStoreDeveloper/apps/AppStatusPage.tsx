@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Redirect, useHistory, useLocation, useParams } from 'react-router-dom';
-import { IonContent, IonIcon, IonPage, IonSpinner } from '@ionic/react';
+import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import { alertCircleOutline, arrowBackOutline } from 'ionicons/icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -127,7 +128,7 @@ const AppStatusPage: React.FC = () => {
                                 onClick={() => history.push('/app-store/developer')}
                                 className="flex items-center gap-1.5 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
                             >
-                                <IonIcon icon={arrowBackOutline} />
+                                <AppIcon icon={arrowBackOutline} />
                                 Your apps
                             </button>
                             <DeleteAppMenu
@@ -140,7 +141,7 @@ const AppStatusPage: React.FC = () => {
                         </div>
                         {error && (
                             <div className="mt-4 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
-                                <IonIcon
+                                <AppIcon
                                     icon={alertCircleOutline}
                                     className="text-red-400 text-lg mt-0.5 shrink-0"
                                 />

@@ -25,7 +25,6 @@ vi.mock('../../../theme/hooks/useTheme', () => ({
 vi.mock('@ionic/react', () => ({
     IonPage: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     IonContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    IonIcon: () => <span />,
 }));
 
 const manifest: CapturedAppManifest = {

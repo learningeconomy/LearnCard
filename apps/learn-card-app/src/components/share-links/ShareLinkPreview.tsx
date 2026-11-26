@@ -3,7 +3,7 @@ import { ShareCredentialThumbnail } from './ShareCredentialThumbnail';
 import { ShareCredentialMetadata } from './ShareCredentialMetadata';
 import { CredentialPreviewButton } from './CredentialPreviewButton';
 import React from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../icon';
 import { alertCircleOutline, checkmarkCircleOutline } from 'ionicons/icons';
 import type { SharePayload, VC } from '@learncard/types';
 import { getShareCredentialCategories } from 'learn-card-base/helpers/share-links';
@@ -72,7 +72,7 @@ export const ProofBadge = ({ state }: { state: ProofState }) => (
                 className="h-3 w-3 rounded-full border-2 border-current border-t-transparent animate-spin"
             />
         ) : (
-            <IonIcon icon={state === 'verified' ? checkmarkCircleOutline : alertCircleOutline} />
+            <AppIcon icon={state === 'verified' ? checkmarkCircleOutline : alertCircleOutline} />
         )}
         {proofLabel(state)}
     </span>

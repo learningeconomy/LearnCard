@@ -1,6 +1,7 @@
 import React from 'react';
 
-import { IonIcon, IonFab, IonFabButton } from '@ionic/react';
+import { IonFab, IonFabButton } from '@ionic/react';
+import { AppIcon } from '../../icon';
 import { eyeOutline, eyeOffOutline } from 'ionicons/icons';
 
 export const ResumePreviewFAB: React.FC<{
@@ -10,7 +11,7 @@ export const ResumePreviewFAB: React.FC<{
     return (
         <IonFab slot="fixed" vertical="bottom" horizontal="end" style={{ marginRight: '72px' }}>
             <IonFabButton onClick={() => setIsPreviewing(!isPreviewing)} color="light">
-                <IonIcon icon={isPreviewing ? eyeOffOutline : eyeOutline} />
+                <AppIcon icon={isPreviewing ? eyeOffOutline : eyeOutline} />
             </IonFabButton>
         </IonFab>
     );

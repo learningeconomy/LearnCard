@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../components/icon';
 import {
     keyOutline,
     clipboardOutline,
@@ -233,7 +233,7 @@ const DeveloperSignInPage: React.FC = () => {
             <div className="w-full max-w-[480px] bg-white rounded-[20px] shadow-2xl font-poppins p-8 animate-fade-in-up">
                 <div className="flex flex-col items-center text-center mb-6">
                     <div className="w-12 h-12 bg-grayscale-100 rounded-full flex items-center justify-center mb-4">
-                        <IonIcon
+                        <AppIcon
                             icon={keyOutline}
                             className="text-grayscale-900 text-2xl"
                             aria-hidden="true"
@@ -250,7 +250,7 @@ const DeveloperSignInPage: React.FC = () => {
                 {isLoggedIn && (
                     <div className="mb-6 p-4 bg-amber-50 border border-amber-100 rounded-2xl">
                         <div className="flex items-start gap-2.5">
-                            <IonIcon
+                            <AppIcon
                                 icon={personCircleOutline}
                                 className="text-amber-500 text-lg mt-0.5 shrink-0"
                                 aria-hidden="true"
@@ -315,7 +315,7 @@ const DeveloperSignInPage: React.FC = () => {
                         </>
                     ) : (
                         <>
-                            <IonIcon
+                            <AppIcon
                                 icon={clipboardOutline}
                                 className="text-lg"
                                 aria-hidden="true"
@@ -363,7 +363,7 @@ const DeveloperSignInPage: React.FC = () => {
                             }
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-grayscale-600 hover:text-grayscale-900 p-1"
                         >
-                            <IonIcon
+                            <AppIcon
                                 icon={showPassword ? eyeOffOutline : eyeOutline}
                                 className="text-xl"
                                 aria-hidden="true"
@@ -382,7 +382,7 @@ const DeveloperSignInPage: React.FC = () => {
 
                 {error && (
                     <div className="mb-6 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
-                        <IonIcon
+                        <AppIcon
                             icon={alertCircleOutline}
                             className="text-red-400 text-lg mt-0.5 shrink-0"
                             aria-hidden="true"

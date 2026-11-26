@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
-import { IonContent, IonIcon, IonPage, IonSpinner } from '@ionic/react';
+import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import { alertCircleOutline, arrowBackOutline } from 'ionicons/icons';
 import { useQuery } from '@tanstack/react-query';
 
@@ -323,13 +324,13 @@ export const EditListingPage: React.FC = () => {
                                 }
                                 className="mt-2 mb-6 flex items-center gap-1.5 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
                             >
-                                <IonIcon icon={arrowBackOutline} />
+                                <AppIcon icon={arrowBackOutline} />
                                 {isDraft ? 'Your apps' : "Back to your app's status"}
                             </button>
 
                             {formError && (
                                 <div className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
-                                    <IonIcon
+                                    <AppIcon
                                         icon={alertCircleOutline}
                                         className="text-red-400 text-lg mt-0.5 shrink-0"
                                     />

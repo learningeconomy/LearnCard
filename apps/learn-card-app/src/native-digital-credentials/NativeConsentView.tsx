@@ -1,5 +1,5 @@
 import React from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../components/icon';
 import {
     alertCircleOutline,
     checkmark,
@@ -77,7 +77,7 @@ export const NativeConsentView: React.FC<NativeConsentViewProps> = ({
                     <section className="rounded-[20px] border border-grayscale-200 bg-white p-4">
                         <div className="flex items-center gap-3">
                             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-grayscale-100">
-                                <IonIcon
+                                <AppIcon
                                     icon={phonePortraitOutline}
                                     aria-hidden="true"
                                     className="text-xl text-grayscale-700"
@@ -118,7 +118,7 @@ export const NativeConsentView: React.FC<NativeConsentViewProps> = ({
                         >
                             <div className="flex items-center gap-3 border-b border-grayscale-100 p-4">
                                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50">
-                                    <IonIcon
+                                    <AppIcon
                                         icon={documentTextOutline}
                                         aria-hidden="true"
                                         className="text-xl text-emerald-700"
@@ -163,7 +163,7 @@ export const NativeConsentView: React.FC<NativeConsentViewProps> = ({
                                                         aria-hidden="true"
                                                         className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-emerald-500 peer-focus-visible:ring-offset-2 ${field.checked ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-grayscale-300 bg-white text-transparent'}`}
                                                     >
-                                                        <IonIcon
+                                                        <AppIcon
                                                             icon={checkmark}
                                                             className="text-sm"
                                                         />
@@ -247,7 +247,7 @@ export const NativeConsentView: React.FC<NativeConsentViewProps> = ({
                             role="status"
                             className="flex items-start gap-2 rounded-2xl border border-amber-100 bg-amber-50 p-3 text-xs leading-relaxed text-amber-800"
                         >
-                            <IonIcon
+                            <AppIcon
                                 icon={alertCircleOutline}
                                 aria-hidden="true"
                                 className="mt-0.5 shrink-0 text-base"

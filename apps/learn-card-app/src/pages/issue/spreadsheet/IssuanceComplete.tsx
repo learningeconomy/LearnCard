@@ -1,5 +1,5 @@
 import React from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import { checkmarkCircleOutline } from 'ionicons/icons';
 import * as m from '../../../paraglide/messages.js';
 import { Confetti } from '../components/Confetti';
@@ -15,7 +15,7 @@ export const IssuanceComplete: React.FC<{
         <Confetti />
         <div className="relative space-y-5">
             <span className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
-                <IonIcon icon={checkmarkCircleOutline} className="h-12 w-12" aria-hidden="true" />
+                <AppIcon icon={checkmarkCircleOutline} className="h-12 w-12" aria-hidden="true" />
             </span>
             <div>
                 <h2 className="text-xl font-semibold">

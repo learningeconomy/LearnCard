@@ -33,7 +33,7 @@
 
 import React, { useEffect } from 'react';
 
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import { closeOutline, swapHorizontalOutline } from 'ionicons/icons';
 
 import { pathwayStore } from '../../../stores/pathways';
@@ -85,17 +85,14 @@ const RouteSwapBanner: React.FC = () => {
                 the banner width — Undo and dismiss never get pushed
                 off the edge.
             */}
-            <div
-                className="flex items-center gap-2 rounded-2xl bg-grayscale-900 text-white shadow-2xl pl-3.5 pr-1.5 py-1.5 font-poppins animate-fade-in-up"
-            >
-                <IonIcon
+            <div className="flex items-center gap-2 rounded-2xl bg-grayscale-900 text-white shadow-2xl pl-3.5 pr-1.5 py-1.5 font-poppins animate-fade-in-up">
+                <AppIcon
                     icon={swapHorizontalOutline}
                     className="text-base text-emerald-300 shrink-0"
                 />
 
                 <span className="text-sm font-medium leading-snug min-w-0 flex-1 truncate">
-                    Switched to{' '}
-                    <span className="font-semibold">{swap.scenarioTitle}</span>
+                    Switched to <span className="font-semibold">{swap.scenarioTitle}</span>
                 </span>
 
                 <button
@@ -112,7 +109,7 @@ const RouteSwapBanner: React.FC = () => {
                     aria-label="Dismiss"
                     className="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center text-grayscale-300 hover:text-white transition-colors shrink-0"
                 >
-                    <IonIcon icon={closeOutline} className="text-base" />
+                    <AppIcon icon={closeOutline} className="text-base" />
                 </button>
             </div>
         </div>

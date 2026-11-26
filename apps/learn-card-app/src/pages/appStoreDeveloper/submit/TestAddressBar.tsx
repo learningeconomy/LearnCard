@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import { flaskOutline } from 'ionicons/icons';
 
 import { displayHost, isValidTestAddress, type TestAddressState } from './testAddress';
@@ -77,7 +77,7 @@ export const TestAddressBar: React.FC<TestAddressBarProps> = ({
         <div className={`flex items-center justify-between gap-3 text-xs ${className}`}>
             {usingTest ? (
                 <span className="flex items-center gap-1.5 min-w-0 px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 font-medium">
-                    <IonIcon icon={flaskOutline} className="shrink-0" />
+                    <AppIcon icon={flaskOutline} className="shrink-0" />
                     <span className="truncate">Test address · {displayHost(test.address)}</span>
                 </span>
             ) : defaultAddress ? (

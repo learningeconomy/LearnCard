@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../icon';
 import { alertCircleOutline } from 'ionicons/icons';
 import { useStore } from '@nanostores/react';
 
@@ -44,7 +44,7 @@ export const AiSessionErrorHandler: React.FC = () => {
                 role="alert"
                 className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5 shadow-soft-bottom"
             >
-                <IonIcon
+                <AppIcon
                     icon={alertCircleOutline}
                     className="text-red-400 text-lg mt-0.5 shrink-0"
                 />

@@ -17,7 +17,7 @@
 
 import React from 'react';
 
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import { closeOutline } from 'ionicons/icons';
 import { motion } from 'motion/react';
 
@@ -88,7 +88,7 @@ const CompletionMoment: React.FC<CompletionMomentProps> = ({ title, onDismiss })
                            text-emerald-700/80 hover:text-emerald-900 hover:bg-emerald-100/60
                            transition-colors"
             >
-                <IonIcon icon={closeOutline} className="text-base" />
+                <AppIcon icon={closeOutline} className="text-base" />
             </button>
         )}
     </motion.section>

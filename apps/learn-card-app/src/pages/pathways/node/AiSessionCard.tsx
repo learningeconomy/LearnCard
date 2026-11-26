@@ -27,7 +27,7 @@
 
 import React from 'react';
 import { motion } from 'motion/react';
-import { IonIcon } from '@ionic/react';
+import { AppIcon } from '../../../components/icon';
 import { playCircleOutline, refreshOutline, sparklesOutline } from 'ionicons/icons';
 
 import type { ResolvedAiSession } from '../core/action';
@@ -170,7 +170,7 @@ const AiSessionCard: React.FC<AiSessionCardProps> = ({ resolved, snapshot }) => 
                                 }}
                             />
                         ) : (
-                            <IonIcon
+                            <AppIcon
                                 icon={sparklesOutline}
                                 className="text-[28px] text-emerald-600"
                                 aria-hidden
@@ -266,7 +266,7 @@ const AiSessionCard: React.FC<AiSessionCardProps> = ({ resolved, snapshot }) => 
                                 : `Start AI tutor session: ${topicTitle}`
                         }
                     >
-                        <IonIcon
+                        <AppIcon
                             icon={hasPriorSessions ? refreshOutline : playCircleOutline}
                             className="text-base"
                             aria-hidden
