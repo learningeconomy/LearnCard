@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import moment from 'moment';
 
-import { IonRow, IonCol, IonTextarea, IonDatetime, useIonModal } from '@ionic/react';
+import { IonRow, IonCol, IonDatetime, useIonModal } from '@ionic/react';
+import { AppTextarea } from '../../../../controls/AppTextarea';
 import { AppToggle } from '../../../../controls/AppToggle';
 import Calendar from '../../../../svgs/Calendar';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
@@ -114,10 +115,10 @@ const BoostCMSAdvancedSettingsForm: React.FC<{
                 <IonCol size="12" className="w-full bg-white">
                     {(isID || isMembership) && (
                         <div className="flex flex-col items-start justify-center w-full mt-2 bg-grayscale-100 px-[16px] py-[8px] rounded-[15px]">
-                            <IonTextarea
+                            <AppTextarea
                                 autocapitalize="on"
                                 value={basicInfo?.issuerName}
-                                onIonInput={e => handleStateChange('issuerName', e.detail.value)}
+                                onValueInput={value => handleStateChange('issuerName', value)}
                                 placeholder={m['boost.cms.advanced.issuerNamePlaceholder']()}
                                 className="bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium text-base"
                                 rows={2}
@@ -126,10 +127,10 @@ const BoostCMSAdvancedSettingsForm: React.FC<{
                         </div>
                     )}
                     <div className="flex flex-col items-start justify-center w-full mt-2 bg-grayscale-100 px-[16px] py-[8px] rounded-[15px]">
-                        <IonTextarea
+                        <AppTextarea
                             autocapitalize="on"
                             value={basicInfo?.description}
-                            onIonInput={e => handleStateChange('description', e.detail.value)}
+                            onValueInput={value => handleStateChange('description', value)}
                             placeholder={m['boost.cms.advanced.descriptionPlaceholder']({ title })}
                             className="bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium text-base"
                             rows={3}
@@ -137,10 +138,10 @@ const BoostCMSAdvancedSettingsForm: React.FC<{
                         />
                     </div>
                     <div className="flex flex-col items-start justify-center w-full mt-2 bg-grayscale-100 px-[16px] py-[8px] rounded-[15px]">
-                        <IonTextarea
+                        <AppTextarea
                             autocapitalize="on"
                             value={basicInfo?.narrative}
-                            onIonInput={e => handleStateChange('narrative', e.detail.value)}
+                            onValueInput={value => handleStateChange('narrative', value)}
                             placeholder={m['boost.cms.advanced.narrativePlaceholder']({ title })}
                             className="bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium text-base"
                             rows={10}
