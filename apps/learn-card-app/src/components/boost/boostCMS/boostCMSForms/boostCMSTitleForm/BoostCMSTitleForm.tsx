@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-import { IonTextarea } from '@ionic/react';
+import { AppTextarea } from '../../../../controls/AppTextarea';
 
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 
@@ -59,20 +59,21 @@ const BoostCMSTitleForm: React.FC<{
 
     return (
         <div className="max-w-[600px] flex flex-col items-start justify-center w-full mt-6">
-            <IonTextarea
+            <AppTextarea
                 autocapitalize="on"
                 value={basicInfo?.name}
-                onIonInput={e => handleStateChange('name', e?.detail?.value)}
+                onValueInput={value => handleStateChange('name', value)}
                 placeholder={placeHolder}
                 className={`relative bg-grayscale-900 text-grayscale-400 rounded-[15px] px-[16px] py-[4px] font-medium tracking-widest text-base `}
                 disabled={disabled}
                 rows={3}
                 maxlength={100}
-            >
-                <p className="absolute right-[10px] bottom-[10px] text-xs" slot="end">
-                    {charCount}/{maxCount}
-                </p>
-            </IonTextarea>
+                end={
+                    <p className="absolute right-[10px] bottom-[10px] text-xs">
+                        {charCount}/{maxCount}
+                    </p>
+                }
+            />
         </div>
     );
 };

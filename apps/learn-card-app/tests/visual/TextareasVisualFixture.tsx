@@ -1,5 +1,7 @@
 import React, { useRef, useState } from 'react';
-import { IonApp, IonTextarea } from '@ionic/react';
+import { IonApp } from '@ionic/react';
+
+import { AppTextarea } from '../../src/components/controls/AppTextarea';
 import { X } from 'lucide-react';
 import { BoostCategoryOptionsEnum, CredentialCategoryEnum } from 'learn-card-base';
 
@@ -19,7 +21,7 @@ import AiInsightsPromptBoxInput from '../../src/pages/ai-insights/ai-inisghts-pr
 import { personaCredentials } from '../../src/pages/dashboard/dashboard.personas';
 
 /**
- * `textareas-1b`: representative IonTextarea call sites for every group (X-A … X-E) in the phase 4
+ * `textareas-1b`: representative (formerly IonTextarea, now AppTextarea) call sites for every group (X-A … X-E) in the phase 4
  * batch 1b inventory (anvil-ionic-evidence/p4c/inventory.md §3), rendered with fixed local data and
  * no backend.
  *
@@ -37,10 +39,10 @@ import { personaCredentials } from '../../src/pages/dashboard/dashboard.personas
  * Every block reports:
  * - `<output data-testid="x1b-…-value">`: the app state the call site's handler writes;
  * - `<output data-testid="x1b-…-events">`: an event log written through a ref (never state, so
- *   logging never re-renders the call site). Excerpts log the site's own `onIonInput` as
+ *   logging never re-renders the call site). Excerpts log the site's own `onValueInput` (was `onIonInput`) as
  *   `input:"…"` (and `onKeyDown` as `keydown:<key>` where wired), plus log-only probes for
- *   `onIonChange` (`change:"…"`, fires on blur when the value changed), `onIonFocus` (`focus`) and
- *   `onIonBlur` (`blur`). Real components log every state write as `input:"<field>"`, plus
+ *   `onValueChange` (`change:"…"`, fires on blur when the value changed), `onFocus` (`focus`) and
+ *   `onBlur` (`blur`), which replace Ionic's `onIonChange` / `onIonFocus` / `onIonBlur`. Real components log every state write as `input:"<field>"`, plus
  *   `focus` / `blur` from native focusin / focusout on their wrapper.
  *
  * No call site sets `debounce`, `counter`, `label`, `helperText` or `errorText`. The state matrix
@@ -99,10 +101,9 @@ const Events: React.FC<{ testId: string; log: EventLog }> = ({ testId, log: { at
 
 /** Log-only probes for the events no call site wires: change (on blur), focus and blur. */
 const probes = (log: EventLog) => ({
-    onIonChange: (e: CustomEvent<{ value?: string | null }>) =>
-        log.record(`change:${JSON.stringify(e.detail.value)}`),
-    onIonFocus: () => log.record('focus'),
-    onIonBlur: () => log.record('blur'),
+    onValueChange: (value: string) => log.record(`change:${JSON.stringify(value)}`),
+    onFocus: () => log.record('focus'),
+    onBlur: () => log.record('blur'),
 });
 
 /** Native focus / blur on a real component's wrapper (the component wires no focus handlers). */
@@ -168,12 +169,12 @@ const MatrixCell: React.FC<{ spec: MatrixCellSpec; mode: 'ios' | 'md' }> = ({ sp
             <span className="text-xs font-mono">
                 {spec.state} {mode}
             </span>
-            <IonTextarea
+            <AppTextarea
                 mode={mode}
                 value={value}
-                onIonInput={e => {
-                    log.record(`input:${JSON.stringify(e.detail.value)}`);
-                    setValue(e.detail.value ?? '');
+                onValueInput={value => {
+                    log.record(`input:${JSON.stringify(value)}`);
+                    setValue(value);
                 }}
                 {...probes(log)}
                 placeholder="Placeholder"
@@ -217,9 +218,9 @@ const WriteBackProbe: React.FC = () => {
     const [renders, setRenders] = useState(0);
     return (
         <div className="bg-white rounded-[15px] p-4 flex flex-col gap-2">
-            <IonTextarea
+            <AppTextarea
                 value="Parent value"
-                onIonInput={e => log.record(`input:${JSON.stringify(e.detail.value)}`)}
+                onValueInput={value => log.record(`input:${JSON.stringify(value)}`)}
                 {...probes(log)}
                 aria-label="write-back"
                 rows={2}
@@ -273,10 +274,10 @@ const BoostCMSBasicInfoTextarea: React.FC<{
     return (
         <div className="w-full bg-white rounded-[20px] p-4">
             <div className="flex flex-col items-start justify-center w-full mt-2 bg-grayscale-100 px-[16px] py-[8px] rounded-[15px]">
-                <IonTextarea
+                <AppTextarea
                     autocapitalize="on"
                     value={basicInfo?.[field]}
-                    onIonInput={e => handleStateChange(field, e.detail.value)}
+                    onValueInput={value => handleStateChange(field, value)}
                     {...probes(log)}
                     placeholder={placeholder}
                     className="bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium text-base"
@@ -379,10 +380,10 @@ const EndorsementRequestOptionsMessage: React.FC = () => {
         <div>
             <div className="w-full flex flex-col items-start justify-start py-4 px-4 cursor-pointer bg-white rounded-[20px] mt-4 shadow-bottom-2-4">
                 <p className="text-[17px] text-grayscale-900 text-left mb-2">What to say</p>
-                <IonTextarea
+                <AppTextarea
                     autocapitalize="on"
                     value={endorsementRequest?.text}
-                    onIonInput={e => handleStateChange('text', e.detail.value)}
+                    onValueInput={value => handleStateChange('text', value)}
                     {...probes(log)}
                     placeholder="Add a message"
                     className={`bg-grayscale-100 font-poppins text-grayscale-800 rounded-[15px] px-[16px] py-[8px] text-[17px] mb-1`}
@@ -517,11 +518,11 @@ const AiPassportAnswerInput: React.FC<{ testId: string; favFictionalCharacter?: 
                     }
                 }}
             >
-                <IonTextarea
+                <AppTextarea
                     value={answer}
-                    onIonInput={e => {
-                        log.record(`input:${JSON.stringify(e.detail.value)}`);
-                        setAnswer(e.detail.value ?? '');
+                    onValueInput={value => {
+                        log.record(`input:${JSON.stringify(value)}`);
+                        setAnswer(value);
                     }}
                     {...probes(log)}
                     placeholder={placeholderText}
@@ -560,14 +561,14 @@ const FamilyMotto: React.FC<{ testId: string; withError?: boolean }> = ({ testId
                 </h3>
 
                 <div className="relative">
-                    <IonTextarea
+                    <AppTextarea
                         aria-label="motto"
                         autoGrow
                         autocapitalize="on"
                         value={description}
-                        onIonInput={e => {
-                            log.record(`input:${JSON.stringify(e.detail.value)}`);
-                            const _familyMotto = e.detail.value ?? '';
+                        onValueInput={value => {
+                            log.record(`input:${JSON.stringify(value)}`);
+                            const _familyMotto = value;
                             setDescription(_familyMotto);
                             handleSetState('basicInfo', 'description', _familyMotto);
 
@@ -625,13 +626,13 @@ const ApiTokenDescription: React.FC = () => {
                 <h1 className="font-semibold mb-[10px] font-notoSans text-[20px] text-grayscale-900">
                     Create API Token
                 </h1>
-                <IonTextarea
+                <AppTextarea
                     className="bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium tracking-widest text-base pl-4 pt-2"
                     style={{ '--min-width': '385px', '--max-width': '385px' }}
                     rows={3}
-                    onIonInput={e => {
-                        log.record(`input:${JSON.stringify(e.detail.value)}`);
-                        setDescription(e.detail.value ?? '');
+                    onValueInput={value => {
+                        log.record(`input:${JSON.stringify(value)}`);
+                        setDescription(value);
                     }}
                     {...probes(log)}
                     value={description}
@@ -658,9 +659,9 @@ const ContractDescription: React.FC = () => {
         <div className="bg-white rounded-[20px]">
             <div className="flex flex-col gap-[20px] text-grayscale-800 py-[30px] px-[20px]">
                 <div className="flex flex-col gap-[10px] w-full">
-                    <IonTextarea
+                    <AppTextarea
                         value={contract.description}
-                        onIonInput={e => updateSlice('description', e.detail.value!)}
+                        onValueInput={value => updateSlice('description', value)}
                         {...probes(log)}
                         placeholder="Describe your contract"
                         rows={6}
@@ -684,11 +685,11 @@ const CheckListRawVc: React.FC<{ testId: string; initial?: string }> = ({
     return (
         <div className="bg-white p-4 rounded-[20px]">
             <div className="flex flex-col gap-[10px] w-full">
-                <IonTextarea
+                <AppTextarea
                     value={rawVcText}
-                    onIonInput={e => {
-                        log.record(`input:${JSON.stringify(e.detail.value)}`);
-                        setRawVcText(e.detail.value ?? '');
+                    onValueInput={value => {
+                        log.record(`input:${JSON.stringify(value)}`);
+                        setRawVcText(value);
                     }}
                     {...probes(log)}
                     className="ion-no-padding mb-0! h-[112px] overflow-hidden bg-grayscale-100 rounded-[10px] text-grayscale-800 text-[15px] font-notoSans"
@@ -724,12 +725,12 @@ const AlignmentStatement: React.FC = () => {
                     <label className="text-grayscale-600 font-poppins text-[12px] font-[600]">
                         Statement
                     </label>
-                    <IonTextarea
-                        onIonInput={e => {
-                            log.record(`input:${JSON.stringify(e.detail.value)}`);
+                    <AppTextarea
+                        onValueInput={value => {
+                            log.record(`input:${JSON.stringify(value)}`);
                             setNode(prev => ({
                                 ...prev,
-                                targetDescription: e.detail.value ?? '',
+                                targetDescription: value,
                             }));
                         }}
                         {...probes(log)}
@@ -752,10 +753,10 @@ const FrameworkDescription: React.FC = () => {
     const [description, setDescription] = useState<string>('');
     return (
         <div className="flex flex-col gap-[20px] bg-white p-[20px] rounded-[20px] shadow-bottom-0-4">
-            <IonTextarea
-                onIonInput={e => {
-                    log.record(`input:${JSON.stringify(e.detail.value)}`);
-                    setDescription(e.detail.value ?? '');
+            <AppTextarea
+                onValueInput={value => {
+                    log.record(`input:${JSON.stringify(value)}`);
+                    setDescription(value);
                 }}
                 {...probes(log)}
                 className="bg-grayscale-100 text-grayscale-800 rounded-[16px] py-[8px] px-[15px]!"

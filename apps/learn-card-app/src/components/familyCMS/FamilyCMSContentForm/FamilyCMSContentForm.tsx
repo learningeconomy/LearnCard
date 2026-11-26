@@ -1,7 +1,8 @@
 import React, { useEffect, Suspense, useState } from 'react';
 import type { EmojiClickData } from 'emoji-picker-react';
 
-import { IonInput, IonTextarea, useIonModal } from '@ionic/react';
+import { IonInput, useIonModal } from '@ionic/react';
+import { AppTextarea } from '../../controls/AppTextarea';
 import { AppToggle } from '../../controls/AppToggle';
 const FamilyEmojiPicker = React.lazy(() => import('../FamilyCMSEmojiPicker/FamilyEmojiPicker'));
 import EmojiRenderer from '../FamilyCMSEmojiPicker/FamilyCMSEmojiRenderer';
@@ -166,13 +167,13 @@ export const FamilyCMSContentForm: React.FC<FamilyCMSContentFormProps> = ({
                 </h3>
 
                 <div className="relative">
-                    <IonTextarea
+                    <AppTextarea
                         aria-label="motto"
                         autoGrow
                         autocapitalize="on"
                         value={description}
-                        onIonInput={e => {
-                            const _familyMotto = e.detail.value;
+                        onValueInput={value => {
+                            const _familyMotto = value;
                             setDescription(_familyMotto);
                             handleSetState('basicInfo', 'description', _familyMotto);
 

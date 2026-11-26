@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { IonTextarea } from '@ionic/react';
+import { AppTextarea } from '../../controls/AppTextarea';
 
 import { VC } from '@learncard/types';
 import { EndorsementState } from './endorsement-state.helpers';
@@ -43,10 +43,10 @@ export const EndorsementTextForm: React.FC<{
                     components={[<span className="font-semibold" />]}
                 />
             </p>
-            <IonTextarea
+            <AppTextarea
                 autocapitalize="on"
                 value={endorsement?.description}
-                onIonInput={e => handleStateChange('description', e.detail.value)}
+                onValueInput={value => handleStateChange('description', value)}
                 placeholder={m['endorsement.form.text.placeholder']()}
                 className={`bg-grayscale-100 font-poppins text-grayscale-800 rounded-[15px] px-[16px] py-[8px] text-[17px] mb-1
                     ${errors?.description ? 'border-red-300 border-2' : ''}

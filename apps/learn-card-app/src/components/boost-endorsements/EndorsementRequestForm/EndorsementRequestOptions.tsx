@@ -6,7 +6,8 @@ import ShareBoostLink from '../../boost/boost-options-menu/ShareBoostLink';
 import EndorsementRequestSuccess from './EndorsementRequestSuccess';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import CopyStack from 'learn-card-base/svgs/CopyStack';
-import { IonInput, IonTextarea } from '@ionic/react';
+import { IonInput } from '@ionic/react';
+import { AppTextarea } from '../../controls/AppTextarea';
 import Mail from 'learn-card-base/svgs/Mail';
 
 import {
@@ -282,10 +283,10 @@ export const EndorsementRequestOptions: React.FC<{
                 <p className="text-[17px] text-grayscale-900 text-left mb-2">
                     {m['endorsement.request.options.whatToSay']()}
                 </p>
-                <IonTextarea
+                <AppTextarea
                     autocapitalize="on"
                     value={endorsementRequest?.text}
-                    onIonInput={e => handleStateChange('text', e.detail.value)}
+                    onValueInput={value => handleStateChange('text', value)}
                     placeholder={m['endorsement.request.options.messagePlaceholder']()}
                     className={`bg-grayscale-100 font-poppins text-grayscale-800 rounded-[15px] px-[16px] py-[8px] text-[17px] mb-1`}
                 />

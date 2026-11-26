@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { IonInput, IonTextarea } from '@ionic/react';
+import { IonInput } from '@ionic/react';
+import { AppTextarea } from '../../../components/controls/AppTextarea';
 import { useWallet, useModal } from 'learn-card-base';
 import { createPortal } from 'react-dom';
 
@@ -51,11 +52,11 @@ const EditAPITokenModal: React.FC<{
                 value={updatedName}
                 placeholder="Name*"
             />
-            <IonTextarea
+            <AppTextarea
                 className="bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium tracking-widest text-base pl-4 pt-2"
                 style={{ '--min-width': '385px', '--max-width': '385px' }}
                 rows={3}
-                onIonInput={e => setUpdatedDescription(e.detail.value)}
+                onValueInput={value => setUpdatedDescription(value)}
                 value={updatedDescription}
                 placeholder="Description"
             />

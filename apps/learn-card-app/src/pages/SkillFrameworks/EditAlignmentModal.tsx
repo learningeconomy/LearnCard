@@ -12,7 +12,8 @@ import AlignmentToggle from './AlignmentToggle';
 import SkillBreadcrumbText from './SkillBreadcrumbText';
 import SkillsFrameworkIcon from 'apps/learn-card-app/src/components/svgs/SkillsFrameworkIcon';
 import ConfirmAlignmentDeletionModal from './ConfirmAlignmentDeletionModal';
-import { IonFooter, IonInput, IonTextarea } from '@ionic/react';
+import { IonFooter, IonInput } from '@ionic/react';
+import { AppTextarea } from '../../components/controls/AppTextarea';
 
 import {
     FrameworkNodeRole,
@@ -305,11 +306,11 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
                         <label className="text-grayscale-600 font-poppins text-[12px] font-[600]">
                             Statement
                         </label>
-                        <IonTextarea
-                            onIonInput={e => {
+                        <AppTextarea
+                            onValueInput={value => {
                                 setNode(prev => ({
                                     ...prev,
-                                    targetDescription: e.detail.value ?? '',
+                                    targetDescription: value,
                                 }));
                             }}
                             className="bg-grayscale-100 text-grayscale-800 rounded-[10px] py-[5px]! px-[10px]!"

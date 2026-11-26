@@ -12,8 +12,8 @@ import {
     IonDatetime,
     IonButtons,
     IonButton,
-    IonTextarea,
 } from '@ionic/react';
+import { AppTextarea } from '../../../components/controls/AppTextarea';
 import Calendar from '../../../components/svgs/Calendar';
 
 import {
@@ -208,11 +208,11 @@ const CreateAPITokenModal: React.FC<{
                 value={name}
                 placeholder="Name*"
             />
-            <IonTextarea
+            <AppTextarea
                 className="bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium tracking-widest text-base pl-4 pt-2"
                 style={{ '--min-width': '385px', '--max-width': '385px' }}
                 rows={3}
-                onIonInput={e => setDescription(e.detail.value)}
+                onValueInput={value => setDescription(value)}
                 value={description}
                 placeholder="Description"
             />

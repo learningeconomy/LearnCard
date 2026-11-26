@@ -26,7 +26,8 @@ import SimpleAttachedNetworkDisplay from './SimpleAttachedNetworkDisplay';
 import FrameworkCreatedSuccessModal from './FrameworkCreatedSuccessModal';
 import SkillsFrameworkAdminSelector from './SkillsFrameworkAdminSelector';
 import SkillsFrameworkNetworkSelector from './SkillsFrameworkNetworkSelector';
-import { IonFooter, IonInput, IonSpinner, IonTextarea } from '@ionic/react';
+import { IonFooter, IonInput, IonSpinner } from '@ionic/react';
+import { AppTextarea } from '../../components/controls/AppTextarea';
 import * as m from '../../paraglide/messages.js';
 
 import { SkillFramework } from '../../components/boost/boost';
@@ -348,8 +349,8 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
                         value={name}
                     />
 
-                    <IonTextarea
-                        onIonInput={e => setDescription(e.detail.value ?? '')}
+                    <AppTextarea
+                        onValueInput={value => setDescription(value)}
                         className="bg-grayscale-100 text-grayscale-800 rounded-[16px] py-[8px] px-[15px]!"
                         placeholder={m['skills.frameworks.descriptionPlaceholder']()}
                         value={description}

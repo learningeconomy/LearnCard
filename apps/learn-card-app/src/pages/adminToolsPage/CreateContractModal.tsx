@@ -9,7 +9,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import useAutosave from '../../hooks/useAutosave';
 import RecoveryPrompt from '../../components/common/RecoveryPrompt';
 
-import { IonDatetime, IonInput, IonLabel, IonSpinner, IonTextarea } from '@ionic/react';
+import { IonDatetime, IonInput, IonLabel, IonSpinner } from '@ionic/react';
+import { AppTextarea } from '../../components/controls/AppTextarea';
 import { AppToggle } from '../../components/controls/AppToggle';
 import ContractTypeTabs from './ContractTypeTabs';
 import FullScreenGameFlow from '../consentFlow/GameFlow/FullScreenGameFlow';
@@ -520,9 +521,9 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
                             placeholder="Subtitle"
                         />
 
-                        <IonTextarea
+                        <AppTextarea
                             value={contract.description}
-                            onIonInput={e => updateSlice('description', e.detail.value!)}
+                            onValueInput={value => updateSlice('description', value)}
                             placeholder="Describe your contract"
                             rows={6}
                             className="pl-3 pr-2 font-medium tracking-widest bg-grayscale-100 text-grayscale-800 rounded-[15px]"

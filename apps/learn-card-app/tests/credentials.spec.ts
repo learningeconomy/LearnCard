@@ -13,8 +13,9 @@ test.describe.skip('credentials', () => {
         await page.locator('#ion-input-0').fill('Test');
         await page.getByRole('button', { name: 'Certification' }).click();
         await page.getByLabel('/100').fill('__Test Credential__');
-        await page.locator('#ion-textarea-1').fill('This is for testing!');
-        await page.locator('#ion-textarea-2').fill('I got this for testing!');
+        // AppTextarea ids are generated; these were #ion-textarea-1 and -2 (the title is the first).
+        await page.locator('textarea').nth(1).fill('This is for testing!');
+        await page.locator('textarea').nth(2).fill('I got this for testing!');
         await page.getByText('Next').click();
 
         const credential = page.getByRole('button', { name: '__Test Credential__' }).first();

@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('check-list-upload-raw-v-c');
 
-import { IonHeader, IonTextarea, IonToolbar } from '@ionic/react';
+import { IonHeader, IonToolbar } from '@ionic/react';
+import { AppTextarea } from '../../../controls/AppTextarea';
 import X from 'learn-card-base/svgs/X';
 import Plus from 'learn-card-base/svgs/Plus';
 import UploadIcon from 'learn-card-base/svgs/UploadIcon';
@@ -314,10 +315,10 @@ export const CheckListUploadRawVC: React.FC = () => {
                     <div className="w-full h-[1px] bg-grayscale-200" />
 
                     <div className="flex flex-col gap-[10px] w-full">
-                        <IonTextarea
+                        <AppTextarea
                             value={rawVcText}
-                            onIonInput={e => {
-                                setRawVcText(e.detail.value);
+                            onValueInput={value => {
+                                setRawVcText(value);
                             }}
                             className="ion-no-padding mb-0! h-[112px] overflow-hidden bg-grayscale-100 rounded-[10px] text-grayscale-800 text-[15px] font-notoSans"
                             // For some reason placeholder-grayscale-400 doesn't work
