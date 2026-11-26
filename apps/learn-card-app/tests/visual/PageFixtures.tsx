@@ -18,6 +18,7 @@ import MyAppsLanding from '../../src/pages/myApps/MyAppsLanding';
 import AppStoreDetailModal from '../../src/pages/launchPad/AppStoreDetailModal';
 import { personaCredentials } from '../../src/pages/dashboard/dashboard.personas';
 import { IssueVisualFixture } from './IssueVisualFixture';
+import { ControlsVisualFixture } from './ControlsVisualFixture';
 
 export const additionalStates = [
     'credential',
@@ -28,6 +29,8 @@ export const additionalStates = [
     'my-apps',
     'my-apps-signed-in',
     'app-details',
+    // Ionic replacement phase 4 batch 1a (buttons, checkboxes, radios). Not in tailwind.spec.ts.
+    'controls-1a',
 ] as const;
 
 const listings: AppStoreListing[] = [
@@ -140,6 +143,7 @@ export const seedPageQueries = (client: QueryClient, state?: string): void => {
 
 export const PageFixture: React.FC<{ state: string }> = ({ state }) => {
     if (state.startsWith('issue')) return <IssueVisualFixture />;
+    if (state === 'controls-1a') return <ControlsVisualFixture />;
     if (state === 'apps') return <LaunchPad />;
     if (state === 'my-apps-signed-in') return <SignedInLaunchpadFixture />;
     if (state === 'my-apps') return <MyAppsLanding />;
