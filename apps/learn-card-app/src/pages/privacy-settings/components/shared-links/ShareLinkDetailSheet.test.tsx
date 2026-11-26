@@ -7,8 +7,6 @@ import type { DataSharingSharedLinksViewModel } from '../../DataSharingCenter.ty
 import ShareLinkDetailSheet from './ShareLinkDetailSheet';
 import { useSharedLinksStore } from './sharedLinksStore';
 
-vi.mock('@ionic/react', () => ({}));
-
 vi.mock('qrcode.react', () => ({
     QRCodeSVG: ({ role, 'aria-label': ariaLabel }: { role?: string; 'aria-label'?: string }) => (
         <img role={role} aria-label={ariaLabel} />

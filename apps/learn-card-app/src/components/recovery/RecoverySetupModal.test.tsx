@@ -20,8 +20,6 @@ vi.mock('@learncard/sss-key-manager', () => ({
     isWebAuthnSupported: () => true,
 }));
 
-vi.mock('@ionic/react', () => ({}));
-
 vi.mock('learn-card-base', async () => ({
     getLogger: () => ({ error: vi.fn() }),
     isSameEscrowPinError: (await import('learn-card-base/auth-coordinator/errors'))

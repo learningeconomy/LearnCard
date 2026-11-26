@@ -55,7 +55,6 @@ vi.mock('@capacitor/haptics', () => ({
     Haptics: { impact: mocks.impact },
     ImpactStyle: { Light: 'LIGHT' },
 }));
-vi.mock('@ionic/react', () => ({}));
 vi.mock('ionicons/icons', () => ({ qrCodeOutline: 'qr-code' }));
 vi.mock('learn-card-base', () => ({
     QRCodeScannerStore: { set: { openScanner: mocks.openScanner } },
