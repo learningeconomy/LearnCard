@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useModal, useWallet } from 'learn-card-base';
-import { IonSpinner, IonInput } from '@ionic/react';
+import { IonInput } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { LCNProfile } from '@learncard/types';
 import CaretDown from 'apps/learn-card-app/src/components/svgs/CaretDown';
@@ -122,7 +123,7 @@ const ManageFrameworkAdminsModal: React.FC<ManageFrameworkAdminsModalProps> = ({
 
                     {isLoading ? (
                         <div className="flex items-center justify-center py-[40px]">
-                            <IonSpinner name="crescent" />
+                            <AppSpinner name="crescent" />
                         </div>
                     ) : isError ? (
                         <div className="text-center py-[40px]">

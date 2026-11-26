@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
-import { IonPage, IonContent, IonSpinner, IonIcon } from '@ionic/react';
+import { IonPage, IonContent, IonIcon } from '@ionic/react';
+import { AppSpinner } from '../../../components/feedback/AppSpinner';
 import {
     alertCircleOutline,
     checkmarkCircleOutline,
@@ -1368,7 +1369,7 @@ const SubmitManifest: React.FC = () => {
                 <AppStoreHeader title="Publish your app" />
                 <IonContent className="ion-padding">
                     <div className="flex justify-center items-center h-full">
-                        <IonSpinner name="crescent" />
+                        <AppSpinner name="crescent" />
                     </div>
                 </IonContent>
             </IonPage>
@@ -1409,7 +1410,7 @@ const SubmitManifest: React.FC = () => {
                         >
                             {isChoosing ? (
                                 <span className="flex items-center justify-center gap-2">
-                                    <IonSpinner name="crescent" />
+                                    <AppSpinner name="crescent" />
                                     Updating...
                                 </span>
                             ) : (
@@ -1439,7 +1440,7 @@ const SubmitManifest: React.FC = () => {
                 <AppStoreHeader title="Publish your app" />
                 <IonContent className="ion-padding">
                     <div className="flex justify-center items-center h-full">
-                        <IonSpinner name="crescent" />
+                        <AppSpinner name="crescent" />
                     </div>
                 </IonContent>
             </IonPage>
@@ -1680,7 +1681,7 @@ const SubmitManifest: React.FC = () => {
                     >
                         {isPreviewing ? (
                             <>
-                                <IonSpinner name="crescent" className="w-4 h-4" />
+                                <AppSpinner name="crescent" className="w-4 h-4" />
                                 Preparing preview...
                             </>
                         ) : (
@@ -1723,7 +1724,7 @@ const SubmitManifest: React.FC = () => {
                             >
                                 {isIconUploading ? (
                                     <div className="w-16 h-16 rounded-2xl bg-grayscale-100 border border-grayscale-200 flex items-center justify-center">
-                                        <IonSpinner
+                                        <AppSpinner
                                             name="crescent"
                                             className="w-6 h-6 text-grayscale-500"
                                         />
@@ -2367,7 +2368,7 @@ const SubmitManifest: React.FC = () => {
                             >
                                 {isPreviewing ? (
                                     <>
-                                        <IonSpinner name="crescent" className="w-4 h-4" />
+                                        <AppSpinner name="crescent" className="w-4 h-4" />
                                         Starting…
                                     </>
                                 ) : (

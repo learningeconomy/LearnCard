@@ -10,7 +10,8 @@ import ChildInviteModalSimple from '../../../components/familyCMS/FamilyCMSInvit
 import AdminToolsFamilySelectorButton from './AdminToolsFamilySelectorButton';
 import HandleIcon from 'learn-card-base/svgs/HandleIcon';
 import Pencil from '../../../components/svgs/Pencil';
-import { IonInput, IonSpinner } from '@ionic/react';
+import { IonInput } from '@ionic/react';
+import { AppSpinner } from '../../../components/feedback/AppSpinner';
 import { Checkmark } from '@learncard/react';
 import X from 'learn-card-base/svgs/X';
 
@@ -415,7 +416,7 @@ const AdminToolsCreateProfileSimple: React.FC<AdminToolsCreateProfileSimpleProps
                     >
                         {imageUploading && (
                             <div className="user-image-upload-inprogress absolute flex h-[70px] min-h-[70px] w-[70px] min-w-[70px] items-center justify-center overflow-hidden rounded-full border-2 border-solid border-white text-xl font-medium text-whiteborder-white">
-                                <IonSpinner name="crescent" color="dark" className="scale-[1.75]" />
+                                <AppSpinner name="crescent" color="dark" className="scale-[1.75]" />
                             </div>
                         )}
                     </UserProfilePicture>
@@ -546,7 +547,7 @@ const AdminToolsCreateProfileSimple: React.FC<AdminToolsCreateProfileSimpleProps
 
                             <p className="flex items-center gap-1 text-grayscale-700 text-xs font-normal min-h-[20px] h-[20px]">
                                 {isCheckingUnique && (
-                                    <IonSpinner
+                                    <AppSpinner
                                         name="crescent"
                                         className="h-[20px] w-[20px] scale-[0.75]"
                                     />

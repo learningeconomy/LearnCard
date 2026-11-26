@@ -4,7 +4,8 @@ import type { AppStoreListing, InstalledApp } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('app-store-detail-modal');
 
-import { IonPage, IonContent, IonSpinner, IonFooter, IonHeader, IonToast } from '@ionic/react';
+import { IonPage, IonContent, IonFooter, IonHeader, IonToast } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 import {
     useModal,
     ModalTypes,
@@ -1014,7 +1015,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                                 disabled
                                 className="py-[9px] px-[20px] rounded-[30px] bg-gray-100 text-gray-400 font-notoSans text-[17px] flex items-center justify-center flex-1"
                             >
-                                <IonSpinner name="dots" className="w-5 h-5" />
+                                <AppSpinner name="dots" className="w-5 h-5" />
                             </button>
                         ) : isInstalled || launchConfig.skipInstallation ? (
                             <>
@@ -1044,7 +1045,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                                 className={`bg-${primaryColor} py-[9px] px-[20px] rounded-[30px] text-white font-notoSans text-[17px] shadow-button-bottom disabled:opacity-50 flex items-center justify-center flex-1`}
                             >
                                 {isProcessing ? (
-                                    <IonSpinner name="dots" className="w-5 h-5" />
+                                    <AppSpinner name="dots" className="w-5 h-5" />
                                 ) : (
                                     m['launchpad.detail.install']()
                                 )}

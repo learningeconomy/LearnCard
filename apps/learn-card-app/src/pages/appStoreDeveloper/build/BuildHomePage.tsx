@@ -1,6 +1,7 @@
 import React from 'react';
 import { useHistory } from 'react-router-dom';
-import { IonContent, IonIcon, IonPage, IonSpinner } from '@ionic/react';
+import { IonContent, IonIcon, IonPage } from '@ionic/react';
+import { AppSpinner } from '../../../components/feedback/AppSpinner';
 import {
     appsOutline,
     arrowForwardOutline,
@@ -161,9 +162,7 @@ const BuildHomePage: React.FC = () => {
                             <IonIcon icon={sparklesOutline} />
                             Most popular
                         </span>
-                        <h2 className="mt-4 text-xl font-semibold text-white">
-                            Build an app
-                        </h2>
+                        <h2 className="mt-4 text-xl font-semibold text-white">Build an app</h2>
                         <p className="mt-1 text-sm text-white/70 max-w-lg leading-relaxed">
                             Make it in Lovable, Bolt, v0, or your own code. It runs inside LearnCard
                             and can sign people in, give out credentials, and more.
@@ -193,7 +192,7 @@ const BuildHomePage: React.FC = () => {
                         </h2>
                         {isLoadingIntegrations || isLoadingApps ? (
                             <div className="flex justify-center py-10">
-                                <IonSpinner name="crescent" />
+                                <AppSpinner name="crescent" />
                             </div>
                         ) : projects.length === 0 ? (
                             <p className="mt-2 text-sm text-grayscale-500">

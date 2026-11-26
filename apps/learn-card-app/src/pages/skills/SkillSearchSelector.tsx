@@ -20,7 +20,7 @@ import VerifiedBadgeIcon from 'learn-card-base/svgs/VerifiedBadgeIcon';
 import SlimCaretLeft from '../../components/svgs/SlimCaretLeft';
 import SlimCaretRight from '../../components/svgs/SlimCaretRight';
 import SkillTag from './SkillTag';
-import { IonInput, IonSpinner } from '@ionic/react';
+import { IonInput } from '@ionic/react';
 import { GenericErrorView } from 'learn-card-base/components/generic/GenericErrorBoundary';
 
 import * as m from '../../paraglide/messages.js';

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Redirect, useHistory, useLocation, useParams } from 'react-router-dom';
-import { IonContent, IonIcon, IonPage, IonSpinner } from '@ionic/react';
+import { IonContent, IonIcon, IonPage } from '@ionic/react';
+import { AppSpinner } from '../../../components/feedback/AppSpinner';
 import { alertCircleOutline, arrowBackOutline } from 'ionicons/icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -42,7 +43,7 @@ const AppStatusPage: React.FC = () => {
                 <AppStoreHeader title="Your app" />
                 <IonContent className="ion-padding">
                     <div className="flex justify-center items-center h-full">
-                        <IonSpinner name="crescent" />
+                        <AppSpinner name="crescent" />
                     </div>
                 </IonContent>
             </IonPage>

@@ -12,7 +12,6 @@ vi.mock('learn-card-base', async () => {
 vi.mock('@ionic/react', () => ({
     IonPage: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     IonContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    IonSpinner: () => <span>loading wizard</span>,
 }));
 vi.mock('../components/SkillProfileModal', () => {
     loads.count += 1;
@@ -40,7 +39,7 @@ describe('useSkillProfileModal', () => {
         expect(options).toEqual({ hideButton: true, sectionClassName: 'max-w-[640px]!' });
 
         render(element);
-        expect(screen.getByText('loading wizard')).toBeTruthy();
+        expect(screen.getByRole('progressbar')).toBeTruthy();
         (await screen.findByText('wizard')).click();
         expect(modal.closeModal).toHaveBeenCalledOnce();
     });

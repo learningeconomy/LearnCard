@@ -7,7 +7,8 @@ import DotIcon from 'learn-card-base/svgs/DotIcon';
 import { QualificationsIconSolidColor } from 'learn-card-base/svgs/wallet/QualificationsIcon';
 
 import { CredentialCategoryEnum } from 'learn-card-base';
-import { IonSkeletonText, IonSpinner } from '@ionic/react';
+import { IonSkeletonText } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 
 import { useTheme } from '../../theme/hooks/useTheme';
 import { StyleSetEnum } from '../../theme/styles';
@@ -148,7 +149,7 @@ const WalletPageSquare: React.FC<WalletPageSquareProps> = ({
                             <div className="relative w-full h-full rounded-full overflow-hidden">
                                 <IonSkeletonText className="h-full m-0" animated />
                                 <div className="absolute inset-0 flex items-center justify-center">
-                                    <IonSpinner
+                                    <AppSpinner
                                         name="crescent"
                                         role="status"
                                         aria-label={m['common.loading']()}

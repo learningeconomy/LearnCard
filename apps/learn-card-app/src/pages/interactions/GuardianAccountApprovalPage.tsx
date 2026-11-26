@@ -8,7 +8,8 @@
 // so we consume the token on load and show the result — no OTP step.
 
 import React, { useEffect, useRef, useState } from 'react';
-import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 import { useParams } from 'react-router-dom';
 
 import { initLearnCard } from '@learncard/init';
@@ -111,7 +112,7 @@ const GuardianAccountApprovalPage: React.FC = () => {
 
                     {state === 'loading' && (
                         <div className="flex flex-col items-center gap-3">
-                            <IonSpinner color="light" />
+                            <AppSpinner color="light" />
                             <p className="font-semibold text-lg">Confirming approval…</p>
                         </div>
                     )}

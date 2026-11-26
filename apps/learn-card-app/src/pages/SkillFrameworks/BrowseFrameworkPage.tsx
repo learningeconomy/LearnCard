@@ -15,7 +15,8 @@ import {
 import { getLogger } from 'learn-card-base';
 const log = getLogger('browse-framework-page');
 
-import { IonPage, IonSpinner } from '@ionic/react';
+import { IonPage } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 import ManageSkills from './ManageSkills';
 import FrameworkColumn from './FrameworkColumn';
 import ViewAlignmentInfo from './ViewAlignmentInfo';
@@ -1154,7 +1155,7 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
 
             {isLoading && !isFullSkillFramework ? (
                 <div className="w-full h-full flex items-center justify-center">
-                    <IonSpinner name="crescent" />
+                    <AppSpinner name="crescent" />
                 </div>
             ) : (
                 <div className="flex w-full relative h-full overflow-y-hidden">

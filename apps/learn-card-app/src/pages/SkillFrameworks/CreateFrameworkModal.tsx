@@ -26,7 +26,8 @@ import SimpleAttachedNetworkDisplay from './SimpleAttachedNetworkDisplay';
 import FrameworkCreatedSuccessModal from './FrameworkCreatedSuccessModal';
 import SkillsFrameworkAdminSelector from './SkillsFrameworkAdminSelector';
 import SkillsFrameworkNetworkSelector from './SkillsFrameworkNetworkSelector';
-import { IonFooter, IonInput, IonSpinner, IonTextarea } from '@ionic/react';
+import { IonFooter, IonInput, IonTextarea } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 import * as m from '../../paraglide/messages.js';
 
 import { SkillFramework } from '../../components/boost/boost';
@@ -315,7 +316,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
                         <div className="relative">
                             {isUploadingImage && (
                                 <div className="absolute top-0 left-0 z-10 bg-white/60  h-full w-full flex items-center justify-center">
-                                    <IonSpinner
+                                    <AppSpinner
                                         name="crescent"
                                         color="dark"
                                         className="scale-[1.75]"

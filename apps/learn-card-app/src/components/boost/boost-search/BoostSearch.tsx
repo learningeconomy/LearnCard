@@ -8,7 +8,6 @@ import {
     IonHeader,
     IonPage,
     IonFooter,
-    IonSpinner,
     useIonModal,
     IonInput,
 } from '@ionic/react';

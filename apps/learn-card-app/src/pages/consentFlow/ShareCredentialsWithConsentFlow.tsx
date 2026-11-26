@@ -12,11 +12,11 @@ import {
     IonToggle,
     IonToolbar,
     IonHeader,
-    IonSpinner,
     IonGrid,
     IonRow,
     IonCol,
 } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 import CaretLeft from '../../components/svgs/CaretLeft';
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 import { useConsentFlowCredentials } from './useConsentFlowCredentials';
@@ -106,7 +106,7 @@ const ShareCredentialsWithConsentFlow: React.FC<{
                             <div className="mt-[15px] text--[14px]">
                                 {!anyDoneLoading && (
                                     <div className="w-full h-full flex flex-col opacity-50 items-center justify-center mt-[40px]">
-                                        <IonSpinner />
+                                        <AppSpinner />
                                         <p className="mt-[20px]">
                                             {m['consentFlow.fetchingCredentials']()}
                                         </p>

@@ -11,10 +11,6 @@ vi.mock('@capacitor/core', () => ({
     Capacitor: { isNativePlatform: () => false },
 }));
 
-vi.mock('@ionic/react', () => ({
-    IonSpinner: () => null,
-}));
-
 vi.mock('../../../paraglide/messages.js', () => ({
     'passport.buildMyLearnCard.intake.title': () => 'Add something you received',
     'passport.buildMyLearnCard.intake.description': () => 'Choose an intake method.',

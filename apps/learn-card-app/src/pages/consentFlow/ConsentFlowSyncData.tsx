@@ -2,7 +2,8 @@ import React, { useEffect } from 'react';
 import queryString from 'query-string';
 import { useLocation, useHistory } from 'react-router-dom';
 
-import { IonContent, IonSpinner } from '@ionic/react';
+import { IonContent } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 import ConsentFlowSyncButton from './ConsentFlowSyncButton';
 import ConsentFlowSyncCard from './ConsentFlowSyncCard';
 
@@ -133,7 +134,7 @@ const ConsentFlowSyncData: React.FC = () => {
                             );
                         })}
 
-                        {entriesLoading && <IonSpinner />}
+                        {entriesLoading && <AppSpinner />}
                     </div>
 
                     <footer className="flex items-center w-full border-t border-solid border-r-grayscale-200 pt-[20px]">

@@ -3,7 +3,7 @@ import { useHistory } from 'react-router-dom';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('loading-page');
 
-import { IonCol, IonContent, IonPage, IonRow, IonSpinner } from '@ionic/react';
+import { IonCol, IonContent, IonPage, IonRow } from '@ionic/react';
 
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import { useTheme } from '../../theme/hooks/useTheme';

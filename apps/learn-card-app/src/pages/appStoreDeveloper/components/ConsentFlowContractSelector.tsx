@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { FileText, Plus, ChevronDown, Check, Eye } from 'lucide-react';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../../../components/feedback/AppSpinner';
 
 import * as m from '../../../paraglide/messages.js';
 
@@ -98,7 +98,7 @@ export const ConsentFlowContractSelector: React.FC<ConsentFlowContractSelectorPr
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                         {isLoadingContracts ? (
                             <>
-                                <IonSpinner name="crescent" className="w-5 h-5 text-gray-400" />
+                                <AppSpinner name="crescent" className="w-5 h-5 text-gray-400" />
                                 <span className="text-sm text-gray-400">
                                     {m[
                                         'developerPortal.components.consentFlowContractSelector.loadingContracts'

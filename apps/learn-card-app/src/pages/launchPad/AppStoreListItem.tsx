@@ -1,7 +1,7 @@
 import React from 'react';
 import type { AppStoreListing, InstalledApp } from '@learncard/types';
 
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 import { ThreeDotVertical } from '@learncard/react';
 
 import useTheme from '../../theme/hooks/useTheme';
@@ -81,7 +81,7 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
                     <div className="flex app-connect-btn-container items-center ms-2 gap-2 shrink-0">
                         {isInstalledLoading ? (
                             <button className={buttonClass} disabled>
-                                <IonSpinner name="dots" className="w-4 h-4" />
+                                <AppSpinner name="dots" className="w-4 h-4" />
                             </button>
                         ) : isInstalled || installedAt || launchConfig.skipInstallation ? (
                             <>

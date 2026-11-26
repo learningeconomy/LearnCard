@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 import { Checkmark } from '@learncard/react';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 import FrameworkImage from '../SkillFrameworks/FrameworkImage';
 import {
     SKILLSHUB_FILTER_OPTIONS,
@@ -130,7 +130,7 @@ export const SkillsHubFilterSortingOptionsModal: React.FC<{
                     })}
                     {frameworksLoading && (
                         <div className="flex items-center justify-center">
-                            <IonSpinner name="crescent" color="dark" />
+                            <AppSpinner name="crescent" color="dark" />
                         </div>
                     )}
                 </div>

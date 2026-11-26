@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 import { useHistory } from 'react-router-dom';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('approve-account');
@@ -107,7 +108,7 @@ const ApproveAccount: React.FC = () => {
                     </div>
                     {loading && (
                         <div className="flex flex-col items-center justify-center gap-3">
-                            <IonSpinner color="light" />
+                            <AppSpinner color="light" />
                             <p className="font-semibold text-lg text-white">Approving…</p>
                         </div>
                     )}

@@ -1,5 +1,6 @@
 import React from 'react';
-import { IonPage, IonSpinner } from '@ionic/react';
+import { IonPage } from '@ionic/react';
+import { AppSpinner } from '../../../components/feedback/AppSpinner';
 import { QRCodeSVG } from 'qrcode.react';
 
 import ModalLayout from 'apps/learn-card-app/src/layout/ModalLayout';
@@ -56,7 +57,7 @@ const InviteQRCodeModal: React.FC<{ handleCloseModal: () => void }> = ({ handleC
                     >
                         {isLoading && (
                             <div className="flex items-center justify-center py-10">
-                                <IonSpinner color="black" />
+                                <AppSpinner color="black" />
                             </div>
                         )}
                         {isError && (

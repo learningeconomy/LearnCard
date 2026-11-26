@@ -9,9 +9,9 @@ import {
     IonHeader,
     IonRow,
     IonSkeletonText,
-    IonSpinner,
     IonToolbar,
 } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import { useModal, useTermsTransactions } from 'learn-card-base';
 import TransactionHistoryItem from '../consentFlow/TransactionHistoryItem';
@@ -156,7 +156,7 @@ const PostConsentFlowActivityFeed: React.FC<PostConsentFlowActivityFeedProps> = 
                     <ol className="px-1 pt-4 w-full flex flex-col items-center">
                         {transactions}
                         <div role="presentation" ref={infiniteScrollRef} />
-                        {isFetching && <IonSpinner className="mt-8" name="lines" />}
+                        {isFetching && <AppSpinner className="mt-8" name="lines" />}
                     </ol>
                 </IonRow>
             </IonGrid>

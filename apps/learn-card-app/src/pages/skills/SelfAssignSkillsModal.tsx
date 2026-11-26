@@ -14,7 +14,8 @@ const log = getLogger('self-assign-skills-modal');
 
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import SkillsCloseConfirmationModal from './SkillsCloseConfirmationModal';
-import { IonFooter, IonSpinner } from '@ionic/react';
+import { IonFooter } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 
 import SkillSearchSelector from './SkillSearchSelector';
 import { SelectedSkill } from './skillTypes';
@@ -133,7 +134,7 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
 
             {isUpdating && (
                 <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-30">
-                    <IonSpinner color="dark" name="crescent" />
+                    <AppSpinner color="dark" name="crescent" />
                 </div>
             )}
 

@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useHistory, useLocation, useParams } from 'react-router-dom';
-import { IonPage, IonContent, IonSpinner } from '@ionic/react';
+import { IonPage, IonContent } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 import { ArrowLeft, ArrowRight, Send, Loader2, AlertCircle, Save, FileEdit } from 'lucide-react';
 
 import * as m from '../../paraglide/messages.js';
@@ -538,7 +539,7 @@ const SubmissionForm: React.FC = () => {
             <IonPage>
                 <IonContent className="ion-padding">
                     <div className="flex justify-center items-center h-full">
-                        <IonSpinner name="crescent" />
+                        <AppSpinner name="crescent" />
                     </div>
                 </IonContent>
             </IonPage>

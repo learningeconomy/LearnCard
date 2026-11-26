@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import queryString from 'query-string';
 
-import { IonContent, IonHeader, IonPage, IonSpinner, IonToolbar, useIonModal } from '@ionic/react';
+import { IonContent, IonHeader, IonPage, IonToolbar, useIonModal } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 import { useLocation } from 'react-router-dom';
 import { VC, VerificationItem, VP } from '@learncard/types';
 
@@ -237,7 +238,7 @@ const VerifySharedResume: React.FC = () => {
                                     <DownloadIcon className="w-5 h-5" />
                                 )}
                                 {downloadingResume ? (
-                                    <IonSpinner name="crescent" className="w-4 h-4" />
+                                    <AppSpinner name="crescent" className="w-4 h-4" />
                                 ) : (
                                     <span className={isMobile ? 'sr-only' : ''}>Download</span>
                                 )}
@@ -258,7 +259,7 @@ const VerifySharedResume: React.FC = () => {
                     <div className="mx-auto max-w-[1180px] px-4 py-6 sm:px-6 lg:px-8">
                         {loading ? (
                             <div className="flex min-h-[70vh] items-center justify-center">
-                                <IonSpinner name="crescent" className="h-10 w-10 text-indigo-500" />
+                                <AppSpinner name="crescent" className="h-10 w-10 text-indigo-500" />
                             </div>
                         ) : error ? (
                             <div className="mx-auto mt-10 max-w-[680px] rounded-[28px] border border-grayscale-200 bg-white p-8 text-center shadow-[0_20px_50px_rgba(15,23,42,0.12)]">

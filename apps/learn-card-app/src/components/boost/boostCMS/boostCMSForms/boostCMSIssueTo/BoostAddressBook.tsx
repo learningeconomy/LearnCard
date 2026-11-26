@@ -7,7 +7,6 @@ import {
     IonRow,
     IonCol,
     IonGrid,
-    IonSpinner,
     IonList,
     IonItem,
     IonContent,
@@ -16,6 +15,7 @@ import {
     IonToolbar,
     IonFooter,
 } from '@ionic/react';
+import { AppSpinner } from '../../../../feedback/AppSpinner';
 
 import Plus from 'learn-card-base/svgs/Plus';
 import BoostAddressBookContactOptions from './BoostAddressBookContactOptions';
@@ -281,7 +281,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                 <IonContent fullscreen>
                     {loading && (
                         <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full">
-                            <IonSpinner color="black" />
+                            <AppSpinner color="black" />
                             <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                         </section>
                     )}
@@ -314,7 +314,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
 
                     {isLoading && search?.length > 0 && (
                         <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
-                            <IonSpinner color="black" />
+                            <AppSpinner color="black" />
                             <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                         </section>
                     )}
@@ -474,7 +474,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                 {recipientsLoading && recipients?.length === 0 && (
                     <IonRow className="w-full flex flex-col items-center justify-center max-w-[600px] mt-8 rounded-[20px]">
                         <section className="loading-spinner-container flex items-center justify-center h-[80%] w-full ">
-                            <IonSpinner color="light" />
+                            <AppSpinner color="light" />
                         </section>
                     </IonRow>
                 )}

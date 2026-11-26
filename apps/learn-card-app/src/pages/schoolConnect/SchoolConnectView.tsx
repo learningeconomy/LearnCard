@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { IonIcon, IonSpinner } from '@ionic/react';
+import { IonIcon } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 import {
     addOutline,
     alertCircleOutline,
@@ -102,7 +103,7 @@ export const SchoolConnectView: React.FC<SchoolConnectViewProps> = ({
     if (isLoading) {
         return (
             <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3">
-                <IonSpinner name="crescent" className="h-8 w-8" />
+                <AppSpinner name="crescent" className="h-8 w-8" />
             </div>
         );
     }
@@ -181,7 +182,7 @@ export const SchoolConnectView: React.FC<SchoolConnectViewProps> = ({
                             >
                                 {connecting ? (
                                     <span className="flex items-center gap-1.5">
-                                        <IonSpinner name="crescent" className="h-3 w-3" />
+                                        <AppSpinner name="crescent" className="h-3 w-3" />
                                         {m['schoolConnect.connecting']()}
                                     </span>
                                 ) : (
@@ -256,7 +257,7 @@ export const SchoolConnectView: React.FC<SchoolConnectViewProps> = ({
                         >
                             {connecting ? (
                                 <span className="flex items-center justify-center gap-2">
-                                    <IonSpinner name="crescent" className="h-4 w-4" />
+                                    <AppSpinner name="crescent" className="h-4 w-4" />
                                     {m['schoolConnect.connecting']()}
                                 </span>
                             ) : (
@@ -344,7 +345,7 @@ export const SchoolConnectView: React.FC<SchoolConnectViewProps> = ({
                         >
                             {connecting ? (
                                 <span className="flex items-center justify-center gap-2">
-                                    <IonSpinner name="crescent" className="h-4 w-4" />
+                                    <AppSpinner name="crescent" className="h-4 w-4" />
                                     {m['schoolConnect.connecting']()}
                                 </span>
                             ) : (

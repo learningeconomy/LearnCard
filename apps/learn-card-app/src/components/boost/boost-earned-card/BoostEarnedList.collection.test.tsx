@@ -67,7 +67,6 @@ vi.mock('@ionic/react', () => ({
     IonGrid: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     IonRow: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     IonIcon: () => null,
-    IonSpinner: () => null,
 }));
 vi.mock('ionicons/icons', () => ({ closeOutline: 'close' }));
 vi.mock('../../../stores/loadingStore', () => ({

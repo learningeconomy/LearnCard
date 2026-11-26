@@ -1,5 +1,5 @@
 import React from 'react';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../../src/components/feedback/AppSpinner';
 
 import * as m from '../../src/paraglide/messages.js';
 import ReducedMotionManager from '../../src/components/accessibility/ReducedMotionManager';
@@ -59,34 +59,34 @@ export const FeedbackVisualFixture: React.FC = () => (
         <Block testId="f1-names" title="IonSpinner names (default = circular md / lines ios)">
             <Row>
                 <Cell label="(default)">
-                    <IonSpinner />
+                    <AppSpinner />
                 </Cell>
                 <Cell label="crescent">
-                    <IonSpinner name="crescent" />
+                    <AppSpinner name="crescent" />
                 </Cell>
                 <Cell label="lines">
-                    <IonSpinner name="lines" />
+                    <AppSpinner name="lines" />
                 </Cell>
                 <Cell label="dots">
-                    <IonSpinner name="dots" />
+                    <AppSpinner name="dots" />
                 </Cell>
                 <Cell label="circular">
-                    <IonSpinner name="circular" />
+                    <AppSpinner name="circular" />
                 </Cell>
                 <Cell label="lines-small">
-                    <IonSpinner name="lines-small" />
+                    <AppSpinner name="lines-small" />
                 </Cell>
                 <Cell label="lines-sharp">
-                    <IonSpinner name="lines-sharp" />
+                    <AppSpinner name="lines-sharp" />
                 </Cell>
                 <Cell label="lines-sharp-small">
-                    <IonSpinner name="lines-sharp-small" />
+                    <AppSpinner name="lines-sharp-small" />
                 </Cell>
                 <Cell label="bubbles">
-                    <IonSpinner name="bubbles" />
+                    <AppSpinner name="bubbles" />
                 </Cell>
                 <Cell label="circles">
-                    <IonSpinner name="circles" />
+                    <AppSpinner name="circles" />
                 </Cell>
             </Row>
         </Block>
@@ -94,37 +94,37 @@ export const FeedbackVisualFixture: React.FC = () => (
         <Block testId="f1-colors" title="IonSpinner color prop (default name and crescent)">
             <Row>
                 <Cell label='color="dark"'>
-                    <IonSpinner color="dark" />
+                    <AppSpinner color="dark" />
                 </Cell>
                 <Cell label="crescent dark">
-                    <IonSpinner color="dark" name="crescent" />
+                    <AppSpinner color="dark" name="crescent" />
                 </Cell>
                 <Cell label='color="black"'>
-                    <IonSpinner color="black" />
+                    <AppSpinner color="black" />
                 </Cell>
                 <Cell label="black in text-indigo-600">
                     <span className="text-indigo-600">
-                        <IonSpinner color="black" />
+                        <AppSpinner color="black" />
                     </span>
                 </Cell>
                 <Cell label='color="light"' dark>
-                    <IonSpinner color="light" />
+                    <AppSpinner color="light" />
                 </Cell>
                 <Cell label="crescent light" dark>
-                    <IonSpinner name="crescent" color="light" aria-hidden="true" />
+                    <AppSpinner name="crescent" color="light" aria-hidden="true" />
                 </Cell>
                 <Cell label='color="grayscale-900"'>
-                    <IonSpinner color="grayscale-900" />
+                    <AppSpinner color="grayscale-900" />
                 </Cell>
                 <Cell label="crescent grayscale-100" dark>
-                    <IonSpinner name="crescent" color="grayscale-100" />
+                    <AppSpinner name="crescent" color="grayscale-100" />
                 </Cell>
                 <Cell label="crescent indigo-600">
-                    <IonSpinner name="crescent" color="indigo-600" />
+                    <AppSpinner name="crescent" color="indigo-600" />
                 </Cell>
                 <Cell label="(none) inherits">
                     <span className="text-emerald-600">
-                        <IonSpinner name="crescent" />
+                        <AppSpinner name="crescent" />
                     </span>
                 </Cell>
             </Row>
@@ -133,31 +133,31 @@ export const FeedbackVisualFixture: React.FC = () => (
         <Block testId="f1-text-colors" title="IonSpinner className text-* colors (currentColor)">
             <Row>
                 <Cell label="text-grayscale-700">
-                    <IonSpinner name="crescent" className="text-grayscale-700" />
+                    <AppSpinner name="crescent" className="text-grayscale-700" />
                 </Cell>
                 <Cell label="h-4 w-4 text-grayscale-900">
-                    <IonSpinner className="h-4 w-4 text-grayscale-900" />
+                    <AppSpinner className="h-4 w-4 text-grayscale-900" />
                 </Cell>
                 <Cell label="w-6 h-6 text-indigo-400">
-                    <IonSpinner name="crescent" className="w-6 h-6 text-indigo-400" />
+                    <AppSpinner name="crescent" className="w-6 h-6 text-indigo-400" />
                 </Cell>
                 <Cell label="w-6 h-6 text-grayscale-500">
-                    <IonSpinner name="crescent" className="w-6 h-6 text-grayscale-500" />
+                    <AppSpinner name="crescent" className="w-6 h-6 text-grayscale-500" />
                 </Cell>
                 <Cell label="w-5 h-5 text-gray-400">
-                    <IonSpinner name="crescent" className="w-5 h-5 text-gray-400" />
+                    <AppSpinner name="crescent" className="w-5 h-5 text-gray-400" />
                 </Cell>
                 <Cell label="w-12 h-12 text-cyan-500">
-                    <IonSpinner name="crescent" className="w-12 h-12 text-cyan-500" />
+                    <AppSpinner name="crescent" className="w-12 h-12 text-cyan-500" />
                 </Cell>
                 <Cell label="h-10 w-10 text-indigo-500">
-                    <IonSpinner name="crescent" className="h-10 w-10 text-indigo-500" />
+                    <AppSpinner name="crescent" className="h-10 w-10 text-indigo-500" />
                 </Cell>
                 <Cell label="text-emerald-600 w-8 h-8">
-                    <IonSpinner name="crescent" className="text-emerald-600 w-8 h-8 mb-4" />
+                    <AppSpinner name="crescent" className="text-emerald-600 w-8 h-8 mb-4" />
                 </Cell>
                 <Cell label="text-white" dark>
-                    <IonSpinner
+                    <AppSpinner
                         name="crescent"
                         aria-label={m['common.loading']()}
                         className="text-white w-[20px] h-[20px] mr-[5px]"
@@ -169,54 +169,54 @@ export const FeedbackVisualFixture: React.FC = () => (
         <Block testId="f1-sizes" title="IonSpinner sizes (w/h utilities, scale, inline style)">
             <Row>
                 <Cell label="h-3 w-3">
-                    <IonSpinner name="crescent" className="h-3 w-3" />
+                    <AppSpinner name="crescent" className="h-3 w-3" />
                 </Cell>
                 <Cell label="w-4 h-4">
-                    <IonSpinner name="crescent" className="w-4 h-4" />
+                    <AppSpinner name="crescent" className="w-4 h-4" />
                 </Cell>
                 <Cell label="dots w-4 h-4">
-                    <IonSpinner name="dots" className="w-4 h-4" />
+                    <AppSpinner name="dots" className="w-4 h-4" />
                 </Cell>
                 <Cell label="h-5 w-5">
-                    <IonSpinner className="h-5 w-5" />
+                    <AppSpinner className="h-5 w-5" />
                 </Cell>
                 <Cell label="dots w-5 h-5">
-                    <IonSpinner name="dots" className="w-5 h-5" />
+                    <AppSpinner name="dots" className="w-5 h-5" />
                 </Cell>
                 <Cell label="lines w-[20px]">
-                    <IonSpinner name="lines" className="w-[20px] h-[20px]" />
+                    <AppSpinner name="lines" className="w-[20px] h-[20px]" />
                 </Cell>
                 <Cell label="h-[34px]">
-                    <IonSpinner className="h-[34px] w-[34px]" />
+                    <AppSpinner className="h-[34px] w-[34px]" />
                 </Cell>
                 <Cell label="h-[20px] scale-[0.75]">
-                    <IonSpinner name="crescent" className="h-[20px] w-[20px] scale-[0.75]" />
+                    <AppSpinner name="crescent" className="h-[20px] w-[20px] scale-[0.75]" />
                 </Cell>
                 <Cell label="scale-[0.8] mr-1">
-                    <IonSpinner name="crescent" color="dark" className="scale-[0.8] mr-1" />
+                    <AppSpinner name="crescent" color="dark" className="scale-[0.8] mr-1" />
                 </Cell>
                 <Cell label="scale-[1] mr-1">
-                    <IonSpinner name="crescent" color="dark" className="scale-[1] mr-1" />
+                    <AppSpinner name="crescent" color="dark" className="scale-[1] mr-1" />
                 </Cell>
                 <Cell label="scale-[1.75]">
-                    <IonSpinner name="crescent" color="dark" className="scale-[1.75]" />
+                    <AppSpinner name="crescent" color="dark" className="scale-[1.75]" />
                 </Cell>
                 <Cell label="style 50px">
-                    <IonSpinner name="crescent" style={{ width: '50px', height: '50px' }} />
+                    <AppSpinner name="crescent" style={{ width: '50px', height: '50px' }} />
                 </Cell>
                 <Cell label="h-[60px]">
-                    <IonSpinner name="crescent" color="dark" className="h-[60px] w-[60px]" />
+                    <AppSpinner name="crescent" color="dark" className="h-[60px] w-[60px]" />
                 </Cell>
                 <Cell label="inline mr-2">
                     <span className="text-sm">
-                        <IonSpinner name="crescent" className="inline mr-2" />
+                        <AppSpinner name="crescent" className="inline mr-2" />
                         Saving
                     </span>
                 </Cell>
             </Row>
             <Row>
                 <Cell label="scale-[2] mb-8 mt-6">
-                    <IonSpinner
+                    <AppSpinner
                         name="crescent"
                         color="grayscale-900"
                         className="scale-[2] mb-8 mt-6"
@@ -224,7 +224,7 @@ export const FeedbackVisualFixture: React.FC = () => (
                 </Cell>
                 <Cell label="scale-[4] mb-8">
                     <div className="w-[160px] h-[160px] flex items-center justify-center">
-                        <IonSpinner
+                        <AppSpinner
                             name="crescent"
                             color="grayscale-900"
                             className="scale-[4] mb-8"
@@ -232,7 +232,7 @@ export const FeedbackVisualFixture: React.FC = () => (
                     </div>
                 </Cell>
                 <Cell label="lines mt-8">
-                    <IonSpinner className="mt-8" name="lines" />
+                    <AppSpinner className="mt-8" name="lines" />
                 </Cell>
             </Row>
         </Block>
@@ -240,16 +240,16 @@ export const FeedbackVisualFixture: React.FC = () => (
         <Block testId="f1-a11y" title="IonSpinner role / aria pass-through">
             <Row>
                 <Cell label="role=status lines">
-                    <IonSpinner name="lines" role="status" aria-label={m['common.loading']()} />
+                    <AppSpinner name="lines" role="status" aria-label={m['common.loading']()} />
                 </Cell>
                 <Cell label="role=status dark">
-                    <IonSpinner role="status" aria-label={m['common.loading']()} color="dark" />
+                    <AppSpinner role="status" aria-label={m['common.loading']()} color="dark" />
                 </Cell>
                 <Cell label="aria-hidden">
-                    <IonSpinner aria-hidden="true" />
+                    <AppSpinner aria-hidden="true" />
                 </Cell>
                 <Cell label="aria-hidden black">
-                    <IonSpinner aria-hidden="true" color="black" />
+                    <AppSpinner aria-hidden="true" color="black" />
                 </Cell>
             </Row>
         </Block>
@@ -258,7 +258,7 @@ export const FeedbackVisualFixture: React.FC = () => (
         <Block testId="f1-connect-page" title="ConnectPage loading (IonSpinner color=black)">
             <div className="bg-white h-[180px]">
                 <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
-                    <IonSpinner color="black" />
+                    <AppSpinner color="black" />
                     <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                 </section>
             </div>
@@ -268,7 +268,7 @@ export const FeedbackVisualFixture: React.FC = () => (
         <Block testId="f1-approve-account" title="ApproveAccount loading (IonSpinner color=light)">
             <div className="bg-grayscale-900 p-6">
                 <div className="flex flex-col items-center justify-center gap-3">
-                    <IonSpinner color="light" />
+                    <AppSpinner color="light" />
                     <p className="font-semibold text-lg text-white">Approving…</p>
                 </div>
             </div>
@@ -279,7 +279,7 @@ export const FeedbackVisualFixture: React.FC = () => (
             <div className="bg-grayscale-200 p-4 flex">
                 <button className="flex items-center justify-center bg-white rounded-full px-[18px] py-[8px] text-grayscale-900 font-poppins text-xl shadow-lg normal tracking-wide mr-3 text-center boost-save-quit-btn">
                     <>
-                        <IonSpinner name="crescent" color="dark" className="scale-[1] mr-1" />{' '}
+                        <AppSpinner name="crescent" color="dark" className="scale-[1] mr-1" />{' '}
                         <p className="w-full line-clamp-1 font-poppins normal tracking-wide">
                             Saving...
                         </p>
@@ -292,7 +292,7 @@ export const FeedbackVisualFixture: React.FC = () => (
         <Block testId="f1-wallpaper-upload" title="Wallpaper upload overlay (scale-[1.75])">
             <div className="relative h-[90px] w-[90px] bg-indigo-300 rounded-full flex items-center justify-center">
                 <div className="absolute z-50 flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-3xl min-w-[70px] min-h-[70px] user-image-upload-inprogress">
-                    <IonSpinner name="crescent" color="dark" className="scale-[1.75]" />
+                    <AppSpinner name="crescent" color="dark" className="scale-[1.75]" />
                 </div>
             </div>
         </Block>
@@ -304,13 +304,13 @@ export const FeedbackVisualFixture: React.FC = () => (
                     disabled
                     className="flex-1 sm:flex-none px-8 py-3 rounded-full bg-gray-100 text-gray-400 font-semibold"
                 >
-                    <IonSpinner name="dots" className="w-5 h-5" />
+                    <AppSpinner name="dots" className="w-5 h-5" />
                 </button>
                 <button
                     disabled
                     className="flex-1 sm:flex-none px-8 py-3 bg-grayscale-900 text-white rounded-[20px] font-semibold hover:opacity-90 disabled:opacity-40"
                 >
-                    <IonSpinner name="dots" />
+                    <AppSpinner name="dots" />
                 </button>
             </div>
         </Block>
@@ -321,7 +321,7 @@ export const FeedbackVisualFixture: React.FC = () => (
                 <div className="h-[44px] w-[44px]">
                     <div className="relative w-full h-full rounded-full overflow-hidden bg-grayscale-200">
                         <div className="absolute inset-0 flex items-center justify-center">
-                            <IonSpinner
+                            <AppSpinner
                                 name="crescent"
                                 role="status"
                                 aria-label={m['common.loading']()}
@@ -337,7 +337,7 @@ export const FeedbackVisualFixture: React.FC = () => (
         <Block testId="f1-activity-feed" title="PassportActivityFeed waiting (lines, role=status)">
             <div className="bg-white h-[120px] flex">
                 <div className="flex-1 flex items-center justify-center">
-                    <IonSpinner name="lines" role="status" aria-label={m['common.loading']()} />
+                    <AppSpinner name="lines" role="status" aria-label={m['common.loading']()} />
                 </div>
             </div>
         </Block>
@@ -347,7 +347,7 @@ export const FeedbackVisualFixture: React.FC = () => (
             <div className="bg-emerald-700 p-4">
                 <h2 className="select-none whitespace-nowrap flex flex-col gap-[4px] text-white">
                     <span className="font-poppins text-[30px] leading-[100%] flex items-center">
-                        <IonSpinner
+                        <AppSpinner
                             name="crescent"
                             aria-label={m['common.loading']()}
                             className="text-white w-[20px] h-[20px] mr-[5px]"
@@ -363,7 +363,7 @@ export const FeedbackVisualFixture: React.FC = () => (
             <div className="bg-white h-[160px] flex items-center justify-center">
                 <div className="relative flex items-center justify-center">
                     <div className="w-[72px] h-[72px] rounded-full bg-indigo-200" />
-                    <IonSpinner
+                    <AppSpinner
                         name="crescent"
                         color="dark"
                         className="absolute -inset-3 w-[96px] h-[96px] opacity-70"
@@ -377,7 +377,7 @@ export const FeedbackVisualFixture: React.FC = () => (
             <div className="bg-white h-[200px] flex items-center">
                 <div className="relative w-full flex items-center justify-center">
                     <div className="h-[70px] w-[70px] rounded-full z-50 bg-indigo-200 border-white border-solid border-[6px] box-content" />
-                    <IonSpinner
+                    <AppSpinner
                         name="crescent"
                         style={{
                             color: '#6366F1',
@@ -392,7 +392,7 @@ export const FeedbackVisualFixture: React.FC = () => (
         {/* src/components/generic/RouteTransitionLoader.tsx:24 (fixed overlay replaced by a box). */}
         <Block testId="f1-route-transition" title="RouteTransitionLoader (inline style color/size)">
             <div className="h-[100px] flex items-center justify-center bg-white">
-                <IonSpinner name="crescent" style={{ color: '#8B5CF6', width: 36, height: 36 }} />
+                <AppSpinner name="crescent" style={{ color: '#8B5CF6', width: 36, height: 36 }} />
             </div>
         </Block>
 

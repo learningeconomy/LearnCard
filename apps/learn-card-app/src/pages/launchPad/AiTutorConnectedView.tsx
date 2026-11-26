@@ -3,7 +3,8 @@ import type { AppStoreListing, InstalledApp } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('ai-tutor-connected-view');
 
-import { IonSpinner, IonFooter } from '@ionic/react';
+import { IonFooter } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 import { Sparkles, History, Send, ChevronLeft, Settings } from 'lucide-react';
 
 import {
@@ -221,7 +222,7 @@ const AiTutorConnectedView: React.FC<AiTutorConnectedViewProps> = ({ listing, la
                         AI Sessions
                         <span className="text-2xl">&nbsp;·&nbsp;</span>
                         {loadingTopics ? (
-                            <IonSpinner name="crescent" color="dark" className="scale-[0.8] mr-1" />
+                            <AppSpinner name="crescent" color="dark" className="scale-[0.8] mr-1" />
                         ) : (
                             existingTopics.length
                         )}
@@ -231,7 +232,7 @@ const AiTutorConnectedView: React.FC<AiTutorConnectedViewProps> = ({ listing, la
 
                 {loadingTopics ? (
                     <div className="flex justify-center py-8">
-                        <IonSpinner name="crescent" />
+                        <AppSpinner name="crescent" />
                     </div>
                 ) : existingTopics.length > 0 ? (
                     <div className="space-y-v3-2 max-h-[200px] overflow-y-auto">
@@ -352,7 +353,7 @@ const AiTutorConnectedView: React.FC<AiTutorConnectedViewProps> = ({ listing, la
                         className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-violet-500 rounded-lg flex items-center justify-center text-white disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {isLaunching ? (
-                            <IonSpinner name="crescent" className="w-4 h-4" />
+                            <AppSpinner name="crescent" className="w-4 h-4" />
                         ) : (
                             <Send className="w-4 h-4" />
                         )}

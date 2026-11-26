@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 
 import {
     ModalTypes,
@@ -157,7 +157,7 @@ const SkillSearchFrameworkSection: React.FC<SkillSearchFrameworkSectionProps> = 
         <div className="relative py-[10px] border-t border-solid border-grayscale-200 flex flex-col gap-[10px]">
             {isSavingSkills && (
                 <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/70 rounded-[10px]">
-                    <IonSpinner color="dark" name="crescent" />
+                    <AppSpinner color="dark" name="crescent" />
                 </div>
             )}
 
@@ -174,7 +174,7 @@ const SkillSearchFrameworkSection: React.FC<SkillSearchFrameworkSectionProps> = 
 
             {isLoading && (
                 <div className="flex-1 flex justify-center pt-[30px]">
-                    <IonSpinner color="dark" name="crescent" />
+                    <AppSpinner color="dark" name="crescent" />
                 </div>
             )}
 

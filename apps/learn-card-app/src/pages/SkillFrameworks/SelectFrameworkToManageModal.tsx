@@ -20,7 +20,8 @@ import ManageSkills from './ManageSkills';
 import SkillsFrameworkIcon from '../../components/svgs/SkillsFrameworkIcon';
 import CreateFrameworkModal from './CreateFrameworkModal';
 import SkillsAdminPanelFramework from '../skills/SkillsAdminPanelFramework';
-import { IonInput, IonSpinner } from '@ionic/react';
+import { IonInput } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 import type { ApiFrameworkInfo } from '../../helpers/skillFramework.helpers';
 import { useGlobalSkillFrameworks } from '../../helpers/globalSkillFrameworks.helpers';
 import {
@@ -259,7 +260,7 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
 
                 {isLoadingFrameworks && (
                     <div className="flex items-center justify-center py-[111px] text-grayscale-900">
-                        <IonSpinner />
+                        <AppSpinner />
                     </div>
                 )}
 
@@ -281,7 +282,7 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
                                 title="Sync framework"
                             >
                                 {syncingFrameworkId === framework.id ? (
-                                    <IonSpinner name="lines" className="w-[20px] h-[20px]" />
+                                    <AppSpinner name="lines" className="w-[20px] h-[20px]" />
                                 ) : (
                                     <RefreshIcon className="w-[20px] h-[20px]" />
                                 )}
@@ -301,7 +302,7 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
 
                         {isLoadingAvailableFrameworks && (
                             <div className="flex items-center justify-center py-[20px] text-grayscale-900">
-                                <IonSpinner />
+                                <AppSpinner />
                             </div>
                         )}
 

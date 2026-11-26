@@ -16,7 +16,7 @@ import CredentialSyncConfirmation from './CredentialSyncConfirmation';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import BoostFooterLayout from 'learn-card-base/components/boost/boostFooter/BoostFooterLayout';
 import BoostLoader from '../../components/boost/boostLoader/BoostLoader';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 
 import { getMinimumTermsForContract } from 'apps/learn-card-app/src/helpers/contract.helpers';
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
@@ -160,7 +160,7 @@ const ConsentFlowCredFrontDoor: React.FC<ConsentFlowCredFrontDoorProps> = ({
 
                         {!resolvedBoost && (
                             <div className="flex flex-col items-center gap-[10px]">
-                                <IonSpinner className="h-[34px] w-[34px]" />
+                                <AppSpinner className="h-[34px] w-[34px]" />
                                 <span className="text-white text-[18px]">
                                     {m['common.loading']()}
                                 </span>

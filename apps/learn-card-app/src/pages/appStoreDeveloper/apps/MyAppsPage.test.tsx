@@ -13,7 +13,6 @@ vi.mock('@ionic/react', () => ({
     IonPage: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     IonContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     IonIcon: () => <span />,
-    IonSpinner: () => <div>Loading</div>,
 }));
 vi.mock('learn-card-base', () => ({
     useModal: () => ({ newModal: vi.fn(), closeModal: vi.fn() }),

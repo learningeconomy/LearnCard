@@ -60,9 +60,6 @@ vi.mock('learn-card-base/hooks/useGetCredentialRecordForBoost', () => ({
     getOrFetchCredentialRecordForBoost: vi.fn(),
 }));
 vi.mock('@ionic/react', () => ({
-    IonSpinner: (props: { 'aria-label'?: string }) => (
-        <span role="status" aria-label={props['aria-label']} />
-    ),
     IonSkeletonText: () => null,
 }));
 vi.mock('../../theme/hooks/useTheme', () => ({

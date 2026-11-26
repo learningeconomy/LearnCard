@@ -1,6 +1,7 @@
 import { enterSharePrivacy } from '../../components/share-links/sharePrivacy';
 import React, { useEffect, useState } from 'react';
-import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 import { useLocation } from 'react-router-dom';
 import { getAnonymousClient } from '@learncard/network-brain-client';
 import { networkStore } from 'learn-card-base';
@@ -41,7 +42,7 @@ const UnsubscribePage: React.FC = () => {
                         </h1>
                         {state === 'loading' && (
                             <div role="status" className="text-grayscale-600">
-                                <IonSpinner aria-hidden="true" />
+                                <AppSpinner aria-hidden="true" />
                                 <p>{m['announcements.unsubscribing']()}</p>
                             </div>
                         )}

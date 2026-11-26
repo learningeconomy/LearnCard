@@ -1,6 +1,7 @@
 import React, { Suspense, useState } from 'react';
 
-import { IonIcon, IonPage, IonContent, IonPopover, IonSpinner } from '@ionic/react';
+import { IonIcon, IonPage, IonContent, IonPopover } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 import { chevronDownOutline, eyeOutline, shareOutline } from 'ionicons/icons';
 import { lazyWithRetry, ModalTypes, useDeviceTypeByWidth, useModal } from 'learn-card-base';
 
@@ -15,7 +16,7 @@ const SharedBundleModalFallback: React.FC = () => (
     <IonPage>
         <IonContent>
             <div className="font-poppins flex min-h-[360px] items-center justify-center p-8">
-                <IonSpinner name="crescent" className="text-grayscale-700" />
+                <AppSpinner name="crescent" className="text-grayscale-700" />
             </div>
         </IonContent>
     </IonPage>

@@ -29,7 +29,6 @@ vi.mock('@ionic/react', () => ({
     IonIcon: () => null,
     IonPage: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
     IonContent: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-    IonSpinner: () => <div>Loading</div>,
     IonPopover: ({ children, isOpen }: React.PropsWithChildren<{ isOpen: boolean }>) =>
         isOpen ? <div>{children}</div> : null,
 }));

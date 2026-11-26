@@ -25,7 +25,8 @@ import FrameworkSkillsCount from './FrameworkSkillsCount';
 import FrameworkOptionsModal from './FrameworkOptionsModal';
 import * as m from '../../paraglide/messages.js';
 import FrameworkSearchResults from './FrameworkSearchResults';
-import { IonFooter, IonInput, IonSpinner } from '@ionic/react';
+import { IonFooter, IonInput } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 
 import {
     FrameworkNodeRole,
@@ -505,7 +506,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
 
                     {search && searchLoading && !isApproveFlow && (
                         <div className="flex items-center justify-center mt-[100px]">
-                            <IonSpinner
+                            <AppSpinner
                                 color="dark"
                                 name="crescent"
                                 className="h-[40px] w-[40px]"
@@ -569,7 +570,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                             <div role="presentation" ref={infiniteScrollRef} />
                             {effectiveIsLoadingMore && (
                                 <div className="w-full flex items-center justify-center py-4">
-                                    <IonSpinner
+                                    <AppSpinner
                                         name="crescent"
                                         color="dark"
                                         className="h-[30px] w-[30px]"

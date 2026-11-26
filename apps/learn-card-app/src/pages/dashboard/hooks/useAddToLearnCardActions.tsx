@@ -1,7 +1,8 @@
 import React, { Suspense, lazy, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { useHistory } from 'react-router-dom';
-import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
+import { AppSpinner } from '../../../components/feedback/AppSpinner';
 
 import { ModalTypes, QRCodeScannerStore, useModal, getLogger } from 'learn-card-base';
 
@@ -19,7 +20,7 @@ const PasteOrUploadClaimModalFallback: React.FC = () => (
     <IonPage>
         <IonContent>
             <div className="font-poppins flex items-center justify-center min-h-[360px] p-8">
-                <IonSpinner
+                <AppSpinner
                     name="crescent"
                     role="status"
                     aria-label={m['common.loading']()}

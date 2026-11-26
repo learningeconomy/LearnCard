@@ -6,7 +6,6 @@ import { ResumeBuilderToolbar } from './ResumeBuilderToolbar';
 vi.mock('@ionic/react', () => ({
     IonHeader: ({ children }: React.PropsWithChildren) => <header>{children}</header>,
     IonToolbar: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-    IonSpinner: () => <span />,
 }));
 
 afterEach(cleanup);

@@ -3,7 +3,8 @@ import { useParams, useHistory } from 'react-router';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('connect-page');
 
-import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 import MainHeader from '../../components/main-header/MainHeader';
 
 import * as m from '../../paraglide/messages.js';
@@ -108,7 +109,7 @@ const ConnectPage: React.FC = () => {
             <IonContent fullscreen>
                 {loading && (
                     <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
-                        <IonSpinner color="black" />
+                        <AppSpinner color="black" />
                         <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                     </section>
                 )}

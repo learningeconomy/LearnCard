@@ -15,11 +15,11 @@ import {
     IonCol,
     useIonModal,
     IonGrid,
-    IonSpinner,
     IonToggle,
     IonDatetime,
     IonInput,
 } from '@ionic/react';
+import { AppSpinner } from '../../../../feedback/AppSpinner';
 
 import {
     ModalTypes,
@@ -435,7 +435,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                     <>
                         {isPermissionsLoading && (
                             <IonRow className="flex items-center justify-center w-full bg-grayscale-100 rounded-[15px] p-4 mb-2">
-                                <IonSpinner name="crescent" color="dark" className="mr-2" />
+                                <AppSpinner name="crescent" color="dark" className="mr-2" />
                                 <p className="text-grayscale-700 font-medium text-sm m-0">
                                     Checking template permissions...
                                 </p>
@@ -484,7 +484,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                                                         {isLinkLoading ||
                                                         getCurrentClaimLink().length === 0 ? (
                                                             <>
-                                                                <IonSpinner
+                                                                <AppSpinner
                                                                     name="crescent"
                                                                     color="dark"
                                                                     className="scale-[1] mr-1"

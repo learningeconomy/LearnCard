@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-import { IonInput, IonSpinner } from '@ionic/react';
+import { IonInput } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 import X from 'learn-card-base/svgs/X';
 import Pencil from '../../components/svgs/Pencil';
 import CodeIcon from 'learn-card-base/svgs/CodeIcon';
@@ -152,7 +153,7 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
                         >
                             {searchLoading && !isApproveFlow && (
                                 <div className="h-[100px] w-full flex items-center justify-center">
-                                    <IonSpinner color="dark" name="crescent" />
+                                    <AppSpinner color="dark" name="crescent" />
                                 </div>
                             )}
                             {(!searchLoading || isApproveFlow) && (

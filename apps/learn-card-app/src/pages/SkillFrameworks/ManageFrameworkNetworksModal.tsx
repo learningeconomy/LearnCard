@@ -5,7 +5,7 @@ import {
     useGetMultipleBoosts,
     useWallet,
 } from 'learn-card-base';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { SkillFrameworkType } from '@learncard/types';
 import CaretDown from 'apps/learn-card-app/src/components/svgs/CaretDown';
@@ -151,7 +151,7 @@ const ManageFrameworkNetworksModal: React.FC<ManageFrameworkNetworksModalProps> 
             <div className="grow p-[15px] min-h-[300px] max-h-[500px] overflow-y-auto">
                 {isLoading ? (
                     <div className="flex items-center justify-center h-full">
-                        <IonSpinner name="crescent" />
+                        <AppSpinner name="crescent" />
                     </div>
                 ) : networks.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center p-[20px]">

@@ -4,7 +4,7 @@ import { m } from '../../../paraglide/messages.js';
 
 import X from 'learn-card-base/svgs/X';
 import { IonInput } from '@ionic/react';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../../../components/feedback/AppSpinner';
 import { AiInsightsUserCardWrapper } from '../AiInsightsUserCard';
 import RequestInsightsFromAnyoneController from './RequestInsightsFromAnyoneController';
 
@@ -80,7 +80,7 @@ export const RequestInsightsModal: React.FC<{ contractUri: string }> = ({ contra
                         <div className="w-full flex flex-col gap-2">
                             {showLoadingSpinner && (
                                 <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full mt-8">
-                                    <IonSpinner color="grayscale-900" />
+                                    <AppSpinner color="grayscale-900" />
                                     <p className="mt-2 font-bold text-lg">
                                         {m['aiInsights.loading']()}
                                     </p>

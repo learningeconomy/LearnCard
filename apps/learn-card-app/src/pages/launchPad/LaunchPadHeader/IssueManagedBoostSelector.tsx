@@ -15,7 +15,8 @@ import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import X from 'learn-card-base/svgs/X';
 import Search from 'learn-card-base/svgs/Search';
 import CaretDown from 'learn-card-base/svgs/CaretDown';
-import { IonInput, IonSpinner } from '@ionic/react';
+import { IonInput } from '@ionic/react';
+import { AppSpinner } from '../../../components/feedback/AppSpinner';
 import BoostTemplateListItem from '../../../components/boost/boost-template/BoostTemplateListItem';
 import * as m from '../../../paraglide/messages.js';
 import { getBoostCategoryLabel } from '../../../helpers/boostCategoryLabel';
@@ -219,7 +220,7 @@ const IssueManagedBoostSelector: React.FC = () => {
                     <div className="relative w-full">
                         <div className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10">
                             {isSearching ? (
-                                <IonSpinner name="crescent" className="w-[20px] h-[20px]" />
+                                <AppSpinner name="crescent" className="w-[20px] h-[20px]" />
                             ) : (
                                 <Search className="text-grayscale-500 w-[20px] h-[20px]" />
                             )}
@@ -243,7 +244,7 @@ const IssueManagedBoostSelector: React.FC = () => {
                 >
                     {boostsLoading && !displayBoosts.length && (
                         <div className="flex justify-center p-4">
-                            <IonSpinner color="dark" />
+                            <AppSpinner color="dark" />
                         </div>
                     )}
 
@@ -259,7 +260,7 @@ const IssueManagedBoostSelector: React.FC = () => {
 
                     {(boostsIsFetchingNextPage || (boostsLoading && displayBoosts.length > 0)) && (
                         <div className="flex justify-center p-4">
-                            <IonSpinner color="dark" />
+                            <AppSpinner color="dark" />
                         </div>
                     )}
                     <div ref={boostInfiniteScrollRef} />

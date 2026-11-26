@@ -2,15 +2,8 @@ import React, { useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
-import {
-    IonContent,
-    IonFooter,
-    IonInput,
-    IonPage,
-    IonSpinner,
-    IonToolbar,
-    useIonModal,
-} from '@ionic/react';
+import { IonContent, IonFooter, IonInput, IonPage, IonToolbar, useIonModal } from '@ionic/react';
+import { AppSpinner } from '../../../feedback/AppSpinner';
 import Pencil from '../../../svgs/Pencil';
 import LearnCardIconOutline from '../../../svgs/LearnCardIconOutline';
 import LearnCardIDCMS from '../../../learncardID-CMS/LearnCardIDCMS';
@@ -242,7 +235,7 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
                                 >
                                     {imageUploadLoading && (
                                         <div className="user-image-upload-inprogress absolute flex h-[70px] min-h-[70px] w-[70px] min-w-[70px] items-center justify-center overflow-hidden rounded-full border-2 border-solid border-white text-xl font-medium text-white">
-                                            <IonSpinner
+                                            <AppSpinner
                                                 name="crescent"
                                                 color="dark"
                                                 className="scale-[1.75]"

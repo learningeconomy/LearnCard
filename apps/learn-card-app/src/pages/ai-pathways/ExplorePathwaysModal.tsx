@@ -30,7 +30,7 @@ import {
     SKILL_PROFILE_GOALS_KEY,
     SkillProfileGoalsData,
 } from './ai-pathways-skill-profile/SkillProfileStep1';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 import type { SelectedSkill } from '../skills/skillTypes';
 import SelfAssignSkillsModal from '../skills/SelfAssignSkillsModal';
 import EditGoalsModal from './EditGoalsModal';
@@ -338,7 +338,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
                     <div className="flex flex-col gap-[10px] relative">
                         {skillsSaving && (
                             <div className="absolute inset-0 z-20 bg-white/70 rounded-[15px] flex items-center justify-center">
-                                <IonSpinner color="dark" name="crescent" />
+                                <AppSpinner color="dark" name="crescent" />
                             </div>
                         )}
 
@@ -543,7 +543,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
 
                     {sasBoostSkillsLoading && selectedSkills.length === 0 && (
                         <div className="flex items-center justify-center py-[15px]">
-                            <IonSpinner color="dark" name="crescent" />
+                            <AppSpinner color="dark" name="crescent" />
                         </div>
                     )}
                 </div>
@@ -551,7 +551,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
                 <div className="relative flex flex-col gap-[10px] pb-[15px] pt-[15px]">
                     {goalsSaving && (
                         <div className="absolute inset-0 z-20 bg-white/70 rounded-[15px] flex items-center justify-center">
-                            <IonSpinner color="dark" name="crescent" />
+                            <AppSpinner color="dark" name="crescent" />
                         </div>
                     )}
 
@@ -567,7 +567,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
 
                     {goalsLoading && (
                         <div className="flex items-center justify-center py-[15px]">
-                            <IonSpinner color="dark" name="crescent" />
+                            <AppSpinner color="dark" name="crescent" />
                         </div>
                     )}
 

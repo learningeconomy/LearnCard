@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
-import { IonContent, IonIcon, IonPage, IonSpinner } from '@ionic/react';
+import { IonContent, IonIcon, IonPage } from '@ionic/react';
+import { AppSpinner } from '../../../components/feedback/AppSpinner';
 import { alertCircleOutline, arrowBackOutline } from 'ionicons/icons';
 import { useQuery } from '@tanstack/react-query';
 
@@ -266,7 +267,7 @@ export const EditListingPage: React.FC = () => {
                 <AppStoreHeader title="Edit listing" />
                 <IonContent>
                     <div className="flex items-center justify-center h-full">
-                        <IonSpinner name="crescent" />
+                        <AppSpinner name="crescent" />
                     </div>
                 </IonContent>
             </IonPage>

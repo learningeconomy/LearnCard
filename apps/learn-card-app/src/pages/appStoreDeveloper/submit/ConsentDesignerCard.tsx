@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { IonIcon, IonSpinner } from '@ionic/react';
+import { IonIcon } from '@ionic/react';
+import { AppSpinner } from '../../../components/feedback/AppSpinner';
 import {
     flashOutline,
     checkmarkOutline,
@@ -397,7 +398,7 @@ export const ConsentDesignerCard: React.FC<ConsentDesignerCardProps> = ({
                     >
                         {isEnabling ? (
                             <>
-                                <IonSpinner name="crescent" className="w-4 h-4" />
+                                <AppSpinner name="crescent" className="w-4 h-4" />
                                 Setting up...
                             </>
                         ) : (

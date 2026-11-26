@@ -67,7 +67,6 @@ vi.mock('../../../components/learncardID-CMS/learncard-cms.helpers', () => ({
 }));
 vi.mock('@learncard/react', () => ({ Checkmark: () => null }));
 vi.mock('@ionic/react', () => ({
-    IonSpinner: () => null,
     IonInput: ({
         label,
         value,

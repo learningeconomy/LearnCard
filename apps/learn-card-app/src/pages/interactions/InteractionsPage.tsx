@@ -6,7 +6,6 @@ import {
     IonToolbar,
     IonTitle,
     IonContent,
-    IonSpinner,
     IonCard,
     IonCardContent,
     IonIcon,
@@ -15,6 +14,7 @@ import {
     IonRow,
     IonCol,
 } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 import {
     refreshOutline,
     homeOutline,
@@ -157,7 +157,7 @@ const InteractionsPage: React.FC = () => {
                             style={{ height: '100%' }}
                         >
                             <IonCol size="auto" className="ion-text-center">
-                                <IonSpinner
+                                <AppSpinner
                                     name="crescent"
                                     style={{ width: '50px', height: '50px' }}
                                 />

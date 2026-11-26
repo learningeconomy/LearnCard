@@ -27,7 +27,6 @@ vi.mock('learn-card-base', () => ({
     }),
 }));
 vi.mock('learn-card-base/svgs/ArrowCircle', () => ({ default: () => null }));
-vi.mock('@ionic/react', () => ({ IonSpinner: () => null }));
 vi.mock('apps/learn-card-app/src/stores/loadingStore', () => ({ useLoadingLine: vi.fn() }));
 vi.mock('../../../theme/hooks/useTheme', () => ({
     default: () => ({

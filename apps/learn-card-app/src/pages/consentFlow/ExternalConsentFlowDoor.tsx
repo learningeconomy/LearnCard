@@ -7,7 +7,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import authStore from 'learn-card-base/stores/authStore';
 
-import { IonPage, IonCol, IonRow, IonSkeletonText, IonSpinner } from '@ionic/react';
+import { IonPage, IonCol, IonRow, IonSkeletonText } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 import FullScreenGameFlow from './GameFlow/FullScreenGameFlow';
 import ConsentFlowCredFrontDoor from './ConsentFlowCredFrontDoor';
 
@@ -230,7 +231,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
         return (
             <IonPage className="bg-emerald-700 p-[30px] flex items-center justify-center">
                 <div className="w-full flex flex-col items-center justify-center min-h-[300px]">
-                    <IonSpinner
+                    <AppSpinner
                         name="crescent"
                         color="grayscale-900"
                         className="scale-[2] mb-8 mt-6"

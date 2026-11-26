@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useWallet } from 'learn-card-base';
-import { IonSpinner, useIonToast } from '@ionic/react';
+import { useIonToast } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Plus from 'apps/learn-card-app/src/components/svgs/Plus';
 // import TrashIcon from 'learn-card-base/svgs/TrashIcon';
@@ -212,7 +213,7 @@ export const FrameworkCRUD: React.FC = () => {
             {/* Loading State */}
             {loadingFrameworks && (
                 <div className="flex items-center justify-center py-8">
-                    <IonSpinner name="crescent" />
+                    <AppSpinner name="crescent" />
                 </div>
             )}
 
@@ -285,7 +286,7 @@ export const FrameworkCRUD: React.FC = () => {
 
                         {loadingNetworks ? (
                             <div className="flex justify-center py-4">
-                                <IonSpinner name="crescent" />
+                                <AppSpinner name="crescent" />
                             </div>
                         ) : networks && networks.length > 0 ? (
                             <div className="space-y-v3-2">

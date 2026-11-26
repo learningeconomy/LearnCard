@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('connect-modal');
 
-import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 
 import * as m from '../../paraglide/messages.js';
 import { useWallet, usePathQuery, useIsLoggedIn } from 'learn-card-base';
@@ -108,7 +109,7 @@ const ConnectModal: React.FC<{
             <IonContent fullscreen>
                 {loading && (
                     <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
-                        <IonSpinner color="black" />
+                        <AppSpinner color="black" />
                         <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                     </section>
                 )}

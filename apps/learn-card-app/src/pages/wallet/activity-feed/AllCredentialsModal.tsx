@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef } from 'react';
-import { IonIcon, IonSpinner } from '@ionic/react';
+import { IonIcon } from '@ionic/react';
+import { AppSpinner } from '../../../components/feedback/AppSpinner';
 import { closeOutline } from 'ionicons/icons';
 import { useCredentialCollection } from 'learn-card-base';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
@@ -101,7 +102,7 @@ export const AllCredentialsModal: React.FC<{ onClose: () => void }> = ({ onClose
                         aria-label={m['credentialCollection.loadingCredentials']()}
                         className="flex justify-center py-4"
                     >
-                        <IonSpinner name="crescent" />
+                        <AppSpinner name="crescent" />
                     </div>
                 )}
                 {isError && (

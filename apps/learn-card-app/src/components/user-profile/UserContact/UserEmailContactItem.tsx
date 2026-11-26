@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Countdown from 'react-countdown';
 import { ContactMethodType } from '@learncard/types';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../../feedback/AppSpinner';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('user-email-contact-item');
 
@@ -162,7 +162,7 @@ export const UserEmailContactItem: React.FC<{
                     className="bg-white border-solid border border-grayscale-200 rounded-full h-[48px] w-[48px] flex items-center justify-center"
                 >
                     {isRemoveLoading ? (
-                        <IonSpinner name="crescent" aria-hidden="true" />
+                        <AppSpinner name="crescent" aria-hidden="true" />
                     ) : (
                         <span aria-hidden="true">
                             <TrashBin

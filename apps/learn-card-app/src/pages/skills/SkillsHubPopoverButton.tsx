@@ -5,7 +5,8 @@ const log = getLogger('skills-hub-popover-button');
 import useTheme from '../../theme/hooks/useTheme';
 import { useModal, ModalTypes, useDeviceTypeByWidth, useWallet } from 'learn-card-base';
 
-import { IonPopover, IonSpinner } from '@ionic/react';
+import { IonPopover } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 import { Checkmark } from '@learncard/react';
 import SortIcon from 'learn-card-base/svgs/SortButton';
 import FrameworkImage from '../SkillFrameworks/FrameworkImage';
@@ -232,7 +233,7 @@ export const SkillsHubPopOverButton: React.FC<SkillsHubPopOverButtonProps> = ({
                             })}
                             {frameworksLoading && (
                                 <div className="flex items-center justify-center">
-                                    <IonSpinner name="crescent" color="dark" />
+                                    <AppSpinner name="crescent" color="dark" />
                                 </div>
                             )}
                         </div>

@@ -4,7 +4,8 @@
 // of parent accounts.
 
 import React, { useEffect, useRef, useState } from 'react';
-import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 import AccessibleCodeInput from '../login/forms/AccessibleCodeInput';
 import { useParams } from 'react-router-dom';
 
@@ -215,7 +216,7 @@ const GuardianCredentialApprovalPage: React.FC = () => {
 
                     {state === 'loading' && (
                         <div className="flex flex-col items-center gap-3">
-                            <IonSpinner color="light" />
+                            <AppSpinner color="light" />
                             <p className="font-semibold text-lg">Loading credential details…</p>
                         </div>
                     )}
@@ -304,7 +305,7 @@ const GuardianCredentialApprovalPage: React.FC = () => {
 
                                 {state === 'sending_code' && (
                                     <div className="flex flex-col items-center gap-3">
-                                        <IonSpinner color="light" />
+                                        <AppSpinner color="light" />
                                         <p className="font-semibold text-lg">Sending code…</p>
                                     </div>
                                 )}
@@ -356,7 +357,7 @@ const GuardianCredentialApprovalPage: React.FC = () => {
 
                     {(state === 'approving' || state === 'rejecting') && (
                         <div className="flex flex-col items-center gap-3">
-                            <IonSpinner color="light" />
+                            <AppSpinner color="light" />
                             <p className="font-semibold text-lg">
                                 {state === 'approving' ? 'Approving…' : 'Rejecting…'}
                             </p>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
-import { IonContent, IonIcon, IonPage, IonSpinner } from '@ionic/react';
+import { IonContent, IonIcon, IonPage } from '@ionic/react';
+import { AppSpinner } from '../../../components/feedback/AppSpinner';
 import {
     addOutline,
     alertCircleOutline,
@@ -157,7 +158,7 @@ const MyAppsPage: React.FC = () => {
 
                     {loading ? (
                         <div className="flex justify-center py-20">
-                            <IonSpinner name="crescent" />
+                            <AppSpinner name="crescent" />
                         </div>
                     ) : isError ? (
                         <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">

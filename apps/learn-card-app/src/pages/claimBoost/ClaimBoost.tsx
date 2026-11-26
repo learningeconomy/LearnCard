@@ -7,7 +7,8 @@ import moment from 'moment';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('claim-boost');
 
-import { IonPage, IonSpinner } from '@ionic/react';
+import { IonPage } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 
 // import MainHeader from '../../components/main-header/MainHeader';
 import BoostFooterLayout from '../../components/accessibility/AccessibleBoostFooterLayout';
@@ -941,7 +942,7 @@ const ClaimBoost: React.FC<{
                                         aria-live="polite"
                                         className="relative loading-spinner-container flex flex-col items-center justify-center h-full w-full"
                                     >
-                                        <IonSpinner aria-hidden="true" color="black" />
+                                        <AppSpinner aria-hidden="true" color="black" />
                                         <p className="mt-2 font-bold text-lg">
                                             {m['common.loading']()}
                                         </p>

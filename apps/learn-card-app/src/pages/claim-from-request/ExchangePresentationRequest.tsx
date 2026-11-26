@@ -9,7 +9,6 @@ import {
     IonList,
     IonItem,
     IonLabel,
-    IonSpinner,
 } from '@ionic/react';
 import { useWallet } from 'learn-card-base';
 import { VC, VP } from '@learncard/types';

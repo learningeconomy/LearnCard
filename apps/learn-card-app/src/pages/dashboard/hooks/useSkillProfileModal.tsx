@@ -1,5 +1,6 @@
 import React, { Suspense, useEffect } from 'react';
-import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
+import { AppSpinner } from '../../../components/feedback/AppSpinner';
 
 import { ModalTypes, lazyWithRetry, useModal } from 'learn-card-base';
 
@@ -13,7 +14,7 @@ const SkillProfileModalFallback: React.FC = () => (
     <IonPage>
         <IonContent>
             <div className="font-poppins flex items-center justify-center min-h-[360px] p-8">
-                <IonSpinner name="crescent" className="text-grayscale-700" />
+                <AppSpinner name="crescent" className="text-grayscale-700" />
             </div>
         </IonContent>
     </IonPage>
