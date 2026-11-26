@@ -3,8 +3,9 @@ import { produce } from 'immer';
 
 import TrashBin from '../../components/svgs/TrashBin';
 import Plus from 'learn-card-base/svgs/Plus';
-import { IonInput, IonCheckbox } from '@ionic/react';
+import { IonInput } from '@ionic/react';
 import type { ConsentFlowContract } from '@learncard/types';
+import { AppCheckbox } from '../../components/controls/AppCheckbox';
 
 type MultiTextInputProps = {
     values: ConsentFlowContract['read']['personal'];
@@ -44,12 +45,12 @@ const MultiTextInput: React.FC<MultiTextInputProps> = ({
 
             <label className="flex items-center gap-2 justify-end rounded-full text-xs text-grayscale-800">
                 Required
-                <IonCheckbox
+                <AppCheckbox
                     checked={value.required}
-                    onIonChange={e =>
+                    onCheckedChange={checked =>
                         onChange(
                             produce(values, draft => {
-                                draft[category] = { required: e.detail.checked };
+                                draft[category] = { required: checked };
                             })
                         )
                     }

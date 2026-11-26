@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { IonContent, IonButton, IonPage, useIonAlert, IonHeader, IonToolbar } from '@ionic/react';
+import { IonContent, IonPage, useIonAlert, IonHeader, IonToolbar } from '@ionic/react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('view-creds-bundle');
 
@@ -10,6 +10,8 @@ import { SyncCredentialsVCs } from 'learn-card-base';
 
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
+
+import { AppButton } from '../controls/AppButton';
 import ShareBoostsBundle from './ShareBoostsBundle';
 
 const ViewCredsBundle: React.FC = () => {
@@ -140,9 +142,9 @@ const ViewCredsBundle: React.FC = () => {
                             </a>
                         </div>
 
-                        <IonButton className="text-grayscale-600 mr-[20px]" onClick={openWebsite}>
+                        <AppButton className="text-grayscale-600 mr-[20px]" onClick={openWebsite}>
                             Learn More
-                        </IonButton>
+                        </AppButton>
                     </div>
                 </IonToolbar>
             </IonHeader>

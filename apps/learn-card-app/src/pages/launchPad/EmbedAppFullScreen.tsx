@@ -1,14 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
-import {
-    IonPage,
-    IonContent,
-    IonHeader,
-    IonToolbar,
-    IonButtons,
-    IonButton,
-    IonTitle,
-} from '@ionic/react';
+import { IonPage, IonContent, IonHeader, IonToolbar, IonTitle } from '@ionic/react';
 
 import { getLogger, useIsOffline, connectivityStore } from 'learn-card-base';
 import { Network } from '@capacitor/network';
@@ -22,6 +14,8 @@ import { useLearnCardMessageHandlers } from '../../hooks/post-message/useLearnCa
 import { CredentialClaimModal } from './CredentialClaimModal';
 import { AppCredentialDashboard } from './AppCredentialDashboard';
 import { useAppNotificationToast } from '../../hooks/useAppNotificationToast';
+import { AppButton } from '../../components/controls/AppButton';
+import { AppButtons } from '../../components/controls/AppButtons';
 
 interface EmbedAppParams {
     appId: string;
@@ -172,8 +166,8 @@ export const EmbedAppFullScreen: React.FC = () => {
         <IonPage>
             <IonHeader>
                 <IonToolbar>
-                    <IonButtons slot="start">
-                        <IonButton onClick={() => history.goBack()}>
+                    <AppButtons slot="start">
+                        <AppButton onClick={() => history.goBack()}>
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
                                 className="h-6 w-6"
@@ -188,17 +182,17 @@ export const EmbedAppFullScreen: React.FC = () => {
                                     d="M15 19l-7-7 7-7"
                                 />
                             </svg>
-                        </IonButton>
-                    </IonButtons>
+                        </AppButton>
+                    </AppButtons>
                     <IonTitle>{appName}</IonTitle>
-                    <IonButtons className="mr-[10px]" slot="end">
+                    <AppButtons className="mr-[10px]" slot="end">
                         <AppCredentialDashboard
                             appId={appId}
                             appName={appName}
                             pendingCredential={pendingCredential}
                             onNavigateAction={handleTapNotificationAction}
                         />
-                    </IonButtons>
+                    </AppButtons>
                 </IonToolbar>
             </IonHeader>
             <IonContent fullscreen>

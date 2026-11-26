@@ -102,6 +102,21 @@
         pointer-events: none;
     }
 
+    /* :host(.ion-focused) / :host(:hover) / :host(.ion-activated) { color: var(--color-*) } */
+    .app-button:has(> .app-button-native:focus-visible) {
+        color: var(--color-focused);
+    }
+
+    @media (any-hover: hover) {
+        .app-button:hover {
+            color: var(--color-hover);
+        }
+    }
+
+    .app-button[data-activated] {
+        color: var(--color-activated);
+    }
+
     .app-button.app-button-solid {
         --background: var(--app-color-primary);
         --color: var(--app-color-primary-contrast);
@@ -421,6 +436,13 @@
     z-index: 0;
     box-sizing: border-box;
     appearance: none;
+    /* Ionic's shadow button was out of reach of normalize.css `button { touch-action }`. */
+    touch-action: auto;
+}
+
+/* normalize.css `button span, button div, button ion-icon { touch-action: manipulation }`. */
+.app-button-native :is(span, div, ion-icon) {
+    touch-action: auto;
 }
 
 .app-button > .app-button-native::-moz-focus-inner {

@@ -95,6 +95,7 @@ const CreateAPITokenModal: React.FC<{
                 max="2050-12-31"
                 min={moment().format('YYYY-MM-DD')}
             >
+                {/* Stays Ionic: IonDatetime styles its slot="buttons" content by tag (::slotted(ion-buttons)). */}
                 <IonButtons slot="buttons">
                     <IonButton color="primary" onClick={reset}>
                         Clear

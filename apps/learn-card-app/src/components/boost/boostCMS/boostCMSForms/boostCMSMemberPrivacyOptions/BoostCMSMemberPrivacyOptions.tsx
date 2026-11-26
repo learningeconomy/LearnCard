@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import moment from 'moment';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
-import { IonRow, IonCol, IonToggle, IonCheckbox } from '@ionic/react';
+import { IonRow, IonCol, IonToggle } from '@ionic/react';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
+import { AppCheckbox } from '../../../../controls/AppCheckbox';
 
 import { BoostCMSState } from '../../../boost';
 import * as m from '../../../../../paraglide/messages.js';
@@ -111,7 +112,7 @@ const BoostCMSMemberOptions: React.FC<{
                                     <p className="text-grayscale-900 font-medium w-10/12">
                                         {option?.text}
                                     </p>
-                                    <IonCheckbox />
+                                    <AppCheckbox />
                                 </div>
                             );
                         })}

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { IonContent, IonPage, IonSpinner, IonButton } from '@ionic/react';
+import { IonContent, IonPage, IonSpinner } from '@ionic/react';
 import { useHistory } from 'react-router-dom';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('approve-account');
@@ -10,6 +10,7 @@ import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url
 import { usePathQuery } from 'learn-card-base';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import { getTenantHeaders } from '../../config/bootstrapTenantConfig';
+import { AppButton } from '../../components/controls/AppButton';
 
 const ApproveAccount: React.FC = () => {
     const { textLogo, brandMarkLight } = useTenantBrandingAssets();
@@ -117,9 +118,9 @@ const ApproveAccount: React.FC = () => {
                             <p className="text-emerald-50 max-w-[520px] mb-4">
                                 {message || 'Profile approved successfully.'}
                             </p>
-                            <IonButton color="light" onClick={handleGoLogin}>
+                            <AppButton color="light" onClick={handleGoLogin}>
                                 Open LearnCard Login
-                            </IonButton>
+                            </AppButton>
                         </>
                     )}
 
@@ -127,9 +128,9 @@ const ApproveAccount: React.FC = () => {
                         <>
                             <h1 className="text-xl font-bold text-white mb-2">Unable to Approve</h1>
                             <p className="text-emerald-50 max-w-[520px] mb-4">{error}</p>
-                            <IonButton color="light" onClick={handleGoLogin}>
+                            <AppButton color="light" onClick={handleGoLogin}>
                                 Go to Login
-                            </IonButton>
+                            </AppButton>
                         </>
                     )}
 

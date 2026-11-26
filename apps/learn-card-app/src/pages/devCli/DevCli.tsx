@@ -1,14 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import {
-    IonPage,
-    IonContent,
-    IonHeader,
-    IonToolbar,
-    IonTitle,
-    IonButtons,
-    IonButton,
-    IonIcon,
-} from '@ionic/react';
+import { IonPage, IonContent, IonHeader, IonToolbar, IonTitle, IonIcon } from '@ionic/react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
@@ -25,6 +16,7 @@ import CommandSidebar, { COMMANDS } from './CommandSidebar';
 import ChainBuilder, { Chain, ChainStep } from './ChainBuilder';
 import TutorialComponent from './Tutorial';
 import DevCliBackButton from './DevCliBackButton';
+import { AppButtons } from '../../components/controls/AppButtons';
 
 const WELCOME_MESSAGE = `
 Welcome to the LearnCard Browser CLI!
@@ -732,13 +724,13 @@ const DevCli: React.FC = () => {
         <IonPage className="cli-page">
             <IonHeader className="cli-header">
                 <IonToolbar className="cli-toolbar">
-                    <IonButtons slot="start">
+                    <AppButtons slot="start">
                         <DevCliBackButton defaultHref="/launchpad" className="cli-back-btn" />
-                    </IonButtons>
+                    </AppButtons>
 
                     <IonTitle className="cli-title">LearnCard CLI</IonTitle>
 
-                    <IonButtons slot="end">
+                    <AppButtons slot="end">
                         <button
                             onClick={() => setShowTutorial(true)}
                             className="cli-tutorial-btn"
@@ -746,7 +738,7 @@ const DevCli: React.FC = () => {
                         >
                             📖 Tutorial
                         </button>
-                    </IonButtons>
+                    </AppButtons>
                 </IonToolbar>
             </IonHeader>
 

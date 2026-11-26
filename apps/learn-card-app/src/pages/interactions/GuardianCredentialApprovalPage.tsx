@@ -4,7 +4,7 @@
 // of parent accounts.
 
 import React, { useEffect, useRef, useState } from 'react';
-import { IonContent, IonPage, IonSpinner, IonButton } from '@ionic/react';
+import { IonContent, IonPage, IonSpinner } from '@ionic/react';
 import AccessibleCodeInput from '../login/forms/AccessibleCodeInput';
 import { useParams } from 'react-router-dom';
 
@@ -16,6 +16,7 @@ import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { getResolvedTenantConfig, getTenantHeaders } from '../../config/bootstrapTenantConfig';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import { useTheme } from '../../theme/hooks/useTheme';
+import { AppButton } from '../../components/controls/AppButton';
 
 type CredentialInfo = {
     inboxCredentialId: string;
@@ -263,14 +264,14 @@ const GuardianCredentialApprovalPage: React.FC = () => {
                                             future credential approvals directly from your
                                             notifications.
                                         </p>
-                                        <IonButton
+                                        <AppButton
                                             expand="block"
                                             color="light"
                                             onClick={handleSendCode}
                                             disabled={isProcessing}
                                         >
                                             Send Verification Code
-                                        </IonButton>
+                                        </AppButton>
                                     </div>
                                 )}
 
@@ -280,15 +281,15 @@ const GuardianCredentialApprovalPage: React.FC = () => {
                                             You have a guardian relationship with this student. You
                                             can approve or reject this credential directly.
                                         </p>
-                                        <IonButton
+                                        <AppButton
                                             expand="block"
                                             color="light"
                                             onClick={handleApproveInApp}
                                             disabled={isProcessing}
                                         >
                                             Approve
-                                        </IonButton>
-                                        <IonButton
+                                        </AppButton>
+                                        <AppButton
                                             expand="block"
                                             fill="outline"
                                             color="light"
@@ -297,7 +298,7 @@ const GuardianCredentialApprovalPage: React.FC = () => {
                                             className="mt-2"
                                         >
                                             Reject
-                                        </IonButton>
+                                        </AppButton>
                                     </div>
                                 )}
 
@@ -322,15 +323,15 @@ const GuardianCredentialApprovalPage: React.FC = () => {
                                             onChange={setOtpCode}
                                             className="react-code-input"
                                         />
-                                        <IonButton
+                                        <AppButton
                                             expand="block"
                                             color="light"
                                             onClick={handleApprove}
                                             disabled={isProcessing || otpCode.length !== 6}
                                         >
                                             Approve
-                                        </IonButton>
-                                        <IonButton
+                                        </AppButton>
+                                        <AppButton
                                             expand="block"
                                             fill="outline"
                                             color="light"
@@ -338,7 +339,7 @@ const GuardianCredentialApprovalPage: React.FC = () => {
                                             disabled={isProcessing || otpCode.length !== 6}
                                         >
                                             Reject
-                                        </IonButton>
+                                        </AppButton>
                                         <button
                                             className="text-white/80 text-sm underline mt-2 bg-transparent border-none cursor-pointer"
                                             onClick={() => {

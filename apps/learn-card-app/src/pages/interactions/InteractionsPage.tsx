@@ -7,7 +7,6 @@ import {
     IonTitle,
     IonContent,
     IonSpinner,
-    IonButton,
     IonCard,
     IonCardContent,
     IonIcon,
@@ -23,6 +22,7 @@ import {
     informationCircleOutline,
 } from 'ionicons/icons';
 import { getAppBaseUrl, getLCNApiUrl } from '../../config/bootstrapTenantConfig';
+import { AppButton } from '../../components/controls/AppButton';
 
 import { getLogger } from 'learn-card-base';
 const log = getLogger('interactions-page');
@@ -208,15 +208,15 @@ const InteractionsPage: React.FC = () => {
                                         >
                                             <p>{error}</p>
                                         </IonText>
-                                        <IonButton
+                                        <AppButton
                                             expand="block"
                                             onClick={handleTryAgain}
                                             className="ion-margin-top"
                                         >
                                             <IonIcon slot="start" icon={refreshOutline} />
                                             Try Again
-                                        </IonButton>
-                                        <IonButton
+                                        </AppButton>
+                                        <AppButton
                                             expand="block"
                                             color="medium"
                                             fill="outline"
@@ -225,7 +225,7 @@ const InteractionsPage: React.FC = () => {
                                         >
                                             <IonIcon slot="start" icon={homeOutline} />
                                             Go to Home
-                                        </IonButton>
+                                        </AppButton>
                                     </IonCardContent>
                                 </IonCard>
                             </IonCol>

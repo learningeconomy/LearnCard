@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import moment from 'moment';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
-import { IonRow, IonCol, IonToggle, IonCheckbox } from '@ionic/react';
+import { IonRow, IonCol, IonToggle } from '@ionic/react';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 
 import { BoostCMSState } from '../../../boost';

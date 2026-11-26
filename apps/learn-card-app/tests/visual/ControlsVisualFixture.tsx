@@ -5,14 +5,11 @@ import {
     IonButtons,
     IonCard,
     IonCardContent,
-    IonCheckbox,
     IonCol,
     IonDatetime,
     IonGrid,
     IonHeader,
     IonIcon,
-    IonRadio,
-    IonRadioGroup,
     IonRow,
     IonText,
     IonTitle,
@@ -28,6 +25,10 @@ import MultiTextInput from '../../src/pages/hidden/MultiTextInput';
 import BoostCMSMemberPrivacyOptions from '../../src/components/boost/boostCMS/boostCMSForms/boostCMSMemberPrivacyOptions/BoostCMSMemberPrivacyOptions';
 import { initialBoostCMSState, type BoostCMSState } from '../../src/components/boost/boost';
 import DevCliBackButton from '../../src/pages/devCli/DevCliBackButton';
+import { AppButton, type AppButtonProps } from '../../src/components/controls/AppButton';
+import { AppButtons } from '../../src/components/controls/AppButtons';
+import { AppCheckbox } from '../../src/components/controls/AppCheckbox';
+import { AppRadio, AppRadioGroup } from '../../src/components/controls/AppRadio';
 import {
     storageOptionsList,
     StorageOptionsEnum,
@@ -38,17 +39,20 @@ import {
 } from '../../src/pages/adminToolsPage/AdminToolsNetwork/AdminToolsNetwork';
 
 /**
- * `controls-1a`: every app call site of IonButton / IonButtons / IonCheckbox / IonRadio /
- * IonRadioGroup (phase 4 batch 1a), rendered with fixed local data and no backend.
+ * `controls-1a`: every app call site that used IonButton / IonButtons / IonCheckbox / IonRadio /
+ * IonRadioGroup (phase 4 batch 1a), rendered with fixed local data and no backend. Those call
+ * sites now use the app-owned AppButton / AppButtons / AppCheckbox / AppRadioGroup / AppRadio;
+ * only CreateAPITokenModal's IonDatetime `slot="buttons"` content stays Ionic.
  *
  * Components that render standalone are the real ones. Pages whose mount effects need a wallet,
- * network or xterm are faithful excerpts: the Ion* elements, their props and classes, and their
+ * network or xterm are faithful excerpts: the controls, their props and classes, and their
  * immediate wrappers are copied from the source line cited in each block. Page-level containers
  * (IonPage/IonContent) become plain divs with the same classes and backgrounds, so each block has
- * an intrinsic height for clipped screenshots.
+ * an intrinsic height for clipped screenshots. Block titles still name the Ionic components, so
+ * screenshots stay comparable with the pre-migration captures.
  *
- * Inputs carry the same `onIonChange` / `onClick` wiring, and each one reports its state in an
- * `<output data-testid="…-value">`, for keyboard and pointer behavior checks.
+ * Inputs carry the same change / `onClick` wiring as their call sites, and each one reports its
+ * state in an `<output data-testid="…-value">`, for keyboard and pointer behavior checks.
  */
 
 const Block: React.FC<{ testId: string; title: string; children: React.ReactNode }> = ({
@@ -86,9 +90,9 @@ const ViewCredsBundleToolbar: React.FC = () => (
                     </a>
                 </div>
 
-                <IonButton className="text-grayscale-600 mr-[20px]" onClick={() => undefined}>
+                <AppButton className="text-grayscale-600 mr-[20px]" onClick={() => undefined}>
                     Learn More
-                </IonButton>
+                </AppButton>
             </div>
         </IonToolbar>
     </IonHeader>
@@ -102,13 +106,13 @@ const DevCliToolbar: React.FC = () => (
     <div className="cli-page">
         <IonHeader className="cli-header">
             <IonToolbar className="cli-toolbar">
-                <IonButtons slot="start">
+                <AppButtons slot="start">
                     <DevCliBackButton defaultHref="/launchpad" className="cli-back-btn" />
-                </IonButtons>
+                </AppButtons>
 
                 <IonTitle className="cli-title">LearnCard CLI</IonTitle>
 
-                <IonButtons slot="end">
+                <AppButtons slot="end">
                     <button
                         onClick={() => undefined}
                         className="cli-tutorial-btn"
@@ -116,7 +120,7 @@ const DevCliToolbar: React.FC = () => (
                     >
                         📖 Tutorial
                     </button>
-                </IonButtons>
+                </AppButtons>
             </IonToolbar>
         </IonHeader>
         <style>{`
@@ -185,8 +189,8 @@ const DevCliToolbar: React.FC = () => (
 const EmbedAppFullScreenToolbar: React.FC = () => (
     <IonHeader>
         <IonToolbar>
-            <IonButtons slot="start">
-                <IonButton onClick={() => undefined}>
+            <AppButtons slot="start">
+                <AppButton onClick={() => undefined}>
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
                         className="h-6 w-6"
@@ -201,15 +205,15 @@ const EmbedAppFullScreenToolbar: React.FC = () => (
                             d="M15 19l-7-7 7-7"
                         />
                     </svg>
-                </IonButton>
-            </IonButtons>
+                </AppButton>
+            </AppButtons>
             <IonTitle>Community Academy</IonTitle>
-            <IonButtons className="mr-[10px]" slot="end">
+            <AppButtons className="mr-[10px]" slot="end">
                 <span
                     data-testid="c1a-embedapp-dashboard-placeholder"
                     className="inline-block h-[36px] w-[36px] rounded-full bg-grayscale-200"
                 />
-            </IonButtons>
+            </AppButtons>
         </IonToolbar>
     </IonHeader>
 );
@@ -260,15 +264,15 @@ const ApproveAccountButtons: React.FC = () => (
         <div className="h-full w-full flex flex-col items-center justify-center px-6 py-8 text-center text-white">
             <h1 className="text-xl font-bold text-white mb-2">Account Approved</h1>
             <p className="text-emerald-50 max-w-[520px] mb-4">Profile approved successfully.</p>
-            <IonButton color="light" onClick={() => undefined}>
+            <AppButton color="light" onClick={() => undefined}>
                 Open LearnCard Login
-            </IonButton>
+            </AppButton>
 
             <h1 className="text-xl font-bold text-white mb-2 mt-8">Unable to Approve</h1>
             <p className="text-emerald-50 max-w-[520px] mb-4">This approval link has expired.</p>
-            <IonButton color="light" onClick={() => undefined}>
+            <AppButton color="light" onClick={() => undefined}>
                 Go to Login
-            </IonButton>
+            </AppButton>
         </div>
     </div>
 );
@@ -295,15 +299,15 @@ const InteractionsErrorCard: React.FC = () => (
                             <IonText color="medium" className="ion-margin-top ion-margin-bottom">
                                 <p>Interaction not found or expired.</p>
                             </IonText>
-                            <IonButton
+                            <AppButton
                                 expand="block"
                                 onClick={() => undefined}
                                 className="ion-margin-top"
                             >
                                 <IonIcon slot="start" icon={refreshOutline} />
                                 Try Again
-                            </IonButton>
-                            <IonButton
+                            </AppButton>
+                            <AppButton
                                 expand="block"
                                 color="medium"
                                 fill="outline"
@@ -312,7 +316,7 @@ const InteractionsErrorCard: React.FC = () => (
                             >
                                 <IonIcon slot="start" icon={homeOutline} />
                                 Go to Home
-                            </IonButton>
+                            </AppButton>
                         </IonCardContent>
                     </IonCard>
                 </IonCol>
@@ -352,14 +356,14 @@ const GuardianButtons: React.FC = () => {
                     <p className="text-white/80 text-sm mb-4">
                         To approve or reject, we'll send a verification code to your email.
                     </p>
-                    <IonButton
+                    <AppButton
                         expand="block"
                         color="light"
                         onClick={() => undefined}
                         disabled={isProcessing}
                     >
                         Send Verification Code
-                    </IonButton>
+                    </AppButton>
                 </div>
             </GuardianSurface>
 
@@ -370,15 +374,15 @@ const GuardianButtons: React.FC = () => {
                         You have a guardian relationship with this student. You can approve or
                         reject this credential directly.
                     </p>
-                    <IonButton
+                    <AppButton
                         expand="block"
                         color="light"
                         onClick={() => undefined}
                         disabled={isProcessing}
                     >
                         Approve
-                    </IonButton>
-                    <IonButton
+                    </AppButton>
+                    <AppButton
                         expand="block"
                         fill="outline"
                         color="light"
@@ -387,7 +391,7 @@ const GuardianButtons: React.FC = () => {
                         className="mt-2"
                     >
                         Reject
-                    </IonButton>
+                    </AppButton>
                 </div>
             </GuardianSurface>
 
@@ -397,15 +401,15 @@ const GuardianButtons: React.FC = () => {
                     <p className="text-white/80 text-sm mb-2">
                         Enter the 6-digit code we sent to your email.
                     </p>
-                    <IonButton
+                    <AppButton
                         expand="block"
                         color="light"
                         onClick={() => undefined}
                         disabled={isProcessing || otpCode.length !== 6}
                     >
                         Approve
-                    </IonButton>
-                    <IonButton
+                    </AppButton>
+                    <AppButton
                         expand="block"
                         fill="outline"
                         color="light"
@@ -413,7 +417,7 @@ const GuardianButtons: React.FC = () => {
                         disabled={isProcessing || otpCode.length !== 6}
                     >
                         Reject
-                    </IonButton>
+                    </AppButton>
                 </div>
             </GuardianSurface>
         </div>
@@ -427,9 +431,9 @@ const GuardianButtons: React.FC = () => {
  * initialize a wallet.
  *
  * Only `term` changes trigger a re-render, as in the source. The handler log is written to the DOM
- * through a ref, not React state: an extra re-render would make Ionic React reassign `checked` and
- * hide the existing desync (clicking the already-checked "Live syncing" box is an early return in
- * the handler, so Ionic's internally toggled state is never corrected).
+ * through a ref, not React state: an extra re-render would re-apply `checked` (AppCheckbox keeps
+ * Ionic React's model) and hide the existing desync (clicking the already-checked "Live syncing"
+ * box is an early return in the handler, so the internally toggled state is never corrected).
  */
 const ConsentSharingCheckboxes: React.FC = () => {
     const category = 'Achievement';
@@ -485,7 +489,7 @@ const ConsentSharingCheckboxes: React.FC = () => {
                             </span>
                         </label>
 
-                        <IonCheckbox
+                        <AppCheckbox
                             id={`${category}-share-all`}
                             color="emerald-700"
                             className="shrink-0 h-8 w-8"
@@ -510,7 +514,7 @@ const ConsentSharingCheckboxes: React.FC = () => {
                             </span>
                         </label>
 
-                        <IonCheckbox
+                        <AppCheckbox
                             color="emerald-700"
                             className="shrink-0 h-8 w-8"
                             mode="ios"
@@ -535,7 +539,7 @@ const ConsentSharingCheckboxes: React.FC = () => {
                                 </span>
                             </label>
 
-                            <IonCheckbox
+                            <AppCheckbox
                                 color="emerald-700"
                                 className="shrink-0 h-8 w-8"
                                 mode="ios"
@@ -576,9 +580,9 @@ const AdminToolsRadioGroup: React.FC<{
     return (
         <section className="bg-white max-w-[800px] w-full rounded-[20px] pt-4">
             <div className="w-full flex flex-col items-center justify-center px-4">
-                <IonRadioGroup
+                <AppRadioGroup
                     value={selectedType}
-                    onIonChange={e => setSelectedType(e.detail.value as string)}
+                    onValueChange={value => setSelectedType(value as string)}
                     className="w-full"
                 >
                     {options.map((opt, index) => {
@@ -605,7 +609,7 @@ const AdminToolsRadioGroup: React.FC<{
                                                 : 'bg-grayscale-100 text-transparent'
                                         }`}
                                     >
-                                        <IonRadio
+                                        <AppRadio
                                             value={opt.type}
                                             className="w-full h-full ml-2"
                                             color="white"
@@ -616,7 +620,7 @@ const AdminToolsRadioGroup: React.FC<{
                             </fieldset>
                         );
                     })}
-                </IonRadioGroup>
+                </AppRadioGroup>
             </div>
             <div className="px-4 pb-4">
                 <Value testId={`${testId}-value`} value={selectedType} />
@@ -645,7 +649,7 @@ const MultiTextInputFixture: React.FC = () => {
     );
 };
 
-/** Real BoostCMSMemberPrivacyOptions (:114): three uncontrolled `<IonCheckbox />`. */
+/** Real BoostCMSMemberPrivacyOptions (:114): three uncontrolled `<AppCheckbox />`. */
 const BoostCMSMemberOptionsFixture: React.FC = () => {
     const [state, setState] = useState<BoostCMSState>(initialBoostCMSState);
     return <BoostCMSMemberPrivacyOptions state={state} setState={setState} />;
@@ -663,34 +667,34 @@ const CheckboxStates: React.FC = () => {
                     className="flex gap-6 items-center"
                 >
                     <span className="w-8 text-xs font-mono">{mode}</span>
-                    <IonCheckbox mode={mode} color="emerald-700" aria-label={`${mode} unchecked`} />
-                    <IonCheckbox
+                    <AppCheckbox mode={mode} color="emerald-700" aria-label={`${mode} unchecked`} />
+                    <AppCheckbox
                         mode={mode}
                         color="emerald-700"
                         checked
                         aria-label={`${mode} checked`}
                     />
-                    <IonCheckbox
+                    <AppCheckbox
                         mode={mode}
                         color="emerald-700"
                         disabled
                         aria-label={`${mode} disabled`}
                     />
-                    <IonCheckbox
+                    <AppCheckbox
                         mode={mode}
                         color="emerald-700"
                         checked
                         disabled
                         aria-label={`${mode} disabled checked`}
                     />
-                    <IonCheckbox mode={mode} aria-label={`${mode} default color checked`} checked />
+                    <AppCheckbox mode={mode} aria-label={`${mode} default color checked`} checked />
                 </div>
             ))}
             <label className="flex items-center gap-2 text-sm">
-                <IonCheckbox
+                <AppCheckbox
                     color="emerald-700"
                     checked={checked}
-                    onIonChange={e => setChecked(e.detail.checked)}
+                    onCheckedChange={setChecked}
                     aria-label="Controlled checkbox"
                 />
                 Controlled (onIonChange)
@@ -701,12 +705,12 @@ const CheckboxStates: React.FC = () => {
 };
 
 /**
- * Each IonButton color/fill/expand combination used by the app, enabled and disabled, in both
- * modes. App call sites pass no `mode`, so they follow the global one (ios on iPhone UAs, md
+ * Each AppButton color/fill/expand combination used by the app (formerly IonButton), enabled
+ * and disabled, in both modes. App call sites pass no `mode`, so they follow the global one (ios on iPhone UAs, md
  * elsewhere). These rows pin it, so a single capture shows both looks.
  */
 const ButtonMatrix: React.FC = () => {
-    const variants: { name: string; props: React.ComponentProps<typeof IonButton> }[] = [
+    const variants: { name: string; props: AppButtonProps }[] = [
         { name: 'default', props: {} },
         { name: 'primary', props: { color: 'primary' } },
         { name: 'light', props: { color: 'light' } },
@@ -736,7 +740,7 @@ const ButtonMatrix: React.FC = () => {
                             <span className="w-[110px] text-xs font-mono text-white">{suffix}</span>
                             {variants.map(({ name, props }) => (
                                 <div key={name} className={props.expand ? 'w-[220px]' : undefined}>
-                                    <IonButton
+                                    <AppButton
                                         mode={mode === 'global' ? undefined : mode}
                                         color={props.color}
                                         fill={props.fill}
@@ -745,7 +749,7 @@ const ButtonMatrix: React.FC = () => {
                                         data-testid={`c1a-button-${name}-${suffix}`}
                                     >
                                         {name}
-                                    </IonButton>
+                                    </AppButton>
                                 </div>
                             ))}
                         </div>

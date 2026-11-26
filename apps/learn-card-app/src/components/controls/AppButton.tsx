@@ -79,17 +79,27 @@ const useTapActivation = (
     rippleRef: React.RefObject<HTMLSpanElement | null>
 ): ((event: React.PointerEvent<HTMLButtonElement>) => void) => {
     const cleanup = useRef<(() => void) | null>(null);
+    // The previous press's deferred clear; a new press cancels it (Ionic's `clearDefers`).
+    const clearDefer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-    useEffect(() => () => cleanup.current?.(), []);
+    useEffect(
+        () => () => {
+            cleanup.current?.();
+            clearTimeout(clearDefer.current);
+        },
+        []
+    );
 
     return event => {
         if (event.button === 2 || cleanup.current) return;
         const host = hostRef.current;
         if (!host) return;
 
+        clearTimeout(clearDefer.current);
+        host.removeAttribute('data-activated');
+
         let lastActivated = 0;
         let activated = false;
-        let clearDefer: ReturnType<typeof setTimeout> | undefined;
         let activeRipple: Promise<() => void> | undefined;
 
         const activate = (x: number, y: number): void => {
@@ -113,7 +123,7 @@ const useTapActivation = (
             removeRipple();
             detach();
             if (CLEAR_STATE_DEFERS - Date.now() + lastActivated > 0) {
-                clearDefer = setTimeout(
+                clearDefer.current = setTimeout(
                     () => host.removeAttribute('data-activated'),
                     CLEAR_STATE_DEFERS
                 );
@@ -134,7 +144,6 @@ const useTapActivation = (
         document.addEventListener('pointercancel', onPointerCancel, true);
         cleanup.current = () => {
             clearTimeout(activeDefer);
-            clearTimeout(clearDefer);
             detach();
         };
     };

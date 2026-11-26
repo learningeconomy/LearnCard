@@ -2,14 +2,12 @@ import React, { useState, useEffect } from 'react';
 import {
     IonContent,
     IonPage,
-    IonButton,
     IonHeader,
     IonToolbar,
     IonTitle,
     IonLoading,
     IonList,
     IonItem,
-    IonCheckbox,
     IonLabel,
     IonSpinner,
 } from '@ionic/react';

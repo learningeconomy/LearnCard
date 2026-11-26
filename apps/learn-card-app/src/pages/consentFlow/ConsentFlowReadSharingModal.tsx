@@ -4,7 +4,6 @@ import { ConsentFlowTerm, CredentialRecord } from '@learncard/types';
 import { Updater } from 'use-immer';
 import { capitalizeFirstLetter } from '@learncard/helpers';
 import {
-    IonCheckbox,
     IonCol,
     IonContent,
     IonDatetime,
@@ -25,6 +24,7 @@ import {
 } from 'learn-card-base';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import Calendar from '../../components/svgs/Calendar';
+import { AppCheckbox } from '../../components/controls/AppCheckbox';
 import { getInfoFromContractKey } from '../../helpers/contract.helpers';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
@@ -245,7 +245,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                         </span>
                                     </label>
 
-                                    <IonCheckbox
+                                    <AppCheckbox
                                         id={`${category}-share-all`}
                                         color="emerald-700"
                                         className="shrink-0 h-8 w-8"
@@ -323,7 +323,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                         </span>
                                     </label>
 
-                                    <IonCheckbox
+                                    <AppCheckbox
                                         color="emerald-700"
                                         className="shrink-0 h-8 w-8"
                                         mode="ios"
@@ -348,7 +348,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                             </span>
                                         </label>
 
-                                        <IonCheckbox
+                                        <AppCheckbox
                                             color="emerald-700"
                                             className="shrink-0 h-8 w-8"
                                             mode="ios"
