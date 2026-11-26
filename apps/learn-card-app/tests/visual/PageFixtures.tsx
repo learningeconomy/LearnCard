@@ -20,6 +20,7 @@ import { personaCredentials } from '../../src/pages/dashboard/dashboard.personas
 import { IssueVisualFixture } from './IssueVisualFixture';
 import { ControlsVisualFixture } from './ControlsVisualFixture';
 import { FeedbackVisualFixture } from './FeedbackVisualFixture';
+import { SkeletonProgressVisualFixture } from './SkeletonProgressVisualFixture';
 
 export const additionalStates = [
     'credential',
@@ -34,6 +35,8 @@ export const additionalStates = [
     'controls-1a',
     // Ionic replacement phase 4 feedback (spinners). Not in tailwind.spec.ts.
     'feedback-1',
+    // Ionic replacement phase 4 feedback (skeletons, progress bars). Not in tailwind.spec.ts.
+    'feedback-2',
 ] as const;
 
 const listings: AppStoreListing[] = [
@@ -148,6 +151,7 @@ export const PageFixture: React.FC<{ state: string }> = ({ state }) => {
     if (state.startsWith('issue')) return <IssueVisualFixture />;
     if (state === 'controls-1a') return <ControlsVisualFixture />;
     if (state === 'feedback-1') return <FeedbackVisualFixture />;
+    if (state === 'feedback-2') return <SkeletonProgressVisualFixture />;
     if (state === 'apps') return <LaunchPad />;
     if (state === 'my-apps-signed-in') return <SignedInLaunchpadFixture />;
     if (state === 'my-apps') return <MyAppsLanding />;
