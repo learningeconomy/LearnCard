@@ -1,10 +1,22 @@
 import { int } from 'neo4j-driver';
+import { noParkedEmailRequest } from '@helpers/contract-request-visibility.helpers';
 
 import { neogma } from '@instance';
+import {
+    contractRequestCountForSender,
+    getContractRequestCap,
+    getContractRequestCapWindowStart,
+    recentContractRequestTimes,
+} from '@helpers/contract-request-cap.helpers';
+import {
+    activeRequestTermsWhere,
+    contractRequestReplacementWhere,
+    inviteHasNeverAttached,
+} from '@helpers/contract-request-replacement.helpers';
 
-/** `closed`: attached, and its request was decided before the invite expiry passed. */
+/** `closed`: an attached invite whose request has been resolved. */
 export type ContractRequestInviteStatus =
-    'pending' | 'attached' | 'cancelled' | 'expired' | 'closed';
+    'pending' | 'attached' | 'denied' | 'cancelled' | 'expired' | 'closed';
 
 /** Properties of a ContractRequestInvite node. `id` is the request ID the sender receives. */
 export type ContractRequestInviteType = {
@@ -31,7 +43,7 @@ export type ContractRequestInviteType = {
     deliveryAttempts?: unknown;
 };
 
-const inviteViewerWhere = `($viewerProfileId IS NULL OR EXISTS {
+export const inviteViewerWhere = `($viewerProfileId IS NULL OR EXISTS {
     MATCH (c)-[:CREATED_BY|CAN_WRITE]->(:Profile {profileId: $viewerProfileId})
 } OR (invite.requestedBy = $viewerProfileId AND EXISTS {
     MATCH (c)-[:SHARES_DATA_WITH]->(:Profile {profileId: $viewerProfileId})
@@ -55,20 +67,6 @@ export const getContractRequestInvite = async (
     return result.records[0]?.get('invite') ?? null;
 };
 
-/** Invites of a contract that have not become a request: pending, cancelled or expired. */
-export const getUnattachedContractRequestInvites = async (
-    contractId: string,
-    viewerProfileId: string
-): Promise<ContractRequestInviteType[]> => {
-    const result = await neogma.queryRunner.run(
-        `MATCH (c:ConsentFlowContract {id: $contractId})-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite)
-         WHERE invite.attachedProfileId IS NULL AND ${inviteViewerWhere}
-         RETURN properties(invite) AS invite ORDER BY invite.requestedAt, invite.id`,
-        { contractId, viewerProfileId }
-    );
-    return result.records.map(record => record.get('invite'));
-};
-
 /** Profile IDs (at most 5) that have this already normalised email as a verified contact method. */
 export const getProfileIdsWithVerifiedEmail = async (email: string): Promise<string[]> => {
     const result = await neogma.queryRunner.run(
@@ -82,41 +80,44 @@ export const getProfileIdsWithVerifiedEmail = async (email: string): Promise<str
 
 /**
  * Pending, unexpired invites addressed to any verified email of the profile, oldest first.
- * Invites that can never attach are left out, so callers do not retry them on every call:
- * the profile's own invites, and invites for a contract that already has a request for the profile,
- * unless that request is one the invite may replace: the same sender's email-addressed request
- * that is cancelled, expired or past its expiry date (see `createRequestForProfile`).
+ * Skips currently ineligible invites before applying the limit. The locked send rechecks
+ * replacement eligibility and the cap when attaching each invite.
  */
 export const getPendingContractRequestInvitesForProfile = async (
     profileId: string,
     limit: number
 ): Promise<{ contractId: string; invite: ContractRequestInviteType }[]> => {
+    const now = new Date();
     const result = await neogma.queryRunner.run(
         `MATCH (profile:Profile {profileId: $profileId})-[:HAS_CONTACT_METHOD]->(cm:ContactMethod)
          WHERE cm.type = 'email' AND cm.isVerified = true
          WITH profile, collect(DISTINCT toLower(trim(cm.value))) AS emails
          MATCH (contract:ConsentFlowContract)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite)
          WHERE invite.email IN emails AND invite.status = 'pending' AND invite.expiresAt > $now
-             AND invite.requestedBy <> $profileId
-             AND NOT EXISTS {
-                MATCH (contract)-[existing:REQUESTED_FOR]->(profile)
-                WHERE NOT (coalesce(existing.addressedByEmail, false) = true AND
-                    existing.requestedBy = invite.requestedBy AND
-                    (existing.status IN ['expired', 'cancelled'] OR
-                     (existing.status = 'pending' AND existing.expiresAt <= $now)))
-             }
-             AND (contract.expiresAt IS NULL OR trim(contract.expiresAt) = '' OR datetime(contract.expiresAt) > datetime($now))
+             AND invite.requestedBy <> $profileId AND ${inviteHasNeverAttached}
+             AND CASE WHEN contract.expiresAt IS NULL OR trim(contract.expiresAt) = '' THEN true
+                      ELSE datetime(contract.expiresAt) > datetime($now) END
              AND EXISTS {
                 MATCH (contract)-[:CREATED_BY|CAN_WRITE|SHARES_DATA_WITH]->(:Profile {profileId: invite.requestedBy})
              }
              AND NOT EXISTS {
                 MATCH (profile)-[:CREATED_BY]->(terms:ConsentFlowTerms)-[:CONSENTS_TO]->(contract)
-                WHERE (terms.status = 'live' OR (terms.status = 'consumed' AND terms.oneTime = true)) AND
-                    (terms.expiresAt IS NULL OR trim(terms.expiresAt) = '' OR datetime(terms.expiresAt) > datetime($now))
+                WHERE ${activeRequestTermsWhere('datetime($now)')}
              }
+         OPTIONAL MATCH (contract)-[existing:REQUESTED_FOR]->(profile)
+         WITH contract, invite, profile AS target, existing
+         WHERE ${noParkedEmailRequest} AND
+             (existing IS NULL OR ${contractRequestReplacementWhere('invite.requestedBy', 'true')}) AND
+             ${contractRequestCountForSender(recentContractRequestTimes('email'), 'invite.requestedBy')} < $requestCap
          RETURN contract.id AS contractId, properties(invite) AS invite
          ORDER BY invite.requestedAt, invite.id LIMIT $limit`,
-        { profileId, now: new Date().toISOString(), limit: int(limit) }
+        {
+            profileId,
+            now: now.toISOString(),
+            capWindowStart: getContractRequestCapWindowStart(now),
+            requestCap: int(getContractRequestCap()),
+            limit: int(limit),
+        }
     );
     return result.records.map(record => ({
         contractId: record.get('contractId'),

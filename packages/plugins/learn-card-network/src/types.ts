@@ -901,7 +901,7 @@ export type LearnCardNetworkPluginMethods = {
     /** Reads one request by the ID that sendContractRequest returned. */
     getContractRequest: (contractUri: string, requestId: string) => Promise<ContractRequest>;
     /** Target-only denial preserves the request and its referral reference. */
-    denyContractRequest: (contractUri: string) => Promise<boolean>;
+    denyContractRequest: (contractUri: string, requestId?: string) => Promise<boolean>;
 
     sendAiInsightsContractRequest: (
         contractUri: string,
@@ -921,7 +921,8 @@ export type LearnCardNetworkPluginMethods = {
     getRequestStatusForProfile: (
         targetProfileId: string,
         contractId?: string,
-        contractUri?: string
+        contractUri?: string,
+        requestId?: string
     ) => Promise<ConsentFlowContractRequestForProfile | null>;
 
     getAllContractRequestsForProfile: (targetProfileId: string) => Promise<
@@ -949,7 +950,11 @@ export type LearnCardNetworkPluginMethods = {
         contractUri?: string
     ) => Promise<boolean>;
 
-    markContractRequestAsSeen: (contractUri: string, targetProfileId: string) => Promise<boolean>;
+    markContractRequestAsSeen: (
+        contractUri: string,
+        targetProfileId: string,
+        requestId?: string
+    ) => Promise<boolean>;
     /** Cancel by target profile ID (a string) or by request ID (`{ requestId }`). */
     cancelContractRequest: (
         contractUri: string,

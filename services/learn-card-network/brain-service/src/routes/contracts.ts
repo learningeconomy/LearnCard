@@ -20,16 +20,14 @@ import {
     contractRequestFromInvite,
     attachContractRequestInvitesForProfile,
 } from '@helpers/contract-request-invites.helpers';
-import {
-    getContractRequestInvite,
-    getUnattachedContractRequestInvites,
-} from '@accesslayer/contract-request-invite/read';
+import { getContractRequestInvite } from '@accesslayer/contract-request-invite/read';
 import { environment } from '@environment';
 import {
     smartResumeFingerprint,
     publishSmartResume,
 } from '@accesslayer/consentflowcontract/relationships/smartResume';
 import { uploadSmartResume } from '@helpers/smartResume.helpers';
+import { isConsentExpiryActive } from '@helpers/consent-expiry.helpers';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
@@ -1329,20 +1327,34 @@ export const contractsRouter = t.router({
                 profile,
                 contractDetails.contract
             );
-            assertLatestContractApproval(
-                previousTerms,
-                Number(contractDetails.contract.currentVersion ?? 1)
-            );
+            const now = Date.now();
+            const expiredTerms =
+                previousTerms?.status === 'live' &&
+                !isConsentExpiryActive(previousTerms.expiresAt, now);
+            // An older accepted version can have its own expiry. A missing legacy version
+            // record follows the request write's fallback to the Terms' own expiry.
+            const acceptedVersion =
+                !isSmartResume && previousTerms?.status === 'live' && !expiredTerms
+                    ? await getConsentFlowContractVersion(
+                          contractDetails.contract.id,
+                          Number(previousTerms.consentedVersion ?? 1)
+                      )
+                    : undefined;
+            const expiredLiveConsent =
+                expiredTerms || !isConsentExpiryActive(acceptedVersion?.expiresAt, now);
+
+            if (isSmartResume || !expiredLiveConsent || !expectedRequestId)
+                assertLatestContractApproval(
+                    previousTerms,
+                    Number(contractDetails.contract.currentVersion ?? 1)
+                );
             const retrySmartResume =
                 isSmartResume &&
                 Boolean(previousTerms?.smartResumeFingerprint) &&
                 (previousTerms?.status === 'live' ||
                     (previousTerms?.status === 'consumed' && previousTerms.oneTime));
 
-            if (
-                !retrySmartResume &&
-                (await hasProfileConsentedToContract(profile, contractDetails.contract))
-            ) {
+            if (!retrySmartResume && previousTerms?.status === 'live' && !expiredLiveConsent) {
                 try {
                     await upsertRequestedForRelationship(
                         contractDetails.contract.id,
@@ -1401,7 +1413,7 @@ export const contractsRouter = t.router({
                     contractDetails,
                     {
                         terms,
-                        expiresAt,
+                        expiresAt: expiresAt ?? (expiredTerms ? '' : undefined),
                         oneTime,
                         audienceVersion,
                         expectedRequestId,
@@ -2351,7 +2363,7 @@ export const contractsRouter = t.router({
                     input.requestId,
                     ctx.user.profile.profileId
                 );
-                if (!invite || invite.attachedProfileId)
+                if (!invite || (invite.attachedProfileId && invite.status !== 'attached'))
                     throw new TRPCError({
                         code: 'NOT_FOUND',
                         message: 'Contract request not found',
@@ -2381,7 +2393,7 @@ export const contractsRouter = t.router({
                 summary: 'Deny a pending contract request as its target',
             },
         })
-        .input(z.object({ contractUri: z.string() }))
+        .input(z.object({ contractUri: z.string(), requestId: z.string().min(1).optional() }))
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const contract = await getContractByUri(input.contractUri);
@@ -2392,6 +2404,7 @@ export const contractsRouter = t.router({
                 targetProfileId: ctx.user.profile.profileId,
                 actorProfileId: ctx.user.profile.profileId,
                 status: 'denied',
+                requestId: input.requestId,
                 domain: ctx.domain,
             });
         }),
@@ -2434,7 +2447,8 @@ export const contractsRouter = t.router({
                     contractByUri.id,
                     resolvedTargetProfileId,
                     'pending',
-                    null
+                    null,
+                    true
                 );
             } catch (error) {
                 if (error instanceof TRPCError && error.code === 'CONFLICT') throw error;
@@ -2604,22 +2618,8 @@ export const contractsRouter = t.router({
                     : // The read state would reveal that the email belongs to an account.
                       { ...row, readStatus: null, target };
             });
-            // Invites with no profile yet. They have the same fields as the redacted rows above.
-            const invites = await getUnattachedContractRequestInvites(
-                contractByUri.id,
-                profile.profileId
-            );
-            // One list in send order. Listing invites after requests would reveal which
-            // emails already belong to an account.
-            return [
-                ...rows,
-                ...invites.map(invite => ({
-                    ...contractRequestFromInvite(invite),
-                    requestedBy: invite.requestedBy,
-                    ...(invite.message ? { message: invite.message } : {}),
-                    readStatus: null,
-                })),
-            ].sort((a, b) => {
+            // Sort by send order independently of attachment.
+            return rows.sort((a, b) => {
                 const [left, right] = [a.requestedAt ?? '', b.requestedAt ?? ''];
                 if (left !== right) return left < right ? -1 : 1;
                 const [leftId, rightId] = [a.requestId ?? '', b.requestId ?? ''];
@@ -2644,6 +2644,7 @@ export const contractsRouter = t.router({
                 contractId: z.string().nullable().optional(),
                 contractUri: z.string().nullable().optional(),
                 targetProfileId: z.string(),
+                requestId: z.string().min(1).optional(),
             })
         )
         .output(
@@ -2656,7 +2657,7 @@ export const contractsRouter = t.router({
         .query(async ({ ctx, input }) => {
             const { profile } = ctx.user;
 
-            const { contractId, contractUri, targetProfileId } = input;
+            const { contractId, contractUri, targetProfileId, requestId } = input;
 
             const resolvedTargetProfileId = await getProfileIdFromString(
                 targetProfileId,
@@ -2692,7 +2693,8 @@ export const contractsRouter = t.router({
             const requests = await getRequestedForForUser(
                 contract.id,
                 resolvedTargetProfileId,
-                profile.profileId
+                profile.profileId,
+                requestId
             );
 
             if (!requests?.[0]) return null;
@@ -2733,12 +2735,13 @@ export const contractsRouter = t.router({
             z.object({
                 contractUri: z.string(),
                 targetProfileId: z.string(),
+                requestId: z.string().min(1).optional(),
             })
         )
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { contractUri, targetProfileId } = input;
+            const { contractUri, targetProfileId, requestId } = input;
 
             const resolvedTargetProfileId = await getProfileIdFromString(
                 targetProfileId,
@@ -2753,22 +2756,19 @@ export const contractsRouter = t.router({
             if (!contractByUri)
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
 
+            const isTarget = profile.profileId === resolvedTargetProfileId;
+            if (requestId && !isTarget)
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Only the target can mark this request seen by ID',
+                });
             const request = await getStoredContractRequest(
                 contractByUri.id,
-                resolvedTargetProfileId
+                resolvedTargetProfileId,
+                { viewerProfileId: profile.profileId, requestId }
             );
-            const isTarget = profile.profileId === resolvedTargetProfileId;
-            // To anyone but the target, an email-addressed request does not exist until it is
-            // accepted: answer exactly as the no-request branch below would, and change nothing.
-            if (!isTarget && request?.addressedByEmail === true && request.status !== 'accepted') {
-                const writers = await getWritersForContract(contractByUri);
-                if (!writers.some(w => w.profileId === profile.profileId))
-                    throw new TRPCError({
-                        code: 'UNAUTHORIZED',
-                        message: 'You do not have permissions to update this contract',
-                    });
-                return true;
-            }
+            if (requestId && request?.requestId !== requestId)
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Request not found' });
             if (request?.requestId) {
                 assertGenericRequestWriteScope(ctx.user.scope);
                 if (!isTarget)
@@ -2776,7 +2776,11 @@ export const contractsRouter = t.router({
                         code: 'UNAUTHORIZED',
                         message: 'Only the target can mark this request seen',
                     });
-                return markGenericContractRequestSeen(contractByUri.id, resolvedTargetProfileId);
+                return markGenericContractRequestSeen(
+                    contractByUri.id,
+                    resolvedTargetProfileId,
+                    request.requestId
+                );
             }
             if (profile.profileId === resolvedTargetProfileId) {
                 if (!request)
@@ -2875,28 +2879,9 @@ export const contractsRouter = t.router({
 
             const request = await getStoredContractRequest(
                 contractByUri.id,
-                resolvedTargetProfileId
+                resolvedTargetProfileId,
+                { viewerProfileId: profile.profileId }
             );
-            if (
-                request?.requestId &&
-                request.addressedByEmail &&
-                request.status !== 'accepted' &&
-                profile.profileId !== resolvedTargetProfileId
-            ) {
-                // Answer exactly as if no request existed, so the caller cannot link the
-                // email it invited to this profile. It must cancel by request ID instead.
-                const managers = await getWritersForContract(contractByUri);
-                if (!managers.some(manager => manager.profileId === profile.profileId))
-                    throw new TRPCError({
-                        code: 'UNAUTHORIZED',
-                        message:
-                            'You do not have permission to view this request status. You must be a contract writer or checking your own status.',
-                    });
-                throw new TRPCError({
-                    code: 'NOT_FOUND',
-                    message: 'No request found for this user',
-                });
-            }
             if (request?.requestId) {
                 assertGenericRequestWriteScope(ctx.user.scope);
                 return decideGenericContractRequest({
@@ -2905,6 +2890,7 @@ export const contractsRouter = t.router({
                     actorProfileId: profile.profileId,
                     status: 'cancelled',
                     domain: ctx.domain,
+                    requestId: request.requestId,
                 });
             }
 

@@ -1,4 +1,5 @@
 import { neogma } from '@instance';
+import { inviteViewerWhere } from '@accesslayer/contract-request-invite/read';
 import { QueryBuilder, BindParam } from 'neogma';
 
 import { getIdFromUri } from '@helpers/uri.helpers';
@@ -102,24 +103,41 @@ const requestingRecipientWhere = `r.requestedBy = $viewerProfileId AND EXISTS {
     MATCH (c)-[:SHARES_DATA_WITH]->(:Profile {profileId:$viewerProfileId})
 }`;
 
+// The unattached-invite projection follows contractRequestFromInvite, with the same pending expiry.
 export const getRequestedForList = async (id: string, viewerProfileId: string) => {
     const result = await neogma.queryRunner.run(
-        `MATCH (c:ConsentFlowContract {id: $id})-[r:REQUESTED_FOR]->(p:Profile)
-         WHERE ${requestManagerWhere} OR (${requestingRecipientWhere})
-         OPTIONAL MATCH (c)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite)
-             WHERE invite.id = r.requestId
-         RETURN r, p, invite.email AS email, invite.expiresAt AS expiresAt`,
+        `MATCH (c:ConsentFlowContract {id: $id})
+         CALL {
+             WITH c
+             MATCH (c)-[r:REQUESTED_FOR|PREVIOUS_VISIBLE_REQUEST|PENDING_EMAIL_REQUEST|CANCELLED_DIRECT_REQUEST]->(p:Profile)
+             WHERE NOT coalesce(r.requestHistoryOnly, false)
+                 AND (${requestManagerWhere} OR (${requestingRecipientWhere}))
+             OPTIONAL MATCH (c)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite)
+                 WHERE invite.id = r.requestId
+             RETURN properties(r) AS request, properties(p) AS profile,
+                 invite.email AS email, invite.expiresAt AS expiresAt
+             UNION ALL
+             WITH c
+             MATCH (c)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite)
+             WHERE invite.attachedProfileId IS NULL AND ${inviteViewerWhere}
+             RETURN invite{.requestedBy, .externalReferenceId, .message, .requestedAt,
+                 requestId: invite.id, addressedByEmail: true,
+                 status: CASE WHEN invite.status IN ['denied', 'cancelled', 'expired']
+                     THEN invite.status ELSE 'pending' END} AS request,
+                 null AS profile, invite.email AS email, invite.expiresAt AS expiresAt
+         }
+         RETURN request, profile, email, expiresAt`,
         { id, viewerProfileId }
     );
 
     return result.records.map(rec => {
-        const request = rec.get('r').properties;
+        const request = rec.get('request');
         const email: string | null = rec.get('email');
         const expiresAt: string | null = request?.expiresAt ?? rec.get('expiresAt');
 
         return {
             ...requestFields(request),
-            profile: rec.get('p').properties as ProfileType,
+            profile: (rec.get('profile') as ProfileType | null) ?? undefined,
             status: effectiveRequestStatus(
                 (request?.status ?? null) as NonNullable<StoredContractRequest['status']> | null,
                 { addressedByEmail: request?.addressedByEmail === true, expiresAt }
@@ -217,17 +235,31 @@ export const getRequestedForByStatus = async (
 export const getRequestedForForUser = async (
     contractId: string,
     requesterProfileId: string,
-    viewerProfileId: string
+    viewerProfileId: string,
+    requestId?: string
 ) => {
-    const query = new QueryBuilder(new BindParam({ requesterProfileId, viewerProfileId }))
+    const query = new QueryBuilder(
+        new BindParam({ requesterProfileId, viewerProfileId, requestId: requestId ?? null })
+    )
         .match({
             model: ConsentFlowContract,
             identifier: 'c',
             where: { id: contractId },
         })
-        .match('(c)-[r:REQUESTED_FOR]->(p:Profile)')
+        .match('(c)-[current:REQUESTED_FOR]->(p:Profile {profileId: $requesterProfileId})')
+        .raw(
+            `OPTIONAL MATCH (c)-[previous:PREVIOUS_VISIBLE_REQUEST]->(p)
+              OPTIONAL MATCH (c)-[parked:PENDING_EMAIL_REQUEST|CANCELLED_DIRECT_REQUEST]->(p)
+                  WHERE p.profileId = $viewerProfileId AND parked.requestId = $requestId
+              WITH c, p, CASE
+                  WHEN p.profileId <> $viewerProfileId AND current.addressedByEmail = true
+                      AND current.status <> 'accepted' THEN previous
+                  WHEN p.profileId = $viewerProfileId AND previous.requestId = $requestId THEN previous
+                  ELSE coalesce(parked, current) END AS r`
+        )
         .where(
-            `p.profileId = $requesterProfileId AND
+            `r IS NOT NULL AND NOT coalesce(r.requestHistoryOnly, false) AND
+             ($requestId IS NULL OR r.requestId = $requestId) AND
              (p.profileId = $viewerProfileId OR ${requestManagerWhere} OR (${requestingRecipientWhere}))`
         );
     const result = await query.return(['p', 'r']).run();
@@ -253,9 +285,10 @@ export const getAllRequestsForTargetProfile = async (targetProfileId: string) =>
             model: ConsentFlowContract,
             identifier: 'c',
         })
-        .match('(c)-[r:REQUESTED_FOR]->(p:Profile)')
+        .match('(c)-[r:REQUESTED_FOR|PENDING_EMAIL_REQUEST]->(p:Profile)')
         .where(
-            `p.profileId = $targetProfileId AND coalesce(r.status, '') <> 'expired' AND
+            `p.profileId = $targetProfileId AND NOT coalesce(r.requestHistoryOnly, false)
+             AND coalesce(r.status, '') <> 'expired' AND
              NOT (r.status = 'pending' AND r.expiresAt IS NOT NULL AND r.expiresAt <= $now)`
         )
         .return(['c', 'p', 'r'])
@@ -292,7 +325,7 @@ export const getContractRequestById = async (
     viewerProfileId: string
 ): Promise<StoredContractRequestById | null> => {
     const result = await neogma.queryRunner.run(
-        `MATCH (c:ConsentFlowContract {id: $contractId})-[r:REQUESTED_FOR]->(p:Profile)
+        `MATCH (c:ConsentFlowContract {id: $contractId})-[r:REQUESTED_FOR|PREVIOUS_VISIBLE_REQUEST|PENDING_EMAIL_REQUEST|CANCELLED_DIRECT_REQUEST]->(p:Profile)
          WHERE r.requestId = $requestId AND (${requestManagerWhere} OR (${requestingRecipientWhere}))
          OPTIONAL MATCH (c)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite)
              WHERE invite.id = r.requestId
@@ -328,16 +361,31 @@ export type StoredContractRequest = ContractRequestFields & {
     expiresAt?: string;
 };
 
+/** Read the active request by default, or the visible request for a public operation. */
 export const getStoredContractRequest = async (
     contractId: string,
-    targetProfileId: string
+    targetProfileId: string,
+    options?: { viewerProfileId?: string; requestId?: string }
 ): Promise<StoredContractRequest | null> => {
     const result = await neogma.queryRunner.run(
-        `
-        MATCH (:ConsentFlowContract {id: $contractId})-[request:REQUESTED_FOR]->(:Profile {profileId: $targetProfileId})
-        RETURN request
-    `,
-        { contractId, targetProfileId }
+        `MATCH (contract:ConsentFlowContract {id: $contractId})-[current:REQUESTED_FOR]->(target:Profile {profileId: $targetProfileId})
+         OPTIONAL MATCH (contract)-[previous:PREVIOUS_VISIBLE_REQUEST]->(target)
+         OPTIONAL MATCH (contract)-[parked:PENDING_EMAIL_REQUEST|CANCELLED_DIRECT_REQUEST]->(target)
+             WHERE parked.requestId = $requestId
+         WITH CASE
+             WHEN parked IS NOT NULL AND ($viewerProfileId IS NULL OR $viewerProfileId = $targetProfileId) THEN parked
+             WHEN $requestId IS NOT NULL AND previous.requestId = $requestId THEN previous
+             WHEN $viewerProfileId IS NOT NULL AND $viewerProfileId <> $targetProfileId
+                  AND current.addressedByEmail = true AND current.status <> 'accepted' THEN previous
+             ELSE current END AS request
+         WHERE request IS NOT NULL AND NOT coalesce(request.requestHistoryOnly, false)
+         RETURN request`,
+        {
+            contractId,
+            targetProfileId,
+            requestId: options?.requestId ?? null,
+            viewerProfileId: options?.viewerProfileId ?? null,
+        }
     );
-    return result.records[0]?.get('request').properties ?? null;
+    return result.records[0]?.get('request')?.properties ?? null;
 };

@@ -286,7 +286,7 @@ describe('referral actions', () => {
         show(<ContractRequest contractUri={state.contract.uri} requestId="req-1" details />);
         fireEvent.click(await screen.findByText('Decline'));
         expect(await screen.findByText('Declined')).toBeVisible();
-        expect(state.deny).toHaveBeenCalledWith(state.contract.uri);
+        expect(state.deny).toHaveBeenCalledWith(state.contract.uri, 'req-1');
         expect(state.toast).toHaveBeenCalled();
         expect(screen.queryByText('Accept & Connect')).toBeNull();
     });
@@ -409,7 +409,15 @@ describe('referral actions', () => {
             state.status.readStatus = 'seen';
         });
         show();
-        await waitFor(() => expect(state.seen).toHaveBeenCalledWith(state.contract.uri, 'learner'));
+        await waitFor(() =>
+            expect(state.seen).toHaveBeenCalledWith(state.contract.uri, 'learner', 'req-1')
+        );
+        expect(state.getStatus).toHaveBeenCalledWith(
+            'learner',
+            undefined,
+            state.contract.uri,
+            'req-1'
+        );
     });
     it('suppresses expired and replaced invitations', async () => {
         state.contract.expiresAt = '2020-01-01T00:00:00Z';

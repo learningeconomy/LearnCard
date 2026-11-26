@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { int } from 'neo4j-driver';
 import { BindParam, QueryBuilder } from 'neogma';
 import { TRPCError } from '@trpc/server';
 import { neogma } from '@instance';
@@ -19,6 +20,22 @@ import {
 import { getProfileIdFromString } from './did.helpers';
 import { userHasRequiredScopes } from './auth-grant.helpers';
 import { enforceRateLimits } from './rateLimit.helpers';
+import {
+    noParkedEmailRequest,
+    parkEmailRequestCypher,
+    preservePreviousRequestCypher,
+} from './contract-request-visibility.helpers';
+import {
+    contractRequestCountForSender,
+    getContractRequestCap,
+    getContractRequestCapWindowStart,
+    recentContractRequestTimes,
+} from './contract-request-cap.helpers';
+import {
+    activeRequestTermsWhere,
+    contractRequestReplacementWhere,
+    inviteHasNeverAttached,
+} from './contract-request-replacement.helpers';
 import {
     requestEventCypher,
     tryDispatchContractEvent,
@@ -99,7 +116,7 @@ export type CreateRequestForProfileInput = {
     contractId: string;
     targetProfileId: string;
     senderProfileId: string;
-    /** Used only when a new relationship is created. */
+    /** Used for a new request, including replacements on an existing relationship. */
     requestId: string;
     externalReferenceId?: string | null;
     message?: string | null;
@@ -109,20 +126,16 @@ export type CreateRequestForProfileInput = {
 };
 
 /**
- * The single place that creates a REQUESTED_FOR request for a resolved profile.
- * A profile-targeted send that meets the same sender's own email-addressed request (pending,
- * expired or cancelled) replaces it in place with the new request ID. The invite is detached
- * and keeps the status it had, so it reads and later expires exactly like an invite to an
- * address with no account: a correct guess of the profile behind an email looks like a miss.
- * An invite from the same sender replaces their earlier email-addressed request the same way
- * once that request is cancelled, expired or past its expiry date, so a resend after expiry
- * reaches the profile whether or not the first invite had attached.
- * Returns null when the request rules do not pass. The caller decides what that means:
- * a profile-targeted send answers CONFLICT, an invite stays pending.
+ * Creates or replaces the current request for a resolved profile under the contract lock.
+ * Returns the existing ID for an exact pending retry. Other results distinguish an
+ * ineligible request from a sender who has reached the rolling limit.
  */
 export const createRequestForProfile = async (
     input: CreateRequestForProfileInput
-): Promise<SendContractRequestResult | null> => {
+): Promise<
+    { requestId: string; status: 'pending' } | { status: 'capped' } | { status: 'ineligible' }
+> => {
+    const now = new Date();
     const query = lockContractAudience(
         new QueryBuilder(
             new BindParam({
@@ -132,7 +145,9 @@ export const createRequestForProfile = async (
                 externalReferenceId: input.externalReferenceId ?? null,
                 message: input.message ?? null,
                 inviteId: input.inviteId ?? null,
-                now: new Date().toISOString(),
+                now: now.toISOString(),
+                capWindowStart: getContractRequestCapWindowStart(now),
+                requestCap: int(getContractRequestCap()),
                 domain: input.domain,
                 eventFrom: input.senderProfileId,
                 eventKind: 'request_sent',
@@ -143,64 +158,78 @@ export const createRequestForProfile = async (
         MATCH (target:Profile {profileId: $targetProfileId})
         WITH contract, target WHERE $targetProfileId <> $senderProfileId AND EXISTS {
             MATCH (contract)-[:CREATED_BY|CAN_WRITE|SHARES_DATA_WITH]->(:Profile {profileId: $senderProfileId})
-        } AND CASE WHEN contract.expiresAt IS NULL OR trim(contract.expiresAt) = '' THEN true ELSE datetime(contract.expiresAt) > datetime($now) END
+        } AND CASE WHEN contract.expiresAt IS NULL OR trim(contract.expiresAt) = '' THEN true ELSE datetime(contract.expiresAt) > datetime.realtime() END
         AND NOT EXISTS {
             MATCH (target)-[:CREATED_BY]->(terms:ConsentFlowTerms)-[:CONSENTS_TO]->(contract)
-            WHERE (terms.status = 'live' OR (terms.status = 'consumed' AND terms.oneTime = true)) AND
-                CASE WHEN terms.expiresAt IS NULL OR trim(terms.expiresAt) = '' THEN true ELSE datetime(terms.expiresAt) > datetime($now) END
+            WHERE ${activeRequestTermsWhere('datetime.realtime()')}
         }
         OPTIONAL MATCH (contract)-[existing:REQUESTED_FOR]->(target)
         WITH contract, target, existing,
-            coalesce(existing.addressedByEmail = true AND existing.requestedBy = $senderProfileId AND
-                (($inviteId IS NULL AND existing.status IN ['pending', 'expired', 'cancelled']) OR
-                 ($inviteId IS NOT NULL AND (existing.status IN ['expired', 'cancelled'] OR
-                    (existing.status = 'pending' AND existing.expiresAt <= $now)))), false) AS replacing
-        WITH contract, target, existing, replacing WHERE existing IS NULL OR replacing OR
-            ($inviteId IS NULL AND existing.status = 'pending' AND existing.requestId IS NOT NULL AND
+            ${contractRequestReplacementWhere('$senderProfileId', '$inviteId IS NOT NULL')} AS replacing,
+            coalesce($inviteId IS NULL AND existing.status = 'pending' AND existing.requestId IS NOT NULL AND
                 coalesce(existing.addressedByEmail, false) = false AND
                 existing.requestedBy = $senderProfileId AND
                 coalesce(existing.externalReferenceId, '') = coalesce($externalReferenceId, '') AND
-                coalesce(existing.message, '') = coalesce($message, ''))
-        WITH contract, target, replacing,
-            CASE WHEN replacing THEN existing.requestId END AS replacedId,
-            CASE WHEN replacing THEN existing.status END AS replacedStatus
+                coalesce(existing.message, '') = coalesce($message, ''), false) AS retry,
+            ${recentContractRequestTimes('profile')} AS profileTimes,
+            ${recentContractRequestTimes('email')} AS emailTimes
+        WHERE existing IS NULL OR replacing OR retry
         OPTIONAL MATCH (contract)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite)
             WHERE invite.id = $inviteId
-        WITH contract, target, invite, replacing, replacedId, replacedStatus WHERE $inviteId IS NULL OR
-            (invite IS NOT NULL AND invite.status = 'pending' AND invite.expiresAt > $now)
-        MERGE (contract)-[request:REQUESTED_FOR]->(target)
-        ON CREATE SET request += {requestId: $requestId, requestedBy: $senderProfileId,
-            externalReferenceId: $externalReferenceId, message: $message,
-            requestedAt: coalesce(invite.requestedAt, $now), status: 'pending', readStatus: 'unseen',
-            addressedByEmail: CASE WHEN $inviteId IS NULL THEN null ELSE true END,
-            expiresAt: invite.expiresAt}
-        FOREACH (_ IN CASE WHEN replacing THEN [1] ELSE [] END |
-            SET request.requestId = $requestId, request.requestedBy = $senderProfileId,
-                request.externalReferenceId = $externalReferenceId, request.message = $message,
-                request.requestedAt = coalesce(invite.requestedAt, $now), request.status = 'pending',
-                request.readStatus = 'unseen',
-                request.addressedByEmail = CASE WHEN $inviteId IS NULL THEN null ELSE true END,
-                request.expiresAt = invite.expiresAt, request.expiredAt = null)
-        FOREACH (_ IN CASE WHEN invite IS NULL THEN [] ELSE [1] END |
-            SET invite.status = 'attached', invite.attachedProfileId = target.profileId,
-                invite.attachedAt = $now)
-        WITH contract, request, target, replacing, replacedId, replacedStatus
-        OPTIONAL MATCH (contract)-[:HAS_REQUEST_INVITE]->(replaced:ContractRequestInvite)
-            WHERE replacing AND replaced.id = replacedId
-        FOREACH (_ IN CASE WHEN replaced IS NULL THEN [] ELSE [1] END |
-            SET replaced.attachedProfileId = null, replaced.attachedAt = null,
-                replaced.status = replacedStatus)
-        ${requestEventCypher}
+        WITH contract, target, existing, invite, retry, profileTimes, emailTimes
+        WHERE $inviteId IS NULL OR (invite IS NOT NULL AND invite.status = 'pending' AND
+            datetime(invite.expiresAt) > datetime.realtime() AND ${inviteHasNeverAttached}
+            AND ${noParkedEmailRequest})
+        WITH contract, target, invite, retry, profileTimes, emailTimes,
+            existing.requestId AS replacedId, existing.status AS replacedStatus,
+            coalesce(invite IS NULL AND existing.addressedByEmail = true AND existing.status = 'pending'
+                AND existing.requestedBy <> $senderProfileId, false) AS park,
+            NOT retry AND ${contractRequestCountForSender(
+                'CASE WHEN invite IS NULL THEN profileTimes ELSE emailTimes END',
+                '$senderProfileId'
+            )} >= $requestCap AS capped
+        CALL {
+            WITH contract, target, invite, retry, profileTimes, emailTimes, replacedId, replacedStatus, park, capped
+            WITH contract, target, invite, retry, profileTimes, emailTimes, replacedId, replacedStatus, park WHERE NOT capped
+            ${preservePreviousRequestCypher}
+            ${parkEmailRequestCypher('request', 'target', 'park')}
+            FOREACH (_ IN CASE WHEN retry THEN [] ELSE [1] END |
+                SET request += {requestId: $requestId, requestedBy: $senderProfileId,
+                    externalReferenceId: $externalReferenceId, message: $message,
+                    requestedAt: coalesce(invite.requestedAt, $now), status: 'pending', readStatus: 'unseen',
+                    addressedByEmail: CASE WHEN $inviteId IS NULL THEN null ELSE true END,
+                    expiresAt: invite.expiresAt, expiredAt: null, requestHistoryOnly: null,
+                    profileRequestTimes: profileTimes + CASE WHEN invite IS NULL THEN [$now + '|' + $senderProfileId] ELSE [] END,
+                    emailRequestTimes: emailTimes + CASE WHEN invite IS NOT NULL THEN [$now + '|' + $senderProfileId] ELSE [] END})
+            FOREACH (_ IN CASE WHEN invite IS NULL THEN [] ELSE [1] END |
+                SET invite.status = 'attached', invite.attachedProfileId = target.profileId,
+                    invite.attachedAt = $now)
+            WITH contract, request, target, retry, replacedId, replacedStatus, park
+            OPTIONAL MATCH (contract)-[:HAS_REQUEST_INVITE]->(replaced:ContractRequestInvite)
+                WHERE NOT retry AND NOT park AND replaced.id = replacedId
+            FOREACH (_ IN CASE WHEN replaced IS NOT NULL AND replacedStatus <> 'accepted' THEN [1] ELSE [] END |
+                SET replaced.attachedProfileId = null, replaced.attachedAt = null,
+                    replaced.status = replacedStatus)
+            FOREACH (_ IN CASE WHEN replaced IS NOT NULL AND replacedStatus = 'accepted' THEN [1] ELSE [] END |
+                SET replaced.status = 'closed')
+            ${requestEventCypher}
+            UNION
+            WITH capped
+            WITH capped WHERE capped
+            RETURN null AS request, null AS eventId
+        }
+        RETURN request, eventId
     `);
     const result = await runAudienceMutation(query);
     const record = result.records[0];
-    if (!record) return null;
+    if (!record) return { status: 'ineligible' };
+    if (!record.get('request')) return { status: 'capped' };
     await tryDispatchContractEvent(record.get('eventId'));
     const request = record.get('request').properties as { requestId: string };
     return { requestId: request.requestId, status: 'pending' };
 };
 
-/** One request per contract/target. Exact pending retries return the same request ID. */
+/** Send to a resolved profile. Exact pending retries return the same request ID. */
 export const sendGenericContractRequest = async (
     input: SendContractRequest,
     profile: ProfileType,
@@ -224,11 +253,16 @@ export const sendGenericContractRequest = async (
         message: input.message,
         domain,
     });
-    if (!result)
+    if (result.status === 'ineligible')
         throw new TRPCError({
             code: 'CONFLICT',
             message:
-                'Active consent or a conflicting/terminal request already exists, or the contract changed.',
+                'Active consent or a conflicting request already exists, or the contract changed.',
+        });
+    if (result.status === 'capped')
+        throw new TRPCError({
+            code: 'TOO_MANY_REQUESTS',
+            message: 'You have reached the 30-day limit for direct requests to this profile.',
         });
     return result;
 };
@@ -247,10 +281,10 @@ export const decideGenericContractRequest = async ({
     actorProfileId: string;
     status: 'denied' | 'cancelled';
     domain: string;
-    /** When set, only this request is changed: a request that replaced it is left alone. */
+    /** The request ID supplied by the caller or used by the route for its access check. */
     requestId?: string;
 }): Promise<boolean> => {
-    const request = await getStoredContractRequest(contract.id, targetProfileId);
+    const request = await getStoredContractRequest(contract.id, targetProfileId, { requestId });
     if (!request?.requestId)
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract request not found' });
     if (requestId && request.requestId !== requestId)
@@ -279,14 +313,15 @@ export const decideGenericContractRequest = async ({
                     now: new Date().toISOString(),
                     eventKind: status === 'denied' ? 'request_denied' : 'request_cancelled',
                     eventFrom: actorProfileId,
-                    requestId: requestId ?? null,
+                    requestId: request.requestId,
                 })
             ),
             contract.id
         ).raw(`
-        MATCH (contract)-[request:REQUESTED_FOR]->(target:Profile {profileId: $targetProfileId})
-        WHERE request.requestId IS NOT NULL AND request.status IN ['pending', $status]
-            AND ($requestId IS NULL OR request.requestId = $requestId)
+        MATCH (contract)-[request:REQUESTED_FOR|PREVIOUS_VISIBLE_REQUEST|PENDING_EMAIL_REQUEST|CANCELLED_DIRECT_REQUEST]->(target:Profile {profileId: $targetProfileId})
+        WHERE request.requestId = $requestId AND request.status IN ['pending', $status]
+            AND (type(request) IN ['REQUESTED_FOR', 'PENDING_EMAIL_REQUEST'] OR
+                (request.status = 'cancelled' AND $status = 'cancelled'))
             AND (request.status = $status OR request.expiresAt IS NULL OR request.expiresAt > $now)
             AND ($actorProfileId = $targetProfileId OR ($status = 'cancelled' AND
                 (EXISTS { MATCH (contract)-[:CREATED_BY|CAN_WRITE]->(:Profile {profileId: $actorProfileId}) } OR
@@ -321,7 +356,7 @@ export const cancelContractRequestById = async ({
     const findTarget = async (): Promise<string | undefined> =>
         (
             await neogma.queryRunner.run(
-                `MATCH (:ConsentFlowContract {id: $contractId})-[request:REQUESTED_FOR]->(target:Profile)
+                `MATCH (:ConsentFlowContract {id: $contractId})-[request:REQUESTED_FOR|PREVIOUS_VISIBLE_REQUEST|PENDING_EMAIL_REQUEST|CANCELLED_DIRECT_REQUEST]->(target:Profile)
                  WHERE request.requestId = $requestId
                  RETURN target.profileId AS targetProfileId`,
                 { contractId: contract.id, requestId }
@@ -344,7 +379,7 @@ export const cancelContractRequestById = async ({
                 return true;
             }
             // Same answer as an attached request that can no longer be cancelled.
-            if (outcome === 'expired')
+            if (outcome === 'decided')
                 throw new TRPCError({
                     code: 'CONFLICT',
                     message: 'Request already decided or permission changed',
@@ -376,12 +411,16 @@ export const cancelContractRequestById = async ({
 
 export const markGenericContractRequestSeen = async (
     contractId: string,
-    targetProfileId: string
+    targetProfileId: string,
+    requestId: string
 ): Promise<boolean> => {
     const result = await runAudienceMutation(
-        lockContractAudience(new QueryBuilder(new BindParam({ targetProfileId })), contractId)
-            .raw(`MATCH (contract)-[request:REQUESTED_FOR]->(:Profile {profileId: $targetProfileId})
-            WHERE request.requestId IS NOT NULL
+        lockContractAudience(
+            new QueryBuilder(new BindParam({ targetProfileId, requestId })),
+            contractId
+        )
+            .raw(`MATCH (contract)-[request:REQUESTED_FOR|PENDING_EMAIL_REQUEST]->(:Profile {profileId: $targetProfileId})
+            WHERE request.requestId = $requestId
             SET request.readStatus = 'seen' RETURN request`)
     );
     if (!result.records.length)

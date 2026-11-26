@@ -16,6 +16,7 @@ import {
 } from '@helpers/contract-request-invites.helpers';
 import { fanOutIntegrationEvents } from '@helpers/integration-events.helpers';
 import * as notifications from '@helpers/notifications.helpers';
+import * as requestCap from '@helpers/contract-request-cap.helpers';
 
 const actor = async (role: string) => {
     const user = await getUser(randomBytes(32).toString('hex'));
@@ -163,6 +164,7 @@ describe('integration events for contract request invites', () => {
         await learner.clients.fullAuth.contracts.consentToContract({
             contractUri,
             terms: normalFullTerms,
+            expectedRequestId: requestId,
             audienceVersion: (
                 await owner.clients.fullAuth.contracts.getConsentFlowContract({ uri: contractUri })
             ).audienceVersion,
@@ -173,6 +175,65 @@ describe('integration events for contract request invites', () => {
         );
         expect(accepted).toMatchObject({ subjectProfileId: learner.profileId });
     });
+
+    it.each(['first consent', 'renewal'] as const)(
+        'keeps the email referral private during independent %s',
+        async action => {
+            vi.spyOn(requestCap, 'getContractRequestCap').mockReturnValue(1);
+            const consents = learner.clients.fullAuth.contracts;
+            const manager = owner.clients.fullAuth.contracts;
+            const sender = recipient.clients.fullAuth.contracts;
+            const consent = {
+                contractUri,
+                terms: normalFullTerms,
+                audienceVersion: (await manager.getConsentFlowContract({ uri: contractUri }))
+                    .audienceVersion,
+            };
+            if (action === 'renewal') {
+                const { termsUri } = await consents.consentToContract(consent);
+                await consents.withdrawConsent({ uri: termsUri });
+            }
+            const email = randomEmail();
+            await addEmail(learner.profileId, email);
+            const invite = await send(email);
+            const profileInput = { contractUri, targetProfileId: learner.profileId };
+            await expect(consents.getRequestStatusForProfile(profileInput)).resolves.toMatchObject(
+                invite
+            );
+
+            const { termsUri } = await consents.consentToContract(consent);
+            const inviteView = await sender.getContractRequest({
+                contractUri,
+                requestId: invite.requestId,
+            });
+            expect(inviteView).toMatchObject({ status: 'pending', target: { email } });
+            expect(inviteView.target).not.toHaveProperty('profile');
+            for (const integration of [ownerIntegration, recipientIntegration]) {
+                expect(await feed(integration, invite.requestId)).toEqual([
+                    expect.objectContaining({ type: 'request_sent', subjectProfileId: undefined }),
+                ]);
+            }
+            const visible = await manager.getRequestStatusForProfile(profileInput);
+            if (action === 'renewal') expect(visible).toBeNull();
+            else expect(visible).toMatchObject({ status: 'accepted' });
+            await expect(send(email)).resolves.toEqual(invite);
+            await expect(
+                consents.consentToContract({ ...consent, expectedRequestId: invite.requestId })
+            ).rejects.toMatchObject({ code: 'CONFLICT' });
+
+            await consents.withdrawConsent({ uri: termsUri });
+            await sender.sendContractRequest({
+                contractUri,
+                targetEmail: email,
+                externalReferenceId: 'new-email-invite',
+            });
+            await deliverContractRequestInvites();
+            await expect(consents.getRequestStatusForProfile(profileInput)).resolves.toBeNull();
+            await expect(sender.sendContractRequest(profileInput)).resolves.toMatchObject({
+                status: 'pending',
+            });
+        }
+    );
 
     it('hides the subject when the sender cancels an attached email-addressed request', async () => {
         const email = randomEmail();
@@ -239,7 +300,7 @@ describe('integration events for contract request invites', () => {
             `MATCH (c:ConsentFlowContract)-[:HAS_REQUEST_INVITE]->(i:ContractRequestInvite {id: $requestId})
              SET i.expiresAt = $past
              WITH c, i
-             OPTIONAL MATCH (c)-[r:REQUESTED_FOR]->(:Profile) WHERE r.requestId = i.id
+             OPTIONAL MATCH (c)-[r:REQUESTED_FOR|PENDING_EMAIL_REQUEST]->(:Profile) WHERE r.requestId = i.id
              FOREACH (_ IN CASE WHEN r IS NULL THEN [] ELSE [1] END | SET r.expiresAt = $past)`,
             { requestId, past: '2000-01-01T00:00:00.000Z' }
         );
@@ -316,18 +377,23 @@ describe('integration events for contract request invites', () => {
         );
     });
 
-    it('does not accept an overdue attached request when the person consents', async () => {
+    it('rejects an overdue invitation ID while allowing an independent consent', async () => {
         const email = randomEmail();
         await addEmail(learner.profileId, email);
         const { requestId } = await send(email);
         await age(requestId);
-        await learner.clients.fullAuth.contracts.consentToContract({
+        const consent = {
             contractUri,
             terms: normalFullTerms,
             audienceVersion: (
                 await owner.clients.fullAuth.contracts.getConsentFlowContract({ uri: contractUri })
             ).audienceVersion,
-        });
+        };
+        const consents = learner.clients.fullAuth.contracts;
+        await expect(
+            consents.consentToContract({ ...consent, expectedRequestId: requestId })
+        ).rejects.toMatchObject({ code: 'CONFLICT' });
+        await consents.consentToContract(consent);
 
         expect((await feed(ownerIntegration, requestId)).map(record => record.type)).not.toContain(
             'request_accepted'
@@ -408,15 +474,144 @@ describe('integration events for contract request invites', () => {
             ]);
     });
 
-    it('still answers CONFLICT when another sender collides with an email request', async () => {
+    it.each([
+        'accept',
+        'deny',
+        'cancel',
+        'expire',
+        'accept the direct request instead of',
+    ] as const)(
+        'keeps another sender’s email invitation private and available to %s after a direct send',
+        async decision => {
+            const manager = owner.clients.fullAuth.contracts;
+            const sender = recipient.clients.fullAuth.contracts;
+            const consents = learner.clients.fullAuth.contracts;
+            const email = randomEmail();
+            await addEmail(learner.profileId, email);
+            const invitation = await send(email);
+            const inviteInput = { contractUri, requestId: invitation.requestId };
+            const original = await sender.getContractRequest(inviteInput);
+            const profileInput = { contractUri, targetProfileId: learner.profileId };
+            vi.spyOn(requestCap, 'getContractRequestCap').mockReturnValue(1);
+            const direct = await manager.sendContractRequest(profileInput);
+            expect(direct.status).toBe('pending');
+            await expect(manager.sendContractRequest(profileInput)).resolves.toEqual(direct);
+            await expect(sender.getContractRequest(inviteInput)).resolves.toEqual(original);
+            await expect(
+                manager.getRequestStatusForProfile({ ...profileInput, ...inviteInput })
+            ).resolves.toBeNull();
+            const inbox = await consents.getAllContractRequestsForProfile({
+                targetProfileId: learner.profileId,
+            });
+            expect(inbox.map(request => request.requestId)).toEqual(
+                expect.arrayContaining([invitation.requestId, direct.requestId])
+            );
+            await expect(
+                consents.markContractRequestAsSeen({ ...profileInput, ...inviteInput })
+            ).resolves.toBe(true);
+            await expect(
+                consents.getRequestStatusForProfile({ ...profileInput, ...inviteInput })
+            ).resolves.toMatchObject({ ...invitation, readStatus: 'seen' });
+            await expect(consents.getRequestStatusForProfile(profileInput)).resolves.toMatchObject({
+                ...direct,
+                readStatus: 'unseen',
+            });
+            await expect(send(email)).resolves.toEqual(invitation);
+
+            if (decision === 'accept' || decision === 'accept the direct request instead of') {
+                await consents.consentToContract({
+                    contractUri,
+                    terms: normalFullTerms,
+                    expectedRequestId:
+                        decision === 'accept' ? invitation.requestId : direct.requestId,
+                    audienceVersion: (await manager.getConsentFlowContract({ uri: contractUri }))
+                        .audienceVersion,
+                });
+                const directInput = { contractUri, requestId: direct.requestId };
+                if (decision !== 'accept') {
+                    await expect(sender.getContractRequest(inviteInput)).resolves.toEqual(original);
+                    await expect(
+                        consents.getRequestStatusForProfile({ ...profileInput, ...inviteInput })
+                    ).resolves.toBeNull();
+                    await expect(send(email)).resolves.toEqual(invitation);
+                    expect(await feed(recipientIntegration, invitation.requestId)).toEqual([
+                        expect.objectContaining({
+                            type: 'request_sent',
+                            subjectProfileId: undefined,
+                        }),
+                    ]);
+                    return;
+                }
+                const records = await feed(recipientIntegration, invitation.requestId);
+                expect(records.find(record => record.type === 'request_accepted')).toMatchObject({
+                    subjectProfileId: learner.profileId,
+                });
+                await expect(sender.getContractRequest(inviteInput)).resolves.toMatchObject({
+                    status: 'accepted',
+                    target: { profile: { profileId: learner.profileId } },
+                });
+                await expect(manager.getContractRequest(directInput)).resolves.toMatchObject({
+                    requestId: direct.requestId,
+                    status: 'cancelled',
+                    target: { profile: { profileId: learner.profileId } },
+                });
+                expect(await manager.getContractSentRequests({ contractUri })).toContainEqual(
+                    expect.objectContaining({ requestId: direct.requestId, status: 'cancelled' })
+                );
+                await expect(sender.getContractRequest(directInput)).rejects.toMatchObject({
+                    code: 'NOT_FOUND',
+                });
+                const closingEvents = await feed(ownerIntegration, direct.requestId);
+                expect(closingEvents.map(record => [record.eventId, record.type])).toEqual([
+                    [direct.requestId, 'request_sent'],
+                    [direct.requestId + ':cancelled', 'request_cancelled'],
+                ]);
+                await expect(manager.cancelContractRequest(directInput)).resolves.toBe(true);
+                expect(await feed(ownerIntegration, direct.requestId)).toEqual(closingEvents);
+                return;
+            }
+            let status: string;
+            if (decision === 'deny') {
+                await consents.denyContractRequest(inviteInput);
+                status = 'denied';
+            } else if (decision === 'cancel') {
+                await sender.cancelContractRequest(inviteInput);
+                status = 'cancelled';
+            } else {
+                await age(invitation.requestId);
+                await expireContractRequestInvites();
+                status = 'expired';
+            }
+            await expect(sender.getContractRequest(inviteInput)).resolves.toMatchObject({
+                status,
+                target: { email },
+            });
+            expect((await feed(recipientIntegration, invitation.requestId)).at(-1)).toMatchObject({
+                type: `request_${status}`,
+                subjectProfileId: undefined,
+            });
+            await expect(manager.getRequestStatusForProfile(profileInput)).resolves.toMatchObject(
+                direct
+            );
+        }
+    );
+
+    it('lets legacy AI requests proceed while keeping an existing email invite actionable', async () => {
         const email = randomEmail();
         await addEmail(learner.profileId, email);
-        await send(email);
+        const invitation = await send(email);
+        const profileInput = { contractUri, targetProfileId: learner.profileId };
         await expect(
-            owner.clients.fullAuth.contracts.sendContractRequest({
-                contractUri,
-                targetProfileId: learner.profileId,
+            owner.clients.fullAuth.contracts.sendAiInsightsContractRequest({
+                ...profileInput,
+                shareLink: 'synthetic-share-link',
             })
-        ).rejects.toMatchObject({ message: expect.stringContaining('already exists') });
+        ).resolves.toBe(true);
+        await expect(
+            learner.clients.fullAuth.contracts.getRequestStatusForProfile({
+                ...profileInput,
+                requestId: invitation.requestId,
+            })
+        ).resolves.toMatchObject(invitation);
     });
 });
