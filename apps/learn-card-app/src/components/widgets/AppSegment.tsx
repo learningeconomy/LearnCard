@@ -252,6 +252,8 @@ export function AppSegment<T extends string>({
 
     return (
         <SegmentContext.Provider value={{ value, afterChecked, activated }}>
+            {/* WAI-ARIA tabs pattern: focus stays on the tab buttons; the tablist only delegates their keys and presses. */}
+            {/* eslint-disable-next-line jsx-a11y/interactive-supports-focus */}
             <div
                 ref={setRefs}
                 role="tablist"
