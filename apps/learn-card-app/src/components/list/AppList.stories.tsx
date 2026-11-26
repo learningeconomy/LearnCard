@@ -14,7 +14,7 @@ const MODES = ['md', 'ios'] as const;
 const ListMatrix: React.FC<{ lines?: AppListLines }> = ({ lines }) => (
     <div className="flex flex-wrap gap-6 bg-grayscale-100 p-6">
         {MODES.map(mode => (
-            <div key={mode} className="flex w-[300px] flex-col gap-2">
+            <div key={mode} className="flex w-[260px] flex-col gap-2">
                 <span className="font-mono text-xs">{mode}</span>
                 <AppList mode={mode} lines={lines}>
                     <AppItem mode={mode}>Plain row</AppItem>
