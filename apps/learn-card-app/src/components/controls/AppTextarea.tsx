@@ -155,7 +155,7 @@ export const AppTextarea: React.FC<AppTextareaProps> = props => {
             data-testid={testId}
             onKeyDown={onKeyDown}
         >
-            {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- only stops a duplicate click from bubbling; the textarea inside owns keyboard interaction. */}
+            {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/label-has-associated-control -- ion-textarea's wrapper label: it only stops a duplicate click from bubbling, the textarea inside owns keyboard interaction, and the textarea's name comes from aria-label or an outer label, as with Ionic (no call site uses label text). */}
             <label className="app-textarea-wrapper" htmlFor={inputId} onClick={handleLabelClick}>
                 <div className="app-textarea-wrapper-inner">
                     <div className="app-textarea-start-slot-wrapper" />
