@@ -1,0 +1,889 @@
+/*
+ * Styles for the app-owned controls (AppButton, AppButtons, AppCheckbox, AppRadioGroup/AppRadio).
+ * Ported from @ionic/core 8.7.2 (ion-button, ion-buttons, ion-checkbox, ion-radio,
+ * ion-radio-group, ion-ripple-effect) for the colors, fills and modes the app uses.
+ *
+ * Cascade, as in app-shell.css:
+ * - Ionic's `:host` and `::slotted` rules lost to every light-DOM author rule (Tailwind's unlayered
+ *   preflight `* { margin: 0 }`, `index.scss`'s `* { font-family }`, call-site utilities). They
+ *   live in the `app-controls-host` layer here so that stays true. For example, preflight still
+ *   zeroes the button's 4px/2px margin and the ion-icon start margin, exactly as it did before.
+ * - Rules for elements that were inside Ionic's shadow roots (.button-native, .checkbox-icon,
+ *   .radio-inner, ...) were unreachable by app CSS. They stay unlayered with class selectors that
+ *   outrank the global element resets (preflight/normalize `button`, `svg`, `*`).
+ * - ion-buttons' scoped styles were ordinary unlayered document rules, and stay unlayered.
+ */
+
+/*
+ * App color tokens. Same values the `--ion-color-*` variables resolve to in src/theme/variables.css
+ * (`:root`; the `prefers-color-scheme: dark` block there is entirely commented out, so `:root` is
+ * the only active definition). The `--ion-color-*` definitions stay for the remaining Ionic users.
+ */
+:root {
+    --app-color-primary: #3880ff;
+    --app-color-primary-contrast: #ffffff;
+    --app-color-primary-shade: #3171e0;
+    --app-color-primary-tint: #4c8dff;
+
+    --app-color-light: #ffffff;
+    --app-color-light-contrast: #000000;
+    --app-color-light-shade: #d7d8da;
+    --app-color-light-tint: #f5f6f9;
+
+    --app-color-medium: #92949c;
+    --app-color-medium-contrast: #ffffff;
+    --app-color-medium-shade: #808289;
+    --app-color-medium-tint: #9d9fa6;
+
+    --app-color-emerald-700: #00ba88;
+    --app-color-emerald-700-contrast: #ffffff;
+    --app-color-emerald-700-shade: #00a478;
+    --app-color-emerald-700-tint: #1ac194;
+}
+
+/* `.ion-color-X` equivalents: the per-color base the components read. */
+.app-color-primary {
+    --app-color-base: var(--app-color-primary);
+    --app-color-contrast: var(--app-color-primary-contrast);
+    --app-color-shade: var(--app-color-primary-shade);
+    --app-color-tint: var(--app-color-primary-tint);
+}
+
+.app-color-light {
+    --app-color-base: var(--app-color-light);
+    --app-color-contrast: var(--app-color-light-contrast);
+    --app-color-shade: var(--app-color-light-shade);
+    --app-color-tint: var(--app-color-light-tint);
+}
+
+.app-color-medium {
+    --app-color-base: var(--app-color-medium);
+    --app-color-contrast: var(--app-color-medium-contrast);
+    --app-color-shade: var(--app-color-medium-shade);
+    --app-color-tint: var(--app-color-medium-tint);
+}
+
+.app-color-emerald-700 {
+    --app-color-base: var(--app-color-emerald-700);
+    --app-color-contrast: var(--app-color-emerald-700-contrast);
+    --app-color-shade: var(--app-color-emerald-700-shade);
+    --app-color-tint: var(--app-color-emerald-700-tint);
+}
+
+@layer app-controls-host {
+    /* ---------------------------------------------------------------- ion-button :host */
+    .app-button {
+        --overflow: hidden;
+        --ripple-color: currentColor;
+        --border-width: initial;
+        --border-color: initial;
+        --border-style: initial;
+        --color-activated: var(--color);
+        --color-focused: var(--color);
+        --color-hover: var(--color);
+        --box-shadow: none;
+        display: inline-block;
+        width: auto;
+        color: var(--color);
+        /* Ionic: var(--ion-font-family, inherit); index.scss's `* { font-family }` wins either way. */
+        font-family: inherit;
+        text-align: center;
+        text-decoration: none;
+        white-space: normal;
+        user-select: none;
+        vertical-align: top;
+        vertical-align: -webkit-baseline-middle;
+        font-kerning: none;
+    }
+
+    .app-button.app-button-disabled {
+        cursor: default;
+        opacity: 0.5;
+        pointer-events: none;
+    }
+
+    .app-button.app-button-solid {
+        --background: var(--app-color-primary);
+        --color: var(--app-color-primary-contrast);
+    }
+
+    .app-button.app-button-outline {
+        --border-color: var(--app-color-primary);
+        --background: transparent;
+        --color: var(--app-color-primary);
+    }
+
+    .app-button.app-button-clear {
+        --border-width: 0;
+        --background: transparent;
+        --color: var(--app-color-primary);
+    }
+
+    .app-button.app-button-block {
+        display: block;
+    }
+
+    /* ::slotted(...) */
+    .app-button-inner > [slot='start'],
+    .app-button-inner > [slot='end'] {
+        flex-shrink: 0;
+    }
+
+    /* Shadow slot order: icon-only, start, default, end. */
+    .app-button-inner > [slot='icon-only'] {
+        order: -2;
+    }
+
+    .app-button-inner > [slot='start'] {
+        order: -1;
+    }
+
+    .app-button-inner > [slot='end'] {
+        order: 1;
+    }
+
+    .app-button-inner > ion-icon {
+        font-size: 1.35em;
+        pointer-events: none;
+    }
+
+    .app-button-inner > ion-icon[slot='start'] {
+        margin-inline-start: -0.3em;
+        margin-inline-end: 0.3em;
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+
+    .app-button-inner > ion-icon[slot='end'] {
+        margin-inline-start: 0.3em;
+        margin-inline-end: -0.2em;
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+
+    /* md :host */
+    .app-button.md {
+        --border-radius: 4px;
+        --padding-top: 8px;
+        --padding-bottom: 8px;
+        --padding-start: 1.1em;
+        --padding-end: 1.1em;
+        --transition:
+            box-shadow 280ms cubic-bezier(0.4, 0, 0.2, 1), background-color 15ms linear,
+            color 15ms linear;
+        margin-inline: 2px;
+        margin-top: 4px;
+        margin-bottom: 4px;
+        min-height: 36px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .app-button.md.app-button-solid {
+        --background-activated: transparent;
+        --background-hover: var(--app-color-primary-contrast);
+        --background-focused: var(--app-color-primary-contrast);
+        --background-activated-opacity: 0;
+        --background-focused-opacity: 0.24;
+        --background-hover-opacity: 0.08;
+        --box-shadow:
+            0 3px 1px -2px rgba(0, 0, 0, 0.2), 0 2px 2px 0 rgba(0, 0, 0, 0.14),
+            0 1px 5px 0 rgba(0, 0, 0, 0.12);
+    }
+
+    .app-button.md.app-button-solid[data-activated] {
+        --box-shadow:
+            0 5px 5px -3px rgba(0, 0, 0, 0.2), 0 8px 10px 1px rgba(0, 0, 0, 0.14),
+            0 3px 14px 2px rgba(0, 0, 0, 0.12);
+    }
+
+    .app-button.md.app-button-outline {
+        --border-width: 2px;
+        --border-style: solid;
+        --box-shadow: none;
+        --background-activated: transparent;
+        --background-focused: var(--app-color-primary);
+        --background-hover: var(--app-color-primary);
+        --background-activated-opacity: 0;
+        --background-focused-opacity: 0.12;
+        --background-hover-opacity: 0.04;
+    }
+
+    .app-button.md.app-button-clear {
+        --background-activated: transparent;
+        --background-focused: var(--app-color-primary);
+        --background-hover: var(--app-color-primary);
+        --background-activated-opacity: 0;
+        --background-focused-opacity: 0.12;
+        --background-hover-opacity: 0.04;
+    }
+
+    /* ios :host */
+    .app-button.ios {
+        --border-radius: 14px;
+        --padding-top: 13px;
+        --padding-bottom: 13px;
+        --padding-start: 1em;
+        --padding-end: 1em;
+        --transition: background-color, opacity 100ms linear;
+        margin-inline: 2px;
+        margin-top: 4px;
+        margin-bottom: 4px;
+        min-height: 3.1em;
+        font-size: min(1rem, 48px);
+        font-weight: 500;
+        letter-spacing: 0;
+    }
+
+    .app-button.ios.app-button-solid {
+        --background-activated: var(--app-color-primary-shade);
+        --background-focused: var(--app-color-primary-shade);
+        --background-hover: var(--app-color-primary-tint);
+        --background-activated-opacity: 1;
+        --background-focused-opacity: 1;
+        --background-hover-opacity: 1;
+    }
+
+    .app-button.ios.app-button-outline {
+        --border-radius: 14px;
+        --border-width: 1px;
+        --border-style: solid;
+        --background-activated: var(--app-color-primary);
+        --background-focused: var(--app-color-primary);
+        --background-hover: transparent;
+        --background-focused-opacity: 0.1;
+        --color-activated: var(--app-color-primary-contrast);
+    }
+
+    .app-button.ios.app-button-clear {
+        --background-activated: transparent;
+        --background-activated-opacity: 0;
+        --background-focused: var(--app-color-primary);
+        --background-hover: transparent;
+        --background-focused-opacity: 0.1;
+        font-size: min(1.0625rem, 51px);
+        font-weight: normal;
+    }
+
+    /* ios :host(.in-buttons): after .app-button-clear, as in Ionic's source order. */
+    .app-buttons .app-button.ios {
+        font-size: clamp(17px, 1.0625rem, 21.08px);
+        font-weight: 400;
+    }
+
+    @media (any-hover: hover) {
+        .app-button.ios.app-button-clear:not([data-activated]):hover,
+        .app-button.ios.app-button-outline:not([data-activated]):hover {
+            opacity: 0.6;
+        }
+    }
+
+    .app-button.ios.app-button-clear[data-activated] {
+        opacity: 0.4;
+    }
+
+    /* ---------------------------------------------------- ion-toolbar ::slotted(ion-buttons) */
+    ion-toolbar > .app-buttons.ios {
+        min-height: 38px;
+    }
+
+    /* `.buttons-first-slot` / `.buttons-last-slot` (md). Preflight's margin reset still wins. */
+    ion-toolbar > .app-buttons.md[slot='start'] {
+        margin-inline-start: 4px;
+    }
+
+    ion-toolbar > .app-buttons.md[slot='end'] {
+        margin-inline-end: 4px;
+    }
+
+    /* ------------------------------------------------------------------ ion-checkbox :host */
+    .app-checkbox {
+        --checkbox-background-checked: var(--app-color-primary);
+        --border-color-checked: var(--app-color-primary);
+        --checkmark-color: var(--app-color-primary-contrast);
+        --transition: none;
+        /* Ionic: var(--ion-item-background, var(--ion-background-color, #fff)); the app sets neither. */
+        --checkbox-background: #fff;
+        display: inline-block;
+        position: relative;
+        cursor: pointer;
+        user-select: none;
+        z-index: 2;
+    }
+
+    .app-checkbox.app-color {
+        --checkbox-background-checked: var(--app-color-base);
+        --border-color-checked: var(--app-color-base);
+        --checkmark-color: var(--app-color-contrast);
+    }
+
+    .app-checkbox.app-checkbox-disabled {
+        pointer-events: none;
+    }
+
+    /* Ionic: rgba(var(--ion-text-color-rgb, 0, 0, 0), …); the app does not set the rgb var. */
+    .app-checkbox.ios {
+        --border-radius: 50%;
+        --border-width: 0.125rem;
+        --border-style: solid;
+        --border-color: rgba(0, 0, 0, 0.23);
+        --size: min(1.375rem, 55.836px);
+        --checkmark-width: 1.5px;
+    }
+
+    .app-checkbox.ios.app-checkbox-disabled {
+        opacity: 0.3;
+    }
+
+    .app-checkbox.md {
+        --border-radius: calc(var(--size) * 0.125);
+        --border-width: 2px;
+        --border-style: solid;
+        --border-color: rgb(0, 0, 0, 0.6);
+        --checkmark-width: 3;
+        --transition: background 180ms cubic-bezier(0.4, 0, 0.2, 1);
+        --size: 18px;
+    }
+
+    /* --------------------------------------------------------------------- ion-radio :host */
+    .app-radio {
+        --inner-border-radius: 50%;
+        display: inline-block;
+        position: relative;
+        max-width: 100%;
+        min-height: inherit;
+        cursor: pointer;
+        user-select: none;
+        z-index: 2;
+        box-sizing: border-box;
+    }
+
+    .app-radio:focus {
+        outline: none;
+    }
+
+    .app-radio.ios {
+        --color-checked: var(--app-color-primary);
+    }
+
+    .app-radio.md {
+        --color: rgb(0, 0, 0, 0.6);
+        --color-checked: var(--app-color-primary);
+        --border-width: 0.125rem;
+        --border-style: solid;
+        --border-radius: 50%;
+    }
+}
+
+/* ------------------------------------------------------------- ion-button .button-native */
+.app-button > .app-button-native {
+    border-radius: var(--border-radius);
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-font-smoothing: antialiased;
+    margin: 0;
+    padding-inline-start: var(--padding-start);
+    padding-inline-end: var(--padding-end);
+    padding-top: var(--padding-top);
+    padding-bottom: var(--padding-bottom);
+    font-family: inherit;
+    font-size: inherit;
+    font-style: inherit;
+    font-weight: inherit;
+    letter-spacing: inherit;
+    text-decoration: inherit;
+    text-indent: inherit;
+    text-overflow: inherit;
+    text-transform: inherit;
+    text-align: inherit;
+    white-space: inherit;
+    color: inherit;
+    display: flex;
+    position: relative;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    min-height: inherit;
+    transition: var(--transition);
+    border-width: var(--border-width);
+    border-style: var(--border-style);
+    border-color: var(--border-color);
+    outline: none;
+    background: var(--background);
+    line-height: 1;
+    box-shadow: var(--box-shadow);
+    contain: layout style;
+    cursor: pointer;
+    /* Inherited: ion-header[translucent] sets --opacity: .8 on ios toolbars. */
+    opacity: var(--opacity);
+    overflow: var(--overflow);
+    z-index: 0;
+    box-sizing: border-box;
+    appearance: none;
+}
+
+.app-button > .app-button-native::-moz-focus-inner {
+    border: 0;
+}
+
+.app-button.app-button-block > .app-button-native {
+    margin-left: 0;
+    margin-right: 0;
+    width: 100%;
+    clear: both;
+    contain: content;
+}
+
+.app-button.app-button-block > .app-button-native::after {
+    clear: both;
+}
+
+.app-button-inner {
+    display: flex;
+    position: relative;
+    flex-flow: row nowrap;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    /* Shadow content inherited the host font; keep index.scss's `* { font-family }` off it. */
+    font-family: inherit;
+}
+
+.app-button > .app-button-native::after {
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    position: absolute;
+    content: '';
+    opacity: 0;
+}
+
+/* :host(.ion-focused): Ionic's focus-visible utility; :focus-visible is the native equivalent. */
+.app-button > .app-button-native:focus-visible::after {
+    background: var(--background-focused);
+    opacity: var(--background-focused-opacity);
+}
+
+@media (any-hover: hover) {
+    .app-button > .app-button-native:hover::after {
+        background: var(--background-hover);
+        opacity: var(--background-hover-opacity);
+    }
+}
+
+/* :host(.ion-activated): set by AppButton's tap handling (Ionic's tap-click utility). */
+.app-button[data-activated] > .app-button-native::after {
+    background: var(--background-activated);
+    opacity: var(--background-activated-opacity);
+}
+
+.app-button.app-button-solid.app-color > .app-button-native {
+    background: var(--app-color-base);
+    color: var(--app-color-contrast);
+}
+
+.app-button.app-button-outline.app-color > .app-button-native {
+    border-color: var(--app-color-base);
+    background: transparent;
+    color: var(--app-color-base);
+}
+
+.app-button.app-button-clear.app-color > .app-button-native {
+    background: transparent;
+    color: var(--app-color-base);
+}
+
+/*
+ * :host(.in-toolbar:not(.ion-color):not(.in-toolbar-color)). Ionic reads
+ * var(--ion-toolbar-color / --ion-toolbar-background, <fallback>); the app sets neither, so the
+ * fallbacks are used directly.
+ */
+ion-toolbar:not([color]) .app-button:not(.app-color) > .app-button-native {
+    color: var(--color);
+}
+
+ion-toolbar:not([color]) .app-button.app-button-outline:not(.app-color) > .app-button-native {
+    border-color: var(--color, var(--border-color));
+}
+
+ion-toolbar:not([color]) .app-button.app-button-solid:not(.app-color) > .app-button-native {
+    background: var(--background);
+    color: var(--color);
+}
+
+/* md color states */
+.app-button.md.app-button-solid.app-color > .app-button-native:focus-visible::after {
+    background: var(--app-color-contrast);
+}
+
+.app-button.md.app-button-clear.app-color > .app-button-native:focus-visible::after,
+.app-button.md.app-button-outline.app-color > .app-button-native:focus-visible::after {
+    background: var(--app-color-base);
+}
+
+@media (any-hover: hover) {
+    .app-button.md.app-button-solid.app-color > .app-button-native:hover::after {
+        background: var(--app-color-contrast);
+    }
+
+    .app-button.md.app-button-clear.app-color > .app-button-native:hover::after,
+    .app-button.md.app-button-outline.app-color > .app-button-native:hover::after {
+        background: var(--app-color-base);
+    }
+}
+
+.app-button.md.app-button-outline.app-color[data-activated] > .app-button-native {
+    background: transparent;
+}
+
+/* ios color states */
+.app-button.ios.app-button-outline.app-color > .app-button-native:focus-visible,
+.app-button.ios.app-button-clear.app-color > .app-button-native:focus-visible {
+    color: var(--app-color-base);
+}
+
+.app-button.ios.app-button-outline.app-color > .app-button-native:focus-visible::after,
+.app-button.ios.app-button-clear.app-color > .app-button-native:focus-visible::after {
+    background: var(--app-color-base);
+}
+
+.app-button.ios.app-button-solid.app-color > .app-button-native:focus-visible::after {
+    background: var(--app-color-shade);
+}
+
+@media (any-hover: hover) {
+    .app-button.ios.app-button-clear.app-color > .app-button-native:hover,
+    .app-button.ios.app-button-outline.app-color > .app-button-native:hover {
+        color: var(--app-color-base);
+    }
+
+    .app-button.ios.app-button-clear.app-color > .app-button-native:hover::after,
+    .app-button.ios.app-button-outline.app-color > .app-button-native:hover::after {
+        background: transparent;
+    }
+
+    .app-button.ios.app-button-solid.app-color > .app-button-native:hover::after {
+        background: var(--app-color-tint);
+    }
+
+    ion-toolbar:not([color])
+        .app-button.ios.app-button-solid:not(.app-color):not([data-activated])
+        > .app-button-native:hover::after {
+        background: #fff;
+        opacity: 0.1;
+    }
+}
+
+.app-button.ios.app-button-outline.app-color[data-activated] > .app-button-native {
+    color: var(--app-color-contrast);
+}
+
+.app-button.ios.app-button-outline.app-color[data-activated] > .app-button-native::after {
+    background: var(--app-color-base);
+}
+
+.app-button.ios.app-button-solid.app-color[data-activated] > .app-button-native::after {
+    background: var(--app-color-shade);
+}
+
+/* ------------------------------------------------------------------- ion-ripple-effect (md) */
+.app-button > .app-button-native > .app-ripple-effect {
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    position: absolute;
+    contain: strict;
+    pointer-events: none;
+    color: var(--ripple-color);
+}
+
+.app-ripple-effect > .app-ripple {
+    border-radius: 50%;
+    position: absolute;
+    background-color: currentColor;
+    color: inherit;
+    contain: strict;
+    opacity: 0;
+    animation:
+        225ms app-ripple-animation forwards,
+        75ms app-ripple-fade-in forwards;
+    will-change: transform, opacity;
+    pointer-events: none;
+}
+
+.app-ripple-effect > .app-ripple.app-ripple-fade-out {
+    transform: translate(var(--translate-end)) scale(var(--final-scale, 1));
+    animation: 150ms app-ripple-fade-out forwards;
+}
+
+@keyframes app-ripple-animation {
+    from {
+        animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        transform: scale(1);
+    }
+
+    to {
+        transform: translate(var(--translate-end)) scale(var(--final-scale, 1));
+    }
+}
+
+@keyframes app-ripple-fade-in {
+    from {
+        animation-timing-function: linear;
+        opacity: 0;
+    }
+
+    to {
+        opacity: 0.16;
+    }
+}
+
+@keyframes app-ripple-fade-out {
+    from {
+        animation-timing-function: linear;
+        opacity: 0.16;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+/* ------------------------------------------------- ion-buttons (scoped, document-level) */
+.app-buttons {
+    display: flex;
+    align-items: center;
+    transform: translateZ(0);
+    z-index: 99;
+}
+
+.app-buttons.md .app-button {
+    --padding-top: 3px;
+    --padding-bottom: 3px;
+    --padding-start: 8px;
+    --padding-end: 8px;
+    --box-shadow: none;
+    --background-hover: currentColor;
+    margin: 0;
+    margin-inline: 2px;
+    min-height: 32px;
+}
+
+.app-buttons.md .app-button {
+    --border-radius: 2px;
+}
+
+.app-buttons.md .app-button.app-button-clear {
+    --color: initial;
+    --background: transparent;
+    --background-activated: transparent;
+    --background-focused: currentColor;
+    --background-hover: currentColor;
+}
+
+.app-buttons.ios .app-button {
+    --padding-top: 3px;
+    --padding-bottom: 3px;
+    --padding-start: 5px;
+    --padding-end: 5px;
+    --border-radius: 4px;
+    margin: 0;
+    margin-inline: 2px;
+    min-height: 32px;
+}
+
+.app-buttons.ios .app-button.app-button-clear,
+.app-buttons.ios .app-button.app-button-outline {
+    --background-activated: transparent;
+    --background-focused: currentColor;
+    --background-hover: transparent;
+}
+
+/* --------------------------------------------------------------- ion-checkbox shadow parts */
+.app-checkbox > .app-checkbox-wrapper {
+    display: flex;
+    flex-grow: 1;
+    align-items: center;
+    justify-content: space-between;
+    height: inherit;
+    cursor: inherit;
+}
+
+.app-checkbox-wrapper > .app-checkbox-native-wrapper {
+    display: flex;
+    align-items: center;
+}
+
+.app-checkbox-native-wrapper > .app-checkbox-icon {
+    border-radius: var(--border-radius);
+    position: relative;
+    width: var(--size);
+    height: var(--size);
+    transition: var(--transition);
+    border-width: var(--border-width);
+    border-style: var(--border-style);
+    border-color: var(--border-color);
+    background: var(--checkbox-background);
+    box-sizing: border-box;
+}
+
+.app-checkbox-icon > path {
+    fill: none;
+    stroke: var(--checkmark-color);
+    stroke-width: var(--checkmark-width);
+    opacity: 0;
+}
+
+.app-checkbox.app-checkbox-checked .app-checkbox-native-wrapper > .app-checkbox-icon {
+    border-color: var(--border-color-checked);
+    background: var(--checkbox-background-checked);
+}
+
+.app-checkbox.app-checkbox-checked .app-checkbox-icon > path {
+    opacity: 1;
+}
+
+.app-checkbox.md .app-checkbox-icon > path {
+    stroke-dasharray: 30;
+    stroke-dashoffset: 30;
+}
+
+.app-checkbox.md.app-checkbox-checked .app-checkbox-icon > path {
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 90ms linear 90ms;
+}
+
+.app-checkbox.md.app-checkbox-disabled .app-checkbox-native-wrapper {
+    opacity: 0.63;
+}
+
+/* ------------------------------------------------------------------ ion-radio shadow parts */
+.app-radio > .app-radio-wrapper {
+    display: flex;
+    position: relative;
+    flex-grow: 1;
+    align-items: center;
+    justify-content: space-between;
+    height: inherit;
+    min-height: inherit;
+    cursor: inherit;
+}
+
+.app-radio-wrapper > .app-radio-native-wrapper {
+    display: flex;
+    align-items: center;
+}
+
+.app-radio-native-wrapper > .app-radio-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    contain: layout size style;
+    box-sizing: border-box;
+}
+
+.app-radio-icon > .app-radio-inner {
+    box-sizing: border-box;
+}
+
+.app-radio.ios .app-radio-native-wrapper > .app-radio-icon {
+    width: 0.9375rem;
+    height: 1.5rem;
+}
+
+.app-radio.ios .app-radio-icon > .app-radio-inner {
+    width: 33%;
+    height: 50%;
+}
+
+.app-radio.ios.app-radio-checked .app-radio-icon > .app-radio-inner {
+    transform: rotate(45deg);
+    border-width: 0.125rem;
+    border-top-width: 0;
+    border-left-width: 0;
+    border-style: solid;
+    border-color: var(--color-checked);
+}
+
+/*
+ * color="white": the app never defined `.ion-color-white`, so Ionic's
+ * `border-color: var(--ion-color-base)` was invalid at computed-value time and fell back to
+ * `currentColor` (the wrapper's text-white / text-transparent). AppRadio paints that explicitly.
+ */
+.app-radio.ios.app-radio-current-color.app-radio-checked .app-radio-icon > .app-radio-inner {
+    border-color: currentColor;
+}
+
+.app-radio.ios:focus-visible .app-radio-icon::after {
+    border-radius: var(--inner-border-radius);
+    top: -8px;
+    inset-inline-start: -9px;
+    display: block;
+    position: absolute;
+    width: 36px;
+    height: 36px;
+    background: var(--app-color-primary-tint);
+    content: '';
+    opacity: 0.2;
+}
+
+.app-radio.md .app-radio-native-wrapper > .app-radio-icon {
+    margin: 0;
+    border-radius: var(--border-radius);
+    border-width: var(--border-width);
+    border-style: var(--border-style);
+    border-color: var(--color);
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.app-radio.md .app-radio-icon > .app-radio-inner {
+    border-radius: var(--inner-border-radius);
+    width: calc(50% + var(--border-width));
+    height: calc(50% + var(--border-width));
+    transform: scale3d(0, 0, 0);
+    transition: transform 280ms cubic-bezier(0.4, 0, 0.2, 1);
+    background: var(--color-checked);
+}
+
+.app-radio.md.app-radio-current-color .app-radio-icon > .app-radio-inner {
+    background: transparent;
+}
+
+.app-radio.md.app-radio-checked .app-radio-native-wrapper > .app-radio-icon {
+    border-color: var(--color-checked);
+}
+
+.app-radio.md.app-radio-current-color.app-radio-checked
+    .app-radio-native-wrapper
+    > .app-radio-icon {
+    border-color: currentColor;
+}
+
+.app-radio.md.app-radio-checked .app-radio-icon > .app-radio-inner {
+    transform: scale3d(1, 1, 1);
+}
+
+.app-radio.md:focus-visible .app-radio-icon::after {
+    border-radius: var(--inner-border-radius);
+    display: block;
+    position: absolute;
+    width: 36px;
+    height: 36px;
+    background: var(--app-color-primary-tint);
+    content: '';
+    opacity: 0.2;
+}
+
+/* ion-radio-group: `ion-radio-group { vertical-align: top }` (global, not shadow). */
+.app-radio-group {
+    vertical-align: top;
+}
