@@ -22,6 +22,7 @@ import { ControlsVisualFixture } from './ControlsVisualFixture';
 import { TogglesVisualFixture } from './TogglesVisualFixture';
 import { TextareasVisualFixture } from './TextareasVisualFixture';
 import { InputsVisualFixture } from './InputsVisualFixture';
+import { ListVisualFixture } from './ListVisualFixture';
 
 export const additionalStates = [
     'credential',
@@ -40,6 +41,7 @@ export const additionalStates = [
     'textareas-1b',
     // Ionic replacement phase 4 (IonInput call sites). Not in tailwind.spec.ts.
     'inputs-1b',
+    'list-1',
 ] as const;
 
 const listings: AppStoreListing[] = [
@@ -156,6 +158,7 @@ export const PageFixture: React.FC<{ state: string }> = ({ state }) => {
     if (state === 'toggles-1b') return <TogglesVisualFixture />;
     if (state === 'textareas-1b') return <TextareasVisualFixture />;
     if (state === 'inputs-1b') return <InputsVisualFixture />;
+    if (state === 'list-1') return <ListVisualFixture />;
     if (state === 'apps') return <LaunchPad />;
     if (state === 'my-apps-signed-in') return <SignedInLaunchpadFixture />;
     if (state === 'my-apps') return <MyAppsLanding />;
