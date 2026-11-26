@@ -9,7 +9,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import useAutosave from '../../hooks/useAutosave';
 import RecoveryPrompt from '../../components/common/RecoveryPrompt';
 
-import { IonDatetime, IonInput, IonLabel, IonSpinner } from '@ionic/react';
+import { IonDatetime, IonLabel, IonSpinner } from '@ionic/react';
+import { AppInput } from '../../components/controls/AppInput';
 import { AppTextarea } from '../../components/controls/AppTextarea';
 import { AppToggle } from '../../components/controls/AppToggle';
 import ContractTypeTabs from './ContractTypeTabs';
@@ -505,17 +506,17 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
                             </button>
                         </div>
 
-                        <IonInput
+                        <AppInput
                             className="bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium tracking-widest text-base ion-padding"
-                            onIonInput={e => updateSlice('name', e.detail.value)}
+                            onValueInput={value => updateSlice('name', value)}
                             value={contract.name}
                             type="text"
                             placeholder="*Contract Name"
                         />
 
-                        <IonInput
+                        <AppInput
                             className="bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium tracking-widest text-base ion-padding"
-                            onIonInput={e => updateSlice('subtitle', e.detail.value)}
+                            onValueInput={value => updateSlice('subtitle', value)}
                             value={contract.subtitle}
                             type="text"
                             placeholder="Subtitle"
@@ -529,37 +530,38 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
                             className="pl-3 pr-2 font-medium tracking-widest bg-grayscale-100 text-grayscale-800 rounded-[15px]"
                         />
 
-                        <IonInput
+                        <AppInput
                             className="bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium tracking-widest text-base ion-padding"
-                            onIonInput={e => updateSlice('reasonForAccessing', e.detail.value)}
+                            onValueInput={value => updateSlice('reasonForAccessing', value)}
                             value={contract.reasonForAccessing}
                             type="text"
                             placeholder="Reason for accessing"
                         />
 
-                        <IonInput
+                        <AppInput
                             className="bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium tracking-widest text-base ion-padding"
-                            onIonInput={e => updateSlice('redirectUrl', e.detail.value)}
+                            onValueInput={value => updateSlice('redirectUrl', value)}
                             value={contract.redirectUrl}
                             type="text"
                             placeholder={`Redirect URL${isGameFlow ? '*' : ''}`}
                             title="URL to redirect users to after they consent to the contract."
                         />
 
-                        <IonInput
+                        <AppInput
                             className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium tracking-widest text-base ion-padding ${
                                 expiresAtError ? 'border-red-mastercard border border-solid' : ''
                             }`}
-                            onIonInput={e => updateSlice('expiresAt', e.detail.value)}
+                            onValueInput={value => updateSlice('expiresAt', value)}
                             value={contract.expiresAt}
                             type="text"
                             placeholder="Expires At (ISO String)"
                             title="Expiration date for the contract. After this date you will no longer be able to read data from users who have consented to this contract or write data to their wallet."
-                        >
-                            <button onClick={presentExpiresAtDatePicker} type="button" slot="end">
-                                <Calendar className="w-[30px] text-grayscale-700" />
-                            </button>
-                        </IonInput>
+                            end={
+                                <button onClick={presentExpiresAtDatePicker} type="button">
+                                    <Calendar className="w-[30px] text-grayscale-700" />
+                                </button>
+                            }
+                        />
                         {expiresAtError && (
                             <p className="text-red-mastercard text-sm">{expiresAtError}</p>
                         )}

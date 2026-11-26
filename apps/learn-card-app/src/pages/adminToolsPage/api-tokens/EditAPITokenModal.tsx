@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IonInput } from '@ionic/react';
+import { AppInput } from '../../../components/controls/AppInput';
 import { AppTextarea } from '../../../components/controls/AppTextarea';
 import { useWallet, useModal } from 'learn-card-base';
 import { createPortal } from 'react-dom';
@@ -45,10 +45,10 @@ const EditAPITokenModal: React.FC<{
             <h1 className="font-semibold mb-[10px] font-notoSans text-[20px] text-grayscale-900">
                 Update API Token
             </h1>
-            <IonInput
+            <AppInput
                 className="ion-padding bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium tracking-widest text-base mb-[10px]"
                 type="text"
-                onIonInput={e => setUpdatedName(e.detail.value)}
+                onValueInput={value => setUpdatedName(value)}
                 value={updatedName}
                 placeholder="Name*"
             />

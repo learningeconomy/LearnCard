@@ -35,6 +35,9 @@
     --app-color-medium-shade: #808289;
     --app-color-medium-tint: #9d9fa6;
 
+    /* AppInput error text (`--ion-color-danger`). */
+    --app-color-danger: #eb445a;
+
     --app-color-emerald-700: #00ba88;
     --app-color-emerald-700-contrast: #ffffff;
     --app-color-emerald-700-shade: #00a478;

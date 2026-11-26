@@ -4,7 +4,8 @@ import { createPortal } from 'react-dom';
 import { Updater } from 'use-immer';
 import { produce } from 'immer';
 
-import { IonCol, IonRow, IonInput } from '@ionic/react';
+import { IonCol, IonRow } from '@ionic/react';
+import { AppInput } from '../../../../controls/AppInput';
 import FileIcon from 'learn-card-base/svgs/FileIcon';
 
 import useTheme from '../../../../../theme/hooks/useTheme';
@@ -87,16 +88,16 @@ const BoostCMSMediaDocumentUpload: React.FC<BoostCMSMediaDocumentUploadProps> = 
                 </IonCol>
             </IonRow>
             <div className="flex flex-col items-center justify-center w-full mb-4 px-[20px]">
-                <IonInput
+                <AppInput
                     autocapitalize="on"
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base`}
                     placeholder={m['boost.cms.media.titlePlaceholder']()}
                     type="text"
                     value={state?.documents?.[currentIndex]?.title}
-                    onIonInput={e => {
+                    onValueInput={value => {
                         const stateCopy = structuredClone(state.documents);
                         if (stateCopy[currentIndex]) {
-                            stateCopy[currentIndex].title = e.detail.value as string;
+                            stateCopy[currentIndex].title = value as string;
                             setState(stateCopy);
                         }
                     }}

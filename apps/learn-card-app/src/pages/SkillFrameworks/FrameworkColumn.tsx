@@ -25,7 +25,8 @@ import FrameworkSkillsCount from './FrameworkSkillsCount';
 import FrameworkOptionsModal from './FrameworkOptionsModal';
 import * as m from '../../paraglide/messages.js';
 import FrameworkSearchResults from './FrameworkSearchResults';
-import { IonFooter, IonInput, IonSpinner } from '@ionic/react';
+import { IonFooter, IonSpinner } from '@ionic/react';
+import { AppInput, type AppInputHandle } from '../../components/controls/AppInput';
 
 import {
     FrameworkNodeRole,
@@ -140,7 +141,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
 }) => {
     const { newModal } = useModal();
     const { isDesktop, isMobile } = useDeviceTypeByWidth();
-    const inputRef = useRef<HTMLIonInputElement>(null);
+    const inputRef = useRef<AppInputHandle>(null);
     const infiniteScrollRef = useRef<HTMLDivElement>(null);
 
     const isSingleColumnView = maxColumns === 1;
@@ -481,12 +482,12 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                 <div className="h-full flex flex-col gap-[10px] overflow-y-auto p-[15px] pb-[150px] bg-grayscale-10">
                     {isSingleColumnView && (
                         <div className="relative">
-                            <IonInput
+                            <AppInput
                                 ref={inputRef}
                                 className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-poppins text-[14px] w-full"
                                 placeholder={m['skills.framework.searchPlaceholder']()}
                                 value={search}
-                                onIonInput={e => setSearch(e.detail.value)}
+                                onValueInput={value => setSearch(value)}
                             />
                             {search && (
                                 <button

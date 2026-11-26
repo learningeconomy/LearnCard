@@ -26,7 +26,8 @@ import {
 } from 'learn-card-base';
 import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 
-import { IonInput, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
+import { AppInput } from '../../components/controls/AppInput';
 import Pencil from '../../components/svgs/Pencil';
 
 import {
@@ -242,18 +243,18 @@ const CreateManagedProfileModal: React.FC<CreateManagedProfileModalProps> = ({})
                     </button>
                 </div>
 
-                <IonInput
+                <AppInput
                     className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base"
-                    onIonInput={e => setName(e.detail.value)}
+                    onValueInput={value => setName(value)}
                     value={name}
                     placeholder="Profile Name"
                     type="text"
                     label="Name*"
                 />
 
-                <IonInput
+                <AppInput
                     className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base"
-                    onIonInput={e => setProfileId(e.detail.value)}
+                    onValueInput={value => setProfileId(value)}
                     value={profileId}
                     placeholder={name ? toKebabCase(name) : 'Profile ID'}
                     type="text"

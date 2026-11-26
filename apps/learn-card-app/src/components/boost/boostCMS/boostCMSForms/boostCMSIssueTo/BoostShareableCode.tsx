@@ -10,15 +10,8 @@ import useDebounce from 'apps/learn-card-app/src/hooks/useDebounce';
 import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantConfig';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 
-import {
-    IonRow,
-    IonCol,
-    useIonModal,
-    IonGrid,
-    IonSpinner,
-    IonDatetime,
-    IonInput,
-} from '@ionic/react';
+import { IonRow, IonCol, useIonModal, IonGrid, IonSpinner, IonDatetime } from '@ionic/react';
+import { AppInput } from '../../../../controls/AppInput';
 import { AppToggle } from '../../../../controls/AppToggle';
 
 import {
@@ -642,16 +635,16 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                                             <p className="text-grayscale-900 font-poppins text-[17px] font-[600]">
                                                 Set Claim Limit
                                             </p>
-                                            <IonInput
+                                            <AppInput
                                                 autocapitalize="on"
                                                 className={`bg-grayscale-100 text-grayscale-500 rounded-[15px] px-[15px]! py-[6px]! font-notoSans text-[17px]`}
                                                 placeholder={m['boost.cms.issueTo.howManyClaims']()}
                                                 type="number"
                                                 min={0}
                                                 value={claimLimit}
-                                                onIonInput={e => {
+                                                onValueInput={value => {
                                                     clearBoostLink();
-                                                    setClaimLimit(e.detail.value);
+                                                    setClaimLimit(value);
                                                 }}
                                                 onKeyDown={e => {
                                                     // Allow only numbers

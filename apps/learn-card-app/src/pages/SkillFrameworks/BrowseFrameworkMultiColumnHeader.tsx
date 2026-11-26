@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-import { IonInput, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
+import { AppInput, type AppInputHandle } from '../../components/controls/AppInput';
 import X from 'learn-card-base/svgs/X';
 import Pencil from '../../components/svgs/Pencil';
 import CodeIcon from 'learn-card-base/svgs/CodeIcon';
@@ -71,7 +72,7 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
     disableSave,
     isViewOnly,
 }) => {
-    const inputRef = useRef<HTMLIonInputElement>(null);
+    const inputRef = useRef<AppInputHandle>(null);
     const [showResults, setShowResults] = useState(false);
 
     // fixes some weird case where search results opens after clicking a search result item from fullscreen
@@ -111,13 +112,12 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
                 )}
                 <div className={`relative flex-1 ${isViewOnly ? 'max-w-[622px] mx-auto' : ''}`}>
                     <div className="relative">
-                        <IonInput
+                        <AppInput
                             ref={inputRef}
                             className="bg-grayscale-100 text-grayscale-800 rounded-[10px] ion-padding font-poppins text-[14px] w-full pr-[24px]!"
                             placeholder={m['skills.framework.searchPlaceholder']()}
                             value={search}
-                            onIonInput={e => {
-                                const value = e.detail.value || '';
+                            onValueInput={value => {
                                 setSearch(value);
                                 setShowResults(value.length > 0);
                             }}
@@ -145,7 +145,7 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
                         <div
                             className="absolute z-10 max-h-[70vh] bg-white border border-t-0 border-gray-200 rounded-b-[15px] shadow-lg overflow-y-auto p-[20px]"
                             style={{
-                                width: inputRef.current?.offsetWidth || '100%',
+                                width: inputRef.current?.host?.offsetWidth || '100%',
                                 left: 0,
                                 right: 0,
                             }}

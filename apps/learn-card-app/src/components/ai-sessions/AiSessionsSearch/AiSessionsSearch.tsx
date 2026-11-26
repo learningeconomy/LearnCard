@@ -2,7 +2,7 @@ import React from 'react';
 
 import { m } from '../../../paraglide/messages.js';
 
-import { IonInput } from '@ionic/react';
+import { AppInput } from '../../controls/AppInput';
 import Search from 'learn-card-base/svgs/Search';
 import AiSessionsPopOverButton from './AiSessionsPopOverButton';
 
@@ -42,11 +42,11 @@ export const AiSessionsSearch: React.FC<{
                     <div className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10">
                         <Search className="text-grayscale-900 w-[24px] h-[24px]" />
                     </div>
-                    <IonInput
+                    <AppInput
                         type="text"
                         value={searchInput}
                         placeholder={m['common.search']()}
-                        onIonInput={e => setSearchInput(e.detail.value)}
+                        onValueInput={value => setSearchInput(value)}
                         className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] py-[4px]! font-normal !font-notoSans text-[17px] pl-[48px]! ${className}`}
                     />
                 </div>

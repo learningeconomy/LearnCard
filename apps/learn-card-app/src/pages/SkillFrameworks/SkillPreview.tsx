@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useModal } from 'learn-card-base';
-import { IonFooter, IonInput } from '@ionic/react';
+import { IonFooter } from '@ionic/react';
+import { AppInput } from '../../components/controls/AppInput';
 import {
     FrameworkNodeRole,
     SkillFramework,
@@ -245,11 +246,11 @@ const SkillPreview: React.FC<SkillPreviewProps> = ({
             </div>
 
             <section className="h-full flex flex-col gap-[10px] pt-[15px] px-[20px] pb-[170px] overflow-y-auto z-0">
-                <IonInput
+                <AppInput
                     className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-poppins text-[14px] w-full"
                     placeholder={m['skills.framework.searchPlaceholder']()}
                     value={search}
-                    onIonInput={e => setSearch(e.detail.value)}
+                    onValueInput={value => setSearch(value)}
                 />
 
                 <TiersAndCompetencies

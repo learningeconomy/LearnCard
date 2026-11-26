@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 
-import { IonInput } from '@ionic/react';
+import { AppInput } from '../../../components/controls/AppInput';
 import { ArrowRight, X } from 'lucide-react';
 import { CredentialCategoryEnum, useOccupationSuggestionsForKeyword } from 'learn-card-base';
 import useTheme from '../../../theme/hooks/useTheme';
@@ -137,10 +137,10 @@ const PathwaySearchInput: React.FC<PathwaySearchInputProps> = ({
             <div className={`flex items-center ${isSimpleVariant ? '' : 'gap-3'}`}>
                 <div className="relative flex-1">
                     <PathwayDecoration className="absolute left-[10px] w-[35px] h-[35px] text-teal-100 pointer-events-none z-10 top-1/2 -translate-y-1/2" />
-                    <IonInput
+                    <AppInput
                         value={searchValue}
-                        onIonInput={e => {
-                            const nextValue = e.detail.value ?? '';
+                        onValueInput={value => {
+                            const nextValue = value;
                             updateSearchValue(nextValue);
                             setShowSuggestions(Boolean(nextValue));
                             setDidUserType(true);

@@ -2,15 +2,8 @@ import React, { useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
-import {
-    IonContent,
-    IonFooter,
-    IonInput,
-    IonPage,
-    IonSpinner,
-    IonToolbar,
-    useIonModal,
-} from '@ionic/react';
+import { IonContent, IonFooter, IonPage, IonSpinner, IonToolbar, useIonModal } from '@ionic/react';
+import { AppInput } from '../../../controls/AppInput';
 import Pencil from '../../../svgs/Pencil';
 import LearnCardIconOutline from '../../../svgs/LearnCardIconOutline';
 import LearnCardIDCMS from '../../../learncardID-CMS/LearnCardIDCMS';
@@ -269,10 +262,10 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
                         </div>
 
                         <div className="w-full mb-2 mt-4 relative">
-                            <IonInput
+                            <AppInput
                                 value={name}
-                                onIonInput={e => {
-                                    const _name = e?.detail?.value;
+                                onValueInput={value => {
+                                    const _name = value;
                                     setName(_name);
                                     setErrors?.({});
                                 }}
@@ -303,10 +296,10 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
                         </div>
 
                         <div className="w-full mb-2 mt-2 relative">
-                            <IonInput
+                            <AppInput
                                 value={shortBio}
-                                onIonInput={e => {
-                                    const _shortBio = e?.detail?.value;
+                                onValueInput={value => {
+                                    const _shortBio = value;
                                     setShortBio(_shortBio);
                                     setErrors?.({});
                                 }}

@@ -15,7 +15,8 @@ import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import X from 'learn-card-base/svgs/X';
 import Search from 'learn-card-base/svgs/Search';
 import CaretDown from 'learn-card-base/svgs/CaretDown';
-import { IonInput, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
+import { AppInput } from '../../../components/controls/AppInput';
 import BoostTemplateListItem from '../../../components/boost/boost-template/BoostTemplateListItem';
 import * as m from '../../../paraglide/messages.js';
 import { getBoostCategoryLabel } from '../../../helpers/boostCategoryLabel';
@@ -224,11 +225,11 @@ const IssueManagedBoostSelector: React.FC = () => {
                                 <Search className="text-grayscale-500 w-[20px] h-[20px]" />
                             )}
                         </div>
-                        <IonInput
+                        <AppInput
                             type="text"
                             value={searchInput}
                             placeholder={m['boost.searchBoosts']()}
-                            onIonInput={e => setSearchInput(e.detail.value || '')}
+                            onValueInput={value => setSearchInput(value || '')}
                             className="bg-grayscale-50 text-grayscale-900 rounded-[15px] p-[5px]! !font-notoSans text-[16px] pl-[44px]! --padding-start=44px border border-grayscale-200"
                         />
                     </div>

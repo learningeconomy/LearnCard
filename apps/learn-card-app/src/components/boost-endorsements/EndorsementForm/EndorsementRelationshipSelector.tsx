@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import zod from 'zod';
 
-import { IonInput } from '@ionic/react';
+import { AppInput } from '../../controls/AppInput';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 
 import { useModal } from 'learn-card-base';
@@ -117,12 +117,12 @@ const EndorsementRelationshipSelector: React.FC<{
                 );
             })}
             <div className="w-full flex flex-col items-start justify-start">
-                <IonInput
+                <AppInput
                     className={`ion-padding bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium tracking-widest text-base mb-[10px] ${
                         errors?.other ? 'border-red-500' : ''
                     }`}
                     type="text"
-                    onIonInput={e => setOther(e.detail.value)}
+                    onValueInput={value => setOther(value)}
                     value={other}
                     placeholder={m['endorsement.form.relationship.otherPlaceholder']()}
                 />

@@ -21,7 +21,8 @@ import {
     useNetworkConsentMutation,
 } from 'learn-card-base';
 
-import { IonCol, IonRow, IonInput, IonSpinner } from '@ionic/react';
+import { IonCol, IonRow, IonSpinner } from '@ionic/react';
+import { AppInput } from '../controls/AppInput';
 import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 import HeaderBranding from 'learn-card-base/components/headerBranding/HeaderBranding';
 import ErrorLogout from './ErrorLogout';
@@ -399,7 +400,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                     {/* profile setup */}
                     <IonRow className="flex flex-col items-center justify-center w-full">
                         {lcNetworkProfile && lcNetworkProfile?.profileId && (
-                            <IonInput
+                            <AppInput
                                 autocapitalize="on"
                                 className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base mb-4`}
                                 value={`@${lcNetworkProfile?.profileId}`}
@@ -410,12 +411,12 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                             />
                         )}
                         <div className="flex flex-col items-center justify-center w-full mb-4">
-                            <IonInput
+                            <AppInput
                                 autocapitalize="on"
                                 className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base ${
                                     errors.name ? 'login-input-email-error' : ''
                                 }`}
-                                onIonInput={e => setName(e.detail.value)}
+                                onValueInput={value => setName(value)}
                                 value={name}
                                 placeholder="Full Name"
                                 type="text"
@@ -457,12 +458,12 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                     {networkToggle && (
                         <IonRow className="flex flex-col items-center justify-center w-full mt-4">
                             <div className="flex flex-col items-center justify-center w-full mb-4">
-                                <IonInput
+                                <AppInput
                                     autocapitalize="on"
                                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base text-left ${
                                         error || errors?.profileId ? 'login-input-email-error' : ''
                                     }`}
-                                    onIonInput={e => setProfileId(e.detail.value)}
+                                    onValueInput={value => setProfileId(value)}
                                     value={profileId}
                                     readonly={classlink}
                                     placeholder="User ID"

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IonInput } from '@ionic/react';
+import { AppInput } from '../../../controls/AppInput';
 import { Checkmark } from '@learncard/react';
 import { OBV3_ACHIEVEMENT_TYPES } from '../../../../pages/appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 import { CATEGORY_MAP } from 'learn-card-base/helpers/credentialHelpers';
@@ -127,13 +127,13 @@ const AchievementTypeSelectorModal: React.FC<AchievementTypeSelectorModalProps> 
                     </h2>
                 </div>
                 <div className="p-4">
-                    <IonInput
+                    <AppInput
                         type="text"
                         value={query}
                         placeholder={m[
                             'passport.buildMyLearnCard.achievementModal.searchPlaceholder'
                         ]()}
-                        onIonInput={e => setQuery(e.detail.value ?? '')}
+                        onValueInput={value => setQuery(value)}
                         className="bg-grayscale-100 text-grayscale-800 rounded-[12px] py-[5px]! font-normal text-base pl-[15px]!"
                     />
                 </div>

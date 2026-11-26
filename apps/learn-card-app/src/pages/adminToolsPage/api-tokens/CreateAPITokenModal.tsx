@@ -4,15 +4,8 @@ import moment from 'moment';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('create-api-token-modal');
 
-import {
-    IonInput,
-    IonItem,
-    IonList,
-    IonLabel,
-    IonDatetime,
-    IonButtons,
-    IonButton,
-} from '@ionic/react';
+import { IonItem, IonList, IonLabel, IonDatetime, IonButtons, IonButton } from '@ionic/react';
+import { AppInput } from '../../../components/controls/AppInput';
 import { AppTextarea } from '../../../components/controls/AppTextarea';
 import Calendar from '../../../components/svgs/Calendar';
 
@@ -201,10 +194,10 @@ const CreateAPITokenModal: React.FC<{
             <h1 className="font-semibold mb-[10px] font-notoSans text-[20px] text-grayscale-900">
                 Create API Token
             </h1>
-            <IonInput
+            <AppInput
                 className="ion-padding bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium tracking-widest text-base mb-[10px]"
                 type="text"
-                onIonInput={e => setName(e.detail.value)}
+                onValueInput={value => setName(value)}
                 value={name}
                 placeholder="Name*"
             />
@@ -249,12 +242,12 @@ const CreateAPITokenModal: React.FC<{
                 )}
             </div>
             {scopeDisplayValue !== '' && scopeDisplayValue === 'Custom' && (
-                <IonInput
+                <AppInput
                     className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base mb-[10px]"
                     type="text"
                     value={customScopeValue}
-                    onIonInput={e => {
-                        setCustomScopeValue(e.detail.value!);
+                    onValueInput={value => {
+                        setCustomScopeValue(value);
                     }}
                     placeholder="Custom Scope"
                 />

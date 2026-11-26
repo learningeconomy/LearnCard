@@ -10,8 +10,8 @@ import {
     IonFooter,
     IonSpinner,
     useIonModal,
-    IonInput,
 } from '@ionic/react';
+import { AppInput } from '../../controls/AppInput';
 
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import BoostAddressBookContactList from '../boostCMS/boostCMSForms/boostCMSIssueTo/BoostAddressBookContactList';
@@ -131,12 +131,12 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
                                 </IonCol>
 
                                 <div className="flex items-center justify-start w-full">
-                                    <IonInput
+                                    <AppInput
                                         autocapitalize="on"
                                         placeholder={`Search ${brandingConfig?.name} Network...`}
                                         value={search}
                                         className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium text-base"
-                                        onIonInput={e => handleSearch(e?.detail?.value ?? '')}
+                                        onValueInput={value => handleSearch(value)}
                                         debounce={500}
                                         type="text"
                                     />

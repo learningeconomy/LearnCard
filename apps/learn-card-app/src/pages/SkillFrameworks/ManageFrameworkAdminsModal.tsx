@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useModal, useWallet } from 'learn-card-base';
-import { IonSpinner, IonInput } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
+import { AppInput } from '../../components/controls/AppInput';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { LCNProfile } from '@learncard/types';
 import CaretDown from 'apps/learn-card-app/src/components/svgs/CaretDown';
@@ -98,8 +99,8 @@ const ManageFrameworkAdminsModal: React.FC<ManageFrameworkAdminsModalProps> = ({
                         Add New Admin
                     </p>
                     <div className="flex gap-[10px]">
-                        <IonInput
-                            onIonInput={e => setNewAdminProfileId(e.detail.value ?? '')}
+                        <AppInput
+                            onValueInput={value => setNewAdminProfileId(value)}
                             className="bg-grayscale-100 text-grayscale-800 rounded-[16px] py-[8px] px-[15px]! h-[40px]! flex-1"
                             placeholder="Enter Profile ID"
                             value={newAdminProfileId}

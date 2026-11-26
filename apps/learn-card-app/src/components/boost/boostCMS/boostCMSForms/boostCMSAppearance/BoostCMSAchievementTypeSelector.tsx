@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { z } from 'zod';
 
-import { IonRow, IonGrid, IonInput } from '@ionic/react';
+import { IonRow, IonGrid } from '@ionic/react';
+import { AppInput } from '../../../../controls/AppInput';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 
 import { CATEGORY_TO_SUBCATEGORY_LIST } from '../../../boost-options/boostOptions';
@@ -139,11 +140,11 @@ const BoostCMSCategoryAndTypeSelector: React.FC<CategoryAndTypeSelectorProps> = 
                 className={`w-full flex flex-col items-center justify-center max-w-[600px] ion-padding bg-${color}`}
             >
                 <div className="w-full ion-padding bg-white rounded-tr-[20px] rounded-tl-[20px] mb-0 relative">
-                    <IonInput
+                    <AppInput
                         autocapitalize="on"
                         value={search}
-                        onIonInput={e => {
-                            setSearch(e.detail.value!);
+                        onValueInput={value => {
+                            setSearch(value);
                             setErrors({});
                         }}
                         placeholder={m['boost.cms.appearance.search']()}

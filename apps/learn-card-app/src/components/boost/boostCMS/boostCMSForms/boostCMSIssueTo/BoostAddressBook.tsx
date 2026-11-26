@@ -3,7 +3,6 @@ import moment from 'moment';
 
 import {
     useIonModal,
-    IonInput,
     IonRow,
     IonCol,
     IonGrid,
@@ -16,6 +15,7 @@ import {
     IonToolbar,
     IonFooter,
 } from '@ionic/react';
+import { AppInput } from '../../../../controls/AppInput';
 
 import Plus from 'learn-card-base/svgs/Plus';
 import BoostAddressBookContactOptions from './BoostAddressBookContactOptions';
@@ -261,14 +261,14 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                     </IonCol>
 
                                     <div className="flex items-center justify-start w-full">
-                                        <IonInput
+                                        <AppInput
                                             autocapitalize="on"
                                             placeholder={m['boost.cms.issueTo.searchNetwork']({
                                                 name: brandingConfig?.name || '',
                                             })}
                                             value={search}
                                             className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base"
-                                            onIonInput={e => handleSearch(e?.detail?.value ?? '')}
+                                            onValueInput={value => handleSearch(value)}
                                             debounce={500}
                                             type="text"
                                         />

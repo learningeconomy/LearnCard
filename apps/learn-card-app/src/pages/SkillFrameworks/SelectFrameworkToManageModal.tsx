@@ -20,7 +20,8 @@ import ManageSkills from './ManageSkills';
 import SkillsFrameworkIcon from '../../components/svgs/SkillsFrameworkIcon';
 import CreateFrameworkModal from './CreateFrameworkModal';
 import SkillsAdminPanelFramework from '../skills/SkillsAdminPanelFramework';
-import { IonInput, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
+import { AppInput } from '../../components/controls/AppInput';
 import type { ApiFrameworkInfo } from '../../helpers/skillFramework.helpers';
 import { useGlobalSkillFrameworks } from '../../helpers/globalSkillFrameworks.helpers';
 import {
@@ -328,9 +329,9 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
                     <h3 className="font-poppins text-[16px] font-[600] text-grayscale-900">
                         Import OpenSALT Framework
                     </h3>
-                    <IonInput
+                    <AppInput
                         value={openSaltRef}
-                        onIonInput={event => setOpenSaltRef(event.detail.value ?? '')}
+                        onValueInput={value => setOpenSaltRef(value)}
                         placeholder="Paste an OpenSALT framework link"
                         className="bg-grayscale-100 rounded-[12px] px-[12px]! text-[14px] font-poppins text-grayscale-900! placeholder:text-grayscale-500"
                     />

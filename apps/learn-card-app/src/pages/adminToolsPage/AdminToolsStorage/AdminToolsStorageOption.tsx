@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { IonInput } from '@ionic/react';
+import { AppInput } from '../../../components/controls/AppInput';
 import { useQueryClient } from '@tanstack/react-query';
 import { shuffle } from 'lodash-es';
 import { getLogger } from 'learn-card-base';
@@ -220,14 +220,14 @@ const AdminToolsStorageOption: React.FC<{ option: AdminToolOption; showFooter?: 
                                             onClick={e => e.stopPropagation()}
                                             onMouseDown={e => e.stopPropagation()}
                                         >
-                                            <IonInput
+                                            <AppInput
                                                 type="url"
                                                 inputmode="url"
                                                 className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-normal font-poppins text-sm w-full"
                                                 placeholder="Enter storage URL (e.g., https://api.example.com)"
                                                 value={customEndpoint}
-                                                onIonInput={e =>
-                                                    setCustomEndpoint(String(e.detail.value ?? ''))
+                                                onValueInput={value =>
+                                                    setCustomEndpoint(String(value))
                                                 }
                                                 debounce={0}
                                             />

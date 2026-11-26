@@ -3,7 +3,7 @@ import React, { useCallback, useState } from 'react';
 import { m } from '../../../paraglide/messages.js';
 
 import X from 'learn-card-base/svgs/X';
-import { IonInput } from '@ionic/react';
+import { AppInput } from '../../../components/controls/AppInput';
 import { IonSpinner } from '@ionic/react';
 import { AiInsightsUserCardWrapper } from '../AiInsightsUserCard';
 import RequestInsightsFromAnyoneController from './RequestInsightsFromAnyoneController';
@@ -59,12 +59,12 @@ export const RequestInsightsModal: React.FC<{ contractUri: string }> = ({ contra
 
                 {/* search  */}
                 <div className="flex items-center justify-start w-full ion-padding">
-                    <IonInput
+                    <AppInput
                         autocapitalize="on"
                         placeholder={m['aiInsights.searchByName']()}
                         value={search}
                         className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium text-base"
-                        onIonInput={e => handleSearch(e?.detail?.value)}
+                        onValueInput={value => handleSearch(value)}
                         debounce={500}
                         type="text"
                         clearInput

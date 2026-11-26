@@ -8,7 +8,8 @@ import AdminToolsFamilySelectorButton from '../../../../pages/adminToolsPage/Adm
 import LearnCardIconOutline from '../../../svgs/LearnCardIconOutline';
 import LearnCardIDCMS from '../../../learncardID-CMS/LearnCardIDCMS';
 import SlimCaretRight from '../../../svgs/SlimCaretRight';
-import { IonInput, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
+import { AppInput } from '../../../controls/AppInput';
 import Pencil from '../../../svgs/Pencil';
 import X from '../../../svgs/X';
 
@@ -220,10 +221,10 @@ export const ChildInviteModalSimple: React.FC<ChildInviteModalSimpleProps> = ({
                     />
 
                     <div className="w-full mb-2 mt-4 relative">
-                        <IonInput
+                        <AppInput
                             value={name}
-                            onIonInput={e => {
-                                const _name = e?.detail?.value;
+                            onValueInput={value => {
+                                const _name = value;
                                 setName(_name);
                                 setErrors?.({});
                             }}
@@ -254,10 +255,10 @@ export const ChildInviteModalSimple: React.FC<ChildInviteModalSimpleProps> = ({
                     </div>
 
                     <div className="w-full mb-2 mt-2 relative">
-                        <IonInput
+                        <AppInput
                             value={shortBio}
-                            onIonInput={e => {
-                                const _shortBio = e?.detail?.value;
+                            onValueInput={value => {
+                                const _shortBio = value;
                                 setShortBio(_shortBio);
                                 setErrors?.({});
                             }}

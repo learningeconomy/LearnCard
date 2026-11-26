@@ -3,7 +3,7 @@ import { produce } from 'immer';
 
 import TrashBin from '../../components/svgs/TrashBin';
 import Plus from 'learn-card-base/svgs/Plus';
-import { IonInput } from '@ionic/react';
+import { AppInput } from '../../components/controls/AppInput';
 import type { ConsentFlowContract } from '@learncard/types';
 import { AppCheckbox } from '../../components/controls/AppCheckbox';
 
@@ -28,14 +28,14 @@ const MultiTextInput: React.FC<MultiTextInputProps> = ({
 
     const inputs = Object.entries(values).map(([category, value], index) => (
         <li className="flex gap-2 items-center w-full" key={index}>
-            <IonInput
+            <AppInput
                 className="bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium tracking-widest text-base ion-padding"
                 type="text"
-                onIonInput={e =>
+                onValueInput={nextCategory =>
                     onChange(
                         produce(values, draft => {
                             delete draft[category];
-                            draft[e.detail.value] = value;
+                            draft[nextCategory] = value;
                         })
                     )
                 }

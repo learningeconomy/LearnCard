@@ -1,5 +1,6 @@
 import React from 'react';
-import { IonLabel, IonInput } from '@ionic/react';
+import { IonLabel } from '@ionic/react';
+import { AppInput } from '../../../components/controls/AppInput';
 import useTheme from '../../../theme/hooks/useTheme';
 import * as m from '../../../paraglide/messages.js';
 import TransP from '../../../i18n/TransP';
@@ -31,10 +32,9 @@ const AiPathwaysDiscoverySearch: React.FC<{
                     <IonLabel className="text-grayscale-600 font-poppins text-sm">
                         {m['aiPathways.discovery.enterCareerKeyword']()}
                     </IonLabel>
-                    <IonInput
+                    <AppInput
                         value={keywordInput}
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
-                        onIonInput={(e: any) => setKeywordInput(e.detail.value)}
+                        onValueInput={value => setKeywordInput(value)}
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                         onKeyDown={(e: any) => e.key === 'Enter' && handleSearch()}
                         autocapitalize="on"

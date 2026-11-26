@@ -2,16 +2,8 @@ import React, { useState } from 'react';
 
 import useGoogle from 'react-google-autocomplete/lib/usePlacesAutocompleteService';
 
-import {
-    IonCol,
-    IonContent,
-    IonGrid,
-    IonHeader,
-    IonInput,
-    IonPage,
-    IonRow,
-    IonToolbar,
-} from '@ionic/react';
+import { IonCol, IonContent, IonGrid, IonHeader, IonPage, IonRow, IonToolbar } from '@ionic/react';
+import { AppInput } from '../controls/AppInput';
 import GoogleLogo from 'learn-card-base/assets/images/google-logo.png';
 import X from 'learn-card-base/svgs/X';
 
@@ -73,14 +65,14 @@ const LocationSearch: React.FC<{
                                 )}
 
                                 <div className="flex items-center justify-start w-full mt-4">
-                                    <IonInput
+                                    <AppInput
                                         autocapitalize="on"
                                         placeholder="Enter your location..."
                                         value={locationSearch}
                                         className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base"
-                                        onIonInput={e => {
-                                            setLocationSearch(e?.detail?.value);
-                                            getPlacePredictions({ input: e?.detail?.value });
+                                        onValueInput={value => {
+                                            setLocationSearch(value);
+                                            getPlacePredictions({ input: value });
                                         }}
                                         type="text"
                                     />

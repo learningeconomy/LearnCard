@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-import { IonFooter, IonCol, IonGrid, IonRow, IonInput } from '@ionic/react';
+import { IonFooter, IonCol, IonGrid, IonRow } from '@ionic/react';
+import { AppInput } from '../../controls/AppInput';
 import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
 import BoostEarnedCard from '../boost-earned-card/BoostEarnedCard';
 import ListItemsIcon from 'learn-card-base/svgs/ListItemsIcon';
@@ -188,12 +189,12 @@ export const BoostLinkedCredentialsModal: React.FC<{
                             version="1"
                             className="h-5 w-5 absolute left-3 top-1/2 -translate-y-1/2 text-grayscale-600"
                         />
-                        <IonInput
+                        <AppInput
                             autocapitalize="on"
                             placeholder="Credentials..."
                             value={search}
                             className="pl-10! text-grayscale-800 text-[17px] font-notoSans py-1! w-full"
-                            onIonInput={e => setSearch(e.detail.value ?? '')}
+                            onValueInput={value => setSearch(value)}
                             type="text"
                         />
                     </div>
