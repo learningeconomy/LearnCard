@@ -168,20 +168,20 @@
     }
 
     .app-fab.app-fab-horizontal-start {
-        left: calc(10px + var(--ion-safe-area-left, 0px));
+        left: calc(10px + var(--app-safe-area-left, 0px));
     }
 
     .app-fab.app-fab-horizontal-start:dir(rtl) {
-        right: calc(10px + var(--ion-safe-area-right, 0px));
+        right: calc(10px + var(--app-safe-area-right, 0px));
         left: unset;
     }
 
     .app-fab.app-fab-horizontal-end {
-        right: calc(10px + var(--ion-safe-area-right, 0px));
+        right: calc(10px + var(--app-safe-area-right, 0px));
     }
 
     .app-fab.app-fab-horizontal-end:dir(rtl) {
-        left: calc(10px + var(--ion-safe-area-left, 0px));
+        left: calc(10px + var(--app-safe-area-left, 0px));
         right: unset;
     }
 
@@ -347,8 +347,6 @@
 
     /* ---------------------------------------------------------------- ion-card :host */
     .app-card {
-        --ion-safe-area-left: 0px;
-        --ion-safe-area-right: 0px;
         -moz-osx-font-smoothing: grayscale;
         -webkit-font-smoothing: antialiased;
         display: block;

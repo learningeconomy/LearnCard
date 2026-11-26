@@ -9,6 +9,11 @@ http://ionicframework.com/docs/theming/ */
      */
     --ion-safe-area-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
     --ion-safe-area-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+    /* Leaf-consumable horizontal insets. Alias Ionic's html-level
+     * --ion-safe-area-left/right (env(safe-area-inset-*)) so widgets can
+     * inset without referencing the primitive directly. */
+    --app-safe-area-left: var(--ion-safe-area-left, 0px);
+    --app-safe-area-right: var(--ion-safe-area-right, 0px);
 
     --ion-backdrop-color: #ffffff;
     /** primary **/
@@ -2184,6 +2189,16 @@ http://ionicframework.com/docs/theming/ */
         padding-top: constant(safe-area-inset-top);
         padding-top: env(safe-area-inset-top);
     }
+}
+
+/* AppCard is already inset from the screen edge. Zero horizontal safe-area
+   tokens here (surface layer) so slotted items don't double-count the inset.
+   Leaf files may not assign --ion-safe-area-*. */
+.app-card {
+    --ion-safe-area-left: 0px;
+    --ion-safe-area-right: 0px;
+    --app-safe-area-left: 0px;
+    --app-safe-area-right: 0px;
 }
 
 ion-input,
