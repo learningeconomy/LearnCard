@@ -8,7 +8,8 @@ import AdminToolsFamilySelectorButton from '../../../../pages/adminToolsPage/Adm
 import LearnCardIconOutline from '../../../svgs/LearnCardIconOutline';
 import LearnCardIDCMS from '../../../learncardID-CMS/LearnCardIDCMS';
 import SlimCaretRight from '../../../svgs/SlimCaretRight';
-import { IonInput, IonSpinner } from '@ionic/react';
+import { IonInput } from '@ionic/react';
+import { AppSpinner } from '../../../feedback/AppSpinner';
 import Pencil from '../../../svgs/Pencil';
 import X from '../../../svgs/X';
 
@@ -189,7 +190,7 @@ export const ChildInviteModalSimple: React.FC<ChildInviteModalSimpleProps> = ({
                             >
                                 {imageUploadLoading && (
                                     <div className="user-image-upload-inprogress absolute flex h-[70px] min-h-[70px] w-[70px] min-w-[70px] items-center justify-center overflow-hidden rounded-full border-2 border-solid border-white text-xl font-medium text-white">
-                                        <IonSpinner
+                                        <AppSpinner
                                             name="crescent"
                                             color="dark"
                                             className="scale-[1.75]"

@@ -6,7 +6,7 @@ import { LCNProfile } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('address-book-connections');
 
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../../../components/feedback/AppSpinner';
 
 import AddressBookContactList from '../addressBook-contact-list/AddressBookContactList';
 import ContactsInviteEmptyState from '../addressBookInvite/ContactsInviteEmptyState';
@@ -257,7 +257,7 @@ const AddressBookConnections: React.FC<{
         <>
             {isLoading && (
                 <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full my-4">
-                    <IonSpinner color="black" />
+                    <AppSpinner color="black" />
                     <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                 </section>
             )}

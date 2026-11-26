@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { IonPage, IonContent, IonSpinner } from '@ionic/react';
+import { IonPage, IonContent } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 import { Filter, ShieldAlert } from 'lucide-react';
 
 import { useDeveloperPortal } from '../appStoreDeveloper/useDeveloperPortal';
@@ -78,7 +79,7 @@ const AdminDashboard: React.FC = () => {
             <IonPage>
                 <IonContent className="ion-padding">
                     <div className="flex justify-center items-center h-full">
-                        <IonSpinner name="crescent" />
+                        <AppSpinner name="crescent" />
                     </div>
                 </IonContent>
             </IonPage>

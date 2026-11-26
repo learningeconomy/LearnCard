@@ -1,7 +1,8 @@
 import React, { useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 
-import { IonToolbar, IonRow, IonCol, IonFooter, IonSpinner } from '@ionic/react';
+import { IonToolbar, IonRow, IonCol, IonFooter } from '@ionic/react';
+import { AppSpinner } from '../../../feedback/AppSpinner';
 
 import { BoostUserTypeEnum } from '../../boost-options/boostOptions';
 
@@ -55,7 +56,7 @@ const BoostCMSFooter: React.FC<{
                             >
                                 {isSaveLoading ? (
                                     <>
-                                        <IonSpinner
+                                        <AppSpinner
                                             name="crescent"
                                             color="dark"
                                             className="scale-[1] mr-1"
@@ -106,7 +107,7 @@ const BoostCMSFooter: React.FC<{
                                 </div>
                                 {isLoading ? (
                                     <>
-                                        <IonSpinner
+                                        <AppSpinner
                                             name="crescent"
                                             color="dark"
                                             className="scale-[1] mr-1"

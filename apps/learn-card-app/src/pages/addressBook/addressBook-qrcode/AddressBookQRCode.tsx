@@ -5,7 +5,8 @@ import { QRCodeSVG } from 'qrcode.react';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import { useWallet, useToast, ToastTypeEnum, useDeviceTypeByWidth } from 'learn-card-base';
 
-import { IonCol, IonRow, IonPage, IonSpinner } from '@ionic/react';
+import { IonCol, IonRow, IonPage } from '@ionic/react';
+import { AppSpinner } from '../../../components/feedback/AppSpinner';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 import ModalLayout from 'apps/learn-card-app/src/layout/ModalLayout';
@@ -100,7 +101,7 @@ const AddressBookQRCode: React.FC<{
                             // Never render a QR for the empty string — it scans
                             // fine and leads nowhere.
                             <div className="flex items-center justify-center py-10">
-                                <IonSpinner color="black" />
+                                <AppSpinner color="black" />
                             </div>
                         )}
                     </div>

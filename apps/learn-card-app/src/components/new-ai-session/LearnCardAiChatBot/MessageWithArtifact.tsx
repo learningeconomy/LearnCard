@@ -4,7 +4,7 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('message-with-artifact');
 
 import MarkdownRenderer from '../../ai-assessment/AiAssessment/helpers/LazyMarkdownRenderer';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../../feedback/AppSpinner';
 
 import {
     useCreateBoost,
@@ -143,7 +143,7 @@ export const MessageWithArtifact: React.FC<MessageProps> = ({ message }) => {
                 >
                     {isSaving ? (
                         <>
-                            <IonSpinner name="crescent" /> Claiming...
+                            <AppSpinner name="crescent" /> Claiming...
                         </>
                     ) : (
                         statusText

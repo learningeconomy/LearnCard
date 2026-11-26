@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 
-import { IonList, IonSpinner } from '@ionic/react';
+import { IonList } from '@ionic/react';
+import { AppSpinner } from '../../../components/feedback/AppSpinner';
 import AddressBookContactItem from './AddressBookContactItem';
 
 import { LCNProfile } from '@learncard/types';
@@ -136,7 +137,7 @@ export const AddressBookContactList: React.FC<AddressBookContactListProps> = ({
                 ))}
                 {isFetching && (
                     <div className="w-full flex items-center justify-center">
-                        <IonSpinner
+                        <AppSpinner
                             name="crescent"
                             color="grayscale-900"
                             className="scale-[2] mb-8 mt-6"

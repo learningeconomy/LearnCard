@@ -1,6 +1,7 @@
 import React, { Suspense, lazy, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
+import { AppSpinner } from '../feedback/AppSpinner';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('add-to-learn-card-menu');
 
@@ -26,7 +27,7 @@ const PasteOrUploadClaimModalFallback: React.FC = () => (
     <IonPage>
         <IonContent>
             <div className="font-poppins flex items-center justify-center min-h-[360px] p-8">
-                <IonSpinner name="crescent" className="text-grayscale-700" />
+                <AppSpinner name="crescent" className="text-grayscale-700" />
             </div>
         </IonContent>
     </IonPage>

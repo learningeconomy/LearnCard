@@ -2,7 +2,7 @@ import React from 'react';
 import queryString from 'query-string';
 import { useLocation } from 'react-router-dom';
 
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../feedback/AppSpinner';
 import ConsentFlowSyncButton from '../../pages/consentFlow/ConsentFlowSyncButton';
 
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
@@ -79,7 +79,7 @@ const NewMyData: React.FC = () => {
                     );
                 })}
 
-                {entriesLoading && <IonSpinner />}
+                {entriesLoading && <AppSpinner />}
             </div>
         </section>
     );

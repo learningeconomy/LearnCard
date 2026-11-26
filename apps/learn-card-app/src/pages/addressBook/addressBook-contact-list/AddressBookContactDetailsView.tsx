@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Clipboard } from '@capacitor/clipboard';
-import { IonIcon, IonSpinner, useIonAlert } from '@ionic/react';
+import { IonIcon, useIonAlert } from '@ionic/react';
+import { AppSpinner } from '../../../components/feedback/AppSpinner';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import type { Swiper as SwiperInstance } from 'swiper';
 import {
@@ -404,7 +405,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                         onClick={handleSendCredential}
                     >
                         {loadingAction === 'send' ? (
-                            <IonSpinner className="h-4 w-4 text-grayscale-900" />
+                            <AppSpinner className="h-4 w-4 text-grayscale-900" />
                         ) : (
                             <CredentialGeneralIcon className="text-lg text-grayscale-900" />
                         )}
@@ -513,7 +514,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                                         className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium text-red-700 transition-colors hover:bg-red-50 disabled:opacity-40"
                                     >
                                         {loadingAction === 'block' ? (
-                                            <IonSpinner className="h-[18px] w-[18px]" />
+                                            <AppSpinner className="h-[18px] w-[18px]" />
                                         ) : (
                                             <IonIcon icon={banOutline} className="text-lg" />
                                         )}
@@ -560,7 +561,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
 
                             {isLoading && (
                                 <div className="flex min-h-[150px] items-center justify-center gap-2 rounded-2xl border border-grayscale-200 bg-white text-sm text-grayscale-600">
-                                    <IonSpinner className="h-5 w-5" />
+                                    <AppSpinner className="h-5 w-5" />
                                     {m['contacts.credentialHistory.loadingPreview']()}
                                 </div>
                             )}

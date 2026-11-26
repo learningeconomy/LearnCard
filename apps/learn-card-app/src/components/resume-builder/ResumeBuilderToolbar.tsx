@@ -1,5 +1,6 @@
 import React from 'react';
-import { IonHeader, IonSpinner, IonToolbar } from '@ionic/react';
+import { IonHeader, IonToolbar } from '@ionic/react';
+import { AppSpinner } from '../feedback/AppSpinner';
 import DocumentIcon from '../svgs/Document';
 import ShareIcon from 'learn-card-base/svgs/Share';
 import DownloadIcon from 'learn-card-base/svgs/DownloadIcon';
@@ -72,7 +73,7 @@ export const ResumeBuilderToolbar: React.FC<ResumeBuilderToolbarProps> = ({
                                 className={secondaryClass}
                             >
                                 {loadingAction === 'download' ? (
-                                    <IonSpinner name="crescent" className="h-5 w-5" />
+                                    <AppSpinner name="crescent" className="h-5 w-5" />
                                 ) : (
                                     <DownloadIcon className="h-5 w-5" />
                                 )}
@@ -110,7 +111,7 @@ export const ResumeBuilderToolbar: React.FC<ResumeBuilderToolbarProps> = ({
                             className="flex min-h-11 items-center justify-center gap-2 rounded-[20px] border border-grayscale-300 bg-white px-4 py-2 text-sm font-medium text-grayscale-900 hover:bg-grayscale-100 disabled:cursor-not-allowed disabled:opacity-40 transition-colors"
                         >
                             {loadingAction === 'preview' ? (
-                                <IonSpinner name="crescent" className="h-4 w-4" />
+                                <AppSpinner name="crescent" className="h-4 w-4" />
                             ) : (
                                 <DocumentIcon className="h-5 w-5 shrink-0" />
                             )}
@@ -126,7 +127,7 @@ export const ResumeBuilderToolbar: React.FC<ResumeBuilderToolbarProps> = ({
                             className="flex min-h-11 items-center justify-center gap-2 rounded-[20px] bg-grayscale-900 px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 transition-opacity"
                         >
                             {loadingAction === 'publish' ? (
-                                <IonSpinner name="crescent" className="h-4 w-4" />
+                                <AppSpinner name="crescent" className="h-4 w-4" />
                             ) : (
                                 <Checkmark className="h-5 w-5 shrink-0" />
                             )}

@@ -4,7 +4,7 @@ import { useLoadingLine } from 'apps/learn-card-app/src/stores/loadingStore';
 import { useGetUserNotifications } from 'learn-card-base';
 import { deduplicateConnectionPromptNotifications } from 'learn-card-base/components/connection-prompts/deduplicateConnectionPromptNotifications';
 
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../../feedback/AppSpinner';
 import ArrowCircle from 'learn-card-base/svgs/ArrowCircle';
 import GenericErrorBoundary from '../../generic/GenericErrorBoundary';
 import NotificationCardContainer from './NotificationCardContainer';
@@ -107,7 +107,7 @@ const NewNotificationsList: React.FC<NewNotificationsListProps> = ({
         <div className="m-auto max-w-[600px] h-full bg-white">
             {notificationsLoading && !isEmptyState && (
                 <div className="min-w-[300px] min-h-[300px] h-full w-full relative flex flex-col items-center justify-center">
-                    <IonSpinner name="crescent" color="grayscale-900" className="scale-[4] mb-8" />
+                    <AppSpinner name="crescent" color="grayscale-900" className="scale-[4] mb-8" />
                     <p className="flex items-center justify-center text-left text-grayscale-900 font-medium text-sm line-clamp-1 mt-8">
                         {m['alerts.loadingNotifications']()}
                     </p>

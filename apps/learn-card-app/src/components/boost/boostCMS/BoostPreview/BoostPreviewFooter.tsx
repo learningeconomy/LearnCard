@@ -1,7 +1,7 @@
 import React from 'react';
 import * as m from '../../../../paraglide/messages.js';
 
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../../../feedback/AppSpinner';
 
 import {
     BoostCategoryOptionsEnum,
@@ -44,7 +44,7 @@ export const BoostPreviewFooter: React.FC<{
                 >
                     {isSaveLoading ? (
                         <>
-                            <IonSpinner name="crescent" color="dark" className="scale-[1] mr-1" />{' '}
+                            <AppSpinner name="crescent" color="dark" className="scale-[1] mr-1" />{' '}
                             <p className="w-full line-clamp-1 font-poppins normal tracking-wide">
                                 Saving...
                             </p>
@@ -71,7 +71,7 @@ export const BoostPreviewFooter: React.FC<{
                     </div>
                     {isLoading ? (
                         <>
-                            <IonSpinner name="crescent" color="dark" className="scale-[1] mr-1" />{' '}
+                            <AppSpinner name="crescent" color="dark" className="scale-[1] mr-1" />{' '}
                             <p className="w-full line-clamp-1 font-poppins normal tracking-wide">
                                 {m['common.loading']()}
                             </p>

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import moment from 'moment';
 
-import { IonItem, IonList, IonPopover, IonSpinner } from '@ionic/react';
+import { IonItem, IonList, IonPopover } from '@ionic/react';
+import { AppSpinner } from '../feedback/AppSpinner';
 import ResumeHistoryIcon from '../../assets/images/resume-history-icon.svg';
 import ResumeHistoryIconPublished from '../../assets/images/resume-builder-icon-published.svg';
 
@@ -121,7 +122,7 @@ export const ResumeBuilderHistoryDropdownButton: React.FC<{
 
                     {isLoading ? (
                         <div className="flex items-center justify-center py-8">
-                            <IonSpinner name="crescent" />
+                            <AppSpinner name="crescent" />
                         </div>
                     ) : sortedResumes.length === 0 ? (
                         <div className="px-3 py-8 text-center text-sm text-grayscale-600">
@@ -176,7 +177,7 @@ export const ResumeBuilderHistoryDropdownButton: React.FC<{
                                                             </p>
                                                         </div>
                                                         {isSelecting && (
-                                                            <IonSpinner
+                                                            <AppSpinner
                                                                 name="crescent"
                                                                 className="w-4 h-4 shrink-0"
                                                             />

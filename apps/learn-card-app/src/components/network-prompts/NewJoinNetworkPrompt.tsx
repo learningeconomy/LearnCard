@@ -21,7 +21,8 @@ import {
     useNetworkConsentMutation,
 } from 'learn-card-base';
 
-import { IonCol, IonRow, IonInput, IonSpinner } from '@ionic/react';
+import { IonCol, IonRow, IonInput } from '@ionic/react';
+import { AppSpinner } from '../feedback/AppSpinner';
 import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 import HeaderBranding from 'learn-card-base/components/headerBranding/HeaderBranding';
 import ErrorLogout from './ErrorLogout';
@@ -336,7 +337,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
         <>
             {createLoading && (
                 <div className="absolute top-0 w-full h-full z-[10000] flex flex-col gap-[5px] items-center justify-center bg-white/70  backdrop-blur-[3px]">
-                    <IonSpinner color="dark" />
+                    <AppSpinner color="dark" />
                     <span className="text-grayscale-900">Joining Network...</span>
                 </div>
             )}
@@ -376,7 +377,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                             >
                                 {imageUploadLoading && (
                                     <div className="user-image-upload-inprogress absolute flex h-[70px] min-h-[70px] w-[70px] min-w-[70px] items-center justify-center overflow-hidden rounded-full border-2 border-solid border-white text-xl font-medium text-white">
-                                        <IonSpinner
+                                        <AppSpinner
                                             name="crescent"
                                             color="dark"
                                             className="scale-[1.75]"

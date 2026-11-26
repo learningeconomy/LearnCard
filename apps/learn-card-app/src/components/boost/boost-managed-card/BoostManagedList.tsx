@@ -5,7 +5,8 @@ import { useHistory } from 'react-router-dom';
 import { useLoadingLine } from '../../../stores/loadingStore';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
-import { IonRow, IonCol, IonGrid, IonSpinner } from '@ionic/react';
+import { IonRow, IonCol, IonGrid } from '@ionic/react';
+import { AppSpinner } from '../../feedback/AppSpinner';
 import BoostManagedCard from '../../../components/boost/boost-managed-card/BoostManagedCard';
 import BoostErrorsDisplay from '../../../components/boost/boostErrors/BoostErrorsDisplay';
 import NewBoostButton from '../NewBoostButton';
@@ -174,7 +175,7 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
                         )}
                         {managedBoostsFetching && (
                             <div className="w-full flex items-center justify-center">
-                                <IonSpinner
+                                <AppSpinner
                                     name="crescent"
                                     color="grayscale-900"
                                     className="scale-[2] mb-8 mt-6"

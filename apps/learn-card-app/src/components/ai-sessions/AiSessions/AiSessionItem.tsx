@@ -3,7 +3,7 @@ import { formatLocaleDate } from '../../../i18n/formatters';
 
 import { m } from '../../../paraglide/messages.js';
 
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../../feedback/AppSpinner';
 import VerifiedBadge from 'learn-card-base/svgs/VerifiedBadge';
 import AiSessionAssessmentPreviewContainer from '../../ai-assessment/AiSessionAssessmentPreviewContainer';
 import { ellipsisVertical } from 'ionicons/icons';
@@ -129,7 +129,7 @@ export const AiSessionItem: React.FC<{
 
             <span className="flex items-center justify-end text-grayscale-600 font-poppins text-sm ml-2 shrink-0 gap-3">
                 {isLoading ? (
-                    <IonSpinner name="crescent" color="dark" className="scale-[0.9] mr-1" />
+                    <AppSpinner name="crescent" color="dark" className="scale-[0.9] mr-1" />
                 ) : isCompleted ? (
                     <VerifiedBadge size="20" />
                 ) : (

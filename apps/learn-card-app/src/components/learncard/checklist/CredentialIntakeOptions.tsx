@@ -1,6 +1,6 @@
 import React, { lazy, Suspense } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../../feedback/AppSpinner';
 
 import * as m from '../../../paraglide/messages.js';
 
@@ -43,7 +43,7 @@ export const CredentialIntakeOptions: React.FC = () => {
             <Suspense
                 fallback={
                     <div className="font-poppins flex items-center justify-center min-h-[360px] p-8">
-                        <IonSpinner name="crescent" className="text-grayscale-700" />
+                        <AppSpinner name="crescent" className="text-grayscale-700" />
                     </div>
                 }
             >

@@ -4,7 +4,8 @@ import { QRCodeSVG } from 'qrcode.react';
 import moment from 'moment';
 
 import X from 'learn-card-base/svgs/X';
-import { IonGrid, IonIcon, IonSpinner } from '@ionic/react';
+import { IonGrid, IonIcon } from '@ionic/react';
+import { AppSpinner } from '../../feedback/AppSpinner';
 import { alertCircleOutline } from 'ionicons/icons';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import IDSleeve from '../../../assets/images/id-sleeve.png';
@@ -352,7 +353,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                             </button>
                         </div>
                     ) : isLinkLoading || !shareLink ? (
-                        <IonSpinner
+                        <AppSpinner
                             role="status"
                             aria-label={m['passport.resumeBuilder.shareLink.generatingLink']()}
                             name="crescent"
@@ -470,7 +471,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
 
                             {!isShareError && (isLinkLoading || !shareLink) && (
                                 <div className="min-h-[300px] h-full w-full relative flex flex-col gap-3 items-center justify-center">
-                                    <IonSpinner
+                                    <AppSpinner
                                         role="status"
                                         aria-label={m[
                                             'passport.resumeBuilder.shareLink.generatingLink'
@@ -538,7 +539,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                                         role="status"
                                         className="flex items-center justify-center gap-2 text-sm text-grayscale-600"
                                     >
-                                        <IonSpinner name="crescent" className="w-4 h-4" />
+                                        <AppSpinner name="crescent" className="w-4 h-4" />
                                         {m['credentialShare.publishingPreview']()}
                                     </span>
                                 )}

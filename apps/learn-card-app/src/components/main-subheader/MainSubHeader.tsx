@@ -3,7 +3,8 @@ import React from 'react';
 import * as m from '../../paraglide/messages.js';
 import { getSideMenuTranslationKey } from 'learn-card-base/components/sidemenu/sidemenuHelpers';
 
-import { IonRow, IonCol, IonSpinner } from '@ionic/react';
+import { IonRow, IonCol } from '@ionic/react';
+import { AppSpinner } from '../feedback/AppSpinner';
 
 import AiPassportPersonalizationContainer from '../../components/ai-passport/AiPassportPersonalizationContainer';
 import CategoryDescriptorModal from '../category-descriptor/CategoryDescriptorModal';
@@ -163,7 +164,7 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
                 >
                     <span className="font-poppins text-[30px] leading-[100%] flex items-center">
                         {countLoading && (
-                            <IonSpinner
+                            <AppSpinner
                                 name="crescent"
                                 aria-label={m['common.loading']()}
                                 className="text-white w-[20px] h-[20px] mr-[5px]"

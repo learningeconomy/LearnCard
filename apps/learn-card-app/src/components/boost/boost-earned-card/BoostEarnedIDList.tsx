@@ -5,7 +5,8 @@ import { useLoadingLine } from '../../../stores/loadingStore';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
 
-import { IonCol, IonSpinner } from '@ionic/react';
+import { IonCol } from '@ionic/react';
+import { AppSpinner } from '../../feedback/AppSpinner';
 import BoostEarnedIDCard from './BoostEarnedIDCard';
 
 import {
@@ -159,7 +160,7 @@ const BoostEarnedIDList: React.FC<{
                                 {credentials}
                                 {credentialsFetching && (
                                     <div className="w-full flex items-center justify-center">
-                                        <IonSpinner
+                                        <AppSpinner
                                             name="crescent"
                                             color="grayscale-900"
                                             className="scale-[2] mb-8 mt-6"
@@ -180,7 +181,7 @@ const BoostEarnedIDList: React.FC<{
                             </div>
                             {credentialsFetching && (
                                 <div className="w-full flex items-center justify-center">
-                                    <IonSpinner
+                                    <AppSpinner
                                         name="crescent"
                                         color="grayscale-900"
                                         className="scale-[2] mb-8 mt-6"

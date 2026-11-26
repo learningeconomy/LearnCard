@@ -11,7 +11,8 @@ import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credent
 import ProfilePicture from 'learn-card-base/components/profilePicture/ProfilePicture';
 import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarnedCard';
 
-import { IonContent, IonPage, IonToggle, IonSpinner, IonGrid, useIonAlert } from '@ionic/react';
+import { IonContent, IonPage, IonToggle, IonGrid, useIonAlert } from '@ionic/react';
+import { AppSpinner } from '../feedback/AppSpinner';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation } from 'swiper/modules';
 import 'swiper/css/navigation';
@@ -146,7 +147,7 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
                                     <div className="mt-[15px] text--[14px]">
                                         {credentialsLoading && (
                                             <div className="w-full h-full flex flex-col opacity-50 items-center justify-center mt-[40px]">
-                                                <IonSpinner />
+                                                <AppSpinner />
                                                 <p className="mt-[20px]">
                                                     Fetching your earned boosts...
                                                 </p>
