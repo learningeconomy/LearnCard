@@ -54,6 +54,11 @@ div:where(.app-input.md) {
     font-size: inherit;
 }
 
+/* `.ion-touched.ion-invalid` (call-site classes): the bottom row's border turns the error color. */
+div.ion-touched.ion-invalid:where(.app-input) {
+    --border-color: var(--app-color-danger);
+}
+
 div.app-input-label-stacked:where(.app-input) {
     min-height: 56px;
 }

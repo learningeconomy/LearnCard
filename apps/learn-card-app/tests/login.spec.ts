@@ -36,7 +36,7 @@ test.describe('Signing in with a seed', () => {
         await page.waitForURL(/wallet/);
 
         await page.getByRole('button', { name: /boost/i }).click();
-        await page.locator('#ion-input-2').fill('ididitlol');
+        await page.locator('input[placeholder="User ID"]:not([disabled])').fill('ididitlol');
         await page.getByRole('button', { name: /let's go/i }).click();
 
         await page.getByLabel('qr-code-scanner-button').click();

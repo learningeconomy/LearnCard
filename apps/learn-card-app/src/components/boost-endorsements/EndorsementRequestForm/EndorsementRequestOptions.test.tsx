@@ -21,9 +21,6 @@ vi.mock('./EndorsementRequestSuccess', () => ({ default: () => null }));
 vi.mock('learn-card-base/svgs/QRCodeScanner', () => ({ default: () => null }));
 vi.mock('learn-card-base/svgs/CopyStack', () => ({ default: () => null }));
 vi.mock('learn-card-base/svgs/Mail', () => ({ default: () => null }));
-vi.mock('@ionic/react', () => ({
-    IonInput: () => null,
-}));
 vi.mock('learn-card-base', () => ({
     CredentialCategoryEnum: { achievement: 'Achievement' },
     ModalTypes: { FullScreen: 'fullscreen' },
