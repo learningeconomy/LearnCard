@@ -34,13 +34,17 @@ import {
 import {
     activeRequestTermsWhere,
     contractRequestReplacementWhere,
+    detachReplacedRequestInviteCypher,
     inviteHasNeverAttached,
+    liveReferralSenderWhere,
+    newLiveReferralReferenceWhere,
 } from './contract-request-replacement.helpers';
 import {
     requestEventCypher,
     tryDispatchContractEvent,
     tryFanOutContractIntegrationEvents,
 } from './contract-events.helpers';
+import { attachReferralToLiveConsent } from './live-referral.helpers';
 import type { ProfileType } from 'types/profile';
 import type { DbContractType } from 'types/consentflowcontract';
 
@@ -159,13 +163,17 @@ export const createRequestForProfile = async (
         WITH contract, target WHERE $targetProfileId <> $senderProfileId AND EXISTS {
             MATCH (contract)-[:CREATED_BY|CAN_WRITE|SHARES_DATA_WITH]->(:Profile {profileId: $senderProfileId})
         } AND CASE WHEN contract.expiresAt IS NULL OR trim(contract.expiresAt) = '' THEN true ELSE datetime(contract.expiresAt) > datetime.realtime() END
-        AND NOT EXISTS {
-            MATCH (target)-[:CREATED_BY]->(terms:ConsentFlowTerms)-[:CONSENTS_TO]->(contract)
+        AND coalesce(contract.status, 'active') <> 'retired'
+        OPTIONAL MATCH (target)-[:CREATED_BY]->(terms:ConsentFlowTerms)-[:CONSENTS_TO]->(contract)
             WHERE ${activeRequestTermsWhere('datetime.realtime()')}
-        }
+        WITH contract, target, terms IS NOT NULL AS referralOnly,
+            coalesce(terms.lastConsentTransactionId, terms.id) AS referralConsentId
+        WHERE terms IS NULL OR ($inviteId IS NOT NULL AND
+            ${liveReferralSenderWhere('$senderProfileId')} AND
+            ${newLiveReferralReferenceWhere('$externalReferenceId')})
         OPTIONAL MATCH (contract)-[existing:REQUESTED_FOR]->(target)
-        WITH contract, target, existing,
-            ${contractRequestReplacementWhere('$senderProfileId', '$inviteId IS NOT NULL')} AS replacing,
+        WITH contract, target, existing, referralOnly, referralConsentId,
+            ${contractRequestReplacementWhere('$senderProfileId', '$inviteId IS NOT NULL', 'referralConsentId')} AS replacing,
             coalesce($inviteId IS NULL AND existing.status = 'pending' AND existing.requestId IS NOT NULL AND
                 coalesce(existing.addressedByEmail, false) = false AND
                 existing.requestedBy = $senderProfileId AND
@@ -176,11 +184,14 @@ export const createRequestForProfile = async (
         WHERE existing IS NULL OR replacing OR retry
         OPTIONAL MATCH (contract)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite)
             WHERE invite.id = $inviteId
-        WITH contract, target, existing, invite, retry, profileTimes, emailTimes
+        WITH contract, target, existing, invite, retry, profileTimes, emailTimes, referralOnly, referralConsentId
         WHERE $inviteId IS NULL OR (invite IS NOT NULL AND invite.status = 'pending' AND
-            datetime(invite.expiresAt) > datetime.realtime() AND ${inviteHasNeverAttached}
-            AND ${noParkedEmailRequest})
-        WITH contract, target, invite, retry, profileTimes, emailTimes,
+            datetime(invite.expiresAt) > datetime.realtime() AND ${inviteHasNeverAttached} AND ${noParkedEmailRequest} AND EXISTS {
+                MATCH (target)-[:HAS_CONTACT_METHOD]->(email:ContactMethod)
+                WHERE email.type = 'email' AND email.isVerified = true
+                    AND toLower(trim(email.value)) = invite.email
+            })
+        WITH contract, target, invite, retry, profileTimes, emailTimes, referralOnly, referralConsentId,
             existing.requestId AS replacedId, existing.status AS replacedStatus,
             coalesce(invite IS NULL AND existing.addressedByEmail = true AND existing.status = 'pending'
                 AND existing.requestedBy <> $senderProfileId, false) AS park,
@@ -189,8 +200,8 @@ export const createRequestForProfile = async (
                 '$senderProfileId'
             )} >= $requestCap AS capped
         CALL {
-            WITH contract, target, invite, retry, profileTimes, emailTimes, replacedId, replacedStatus, park, capped
-            WITH contract, target, invite, retry, profileTimes, emailTimes, replacedId, replacedStatus, park WHERE NOT capped
+            WITH contract, target, invite, retry, profileTimes, emailTimes, referralOnly, referralConsentId, replacedId, replacedStatus, park, capped
+            WITH contract, target, invite, retry, profileTimes, emailTimes, referralOnly, referralConsentId, replacedId, replacedStatus, park WHERE NOT capped
             ${preservePreviousRequestCypher}
             ${parkEmailRequestCypher('request', 'target', 'park')}
             FOREACH (_ IN CASE WHEN retry THEN [] ELSE [1] END |
@@ -200,18 +211,15 @@ export const createRequestForProfile = async (
                     addressedByEmail: CASE WHEN $inviteId IS NULL THEN null ELSE true END,
                     expiresAt: invite.expiresAt, expiredAt: null, requestHistoryOnly: null,
                     profileRequestTimes: profileTimes + CASE WHEN invite IS NULL THEN [$now + '|' + $senderProfileId] ELSE [] END,
-                    emailRequestTimes: emailTimes + CASE WHEN invite IS NOT NULL THEN [$now + '|' + $senderProfileId] ELSE [] END})
+                    emailRequestTimes: emailTimes + CASE WHEN invite IS NOT NULL THEN [$now + '|' + $senderProfileId] ELSE [] END,
+                    liveReferral: CASE WHEN referralOnly THEN true ELSE null END,
+                    referralConsentId: referralConsentId})
             FOREACH (_ IN CASE WHEN invite IS NULL THEN [] ELSE [1] END |
                 SET invite.status = 'attached', invite.attachedProfileId = target.profileId,
                     invite.attachedAt = $now)
-            WITH contract, request, target, retry, replacedId, replacedStatus, park
-            OPTIONAL MATCH (contract)-[:HAS_REQUEST_INVITE]->(replaced:ContractRequestInvite)
-                WHERE NOT retry AND NOT park AND replaced.id = replacedId
-            FOREACH (_ IN CASE WHEN replaced IS NOT NULL AND replacedStatus <> 'accepted' THEN [1] ELSE [] END |
-                SET replaced.attachedProfileId = null, replaced.attachedAt = null,
-                    replaced.status = replacedStatus)
-            FOREACH (_ IN CASE WHEN replaced IS NOT NULL AND replacedStatus = 'accepted' THEN [1] ELSE [] END |
-                SET replaced.status = 'closed')
+            WITH contract, request, target, retry, replacedStatus,
+                CASE WHEN NOT park THEN replacedId END AS replacedId
+            ${detachReplacedRequestInviteCypher}
             ${requestEventCypher}
             UNION
             WITH capped
@@ -244,7 +252,7 @@ export const sendGenericContractRequest = async (
             code: 'BAD_REQUEST',
             message: 'You cannot send a request to yourself.',
         });
-    const result = await createRequestForProfile({
+    const request: CreateRequestForProfileInput = {
         contractId: contract.id,
         targetProfileId: target.profileId,
         senderProfileId: profile.profileId,
@@ -252,7 +260,12 @@ export const sendGenericContractRequest = async (
         externalReferenceId: input.externalReferenceId,
         message: input.message,
         domain,
-    });
+    };
+    const pending = await createRequestForProfile(request);
+    const result =
+        pending.status === 'ineligible' && request.externalReferenceId
+            ? ((await attachReferralToLiveConsent(request)) ?? pending)
+            : pending;
     if (result.status === 'ineligible')
         throw new TRPCError({
             code: 'CONFLICT',

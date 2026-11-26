@@ -2243,6 +2243,8 @@
         "previewCredentials": "معاينة {{count}} من بيانات الاعتماد"
     },
     "consentFlow": {
+        "referralUpdated": "تم تحديث الإحالة",
+        "referralUpdatedDescription": "لديك إحالة جديدة لهذا الاتصال.",
         "aiPassportReauthenticationRequired": "ارجع إلى AI Passport وسجّل الدخول مرة أخرى.",
         "reviewChanged": "تغيّرت تفاصيل مشاركة البيانات. راجعها قبل الاتصال مرة أخرى.",
         "guardianApprovalRequired": "اطلب من أحد مديري الحساب الحاليين الموافقة على هذا الاتصال، ثم حاول مرة أخرى.",
@@ -10544,6 +10546,8 @@
         "accountChanged": "اكتمل الإرسال، لكن حسابك تغير. عُد إلى التطبيق الذي طلب المعلومات للمتابعة."
     },
     "contractRequests": {
+        "acceptReferral": "قبول الإحالة",
+        "referralOnlyDescription": "أضف هذه الإحالة إلى اتصالك الحالي مع {{contractName}}.",
         "label": "التواصل",
         "referred": "أحالك {{referrer}} إلى {{owner}}.",
         "invitation": "يرغب {{owner}} في التواصل معك.",

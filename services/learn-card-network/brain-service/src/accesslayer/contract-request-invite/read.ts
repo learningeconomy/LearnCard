@@ -12,6 +12,8 @@ import {
     activeRequestTermsWhere,
     contractRequestReplacementWhere,
     inviteHasNeverAttached,
+    liveReferralSenderWhere,
+    newLiveReferralReferenceWhere,
 } from '@helpers/contract-request-replacement.helpers';
 
 /** `closed`: an attached invite whose request has been resolved. */
@@ -95,19 +97,21 @@ export const getPendingContractRequestInvitesForProfile = async (
          MATCH (contract:ConsentFlowContract)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite)
          WHERE invite.email IN emails AND invite.status = 'pending' AND invite.expiresAt > $now
              AND invite.requestedBy <> $profileId AND ${inviteHasNeverAttached}
+             AND coalesce(contract.status, 'active') <> 'retired'
              AND CASE WHEN contract.expiresAt IS NULL OR trim(contract.expiresAt) = '' THEN true
                       ELSE datetime(contract.expiresAt) > datetime($now) END
              AND EXISTS {
                 MATCH (contract)-[:CREATED_BY|CAN_WRITE|SHARES_DATA_WITH]->(:Profile {profileId: invite.requestedBy})
              }
-             AND NOT EXISTS {
-                MATCH (profile)-[:CREATED_BY]->(terms:ConsentFlowTerms)-[:CONSENTS_TO]->(contract)
-                WHERE ${activeRequestTermsWhere('datetime($now)')}
-             }
+         OPTIONAL MATCH (profile)-[:CREATED_BY]->(terms:ConsentFlowTerms)-[:CONSENTS_TO]->(contract)
+             WHERE ${activeRequestTermsWhere('datetime($now)')}
+         WITH contract, invite, profile, terms, coalesce(terms.lastConsentTransactionId, terms.id) AS referralConsentId
+         WHERE terms IS NULL OR (${liveReferralSenderWhere('invite.requestedBy')} AND
+             ${newLiveReferralReferenceWhere('invite.externalReferenceId')})
          OPTIONAL MATCH (contract)-[existing:REQUESTED_FOR]->(profile)
-         WITH contract, invite, profile AS target, existing
+         WITH contract, invite, profile AS target, existing, referralConsentId
          WHERE ${noParkedEmailRequest} AND
-             (existing IS NULL OR ${contractRequestReplacementWhere('invite.requestedBy', 'true')}) AND
+             (existing IS NULL OR ${contractRequestReplacementWhere('invite.requestedBy', 'true', 'referralConsentId')}) AND
              ${contractRequestCountForSender(recentContractRequestTimes('email'), 'invite.requestedBy')} < $requestCap
          RETURN contract.id AS contractId, properties(invite) AS invite
          ORDER BY invite.requestedAt, invite.id LIMIT $limit`,

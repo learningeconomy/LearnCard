@@ -2243,6 +2243,8 @@
         "previewCredentials": "Vista previa de {{count}} credenciales"
     },
     "consentFlow": {
+        "referralUpdated": "Derivación actualizada",
+        "referralUpdatedDescription": "Tu conexión tiene una nueva derivación.",
         "aiPassportReauthenticationRequired": "Vuelve a AI Passport e inicia sesión de nuevo.",
         "reviewChanged": "Los detalles de acceso cambiaron. Revísalos antes de volver a conectar.",
         "guardianApprovalRequired": "Pide a un administrador actual de la cuenta que apruebe esta conexión y vuelve a intentarlo.",
@@ -10455,6 +10457,8 @@
         "accountChanged": "El envío terminó, pero cambiaste de cuenta. Vuelve a la aplicación que lo solicitó para continuar."
     },
     "contractRequests": {
+        "acceptReferral": "Aceptar derivación",
+        "referralOnlyDescription": "Añade esta derivación a tu conexión actual con {{contractName}}.",
         "label": "Conectar",
         "referred": "{{referrer}} te ha referido a {{owner}}.",
         "invitation": "{{owner}} quiere conectar contigo.",

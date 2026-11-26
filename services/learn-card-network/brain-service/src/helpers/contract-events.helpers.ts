@@ -5,6 +5,7 @@ import { DbTermsValidator } from 'types/consentflowcontract';
 import { neogma } from '@instance';
 import { environment } from '@environment';
 import {
+    CONTRACT_REFERRAL_UPDATED_NOTIFICATION,
     ConsentFlowTransactionValidator,
     ConsentFlowWebhookMetadataValidator,
     ConsentFlowContractNotificationDataValidator,
@@ -31,7 +32,7 @@ import { updateDidForProfile } from './did.helpers';
 import { buildContractUpdatePreview } from '@learncard/helpers';
 import { storedContractRequestTimes } from './contract-request-cap.helpers';
 
-type EventKind = ConsentFlowWebhookMetadata['event'] | 'contract_updated';
+type EventKind = ConsentFlowWebhookMetadata['event'] | 'contract_updated' | 'referral_attached';
 const defaultDomain = (): string => environment.DOMAIN_NAME ?? 'network.learncard.com';
 
 const MAX_DELIVERY_ATTEMPTS = 12;
@@ -127,9 +128,12 @@ export const appendConsentEvent = (
             SET request.profileRequestTimes = profileTimes, request.emailRequestTimes = emailTimes
             DELETE reviewed)
         WITH contract, terms, transaction, consenter, request, previous, restoreVisible,
-            request.status = 'pending' AND (request.expiresAt IS NULL OR request.expiresAt > transaction.date)
+            request.status = 'pending' AND coalesce(request.liveReferral, false) = false
+                AND (request.expiresAt IS NULL OR request.expiresAt > transaction.date)
                 AND (NOT coalesce(request.addressedByEmail, false) OR request.requestId = $eventRequestId) AS requestOpen
-        SET terms.\`referral.requestId\` = CASE WHEN request.requestId IS NOT NULL AND (request.status = 'accepted' OR (requestOpen AND $eventKind IN ['consent_created', 'consent_updated']))
+        SET terms.lastConsentTransactionId = CASE WHEN transaction.action IN ['consent', 'reconsent']
+            THEN transaction.id ELSE terms.lastConsentTransactionId END,
+            terms.\`referral.requestId\` = CASE WHEN request.requestId IS NOT NULL AND (request.status = 'accepted' OR (requestOpen AND $eventKind IN ['consent_created', 'consent_updated']))
             THEN request.requestId ELSE terms.\`referral.requestId\` END,
             terms.\`referral.requestedBy\` = CASE WHEN request.requestId IS NOT NULL AND (request.status = 'accepted' OR (requestOpen AND $eventKind IN ['consent_created', 'consent_updated']))
             THEN request.requestedBy ELSE terms.\`referral.requestedBy\` END,
@@ -247,6 +251,7 @@ type StoredEvent = {
     requestAccepted?: boolean;
     /** True when the target of an email-addressed request made this decision. */
     hideActor?: boolean;
+    targetId?: string;
 };
 type StoredDelivery = {
     id: string;
@@ -333,6 +338,35 @@ const buildNotification = async (
         getContractById(event.contractId),
     ]);
     if (!from || !to || !owner) return null;
+    if (event.kind === 'referral_attached') {
+        if (delivery.role !== 'target' || delivery.toId !== event.targetId || !contract)
+            return null;
+        const sender = updateDidForProfile(event.domain, from);
+        return {
+            type: LCNNotificationTypeEnumValidator.enum.CONSENT_FLOW_TRANSACTION,
+            from: {
+                ...stripSensitiveProfileListFields(
+                    sanitizeProfileForTier(sender, 'unauthenticated')
+                ),
+                did: sender.did,
+            },
+            to: { did: to.did, profileId: to.profileId },
+            sent: event.createdAt,
+            message: getNotificationMessage(
+                'contractReferralAttached',
+                resolveRecipientLocale(to),
+                {
+                    contractName: contract.name || '',
+                }
+            ),
+            data: {
+                metadata: {
+                    type: CONTRACT_REFERRAL_UPDATED_NOTIFICATION,
+                    deliveryKey: delivery.id,
+                },
+            },
+        };
+    }
     if (event.kind === 'contract_updated') {
         if (!contract) return null;
         const data = ConsentFlowContractNotificationDataValidator.parse(

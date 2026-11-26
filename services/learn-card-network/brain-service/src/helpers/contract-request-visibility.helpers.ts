@@ -10,7 +10,7 @@ export const preservePreviousRequestCypher = `
         THEN [1] ELSE [] END |
         MERGE (contract)-[snapshot:PREVIOUS_VISIBLE_REQUEST]->(target)
         SET snapshot = request{.status, .requestId, .requestedBy, .externalReferenceId,
-            .message, .requestedAt, .readStatus, .addressedByEmail, .expiresAt})
+            .message, .requestedAt, .readStatus, .addressedByEmail, .expiresAt, .liveReferral})
     FOREACH (_ IN CASE WHEN NOT retry AND invite IS NULL AND previous IS NOT NULL
         THEN [1] ELSE [] END | DELETE previous)
 `;

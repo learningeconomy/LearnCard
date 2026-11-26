@@ -105,6 +105,33 @@ describe('managed credential refresh notification persistence', () => {
     });
 });
 
+describe('referral update notification persistence', () => {
+    it('keys retries to one in-app notification and preserves its read status', async () => {
+        const update = {
+            type: 'CONSENT_FLOW_TRANSACTION' as const,
+            from: 'did:key:sender',
+            to: { did: 'did:key:learner' },
+            sent: '2026-01-01T00:00:00.000Z',
+            data: {
+                metadata: { type: 'contract-referral-updated', deliveryKey: 'one-referral' },
+            },
+        };
+        mocks.updateOne.mockReset();
+        mocks.updateOne
+            .mockResolvedValueOnce({ upsertedCount: 1 })
+            .mockResolvedValueOnce({ upsertedCount: 0 });
+
+        await expect(createNotification(update)).resolves.toEqual({ created: true });
+        await expect(createNotification(update)).resolves.toEqual({ created: false });
+        const [filter, operation] = mocks.updateOne.mock.calls[0]!;
+        expect(filter).toEqual({ _id: expect.stringMatching(/^contract-referral:/) });
+        expect(mocks.updateOne.mock.calls[1]?.[0]).toEqual(filter);
+        expect(operation).toEqual({
+            $setOnInsert: expect.objectContaining({ read: false, archived: false }),
+        });
+    });
+});
+
 describe('campaign notification persistence', () => {
     const campaignNotification = {
         type: 'ANNOUNCEMENT' as const,

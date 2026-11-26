@@ -12,6 +12,7 @@ type TransactionHistoryItemProps = {
 
 const ACTION_COLOR: Record<ConsentFlowTransactionAction, string> = {
     consent: 'text-emerald-700',
+    referral: 'text-grayscale-700',
     reconsent: 'text-emerald-700',
     sync: 'text-cyan-700',
     update: 'text-indigo-700',
@@ -25,6 +26,7 @@ const getActionText = (transaction: ConsentFlowTransaction): string => {
     }
     return {
         consent: 'Consent',
+        referral: m['consentFlow.referralUpdated'](),
         reconsent: m['consentUpdate.approvedUpdate'](),
         sync: 'Sync',
         update: m['common.update'](),
@@ -50,6 +52,10 @@ const getDescriptiveText = (
         return m['consentUpdate.approvedUpdateDescription']({
             appName: contractName ?? contractOwner?.displayName ?? m['dataSharing.unknownApp'](),
         });
+    }
+
+    if (transaction.action === 'referral') {
+        return m['consentFlow.referralUpdatedDescription']();
     }
 
     if (transaction.action === 'sync') {

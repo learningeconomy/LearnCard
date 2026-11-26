@@ -1087,6 +1087,7 @@ export const ConsentFlowWebhookMetadataValidator = z.object({
 export type ConsentFlowWebhookMetadata = z.infer<typeof ConsentFlowWebhookMetadataValidator>;
 
 export const ConsentFlowContractRequestForProfileValidator = ContractRequestFieldsValidator.extend({
+    referralOnly: z.boolean().optional(),
     profile: LCNProfileValidator,
     status: ConsentFlowContractRequestStatusValidator,
     readStatus: ConsentFlowContractRequestReadStatusValidator.optional(),
@@ -1348,6 +1349,7 @@ export const ConsentFlowTransactionActionValidator = z.enum([
     'withdraw',
     'write',
     'reconsent',
+    'referral',
 ]);
 export type ConsentFlowTransactionAction = z.infer<typeof ConsentFlowTransactionActionValidator>;
 
@@ -1525,6 +1527,8 @@ export const LCNNotificationInboxValidator = z.object({
 });
 
 export type LCNNotificationInbox = z.infer<typeof LCNNotificationInboxValidator>;
+
+export const CONTRACT_REFERRAL_UPDATED_NOTIFICATION = 'contract-referral-updated';
 
 export const LCNNotificationMetadataValidator = z
     .object({
@@ -2265,6 +2269,7 @@ export const IntegrationEventTypeValidator = z.enum([
     'request_denied',
     'request_cancelled',
     'request_expired',
+    'referral_attached',
     'consent_created',
     'consent_updated',
     'consent_withdrawn',

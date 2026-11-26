@@ -1,11 +1,17 @@
 import { ACCEPTED_VERSION_PREDICATE } from './consent-expiry.helpers';
 
 /**
- * Shared by the locked send and the invite lookup. Callers separately exclude live consent.
- * Keep the LC-2372 exception for a sender replacing their own email-addressed request.
+ * Shared by the locked sends and the invite lookup after checking the sender and active terms.
+ * An invitation bound to a prior consent cannot block a fresh request.
  */
-export const contractRequestReplacementWhere = (sender: string, isEmailSend: string): string => `
+export const contractRequestReplacementWhere = (
+    sender: string,
+    isEmailSend: string,
+    consentId: string
+): string => `
     coalesce(existing.requestHistoryOnly = true OR existing.status IN ['denied', 'cancelled', 'accepted'] OR
+        (existing.status = 'pending' AND existing.liveReferral = true AND
+            (${consentId} IS NULL OR existing.referralConsentId IS NULL OR existing.referralConsentId <> ${consentId})) OR
         (NOT (${isEmailSend}) AND existing.addressedByEmail = true AND existing.status IN ['pending', 'expired']) OR
         (existing.addressedByEmail = true AND existing.requestedBy = ${sender} AND
             (existing.status = 'expired' OR
@@ -19,7 +25,7 @@ export const inviteHasNeverAttached = `
     }
 `;
 
-/** An expired accepted version ends the grant. Preserve the legacy fallback when no version exists. */
+/** Active grants block new requests, including one-time grants until their accepted version expires. */
 export const activeRequestTermsWhere = (now: string): string => `
     (terms.status = 'live' OR (terms.status = 'consumed' AND terms.oneTime = true))
     AND CASE WHEN terms.expiresAt IS NULL OR trim(terms.expiresAt) = '' THEN true
@@ -30,4 +36,28 @@ export const activeRequestTermsWhere = (now: string): string => `
             WHEN accepted.expiresAt IS NULL OR trim(accepted.expiresAt) = '' THEN false
             ELSE datetime(accepted.expiresAt) <= ${now} END
     }
+`;
+
+/** Call after checking active consent and the sender's current contract role. */
+export const liveReferralSenderWhere = (sender: string, alreadyDelivered = 'false'): string => `
+    terms.status = 'live' AND coalesce(terms.oneTime, false) = false
+    AND terms.smartResumeFingerprint IS NULL
+    AND coalesce(terms.consentedVersion, 1) = coalesce(contract.currentVersion, 1)
+    AND (${alreadyDelivered} OR terms.\`referral.requestId\` IS NULL OR terms.\`referral.requestedBy\` = ${sender}
+        OR EXISTS { MATCH (contract)-[:CREATED_BY]->(:Profile {profileId: ${sender}}) })
+`;
+
+export const newLiveReferralReferenceWhere = (reference: string): string => `
+    ${reference} IS NOT NULL AND ${reference} <> coalesce(terms.\`referral.externalReferenceId\`, '')
+`;
+
+/** Replaced email IDs retain their redacted terminal status or remain pending until expiry. */
+export const detachReplacedRequestInviteCypher = `
+    OPTIONAL MATCH (contract)-[:HAS_REQUEST_INVITE]->(replaced:ContractRequestInvite)
+        WHERE NOT retry AND replaced.id = replacedId
+    FOREACH (_ IN CASE WHEN replaced IS NOT NULL AND replacedStatus <> 'accepted' THEN [1] ELSE [] END |
+        SET replaced.attachedProfileId = null, replaced.attachedAt = null,
+            replaced.status = replacedStatus)
+    FOREACH (_ IN CASE WHEN replaced IS NOT NULL AND replacedStatus = 'accepted' THEN [1] ELSE [] END |
+        SET replaced.status = 'closed')
 `;

@@ -18,6 +18,7 @@ import { isDidOwnerOfNotification } from '@helpers/notifications.helpers';
 import {
     createNotification,
     isManagedCredentialRefreshNotification,
+    isReferralUpdateNotification,
     upsertConsentFlowContractUpdateNotification,
     upsertCredentialRefreshNotification,
 } from '@accesslayer/notifications/create';
@@ -384,7 +385,7 @@ export const notificationsRouter = t.router({
 
             if (!creationResult) return false;
 
-            if (creationResult.created) {
+            if (creationResult.created && !isReferralUpdateNotification(input)) {
                 try {
                     sendNotificationResponse = await sendPushNotification(input);
                 } catch (error) {

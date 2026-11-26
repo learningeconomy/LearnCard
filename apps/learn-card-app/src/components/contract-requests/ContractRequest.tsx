@@ -20,7 +20,7 @@ import {
     contractCategoryNameToCategoryMetadata,
 } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
-import type { ConsentFlowContractDetails } from '@learncard/types';
+import { ConsentFlowTermsValidator, type ConsentFlowContractDetails } from '@learncard/types';
 import { ReferralConsentReview, useReferralGate, useReferralModal } from './ReferralModal';
 import { useContractRequestsEnabled } from '../../hooks/useContractRequestsEnabled';
 import * as m from '../../paraglide/messages.js';
@@ -28,6 +28,8 @@ import { getLocale } from '../../paraglide/runtime.js';
 import { localizeCategoryTitle } from '../../i18n/categoryTitle';
 import { localizeContractPersonalField } from '../../i18n/contractPersonalField';
 import { ContractAudience } from './ContractAudience';
+import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
+import { useGuardianGate } from '../../hooks/useGuardianGate';
 
 const isExpired = (expiresAt?: string): boolean =>
     Boolean(
@@ -71,6 +73,8 @@ export const ContractRequest: React.FC<RequestProps> = ({
         mobile: ModalTypes.FullScreen,
     });
     const confirm = useConfirmation();
+    const { gate } = useLCNGatedAction();
+    const { guardedAction } = useGuardianGate();
     const { presentToast } = useToast();
     const branding = useBrandingConfig();
     const [busyAction, setBusyAction] = useState<'accept' | 'decline' | 'dismiss' | 'retry' | null>(
@@ -112,6 +116,7 @@ export const ContractRequest: React.FC<RequestProps> = ({
     );
     const contract = request.data?.contract;
     const status = request.data?.status;
+    const referralOnly = status?.referralOnly === true;
     const expired = isExpired(contract?.expiresAt);
     const pending = enabled && status?.status === 'pending' && !expired && !request.isError;
 
@@ -202,6 +207,31 @@ export const ContractRequest: React.FC<RequestProps> = ({
 
     const accept = () =>
         run(async () => {
+            if (referralOnly) {
+                const { prompted } = await gate();
+                if (prompted) return;
+                await guardedAction(async () => {
+                    const fresh = await requirePending();
+                    const wallet = await initWallet();
+                    requireEnabled();
+                    const { termsUri } = await wallet.invoke.consentToContract(contractUri, {
+                        terms: ConsentFlowTermsValidator.parse({}),
+                        expectedRequestId: requestId,
+                        audienceVersion: fresh.audienceVersion,
+                    });
+                    await Promise.all([
+                        refresh(),
+                        queryClient.invalidateQueries({ queryKey: ['useConsentedContracts'] }),
+                        queryClient.invalidateQueries({
+                            queryKey: ['useTermsTransactions', termsUri],
+                        }),
+                    ]);
+                    presentToast(m['consentFlow.referralUpdated'](), {
+                        type: ToastTypeEnum.Success,
+                    });
+                });
+                return;
+            }
             const fresh = await requirePending();
             // The existing flow owns data selection, fresh audience acknowledgment, and guardian approval.
             const flow = (
@@ -324,12 +354,22 @@ export const ContractRequest: React.FC<RequestProps> = ({
                                   ? m['error.generic']()
                                   : title}
                         </h3>
-                        {contract?.description && (
+                        {referralOnly && pending && (
+                            <div className="space-y-v3-3 text-sm text-grayscale-600 leading-relaxed">
+                                <p>
+                                    {m['contractRequests.referralOnlyDescription']({
+                                        contractName: contract?.name || owner,
+                                    })}
+                                </p>
+                                {status?.message && <p>{status.message}</p>}
+                            </div>
+                        )}
+                        {!referralOnly && contract?.description && (
                             <p className="text-sm text-grayscale-600 leading-relaxed">
                                 {contract.description}
                             </p>
                         )}
-                        {details && contract && (
+                        {details && contract && !referralOnly && (
                             <>
                                 {(contract.reasonForAccessing || status?.message) && (
                                     <div className="space-y-v3-3 border-s-2 border-emerald-200 ps-4 text-sm text-grayscale-600 leading-relaxed">
@@ -383,7 +423,9 @@ export const ContractRequest: React.FC<RequestProps> = ({
                                 className="text-xs font-medium text-grayscale-700 rounded-full bg-grayscale-100 px-3 py-1.5 w-fit"
                             >
                                 {status.status === 'accepted'
-                                    ? m['contractRequests.connected']()
+                                    ? referralOnly
+                                        ? m['consentFlow.referralUpdated']()
+                                        : m['contractRequests.connected']()
                                     : status.status === 'denied'
                                       ? m['contractRequests.declined']()
                                       : m['contractRequests.cancelled']()}
@@ -432,7 +474,7 @@ export const ContractRequest: React.FC<RequestProps> = ({
                             : 'mt-5'
                     }
                 >
-                    {details && pending && (
+                    {details && pending && !referralOnly && (
                         <p className="flex items-start gap-2 text-xs text-grayscale-600 leading-relaxed">
                             <IonIcon
                                 icon={shieldCheckmarkOutline}
@@ -458,6 +500,8 @@ export const ContractRequest: React.FC<RequestProps> = ({
                                         />
                                         {m['contractRequests.working']()}
                                     </span>
+                                ) : referralOnly ? (
+                                    m['contractRequests.acceptReferral']()
                                 ) : (
                                     m['contractRequests.accept']()
                                 )}

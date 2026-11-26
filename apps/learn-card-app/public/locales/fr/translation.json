@@ -2243,6 +2243,8 @@
         "previewCredentials": "Aperçu de {{count}} justificatifs"
     },
     "consentFlow": {
+        "referralUpdated": "Orientation mise à jour",
+        "referralUpdatedDescription": "Votre connexion a une nouvelle orientation.",
         "aiPassportReauthenticationRequired": "Retournez sur AI Passport et reconnectez-vous.",
         "reviewChanged": "Les modalités de partage ont changé. Vérifiez-les avant de vous reconnecter.",
         "guardianApprovalRequired": "Demandez à un gestionnaire actuel du compte d’approuver cette connexion, puis réessayez.",
@@ -10455,6 +10457,8 @@
         "accountChanged": "L’envoi est terminé, mais vous avez changé de compte. Retournez dans l’application à l’origine de la demande pour continuer."
     },
     "contractRequests": {
+        "acceptReferral": "Accepter l’orientation",
+        "referralOnlyDescription": "Ajoutez cette orientation à votre connexion existante avec {{contractName}}.",
         "label": "Connexion",
         "referred": "{{referrer}} vous a recommandé à {{owner}}.",
         "invitation": "{{owner}} souhaite vous contacter.",
