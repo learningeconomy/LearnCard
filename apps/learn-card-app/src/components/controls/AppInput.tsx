@@ -1,4 +1,4 @@
-import React, { useId, useImperativeHandle, useRef, useState } from 'react';
+import React, { useEffect, useId, useImperativeHandle, useRef, useState } from 'react';
 
 import { getIonMode, type IonMode } from '../app-shell/ionMode';
 import { useParentSyncedState } from './useParentSyncedState';
@@ -88,7 +88,7 @@ export type AppInputProps = {
     /** Platform look. Defaults to the document's Ionic mode (`ios` on iOS, `md` elsewhere). */
     mode?: IonMode;
     className?: string;
-    style?: AppInputStyle;
+    style?: React.CSSProperties | AppInputStyle;
     /** Moved onto the native input, as ion-input's `inheritAriaAttributes` did. */
     'aria-label'?: string;
     /** Moved onto the native input, as ion-input's `inheritAttributes` did. */
@@ -102,7 +102,10 @@ export type AppInputProps = {
      * `debounce` when set. Never fired for `value` prop updates.
      */
     onValueInput?: (value: string, event: React.SyntheticEvent) => void;
-    /** On blur, when the value differs from the value at focus, like `ionChange`. */
+    /**
+     * When the user commits a different value, like `ionChange`: the native `change` event
+     * (Enter, number steppers, autofill) or blur after an edit. Not debounced.
+     */
     onValueChange?: (value: string) => void;
     onFocus?: React.FocusEventHandler<HTMLInputElement>;
     onBlur?: React.FocusEventHandler<HTMLInputElement>;
@@ -242,12 +245,26 @@ export const AppInput: React.FC<AppInputProps> = props => {
         onFocus?.(event);
     };
 
+    /** ion-input's `emitValueChange`: also resets the value compared on blur. */
+    const emitValueChange = (next: string): void => {
+        focusedValueRef.current = next;
+        onValueChange?.(next);
+    };
+    // React's `onChange` is the per-keystroke input event; `ionChange` also fired on the native
+    // `change` event, which React does not expose. The ref keeps the listener on this render's props.
+    const emitValueChangeRef = useRef(emitValueChange);
+    emitValueChangeRef.current = emitValueChange;
+    useEffect(() => {
+        const input = inputRef.current;
+        if (!input) return undefined;
+        const handleNativeChange = (): void => emitValueChangeRef.current(input.value);
+        input.addEventListener('change', handleNativeChange);
+        return () => input.removeEventListener('change', handleNativeChange);
+    }, []);
+
     const handleBlur = (event: React.FocusEvent<HTMLInputElement>): void => {
         setHasFocus(false);
-        if (focusedValueRef.current !== value) {
-            focusedValueRef.current = value;
-            onValueChange?.(value);
-        }
+        if (focusedValueRef.current !== value) emitValueChange(value);
         didClearOnEditRef.current = false;
         onBlur?.(event);
     };
@@ -340,7 +357,8 @@ export const AppInput: React.FC<AppInputProps> = props => {
                         inputMode={inputmode}
                         aria-label={ariaLabel}
                         aria-describedby={hintTextId}
-                        aria-invalid={isInvalid}
+                        // Ionic rendered `aria-invalid=""` (read as false); the error state is now exposed.
+                        aria-invalid={isInvalid || undefined}
                         title={title}
                         onChange={handleChange}
                         onFocus={handleFocus}

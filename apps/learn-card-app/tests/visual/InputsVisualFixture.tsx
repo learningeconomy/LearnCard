@@ -1,12 +1,13 @@
 import React, { useRef, useState } from 'react';
-import { IonApp, IonInput } from '@ionic/react';
+import { IonApp } from '@ionic/react';
 import { X } from 'lucide-react';
 import Search from 'learn-card-base/svgs/Search';
 
+import { AppInput, type AppInputHandle } from '../../src/components/controls/AppInput';
 import Calendar from '../../src/components/svgs/Calendar';
 
 /**
- * `inputs-1b`: representative IonInput call sites for every group (I-A … I-F) in the phase 4
+ * `inputs-1b`: representative (formerly IonInput, now AppInput) call sites for every group (I-A … I-F) in the phase 4
  * inventory (anvil-ionic-evidence/p4c/inventory.md §2), rendered with fixed local data and no
  * backend.
  *
@@ -14,16 +15,17 @@ import Calendar from '../../src/components/svgs/Calendar';
  * immediate wrappers, copied from the source line cited in each block. Page state those handlers
  * touch is reduced to the fields the input reads; translated strings are inlined in English.
  *
- * Each call site is its own component with local state, as in the source: Ionic React writes
- * `value` back onto ion-input whenever its parent re-renders, so shared page-level state would
+ * Each call site is its own component with local state, as in the source: AppInput (like Ionic
+ * React) re-applies `value` whenever its parent re-renders, so shared page-level state would
  * change what a re-render resets.
  *
  * Every block reports:
  * - `<output data-testid="i1b-…-value">`: the app state the call site's handler writes;
  * - `<output data-testid="i1b-…-events">`: an event log written through a ref (never state, so
- *   logging never re-renders the call site). The site's own `onIonInput` logs `input:"…"` (and
- *   `onKeyDown` logs `keydown:<key>` where wired), plus log-only probes for `onIonChange`
- *   (`change:"…"`), `onIonFocus` (`focus`) and `onIonBlur` (`blur`).
+ *   logging never re-renders the call site). The site's own `onValueInput` (was `onIonInput`) logs
+ *   `input:"…"` (and `onKeyDown` logs `keydown:<key>` where wired), plus log-only probes for
+ *   `onValueChange` (`change:"…"`), `onFocus` (`focus`) and `onBlur` (`blur`), which replace
+ *   Ionic's `onIonChange` / `onIonFocus` / `onIonBlur`.
  *
  * The state matrix adds synthetic cells for the built-in states no single site covers together
  * (types, clearInput, counter, helper / error text, label placements, debounce).
@@ -80,10 +82,9 @@ const Events: React.FC<{ testId: string; log: EventLog }> = ({ testId, log: { at
 
 /** Log-only probes for the events no call site wires: change (on blur), focus and blur. */
 const probes = (log: EventLog) => ({
-    onIonChange: (e: CustomEvent<{ value?: string | null }>) =>
-        log.record(`change:${JSON.stringify(e.detail.value)}`),
-    onIonFocus: () => log.record('focus'),
-    onIonBlur: () => log.record('blur'),
+    onValueChange: (value: string) => log.record(`change:${JSON.stringify(value)}`),
+    onFocus: () => log.record('focus'),
+    onBlur: () => log.record('blur'),
 });
 
 const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({
@@ -142,12 +143,12 @@ const MatrixCell: React.FC<{ spec: MatrixCellSpec; mode: 'ios' | 'md' }> = ({ sp
             <span className="text-xs font-mono">
                 {spec.state} {mode}
             </span>
-            <IonInput
+            <AppInput
                 mode={mode}
                 value={value}
-                onIonInput={e => {
-                    log.record(`input:${JSON.stringify(e.detail.value)}`);
-                    setValue(e.detail.value ?? '');
+                onValueInput={value => {
+                    log.record(`input:${JSON.stringify(value)}`);
+                    setValue(value);
                 }}
                 {...probes(log)}
                 placeholder="Placeholder"
@@ -199,9 +200,9 @@ const WriteBackProbe: React.FC = () => {
     const [renders, setRenders] = useState(0);
     return (
         <Card className="flex flex-col gap-2">
-            <IonInput
+            <AppInput
                 value="Parent value"
-                onIonInput={e => log.record(`input:${JSON.stringify(e.detail.value)}`)}
+                onValueInput={value => log.record(`input:${JSON.stringify(value)}`)}
                 {...probes(log)}
                 aria-label="write-back"
                 className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding"
@@ -236,12 +237,12 @@ const EndorsementEmail: React.FC<{ testId: string; withError?: boolean }> = ({
     );
     return (
         <Card>
-            <IonInput
+            <AppInput
                 value={email}
-                onIonInput={e => {
+                onValueInput={value => {
                     setErrors({});
-                    log.record(`input:${JSON.stringify(e.detail.value)}`);
-                    setEmail(e.detail.value!);
+                    log.record(`input:${JSON.stringify(value)}`);
+                    setEmail(value);
                 }}
                 {...probes(log)}
                 placeholder="Email address"
@@ -263,30 +264,30 @@ const MediaTitleAndLink: React.FC = () => {
     const [mediaUrl, setMediaUrl] = useState('https://example.com/video');
     return (
         <Card>
-            <IonInput
+            <AppInput
                 autocapitalize="on"
                 className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base`}
                 placeholder="Title"
                 type="text"
                 value={mediaTitle}
-                onIonInput={e => {
-                    log.record(`input:${JSON.stringify(e.detail.value)}`);
-                    setMediaTitle(e.detail.value!);
+                onValueInput={value => {
+                    log.record(`input:${JSON.stringify(value)}`);
+                    setMediaTitle(value);
                 }}
                 {...probes(log)}
                 onKeyDown={e => {
                     if (e.key === 'Enter') log.record('keydown:Enter');
                 }}
             />
-            <IonInput
+            <AppInput
                 autocapitalize="on"
                 className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base mt-4`}
                 placeholder="Paste link"
                 type="text"
                 value={mediaUrl}
-                onIonInput={e => {
-                    log.record(`input:${JSON.stringify(e.detail.value)}`);
-                    setMediaUrl(e.detail.value!);
+                onValueInput={value => {
+                    log.record(`input:${JSON.stringify(value)}`);
+                    setMediaUrl(value);
                 }}
                 onKeyDown={e => {
                     if (e.key === 'Enter') log.record('keydown:Enter');
@@ -305,11 +306,11 @@ const ManagedProfileLabels: React.FC = () => {
     const [profileId, setProfileId] = useState<string | null | undefined>('');
     return (
         <Card className="flex flex-col gap-3">
-            <IonInput
+            <AppInput
                 className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base"
-                onIonInput={e => {
-                    log.record(`input:${JSON.stringify(e.detail.value)}`);
-                    setName(e.detail.value);
+                onValueInput={value => {
+                    log.record(`input:${JSON.stringify(value)}`);
+                    setName(value);
                 }}
                 {...probes(log)}
                 value={name}
@@ -317,11 +318,11 @@ const ManagedProfileLabels: React.FC = () => {
                 type="text"
                 label="Name*"
             />
-            <IonInput
+            <AppInput
                 className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base"
-                onIonInput={e => {
-                    log.record(`input:${JSON.stringify(e.detail.value)}`);
-                    setProfileId(e.detail.value);
+                onValueInput={value => {
+                    log.record(`input:${JSON.stringify(value)}`);
+                    setProfileId(value);
                 }}
                 value={profileId}
                 placeholder={name ? name.toLowerCase().replace(/\s+/g, '-') : 'Profile ID'}
@@ -348,33 +349,33 @@ const ContractExpires: React.FC = () => {
     };
     return (
         <Card className="flex flex-col gap-3">
-            <IonInput
+            <AppInput
                 className="bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium tracking-widest text-base ion-padding"
-                onIonInput={e => updateSlice('redirectUrl', e.detail.value)}
+                onValueInput={value => updateSlice('redirectUrl', value)}
                 {...probes(log)}
                 value={contract.redirectUrl}
                 type="text"
                 placeholder="Redirect URL"
                 title="URL to redirect users to after they consent to the contract."
             />
-            <IonInput
+            <AppInput
                 className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium tracking-widest text-base ion-padding ${
                     expiresAtError ? 'border-red-mastercard border border-solid' : ''
                 }`}
-                onIonInput={e => updateSlice('expiresAt', e.detail.value)}
+                onValueInput={value => updateSlice('expiresAt', value)}
                 value={contract.expiresAt}
                 type="text"
                 placeholder="Expires At (ISO String)"
                 title="Expiration date for the contract."
-            >
-                <button
-                    onClick={() => updateSlice('expiresAt', '2027-01-01T00:00:00.000Z')}
-                    type="button"
-                    slot="end"
-                >
-                    <Calendar className="w-[30px] text-grayscale-700" />
-                </button>
-            </IonInput>
+                end={
+                    <button
+                        onClick={() => updateSlice('expiresAt', '2027-01-01T00:00:00.000Z')}
+                        type="button"
+                    >
+                        <Calendar className="w-[30px] text-grayscale-700" />
+                    </button>
+                }
+            />
             <Value testId="i1b-a-contract-value" value={contract} />
             <Events testId="i1b-a-contract-events" log={log} />
         </Card>
@@ -392,9 +393,9 @@ const FamilyTitles: React.FC = () => {
     };
     return (
         <Card className="flex flex-col gap-3">
-            <IonInput
+            <AppInput
                 value={titles.singular}
-                onIonInput={e => handleSetState('singular', e.detail.value)}
+                onValueInput={value => handleSetState('singular', value)}
                 {...probes(log)}
                 className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-normal font-poppins text-[17px] w-full troops-cms-placeholder ${
                     (errors as Record<string, string>)?.singular ? 'border-red-300 border-2' : ''
@@ -403,9 +404,9 @@ const FamilyTitles: React.FC = () => {
                 clearInput
                 type="text"
             />
-            <IonInput
+            <AppInput
                 value={titles.plural}
-                onIonInput={e => handleSetState('plural', e.detail.value)}
+                onValueInput={value => handleSetState('plural', value)}
                 className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-normal font-poppins text-[17px] w-full troops-cms-placeholder ${
                     errors?.plural ? 'border-red-300 border-2' : ''
                 }`}
@@ -436,16 +437,16 @@ const CreateProfileSimple: React.FC<{ testId: string; isLoading?: boolean }> = (
     const [errors, setErrors] = useState<Record<string, string>>({ name: 'Name is required' });
     return (
         <Card>
-            <IonInput
+            <AppInput
                 style={placeholderStyles}
                 autocapitalize="on"
                 className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base ${
                     errors.name ? 'login-input-email-error' : ''
                 }`}
-                onIonInput={e => {
+                onValueInput={value => {
                     setErrors({});
-                    log.record(`input:${JSON.stringify(e.detail.value)}`);
-                    setName(e.detail.value);
+                    log.record(`input:${JSON.stringify(value)}`);
+                    setName(value);
                 }}
                 {...probes(log)}
                 value={name}
@@ -466,15 +467,15 @@ const StorageUrl: React.FC = () => {
     const [customEndpoint, setCustomEndpoint] = useState('');
     return (
         <Card>
-            <IonInput
+            <AppInput
                 type="url"
                 inputmode="url"
                 className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-normal font-poppins text-sm w-full"
                 placeholder="Enter storage URL (e.g., https://api.example.com)"
                 value={customEndpoint}
-                onIonInput={e => {
-                    log.record(`input:${JSON.stringify(e.detail.value)}`);
-                    setCustomEndpoint(String(e.detail.value ?? ''));
+                onValueInput={value => {
+                    log.record(`input:${JSON.stringify(value)}`);
+                    setCustomEndpoint(String(value));
                 }}
                 {...probes(log)}
                 debounce={0}
@@ -491,16 +492,16 @@ const ClaimLimit: React.FC = () => {
     const [claimLimit, setClaimLimit] = useState<string | number | null | undefined>('');
     return (
         <Card>
-            <IonInput
+            <AppInput
                 autocapitalize="on"
                 className={`bg-grayscale-100 text-grayscale-500 rounded-[15px] px-[15px]! py-[6px]! font-notoSans text-[17px]`}
                 placeholder="How many claims?"
                 type="number"
                 min={0}
                 value={claimLimit}
-                onIonInput={e => {
-                    log.record(`input:${JSON.stringify(e.detail.value)}`);
-                    setClaimLimit(e.detail.value);
+                onValueInput={value => {
+                    log.record(`input:${JSON.stringify(value)}`);
+                    setClaimLimit(value);
                 }}
                 {...probes(log)}
                 onKeyDown={e => {
@@ -532,12 +533,12 @@ const AchievementTypeSearch: React.FC = () => {
     const [errors, setErrors] = useState<Record<string, string>>({ customType: 'Too long' });
     return (
         <Card>
-            <IonInput
+            <AppInput
                 autocapitalize="on"
                 value={search}
-                onIonInput={e => {
-                    log.record(`input:${JSON.stringify(e.detail.value)}`);
-                    setSearch(e.detail.value!);
+                onValueInput={value => {
+                    log.record(`input:${JSON.stringify(value)}`);
+                    setSearch(value);
                     setErrors({});
                 }}
                 {...probes(log)}
@@ -562,7 +563,7 @@ const JoinNetwork: React.FC = () => {
     const classlink = true;
     return (
         <Card className="flex flex-col">
-            <IonInput
+            <AppInput
                 autocapitalize="on"
                 className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base mb-4`}
                 value={`@${'ada'}`}
@@ -571,12 +572,12 @@ const JoinNetwork: React.FC = () => {
                 aria-label="User ID"
                 disabled={true}
             />
-            <IonInput
+            <AppInput
                 autocapitalize="on"
                 className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base`}
-                onIonInput={e => {
-                    log.record(`input:${JSON.stringify(e.detail.value)}`);
-                    setName(e.detail.value);
+                onValueInput={value => {
+                    log.record(`input:${JSON.stringify(value)}`);
+                    setName(value);
                 }}
                 {...probes(log)}
                 value={name}
@@ -584,12 +585,12 @@ const JoinNetwork: React.FC = () => {
                 type="text"
                 aria-label="Full Name"
             />
-            <IonInput
+            <AppInput
                 autocapitalize="on"
                 className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base text-left mt-4 login-input-email-error`}
-                onIonInput={e => {
-                    log.record(`input:${JSON.stringify(e.detail.value)}`);
-                    setProfileId(e.detail.value);
+                onValueInput={value => {
+                    log.record(`input:${JSON.stringify(value)}`);
+                    setProfileId(value);
                 }}
                 value={profileId}
                 readonly={classlink}
@@ -617,12 +618,12 @@ const ShareInsightsSearch: React.FC = () => {
     };
     return (
         <Card>
-            <IonInput
+            <AppInput
                 autocapitalize="on"
                 placeholder="Search by name"
                 value={search}
                 className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium text-base"
-                onIonInput={e => handleSearch(e?.detail?.value)}
+                onValueInput={value => handleSearch(value)}
                 {...probes(log)}
                 debounce={500}
                 type="text"
@@ -640,14 +641,14 @@ const BoostSearchExcerpt: React.FC = () => {
     const [search, setSearch] = useState('');
     return (
         <Card>
-            <IonInput
+            <AppInput
                 autocapitalize="on"
                 placeholder="Search LearnCard Network..."
                 value={search}
                 className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium text-base"
-                onIonInput={e => {
-                    log.record(`input:${JSON.stringify(e?.detail?.value ?? '')}`);
-                    setSearch(e?.detail?.value ?? '');
+                onValueInput={value => {
+                    log.record(`input:${JSON.stringify(value)}`);
+                    setSearch(value);
                 }}
                 {...probes(log)}
                 debounce={500}
@@ -675,13 +676,13 @@ const SkillsHubSearchExcerpt: React.FC = () => {
                         <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
                             <Search className="text-grayscale-900 w-[24px] h-[24px]" />
                         </div>
-                        <IonInput
+                        <AppInput
                             type="text"
                             value={searchInput}
                             placeholder="Search"
-                            onIonInput={e => {
-                                log.record(`input:${JSON.stringify(e.detail.value)}`);
-                                setSearchInput(e.detail.value);
+                            onValueInput={value => {
+                                log.record(`input:${JSON.stringify(value)}`);
+                                setSearchInput(value);
                             }}
                             {...probes(log)}
                             className="bg-grayscale-200 text-grayscale-800 rounded-[10px] py-[4px]! font-normal !font-notoSans text-[17px] pl-[44px]! text-left! pr-[36px]!"
@@ -722,10 +723,10 @@ const PathwaySearch: React.FC = () => {
             <div className="relative flex flex-col">
                 <div className="flex items-center">
                     <div className="relative flex-1">
-                        <IonInput
+                        <AppInput
                             value={searchValue}
-                            onIonInput={e => {
-                                const nextValue = e.detail.value ?? '';
+                            onValueInput={value => {
+                                const nextValue = value;
                                 log.record(`input:${JSON.stringify(nextValue)}`);
                                 setSearchValue(nextValue);
                                 setShowSuggestions(Boolean(nextValue));
@@ -779,10 +780,10 @@ const AssessmentAnswer: React.FC<{ isDesktop: boolean; testId: string }> = ({
     const [answer, setAnswer] = useState<string | null | undefined>('');
     return (
         <div className="w-full flex bg-cyan-50 p-4">
-            <IonInput
-                onIonInput={e => {
-                    log.record(`input:${JSON.stringify(e.detail.value)}`);
-                    setAnswer(e.detail.value);
+            <AppInput
+                onValueInput={value => {
+                    log.record(`input:${JSON.stringify(value)}`);
+                    setAnswer(value);
                 }}
                 {...probes(log)}
                 className={`bg-white text-grayscale-800 flex-1 w-full rounded-[16px] px-4!  ${
@@ -814,10 +815,10 @@ const ExistingTopic: React.FC = () => {
                         : 'bg-cyan-50'
                 }`}
             >
-                <IonInput
-                    onIonInput={e => {
-                        log.record(`input:${JSON.stringify(e.detail.value)}`);
-                        setSearch(e.detail.value);
+                <AppInput
+                    onValueInput={value => {
+                        log.record(`input:${JSON.stringify(value)}`);
+                        setSearch(value);
                     }}
                     {...probes(log)}
                     className={`bg-white text-grayscale-800 flex-1 w-full rounded-[16px] px-4! ${
@@ -849,19 +850,19 @@ const ExistingTopic: React.FC = () => {
 /** src/pages/SkillFrameworks/FrameworkColumn.tsx:483-500 (ref + setFocus on clear) */
 const FrameworkSearch: React.FC = () => {
     const log = useEventLog();
-    const inputRef = useRef<HTMLIonInputElement>(null);
+    const inputRef = useRef<AppInputHandle>(null);
     const [search, setSearch] = useState<string | null | undefined>('Communication');
     return (
         <Card>
             <div className="relative">
-                <IonInput
+                <AppInput
                     ref={inputRef}
                     className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-poppins text-[14px] w-full"
                     placeholder="Search skills..."
                     value={search}
-                    onIonInput={e => {
-                        log.record(`input:${JSON.stringify(e.detail.value)}`);
-                        setSearch(e.detail.value);
+                    onValueInput={value => {
+                        log.record(`input:${JSON.stringify(value)}`);
+                        setSearch(value);
                     }}
                     {...probes(log)}
                 />
@@ -883,7 +884,7 @@ const FrameworkSearch: React.FC = () => {
                 type="button"
                 data-testid="i1b-e-framework-measure"
                 className="mt-2 rounded-full bg-grayscale-900 text-white px-4 py-1 text-sm"
-                onClick={() => log.record(`width:${inputRef.current?.offsetWidth}`)}
+                onClick={() => log.record(`width:${inputRef.current?.host?.offsetWidth}`)}
             >
                 Measure
             </button>
@@ -907,10 +908,10 @@ const ChildInvite: React.FC<{ withError?: boolean; testId: string }> = ({ withEr
     return (
         <Card>
             <div className="w-full mb-2 mt-4 relative">
-                <IonInput
+                <AppInput
                     value={name}
-                    onIonInput={e => {
-                        const _name = e?.detail?.value;
+                    onValueInput={value => {
+                        const _name = value;
                         log.record(`input:${JSON.stringify(_name)}`);
                         setName(_name);
                         setErrors?.({});
