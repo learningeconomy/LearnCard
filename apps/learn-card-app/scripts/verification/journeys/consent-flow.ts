@@ -140,8 +140,8 @@ export const consentFlowFeature: FeatureDefinition = {
                 .getByRole('button', { name: '', exact: true })
                 .click();
             await expect(selection.getByText('Sharing 1/1', { exact: true })).toBeVisible();
-            // The category editor's real toolbar back button saves the selection (no aria label).
-            await selection.locator('ion-header button').click();
+            // The category editor's toolbar back button saves the selection.
+            await selection.getByRole('button', { name: 'Back button', exact: true }).click();
             await expect(
                 privacy.getByRole('button', { name: /^Achievements 1\/1$/ })
             ).toBeVisible();
