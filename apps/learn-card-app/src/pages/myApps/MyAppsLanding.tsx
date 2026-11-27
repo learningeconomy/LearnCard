@@ -20,7 +20,7 @@ import {
 } from './learnCardAppShortcuts';
 import useMoreApps from './useMoreApps';
 import { usePathwaysEnabled } from '../pathways/hooks/usePathwaysEnabled';
-import { AppContent, AppPage } from '../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const DEEP_LINK_PARAMS = ['connectTo', 'uri', 'embedUrl'];
 

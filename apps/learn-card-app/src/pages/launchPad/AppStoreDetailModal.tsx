@@ -4,7 +4,7 @@ import type { AppStoreListing, InstalledApp } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('app-store-detail-modal');
 
-import { AppToast } from '../../components/overlays/AppToast';
+import { AppToast } from 'learn-card-base/ui/overlays/AppToast';
 import {
     useModal,
     ModalTypes,
@@ -44,8 +44,8 @@ import { useGuardianGate } from '../../hooks/useGuardianGate';
 import DatePickerInput from '../../components/date-picker/DatePickerInput';
 import { checkAppInstallEligibility, AGE_RATING_TO_MIN_AGE } from '@learncard/helpers';
 import * as m from '../../paraglide/messages.js';
-import { AppContent, AppFooter, AppHeader, AppPage } from '../../components/chrome';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppContent, AppFooter, AppHeader, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 // Extended type to include new fields (until types package is rebuilt)
 type ExtendedAppStoreListing = (AppStoreListing | InstalledApp) & {

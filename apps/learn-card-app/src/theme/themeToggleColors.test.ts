@@ -10,7 +10,7 @@ const KNOWN_WITHOUT_ION_COLOR = new Set(['baltic-blue-500']);
 
 type ThemeJson = { colors?: { defaults?: { primaryColor?: unknown } } };
 
-const themes = import.meta.glob<ThemeJson>('../../theme/schemas/*/theme.json', {
+const themes = import.meta.glob<ThemeJson>('./schemas/*/theme.json', {
     eager: true,
     import: 'default',
 });
@@ -26,8 +26,8 @@ type Fs = {
 };
 /** Relative to the vitest working directory: the app (local runs) or the repo root. */
 const CSS_PATHS = [
-    'src/components/controls/controls.css',
-    'apps/learn-card-app/src/components/controls/controls.css',
+    '../../packages/learn-card-base/src/ui/controls/controls.css',
+    'packages/learn-card-base/src/ui/controls/controls.css',
 ];
 const NODE_FS = 'node:fs';
 let css = '';

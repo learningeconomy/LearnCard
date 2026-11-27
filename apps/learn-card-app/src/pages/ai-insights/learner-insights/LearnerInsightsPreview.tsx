@@ -24,7 +24,7 @@ import {
 
 import { LCNProfile } from '@learncard/types';
 import { useGlobalSkillFrameworks } from '../../../helpers/globalSkillFrameworks.helpers';
-import { AppContent, AppPage } from '../../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 export const LearnerInsightsPreview: React.FC<{
     profile: LCNProfile;

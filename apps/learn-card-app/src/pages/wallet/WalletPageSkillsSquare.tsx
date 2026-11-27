@@ -7,7 +7,7 @@ import { useLoadingLine } from '../../stores/loadingStore';
 import { WalletPageItem } from './constants';
 import useAlignments from '../../hooks/useAlignments';
 import { WalletCategoryTypes } from 'learn-card-base/components/IssueVC/types';
-import { AppSkeletonText } from '../../components/feedback/AppSkeletonText';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
 
 const WalletPageSkillsSquare: React.FC<{
     handleClickSquare: (subtype: WalletCategoryTypes) => void;

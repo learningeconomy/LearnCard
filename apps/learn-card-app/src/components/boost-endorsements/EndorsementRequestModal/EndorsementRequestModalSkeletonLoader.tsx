@@ -1,6 +1,6 @@
 import React from 'react';
-import { AppAvatar } from '../../widgets';
-import { AppSkeletonText } from '../../feedback/AppSkeletonText';
+import { AppAvatar } from 'learn-card-base/ui/widgets';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
 
 export const EndorsementRequestModalSkeletonLoader: React.FC = () => {
     return (

@@ -17,7 +17,7 @@ import {
     ModalTypes,
     useDeviceTypeByWidth,
 } from 'learn-card-base';
-import { AppSpinner } from '../../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import AiPassportPersonalizationContainer from '../../ai-passport/AiPassportPersonalizationContainer';
 import UnicornIcon from 'learn-card-base/svgs/UnicornIcon';
 import {

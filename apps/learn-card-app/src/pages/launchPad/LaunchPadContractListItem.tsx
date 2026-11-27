@@ -1,6 +1,6 @@
 import React from 'react';
 import { ConsentFlowContractDetails } from '@learncard/types';
-import { AppItem } from '../../components/list';
+import { AppItem } from 'learn-card-base/ui/list';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import { ModalTypes, useModal } from 'learn-card-base';
 
@@ -16,7 +16,7 @@ import useConsentFlow from '../consentFlow/useConsentFlow';
 import useTheme from '../../theme/hooks/useTheme';
 import { ColorSetEnum } from '../../theme/colors';
 import * as m from '../../paraglide/messages.js';
-import { AppSkeletonText } from '../../components/feedback/AppSkeletonText';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
 
 type LaunchPadContractListItemProps = {
     contract?: ConsentFlowContractDetails;

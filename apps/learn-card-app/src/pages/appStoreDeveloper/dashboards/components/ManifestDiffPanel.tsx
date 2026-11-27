@@ -1,6 +1,6 @@
 import React from 'react';
 import { AppManifestDiff } from '@learncard/types';
-import { AppIcon } from '../../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     alertCircleOutline,
     addOutline,

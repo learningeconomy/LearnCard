@@ -4,7 +4,7 @@ import X from 'learn-card-base/svgs/X';
 import ShareModal from '../share/ShareModal';
 import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
 import * as m from '../../paraglide/messages.js';
-import { AppFooter } from '../chrome';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 type LearnCardFooterProps = {
     hideShare?: boolean;

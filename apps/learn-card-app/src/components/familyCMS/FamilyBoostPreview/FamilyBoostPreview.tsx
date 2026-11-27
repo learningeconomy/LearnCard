@@ -7,7 +7,7 @@ import ShareBoostLink from '../../boost/boost-options-menu/ShareBoostLink';
 
 import { VC } from '@learncard/types';
 import { ModalTypes, useModal, BoostCategoryOptionsEnum } from 'learn-card-base';
-import { AppContent, AppPage } from '../../chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 export const FamilyPreview: React.FC<{
     credential: VC;

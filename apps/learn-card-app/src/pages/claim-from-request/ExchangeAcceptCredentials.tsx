@@ -55,7 +55,7 @@ import type { DuplicateCredentialResolution } from '../../components/credentials
 
 import { VCAPIRequestStrategy } from './ClaimFromRequest';
 import { getInboxDeliveryId, type InboxDelivery } from './inboxDelivery';
-import { AppContent, AppPage } from '../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 interface ExchangeAcceptCredentialsProps {
     inboxDeliveries?: InboxDelivery[];

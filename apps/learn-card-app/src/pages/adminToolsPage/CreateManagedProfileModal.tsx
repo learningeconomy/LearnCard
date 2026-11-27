@@ -26,7 +26,7 @@ import {
 } from 'learn-card-base';
 import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 
-import { AppInput } from '../../components/controls/AppInput';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import Pencil from '../../components/svgs/Pencil';
 
 import {
@@ -39,7 +39,7 @@ import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack'
 import { useAddCredentialToWallet } from '../../components/boost/mutations';
 import { sendBoostCredential } from '../../components/boost/boostHelpers';
 import { LCNBoostStatusEnum } from '../../components/boost/boost';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- existing empty props type; replacing it changes the accepted props type
 type CreateManagedProfileModalProps = {};

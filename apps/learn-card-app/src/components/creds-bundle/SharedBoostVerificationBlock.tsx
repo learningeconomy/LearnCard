@@ -13,7 +13,7 @@ import SharedBoostVerificationItem from './SharedBoostVerificationItem';
 import { VC, VerificationItem, VerificationStatusEnum } from '@learncard/types';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import * as m from '../../paraglide/messages.js';
-import { AppContent, AppHeader, AppPage, AppToolbar } from '../chrome';
+import { AppContent, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
 
 export const getColorForVerificationStatus = (
     status: (typeof VerificationStatusEnum)[keyof typeof VerificationStatusEnum]

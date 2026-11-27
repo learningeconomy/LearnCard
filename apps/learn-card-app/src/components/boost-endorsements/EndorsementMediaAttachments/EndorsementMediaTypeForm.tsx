@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Keyboard } from '@capacitor/keyboard';
 
-import { AppCol, AppRow } from '../../layout';
-import { AppInput } from '../../controls/AppInput';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import FileIcon from 'learn-card-base/svgs/FileIcon';
 

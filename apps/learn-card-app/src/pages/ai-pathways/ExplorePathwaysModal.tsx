@@ -30,7 +30,7 @@ import {
     SKILL_PROFILE_GOALS_KEY,
     SkillProfileGoalsData,
 } from './ai-pathways-skill-profile/SkillProfileStep1';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import type { SelectedSkill } from '../skills/skillTypes';
 import SelfAssignSkillsModal from '../skills/SelfAssignSkillsModal';
 import EditGoalsModal from './EditGoalsModal';

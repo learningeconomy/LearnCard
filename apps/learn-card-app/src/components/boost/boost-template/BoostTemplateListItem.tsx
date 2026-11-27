@@ -12,7 +12,7 @@ import { useModal, ModalTypes, CredentialCategory, getCategoryMetadata } from 'l
 import { closeAll } from 'apps/learn-card-app/src/helpers/uiHelpers';
 import { getAchievementTypeDisplayText } from 'learn-card-base/helpers/credentialHelpers';
 import { VC, Boost } from '@learncard/types';
-import { AppSkeletonText } from '../../feedback/AppSkeletonText';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
 
 type BoostTemplateListItemProps = {
     boost: Boost;

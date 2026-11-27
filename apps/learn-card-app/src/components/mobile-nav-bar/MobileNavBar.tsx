@@ -1,8 +1,8 @@
 import { useLocation } from 'react-router-dom';
 
-import { AppTabs, AppTabBar, AppTabButton } from '../app-shell/AppTabs';
-import { AppOutlet } from '../app-shell/AppOutlet';
-import { AppMenuToggle } from '../app-shell/AppMenuToggle';
+import { AppTabs, AppTabBar, AppTabButton } from 'learn-card-base/ui/app-shell/AppTabs';
+import { AppOutlet } from 'learn-card-base/ui/app-shell/AppOutlet';
+import { AppMenuToggle } from 'learn-card-base/ui/app-shell/AppMenuToggle';
 import CustomSpinner from '../svgs/CustomSpinner';
 import BurgerIcon from '../../components/svgs/Burger';
 import GenericErrorBoundary from '../generic/GenericErrorBoundary';
@@ -25,7 +25,7 @@ import { NATIVE_CREDENTIAL_PATH } from '../../native-digital-credentials/types';
 import { RoutesOutlet } from './RoutesOutlet';
 
 import { MobileNavBarLinks } from './mobileNavBarLinks';
-import { AppLabel } from '../list';
+import { AppLabel } from 'learn-card-base/ui/list';
 
 export { MobileNavBarLinks };
 

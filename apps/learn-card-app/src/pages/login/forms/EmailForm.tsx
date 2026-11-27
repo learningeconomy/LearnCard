@@ -28,7 +28,7 @@ import {
 } from 'learn-card-base';
 import { walletStore } from 'learn-card-base/stores/walletStore';
 
-import { AppCol } from '../../../components/layout';
+import { AppCol } from 'learn-card-base/ui/layout';
 
 import { setAuthToken } from 'learn-card-base/helpers/authHelpers';
 

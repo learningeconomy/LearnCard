@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 import {
     ModalTypes,

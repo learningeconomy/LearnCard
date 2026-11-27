@@ -27,7 +27,7 @@
 
 import React from 'react';
 import { motion } from 'motion/react';
-import { AppIcon } from '../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { playCircleOutline, refreshOutline, sparklesOutline } from 'learn-card-base/icons/ionicons';
 
 import type { ResolvedAiSession } from '../core/action';

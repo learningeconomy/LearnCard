@@ -4,7 +4,7 @@ import * as m from '../../../paraglide/messages.js';
 import { useModal } from 'learn-card-base';
 
 import { LearnCardRolesEnum, OnboardingStepsEnum } from '../onboarding.helpers';
-import { AppFooter, AppToolbar } from '../../chrome';
+import { AppFooter, AppToolbar } from 'learn-card-base/ui/chrome';
 
 export const OnboardingFooter: React.FC<{
     step?: OnboardingStepsEnum;

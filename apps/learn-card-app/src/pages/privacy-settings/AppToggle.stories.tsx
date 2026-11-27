@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { AppToggle } from './AppToggle';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 // `ds-toggle` lives in the privacy page's lazily loaded stylesheet; load it so that row matches.
-import '../../pages/privacy-settings/dataSharingCenter.scss';
+import './dataSharingCenter.scss';
 
 const VARIANTS: { name: string; color?: string; className?: string }[] = [
     { name: 'emerald-700', color: 'emerald-700' },

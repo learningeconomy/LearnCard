@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
-import { AppIcon } from '../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     alertCircleOutline,
     checkmarkCircleOutline,

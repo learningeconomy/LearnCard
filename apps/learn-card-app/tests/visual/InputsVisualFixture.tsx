@@ -3,7 +3,7 @@ import { IonApp } from '@ionic/react';
 import { X } from 'lucide-react';
 import Search from 'learn-card-base/svgs/Search';
 
-import { AppInput, type AppInputHandle } from '../../src/components/controls/AppInput';
+import { AppInput, type AppInputHandle } from 'learn-card-base/ui/controls/AppInput';
 import Calendar from '../../src/components/svgs/Calendar';
 
 /**

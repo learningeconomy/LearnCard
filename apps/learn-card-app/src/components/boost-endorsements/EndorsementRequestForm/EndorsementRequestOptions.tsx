@@ -6,8 +6,8 @@ import ShareBoostLink from '../../boost/boost-options-menu/ShareBoostLink';
 import EndorsementRequestSuccess from './EndorsementRequestSuccess';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import CopyStack from 'learn-card-base/svgs/CopyStack';
-import { AppInput } from '../../controls/AppInput';
-import { AppTextarea } from '../../controls/AppTextarea';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
+import { AppTextarea } from 'learn-card-base/ui/controls/AppTextarea';
 import Mail from 'learn-card-base/svgs/Mail';
 
 import {

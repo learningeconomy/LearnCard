@@ -1,5 +1,5 @@
 import React from 'react';
-import { AppItem } from '../../components/list';
+import { AppItem } from 'learn-card-base/ui/list';
 
 import {
     useModal,

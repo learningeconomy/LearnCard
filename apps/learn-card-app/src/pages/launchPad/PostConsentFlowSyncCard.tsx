@@ -11,7 +11,7 @@ import {
     LCNProfile,
 } from '@learncard/types';
 
-import { AppCol, AppRow } from '../../components/layout';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 import ConsentFlowEditAccess from './ConsentFlowEditAccess';
 import PostConsentFlowActivityFeed from './PostConsentFlowActivityFeed';
 import RightArrow from 'learn-card-base/svgs/RightArrow';
@@ -28,7 +28,7 @@ import {
     BoostCategoryOptionsEnum,
 } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
-import { AppLoading } from '../../components/overlays/AppLoading';
+import { AppLoading } from 'learn-card-base/ui/overlays/AppLoading';
 
 import useTheme from '../../theme/hooks/useTheme';
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AppInput } from '../../../controls/AppInput';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import { Checkmark } from '@learncard/react';
 import { OBV3_ACHIEVEMENT_TYPES } from '../../../../pages/appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 import { CATEGORY_MAP } from 'learn-card-base/helpers/credentialHelpers';

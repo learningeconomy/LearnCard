@@ -8,7 +8,7 @@ import { Responsive, WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import { getLogger } from 'learn-card-base';
-import { AppFooter } from '../../components/chrome';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 const log = getLogger('view-skill-framework');
 
 type ViewSkillFrameworkProps = {

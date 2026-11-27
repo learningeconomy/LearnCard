@@ -2,10 +2,10 @@ import React from 'react';
 import { Updater, useImmer } from 'use-immer';
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 
-import { AppCol, AppGrid, AppRow } from '../../components/layout';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import BrokenLink from '../../components/svgs/BrokenLink';
-import { AppToggle } from '../../components/controls/AppToggle';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 import ConsentFlowReadSharing from '../consentFlow/ConsentFlowReadSharing';
 import ConsentFlowWriteSharing from '../consentFlow/ConsentFlowWriteSharing';
 
@@ -23,7 +23,7 @@ import {
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { getPersonalEntry, isSupportedPersonalField } from '../../helpers/consentPersonalFields';
 import * as m from '../../paraglide/messages.js';
-import { AppHeader, AppToolbar } from '../../components/chrome';
+import { AppHeader, AppToolbar } from 'learn-card-base/ui/chrome';
 
 export enum ConsentFlowEditAccessViewModes {
     editAccess = 'edit-access',

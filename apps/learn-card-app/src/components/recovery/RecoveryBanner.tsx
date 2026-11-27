@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { AppIcon } from '../icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     checkmarkCircleOutline,
     closeOutline,

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import moment from 'moment';
 
-import AppDatetime from '../../../../datetime/AppDatetime';
-import { useAppOverlayModal } from '../../../../overlays/useAppOverlayModal';
-import { AppCol, AppRow } from '../../../../layout';
-import { AppTextarea } from '../../../../controls/AppTextarea';
-import { AppToggle } from '../../../../controls/AppToggle';
+import AppDatetime from 'learn-card-base/ui/datetime/AppDatetime';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
+import { AppTextarea } from 'learn-card-base/ui/controls/AppTextarea';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 import Calendar from '../../../../svgs/Calendar';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import LocationIcon from 'learn-card-base/svgs/LocationIcon';

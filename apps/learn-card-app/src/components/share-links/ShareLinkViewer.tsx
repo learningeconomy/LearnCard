@@ -6,7 +6,7 @@ import LearnCardTextLogo from '../svgs/LearnCardTextLogo';
 import { ShareCredentialsIllustration } from './ShareCredentialsIllustration';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useLocation, useHistory } from 'react-router-dom';
-import { AppIcon } from '../icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     checkmarkOutline,
     closeOutline,
@@ -46,7 +46,7 @@ import {
     hasProtectedResumePdf,
     downloadProtectedResumePdf,
 } from '../../helpers/resume-publishing/protectedPdf';
-import { AppContent, AppHeader, AppPage, AppToolbar } from '../chrome';
+import { AppContent, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
 
 type Ready = {
     payload: SharePayload;

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Gift } from 'lucide-react';
 import * as m from '../../paraglide/messages.js';
-import { AppContent, AppPage } from '../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 interface ExchangeInitiateProps {
     onStart: () => void;

@@ -10,7 +10,7 @@ import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import { getAuthToken } from 'learn-card-base/helpers/authHelpers';
 
-import { AppCol, AppRow } from '../layout';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 import WarningIcon from '../svgs/WarningIcon';
 import confirmationStore from 'learn-card-base/stores/confirmationStore';
 import deletingAccountStore from 'learn-card-base/stores/deletingAccountStore';

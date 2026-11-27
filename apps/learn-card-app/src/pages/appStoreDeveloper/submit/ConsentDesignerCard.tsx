@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { AppIcon } from '../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     flashOutline,
     checkmarkOutline,
@@ -15,7 +15,7 @@ import type {
     WalletCategory,
     PersonalField,
 } from '@learncard/partner-connect-core';
-import { AppSpinner } from '../../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 interface ConsentDesignerCardProps {
     appName: string;

@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { IonApp, IonContent, IonFooter, IonHeader, IonPage, IonToolbar } from '@ionic/react';
 
-import { AppLoading } from '../../src/components/overlays/AppLoading';
-import { AppOverlayManager } from '../../src/components/overlays/AppOverlayManager';
-import { useAppAlert as useAlertHook } from '../../src/components/overlays/useAppAlert';
-import { useAppOverlayModal as useModalHook } from '../../src/components/overlays/useAppOverlayModal';
-import { AppPopover } from '../../src/components/overlays/AppPopover';
-import { useAppToast } from '../../src/components/overlays/useAppToast';
+import { AppLoading } from 'learn-card-base/ui/overlays/AppLoading';
+import { AppOverlayManager } from 'learn-card-base/ui/overlays/AppOverlayManager';
+import { useAppAlert as useAlertHook } from 'learn-card-base/ui/overlays/useAppAlert';
+import { useAppOverlayModal as useModalHook } from 'learn-card-base/ui/overlays/useAppOverlayModal';
+import { AppPopover } from 'learn-card-base/ui/overlays/AppPopover';
+import { useAppToast } from 'learn-card-base/ui/overlays/useAppToast';
 
 /**
  * `modals-1`: the app's useIonModal / useIonAlert call sites (present options, cssClass values,

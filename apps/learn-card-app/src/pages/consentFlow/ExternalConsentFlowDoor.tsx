@@ -7,7 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import authStore from 'learn-card-base/stores/authStore';
 
-import { AppCol, AppRow } from '../../components/layout';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 import FullScreenGameFlow from './GameFlow/FullScreenGameFlow';
 import ConsentFlowCredFrontDoor from './ConsentFlowCredFrontDoor';
 
@@ -44,9 +44,9 @@ import {
     ACCOUNT_CREATED_AT_KEY,
     SESSION_START_KEY,
 } from '@analytics';
-import { AppPage } from '../../components/chrome';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
-import { AppSkeletonText } from '../../components/feedback/AppSkeletonText';
+import { AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
 
 enum Step {
     landing,

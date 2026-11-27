@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('view-endorsement-request');
 
-import { useAppAlert } from '../../overlays/useAppAlert';
+import { useAppAlert } from 'learn-card-base/ui/overlays/useAppAlert';
 import EndorsementFormHeader from '../EndorsementForm/EndorsementFormHeader';
 import EndorsementReviewFooter from '../EndorsementsList/EndorsementReviewFooter';
 import EndorsementFullView from '../EndorsementsList/EndorsementFullView';

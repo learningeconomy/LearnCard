@@ -8,7 +8,7 @@ import CareerLaptopIcon from '../../../assets/images/career.laptop.icon.png';
 import openSyllabusLogo from '../../../assets/images/open-syllabus-logo.webp';
 
 import { useModal } from 'learn-card-base';
-import { AppFooter } from '../../../components/chrome';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 const AiPathwayCourseDetails: React.FC<{ course: any }> = ({ course }) => {

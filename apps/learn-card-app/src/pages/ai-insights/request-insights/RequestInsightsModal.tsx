@@ -3,7 +3,7 @@ import React, { useCallback, useState } from 'react';
 import { m } from '../../../paraglide/messages.js';
 
 import X from 'learn-card-base/svgs/X';
-import { AppInput } from '../../../components/controls/AppInput';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import { AiInsightsUserCardWrapper } from '../AiInsightsUserCard';
 import RequestInsightsFromAnyoneController from './RequestInsightsFromAnyoneController';
 
@@ -11,7 +11,7 @@ import { useModal, useGetConnections, useGetSearchProfiles } from 'learn-card-ba
 
 import useTheme from '../../../theme/hooks/useTheme';
 import { IconSetEnum } from '../../../theme/icons';
-import { AppSpinner } from '../../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 export const RequestInsightsModal: React.FC<{ contractUri: string }> = ({ contractUri }) => {
     const { getIconSet } = useTheme();

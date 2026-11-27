@@ -1,11 +1,11 @@
 import React from 'react';
 
-import { AppCol, AppGrid, AppRow } from '../layout';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import { ACHIEVEMENT_CATEGORIES } from '../../../../../packages/learn-card-base/src/components/IssueVC/constants';
 import X from 'learn-card-base/svgs/X';
 
 import useTheme from '../../theme/hooks/useTheme';
-import { AppContent, AppHeader, AppPage, AppToolbar } from '../chrome';
+import { AppContent, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
 
 const SubHeaderActionMenu: React.FC<{
     handleCloseModal: () => void;

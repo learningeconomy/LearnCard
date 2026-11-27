@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { z } from 'zod';
 
-import { AppGrid, AppRow } from '../../../../layout';
-import { AppInput } from '../../../../controls/AppInput';
+import { AppGrid, AppRow } from 'learn-card-base/ui/layout';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 
 import { CATEGORY_TO_SUBCATEGORY_LIST } from '../../../boost-options/boostOptions';

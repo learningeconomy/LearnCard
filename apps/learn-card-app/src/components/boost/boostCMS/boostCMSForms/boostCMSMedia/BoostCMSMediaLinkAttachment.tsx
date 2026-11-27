@@ -5,8 +5,8 @@ import { Keyboard } from '@capacitor/keyboard';
 
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 
-import { AppCol, AppRow } from '../../../../layout';
-import { AppInput } from '../../../../controls/AppInput';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 
 import { BoostCMSMediaAttachment, BoostCMSMediaState } from 'learn-card-base';
 import { boostMediaOptions, BoostMediaOptionsEnum } from '../../../boost';

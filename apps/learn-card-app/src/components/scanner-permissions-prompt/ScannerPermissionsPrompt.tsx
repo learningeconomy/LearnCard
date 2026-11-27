@@ -2,7 +2,7 @@ import React from 'react';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
-import { AppCol, AppRow } from '../layout';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 import ModalLayout from '../../layout/ModalLayout';
 import Camera from 'learn-card-base/svgs/Camera';
 

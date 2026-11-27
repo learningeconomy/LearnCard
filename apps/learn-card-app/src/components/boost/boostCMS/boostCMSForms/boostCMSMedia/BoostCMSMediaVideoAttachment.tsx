@@ -3,8 +3,8 @@ import { Keyboard } from '@capacitor/keyboard';
 import { createPortal } from 'react-dom';
 import { Updater } from 'use-immer';
 
-import { AppCol, AppRow } from '../../../../layout';
-import { AppInput } from '../../../../controls/AppInput';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 
 import { boostMediaOptions, BoostMediaOptionsEnum } from '../../../boost';
 import { BoostCMSMediaAttachment, BoostCMSMediaState } from 'learn-card-base';

@@ -4,7 +4,7 @@ import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('cap-go-update-modal');
 
-import { AppRow } from '../layout';
+import { AppRow } from 'learn-card-base/ui/layout';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 
 export const CapGoUpdateModal: React.FC<{

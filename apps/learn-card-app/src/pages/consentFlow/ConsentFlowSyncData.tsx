@@ -22,8 +22,8 @@ import PostConsentFlowSyncCard from '../launchPad/PostConsentFlowSyncCard';
 import { useRegistryState } from '../../hooks/useRegistryEntryState';
 import * as m from '../../paraglide/messages.js';
 import { getConsentFlowDidAuthRedirect } from './issueConsentFlowDidAuth';
-import { AppContent } from '../../components/chrome';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppContent } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 // Deprecated - ConsentFlow happens on LaunchPad now
 const ConsentFlowSyncData: React.FC = () => {

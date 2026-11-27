@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { AppToggle } from '../../controls/AppToggle';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 import FamilyCMSWallpaperSelect from './FamilyCMSWallpaperSelect';
 import FamilyCMSThumbnailSelect from './FamilyCMSThumbnailSelect';
 import FamilyCMSColorPicker from './FamilyCMSColorPicker';

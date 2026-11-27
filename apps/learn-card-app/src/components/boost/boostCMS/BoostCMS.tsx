@@ -8,7 +8,7 @@ import {
     boostCategoryMetadata,
     BoostCategoryOptionsEnum,
 } from 'learn-card-base';
-import { AppCol, AppGrid, AppRow } from '../../layout';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 
 import {
     BoostAddressBookEditMode,
@@ -133,7 +133,7 @@ interface BoostCMSProps {
 }
 
 import { getLogger } from 'learn-card-base';
-import { AppContent, AppPage } from '../../chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 const log = getLogger('boost-cms');
 
 const BoostCMS: React.FC<BoostCMSProps> = ({

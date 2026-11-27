@@ -5,8 +5,8 @@ import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { getVCDisplayCardVariant } from '@learncard/react';
 import BoostFooterLayout from '../accessibility/AccessibleBoostFooterLayout';
-import { useAppAlert } from '../overlays/useAppAlert';
-import { useAppOverlayModal } from '../overlays/useAppOverlayModal';
+import { useAppAlert } from 'learn-card-base/ui/overlays/useAppAlert';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
 import SharedBoostVerificationBlock, {
     SharedBoostVerificationBlockViewMode,
 } from './SharedBoostVerificationBlock';
@@ -47,7 +47,7 @@ import * as m from '../../paraglide/messages.js';
 const websiteLink = `${getAppBaseUrl()}/login`;
 
 import { getLogger } from 'learn-card-base';
-import { AppContent, AppHeader, AppPage, AppToolbar } from '../chrome';
+import { AppContent, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
 const log = getLogger('view-shared-boost');
 
 const ViewSharedBoost: React.FC<{

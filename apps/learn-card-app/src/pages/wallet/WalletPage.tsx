@@ -25,7 +25,7 @@ import {
 
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 import CapGoUpdateModal from '../../components/capGoUpdateModal/CapGoUpdateModal';
-import { AppCol, AppRow } from '../../components/layout';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 import WalletPageViewModeSelector from './WalletPageViewModeSelector';
 import MainHeader from '../../components/main-header/MainHeader';
 import ProfileAlertsIsland from '../../components/main-header/ProfileAlertsIsland';
@@ -47,7 +47,7 @@ import { useTheme } from '../../theme/hooks/useTheme';
 import { chatBotStore } from '../../stores/chatBotStore';
 import { prefetchRoutes, ROUTE_PRELOAD } from '../../Routes';
 import useHeaderScrollSync from '../../hooks/useHeaderScrollSync';
-import { AppContent, AppPage } from '../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const WalletPage: React.FC = () => {
     const flags = useFlags();

@@ -1,7 +1,7 @@
 import React from 'react';
 import * as m from '../../../paraglide/messages.js';
 
-import { AppCol, AppRow } from '../../../components/layout';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 import Search from 'learn-card-base/svgs/Search';
 import X from 'learn-card-base/svgs/X';

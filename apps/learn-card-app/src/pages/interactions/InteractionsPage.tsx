@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useLocation, useHistory } from 'react-router-dom';
-import { AppCol, AppGrid, AppRow } from '../../components/layout';
-import { AppIcon } from '../../components/icon';
-import { AppCard, AppCardContent, AppText } from '../../components/widgets';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { AppCard, AppCardContent, AppText } from 'learn-card-base/ui/widgets';
 import {
     refreshOutline,
     homeOutline,
@@ -10,11 +10,11 @@ import {
     informationCircleOutline,
 } from 'learn-card-base/icons/ionicons';
 import { getAppBaseUrl, getLCNApiUrl } from '../../config/bootstrapTenantConfig';
-import { AppButton } from '../../components/controls/AppButton';
+import { AppButton } from 'learn-card-base/ui/controls/AppButton';
 
 import { getLogger } from 'learn-card-base';
-import { AppContent, AppHeader, AppPage, AppTitle, AppToolbar } from '../../components/chrome';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppContent, AppHeader, AppPage, AppTitle, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 const log = getLogger('interactions-page');
 
 /**

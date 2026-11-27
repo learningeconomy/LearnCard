@@ -1,6 +1,6 @@
 import React from 'react';
 import moment from 'moment';
-import { AppIcon } from '../../icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { chevronForwardOutline, syncOutline } from 'learn-card-base/icons/ionicons';
 
 import { ErrorBoundary } from '@sentry/react';

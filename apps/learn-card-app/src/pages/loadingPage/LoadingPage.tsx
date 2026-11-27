@@ -3,7 +3,7 @@ import { useHistory } from 'react-router-dom';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('loading-page');
 
-import { AppCol, AppRow } from '../../components/layout';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import { useTheme } from '../../theme/hooks/useTheme';
@@ -17,7 +17,7 @@ import {
     useCurrentUser,
     useIsLoggedIn,
 } from 'learn-card-base';
-import { AppContent, AppPage } from '../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const LoadingPage: React.FC = () => {
     const { textLogo } = useTenantBrandingAssets();

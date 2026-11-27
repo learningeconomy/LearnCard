@@ -22,7 +22,7 @@ import ConsentFlowGuide from './useCases/ConsentFlowGuide';
 import VerifyCredentialsGuide from './useCases/VerifyCredentialsGuide';
 import ServerWebhooksGuide from './useCases/ServerWebhooksGuide';
 import CourseCatalogGuide from './useCases/CourseCatalogGuide';
-import { AppContent, AppPage } from '../../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 // Guide components that accept integration prop
 export interface GuideProps {

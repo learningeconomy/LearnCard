@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 
 // import Pencil from '../../svgs/Pencil';
-import { AppRow } from '../../layout';
-import { AppToggle } from '../../controls/AppToggle';
+import { AppRow } from 'learn-card-base/ui/layout';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 import TrashBin from 'learn-card-base/svgs/TrashBin';
 import EndorsementDeletedCard from './EndorsementDeletedCard';
 import DeleteEndorsementOverlay from './DeleteEndorsementOverlay';

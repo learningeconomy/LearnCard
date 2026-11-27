@@ -6,7 +6,7 @@ import NewAiSessionButton, {
     NewAiSessionButtonEnum,
 } from '../../new-ai-session/NewAiSessionButton/NewAiSessionButton';
 import { LaunchPadAppListItem } from 'learn-card-base';
-import { AppFooter } from '../../chrome';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 export const AiPassportAppProfileFooter: React.FC<{
     showBackButton?: boolean;

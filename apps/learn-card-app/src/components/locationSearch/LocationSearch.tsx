@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 
 import useGoogle from 'react-google-autocomplete/lib/usePlacesAutocompleteService';
 
-import { AppCol, AppGrid, AppRow } from '../layout';
-import { AppInput } from '../controls/AppInput';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import GoogleLogo from 'learn-card-base/assets/images/google-logo.png';
 import X from 'learn-card-base/svgs/X';
 
@@ -11,7 +11,7 @@ import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinne
 import { useObservabilityConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import { AddressSpec, formatLocationObject } from './location.helpers';
-import { AppContent, AppHeader, AppPage, AppToolbar } from '../chrome';
+import { AppContent, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
 
 const LocationSearch: React.FC<{
     showCloseButton?: boolean;

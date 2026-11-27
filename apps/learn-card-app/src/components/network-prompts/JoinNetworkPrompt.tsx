@@ -17,7 +17,7 @@ import {
     useNetworkConsentMutation,
 } from 'learn-card-base';
 
-import { AppInput } from '../controls/AppInput';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import { ProfilePicture } from 'learn-card-base';
 import RejectNetworkPrompt from './RejectNetworkPrompt';
 import PushNotificationsPrompt from '../push-notifications-prompt/PushNotificationsPrompt';

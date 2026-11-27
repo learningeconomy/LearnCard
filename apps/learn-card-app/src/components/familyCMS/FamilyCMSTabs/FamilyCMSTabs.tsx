@@ -1,8 +1,8 @@
 import React from 'react';
 
-import { AppRow } from '../../layout';
-import { AppLabel } from '../../list';
-import { AppSegment, AppSegmentButton } from '../../widgets';
+import { AppRow } from 'learn-card-base/ui/layout';
+import { AppLabel } from 'learn-card-base/ui/list';
+import { AppSegment, AppSegmentButton } from 'learn-card-base/ui/widgets';
 import { m } from '../../../paraglide/messages.js';
 
 export enum FamilyCMSTabsEnum {

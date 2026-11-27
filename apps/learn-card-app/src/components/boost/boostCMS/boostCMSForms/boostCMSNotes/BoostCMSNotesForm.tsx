@@ -1,7 +1,7 @@
 import React from 'react';
 
-import { AppCol, AppRow } from '../../../../layout';
-import { AppTextarea } from '../../../../controls/AppTextarea';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
+import { AppTextarea } from 'learn-card-base/ui/controls/AppTextarea';
 import { BoostCMSState } from '../../../boost';
 import * as m from '../../../../../paraglide/messages.js';
 

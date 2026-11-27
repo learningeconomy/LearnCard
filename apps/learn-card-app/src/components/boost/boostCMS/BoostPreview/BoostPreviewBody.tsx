@@ -1,7 +1,7 @@
 import React from 'react';
 import { formatNumber } from '@learncard/helpers';
 import { UserProfilePicture, useCurrentUser } from 'learn-card-base';
-import { AppGrid, AppRow } from '../../../layout';
+import { AppGrid, AppRow } from 'learn-card-base/ui/layout';
 
 import { filterBoostRecipients } from '../../boostHelpers';
 

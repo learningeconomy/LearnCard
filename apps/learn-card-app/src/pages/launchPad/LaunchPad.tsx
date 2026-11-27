@@ -37,7 +37,7 @@ import AppStoreListItem from './AppStoreListItem';
 import { AppStoreListSkeleton } from './AppStoreListItemSkeleton';
 import FeaturedCarousel from './FeaturedCarousel';
 import { NavBarLaunchPadIcon } from '../../components/svgs/NavBarLaunchPadIcon';
-import { AppContent, AppPage } from '../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const LaunchPad: React.FC = () => {
     const flags = useFlags();

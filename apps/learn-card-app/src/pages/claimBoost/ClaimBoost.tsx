@@ -73,8 +73,8 @@ import {
 import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
 import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
 import * as m from '../../paraglide/messages.js';
-import { AppPage } from '../../components/chrome';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 class ClaimContextChangedError extends Error {
     constructor() {

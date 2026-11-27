@@ -1,8 +1,8 @@
 import React, { Suspense, useEffect } from 'react';
 
 import { ModalTypes, lazyWithRetry, useModal } from 'learn-card-base';
-import { AppContent, AppPage } from '../../../components/chrome';
-import { AppSpinner } from '../../../components/feedback/AppSpinner';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 // The skill-profile wizard statically reaches the framework editor and its emoji picker (~1 MB
 // with deps); loading it lazily keeps all of that out of the dashboard's cold-start chunk.

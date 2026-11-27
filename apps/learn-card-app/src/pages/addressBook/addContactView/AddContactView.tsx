@@ -15,7 +15,7 @@ import {
     ToastTypeEnum,
 } from 'learn-card-base';
 
-import { AppCol, AppGrid, AppRow } from '../../../components/layout';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import { UserProfilePicture, useCurrentUser } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { AddressBookContact } from '../addressBookHelpers';

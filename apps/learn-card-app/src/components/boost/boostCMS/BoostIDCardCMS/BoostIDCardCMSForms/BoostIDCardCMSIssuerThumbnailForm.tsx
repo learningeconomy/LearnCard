@@ -3,15 +3,15 @@ import React, { useState } from 'react';
 import { useImageUpload, UploadRes } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
-import { AppRow } from '../../../../layout';
-import { AppToggle } from '../../../../controls/AppToggle';
+import { AppRow } from 'learn-card-base/ui/layout';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 
 import Pencil from '../../../../svgs/Pencil';
 import EmptyImage from 'learn-card-base/assets/images/empty-image.png';
 import TrashBin from '../../../../svgs/TrashBin';
 
 import { BoostCMSState } from '../../../boost';
-import { AppSpinner } from '../../../../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const BoostIDCardCMSIssuerThumbnailForm: React.FC<{
     state: BoostCMSState;

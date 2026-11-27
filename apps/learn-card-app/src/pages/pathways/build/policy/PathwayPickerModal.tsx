@@ -21,7 +21,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 
-import { AppIcon } from '../../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
     addCircleOutline,

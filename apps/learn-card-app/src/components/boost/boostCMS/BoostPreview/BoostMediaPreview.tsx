@@ -31,7 +31,7 @@ import { getAttachmentSource } from 'learn-card-base/helpers/attachment.helpers'
 import { getFilestackPreviewUrl } from 'learn-card-base/filestack/images/images.helpers';
 import { resolvePdfDocumentResource } from '../../../../pages/ids/view-id/IdDetails/helpers/pdfDocumentResource.helpers';
 import * as m from '../../../../paraglide/messages.js';
-import { AppContent, AppPage } from '../../../chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 export const BoostMediaPreview: React.FC<{
     credential: VC;

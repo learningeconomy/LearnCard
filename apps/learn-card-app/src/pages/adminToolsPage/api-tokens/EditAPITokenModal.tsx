@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { AppInput } from '../../../components/controls/AppInput';
-import { AppTextarea } from '../../../components/controls/AppTextarea';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
+import { AppTextarea } from 'learn-card-base/ui/controls/AppTextarea';
 import { useWallet, useModal } from 'learn-card-base';
 import { createPortal } from 'react-dom';
 

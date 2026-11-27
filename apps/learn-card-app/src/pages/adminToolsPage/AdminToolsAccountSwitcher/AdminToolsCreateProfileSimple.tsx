@@ -10,7 +10,7 @@ import ChildInviteModalSimple from '../../../components/familyCMS/FamilyCMSInvit
 import AdminToolsFamilySelectorButton from './AdminToolsFamilySelectorButton';
 import HandleIcon from 'learn-card-base/svgs/HandleIcon';
 import Pencil from '../../../components/svgs/Pencil';
-import { AppInput } from '../../../components/controls/AppInput';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import { Checkmark } from '@learncard/react';
 import X from 'learn-card-base/svgs/X';
 
@@ -56,7 +56,7 @@ import { LearnCardIDCMSTabsEnum } from 'apps/learn-card-app/src/components/learn
 import { useCreateChildAccount } from 'apps/learn-card-app/src/hooks/useCreateChildAccount';
 import useLCNGatedAction from 'apps/learn-card-app/src/components/network-prompts/hooks/useLCNGatedAction';
 import * as m from '../../../paraglide/messages.js';
-import { AppSpinner } from '../../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type AdminToolsCreateProfileSimpleProps = { profileType: 'child' | 'organization' };
 

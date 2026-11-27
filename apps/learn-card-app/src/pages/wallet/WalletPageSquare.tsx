@@ -7,11 +7,11 @@ import DotIcon from 'learn-card-base/svgs/DotIcon';
 import { QualificationsIconSolidColor } from 'learn-card-base/svgs/wallet/QualificationsIcon';
 
 import { CredentialCategoryEnum } from 'learn-card-base';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 import { useTheme } from '../../theme/hooks/useTheme';
 import { StyleSetEnum } from '../../theme/styles';
-import { AppSkeletonText } from '../../components/feedback/AppSkeletonText';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
 
 /**
  * Maps each CredentialCategoryEnum value to the existing translated tile

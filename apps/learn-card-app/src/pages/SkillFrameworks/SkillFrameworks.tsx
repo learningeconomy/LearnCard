@@ -2,7 +2,7 @@ import React from 'react';
 import { formatLocaleDate } from '../../i18n/formatters';
 import { useModal, ModalTypes, useWallet } from 'learn-card-base';
 import { useQuery } from '@tanstack/react-query';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import { ThreeDotVertical } from '@learncard/react';
 import { SkillFrameworkType } from '@learncard/types';
 import Plus from 'apps/learn-card-app/src/components/svgs/Plus';

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { getLogger, type EscrowEmailSenderNote } from 'learn-card-base';
-import { AppIcon } from '../icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     alertCircleOutline,
     timeOutline,

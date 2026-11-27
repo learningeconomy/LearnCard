@@ -53,7 +53,7 @@ import {
     isIntegrationActive,
     PartnerOnboardingGuideState,
 } from './utils/integrationStatus';
-import { AppContent, AppPage } from '../../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const STEP_ICONS = [Building2, Shield, Palette, FileStack, Plug, GitMerge, TestTube2, Rocket];
 

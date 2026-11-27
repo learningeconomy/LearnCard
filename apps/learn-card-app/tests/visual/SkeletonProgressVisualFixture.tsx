@@ -18,8 +18,8 @@ import AiPathwayCourseItemSkeletonLoader from '../../src/pages/ai-pathways/ai-pa
 import AiPathwayContentListItemSkeleton from '../../src/pages/ai-pathways/ai-pathway-explore-content/AiPathwayContentItemSkeletonLoader';
 import AiPathwaySessionItemSkeleton from '../../src/pages/ai-pathways/ai-pathway-sessions/AiPathwaySessionItemSkeleton';
 import AiPathwaySessionsSkeletonLoader from '../../src/pages/ai-pathways/ai-pathway-sessions/AiPathwaySessionsSkeletonLoader';
-import { AppProgressBar } from '../../src/components/feedback/AppProgressBar';
-import { AppSkeletonText } from '../../src/components/feedback/AppSkeletonText';
+import { AppProgressBar } from 'learn-card-base/ui/feedback/AppProgressBar';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
 
 /**
  * `feedback-2`: the app's IonSkeletonText and IonProgressBar call sites (phase 4 feedback, skeleton and

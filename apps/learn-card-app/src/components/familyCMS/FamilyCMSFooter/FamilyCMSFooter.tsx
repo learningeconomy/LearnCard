@@ -2,7 +2,7 @@ import React from 'react';
 
 import { FamilyCMSEditorModeEnum } from '../familyCMSState';
 import { m } from '../../../paraglide/messages.js';
-import { AppFooter, AppToolbar } from '../../chrome';
+import { AppFooter, AppToolbar } from 'learn-card-base/ui/chrome';
 
 export const FamilyCMSFooter: React.FC<{
     handleCreateFamily: () => void;

@@ -5,7 +5,7 @@ import AiInsightsUserCard from '../../ai-insights/AiInsightsUserCard';
 
 import { AiInsightsUserCardMode } from '../../ai-insights/ai-insights.helpers';
 import { LCNProfile } from '@learncard/types';
-import { AppHeader, AppToolbar } from '../../../components/chrome';
+import { AppHeader, AppToolbar } from 'learn-card-base/ui/chrome';
 
 type LearnerInsightsPreviewHeaderProps = {
     profile: LCNProfile;

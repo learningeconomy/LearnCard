@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 import { BoostCategoryOptionsEnum, useModal } from 'learn-card-base';
 
-import { AppGrid } from '../../../../layout';
+import { AppGrid } from 'learn-card-base/ui/layout';
 import { BoostUserTypeEnum } from '../../../boost-options/boostOptions';
 
 import BoostCMSAppearanceBadgeList from './BoostCMSAppearanceBadgeList';

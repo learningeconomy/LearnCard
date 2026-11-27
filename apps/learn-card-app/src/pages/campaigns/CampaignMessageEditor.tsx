@@ -1,6 +1,6 @@
 import React, { useId, useMemo, useState } from 'react';
 import { inAppMessageValidator } from '@learncard/types';
-import { AppIcon } from '../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { codeSlashOutline, optionsOutline } from 'learn-card-base/icons/ionicons';
 import { z } from 'zod';
 import { buttonClass, primaryClass, textButtonClass } from './ui';

@@ -5,7 +5,7 @@ import { Capacitor } from '@capacitor/core';
 import keyboardStore from 'learn-card-base/stores/keyboardStore';
 import { useModal } from 'learn-card-base';
 import { useRef } from 'react';
-import { AppFooter } from '../../chrome';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 export const AiAssessmentFooter: React.FC = () => {
     const { closeModal } = useModal();

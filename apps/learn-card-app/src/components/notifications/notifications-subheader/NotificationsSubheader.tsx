@@ -3,7 +3,7 @@ import { Badge } from '@capawesome/capacitor-badge';
 import { Capacitor } from '@capacitor/core';
 import { useHistory } from 'react-router-dom';
 
-import { AppCol, AppGrid, AppRow } from '../../layout';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import X from 'learn-card-base/svgs/X';
 

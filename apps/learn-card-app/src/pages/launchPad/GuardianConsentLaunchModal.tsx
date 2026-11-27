@@ -3,7 +3,7 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('guardian-consent-launch-modal');
 
 import * as m from '../../paraglide/messages.js';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import { ConsentFlowContractDetails, ConsentFlowTerms, LCNProfile } from '@learncard/types';
 import { useImmer } from 'use-immer';
 

@@ -3,8 +3,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('family-guardian-issue-to-list');
 
-import { useAppAlert } from '../../../overlays/useAppAlert';
-import { AppCol, AppGrid, AppRow } from '../../../layout';
+import { useAppAlert } from 'learn-card-base/ui/overlays/useAppAlert';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import Plus from 'learn-card-base/svgs/Plus';
 import BoostAddressBookContactItem from '../../../boost/boostCMS/boostCMSForms/boostCMSIssueTo/BoostAddressBookContactItem';
 
@@ -15,7 +15,7 @@ import { updateAdminList, useWallet } from 'learn-card-base';
 
 import useTheme from '../../../../theme/hooks/useTheme';
 import { m } from '../../../../paraglide/messages.js';
-import { AppContent, AppFooter, AppHeader, AppPage, AppToolbar } from '../../../chrome';
+import { AppContent, AppFooter, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
 
 const FamilyGuardianIssueToList: React.FC<{
     state: ShortBoostState;

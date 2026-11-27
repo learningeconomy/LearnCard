@@ -41,8 +41,8 @@ import {
     generateSkillId,
 } from '../../helpers/skillFramework.helpers';
 import { ReplaceSkillFrameworkSkillsResult } from '@learncard/types';
-import { AppFooter } from '../../components/chrome';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppFooter } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 // Define the base schema for SkillFrameworkNode
 const BaseSkillFrameworkNodeSchema = z.object({

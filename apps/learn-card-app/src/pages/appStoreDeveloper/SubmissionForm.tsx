@@ -22,8 +22,8 @@ import { LaunchTypeValidator } from '@learncard/types';
 import { getAppStatusPath } from './apps/myApps';
 import type { CapturedAppManifest } from '@learncard/partner-connect-core';
 import { EmbedIframeModal } from '../launchPad/EmbedIframeModal';
-import { AppContent, AppPage } from '../../components/chrome';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const STEPS = [
     {

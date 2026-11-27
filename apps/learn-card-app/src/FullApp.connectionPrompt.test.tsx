@@ -28,7 +28,7 @@ vi.mock('@ionic/react', () => ({
     IonApp: ({ children }: { children: React.ReactNode }) => children,
 }));
 
-vi.mock('./components/app-shell/AppShellRouter', () => ({
+vi.mock('learn-card-base/ui/app-shell/AppShellRouter', () => ({
     AppShellRouter: ({ children }: { children: React.ReactNode }) => children,
 }));
 vi.mock('learn-card-base/components/modals/ModalAccessibilityManager', () => ({

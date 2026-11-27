@@ -23,7 +23,7 @@ import {
     convertApiSkillNodeToSkillTreeNode,
     ApiSkillNode,
 } from '../../helpers/skillFramework.helpers';
-import { AppFooter } from '../../components/chrome';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 type ViewAlignmentInfoProps = {
     alignment?: SkillFrameworkNode;

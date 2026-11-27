@@ -1,7 +1,7 @@
 import type { ModalInstanceToken } from 'learn-card-base/components/modals/types/Modals';
 import React, { useEffect } from 'react';
 
-import { useAppOverlayModal } from '../../../overlays/useAppOverlayModal';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
 
 import PeaceSign from '../../../svgs/PeaceSign';
 import QrCodeIcon from '../../../svgs/QrCodeIcon';

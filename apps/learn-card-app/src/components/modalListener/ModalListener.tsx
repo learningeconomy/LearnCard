@@ -3,7 +3,7 @@ import { useHistory } from 'react-router-dom';
 
 import modalStateStore from 'learn-card-base/stores/modalStateStore';
 import { VCClaim } from 'learn-card-base';
-import { useAppOverlayModal } from '../overlays/useAppOverlayModal';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
 
 export const PresentVcModalListener: React.FC = () => {
     const history = useHistory();

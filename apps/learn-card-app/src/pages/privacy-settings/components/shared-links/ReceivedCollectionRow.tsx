@@ -1,5 +1,5 @@
 import React from 'react';
-import { AppIcon } from '../../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { bookmarkOutline, chevronForward } from 'learn-card-base/icons/ionicons';
 import { useGetProfile } from 'learn-card-base';
 import { UserProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';

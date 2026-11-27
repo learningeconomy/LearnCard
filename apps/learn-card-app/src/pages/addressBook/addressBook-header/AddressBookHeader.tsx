@@ -1,8 +1,8 @@
 import React from 'react';
 import { useHistory } from 'react-router-dom';
 
-import { useAppOverlayModal } from '../../../components/overlays/useAppOverlayModal';
-import { AppCol, AppGrid, AppRow } from '../../../components/layout';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 
 import { AddressBookTabsEnum } from '../addressBookHelpers';
 

@@ -1,6 +1,6 @@
 import * as m from '../../paraglide/messages.js';
-import { AppContent, AppPage } from '../../components/chrome';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const ExchangeLoading = () => {
     return (

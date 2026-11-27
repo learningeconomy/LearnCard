@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Countdown from 'react-countdown';
 import { ContactMethodType } from '@learncard/types';
-import { AppSpinner } from '../../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('user-email-contact-item');
 

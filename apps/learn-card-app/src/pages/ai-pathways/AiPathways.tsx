@@ -16,7 +16,7 @@ import GrowSkillsPathwaysHome from './GrowSkillsPathwaysHome';
 import { useSkillProfileCompletion } from './ai-pathways-skill-profile/SkillProfileProgressBar';
 import { useGrowSkillsContent } from './useGrowSkillsContent';
 import AiPathwayCareers from './ai-pathway-careers/AiPathwayCareers';
-import { AppContent, AppPage } from '../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const AiPathways: React.FC = () => {
     const { getThemedCategoryColors } = useTheme();

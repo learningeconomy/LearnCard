@@ -6,7 +6,7 @@ import SproutIcon from 'learn-card-base/svgs/SproutIcon';
 import { AiPathwaysIconWithShape } from 'learn-card-base/svgs/wallet/AiPathwaysIcon';
 
 import { VC } from '@learncard/types';
-import { AppSkeletonText } from '../../../components/feedback/AppSkeletonText';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
 
 enum AiInsightsLearningSnapshotType {
     StrongestArea = 'strongest-area',

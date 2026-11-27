@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AppIcon } from '../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { checkmarkCircleOutline, timeOutline } from 'learn-card-base/icons/ionicons';
 
 import type { ListingMode } from './listingLifecycle';

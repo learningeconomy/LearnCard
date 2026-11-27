@@ -5,8 +5,8 @@ import { useHistory, useLocation } from 'react-router-dom';
 
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 
-import { AppLoading } from '../../components/overlays/AppLoading';
-import { AppCol, AppRow } from '../../components/layout';
+import { AppLoading } from 'learn-card-base/ui/overlays/AppLoading';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 import RightArrow from 'learn-card-base/svgs/RightArrow';
 import HandshakeIcon from '../../components/svgs/HandshakeIcon';
 import { getMinimumTermsForContract } from '../../helpers/contract.helpers';
@@ -34,7 +34,7 @@ import {
 
 import useTheme from '../../theme/hooks/useTheme';
 import * as m from '../../paraglide/messages.js';
-import { AppSkeletonText } from '../../components/feedback/AppSkeletonText';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
 
 export type ConsentFlowWriteAccessType = {
     [BoostCategoryOptionsEnum.socialBadge]: boolean;

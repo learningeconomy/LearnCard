@@ -6,8 +6,8 @@ import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('boost-address-book-contact-options');
 
-import { useAppOverlayModal } from '../../../../overlays/useAppOverlayModal';
-import { AppCol, AppGrid, AppRow } from '../../../../layout';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import X from 'learn-card-base/svgs/X';
 import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantConfig';
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
@@ -33,7 +33,7 @@ import { BoostUserTypeEnum } from 'learn-card-base';
 import { LCNProfile } from '@learncard/types';
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
 import * as m from '../../../../../paraglide/messages.js';
-import { AppContent, AppFooter, AppHeader, AppPage, AppToolbar } from '../../../../chrome';
+import { AppContent, AppFooter, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
 
 type BoostAddressBookContactOptionsProps = {
     state: BoostCMSState;

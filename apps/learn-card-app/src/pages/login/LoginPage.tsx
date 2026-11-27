@@ -46,7 +46,7 @@ import { useSignInAdapter } from 'learn-card-base';
 import { readKeycloakReauth } from '../../auth/keycloakReauth';
 import { getConfigCapabilities } from 'learn-card-base/config/authConfig';
 
-import { AppGrid, AppRow } from '../../components/layout';
+import { AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import EmailForm from './forms/EmailForm';
 import PhoneForm from './forms/PhoneForm';
 import LoginFooter from './LoginFooter';
@@ -72,7 +72,7 @@ import {
     LAST_LOGIN_METHOD_KEY,
     getOrCreateSignupFlow,
 } from '@analytics';
-import { AppContent, AppPage } from '../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 export const LoginContent: React.FC = () => {
     const adapter = useSignInAdapter();

@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 
 import { IntegrationGuidePanel } from './IntegrationGuidePanel';
-import { AppToggle } from '../../../components/controls/AppToggle';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 
 import type { AppStoreListingCreate, LaunchConfig, AppPermission } from '../types';
 import type { ConsentFlowContractDetails } from '@learncard/types';

@@ -7,7 +7,7 @@ import { AppStoreHeader } from '../components/AppStoreHeader';
 import { HeaderIntegrationSelector } from '../components/HeaderIntegrationSelector';
 import { useDeveloperPortalContext } from '../DeveloperPortalContext';
 import { DashboardRouter } from '../dashboards';
-import { AppContent, AppPage } from '../../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 /**
  * IntegrationPage - Main page for viewing/managing an integration.

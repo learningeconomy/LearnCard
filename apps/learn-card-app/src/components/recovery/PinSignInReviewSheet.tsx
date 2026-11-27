@@ -1,5 +1,5 @@
 import React, { useId } from 'react';
-import { AppIcon } from '../icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { checkmarkCircleOutline, warningOutline } from 'learn-card-base/icons/ionicons';
 import { Overlay } from 'learn-card-base';
 import { focusOnMount } from './focusOnMount';

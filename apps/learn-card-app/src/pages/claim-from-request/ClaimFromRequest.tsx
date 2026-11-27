@@ -4,7 +4,7 @@ import { useHistory, useLocation } from 'react-router-dom';
 import { formatCredentialDate } from 'learn-card-base/helpers/credentialHelpers';
 import queryString from 'query-string';
 import { VC, VP } from '@learncard/types';
-import { useAppOverlayModal } from '../../components/overlays/useAppOverlayModal';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
 
 import { getLogger } from 'learn-card-base';
 const log = getLogger('claim-from-request');
@@ -75,7 +75,7 @@ import {
     shouldCompleteCredentialClaimLocally,
 } from './claimRequest.helpers';
 import { canParticipateInExchange, deriveInboxClaimProfileState } from './inboxClaimGate';
-import { AppContent, AppPage } from '../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 export type RequestMetadata = {
     credentialName: string;

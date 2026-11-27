@@ -2,7 +2,7 @@
     "extends": "./tsconfig.json",
     "compilerOptions": {
         "outDir": "../../dist/out-tsc",
-        "types": ["vitest/globals", "node", "vite/client"]
+        "types": ["vitest/globals", "node", "vite/client", "testing-library__jest-dom"]
     },
     "include": [
         "vitest.config.ts",

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 
-import { AppIcon } from '../icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { menuOutline } from 'learn-card-base/icons/ionicons';
 import ResumeIframePreview from './ResumeIframePreview';
 import ResumeBuilderLoader from './ResumeBuilderLoader';

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AppIcon } from '../../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { checkmark, copyOutline } from 'learn-card-base/icons/ionicons';
 import { Capacitor } from '@capacitor/core';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';

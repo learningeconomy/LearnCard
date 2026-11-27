@@ -22,7 +22,7 @@
 import React, { useState } from 'react';
 import * as m from '../../../paraglide/messages.js';
 
-import { AppIcon } from '../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { closeOutline, mapOutline, openOutline } from 'learn-card-base/icons/ionicons';
 import { AnimatePresence, motion } from 'motion/react';
 import { useHistory, useLocation, useParams } from 'react-router-dom';

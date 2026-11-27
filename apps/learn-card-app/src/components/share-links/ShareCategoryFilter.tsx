@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AppIcon } from '../icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { filterOutline } from 'learn-card-base/icons/ionicons';
 import type { CredentialCategoryEnum } from 'learn-card-base';
 import { ActivityFilterPopover } from '../../pages/wallet/activity-feed/ActivityFilterPopover';

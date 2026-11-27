@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AppIcon } from '../icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     alertCircleOutline,
     checkmarkCircleOutline,

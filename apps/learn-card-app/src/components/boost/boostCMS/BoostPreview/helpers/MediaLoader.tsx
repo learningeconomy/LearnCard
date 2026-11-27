@@ -1,5 +1,5 @@
 import React from 'react';
-import { AppSpinner } from '../../../../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 export const MediaLoader: React.FC<{ text: string }> = ({ text = 'Media' }) => {
     return (

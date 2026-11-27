@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { AppIcon } from '../icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { alertCircleOutline } from 'learn-card-base/icons/ionicons';
 import { authUserStore, currentUserStore, useSignInAdapter } from 'learn-card-base';
 import type { KeycloakSignInAdapter } from 'learn-card-base';

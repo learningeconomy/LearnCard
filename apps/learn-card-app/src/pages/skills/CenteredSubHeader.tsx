@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { AppCol, AppRow } from '../../components/layout';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 import SKillsShield from '../../assets/images/skills-shield.png';
 
 import { AiInsightsIconWithShape } from 'learn-card-base/svgs/wallet/AiInsightsIcon';

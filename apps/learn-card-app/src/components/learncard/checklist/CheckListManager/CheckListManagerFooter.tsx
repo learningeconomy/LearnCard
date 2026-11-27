@@ -4,7 +4,7 @@ import { useModal } from 'learn-card-base';
 
 import useTheme from '../../../../theme/hooks/useTheme';
 import * as m from '../../../../paraglide/messages.js';
-import { AppFooter } from '../../../chrome';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 const CheckListManagerFooter: React.FC<{ handleSave?: () => void; loading?: boolean }> = ({
     handleSave,

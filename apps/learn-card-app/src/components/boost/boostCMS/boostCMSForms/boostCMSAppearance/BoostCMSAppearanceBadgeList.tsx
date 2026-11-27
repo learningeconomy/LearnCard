@@ -11,7 +11,7 @@ import {
 import { useLCAStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
-import { AppCol, AppGrid, AppRow } from '../../../../layout';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import TransparentGrid from 'learn-card-base/assets/images/transparent-grid.png';
 import Camera from 'learn-card-base/svgs/Camera';
 import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
@@ -26,7 +26,7 @@ import Checkmark from 'learn-card-base/svgs/Checkmark';
 import { BoostCMSActiveAppearanceForm } from './BoostCMSAppearanceFormHeader';
 import { SetState } from 'packages/shared-types/dist';
 import * as m from '../../../../../paraglide/messages.js';
-import { AppSpinner } from '../../../../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 export enum StylePackCategories {
     all = BoostCategoryOptionsEnum.all,

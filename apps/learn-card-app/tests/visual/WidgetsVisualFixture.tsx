@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { IonApp, IonContent, IonTitle } from '@ionic/react';
 import { alertCircleOutline, homeOutline, refreshOutline } from 'learn-card-base/icons/ionicons';
 
-import { AppButton } from '../../src/components/controls/AppButton';
-import { AppIcon } from '../../src/components/icon';
+import { AppButton } from 'learn-card-base/ui/controls/AppButton';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     AppAvatar,
     AppCard,
@@ -11,7 +11,7 @@ import {
     AppRippleEffect,
     AppText,
     AppThumbnail,
-} from '../../src/components/widgets';
+} from 'learn-card-base/ui/widgets';
 import FamilyCMSTabs, {
     FamilyCMSTabsEnum,
 } from '../../src/components/familyCMS/FamilyCMSTabs/FamilyCMSTabs';

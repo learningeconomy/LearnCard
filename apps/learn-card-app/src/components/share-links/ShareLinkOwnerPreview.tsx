@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AppIcon } from '../icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { alertCircleOutline, closeOutline } from 'learn-card-base/icons/ionicons';
 import type { ShareLink, SharePayload } from '@learncard/types';
 import { useWallet } from 'learn-card-base';

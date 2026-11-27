@@ -70,7 +70,7 @@ vi.mock('../components/debug/authDebugEvents', () => ({
     emitAuthSuccess: vi.fn(),
 }));
 
-vi.mock('../components/overlays/useAppAlert', () => ({
+vi.mock('learn-card-base/ui/overlays/useAppAlert', () => ({
     useAppAlert: () => [mocks.presentAlert],
 }));
 

@@ -21,7 +21,7 @@ import PathwaysHeader from './PathwaysHeader';
 import { pathwayStore } from '../../stores/pathways';
 import { useCostSnapshot } from './hooks/useCostSnapshot';
 import { installPathwaysDevGlobals } from './dev/pathwaysDevGlobals';
-import { AppContent, AppPage } from '../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 // Attach `window.__pathwaysDev` once on first import. No-op in production
 // builds (guarded by `import.meta.env.DEV` inside the installer), idempotent

@@ -2,7 +2,7 @@ import React from 'react';
 import * as m from '../../../../../paraglide/messages.js';
 import { QRCodeSVG } from 'qrcode.react';
 
-import { AppRow } from '../../../../layout';
+import { AppRow } from 'learn-card-base/ui/layout';
 import X from 'learn-card-base/svgs/X';
 import BoostCMSAppearanceController from '../boostCMSAppearance/BoostCMSAppearanceController';
 import BoostCMSIDAppearanceController from '../boostCMSAppearance/BoostCMSIDAppearanceController';
@@ -11,7 +11,7 @@ import FamilyCrest from 'apps/learn-card-app/src/components/familyCMS/FamilyCres
 import { CATEGORY_TO_SUBCATEGORY_LIST } from '../../../boost-options/boostOptions';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import { BoostCMSState } from '../../../boost';
-import { AppSpinner } from '../../../../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type BoostShareableQRCodeProps = {
     state: BoostCMSState;

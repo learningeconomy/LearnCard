@@ -5,7 +5,7 @@ const log = getLogger('skills-hub-popover-button');
 import useTheme from '../../theme/hooks/useTheme';
 import { useModal, ModalTypes, useDeviceTypeByWidth, useWallet } from 'learn-card-base';
 
-import { AppPopover } from '../../components/overlays/AppPopover';
+import { AppPopover } from 'learn-card-base/ui/overlays/AppPopover';
 import { Checkmark } from '@learncard/react';
 import SortIcon from 'learn-card-base/svgs/SortButton';
 import FrameworkImage from '../SkillFrameworks/FrameworkImage';
@@ -22,7 +22,7 @@ import {
 import { SetState } from 'packages/shared-types/dist';
 import { ColorSetEnum } from '../../theme/colors/index';
 import { ApiFrameworkInfo } from '../../helpers/skillFramework.helpers';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 // Helper to toggle a filter value in/out of the array
 const toggleFilter = (

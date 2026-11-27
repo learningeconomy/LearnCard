@@ -3,7 +3,7 @@ import { Updater } from 'use-immer';
 import { LaunchPadAppListItem, ModalTypes, useModal } from 'learn-card-base';
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 
-import { AppRippleEffect } from '../../components/widgets';
+import { AppRippleEffect } from 'learn-card-base/ui/widgets';
 import BlueMagicWand from 'learn-card-base/svgs/BlueMagicWand';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 import ConsentFlowAiSessionsWriteDetailsModal from './ConsentFlowAiSessionsWriteDetailsModal';

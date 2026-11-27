@@ -1,6 +1,6 @@
 import useLogout from '../../hooks/useLogout';
-import { AppLoading } from '../overlays/AppLoading';
-import { AppRow } from '../layout';
+import { AppLoading } from 'learn-card-base/ui/overlays/AppLoading';
+import { AppRow } from 'learn-card-base/ui/layout';
 
 const ErrorLogout: React.FC = () => {
     const { handleLogout, isLoggingOut } = useLogout();

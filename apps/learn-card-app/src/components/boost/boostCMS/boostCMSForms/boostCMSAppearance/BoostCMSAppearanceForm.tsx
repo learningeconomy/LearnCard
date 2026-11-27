@@ -15,7 +15,7 @@ import {
 } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
-import { AppGrid, AppRow } from '../../../../layout';
+import { AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import { CATEGORY_TO_SUBCATEGORY_LIST } from '../../../boost-options/boostOptions';
 
 import BoostCMSIDCard from '../../../boost-id-card/BoostIDCard';
@@ -29,7 +29,7 @@ import BoostIDCardCMSAppearanceForm from '../../BoostIDCardCMS/BoostIDCardCMSFor
 import { BoostCMSState } from '../../../boost';
 import BoostIDCardCMSIssuerThumbnailForm from '../../BoostIDCardCMS/BoostIDCardCMSForms/BoostIDCardCMSIssuerThumbnailForm';
 import * as m from '../../../../../paraglide/messages.js';
-import { AppSpinner } from '../../../../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type BoostCMSAppearanceFormProps = {
     state: BoostCMSState;

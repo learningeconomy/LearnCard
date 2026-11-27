@@ -7,7 +7,7 @@ import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore'
 import ListItemsIcon from 'learn-card-base/svgs/ListItemsIcon';
 import GridIcon from 'learn-card-base/svgs/GridIcon';
 import Search from 'learn-card-base/svgs/Search';
-import { AppCol, AppRow } from '../layout';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 import X from 'learn-card-base/svgs/X';
 
 import useTheme from '../../theme/hooks/useTheme';

@@ -1,11 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 
-import { AppList } from '../../../components/list';
+import { AppList } from 'learn-card-base/ui/list';
 import AddressBookContactItem from './AddressBookContactItem';
 
 import { LCNProfile } from '@learncard/types';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
-import { AppSpinner } from '../../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type AddressBookContactListProps = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR

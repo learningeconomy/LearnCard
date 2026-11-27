@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { useAppAlert } from '../overlays/useAppAlert';
+import { useAppAlert } from 'learn-card-base/ui/overlays/useAppAlert';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('view-creds-bundle');
 
@@ -11,9 +11,9 @@ import { SyncCredentialsVCs } from 'learn-card-base';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 
-import { AppButton } from '../controls/AppButton';
+import { AppButton } from 'learn-card-base/ui/controls/AppButton';
 import ShareBoostsBundle from './ShareBoostsBundle';
-import { AppContent, AppHeader, AppPage, AppToolbar } from '../chrome';
+import { AppContent, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
 
 const ViewCredsBundle: React.FC = () => {
     const { uri, seed } = useParams<{ uri: string; seed: string }>();

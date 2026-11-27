@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 
-import { AppIcon } from '../icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { alertCircleOutline } from 'learn-card-base/icons/ionicons';
 import { ModalTypes, useGetCurrentLCNUser, useModal } from 'learn-card-base';
 

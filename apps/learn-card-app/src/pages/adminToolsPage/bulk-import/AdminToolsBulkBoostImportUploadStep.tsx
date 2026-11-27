@@ -13,7 +13,7 @@ import CircleCheckOutlineIcon from 'learn-card-base/svgs/CircleCheckOutlineIcon'
 import { ModalTypes, useModal } from 'learn-card-base';
 
 import { BadgeDataRow, ImageTrackingType } from './AdminToolsBulkBoostImportOption';
-import { AppSpinner } from '../../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 import { useTheme } from '../../../theme/hooks/useTheme';
 import * as m from '../../../paraglide/messages.js';

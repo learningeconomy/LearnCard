@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { FamilyCMSState } from './familyCMSState';
-import { AppContent } from '../chrome';
+import { AppContent } from 'learn-card-base/ui/chrome';
 
 type AllowedWallpaperStylesType = {
     backgroundSize?: string;

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { z } from 'zod';
 
 import Plus from '../../svgs/Plus';
-import { AppSpinner } from '../../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import UserEmailContactItem from './UserEmailContactItem';
 
 import { EMAIL_REGEX, useGetMyContactMethods, useAddContactMethod } from 'learn-card-base';

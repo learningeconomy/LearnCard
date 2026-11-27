@@ -6,7 +6,7 @@ import { SplashScreen } from '@capacitor/splash-screen';
 import { useLocation, useHistory } from 'react-router-dom';
 import queryString from 'query-string';
 
-import { AppSplitPane } from './components/app-shell/AppSplitPane';
+import { AppSplitPane } from 'learn-card-base/ui/app-shell/AppSplitPane';
 import SideMenu from './components/sidemenu/SideMenu';
 import NewMyData from './components/new-my-data/NewMyData';
 import ViewSharedBoost from './components/creds-bundle/ViewSharedBoost';

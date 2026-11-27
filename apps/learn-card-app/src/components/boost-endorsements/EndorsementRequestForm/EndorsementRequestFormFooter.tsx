@@ -2,7 +2,7 @@ import React from 'react';
 
 import { ModalTypes, useModal } from 'learn-card-base';
 import * as m from '../../../paraglide/messages.js';
-import { AppFooter } from '../../chrome';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 const EndorsementRequestFormFooter: React.FC<{
     className?: string;

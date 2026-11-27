@@ -6,7 +6,7 @@ import {
     useDeviceTypeByWidth,
 } from 'learn-card-base';
 
-import { AppGrid } from '../../components/layout';
+import { AppGrid } from 'learn-card-base/ui/layout';
 
 import {
     SomeoneSentYouACredentialRequest,
@@ -20,7 +20,7 @@ import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBr
 import DesktopLoginBackground from './DesktopLoginBackground';
 import { LoginContent } from './LoginPage';
 import LoginWelcomePanel from './LoginWelcomePanel';
-import { AppContent, AppPage } from '../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const ClaimLoginPage: React.FC<{
     alternateBgComponent?: React.ReactNode;

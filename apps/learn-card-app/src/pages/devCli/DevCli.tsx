@@ -14,7 +14,7 @@ import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url
 import CommandSidebar, { COMMANDS } from './CommandSidebar';
 import ChainBuilder, { Chain, ChainStep } from './ChainBuilder';
 import TutorialComponent from './Tutorial';
-import { AppButtons } from '../../components/controls/AppButtons';
+import { AppButtons } from 'learn-card-base/ui/controls/AppButtons';
 import {
     AppBackButton,
     AppContent,
@@ -22,7 +22,7 @@ import {
     AppPage,
     AppTitle,
     AppToolbar,
-} from '../../components/chrome';
+} from 'learn-card-base/ui/chrome';
 
 const WELCOME_MESSAGE = `
 Welcome to the LearnCard Browser CLI!

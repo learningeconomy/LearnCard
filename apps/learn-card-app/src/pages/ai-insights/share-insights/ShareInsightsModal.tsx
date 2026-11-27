@@ -3,7 +3,7 @@ import React, { useCallback, useState } from 'react';
 import { m } from '../../../paraglide/messages.js';
 
 import X from 'learn-card-base/svgs/X';
-import { AppInput } from '../../../components/controls/AppInput';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import AiInsightsUserCard from '../AiInsightsUserCard';
 import ShareInsightsWithAnyoneController from './ShareInsightsWithAnyoneController';
 
@@ -18,7 +18,7 @@ import { AiInsightsUserCardMode } from '../ai-insights.helpers';
 
 import useTheme from '../../../theme/hooks/useTheme';
 import { IconSetEnum } from '../../../theme/icons';
-import { AppSpinner } from '../../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 export const ShareInsightsModal: React.FC = () => {
     const profileType = switchedProfileStore.use.profileType();

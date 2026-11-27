@@ -6,7 +6,7 @@ import numeral from 'numeral';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('app-listing-page');
 
-import { AppToast } from '../../components/overlays/AppToast';
+import { AppToast } from 'learn-card-base/ui/overlays/AppToast';
 import {
     useModal,
     ModalTypes,
@@ -39,8 +39,8 @@ import ConsentFlowPrivacyAndData from '../consentFlow/ConsentFlowPrivacyAndData'
 import GuardianConsentLaunchModal from './GuardianConsentLaunchModal';
 import AiTutorConnectedView from './AiTutorConnectedView';
 import { Settings, Eye, ArrowLeft } from 'lucide-react';
-import { AppContent, AppPage } from '../../components/chrome';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 // Extended type to include new fields
 type ExtendedAppStoreListing = AppStoreListing & {

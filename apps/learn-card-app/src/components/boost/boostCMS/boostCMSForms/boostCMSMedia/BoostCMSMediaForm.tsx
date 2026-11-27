@@ -2,8 +2,8 @@ import React, { useEffect } from 'react';
 
 import Plus from 'learn-card-base/svgs/Plus';
 import LockBold from 'learn-card-base/svgs/LockBold';
-import { AppCol, AppRow } from '../../../../layout';
-import { AppToggle } from '../../../../controls/AppToggle';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 import BoostCMSMediaOptions from './BoostCMSMediaOptions';
 import BoostMediaCMSFormLinkItem from './BoostMediaCMSFormLinkItem';
 import BoostMediaCMSFormPhotoItem from './BoostMediaCMSFormPhotoItem';

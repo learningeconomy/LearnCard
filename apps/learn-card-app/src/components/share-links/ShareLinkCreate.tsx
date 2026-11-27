@@ -2,7 +2,7 @@ import { ShareCredentialPicker } from './ShareCredentialPicker';
 import { downloadSharePdf } from './sharePdf';
 import { ShareCredentialsIllustration } from './ShareCredentialsIllustration';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { AppIcon } from '../icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     arrowBackOutline,
     arrowForwardOutline,

@@ -16,7 +16,7 @@ import type { DigitalCredentialWallet } from './inventory';
 import type { PendingDigitalCredentialRequest } from './types';
 import { markStartupPhase } from '../helpers/startupDiagnostics';
 import { NativeRequestState } from './NativeRequestState';
-import { AppContent, AppPage } from '../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 type Prepared = Awaited<ReturnType<typeof prepareAccountPresentation>>;
 

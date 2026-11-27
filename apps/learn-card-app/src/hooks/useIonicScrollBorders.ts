@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { produce } from 'immer';
 
-import type { AppContentScrollEvent } from '../components/chrome/AppContent';
+import type { AppContentScrollEvent } from 'learn-card-base/ui/chrome/AppContent';
 
 export const useIonicScrollBorders = ({
     topShowClassName = 'border-t border-t-grayscale-200',

@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { useAppOverlayModal } from '../../../../overlays/useAppOverlayModal';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
 
 import Pencil from '../../../../svgs/Pencil';
 import BoostCMSAppearanceFormModal from './BoostCMSAppearanceFormModal';

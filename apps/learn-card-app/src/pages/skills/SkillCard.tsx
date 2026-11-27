@@ -1,7 +1,7 @@
 import React from 'react';
 import { useGetSkill, useModal } from 'learn-card-base';
 
-import { AppCol } from '../../components/layout';
+import { AppCol } from 'learn-card-base/ui/layout';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import CompetencyIcon from '../SkillFrameworks/CompetencyIcon';
 import SelfVerifiedCertIcon from 'learn-card-base/svgs/SelfVerifiedCertIcon';

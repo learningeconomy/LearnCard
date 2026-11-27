@@ -1,5 +1,5 @@
 import React from 'react';
-import { AppSpinner } from '../../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 import LinkChain from 'learn-card-base/svgs/LinkChain';
 import { type InviteSurface } from '@analytics';

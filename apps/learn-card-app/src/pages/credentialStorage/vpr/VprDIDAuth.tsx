@@ -5,8 +5,8 @@ const log = getLogger('vpr-d-i-d-auth');
 
 import { useCurrentUser, chapiStore, redirectStore } from 'learn-card-base';
 
-import { AppCol, AppRow } from '../../../components/layout';
-import { AppContent, AppPage } from '../../../components/chrome';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const VprDIDAuth: React.FC = ({ event, currentUser }) => {
     const [isLoading, setIsLoading] = useState<boolean>(false);

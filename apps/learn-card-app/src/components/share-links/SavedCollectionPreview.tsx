@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { AppIcon } from '../icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { calendarOutline, closeOutline } from 'learn-card-base/icons/ionicons';
 import type { SharePayload } from '@learncard/types';
 

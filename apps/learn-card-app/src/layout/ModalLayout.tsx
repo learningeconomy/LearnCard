@@ -2,10 +2,10 @@ import React, { useRef } from 'react';
 
 import { useScreenWidth } from 'learn-card-base';
 
-import { AppCol, AppRow } from '../components/layout';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 import keyboardStore from 'learn-card-base/stores/keyboardStore';
-import { AppContent } from '../components/chrome';
+import { AppContent } from 'learn-card-base/ui/chrome';
 
 const ModalLayoutActionButton: React.FC<{ handleOnClick: () => void; buttonText?: string }> = ({
     handleOnClick,

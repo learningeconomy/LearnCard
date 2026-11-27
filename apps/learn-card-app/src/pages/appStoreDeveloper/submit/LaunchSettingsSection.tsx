@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AppIcon } from '../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { checkmarkCircle, ellipseOutline, warningOutline } from 'learn-card-base/icons/ionicons';
 import type { LaunchType } from '@learncard/types';
 

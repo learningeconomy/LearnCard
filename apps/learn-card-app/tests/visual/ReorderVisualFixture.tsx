@@ -1,9 +1,6 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { IonApp, IonContent } from '@ionic/react';
-import {
-    AppReorder as Reorder,
-    AppReorderGroup as ReorderGroup,
-} from '../../src/components/reorder';
+import { AppReorder as Reorder, AppReorderGroup as ReorderGroup } from 'learn-card-base/ui/reorder';
 import { CredentialCategoryEnum } from 'learn-card-base';
 
 import ResumePreviewGroupedCredentialsBlock from '../../src/components/resume-builder/resume-preview/ResumePreviewGroupedCredentialsBlock';

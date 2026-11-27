@@ -6,8 +6,8 @@ import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import Checkmark from '../svgs/Checkmark';
 import type { ResumeBuilderHeaderAction } from './ResumeBuilderHeader';
 import * as m from '../../paraglide/messages.js';
-import { AppHeader, AppToolbar } from '../chrome';
-import { AppSpinner } from '../feedback/AppSpinner';
+import { AppHeader, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 export interface ResumeBuilderToolbarProps {
     loadingAction: ResumeBuilderHeaderAction;

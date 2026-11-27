@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-import { AppInput } from '../../../../components/controls/AppInput';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import Search from 'learn-card-base/svgs/Search';
 import CaretDown from 'learn-card-base/svgs/CaretDown';
 import BulkParentSelectorCredentialList from './BulkParentSelectorCredentialList';

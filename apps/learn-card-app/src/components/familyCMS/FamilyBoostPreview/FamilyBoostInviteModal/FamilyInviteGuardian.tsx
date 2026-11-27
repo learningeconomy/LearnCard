@@ -14,7 +14,7 @@ import {
     ToastTypeEnum,
 } from 'learn-card-base';
 
-import { useAppOverlayModal } from '../../../overlays/useAppOverlayModal';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
 import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantConfig';
 import CopyStack from 'apps/learn-card-app/src/components/svgs/CopyStack';
 import BoostShareableQRCode from '../../../boost/boostCMS/boostCMSForms/boostCMSIssueTo/BoostShareableQRCode';
@@ -33,7 +33,7 @@ import { Capacitor } from '@capacitor/core';
 import { Share } from '@capacitor/share';
 import { BoostCMSIssueTo, ShortBoostState } from '../../../boost/boost';
 import * as m from '../../../../paraglide/messages.js';
-import { AppPage } from '../../../chrome';
+import { AppPage } from 'learn-card-base/ui/chrome';
 
 type FamilyInviteGuardianProps = {
     boostUri: string;

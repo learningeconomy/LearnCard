@@ -5,7 +5,7 @@ import MainHeader from '../../components/main-header/MainHeader';
 import { CurvedBackdropEl } from 'learn-card-base';
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
 import { categoryMetadata, CredentialCategoryEnum } from 'learn-card-base';
-import { AppContent, AppPage } from '../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const CurrenciesPage: React.FC = () => {
     const imgSrc = categoryMetadata[CredentialCategoryEnum.currency].defaultImageSrc;

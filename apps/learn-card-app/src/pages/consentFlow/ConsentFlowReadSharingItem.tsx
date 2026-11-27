@@ -1,7 +1,7 @@
 import React from 'react';
 import { ConsentFlowTerms } from '@learncard/types';
 import { Updater } from 'use-immer';
-import { AppRippleEffect } from '../../components/widgets';
+import { AppRippleEffect } from 'learn-card-base/ui/widgets';
 
 import { useGetCredentialCount, CredentialCategory, ModalTypes, useModal } from 'learn-card-base';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { AppIcon } from '../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { alertCircleOutline } from 'learn-card-base/icons/ionicons';
 
 import type { LCNProfile } from '@learncard/types';
@@ -13,7 +13,7 @@ import {
     type ContactCredentialHistoryItem,
     useContactCredentialHistory,
 } from './useContactCredentialHistory';
-import { AppSpinner } from '../../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type ContactCredentialHistoryModalProps = {
     contact: Pick<LCNProfile, 'profileId' | 'displayName'>;

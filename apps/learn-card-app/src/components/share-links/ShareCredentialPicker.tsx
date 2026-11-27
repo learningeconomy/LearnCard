@@ -1,5 +1,5 @@
 import React, { useId } from 'react';
-import { AppIcon } from '../icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { searchOutline, closeOutline } from 'learn-card-base/icons/ionicons';
 import type { CredentialCategoryEnum } from 'learn-card-base';
 import useTheme from '../../theme/hooks/useTheme';

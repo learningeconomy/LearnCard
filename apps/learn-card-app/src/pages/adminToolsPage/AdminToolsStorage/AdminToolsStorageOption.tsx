@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AppInput } from '../../../components/controls/AppInput';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import { useQueryClient } from '@tanstack/react-query';
 import { shuffle } from 'lodash-es';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('admin-tools-storage-option');
 
 import GenericLoader from '../../../components/generic/GenericLoader';
-import { AppRadio, AppRadioGroup } from '../../../components/controls/AppRadio';
+import { AppRadio, AppRadioGroup } from 'learn-card-base/ui/controls/AppRadio';
 import AdminToolsModalFooter from '../AdminToolsModal/AdminToolsModalFooter';
 import * as m from '../../../paraglide/messages.js';
 import AdminToolsOptionItemHeader from '../AdminToolsModal/helpers/AdminToolsOptionItemHeader';

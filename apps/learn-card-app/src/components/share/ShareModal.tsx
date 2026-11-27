@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('share-modal');
 
-import { AppSpinner } from '../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import LinkChain from 'learn-card-base/svgs/LinkChain';
 import Select from 'learn-card-base/components/generic/Select';
 import CopyStack from '../svgs/CopyStack';

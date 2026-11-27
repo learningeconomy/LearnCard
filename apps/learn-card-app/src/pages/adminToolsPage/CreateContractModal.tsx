@@ -9,11 +9,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import useAutosave from '../../hooks/useAutosave';
 import RecoveryPrompt from '../../components/common/RecoveryPrompt';
 
-import AppDatetime from '../../components/datetime/AppDatetime';
-import { AppLabel } from '../../components/list';
-import { AppInput } from '../../components/controls/AppInput';
-import { AppTextarea } from '../../components/controls/AppTextarea';
-import { AppToggle } from '../../components/controls/AppToggle';
+import AppDatetime from 'learn-card-base/ui/datetime/AppDatetime';
+import { AppLabel } from 'learn-card-base/ui/list';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
+import { AppTextarea } from 'learn-card-base/ui/controls/AppTextarea';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 import ContractTypeTabs from './ContractTypeTabs';
 import FullScreenGameFlow from '../consentFlow/GameFlow/FullScreenGameFlow';
 import AdminManagedBoostRow from './AdminManagedBoostRow';
@@ -49,7 +49,7 @@ import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack'
 import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 
 import useTheme from '../../theme/hooks/useTheme';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 export enum ContractType {
     classic = 'Classic', // regular ConsentFlow modal

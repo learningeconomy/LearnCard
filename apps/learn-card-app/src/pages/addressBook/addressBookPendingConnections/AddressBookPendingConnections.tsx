@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('address-book-pending-connections');
 
-import { AppSpinner } from '../../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import * as m from '../../../paraglide/messages.js';
 
 import AddressBookContactList from '../addressBook-contact-list/AddressBookContactList';

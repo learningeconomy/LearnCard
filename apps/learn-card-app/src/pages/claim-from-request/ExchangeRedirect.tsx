@@ -1,7 +1,7 @@
 import React from 'react';
 import { Home } from 'lucide-react';
 import * as m from '../../paraglide/messages.js';
-import { AppContent, AppPage } from '../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 interface ExchangeRedirectProps {
     redirectUrl: string; // Contains the redirectUrl from the server

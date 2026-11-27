@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { AppToggle } from '../controls/AppToggle';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 import HiddenIcon from '../svgs/HiddenIcon';
 
 type ResumeBuilderToggleProps = {

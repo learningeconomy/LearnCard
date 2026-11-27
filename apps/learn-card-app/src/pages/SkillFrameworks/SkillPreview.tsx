@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useModal } from 'learn-card-base';
-import { AppInput } from '../../components/controls/AppInput';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import {
     FrameworkNodeRole,
     SkillFramework,
@@ -14,7 +14,7 @@ import * as m from '../../paraglide/messages.js';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
 import Pencil from 'apps/learn-card-app/src/components/svgs/Pencil';
-import { AppFooter } from '../../components/chrome';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 type SkillPreviewProps = {
     framework: SkillFramework;

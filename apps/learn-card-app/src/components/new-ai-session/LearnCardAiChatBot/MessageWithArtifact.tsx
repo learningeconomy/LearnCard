@@ -4,7 +4,7 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('message-with-artifact');
 
 import MarkdownRenderer from '../../ai-assessment/AiAssessment/helpers/LazyMarkdownRenderer';
-import { AppSpinner } from '../../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 import {
     useCreateBoost,

@@ -1,6 +1,6 @@
 import React from 'react';
-import { AppLabel } from '../../../components/list';
-import { AppInput } from '../../../components/controls/AppInput';
+import { AppLabel } from 'learn-card-base/ui/list';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import useTheme from '../../../theme/hooks/useTheme';
 import * as m from '../../../paraglide/messages.js';
 import TransP from '../../../i18n/TransP';

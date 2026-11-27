@@ -1,6 +1,6 @@
 import React from 'react';
 import * as m from '../../../../paraglide/messages.js';
-import { AppSpinner } from '../../../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import { ToastTypeEnum, useToast } from 'learn-card-base';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import X from 'learn-card-base/svgs/X';

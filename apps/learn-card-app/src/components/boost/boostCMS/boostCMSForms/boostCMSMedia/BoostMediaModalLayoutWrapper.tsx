@@ -1,7 +1,7 @@
 import React from 'react';
-import { AppCol, AppGrid, AppRow } from '../../../../layout';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import X from 'learn-card-base/svgs/X';
-import { AppContent, AppHeader, AppPage, AppToolbar } from '../../../../chrome';
+import { AppContent, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
 
 type BoostMediaModalLayoutWrapperProps = {
     showCloseButton?: boolean;

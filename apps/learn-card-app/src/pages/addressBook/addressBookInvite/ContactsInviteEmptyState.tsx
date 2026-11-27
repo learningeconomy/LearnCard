@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAppOverlayModal } from '../../../components/overlays/useAppOverlayModal';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
 
 import { AnalyticsEvents, useAnalytics } from '@analytics';
 

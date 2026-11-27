@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('check-list-upload-raw-v-c');
 
-import { AppTextarea } from '../../../controls/AppTextarea';
+import { AppTextarea } from 'learn-card-base/ui/controls/AppTextarea';
 import X from 'learn-card-base/svgs/X';
 import Plus from 'learn-card-base/svgs/Plus';
 import UploadIcon from 'learn-card-base/svgs/UploadIcon';
@@ -26,7 +26,7 @@ import { useUploadFile } from '../../../../hooks/useUploadFile';
 import { useUploadVcFromText } from '../../../../hooks/useUploadVcFromText';
 import useTheme from '../../../../theme/hooks/useTheme';
 import * as m from '../../../../paraglide/messages.js';
-import { AppHeader, AppToolbar } from '../../../chrome';
+import { AppHeader, AppToolbar } from 'learn-card-base/ui/chrome';
 
 export type RawVCFileType = {
     id: string;

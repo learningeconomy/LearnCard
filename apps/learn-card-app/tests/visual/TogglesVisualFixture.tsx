@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { IonApp } from '@ionic/react';
-import { AppCol, AppRow } from '../../src/components/layout';
-import { AppLabel } from '../../src/components/list';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
+import { AppLabel } from 'learn-card-base/ui/list';
 import { useImmer } from 'use-immer';
 import { Lock } from 'lucide-react';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
@@ -27,7 +27,7 @@ import {
 import ConsentFlowCredentialAccessToggles from '../../src/pages/consentFlow/ConsentFlowCredentialAccessToggles';
 import ConsentFlowPersonalAccessToggles from '../../src/pages/consentFlow/ConsentFlowPersonalAccessToggles';
 import SettingRow from '../../src/pages/privacy-settings/components/SettingRow';
-import { AppToggle } from '../../src/components/controls/AppToggle';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 import GlassCard from '../../src/pages/privacy-settings/components/GlassCard';
 // Not global in the app: only DataSharingCenterView / SharedLinksAllSheet import it, so `ds-toggle`
 // (T-K) is styled on the privacy page and unstyled on any other mount. The fixture imports it so

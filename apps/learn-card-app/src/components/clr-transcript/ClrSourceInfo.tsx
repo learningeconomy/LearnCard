@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AppPopover } from '../overlays/AppPopover';
+import { AppPopover } from 'learn-card-base/ui/overlays/AppPopover';
 import { Info } from 'lucide-react';
 
 import type { SourceMappedField } from 'learn-card-base/helpers/credentials/clr/renderer';

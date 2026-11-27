@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
-import { AppIcon } from '../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { alertCircleOutline, checkmarkCircle, rocketOutline } from 'learn-card-base/icons/ionicons';
 
 import { redirectStore } from 'learn-card-base';
@@ -11,7 +11,7 @@ import type { CapturedAppManifest } from '@learncard/partner-connect-core';
 import useTheme from '../../../theme/hooks/useTheme';
 import { PUBLISH_RESUME_KEY } from './publishResume';
 import { describeManifest } from './appCapabilities';
-import { AppContent, AppPage } from '../../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const STEPS = ['Create account', 'Review', 'Publish'] as const;
 

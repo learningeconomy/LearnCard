@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 
-import { AppCol, AppRow } from '../../../layout';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 import { BoostUserTypeEnum } from '../../boost-options/boostOptions';
 import { BoostCMSStepsEnum } from '../../boost';
@@ -10,7 +10,7 @@ import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import useTheme from '../../../../theme/hooks/useTheme';
 import * as m from '../../../../paraglide/messages.js';
 import { localizeCategoryTitle } from '../../../../i18n/categoryTitle';
-import { AppHeader, AppToolbar } from '../../../chrome';
+import { AppHeader, AppToolbar } from 'learn-card-base/ui/chrome';
 
 type BoostCMSHeaderProps = {
     boostUserType: BoostUserTypeEnum | string | null;

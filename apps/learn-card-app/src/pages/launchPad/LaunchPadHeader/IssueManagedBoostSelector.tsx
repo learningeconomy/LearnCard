@@ -15,11 +15,11 @@ import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import X from 'learn-card-base/svgs/X';
 import Search from 'learn-card-base/svgs/Search';
 import CaretDown from 'learn-card-base/svgs/CaretDown';
-import { AppInput } from '../../../components/controls/AppInput';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import BoostTemplateListItem from '../../../components/boost/boost-template/BoostTemplateListItem';
 import * as m from '../../../paraglide/messages.js';
 import { getBoostCategoryLabel } from '../../../helpers/boostCategoryLabel';
-import { AppSpinner } from '../../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const escapeRegex = (str: string): string => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 

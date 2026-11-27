@@ -15,7 +15,7 @@ import {
 } from 'learn-card-base';
 import { Network } from '@capacitor/network';
 import { AppEmbedOfflineState } from './AppEmbedOfflineState';
-import { AppToast } from '../../components/overlays/AppToast';
+import { AppToast } from 'learn-card-base/ui/overlays/AppToast';
 
 import { useLearnCardPostMessage } from '../../hooks/post-message/useLearnCardPostMessage';
 import { useLearnCardMessageHandlers } from '../../hooks/post-message/useLearnCardMessageHandlers';
@@ -25,7 +25,7 @@ import { AppCredentialDashboard } from './AppCredentialDashboard';
 import { useAppNotificationToast } from '../../hooks/useAppNotificationToast';
 import { toSafeFrameUrl } from './frameUrl';
 import { buildEmbedUrlWithPath } from './buildEmbedUrlWithPath';
-import { AppContent, AppHeader, AppPage, AppToolbar } from '../../components/chrome';
+import { AppContent, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
 
 interface LaunchConfig {
     url?: string;

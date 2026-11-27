@@ -4,7 +4,7 @@ import { m } from '../../paraglide/messages.js';
 
 import { useHistory } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { AppSpinner } from '../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import { useDeviceTypeByWidth, useGetEnrichedSession, useModal } from 'learn-card-base';
 import { useWallet } from 'learn-card-base/hooks/useWallet';
 import { AiSessionsIconWithShape } from 'learn-card-base/svgs/wallet/AiSessionsIcon';

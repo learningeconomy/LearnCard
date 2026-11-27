@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 
-import { useAppOverlayModal } from '../../../../overlays/useAppOverlayModal';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
 import {
     BoostUserTypeEnum,
     CATEGORY_TO_SUBCATEGORY_LIST,

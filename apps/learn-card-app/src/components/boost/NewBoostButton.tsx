@@ -1,7 +1,7 @@
 import { tailwindColorWithOpacity } from 'learn-card-base/helpers/colorHelpers';
 import React from 'react';
 
-import { AppCol, AppRow } from '../layout';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 import Plus from 'learn-card-base/svgs/Plus';
 
 import { CredentialCategoryEnum } from 'learn-card-base';

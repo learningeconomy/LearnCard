@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { AppSpinner } from '../../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import BulkBoostParentSelectorModal from './BulkParentSelector/BulkParentSelectorModal';
 import X from 'apps/learn-card-app/src/components/svgs/X';
 

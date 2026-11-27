@@ -8,7 +8,7 @@ import {
     SkillsHubSortOptionsEnum,
 } from './skillshub-search.helpers';
 
-import { AppInput } from '../../components/controls/AppInput';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import X from 'learn-card-base/svgs/X';
 import Search from 'learn-card-base/svgs/Search';
 import SkillsHubPopOverButton from './SkillsHubPopoverButton';

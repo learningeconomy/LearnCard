@@ -2,7 +2,7 @@ import React from 'react';
 
 import { useModal } from 'learn-card-base';
 import * as m from '../../../paraglide/messages.js';
-import { AppFooter } from '../../../components/chrome';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 const AdminToolsModalFooter: React.FC<{
     isDisabled?: boolean;

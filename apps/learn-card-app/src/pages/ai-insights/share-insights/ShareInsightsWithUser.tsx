@@ -23,7 +23,7 @@ import {
 
 import { LCNProfile } from '@learncard/types';
 import { getAppBaseUrl } from '../../../config/bootstrapTenantConfig';
-import { AppFooter } from '../../../components/chrome';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 export const ShareInsightsWithUser: React.FC<{
     targetProfile: LCNProfile | string;

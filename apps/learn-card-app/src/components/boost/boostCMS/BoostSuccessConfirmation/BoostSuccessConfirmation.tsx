@@ -1,7 +1,7 @@
 import React from 'react';
 import { useHistory } from 'react-router-dom';
 
-import { AppRow } from '../../../layout';
+import { AppRow } from 'learn-card-base/ui/layout';
 import BoostCMSAppearanceController from '../boostCMSForms/boostCMSAppearance/BoostCMSAppearanceController';
 
 import { BoostCMSState } from '../../boost';

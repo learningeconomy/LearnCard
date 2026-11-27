@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => ({
     initWallet: vi.fn(),
 }));
 
-vi.mock('../app-shell/AppMenuToggle', () => ({
+vi.mock('learn-card-base/ui/app-shell/AppMenuToggle', () => ({
     AppMenuToggle: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
 }));
 vi.mock('launchdarkly-react-client-sdk', () => ({

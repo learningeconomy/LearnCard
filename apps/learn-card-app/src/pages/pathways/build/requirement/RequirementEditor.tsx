@@ -43,7 +43,7 @@
 
 import React from 'react';
 
-import { AppIcon } from '../../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { addOutline, closeOutline } from 'learn-card-base/icons/ionicons';
 
 import type { NodeRequirement } from '../../types';

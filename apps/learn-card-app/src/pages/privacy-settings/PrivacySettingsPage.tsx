@@ -2,7 +2,7 @@ import { AnnouncementPreferences } from './AnnouncementPreferences';
 import { useVerifierHistoryEligibility } from '../../helpers/verifier-history/useEligibility';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 
-import { useViewWillEnter } from '../../components/app-shell/AppOutlet';
+import { useViewWillEnter } from 'learn-card-base/ui/app-shell/AppOutlet';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useHistory } from 'react-router-dom';
 import {
@@ -44,7 +44,7 @@ import type {
     ProfileVisibilityValue,
     SavedCredentialCollection,
 } from './DataSharingCenter.types';
-import { AppContent, AppPage } from '../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 type PrivacySettingsProfile = {
     profileVisibility?: ProfileVisibilityValue;

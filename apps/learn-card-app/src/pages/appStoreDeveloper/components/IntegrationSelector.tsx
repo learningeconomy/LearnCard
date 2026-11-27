@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AppSpinner } from '../../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import type { LCNIntegration } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('integration-selector');

@@ -8,7 +8,7 @@ import AdminToolsFamilySelectorButton from '../../../../pages/adminToolsPage/Adm
 import LearnCardIconOutline from '../../../svgs/LearnCardIconOutline';
 import LearnCardIDCMS from '../../../learncardID-CMS/LearnCardIDCMS';
 import SlimCaretRight from '../../../svgs/SlimCaretRight';
-import { AppInput } from '../../../controls/AppInput';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import Pencil from '../../../svgs/Pencil';
 import X from '../../../svgs/X';
 
@@ -31,7 +31,7 @@ import { getLearnCardIDStyleDefaults } from '../../../learncardID-CMS/learncard-
 
 import { useCreateChildAccount } from '../../../../hooks/useCreateChildAccount';
 import * as m from '../../../../paraglide/messages.js';
-import { AppSpinner } from '../../../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type ChildInviteModalSimpleProps = {
     selectedFamily:

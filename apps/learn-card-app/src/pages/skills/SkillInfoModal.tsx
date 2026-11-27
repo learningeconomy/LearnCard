@@ -9,7 +9,7 @@ import SkillFrameworkInfoBox from './SkillFrameworkInfoBox';
 
 import { VC } from '@learncard/types';
 import * as m from '../../paraglide/messages.js';
-import { AppFooter } from '../../components/chrome';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 type SkillInfoModalProps = {
     frameworkId: string;

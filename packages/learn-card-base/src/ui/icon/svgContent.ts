@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { environment } from '../../config/environment';
+import { isProductionEnvironment } from '../../config/isProduction';
 
 /**
  * Turns an `ionicons/icons` export (`data:image/svg+xml;utf8,<svg ...>`) into React SVG elements.
@@ -99,7 +99,7 @@ export const getIconSvg = (icon: string | undefined): React.ReactElement | null 
         svg = root ? toReact(root) : null;
     }
 
-    if (!svg && environment.DEV) {
+    if (!svg && !isProductionEnvironment()) {
         console.warn(
             `AppIcon: unsupported icon "${icon.slice(0, 60)}"; pass an ionicons/icons export.`
         );

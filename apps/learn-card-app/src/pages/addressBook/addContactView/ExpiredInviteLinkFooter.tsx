@@ -1,7 +1,7 @@
 import React from 'react';
 import { useDeviceTypeByWidth, useModal } from 'learn-card-base';
 import X from 'learn-card-base/svgs/X';
-import { AppFooter } from '../../../components/chrome';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 type ExpiredInviteLinkFooterProps = {
     buttonText?: string;

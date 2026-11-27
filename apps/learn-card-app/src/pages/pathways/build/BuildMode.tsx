@@ -37,7 +37,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 
-import { AppIcon } from '../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { AnimatePresence } from 'framer-motion';
 import {
     arrowRedoOutline,

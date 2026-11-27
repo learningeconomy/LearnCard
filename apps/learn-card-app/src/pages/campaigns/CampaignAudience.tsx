@@ -1,4 +1,4 @@
-import { AppIcon } from '../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { cloudUploadOutline, ribbonOutline } from 'learn-card-base/icons/ionicons';
 import React, { useEffect, useRef, useState } from 'react';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';

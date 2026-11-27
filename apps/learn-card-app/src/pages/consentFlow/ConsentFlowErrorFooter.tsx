@@ -3,7 +3,7 @@ import { useModal } from 'learn-card-base';
 
 import useTheme from '../../theme/hooks/useTheme';
 import * as m from '../../paraglide/messages.js';
-import { AppFooter } from '../../components/chrome';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 type ConsentFlowErrorFooterProps = {
     hideRetry?: boolean;

@@ -41,7 +41,7 @@
 
 import React from 'react';
 
-import { AppIcon } from '../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { constructOutline, sparklesOutline } from 'learn-card-base/icons/ionicons';
 import { NavLink, useRouteMatch } from 'react-router-dom';
 

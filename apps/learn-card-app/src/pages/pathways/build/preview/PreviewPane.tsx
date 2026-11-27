@@ -18,7 +18,7 @@
 
 import React, { useMemo } from 'react';
 
-import { AppIcon } from '../../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { flagOutline, phonePortraitOutline } from 'learn-card-base/icons/ionicons';
 
 import type { Pathway, PathwayNode, Policy } from '../../types';

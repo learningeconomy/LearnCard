@@ -28,7 +28,7 @@ import {
     BoostCategoryOptionsEnum,
     newCredsStore,
 } from 'learn-card-base';
-import { AppCol } from '../../layout';
+import { AppCol } from 'learn-card-base/ui/layout';
 
 import BadgeSkeleton from 'learn-card-base/components/boost/boostSkeletonLoaders/BadgeSkeleton';
 

@@ -1,12 +1,12 @@
 import React from 'react';
 
-import { useAppOverlayModal } from '../overlays/useAppOverlayModal';
-import { AppCol, AppRow } from '../layout';
-import { AppItem, AppList } from '../list';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
+import { AppItem, AppList } from 'learn-card-base/ui/list';
 import X from 'learn-card-base/svgs/X';
 import DeleteUserConfirmationPrompt from './DeleteUserConfirmationPrompt';
 import * as m from '../../paraglide/messages.js';
-import { AppContent, AppFooter, AppHeader, AppPage, AppToolbar } from '../chrome';
+import { AppContent, AppFooter, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
 
 const UserOptions: React.FC<{
     handleCloseModal: () => void;

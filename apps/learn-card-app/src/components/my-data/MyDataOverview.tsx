@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { AppCol, AppGrid, AppRow } from '../layout';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import ShieldCheck from 'learn-card-base/svgs/ShieldCheck';
 import BellSimple from 'learn-card-base/svgs/BellSimple';
@@ -9,7 +9,7 @@ import LockSimple from 'learn-card-base/svgs/LockSimple';
 import useTheme from '../../theme/hooks/useTheme';
 
 import { MyDataStepsEnum } from './MyData';
-import { AppContent, AppHeader, AppPage, AppToolbar } from '../chrome';
+import { AppContent, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
 
 const MyDataOverview: React.FC<{
     handleCloseModal: () => void;

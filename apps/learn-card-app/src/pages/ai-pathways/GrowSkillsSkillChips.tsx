@@ -9,7 +9,7 @@ import {
     useGlobalSemanticSearchSkills,
     useGlobalSkillFrameworks,
 } from '../../helpers/globalSkillFrameworks.helpers';
-import { AppSkeletonText } from '../../components/feedback/AppSkeletonText';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
 
 const SKILL_CHIP_GAP_PX = 5;
 const MIN_LAST_SKILL_WIDTH_PX = 100;

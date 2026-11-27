@@ -5,7 +5,7 @@ import { useLoadingLine } from '../../../stores/loadingStore';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
 
-import { AppCol, AppGrid, AppRow } from '../../layout';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import BoostEarnedCard from '../../../components/boost/boost-earned-card/BoostEarnedCard';
 
 import {
@@ -21,7 +21,7 @@ import {
     SubheaderContentType,
 } from '../../main-subheader/MainSubHeader.types';
 import CategoryEmptyPlaceholder from '../../empty-placeholder/CategoryEmptyPlaceHolder';
-import { AppSpinner } from '../../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type CategoryType = CredentialCategory | 'Hidden';
 

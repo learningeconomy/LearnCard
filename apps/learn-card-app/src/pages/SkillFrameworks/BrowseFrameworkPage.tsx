@@ -42,8 +42,8 @@ import {
     SkillFrameworkNodeWithSearchInfo,
 } from '../../components/boost/boost';
 import { SetState } from 'packages/shared-types/dist';
-import { AppPage } from '../../components/chrome';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type BrowseFrameworkPageProps = {
     frameworkInfo: ApiFrameworkInfo;

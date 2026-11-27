@@ -5,12 +5,12 @@ import { shuffle } from 'lodash-es';
 import * as m from '../../../paraglide/messages.js';
 import { useLocale } from '../../../i18n';
 
-import { AppRow } from '../../../components/layout';
+import { AppRow } from 'learn-card-base/ui/layout';
 import { useTenantBrandingAssets } from '../../../config/brandingAssets';
 
 import themeStore from '../../../theme/store/themeStore';
 import { getThemeLoaderColors, resolveThemeId } from '../../../theme/helpers/themeIds';
-import { AppContent, AppPage } from '../../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 export const LoginLoadingPage: React.FC = () => {
     const locale = useLocale();

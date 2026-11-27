@@ -1,14 +1,14 @@
 import React, { Suspense, useState } from 'react';
 
-import { AppPopover } from '../../components/overlays/AppPopover';
-import { AppIcon } from '../../components/icon';
+import { AppPopover } from 'learn-card-base/ui/overlays/AppPopover';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { chevronDownOutline, eyeOutline, shareOutline } from 'learn-card-base/icons/ionicons';
 import { lazyWithRetry, ModalTypes, useDeviceTypeByWidth, useModal } from 'learn-card-base';
 
 import * as m from '../../paraglide/messages.js';
 import { ShareCredentialsIllustration } from '../../components/share-links/ShareCredentialsIllustration';
-import { AppContent, AppPage } from '../../components/chrome';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const ShareBoostsBundleModal = lazyWithRetry(
     () => import('../../components/creds-bundle/ShareBoostsBundleModal')

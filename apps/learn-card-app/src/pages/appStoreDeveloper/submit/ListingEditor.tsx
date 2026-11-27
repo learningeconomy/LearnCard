@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AppIcon } from '../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { addOutline, chevronDownOutline, closeOutline } from 'learn-card-base/icons/ionicons';
 
 import { ImageUpload, ScreenshotUpload } from '../components/ImageUpload';

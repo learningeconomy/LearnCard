@@ -5,15 +5,15 @@ import { QRCodeSVG } from 'qrcode.react';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import { useWallet, useToast, ToastTypeEnum, useDeviceTypeByWidth } from 'learn-card-base';
 
-import { AppCol, AppRow } from '../../../components/layout';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 import ModalLayout from 'apps/learn-card-app/src/layout/ModalLayout';
 import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantConfig';
 
 import { shareOrCopy } from '../../../helpers/shareHelpers';
-import { AppPage } from '../../../components/chrome';
-import { AppSpinner } from '../../../components/feedback/AppSpinner';
+import { AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const AddressBookQRCode: React.FC<{
     handleCloseModal: () => void;

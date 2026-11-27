@@ -5,7 +5,7 @@ import { getVCDisplayCardVariant } from '@learncard/react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('boost-claim-card');
 
-import { useAppAlert } from '../../overlays/useAppAlert';
+import { useAppAlert } from 'learn-card-base/ui/overlays/useAppAlert';
 
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import RenderMethodDisplay from '../../render-method/RenderMethodDisplay';
@@ -60,8 +60,8 @@ import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreview
 import * as m from '../../../paraglide/messages.js';
 import { useDuplicateCredentialGuard } from '../../credentials/duplicate-credential/useDuplicateCredentialGuard';
 import type { DuplicateCredentialLookup } from '../../credentials/duplicate-credential/findDuplicateCredential';
-import { AppPage } from '../../chrome';
-import { AppSpinner } from '../../feedback/AppSpinner';
+import { AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type BoostClaimCardProps = {
     credential: VC | VP;

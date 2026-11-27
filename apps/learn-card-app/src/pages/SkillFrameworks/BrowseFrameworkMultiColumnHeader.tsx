@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-import { AppInput, type AppInputHandle } from '../../components/controls/AppInput';
+import { AppInput, type AppInputHandle } from 'learn-card-base/ui/controls/AppInput';
 import X from 'learn-card-base/svgs/X';
 import Pencil from '../../components/svgs/Pencil';
 import CodeIcon from 'learn-card-base/svgs/CodeIcon';
@@ -12,7 +12,7 @@ import { SetState } from 'packages/shared-types/dist';
 import { ApiFrameworkInfo } from '../../helpers/skillFramework.helpers';
 import { SkillFrameworkNode, SkillFrameworkNodeWithSearchInfo } from '../../components/boost/boost';
 import * as m from '../../paraglide/messages.js';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type BrowseFrameworkMultiColumnHeaderProps = {
     handleBack: () => void;

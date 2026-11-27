@@ -46,8 +46,8 @@ import {
     useDeviceTypeByWidth,
 } from 'learn-card-base';
 import { chatBotStore } from '../../stores/chatBotStore';
-import { AppContent, AppPage } from '../chrome';
-import { AppSpinner } from '../feedback/AppSpinner';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 export enum AddToLearnCardMenuEnum {
     boostSomeone = 'boostSomeone',

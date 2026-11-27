@@ -31,7 +31,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import * as m from '../../../paraglide/messages.js';
 
-import { AppIcon } from '../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
     alertCircleOutline,

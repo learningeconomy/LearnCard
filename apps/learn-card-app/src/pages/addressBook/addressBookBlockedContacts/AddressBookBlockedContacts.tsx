@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useRouteMatch } from 'react-router-dom';
 
-import { AppSpinner } from '../../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import * as m from '../../../paraglide/messages.js';
 
 import AddressBookContactList from '../addressBook-contact-list/AddressBookContactList';

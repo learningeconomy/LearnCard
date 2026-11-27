@@ -20,7 +20,7 @@ import { useGetAiInsightsServicesContract } from '../learner-insights/learner-in
 
 import { LCNProfile } from '@learncard/types';
 import { getProfileIdFromLCNDidWeb } from 'learn-card-base/helpers/credentialHelpers';
-import { AppFooter } from '../../../components/chrome';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 export const AiInsightsParentConsent: React.FC<{
     targetProfile: LCNProfile;

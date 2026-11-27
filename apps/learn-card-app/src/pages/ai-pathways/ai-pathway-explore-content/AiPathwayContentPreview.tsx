@@ -9,7 +9,7 @@ import { useModal, VideoMetadata, getVideoMetadata, getVideoSource } from 'learn
 
 import GrowSkillsSkillChips from '../GrowSkillsSkillChips';
 import { AiPathwayContent } from './ai-pathway-content.helpers';
-import { AppFooter } from '../../../components/chrome';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 const AiPathwayContentPreview: React.FC<{ content: AiPathwayContent }> = ({ content }) => {
     const { closeModal } = useModal();

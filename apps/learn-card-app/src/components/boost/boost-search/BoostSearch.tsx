@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { AppCol, AppGrid, AppRow } from '../../layout';
-import { AppInput } from '../../controls/AppInput';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import BoostAddressBookContactList from '../boostCMS/boostCMSForms/boostCMSIssueTo/BoostAddressBookContactList';
@@ -19,7 +19,7 @@ import { useBrandingConfig } from 'learn-card-base';
 import Lottie from '../../lottie/LazyLottie';
 const Pulpo = '/lotties/cuteopulpo.json';
 import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
-import { AppContent, AppFooter, AppHeader, AppPage, AppToolbar } from '../../chrome';
+import { AppContent, AppFooter, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
 
 type BoostSearchProps = {
     handleCloseModal: () => void;

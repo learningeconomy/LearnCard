@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useWallet } from 'learn-card-base';
-import { useAppToast } from '../../components/overlays/useAppToast';
+import { useAppToast } from 'learn-card-base/ui/overlays/useAppToast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Plus from 'apps/learn-card-app/src/components/svgs/Plus';
 // import TrashIcon from 'learn-card-base/svgs/TrashIcon';
 import Pencil from 'apps/learn-card-app/src/components/svgs/Pencil';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type SkillFramework = {
     id: string;

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AppCol, AppRow } from '../layout';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 import KeyIcon from 'learn-card-base/svgs/KeyIcon';
 import { useModal, useCurrentUser } from 'learn-card-base';
 import CopyStack from '../svgs/CopyStack';

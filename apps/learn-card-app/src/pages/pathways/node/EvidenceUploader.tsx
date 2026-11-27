@@ -19,7 +19,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 
-import { AppIcon } from '../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { addOutline, attachOutline } from 'learn-card-base/icons/ionicons';
 import { AnimatePresence, motion } from 'motion/react';
 import { v4 as uuid } from 'uuid';

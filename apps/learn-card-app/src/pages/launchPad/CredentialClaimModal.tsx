@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import { X, Check, Loader2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getLogger } from 'learn-card-base';

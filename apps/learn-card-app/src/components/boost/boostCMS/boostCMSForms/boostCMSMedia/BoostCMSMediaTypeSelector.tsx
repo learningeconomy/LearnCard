@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { AppCol, AppRow } from '../../../../layout';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 import { boostMediaOptions, BoostMediaOptionsEnum } from '../../../boost';
 

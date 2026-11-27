@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-import { AppCol, AppGrid, AppRow } from '../../layout';
-import { AppInput } from '../../controls/AppInput';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
 import BoostEarnedCard from '../boost-earned-card/BoostEarnedCard';
 import ListItemsIcon from 'learn-card-base/svgs/ListItemsIcon';
@@ -29,7 +29,7 @@ import keyboardStore from 'learn-card-base/stores/keyboardStore';
 import { Capacitor } from '@capacitor/core';
 import * as m from '../../../paraglide/messages.js';
 import { TransP } from '../../../i18n/TransP';
-import { AppFooter } from '../../chrome';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 export const BoostLinkedCredentialsModal: React.FC<{
     credential: VC;

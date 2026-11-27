@@ -6,7 +6,7 @@ import BrowseFrameworkPage from '../SkillFrameworks/BrowseFrameworkPage';
 import CreateFrameworkModal from '../SkillFrameworks/CreateFrameworkModal';
 import SkillsAdminPanelFramework from './SkillsAdminPanelFramework';
 import SelectFrameworkToManageModal from '../SkillFrameworks/SelectFrameworkToManageModal';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 import {
     useModal,

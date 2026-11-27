@@ -47,7 +47,7 @@ import {
 } from '../../helpers/oid4vc-resilience/resilientVci';
 import { useResilientExchange } from '../../hooks/useResilientExchange';
 import { RecoveryPromptModal } from '../../components/oid4vc-recovery/RecoveryPromptModal';
-import { AppContent, AppPage } from '../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const PRE_AUTH_GRANT_KEY = 'urn:ietf:params:oauth:grant-type:pre-authorized_code';
 

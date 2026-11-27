@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouteMatch } from 'react-router-dom';
-import { AppGrid, AppRow } from '../../components/layout';
+import { AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('address-book');
 
@@ -32,8 +32,8 @@ import useTheme from '../../theme/hooks/useTheme';
 import useHeaderScrollSync from '../../hooks/useHeaderScrollSync';
 import useDebounce from '../../hooks/useDebounce';
 import { IconSetEnum } from '../../theme/icons';
-import { AppContent, AppPage } from '../../components/chrome';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const getActiveRouteTab = (url: string): AddressBookTabsEnum | undefined => {
     switch (url) {

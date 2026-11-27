@@ -2,7 +2,7 @@ import React from 'react';
 import { PendingContractRequests } from '../../components/contract-requests/ContractRequest';
 import * as m from '../../paraglide/messages.js';
 
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 import TrustSummaryCard from './components/TrustSummaryCard';
 import ConnectedAppsSection from './components/ConnectedAppsSection';

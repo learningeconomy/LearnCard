@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import zod from 'zod';
 
-import { AppInput } from '../../controls/AppInput';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 
 import { useModal } from 'learn-card-base';

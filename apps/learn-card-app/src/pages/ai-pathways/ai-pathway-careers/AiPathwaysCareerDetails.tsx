@@ -11,7 +11,7 @@ import AiPathwayCareerQualifications from './AiPathwayCareerQualifications';
 import { useModal } from 'learn-card-base';
 
 import { OccupationDetailsResponse } from 'learn-card-base/types/careerOneStop';
-import { AppFooter } from '../../../components/chrome';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 const AiPathwayCareerDetails: React.FC<{ occupation: OccupationDetailsResponse }> = ({
     occupation,

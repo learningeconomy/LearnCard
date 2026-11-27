@@ -1,7 +1,7 @@
 import React from 'react';
 import * as m from '../../../../paraglide/messages.js';
 
-import { AppSpinner } from '../../../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const AdminToolsOptionItemLoader: React.FC = () => {
     return (

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AppLabel } from '../../../components/list';
+import { AppLabel } from 'learn-card-base/ui/list';
 
 import useTheme from '../../../theme/hooks/useTheme';
 import { CredentialCategoryEnum, useModal, ModalTypes } from 'learn-card-base';

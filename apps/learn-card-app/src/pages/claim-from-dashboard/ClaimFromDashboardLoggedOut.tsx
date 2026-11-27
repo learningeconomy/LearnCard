@@ -1,6 +1,6 @@
 import React from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
-import { AppCol, AppRow } from '../../components/layout';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 
@@ -11,7 +11,7 @@ import { FromDashboardMetadata } from './ClaimFromDashboard';
 
 import useTheme from '../../theme/hooks/useTheme';
 import * as m from '../../paraglide/messages.js';
-import { AppPage } from '../../components/chrome';
+import { AppPage } from 'learn-card-base/ui/chrome';
 
 export type ClaimFromDashboardLoggedOutProps = {
     metadata: FromDashboardMetadata | undefined;

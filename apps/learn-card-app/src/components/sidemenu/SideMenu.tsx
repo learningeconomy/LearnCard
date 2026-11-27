@@ -15,8 +15,8 @@ import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import LearnCardTextLogo from '../svgs/LearnCardTextLogo';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import SideMenuSecondaryLinks from './SideMenuSecondaryLinks';
-import { AppMenu } from '../app-shell/AppMenu';
-import { AppMenuToggle } from '../app-shell/AppMenuToggle';
+import { AppMenu } from 'learn-card-base/ui/app-shell/AppMenu';
+import { AppMenuToggle } from 'learn-card-base/ui/app-shell/AppMenuToggle';
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
 import Settings from '../svgs/Settings';
 import ThemeSelector, { themeSelectorViewMode } from '../../theme/components/ThemeSelector';
@@ -38,7 +38,7 @@ import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
 import useBoostRecoveryCheck from '../../hooks/useBoostRecoveryCheck';
 
 import * as m from '../../paraglide/messages.js';
-import { AppContent } from '../chrome';
+import { AppContent } from 'learn-card-base/ui/chrome';
 
 const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
     branding = BrandingEnum.learncard,

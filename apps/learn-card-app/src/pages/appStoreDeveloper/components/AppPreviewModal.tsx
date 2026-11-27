@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { AppToast } from '../../../components/overlays/AppToast';
+import { AppToast } from 'learn-card-base/ui/overlays/AppToast';
 import { X, Maximize2, Play, AlertCircle } from 'lucide-react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('app-preview-modal');
@@ -21,7 +21,7 @@ import type {
     ExtendedAppStoreListing,
 } from '../types';
 import { LAUNCH_TYPE_INFO } from '../types';
-import { AppContent, AppPage } from '../../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 // LaunchConfig type compatible with useLearnCardMessageHandlers
 interface LaunchConfig {

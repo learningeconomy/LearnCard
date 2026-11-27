@@ -7,7 +7,7 @@ import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import type { CampaignApi } from './types';
 import { CampaignRoutes, CampaignNotFound } from './CampaignRoutes';
 import { Busy, Notice, buttonClass } from './ui';
-import { AppContent, AppPage } from '../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const CampaignSession: React.FC = () => {
     const { initWallet } = useWallet();

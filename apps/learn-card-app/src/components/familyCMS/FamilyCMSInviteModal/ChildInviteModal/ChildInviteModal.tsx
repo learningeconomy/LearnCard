@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
-import { AppInput } from '../../../controls/AppInput';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import Pencil from '../../../svgs/Pencil';
 import LearnCardIconOutline from '../../../svgs/LearnCardIconOutline';
 import LearnCardIDCMS from '../../../learncardID-CMS/LearnCardIDCMS';
@@ -29,8 +29,8 @@ import { getLearnCardIDStyleDefaults } from '../../../learncardID-CMS/learncard-
 
 import keyboardStore from 'learn-card-base/stores/keyboardStore';
 import { m } from '../../../../paraglide/messages.js';
-import { AppContent, AppFooter, AppPage, AppToolbar } from '../../../chrome';
-import { AppSpinner } from '../../../feedback/AppSpinner';
+import { AppContent, AppFooter, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 export enum ChildInviteModalViewModeEnum {
     create = 'create',

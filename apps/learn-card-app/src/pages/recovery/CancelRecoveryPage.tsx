@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useHistory } from 'react-router-dom';
 import queryString from 'query-string';
-import { AppIcon } from '../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { alertCircleOutline, checkmarkCircleOutline } from 'learn-card-base/icons/ionicons';
 import { networkStore, getSSSConfig } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';

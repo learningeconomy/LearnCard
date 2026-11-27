@@ -6,7 +6,7 @@ import LearnCardIDPreview from './LearnCardIDPreview';
 
 import { FamilyChildAccount, FamilyCMSAppearance } from '../familyCMS/familyCMSState';
 import { ModalTypes, useModal } from 'learn-card-base';
-import { AppFooter, AppToolbar } from '../chrome';
+import { AppFooter, AppToolbar } from 'learn-card-base/ui/chrome';
 
 export const LearnCardIDCMSFooter: React.FC<{
     user: FamilyChildAccount;

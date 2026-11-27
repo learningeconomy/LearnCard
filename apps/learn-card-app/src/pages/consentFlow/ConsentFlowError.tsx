@@ -1,5 +1,5 @@
 import React from 'react';
-import { AppRow } from '../../components/layout';
+import { AppRow } from 'learn-card-base/ui/layout';
 
 import SadCloud from '../../components/svgs/SadCloud';
 import CloudWarning from '../../components/svgs/CloudWarning';
@@ -8,7 +8,7 @@ import ConsentFlowErrorFooter from './ConsentFlowErrorFooter';
 import { useHistory } from 'react-router-dom';
 import { useModal } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
-import { AppFooter } from '../../components/chrome';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 type ConsentFlowErrorProps = {
     errorType: number;

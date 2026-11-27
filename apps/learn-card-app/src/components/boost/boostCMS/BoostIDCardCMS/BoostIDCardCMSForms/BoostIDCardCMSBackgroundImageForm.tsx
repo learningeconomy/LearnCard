@@ -3,14 +3,14 @@ import React, { useState } from 'react';
 import { useImageUpload, UploadRes } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
-import { AppToggle } from '../../../../controls/AppToggle';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 
 import Pencil from '../../../../svgs/Pencil';
 import EmptyImage from 'learn-card-base/assets/images/empty-image.png';
 import TrashBin from '../../../../svgs/TrashBin';
 
 import { BoostCMSState } from '../../../boost';
-import { AppSpinner } from '../../../../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const BoostIDCardCMSBackgroundImageForm: React.FC<{
     state: BoostCMSState;

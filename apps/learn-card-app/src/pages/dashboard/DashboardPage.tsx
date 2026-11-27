@@ -83,7 +83,7 @@ import ProfileAlertsIsland from '../../components/main-header/ProfileAlertsIslan
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 import { markDashboardPath, useDashboardPathMark } from '../../helpers/dashboardPathMarks';
 import { markFirstScreenPainted } from 'learn-card-base/helpers/firstScreen';
-import { AppContent, AppPage } from '../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 /** The activity card lists at most three passive records. */
 const RECENT_ACTIVITY_RECORDS = 3;

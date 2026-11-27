@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { IonApp } from '@ionic/react';
 
-import { AppTextarea } from '../../src/components/controls/AppTextarea';
+import { AppTextarea } from 'learn-card-base/ui/controls/AppTextarea';
 import { X } from 'lucide-react';
 import { BoostCategoryOptionsEnum, CredentialCategoryEnum } from 'learn-card-base';
 

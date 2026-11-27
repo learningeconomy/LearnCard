@@ -23,7 +23,7 @@ import {
 import { normalizeSchoolPrograms } from '../ai-pathway-courses/ai-pathway-courses.helpers';
 import * as m from '../../../paraglide/messages.js';
 import { TransP } from '../../../i18n/TransP';
-import { AppContent, AppPage } from '../../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const AiPathwaysDiscovery: React.FC = () => {
     const { getThemedCategoryColors } = useTheme();

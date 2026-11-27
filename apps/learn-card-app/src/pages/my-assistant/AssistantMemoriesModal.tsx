@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AppIcon } from '../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { alertCircleOutline, closeOutline } from 'learn-card-base/icons/ionicons';
 
 import {

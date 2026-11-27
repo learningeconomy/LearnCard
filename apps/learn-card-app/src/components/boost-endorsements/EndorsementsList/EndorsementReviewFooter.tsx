@@ -4,7 +4,7 @@ import X from 'learn-card-base/svgs/X';
 
 import { useModal } from 'learn-card-base';
 import * as m from '../../../paraglide/messages.js';
-import { AppFooter } from '../../chrome';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 const EndorsementReviewFooter: React.FC<{
     isDisabled?: boolean;

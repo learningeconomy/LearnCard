@@ -11,7 +11,7 @@ import { useModal } from 'learn-card-base';
 import { TrainingProgram } from 'learn-card-base/types/careerOneStop';
 import { getProgramLengthDisplay } from './ai-pathway-courses.helpers';
 import GrowSkillsSkillChips from '../GrowSkillsSkillChips';
-import { AppFooter } from '../../../components/chrome';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 const AiPathwaySchoolProgramDetails: React.FC<{ program: TrainingProgram }> = ({ program }) => {
     const { closeModal } = useModal();

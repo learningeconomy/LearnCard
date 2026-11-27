@@ -3,7 +3,7 @@ import React, { useCallback, useState } from 'react';
 import { m } from '../../../paraglide/messages.js';
 
 import X from 'learn-card-base/svgs/X';
-import { AppInput } from '../../../components/controls/AppInput';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import ShareChildInsightsWithUserCard from './ShareChildInsightsWithUserCard';
 import ShareChildInsightsWithAnyoneController from './ShareChildInsightsWithAnyoneController';
 
@@ -18,7 +18,7 @@ import { LCNProfileManager, LCNProfile } from '@learncard/types';
 
 import useTheme from '../../../theme/hooks/useTheme';
 import { IconSetEnum } from '../../../theme/icons';
-import { AppSpinner } from '../../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 export const ShareChildInsightsModal: React.FC<{
     childProfile: LCNProfile;

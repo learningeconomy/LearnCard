@@ -29,7 +29,7 @@ import AiFeatureLinks from '../../components/ai-feature-links/AiFeatureLinks';
 
 import { LearnCardRolesEnum } from '../../components/onboarding/onboarding.helpers';
 import { m } from '../../paraglide/messages.js';
-import { AppContent, AppPage } from '../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 enum TabEnum {
     MY_HUB = 'my-hub',

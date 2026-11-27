@@ -1,7 +1,7 @@
 import React, { useId, useState } from 'react';
 import { useModal, ModalTypes } from 'learn-card-base';
 import { MediaAttachments, type SimpleMediaAttachment } from '../components/MediaAttachments';
-import { AppIcon } from '../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     alertCircleOutline,
     peopleOutline,

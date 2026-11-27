@@ -1,7 +1,7 @@
 import React from 'react';
 
-import { AppCol, AppRow } from '../../../../layout';
-import { AppToggle } from '../../../../controls/AppToggle';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 
 import { BoostCMSState } from '../../../boost';
 import * as m from '../../../../../paraglide/messages.js';

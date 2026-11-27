@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-import { AppIcon } from '../../../icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { chevronDownOutline, chevronUpOutline } from 'learn-card-base/icons/ionicons';
 
 import { resumeUserInfo, UserInfoEnum } from '../../resume-builder.helpers';

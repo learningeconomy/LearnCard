@@ -40,7 +40,7 @@ import { useLoadingLine } from '../../stores/loadingStore';
 import useLCNGatedAction from '../../components/network-prompts/hooks/useLCNGatedAction';
 
 import useTheme from '../../theme/hooks/useTheme';
-import { AppContent, AppPage } from '../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const FamilyPage: React.FC = () => {
     const { getThemedCategoryColors } = useTheme();

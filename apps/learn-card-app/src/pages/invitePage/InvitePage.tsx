@@ -11,8 +11,8 @@ import { generatePK } from '../../helpers/privateKeyHelpers';
 import { AddressBookContact } from '../addressBook/addressBookHelpers';
 import * as m from '../../paraglide/messages.js';
 import AddContactView, { AddContactViewMode } from '../addressBook/addContactView/AddContactView';
-import { AppContent, AppPage } from '../../components/chrome';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const InvitePage: React.FC = () => {
     const isLoggedIn = useIsLoggedIn();

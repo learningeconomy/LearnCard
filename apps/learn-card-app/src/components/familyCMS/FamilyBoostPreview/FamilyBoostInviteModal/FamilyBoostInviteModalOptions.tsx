@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
-import { useAppOverlayModal } from '../../../overlays/useAppOverlayModal';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
 import FamilyInviteGuardian from './FamilyInviteGuardian';
 import AddUser from '../../../svgs/AddUser';
 

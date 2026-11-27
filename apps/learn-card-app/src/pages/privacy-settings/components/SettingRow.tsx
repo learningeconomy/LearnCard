@@ -1,7 +1,7 @@
 import React from 'react';
 import { Lock } from 'lucide-react';
 
-import { AppToggle } from '../../../components/controls/AppToggle';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 
 type SettingRowProps = {
     title: string;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AppCol, AppRow } from '../../../../layout';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 import Plus from 'learn-card-base/svgs/Plus';
 import { BoostCMSState, SkillFrameworkNode } from '../../../boost';
 import { useModal, ModalTypes, useGetBoostsThatUseFramework } from 'learn-card-base';

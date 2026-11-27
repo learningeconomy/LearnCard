@@ -1,5 +1,5 @@
 import React from 'react';
-import { AppLoading } from '../../components/overlays/AppLoading';
+import { AppLoading } from 'learn-card-base/ui/overlays/AppLoading';
 import * as m from '../../paraglide/messages.js';
 
 import BrokenLink from '../../components/svgs/BrokenLink';

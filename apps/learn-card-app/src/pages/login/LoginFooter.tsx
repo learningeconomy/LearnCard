@@ -3,7 +3,7 @@ import * as m from '../../paraglide/messages.js';
 import { TransP } from '../../i18n/TransP';
 import { useHistory } from 'react-router-dom';
 
-import { AppCol } from '../../components/layout';
+import { AppCol } from 'learn-card-base/ui/layout';
 import SeedPhraseModal from './SeedPhraseModal';
 
 import { openToS, openPP, openLCwebsite } from '../../helpers/externalLinkHelpers';

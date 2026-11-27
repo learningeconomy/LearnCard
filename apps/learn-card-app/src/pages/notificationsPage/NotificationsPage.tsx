@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-import { AppCol } from '../../components/layout';
+import { AppCol } from 'learn-card-base/ui/layout';
 import { useHistory, useLocation } from 'react-router-dom';
 import { getLogger, useWallet } from 'learn-card-base';
 import MainHeader from '../../components/main-header/MainHeader';
@@ -11,7 +11,7 @@ import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary'
 import useHeaderScrollSync from '../../hooks/useHeaderScrollSync';
 import { useForceRefreshLearnCloudCredential } from '../../components/credential-refresh-listener/CredentialRefreshListener';
 import { locateCredentialRefreshRecord } from '../../components/notifications/notificationsV2/NotificationCredentialRefreshedCard';
-import { AppContent, AppPage } from '../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const log = getLogger('notifications-page');
 

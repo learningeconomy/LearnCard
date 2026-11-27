@@ -33,7 +33,7 @@
 
 import React, { useEffect } from 'react';
 
-import { AppIcon } from '../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { closeOutline, swapHorizontalOutline } from 'learn-card-base/icons/ionicons';
 
 import { pathwayStore } from '../../../stores/pathways';

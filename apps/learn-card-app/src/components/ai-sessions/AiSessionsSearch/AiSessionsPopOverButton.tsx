@@ -3,8 +3,8 @@ import React, { useState, useRef } from 'react';
 import { m } from '../../../paraglide/messages.js';
 
 import AiSessionsFilterSortingOptionsModal from './AiSessionsFilterSortingOptionsModal';
-import { AppPopover } from '../../overlays/AppPopover';
-import { AppItem, AppList } from '../../list';
+import { AppPopover } from 'learn-card-base/ui/overlays/AppPopover';
+import { AppItem, AppList } from 'learn-card-base/ui/list';
 import SortIcon from 'learn-card-base/svgs/SortButton';
 import { Checkmark } from '@learncard/react';
 

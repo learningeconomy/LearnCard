@@ -19,8 +19,8 @@ import 'swiper/css/keyboard';
 import 'swiper/css/pagination';
 import 'swiper/css/scrollbar';
 import 'learn-card-base/swiper/swiper-defaults.css';
-import { AppContent, AppPage } from '../chrome';
-import { AppSpinner } from '../feedback/AppSpinner';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const IntroSlides: React.FC = () => {
     const { getColorSet } = useTheme();

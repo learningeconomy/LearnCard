@@ -3,9 +3,9 @@ import { produce } from 'immer';
 
 import TrashBin from '../../components/svgs/TrashBin';
 import Plus from 'learn-card-base/svgs/Plus';
-import { AppInput } from '../../components/controls/AppInput';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import type { ConsentFlowContract } from '@learncard/types';
-import { AppCheckbox } from '../../components/controls/AppCheckbox';
+import { AppCheckbox } from 'learn-card-base/ui/controls/AppCheckbox';
 
 type MultiTextInputProps = {
     values: ConsentFlowContract['read']['personal'];

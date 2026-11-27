@@ -22,7 +22,7 @@ import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader
 import BoostEarnedIDCard from '../../components/boost/boost-earned-card/BoostEarnedIDCard';
 import BoostManagedIDCard from '../../components/boost/boost-managed-card/BoostManagedIDCard';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
-import { AppContent, AppPage } from '../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const MembershipPage: React.FC = () => {
     const infiniteScrollRef = useRef<HTMLDivElement>(null);

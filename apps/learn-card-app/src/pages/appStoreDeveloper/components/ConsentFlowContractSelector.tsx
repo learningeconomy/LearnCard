@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { FileText, Plus, ChevronDown, Check, Eye } from 'lucide-react';
-import { AppSpinner } from '../../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 import * as m from '../../../paraglide/messages.js';
 

@@ -51,7 +51,7 @@ interface UseCaseCardProps {
 }
 
 import { getLogger } from 'learn-card-base';
-import { AppContent, AppPage } from '../../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 const log = getLogger('integration-hub');
 
 const UseCaseCard: React.FC<UseCaseCardProps> = ({

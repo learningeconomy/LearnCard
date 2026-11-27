@@ -4,11 +4,11 @@ import { IonApp } from '@ionic/react';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
 
 import { BackButton, Footer, Header, Title, Toolbar } from './chromeShim';
-import { AppContent, AppPage } from '../../src/components/chrome';
-import { AppButton } from '../../src/components/controls/AppButton';
-import { AppButtons } from '../../src/components/controls/AppButtons';
-import { AppOverlayManager } from '../../src/components/overlays/AppOverlayManager';
-import { useAppOverlayModal } from '../../src/components/overlays/useAppOverlayModal';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppButton } from 'learn-card-base/ui/controls/AppButton';
+import { AppButtons } from 'learn-card-base/ui/controls/AppButtons';
+import { AppOverlayManager } from 'learn-card-base/ui/overlays/AppOverlayManager';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
 import BoostCMSHeader from '../../src/components/boost/boostCMS/BoostCMSHeader/BoostCMSHeader';
 import BoostCMSFooter from '../../src/components/boost/boostCMS/BoostCMSFooter/BoostCMSFooter';
 import { BoostUserTypeEnum } from '../../src/components/boost/boost-options/boostOptions';

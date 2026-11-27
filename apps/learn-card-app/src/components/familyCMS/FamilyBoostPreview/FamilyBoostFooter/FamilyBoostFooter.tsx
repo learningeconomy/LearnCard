@@ -8,7 +8,7 @@ import FamilyActionMenu from '../../FamilyActionMenu/FamilyActionMenu';
 import { ModalTypes, useModal } from 'learn-card-base';
 import { VC } from '@learncard/types';
 import { m } from '../../../../paraglide/messages.js';
-import { AppFooter, AppToolbar } from '../../../chrome';
+import { AppFooter, AppToolbar } from 'learn-card-base/ui/chrome';
 
 export const FamilyBoostFooter: React.FC<{
     credential: VC;

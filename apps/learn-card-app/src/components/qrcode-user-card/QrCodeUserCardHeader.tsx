@@ -7,7 +7,7 @@ import ProfilePicture, {
 } from 'learn-card-base/components/profilePicture/ProfilePicture';
 
 import { useCurrentUser, useModal, useDeviceTypeByWidth } from 'learn-card-base';
-import { AppHeader, AppToolbar } from '../chrome';
+import { AppHeader, AppToolbar } from 'learn-card-base/ui/chrome';
 
 export const QrCodeUserCardHeader: React.FC<{
     showCompact: boolean;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { AppSkeletonText } from '../../../components/feedback/AppSkeletonText';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
 
 export const AiPathwaySessionItemSkeleton: React.FC = () => (
     <div className="w-full flex flex-col items-start justify-start px-4 py-2 gap-1 border-solid border border-grayscale-200 rounded-xl">

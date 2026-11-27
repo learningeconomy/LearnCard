@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-import { AppInput } from '../../../controls/AppInput';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import PaperPlane from 'learn-card-base/svgs/PaperPlane';
 
 import { useDeviceTypeByWidth, useKeyboardHeight, isPlatformIOS } from 'learn-card-base';

@@ -21,7 +21,7 @@ import {
 import { useAiConsentToggle } from '../../hooks/useAiConsentToggle';
 import * as m from '../../paraglide/messages.js';
 import { useLocale } from '../../i18n';
-import { AppToggle } from '../../components/controls/AppToggle';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 
 type ProfileVisibilityValue =
     (typeof ProfileVisibilityEnum.enum)[keyof typeof ProfileVisibilityEnum.enum];

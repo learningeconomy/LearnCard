@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { AppItem } from '../../../../list';
+import { AppItem } from 'learn-card-base/ui/list';
 
 import X from 'learn-card-base/svgs/X';
 import Plus from 'learn-card-base/svgs/Plus';

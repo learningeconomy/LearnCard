@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { AppTextarea } from '../controls/AppTextarea';
+import { AppTextarea } from 'learn-card-base/ui/controls/AppTextarea';
 import {
     PersonalizedQuestionEnum,
     PersonalizedQuestionType,

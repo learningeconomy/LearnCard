@@ -32,7 +32,7 @@ import { CredentialCategoryEnum, useModal, DisplayTypeEnum } from 'learn-card-ba
 import { VC, UnsignedVC, VerificationItem } from '@learncard/types';
 import moment from 'moment';
 import * as m from '../../../../paraglide/messages.js';
-import { AppPage } from '../../../chrome';
+import { AppPage } from 'learn-card-base/ui/chrome';
 
 type BoostDetailsSideMenuProps = {
     credential: VC;

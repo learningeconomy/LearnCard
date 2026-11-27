@@ -1,6 +1,6 @@
 import React, { useId, useRef, useState } from 'react';
 import { useHistory } from 'react-router-dom';
-import { AppIcon } from '../../icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     archiveOutline,
     arrowUndoOutline,

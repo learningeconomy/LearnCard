@@ -4,12 +4,12 @@ import moment from 'moment';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('create-api-token-modal');
 
-import { AppItem, AppLabel, AppList } from '../../../components/list';
-import { AppInput } from '../../../components/controls/AppInput';
-import { AppTextarea } from '../../../components/controls/AppTextarea';
-import { AppButton } from '../../../components/controls/AppButton';
-import { AppButtons } from '../../../components/controls/AppButtons';
-import AppDatetime, { type AppDatetimeHandle } from '../../../components/datetime/AppDatetime';
+import { AppItem, AppLabel, AppList } from 'learn-card-base/ui/list';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
+import { AppTextarea } from 'learn-card-base/ui/controls/AppTextarea';
+import { AppButton } from 'learn-card-base/ui/controls/AppButton';
+import { AppButtons } from 'learn-card-base/ui/controls/AppButtons';
+import AppDatetime, { type AppDatetimeHandle } from 'learn-card-base/ui/datetime/AppDatetime';
 import Calendar from '../../../components/svgs/Calendar';
 
 import {

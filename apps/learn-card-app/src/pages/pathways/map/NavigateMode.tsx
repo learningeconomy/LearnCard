@@ -47,7 +47,7 @@
 
 import React, { useEffect } from 'react';
 
-import { AppIcon } from '../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     arrowBackOutline,
     arrowForwardOutline,

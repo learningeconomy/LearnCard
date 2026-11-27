@@ -1,4 +1,4 @@
-import { AppSkeletonText } from '../../../components/feedback/AppSkeletonText';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
 
 export const AdminToolsApiTokenItemSkeleton: React.FC = () => {
     return (

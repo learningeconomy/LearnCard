@@ -6,8 +6,8 @@ import { useJoinLCNetworkModal } from '../../../components/network-prompts/hooks
 import { getLogger } from 'learn-card-base';
 const log = getLogger('address-book-contact-item');
 
-import { useAppAlert } from '../../../components/overlays/useAppAlert';
-import { AppItem } from '../../../components/list';
+import { useAppAlert } from 'learn-card-base/ui/overlays/useAppAlert';
+import { AppItem } from 'learn-card-base/ui/list';
 
 import Plus from 'learn-card-base/svgs/Plus';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck

@@ -5,7 +5,7 @@ import {
     useGetMultipleBoosts,
     useWallet,
 } from 'learn-card-base';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { SkillFrameworkType } from '@learncard/types';
 import CaretDown from 'apps/learn-card-app/src/components/svgs/CaretDown';

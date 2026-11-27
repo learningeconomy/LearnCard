@@ -10,7 +10,7 @@ import {
 } from 'learn-card-base/icons/ionicons';
 import SlimCaretRight from '../../../svgs/SlimCaretRight';
 import SlimCaretLeft from '../../../svgs/SlimCaretLeft';
-import { AppIcon } from '../../../icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import type { CredentialCategory } from 'learn-card-base/types/credentials';
 
 import { useGetCredentialList } from 'learn-card-base';

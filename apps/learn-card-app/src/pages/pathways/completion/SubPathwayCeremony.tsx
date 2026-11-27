@@ -25,7 +25,7 @@
 
 import React from 'react';
 
-import { AppIcon } from '../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { arrowForwardOutline, closeOutline } from 'learn-card-base/icons/ionicons';
 import { motion } from 'motion/react';
 import { useHistory } from 'react-router-dom';

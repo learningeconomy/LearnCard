@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { AppSpinner } from '../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import NewProfileButton from './NewProfileButton';
 import ParentSwitcherButton from './ParentSwitcherButton';
 import NewProfileTypeSelector from './NewProfileTypeSelector';

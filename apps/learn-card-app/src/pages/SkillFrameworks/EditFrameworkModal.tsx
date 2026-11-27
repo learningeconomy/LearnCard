@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useModal, useWallet, useImageUpload } from 'learn-card-base';
-import { AppInput } from '../../components/controls/AppInput';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('edit-framework-modal');

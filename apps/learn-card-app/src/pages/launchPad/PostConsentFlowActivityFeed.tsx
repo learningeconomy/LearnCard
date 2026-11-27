@@ -2,14 +2,14 @@ import React, { useEffect, useRef } from 'react';
 import { ConsentFlowTerms, ConsentFlowContractDetails, LCNProfile } from '@learncard/types';
 import moment from 'moment';
 
-import { AppCol, AppGrid, AppRow } from '../../components/layout';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import { useModal, useTermsTransactions } from 'learn-card-base';
 import TransactionHistoryItem from '../consentFlow/TransactionHistoryItem';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
-import { AppHeader, AppToolbar } from '../../components/chrome';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
-import { AppSkeletonText } from '../../components/feedback/AppSkeletonText';
+import { AppHeader, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
 
 const defaultDate = moment().add(6, 'months').toISOString(); // sets the shareable expiration date 6 months from today
 

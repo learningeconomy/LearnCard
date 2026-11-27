@@ -20,8 +20,8 @@ import { AiFeatureGate } from '../../components/ai-feature-gate/AiFeatureGate';
 import useAppStore from './useAppStore';
 import { useConsentFlowByUri } from '../consentFlow/useConsentFlow';
 import ConsentFlowPrivacyAndData from '../consentFlow/ConsentFlowPrivacyAndData';
-import { AppFooter } from '../../components/chrome';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppFooter } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyCredential = any;

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 import { m } from '../../../paraglide/messages.js';
 
-import { AppItem, AppList } from '../../list';
+import { AppItem, AppList } from 'learn-card-base/ui/list';
 import { Checkmark } from '@learncard/react';
 
 import {

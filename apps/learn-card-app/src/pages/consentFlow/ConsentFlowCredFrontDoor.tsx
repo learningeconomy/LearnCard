@@ -16,7 +16,7 @@ import CredentialSyncConfirmation from './CredentialSyncConfirmation';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import BoostFooterLayout from 'learn-card-base/components/boost/boostFooter/BoostFooterLayout';
 import BoostLoader from '../../components/boost/boostLoader/BoostLoader';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 import { getMinimumTermsForContract } from 'apps/learn-card-app/src/helpers/contract.helpers';
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';

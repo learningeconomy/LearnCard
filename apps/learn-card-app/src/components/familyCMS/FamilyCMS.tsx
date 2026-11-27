@@ -76,7 +76,7 @@ type FamilyCMSProps = {
 };
 
 import { getLogger } from 'learn-card-base';
-import { AppPage } from '../chrome';
+import { AppPage } from 'learn-card-base/ui/chrome';
 const log = getLogger('family-cms');
 
 export const FamilyCMS: React.FC<FamilyCMSProps> = ({

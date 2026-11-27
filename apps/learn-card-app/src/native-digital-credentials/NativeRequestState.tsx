@@ -1,5 +1,5 @@
 import React from 'react';
-import { AppIcon } from '../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { documentTextOutline, alertCircleOutline } from 'learn-card-base/icons/ionicons';
 import * as m from '../paraglide/messages.js';
 

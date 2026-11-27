@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 
 import { m } from '../../paraglide/messages.js';
 
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import { X } from 'lucide-react';
 import {
     ModalTypes,

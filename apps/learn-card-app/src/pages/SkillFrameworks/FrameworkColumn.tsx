@@ -25,7 +25,7 @@ import FrameworkSkillsCount from './FrameworkSkillsCount';
 import FrameworkOptionsModal from './FrameworkOptionsModal';
 import * as m from '../../paraglide/messages.js';
 import FrameworkSearchResults from './FrameworkSearchResults';
-import { AppInput, type AppInputHandle } from '../../components/controls/AppInput';
+import { AppInput, type AppInputHandle } from 'learn-card-base/ui/controls/AppInput';
 
 import {
     FrameworkNodeRole,
@@ -39,8 +39,8 @@ import {
     convertApiSkillNodesToSkillFrameworkNodes,
 } from '../../helpers/skillFramework.helpers';
 import { SetState } from 'packages/shared-types/dist';
-import { AppFooter } from '../../components/chrome';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppFooter } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type FrameworkColumnProps = {
     nodes: SkillFrameworkNode[];

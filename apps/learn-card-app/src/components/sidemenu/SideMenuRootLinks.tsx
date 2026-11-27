@@ -22,8 +22,8 @@ import {
 } from 'learn-card-base/components/sidemenu/sidemenuHelpers';
 import CustomSpinner from '../svgs/CustomSpinner';
 
-import { AppList } from '../list';
-import { AppMenuToggle } from '../app-shell/AppMenuToggle';
+import { AppList } from 'learn-card-base/ui/list';
+import { AppMenuToggle } from 'learn-card-base/ui/app-shell/AppMenuToggle';
 import AiPassportPersonalizationContainer from '../ai-passport/AiPassportPersonalizationContainer';
 
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';

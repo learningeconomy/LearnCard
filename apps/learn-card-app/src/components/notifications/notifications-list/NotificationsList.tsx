@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 
-import { AppItem, AppList } from '../../list';
+import { AppItem, AppList } from 'learn-card-base/ui/list';
 
 import { Notification, NotificationProps } from '@learncard/react';
 import CredentialClaimModal from '../../../pages/launchPad/CredentialClaimModal';

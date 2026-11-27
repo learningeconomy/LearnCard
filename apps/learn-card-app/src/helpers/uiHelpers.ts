@@ -1,4 +1,4 @@
-import { dismissAllAppOverlays } from '../components/overlays/overlayStack';
+import { dismissAllAppOverlays } from 'learn-card-base/ui/overlays/overlayStack';
 
 export const closeAll = () => {
     // adjust selector to fit your needs

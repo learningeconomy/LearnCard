@@ -36,7 +36,7 @@
 
 import React, { useState } from 'react';
 
-import { AppIcon } from '../../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { AnimatePresence, motion } from 'framer-motion';
 import { chevronDownOutline } from 'learn-card-base/icons/ionicons';
 

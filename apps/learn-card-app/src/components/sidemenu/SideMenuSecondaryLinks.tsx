@@ -5,8 +5,8 @@ import { useFlags } from 'launchdarkly-react-client-sdk';
 import * as m from '../../paraglide/messages.js';
 
 import CustomSpinner from '../svgs/CustomSpinner';
-import { AppList } from '../list';
-import { AppMenuToggle } from '../app-shell/AppMenuToggle';
+import { AppList } from 'learn-card-base/ui/list';
+import { AppMenuToggle } from 'learn-card-base/ui/app-shell/AppMenuToggle';
 
 import {
     CredentialCategoryEnum,

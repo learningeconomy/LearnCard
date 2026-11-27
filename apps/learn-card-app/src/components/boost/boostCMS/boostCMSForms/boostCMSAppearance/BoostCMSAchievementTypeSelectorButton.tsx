@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { AppRow } from '../../../../layout';
+import { AppRow } from 'learn-card-base/ui/layout';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 
 import {

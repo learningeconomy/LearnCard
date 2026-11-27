@@ -1,7 +1,7 @@
 import React from 'react';
 import { Clipboard } from '@capacitor/clipboard';
 
-import { AppCol, AppRow } from '../../components/layout';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 import { QRCodeSVG } from 'qrcode.react';
 import CopyStack from '../../components/svgs/CopyStack';
 

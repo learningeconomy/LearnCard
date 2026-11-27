@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { AppReorder } from '../../reorder';
+import { AppReorder } from 'learn-card-base/ui/reorder';
 import TrashBin from '../../svgs/TrashBin';
 import VerticalArrowsIcon from '../../svgs/VerticalArrowsIcon';
 

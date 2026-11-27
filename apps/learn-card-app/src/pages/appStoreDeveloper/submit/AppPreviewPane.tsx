@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AppIcon } from '../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { playOutline } from 'learn-card-base/icons/ionicons';
 
 import { EmbedIframeModal } from '../../launchPad/EmbedIframeModal';

@@ -2,7 +2,7 @@ import React, { Suspense, useEffect } from 'react';
 import { InAppMessagesAnalyticsHost } from './analytics/InAppMessagesAnalyticsHost';
 import { SharedI18nProvider } from './i18n/SharedI18nProvider';
 import { createBrowserHistory } from 'history';
-import { AppShellRouter } from './components/app-shell/AppShellRouter';
+import { AppShellRouter } from 'learn-card-base/ui/app-shell/AppShellRouter';
 import { QueryClient, onlineManager } from '@tanstack/react-query';
 import { BatchedPersistQueryClientProvider } from './providers/BatchedPersistQueryClientProvider';
 import { connectivityStore, networkStore } from 'learn-card-base';
@@ -12,7 +12,7 @@ import {
     CONNECTIVITY_PROBE_PATH,
 } from 'learn-card-base';
 import { IonApp } from '@ionic/react';
-import { AppOverlayManager } from './components/overlays/AppOverlayManager';
+import { AppOverlayManager } from 'learn-card-base/ui/overlays/AppOverlayManager';
 import { LoadingPageDumb } from './pages/loadingPage/LoadingPage';
 
 import AppRouter from './AppRouter';

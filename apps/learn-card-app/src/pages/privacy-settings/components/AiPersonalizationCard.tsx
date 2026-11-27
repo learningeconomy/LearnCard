@@ -4,7 +4,7 @@ import { Check, Lock } from 'lucide-react';
 import * as m from '../../../paraglide/messages.js';
 import type { DataSharingAiViewModel } from '../DataSharingCenter.types';
 import GlassCard from './GlassCard';
-import { AppToggle } from '../../../components/controls/AppToggle';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 
 type AiConnectionStatus = 'idle' | 'connecting' | 'connected' | 'disconnecting' | 'disconnected';
 

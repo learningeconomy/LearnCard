@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Overlay } from 'learn-card-base';
-import { AppIcon } from '../icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { cloudOfflineOutline } from 'learn-card-base/icons/ionicons';
 import * as m from '../../paraglide/messages.js';
 

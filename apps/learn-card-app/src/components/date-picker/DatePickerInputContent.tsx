@@ -5,7 +5,7 @@ import type { Locale } from 'date-fns';
 import { ar, enUS, es, fr } from 'date-fns/locale';
 import 'react-datepicker/dist/react-datepicker.css';
 import { Calendar } from 'lucide-react';
-import AppDatetime from '../datetime/AppDatetime';
+import AppDatetime from 'learn-card-base/ui/datetime/AppDatetime';
 import { useModal, ModalTypes } from 'learn-card-base';
 import { SupportedLanguage, useLocale } from '../../i18n';
 import { formatDateForLocale } from './datePicker.helpers';

@@ -2,7 +2,7 @@ import React from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay } from 'swiper/modules';
 
-import { AppSpinner } from '../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import { ProfilePicture } from 'learn-card-base';
 import Sparkles from '../../assets/images/purple-sparkles.gif';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';

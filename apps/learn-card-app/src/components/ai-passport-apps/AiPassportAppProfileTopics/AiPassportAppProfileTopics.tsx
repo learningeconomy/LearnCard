@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 
-import { AppSpinner } from '../../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import TopicsItem from './TopicsItem';
 import TopicsItemSkeleton from './TopicsItemSkeleton';
 import { LaunchPadAppListItem, useGetCredentialList } from 'learn-card-base';

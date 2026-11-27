@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { VC } from '@learncard/types';
 
-import { AppIcon } from '../../icon';
-import { AppReorderGroup } from '../../reorder';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { AppReorderGroup } from 'learn-card-base/ui/reorder';
 import { chevronDownOutline, chevronUpOutline } from 'learn-card-base/icons/ionicons';
 import ResumePreviewCredentialToTextBlock from './ResumePreviewCredentialToTextBlock';
 import ResumePreviewCredentialActionRail from './ResumePreviewCredentialActionRail';

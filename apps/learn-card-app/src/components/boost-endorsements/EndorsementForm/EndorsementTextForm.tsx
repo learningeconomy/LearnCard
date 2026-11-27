@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { AppTextarea } from '../../controls/AppTextarea';
+import { AppTextarea } from 'learn-card-base/ui/controls/AppTextarea';
 
 import { VC } from '@learncard/types';
 import { EndorsementState } from './endorsement-state.helpers';

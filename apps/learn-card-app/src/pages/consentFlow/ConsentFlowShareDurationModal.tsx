@@ -1,16 +1,16 @@
 import React from 'react';
 import moment from 'moment';
 
-import AppDatetime from '../../components/datetime/AppDatetime';
-import { useAppOverlayModal } from '../../components/overlays/useAppOverlayModal';
-import { AppCol, AppGrid, AppRow } from '../../components/layout';
+import AppDatetime from 'learn-card-base/ui/datetime/AppDatetime';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import Calendar from '../../components/svgs/Calendar';
 import { RadioButton } from 'learn-card-base';
 
 import useTheme from '../../theme/hooks/useTheme';
 import * as m from '../../paraglide/messages.js';
-import { AppContent, AppHeader, AppPage, AppToolbar } from '../../components/chrome';
+import { AppContent, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
 
 const defaultDate = moment().add(6, 'months').toISOString(); // sets the shareable expiration date 6 months from today
 

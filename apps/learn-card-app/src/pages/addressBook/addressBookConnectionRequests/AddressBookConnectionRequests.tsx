@@ -5,7 +5,7 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('address-book-connection-requests');
 
 import * as m from '../../../paraglide/messages.js';
-import { useAppOverlayModal } from '../../../components/overlays/useAppOverlayModal';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
 
 import AddressBookContactList from '../addressBook-contact-list/AddressBookContactList';
 
@@ -22,7 +22,7 @@ import ConnectModal from '../../connectPage/ConnectModal';
 
 import useTheme from '../../../theme/hooks/useTheme';
 import { IconSetEnum } from '../../../theme/icons';
-import { AppSpinner } from '../../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const AddressBookConnectionRequests: React.FC<{
     activeTab: AddressBookTabsEnum;

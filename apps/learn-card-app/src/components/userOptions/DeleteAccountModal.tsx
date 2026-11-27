@@ -1,5 +1,5 @@
 import React from 'react';
-import { AppSpinner } from '../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import * as m from '../../paraglide/messages.js';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- existing empty props type; replacing it changes the accepted props type

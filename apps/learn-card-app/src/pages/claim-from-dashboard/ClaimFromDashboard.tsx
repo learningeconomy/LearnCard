@@ -4,9 +4,9 @@ import { useHistory, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
 import { VC, UnsignedVP } from '@learncard/types';
 import { getVCDisplayCardVariant } from '@learncard/react';
-import { useAppOverlayModal } from '../../components/overlays/useAppOverlayModal';
-import { AppLoading } from '../../components/overlays/AppLoading';
-import { AppRow } from '../../components/layout';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
+import { AppLoading } from 'learn-card-base/ui/overlays/AppLoading';
+import { AppRow } from 'learn-card-base/ui/layout';
 
 import { getLogger } from 'learn-card-base';
 const log = getLogger('claim-from-dashboard');
@@ -55,7 +55,7 @@ import useTheme from '../../theme/hooks/useTheme';
 import { useClaimSuccessToast } from '../../feedback/useClaimSuccessToast';
 import { useDuplicateCredentialGuard } from '../../components/credentials/duplicate-credential/useDuplicateCredentialGuard';
 import * as m from '../../paraglide/messages.js';
-import { AppContent, AppFooter, AppPage, AppToolbar } from '../../components/chrome';
+import { AppContent, AppFooter, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
 
 export type FromDashboardMetadata = {
     credentialName: string;

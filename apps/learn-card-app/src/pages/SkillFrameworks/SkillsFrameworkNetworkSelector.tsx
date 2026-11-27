@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useModal, useGetCurrentUserTroopIdsResolved, useGetMultipleBoosts } from 'learn-card-base';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import SkillsFrameworkNetworkSelectorItem from './SkillsFrameworkNetworkSelectorItem';
 
 type SkillsFrameworkNetworkSelectorProps = {

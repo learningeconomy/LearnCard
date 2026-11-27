@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { AppSpinner } from '../../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import Pencil from '../../svgs/Pencil';
 import TrashBin from '../../svgs/TrashBin';
 import EmptyImage from '../../../assets/images/wallpaper-empty-state.png';

@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import * as m from '../../../paraglide/messages.js';
-import { AppRow } from '../../../components/layout';
+import { AppRow } from 'learn-card-base/ui/layout';
 
 import useSocialLogins from 'learn-card-base/hooks/useSocialLogins';
 

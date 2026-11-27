@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { VC } from '@learncard/types';
-import { AppIcon } from '../../icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { alertCircleOutline } from 'learn-card-base/icons/ionicons';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('endorsement-draft-request-success');

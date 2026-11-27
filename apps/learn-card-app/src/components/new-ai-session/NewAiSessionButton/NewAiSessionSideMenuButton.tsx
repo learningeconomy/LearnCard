@@ -5,7 +5,7 @@ import * as m from '../../../paraglide/messages.js';
 
 import NewAiSessionIcon from 'learn-card-base/svgs/NewAiSessionIcon';
 
-import { AppMenuToggle } from '../../app-shell/AppMenuToggle';
+import { AppMenuToggle } from 'learn-card-base/ui/app-shell/AppMenuToggle';
 
 import useTheme from '../../../theme/hooks/useTheme';
 import { ColorSetEnum } from '../../../theme/colors';

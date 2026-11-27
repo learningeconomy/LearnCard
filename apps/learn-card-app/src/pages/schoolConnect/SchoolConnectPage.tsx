@@ -17,7 +17,7 @@ import MainHeader from '../../components/main-header/MainHeader';
 import { useLocale } from '../../i18n';
 import * as m from '../../paraglide/messages.js';
 import { SchoolConnectView } from './SchoolConnectView';
-import { AppContent, AppPage } from '../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 /** Holds every lca-api query, so it only mounts once the School Connect flags are on. */
 const SchoolConnectPageContent: React.FC = () => {

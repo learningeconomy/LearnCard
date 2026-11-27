@@ -5,7 +5,7 @@ import React, {
     useRef,
     useSyncExternalStore,
 } from 'react';
-import { AppIcon } from '../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { closeOutline } from 'learn-card-base/icons/ionicons';
 import { ModalTypes, useModal } from 'learn-card-base';
 import * as m from '../../../paraglide/messages.js';

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 import { useModal, useWallet } from 'learn-card-base';
 import * as m from '../../../paraglide/messages.js';
-import { AppFooter } from '../../chrome';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 const UserContactFooter: React.FC = () => {
     const { initWallet } = useWallet();

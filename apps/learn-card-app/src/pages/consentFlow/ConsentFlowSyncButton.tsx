@@ -12,7 +12,7 @@ import { useSyncDataSource } from '../../hooks/useSyncDataSource';
 import DataSourceDisconnectModal from './DataSourceDisconnectModal';
 import { RegistryEntry, useModal, ModalTypes } from 'learn-card-base';
 import { useRegistryEntryState, SYNC_STATE } from '../../hooks/useRegistryEntryState';
-import { AppSkeletonText } from '../../components/feedback/AppSkeletonText';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
 
 type ConsentFlowSyncButtonProps = {
     preLogin?: () => void;

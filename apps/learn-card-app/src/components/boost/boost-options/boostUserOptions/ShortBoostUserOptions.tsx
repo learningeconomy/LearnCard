@@ -5,7 +5,7 @@ import { getLogger } from 'learn-card-base';
 import * as m from '../../../../paraglide/messages.js';
 const log = getLogger('short-boost-user-options');
 
-import { useAppAlert } from '../../../overlays/useAppAlert';
+import { useAppAlert } from 'learn-card-base/ui/overlays/useAppAlert';
 import ShortBoostSomeoneScreen from './ShortBoostSomeoneScreen';
 import BoostShareableCode from '../../boostCMS/boostCMSForms/boostCMSIssueTo/BoostShareableCode';
 import BoostSearch from '../../boost-search/BoostSearch';

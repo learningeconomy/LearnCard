@@ -1,7 +1,7 @@
 import * as m from '../../../../paraglide/messages.js';
 import { useLocale } from '../../../../i18n';
 import React, { useEffect, useState } from 'react';
-import { AppIcon } from '../../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     checkmarkCircleOutline,
     checkmarkOutline,

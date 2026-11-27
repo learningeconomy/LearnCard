@@ -12,8 +12,8 @@ import CheckListUploadRawVC from '../learncard/checklist/checklist-steps/CheckLi
 import useBuildMyLearnCardModal from '../../pages/dashboard/hooks/useBuildMyLearnCardModal';
 
 import * as m from '../../paraglide/messages.js';
-import { AppContent, AppPage } from '../chrome';
-import { AppSpinner } from '../feedback/AppSpinner';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const log = getLogger('add-to-passport');
 

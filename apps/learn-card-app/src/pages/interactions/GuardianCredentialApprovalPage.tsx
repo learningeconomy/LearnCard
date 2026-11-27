@@ -15,9 +15,9 @@ import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { getResolvedTenantConfig, getTenantHeaders } from '../../config/bootstrapTenantConfig';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import { useTheme } from '../../theme/hooks/useTheme';
-import { AppButton } from '../../components/controls/AppButton';
-import { AppContent, AppPage } from '../../components/chrome';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppButton } from 'learn-card-base/ui/controls/AppButton';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type CredentialInfo = {
     inboxCredentialId: string;

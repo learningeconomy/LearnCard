@@ -5,7 +5,7 @@ import NewAiSessionIcon from 'learn-card-base/svgs/NewAiSessionIcon';
 import { useModal } from 'learn-card-base';
 
 import useTheme from '../../../theme/hooks/useTheme';
-import { AppFooter } from '../../chrome';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 export const AiSessionLearningPathwayPreviewFooter: React.FC<{
     handleStartAiSession?: () => void;

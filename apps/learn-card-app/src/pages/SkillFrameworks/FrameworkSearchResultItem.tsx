@@ -1,7 +1,7 @@
 import React from 'react';
 import { middleTruncate, useGetSkillPath } from 'learn-card-base';
 
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import TierIcon from './TierIcon';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import SlimCaretRight from '../../components/svgs/SlimCaretRight';

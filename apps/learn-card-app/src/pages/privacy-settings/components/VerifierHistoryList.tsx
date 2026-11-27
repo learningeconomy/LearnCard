@@ -1,5 +1,5 @@
 import React, { useId, useState } from 'react';
-import { AppIcon } from '../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { chevronDownOutline } from 'learn-card-base/icons/ionicons';
 import { useLocale } from '../../../i18n';
 import type { VerifierReceipt } from '../../../helpers/verifier-history/history';

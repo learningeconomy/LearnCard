@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAppOverlayModal } from '../../components/overlays/useAppOverlayModal';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
 import { PaginatedConsentFlowContracts } from '@learncard/types';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import CustomWalletContractData from './CustomWalletContractData';

@@ -1,7 +1,7 @@
 import * as m from '../../paraglide/messages.js';
 import React, { useEffect, useState } from 'react';
 
-import { AppToggle } from '../controls/AppToggle';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 import LearnCardIDCMSLayout from './LearnCardIDCMSLayout';
 import LearnCardIDCMSFooter from './LearCardIDCMSFooter';
 import IDSleeve from 'learn-card-base/svgs/IDSleeve';
@@ -21,7 +21,7 @@ import {
     getLearnCardIDBackgroundColor,
     getLearnCardIDStyleDefaults,
 } from './learncard-cms.helpers';
-import { AppPage } from '../chrome';
+import { AppPage } from 'learn-card-base/ui/chrome';
 
 // different editor modes the CMS can be opened in
 export enum LearnCardIdCMSEditorModeEnum {

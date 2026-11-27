@@ -11,7 +11,7 @@ import AddContactView, {
     AddContactViewMode,
 } from '../../pages/addressBook/addContactView/AddContactView';
 import * as m from '../../paraglide/messages.js';
-import { AppFooter, AppHeader, AppToolbar } from '../chrome';
+import { AppFooter, AppHeader, AppToolbar } from 'learn-card-base/ui/chrome';
 
 const unrecognizedCopyFor = (reason: UnrecognizedReason, source: ClaimInputSource): string => {
     const isQrImage = source === 'image_upload';

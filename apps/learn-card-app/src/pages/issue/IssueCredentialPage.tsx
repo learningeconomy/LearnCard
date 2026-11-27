@@ -5,7 +5,7 @@ import type { IssueImportResult } from './import/issueImport';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { UnsignedVC } from '@learncard/types';
 import { useHistory, useLocation } from 'react-router-dom';
-import { useAppAlert } from '../../components/overlays/useAppAlert';
+import { useAppAlert } from 'learn-card-base/ui/overlays/useAppAlert';
 import { useQueryClient } from '@tanstack/react-query';
 
 import {

@@ -3,8 +3,8 @@ import { VC } from '@learncard/types';
 import { deriveAlignmentsFromVC } from '../alignmentHelpers';
 import { useHistory, useLocation } from 'react-router-dom';
 
-import { useAppOverlayModal } from '../../overlays/useAppOverlayModal';
-import { AppCol, AppGrid, AppRow } from '../../layout';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import BoostCMSHeader from './BoostCMSHeader/BoostCMSHeader';
 import BoostAddressBook, {
     BoostAddressBookEditMode,
@@ -83,7 +83,7 @@ import BoostFrameworkSkillSelector from './boostCMSForms/boostCMSSkills/BoostFra
 import * as m from '../../../paraglide/messages.js';
 
 import { getLogger } from 'learn-card-base';
-import { AppContent, AppPage } from '../../chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 const log = getLogger('update-boost-cms');
 
 const UpdateBoostCMS: React.FC = () => {

@@ -1,7 +1,7 @@
 import React from 'react';
 import moment from 'moment';
 
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import { ConsentFlowContractData, ConsentFlowContractDetails } from '@learncard/types';
 import CaretDown from 'learn-card-base/svgs/CaretDown';
 import {

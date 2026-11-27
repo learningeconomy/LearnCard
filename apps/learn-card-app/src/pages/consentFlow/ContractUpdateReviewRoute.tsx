@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import { useQuery } from '@tanstack/react-query';
 import { buildContractUpdatePreview, hasOpenNewOptionsWindow } from '@learncard/helpers';
 import {

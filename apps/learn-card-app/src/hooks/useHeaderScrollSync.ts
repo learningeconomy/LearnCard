@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 
-import type { AppContentScrollEvent } from '../components/chrome/AppContent';
+import type { AppContentScrollEvent } from 'learn-card-base/ui/chrome/AppContent';
 import headerScrollStore from '../stores/headerScrollStore';
-import { useViewWillEnter } from '../components/app-shell/AppOutlet';
+import { useViewWillEnter } from 'learn-card-base/ui/app-shell/AppOutlet';
 
 /** Past this scroll offset the condensed header title swaps in (LC-1921). */
 const SCROLL_THRESHOLD = 24;

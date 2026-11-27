@@ -44,7 +44,7 @@ import {
 import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
 import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
 import { AnalyticsEvents, useAnalytics } from '@analytics';
-import { AppPage } from '../../../chrome';
+import { AppPage } from 'learn-card-base/ui/chrome';
 
 export type IssueHistory = {
     id?: string | number;

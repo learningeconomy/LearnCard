@@ -1,7 +1,7 @@
 import React from 'react';
 import Sparkles from '../../assets/images/purple-sparkles.gif';
 import { ConsentFlowContractDetails } from '@learncard/types';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import { LaunchPadAppListItem } from 'learn-card-base';
 
 type ConsentFlowConnectingProps = {

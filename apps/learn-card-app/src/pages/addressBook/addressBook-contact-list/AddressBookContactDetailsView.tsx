@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Clipboard } from '@capacitor/clipboard';
-import { useAppAlert } from '../../../components/overlays/useAppAlert';
-import { AppIcon } from '../../../components/icon';
+import { useAppAlert } from 'learn-card-base/ui/overlays/useAppAlert';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import type { Swiper as SwiperInstance } from 'swiper';
 import {
@@ -53,7 +53,7 @@ import { ThreeDotVertical } from '@learncard/react';
 import X from 'learn-card-base/svgs/X';
 
 import 'swiper/css';
-import { AppSpinner } from '../../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type ContactWithRelationship = LCNProfile & {
     connectedAt?: string;

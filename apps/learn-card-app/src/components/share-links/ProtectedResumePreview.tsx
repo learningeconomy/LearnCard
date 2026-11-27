@@ -1,6 +1,6 @@
 import React from 'react';
 import type { VC } from '@learncard/types';
-import { AppIcon } from '../icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { documentTextOutline, downloadOutline } from 'learn-card-base/icons/ionicons';
 import { getProtectedResumePdf } from '../../helpers/resume-publishing/protectedPdf';
 import * as m from '../../paraglide/messages.js';

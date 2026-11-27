@@ -4,7 +4,7 @@ import z from 'zod';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('create-signing-authority-modal');
 
-import { AppInput } from '../../../components/controls/AppInput';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 
 import { useModal, useWallet } from 'learn-card-base';
 

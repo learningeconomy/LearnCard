@@ -1,7 +1,7 @@
 import React from 'react';
 import { HexColorPicker } from 'react-colorful';
 
-import { AppCol } from '../../../../layout';
+import { AppCol } from 'learn-card-base/ui/layout';
 import X from 'learn-card-base/svgs/X';
 
 import { BoostCMSState } from '../../../boost';

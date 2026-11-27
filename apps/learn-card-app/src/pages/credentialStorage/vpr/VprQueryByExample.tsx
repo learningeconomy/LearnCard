@@ -33,7 +33,7 @@ import type {
     CredentialDisclosureSubmit,
 } from '../../../helpers/verifier-history/disclosure';
 import * as m from '../../../paraglide/messages.js';
-import { AppContent, AppPage } from '../../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 export type VprQueryByExampleProps = {
     event?: CredentialRequestEvent;

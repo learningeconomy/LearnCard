@@ -108,7 +108,12 @@ export default tseslint.config(
         },
     },
     {
-        files: ['apps/learn-card-app/src/**/*.{ts,tsx}', 'apps/scouts/src/**/*.{ts,tsx}'],
+        files: [
+            'apps/learn-card-app/src/**/*.{ts,tsx}',
+            'apps/scouts/src/**/*.{ts,tsx}',
+            // The app-owned Ionic replacements, hoisted from learn-card-app.
+            'packages/learn-card-base/src/ui/**/*.{ts,tsx}',
+        ],
         rules: {
             'no-console': 'warn',
             // Existing app code predates React Compiler linting. Keep the runtime hooks rules

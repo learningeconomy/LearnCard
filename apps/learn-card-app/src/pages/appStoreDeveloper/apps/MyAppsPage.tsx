@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
-import { AppIcon } from '../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     addOutline,
     alertCircleOutline,
@@ -20,8 +20,8 @@ import { LAUNCH_TYPE_LABELS } from '../submit/launchSettings';
 import { DEVELOPER_DOCS_URL, NewAppSheet } from './NewAppSheet';
 import { openExternalLink } from '../../../helpers/externalLinkHelpers';
 import { DeleteAppMenu } from './DeleteAppMenu';
-import { AppContent, AppPage } from '../../../components/chrome';
-import { AppSpinner } from '../../../components/feedback/AppSpinner';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const PILL_CLASS: Record<ListingMode, string> = {
     'draft': 'bg-grayscale-100 text-grayscale-700',

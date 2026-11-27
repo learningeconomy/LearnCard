@@ -1,5 +1,5 @@
 import React from 'react';
-import { AppSpinner } from '../../src/components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 import * as m from '../../src/paraglide/messages.js';
 import ReducedMotionManager from '../../src/components/accessibility/ReducedMotionManager';

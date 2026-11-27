@@ -1,6 +1,6 @@
 import React from 'react';
 import { useHistory } from 'react-router-dom';
-import { AppIcon } from '../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     appsOutline,
     arrowForwardOutline,
@@ -22,8 +22,8 @@ import { USE_CASES } from '../guides/types';
 import type { UseCaseId } from '../guides/types';
 import { FEATURED_GUIDE, GUIDE_ORDER, summarizeProjects } from './buildHome';
 import type { ProjectState, ProjectSummary } from './buildHome';
-import { AppContent, AppPage } from '../../../components/chrome';
-import { AppSpinner } from '../../../components/feedback/AppSpinner';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const GUIDE_ICONS: Record<string, string> = {
     'award': ribbonOutline,

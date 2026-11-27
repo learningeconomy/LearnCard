@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { AppCol, AppRow } from '../../components/layout';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
 import MembershipSleeve from 'learn-card-base/assets/images/membership-sleeve.svg';
 import IDDisplayCard from 'learn-card-base/components/id/IDDisplayCard';

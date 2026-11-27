@@ -5,7 +5,7 @@ import { redirectStore } from 'learn-card-base';
 import { useHistory } from 'react-router-dom';
 import ClaimLoginPage from '../login/ClaimLoginPage';
 import DoubleTrapezoid from 'learn-card-base/svgs/DoubeTrapezoid';
-import { AppRow } from '../../components/layout';
+import { AppRow } from 'learn-card-base/ui/layout';
 import { useModal, ModalTypes } from 'learn-card-base';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';

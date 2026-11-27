@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import * as m from '../../paraglide/messages.js';
-import { AppCol, AppRow } from '../../components/layout';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 import {
     LearnCard,
@@ -11,7 +11,7 @@ import {
 
 import UserF from '../../assets/images/f-user.png';
 import MainHeader from '../../components/main-header/MainHeader';
-import { AppContent, AppPage } from '../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const LearnCardWalletPage: React.FC = () => {
     const [isActivityHeaderFixed, setIsActivityHeaderFixed] = useState<boolean>(false);

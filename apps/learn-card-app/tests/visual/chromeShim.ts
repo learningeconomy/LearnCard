@@ -6,4 +6,4 @@ export {
     AppToolbar as Toolbar,
     AppTitle as Title,
     AppBackButton as BackButton,
-} from '../../src/components/chrome';
+} from 'learn-card-base/ui/chrome';

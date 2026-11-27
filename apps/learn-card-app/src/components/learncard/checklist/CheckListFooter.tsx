@@ -2,7 +2,7 @@ import React from 'react';
 
 import { useModal } from 'learn-card-base';
 import * as m from '../../../paraglide/messages.js';
-import { AppFooter } from '../../chrome';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type, no-empty-pattern -- existing empty props type; replacing it changes the accepted props type; dropping the empty destructure removes the implicit non-null argument check
 const CheckListFooter: React.FC<{}> = ({}) => {

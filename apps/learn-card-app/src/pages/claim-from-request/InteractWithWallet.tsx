@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { AppList } from '../../components/list';
+import { AppList } from 'learn-card-base/ui/list';
 import { QRCodeSVG } from 'qrcode.react';
 import { useModal, ModalTypes } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';

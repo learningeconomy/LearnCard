@@ -8,7 +8,7 @@ import {
     useGetPaginatedManagedBoosts,
 } from 'learn-card-base';
 
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import AdminManagedBoostRow from './AdminManagedBoostRow';
 import { Boost } from '@learncard/types';
 

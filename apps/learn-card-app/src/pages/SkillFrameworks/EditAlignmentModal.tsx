@@ -12,15 +12,15 @@ import AlignmentToggle from './AlignmentToggle';
 import SkillBreadcrumbText from './SkillBreadcrumbText';
 import SkillsFrameworkIcon from 'apps/learn-card-app/src/components/svgs/SkillsFrameworkIcon';
 import ConfirmAlignmentDeletionModal from './ConfirmAlignmentDeletionModal';
-import { AppInput } from '../../components/controls/AppInput';
-import { AppTextarea } from '../../components/controls/AppTextarea';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
+import { AppTextarea } from 'learn-card-base/ui/controls/AppTextarea';
 
 import {
     FrameworkNodeRole,
     SkillFramework,
     SkillFrameworkNode,
 } from 'apps/learn-card-app/src/components/boost/boost';
-import { AppFooter } from '../../components/chrome';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 type EditAlignmentModalProps = {
     framework: SkillFramework;

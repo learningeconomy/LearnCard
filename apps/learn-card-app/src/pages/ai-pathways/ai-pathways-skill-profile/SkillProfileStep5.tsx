@@ -8,7 +8,7 @@ import {
     ToastTypeEnum,
     useVerifiableData,
 } from 'learn-card-base';
-import { AppSpinner } from '../../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 import SkillSearchSelector from '../../../pages/skills/SkillSearchSelector';
 import { SelectedSkill } from '../../../pages/skills/skillTypes';

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Redirect, useHistory, useLocation, useParams } from 'react-router-dom';
-import { AppIcon } from '../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { alertCircleOutline, arrowBackOutline } from 'learn-card-base/icons/ionicons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -11,8 +11,8 @@ import { AppStatusView } from '../submit/AppStatusView';
 import { getListingMode, withPendingChanges } from '../submit/listingLifecycle';
 import { getAppStatusPath } from './myApps';
 import { DeleteAppMenu } from './DeleteAppMenu';
-import { AppContent, AppPage } from '../../../components/chrome';
-import { AppSpinner } from '../../../components/feedback/AppSpinner';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const log = getLogger('app-status-page');
 

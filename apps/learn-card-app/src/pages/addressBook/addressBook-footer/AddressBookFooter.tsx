@@ -8,12 +8,12 @@ import keyboardStore from 'learn-card-base/stores/keyboardStore';
 import User from '../../../components/svgs/User';
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
 import AddressBookContactOptions from '../addressBook-contact-options/AddressBookContactOptions';
-import { useAppOverlayModal } from '../../../components/overlays/useAppOverlayModal';
-import { AppCol, AppGrid, AppRow } from '../../../components/layout';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 
 import { useIsCurrentUserLCNUser } from 'learn-card-base';
 import useLCNGatedAction from 'apps/learn-card-app/src/components/network-prompts/hooks/useLCNGatedAction';
-import { AppFooter, AppToolbar } from '../../../components/chrome';
+import { AppFooter, AppToolbar } from 'learn-card-base/ui/chrome';
 
 export const AddressBookFooter: React.FC<{
     showSearch?: boolean;

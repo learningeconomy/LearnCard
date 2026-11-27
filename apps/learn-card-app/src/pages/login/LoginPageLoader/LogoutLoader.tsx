@@ -3,11 +3,11 @@ import * as m from '../../../paraglide/messages.js';
 import Typewriter from 'typewriter-effect';
 import _ from 'lodash-es';
 
-import { AppRow } from '../../../components/layout';
+import { AppRow } from 'learn-card-base/ui/layout';
 
 import { useTenantBrandingAssets } from '../../../config/brandingAssets';
 import { useTheme } from '../../../theme/hooks/useTheme';
-import { AppContent, AppPage } from '../../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 export const LogoutLoadingPage: React.FC = () => {
     const { textLogo } = useTenantBrandingAssets();

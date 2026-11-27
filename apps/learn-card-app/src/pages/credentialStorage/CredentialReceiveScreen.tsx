@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AppIcon } from '../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     alertCircleOutline,
     checkmarkCircleOutline,
@@ -9,7 +9,7 @@ import type { VC } from '@learncard/types';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import { getCredentialName, getIssuerName } from 'learn-card-base/helpers/credentialHelpers';
 import * as m from '../../paraglide/messages.js';
-import { AppContent, AppPage } from '../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 export type CredentialReceiveScreenProps = {
     credentials: VC[];

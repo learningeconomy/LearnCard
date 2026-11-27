@@ -3,7 +3,7 @@ import React from 'react';
 import { BoostCMSState } from '../../../boost';
 import BoostIDCardFontForm from './BoostIDCardCMSFontForm';
 import BoostIDCardCMSBackgroundImageForm from './BoostIDCardCMSBackgroundImageForm';
-import { AppRow } from '../../../../layout';
+import { AppRow } from 'learn-card-base/ui/layout';
 import BoostIDCardAccentForm from './BoostIDCardCMSAccentForm';
 
 const BoostIDCardCMSAppearanceForm: React.FC<{

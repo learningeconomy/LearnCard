@@ -13,7 +13,7 @@ import {
     emitAuthSuccess,
     emitAuthError,
 } from '../components/debug/authDebugEvents';
-import { useAppAlert } from '../components/overlays/useAppAlert';
+import { useAppAlert } from 'learn-card-base/ui/overlays/useAppAlert';
 
 import {
     authStore,

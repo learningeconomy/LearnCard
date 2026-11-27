@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useRef } from 'react';
-import { AppIcon } from '../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { closeOutline } from 'learn-card-base/icons/ionicons';
 import { useCredentialCollection } from 'learn-card-base';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import PassportCredentialCard from './PassportCredentialCard';
 import { groupByRelativeTime } from './activityFeed.helpers';
 import * as m from '../../../paraglide/messages.js';
-import { AppSpinner } from '../../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 export const AllCredentialsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const collection = useCredentialCollection();

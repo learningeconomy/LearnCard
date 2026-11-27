@@ -40,7 +40,7 @@ import {
 import * as m from '../../paraglide/messages.js';
 
 import useTheme from '../../theme/hooks/useTheme';
-import { AppContent, AppPage } from '../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 type ViewMode = 'topics' | 'sessions' | 'topicDetail';
 type TopicGroup = {

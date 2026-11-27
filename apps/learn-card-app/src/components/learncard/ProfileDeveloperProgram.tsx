@@ -1,5 +1,5 @@
 import React from 'react';
-import { AppIcon } from '../icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { codeSlashOutline } from 'learn-card-base/icons/ionicons';
 import { useHistory } from 'react-router-dom';
 import { ModalTypes, switchedProfileStore, useGetProfile, useModal } from 'learn-card-base';

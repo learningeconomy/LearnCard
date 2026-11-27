@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AppPopover } from '../../components/overlays/AppPopover';
-import { AppIcon } from '../../components/icon';
+import { AppPopover } from 'learn-card-base/ui/overlays/AppPopover';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     alertCircleOutline,
     chevronDownOutline,
@@ -44,7 +44,7 @@ import {
     saveAssistantAvatarConfig,
     type AssistantAvatarConfig,
 } from './assistantAvatarOptions';
-import { AppContent, AppPage } from '../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const AssistantCardsSkeleton: React.FC = () => (
     <div className="space-y-v3-3">

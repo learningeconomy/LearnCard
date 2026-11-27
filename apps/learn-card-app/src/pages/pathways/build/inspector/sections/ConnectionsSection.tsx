@@ -42,7 +42,7 @@
 import React, { useMemo, useState } from 'react';
 import * as m from '../../../../../paraglide/messages.js';
 
-import { AppIcon } from '../../../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { informationCircleOutline, linkOutline, peopleOutline } from 'learn-card-base/icons/ionicons';
 
 import { detectCollections } from '../../../map/collectionDetection';

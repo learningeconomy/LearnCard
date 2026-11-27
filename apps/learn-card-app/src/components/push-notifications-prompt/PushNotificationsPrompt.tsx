@@ -5,7 +5,7 @@ const log = getLogger('push-notifications-prompt');
 import { Capacitor } from '@capacitor/core';
 import { NativeSettings, IOSSettings, AndroidSettings } from 'capacitor-native-settings';
 import { ChevronLeft, CheckCircle2 } from 'lucide-react';
-import { AppSpinner } from '../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 import NotificationImage from '../../assets/images/notification-polygon.png';
 import { pushUtilities } from 'learn-card-base';

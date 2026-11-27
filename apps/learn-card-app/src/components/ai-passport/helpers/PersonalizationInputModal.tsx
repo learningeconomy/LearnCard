@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { AppInput } from '../../controls/AppInput';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import PersonalizationQuestionTitle from '../helpers/personalizationI18n';
 
 import { PersonalizedQuestionType } from '../personalizedQuestions.helpers';

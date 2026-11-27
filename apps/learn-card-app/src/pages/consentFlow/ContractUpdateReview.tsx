@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Check, ChevronDown, ChevronUp, CircleHelp, LockKeyhole, Plus, X } from 'lucide-react';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import type {
     ConsentFlowContractDetails,
     ConsentFlowContractUpdatePreview,

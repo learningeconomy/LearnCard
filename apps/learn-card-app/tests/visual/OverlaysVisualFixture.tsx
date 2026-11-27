@@ -1,16 +1,16 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { IonApp } from '@ionic/react';
 
-import { AppLoading } from '../../src/components/overlays/AppLoading';
-import { AppOverlayManager } from '../../src/components/overlays/AppOverlayManager';
-import { AppPopover } from '../../src/components/overlays/AppPopover';
-import { AppToast } from '../../src/components/overlays/AppToast';
-import { useAppToast } from '../../src/components/overlays/useAppToast';
-import { useAppOverlayModal } from '../../src/components/overlays/useAppOverlayModal';
+import { AppLoading } from 'learn-card-base/ui/overlays/AppLoading';
+import { AppOverlayManager } from 'learn-card-base/ui/overlays/AppOverlayManager';
+import { AppPopover } from 'learn-card-base/ui/overlays/AppPopover';
+import { AppToast } from 'learn-card-base/ui/overlays/AppToast';
+import { useAppToast } from 'learn-card-base/ui/overlays/useAppToast';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
 
 import type { SourceMappedField } from 'learn-card-base/helpers/credentials/clr/renderer';
 import ClrSourceInfo from '../../src/components/clr-transcript/ClrSourceInfo';
-import { AppItem, AppList } from '../../src/components/list';
+import { AppItem, AppList } from 'learn-card-base/ui/list';
 
 /**
  * `overlays-1`: the app's AppPopover, AppLoading, AppToast and useAppToast call sites (formerly

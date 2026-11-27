@@ -2,8 +2,8 @@ import React from 'react';
 import { useLocation, useHistory } from 'react-router-dom';
 import * as m from '../../paraglide/messages.js';
 
-import { AppCol, AppGrid, AppRow } from '../layout';
-import { AppMenuToggle } from '../app-shell/AppMenuToggle';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
+import { AppMenuToggle } from 'learn-card-base/ui/app-shell/AppMenuToggle';
 import HeaderBranding from '../headerBranding/HeaderBranding';
 
 import Burger from '../svgs/Burger';
@@ -24,8 +24,8 @@ import { CredentialCategoryEnum, useIsLoggedIn } from 'learn-card-base';
 import loadingStore from '../../stores/loadingStore';
 
 import useTheme from '../../theme/hooks/useTheme';
-import { AppHeader, AppToolbar } from '../chrome';
-import { AppProgressBar } from '../feedback/AppProgressBar';
+import { AppHeader, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppProgressBar } from 'learn-card-base/ui/feedback/AppProgressBar';
 
 type MainHeaderProps = {
     category?: CredentialCategoryEnum;

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Updater } from 'use-immer';
 import { ConsentFlowTerms } from '@learncard/types';
-import { AppRippleEffect } from '../../components/widgets';
+import { AppRippleEffect } from 'learn-card-base/ui/widgets';
 
 import AnonymousIcon from '../../components/svgs/AnonymousIcon';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';

@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import queryString from 'query-string';
 import { useLocation } from 'react-router-dom';
 
-import { AppLoading } from '../../components/overlays/AppLoading';
+import { AppLoading } from 'learn-card-base/ui/overlays/AppLoading';
 import ConsentFlowSyncButton from '../../pages/consentFlow/ConsentFlowSyncButton';
 
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
@@ -14,7 +14,7 @@ import { useRegistryEntryState } from '../../hooks/useRegistryEntryState';
 
 import useTheme from '../../theme/hooks/useTheme';
 import * as m from '../../paraglide/messages.js';
-import { AppPage } from '../../components/chrome';
+import { AppPage } from 'learn-card-base/ui/chrome';
 
 export type NewDataSourceProps = {
     handleCloseModal: () => void;

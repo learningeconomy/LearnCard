@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 
-import { AppInput } from '../../../components/controls/AppInput';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import { ArrowRight, X } from 'lucide-react';
 import { CredentialCategoryEnum, useOccupationSuggestionsForKeyword } from 'learn-card-base';
 import useTheme from '../../../theme/hooks/useTheme';

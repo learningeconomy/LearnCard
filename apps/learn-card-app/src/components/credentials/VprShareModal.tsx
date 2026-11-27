@@ -9,7 +9,7 @@ import {
 } from 'learn-card-base';
 import { queryListOfCredentials } from 'learn-card-base/helpers/credentials/queries';
 import { filterMaybes } from '@learncard/helpers';
-import { AppSpinner } from '../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import { VerifiablePresentationRequest } from '../../hooks/post-message/useLearnCardPostMessage';
 import { VC } from '@learncard/types';
 

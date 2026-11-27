@@ -15,7 +15,7 @@ import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import useConsentFlow from './useConsentFlow';
 import useGuardianGate from '../../hooks/useGuardianGate';
 
-import { AppToggle } from '../../components/controls/AppToggle';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 import ConsentFlowFooter from './ConsentFlowFooter';
 import ConsentFlowReadSharing from './ConsentFlowReadSharing';
 import ConsentFlowWriteSharing from './ConsentFlowWriteSharing';

@@ -11,7 +11,7 @@ import {
     transformPersonalizedAnswersForVC,
 } from './personalizedQuestionCredential.helpers';
 import * as m from '../../paraglide/messages.js';
-import { AppFooter } from '../chrome';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 const LearnCardFooter: React.FC<{ personalizedAnswers: PersonalizedAnswersState; uri: string }> = ({
     personalizedAnswers,

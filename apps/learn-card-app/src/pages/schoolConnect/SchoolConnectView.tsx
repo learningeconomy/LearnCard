@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AppIcon } from '../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     addOutline,
     alertCircleOutline,
@@ -14,7 +14,7 @@ import type { SchoolConnection } from '@learncard/lca-api-plugin';
 import SchoolConnectTileIcon from '../myApps/icons/SchoolConnectTileIcon';
 import classlinkLogo from 'learn-card-base/assets/images/classlink-logo.png';
 import * as m from '../../paraglide/messages.js';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const ErrorBanner: React.FC<{ message: string }> = ({ message }) => (
     <div

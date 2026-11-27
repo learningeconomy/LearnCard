@@ -1,5 +1,5 @@
 import React from 'react';
-import { AppIcon } from '../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { alertCircleOutline } from 'learn-card-base/icons/ionicons';
 import { useSignInPersistence } from '../../auth/signInPersistence';
 

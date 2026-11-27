@@ -1,11 +1,11 @@
 import React from 'react';
 
-import { AppRow } from '../../layout';
+import { AppRow } from 'learn-card-base/ui/layout';
 import { FamilyCMSEditorModeEnum } from '../familyCMSState';
 
 import FamilyIcon from 'learn-card-base/svgs/FamilyIcon';
 import { m } from '../../../paraglide/messages.js';
-import { AppHeader } from '../../chrome';
+import { AppHeader } from 'learn-card-base/ui/chrome';
 
 export const FamilyCMSHeader: React.FC<{ editorMode?: FamilyCMSEditorModeEnum }> = ({
     editorMode,

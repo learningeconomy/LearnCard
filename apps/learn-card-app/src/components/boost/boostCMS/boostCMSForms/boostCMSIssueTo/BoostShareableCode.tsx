@@ -10,11 +10,11 @@ import useDebounce from 'apps/learn-card-app/src/hooks/useDebounce';
 import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantConfig';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 
-import AppDatetime from '../../../../datetime/AppDatetime';
-import { useAppOverlayModal } from '../../../../overlays/useAppOverlayModal';
-import { AppCol, AppGrid, AppRow } from '../../../../layout';
-import { AppInput } from '../../../../controls/AppInput';
-import { AppToggle } from '../../../../controls/AppToggle';
+import AppDatetime from 'learn-card-base/ui/datetime/AppDatetime';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 
 import {
     ModalTypes,
@@ -34,7 +34,7 @@ import BoostShareableQRCode from './BoostShareableQRCode';
 
 import useTheme from '../../../../../theme/hooks/useTheme';
 import * as m from '../../../../../paraglide/messages.js';
-import { AppSpinner } from '../../../../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type BoostShareableCodeProps = {
     state: BoostCMSState;

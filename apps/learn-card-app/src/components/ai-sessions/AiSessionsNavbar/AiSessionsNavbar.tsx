@@ -3,7 +3,7 @@ import { useHistory, useLocation } from 'react-router-dom';
 
 import { m } from '../../../paraglide/messages.js';
 
-import { AppMenuToggle } from '../../app-shell/AppMenuToggle';
+import { AppMenuToggle } from 'learn-card-base/ui/app-shell/AppMenuToggle';
 import BurgerIcon from '../../../components/svgs/Burger';
 import BlueMagicWand from 'learn-card-base/svgs/BlueMagicWand';
 import AiPassportPersonalizationContainer from '../../ai-passport/AiPassportPersonalizationContainer';
@@ -23,7 +23,7 @@ import {
 
 import { Capacitor } from '@capacitor/core';
 import keyboardStore from 'learn-card-base/stores/keyboardStore';
-import { AppFooter } from '../../chrome';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 const AiSessionsNavbar: React.FC = () => {
     const history = useHistory();

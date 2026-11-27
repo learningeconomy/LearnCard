@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AppIcon } from '../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { addOutline, refreshOutline, chevronForwardOutline } from 'learn-card-base/icons/ionicons';
 import { Link } from 'react-router-dom';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';

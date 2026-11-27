@@ -4,7 +4,7 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 
 import { checkmark, copyOutline } from 'learn-card-base/icons/ionicons';
 
-import { AppIcon } from '../../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import CopyIconButton from './CopyIconButton';
 
 /** The svg markup AppIcon renders for an icon, to tell which icon the button shows. */

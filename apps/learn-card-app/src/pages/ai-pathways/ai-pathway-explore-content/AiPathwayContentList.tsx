@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { AppRow } from '../../../components/layout';
+import { AppRow } from 'learn-card-base/ui/layout';
 import AiPathwayContentListItem from './AiPathwayContentListItem';
 
 import { AiPathwayContent } from './ai-pathway-content.helpers';

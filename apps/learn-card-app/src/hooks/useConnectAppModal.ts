@@ -1,5 +1,5 @@
 import { useHistory } from 'react-router-dom';
-import { useAppOverlayModal } from '../components/overlays/useAppOverlayModal';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
 import { useTrustedAppsRegistry } from 'learn-card-base/hooks/useRegistry';
 import TrustedAppRequestModal from 'learn-card-base/components/connected-applications/TrustedAppRequestModal';
 import UnknownAppRequestModal from 'learn-card-base/components/connected-applications/UnknownAppRequestModal';

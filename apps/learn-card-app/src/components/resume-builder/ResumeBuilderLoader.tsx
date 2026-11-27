@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { AppSpinner } from '../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 import * as m from '../../paraglide/messages.js';
 

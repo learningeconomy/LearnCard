@@ -20,7 +20,7 @@ import ManageSkills from './ManageSkills';
 import SkillsFrameworkIcon from '../../components/svgs/SkillsFrameworkIcon';
 import CreateFrameworkModal from './CreateFrameworkModal';
 import SkillsAdminPanelFramework from '../skills/SkillsAdminPanelFramework';
-import { AppInput } from '../../components/controls/AppInput';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import type { ApiFrameworkInfo } from '../../helpers/skillFramework.helpers';
 import { useGlobalSkillFrameworks } from '../../helpers/globalSkillFrameworks.helpers';
 import {
@@ -28,7 +28,7 @@ import {
     isOpenSaltFramework,
     isOpenSaltRef,
 } from '../../helpers/opensalt.helpers';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type SelectFrameworkToManageModalProps = {
     onFrameworkSelectOverride?: (framework: ApiFrameworkInfo) => void;

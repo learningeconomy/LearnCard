@@ -52,7 +52,7 @@ import { loadCandidatePool, type PooledCandidate, type WalletForCandidates } fro
 import { resilientPresentCredentials } from '../../helpers/oid4vc-resilience/resilientVp';
 import { useResilientExchange } from '../../hooks/useResilientExchange';
 import { RecoveryPromptModal } from '../../components/oid4vc-recovery/RecoveryPromptModal';
-import { AppContent, AppPage } from '../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 interface ParsedSdJwtForConsent {
     disclosureKeys?: string[];

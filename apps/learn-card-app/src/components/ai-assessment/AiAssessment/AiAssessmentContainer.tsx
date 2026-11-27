@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { AppIcon } from '../../icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { alertCircleOutline } from 'learn-card-base/icons/ionicons';
 import { useQueryClient } from '@tanstack/react-query';
 import { getLogger } from 'learn-card-base';

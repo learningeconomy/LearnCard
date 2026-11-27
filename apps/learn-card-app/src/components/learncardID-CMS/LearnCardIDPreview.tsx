@@ -5,7 +5,7 @@ import IDSleeve from 'learn-card-base/svgs/IDSleeve';
 import LearnCardID from './LearnCardID';
 
 import { FamilyChildAccount, FamilyCMSAppearance } from '../familyCMS/familyCMSState';
-import { AppFooter, AppPage, AppToolbar } from '../chrome';
+import { AppFooter, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
 
 export const LearnCardIDPreview: React.FC<{
     user: FamilyChildAccount;

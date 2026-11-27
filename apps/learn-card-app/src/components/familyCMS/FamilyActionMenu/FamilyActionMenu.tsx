@@ -18,7 +18,7 @@ import {
     useGetBoostPermissions,
     useModal,
 } from 'learn-card-base';
-import { useAppOverlayModal } from '../../overlays/useAppOverlayModal';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
 import { m } from '../../../paraglide/messages.js';
 
 import { FamilyChildAccount, FamilyCMSEditorModeEnum } from '../familyCMSState';

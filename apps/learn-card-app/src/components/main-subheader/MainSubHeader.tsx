@@ -3,7 +3,7 @@ import React from 'react';
 import * as m from '../../paraglide/messages.js';
 import { getSideMenuTranslationKey } from 'learn-card-base/components/sidemenu/sidemenuHelpers';
 
-import { AppCol, AppRow } from '../layout';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 import AiPassportPersonalizationContainer from '../../components/ai-passport/AiPassportPersonalizationContainer';
 import CategoryDescriptorModal from '../category-descriptor/CategoryDescriptorModal';
@@ -15,7 +15,7 @@ import useTheme from '../../theme/hooks/useTheme';
 import newCredsStore from 'learn-card-base/stores/newCredsStore';
 import { usePersonalizationQA } from '../ai-passport/usePersonalizationQA';
 import NewCredentialsPill from './NewCredentialsPill';
-import { AppSpinner } from '../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const formatCount = (count: number | string): string => {
     if (typeof count === 'string') return count;

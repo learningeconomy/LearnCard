@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { AppCol, AppRow } from '../layout';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 import WarningIcon from '../svgs/WarningIcon';
 import SeedPhraseModal from './SeedPhraseModal';
 

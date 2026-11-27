@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import moment from 'moment';
 
-import { useAppOverlayModal } from '../../../../overlays/useAppOverlayModal';
-import { AppCol, AppGrid, AppRow } from '../../../../layout';
-import { AppItem, AppList } from '../../../../list';
-import { AppInput } from '../../../../controls/AppInput';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
+import { AppItem, AppList } from 'learn-card-base/ui/list';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 
 import Plus from 'learn-card-base/svgs/Plus';
 import BoostAddressBookContactOptions from './BoostAddressBookContactOptions';
@@ -23,8 +23,8 @@ import { LCNProfile, BoostRecipientInfo } from '@learncard/types';
 import BoostShareableCode from './BoostShareableCode';
 
 import { useBrandingConfig } from 'learn-card-base';
-import { AppContent, AppFooter, AppHeader, AppPage, AppToolbar } from '../../../../chrome';
-import { AppSpinner } from '../../../../feedback/AppSpinner';
+import { AppContent, AppFooter, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 export enum BoostAddressBookEditMode {
     edit = 'edit',

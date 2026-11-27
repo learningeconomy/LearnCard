@@ -11,7 +11,7 @@ import { getAppBaseUrl } from '../../../config/bootstrapTenantConfig';
 import { useJoinLCNetworkModal } from '../../../components/network-prompts/hooks/useJoinLCNetworkModal';
 import * as m from '../../../paraglide/messages.js';
 
-import { AppSpinner } from '../../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import { QrCodeDownloadOptionsEnum, userQrCodeDownloadOptions } from './user-share-options.helpers';
 
 const APP_ALBUM_NAME = 'LearnCard';

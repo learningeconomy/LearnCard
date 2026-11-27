@@ -1,7 +1,7 @@
 import React from 'react';
 import * as m from '../../../../paraglide/messages.js';
 
-import { AppSpinner } from '../../../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 import {
     BoostCategoryOptionsEnum,

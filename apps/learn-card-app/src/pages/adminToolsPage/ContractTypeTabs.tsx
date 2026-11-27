@@ -1,7 +1,7 @@
 import React from 'react';
-import { AppRow } from '../../components/layout';
-import { AppLabel } from '../../components/list';
-import { AppSegment, AppSegmentButton } from '../../components/widgets';
+import { AppRow } from 'learn-card-base/ui/layout';
+import { AppLabel } from 'learn-card-base/ui/list';
+import { AppSegment, AppSegmentButton } from 'learn-card-base/ui/widgets';
 import { ContractType } from './CreateContractModal';
 import { SetState } from 'packages/shared-types/dist';
 

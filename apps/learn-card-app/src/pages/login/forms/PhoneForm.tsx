@@ -12,7 +12,7 @@ import { useSignInAdapter, useToast, ToastTypeEnum } from 'learn-card-base';
 import { useFirebase } from '../../../hooks/useFirebase';
 import { useTheme } from '../../../theme/hooks/useTheme';
 
-import { AppCol } from '../../../components/layout';
+import { AppCol } from 'learn-card-base/ui/layout';
 import AppStoreDownloadButtons from '../appStoreButtons/AppStoreDownloadButtons';
 import AccessibleCodeInput from './AccessibleCodeInput';
 import LoginErrorMessage from './LoginErrorMessage';

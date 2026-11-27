@@ -17,7 +17,7 @@ import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers
 import { useHistory } from 'react-router-dom';
 
 import 'swiper/css';
-import { AppSkeletonText } from '../../components/feedback/AppSkeletonText';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
 
 type PathwayStep = {
     title?: string;

@@ -41,7 +41,7 @@ import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarne
 import { BoostCategoryOptionsEnum, BoostPageViewMode } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
 import { useLocale } from '../../i18n';
-import { AppContent, AppPage } from '../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 type Step = 'pick' | 'personalize' | 'send' | 'celebrate';
 

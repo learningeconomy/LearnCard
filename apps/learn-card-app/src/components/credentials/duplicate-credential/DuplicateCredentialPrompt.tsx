@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { AppIcon } from '../../icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { closeOutline, documentsOutline } from 'learn-card-base/icons/ionicons';
 import { Overlay } from 'learn-card-base';
 import {

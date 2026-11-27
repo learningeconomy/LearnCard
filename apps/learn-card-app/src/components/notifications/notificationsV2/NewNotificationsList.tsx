@@ -4,7 +4,7 @@ import { useLoadingLine } from 'apps/learn-card-app/src/stores/loadingStore';
 import { useGetUserNotifications } from 'learn-card-base';
 import { deduplicateConnectionPromptNotifications } from 'learn-card-base/components/connection-prompts/deduplicateConnectionPromptNotifications';
 
-import { AppSpinner } from '../../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import ArrowCircle from 'learn-card-base/svgs/ArrowCircle';
 import GenericErrorBoundary from '../../generic/GenericErrorBoundary';
 import NotificationCardContainer from './NotificationCardContainer';

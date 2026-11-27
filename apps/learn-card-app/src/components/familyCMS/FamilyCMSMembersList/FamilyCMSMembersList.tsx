@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 import { useConfirmation, useModal, ModalTypes } from 'learn-card-base';
 
-import { AppInput } from '../../controls/AppInput';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import AddUser from '../../svgs/AddUser';
 import { m } from '../../../paraglide/messages.js';
 import { TransP } from '../../../i18n/TransP';

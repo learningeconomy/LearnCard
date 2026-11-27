@@ -16,7 +16,7 @@ vi.mock('@ionic/react', () => ({
     IonLabel: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
 }));
 
-vi.mock('../app-shell/AppTabs', () => {
+vi.mock('learn-card-base/ui/app-shell/AppTabs', () => {
     const Container = ({ children }: React.PropsWithChildren) => <div>{children}</div>;
 
     return {
@@ -30,11 +30,11 @@ vi.mock('../app-shell/AppTabs', () => {
     };
 });
 
-vi.mock('../app-shell/AppOutlet', () => ({
+vi.mock('learn-card-base/ui/app-shell/AppOutlet', () => ({
     AppOutlet: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
 }));
 
-vi.mock('../app-shell/AppMenuToggle', () => ({
+vi.mock('learn-card-base/ui/app-shell/AppMenuToggle', () => ({
     AppMenuToggle: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
 }));
 

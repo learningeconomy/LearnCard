@@ -1,4 +1,4 @@
-import { AppInput } from '../../controls/AppInput';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import React, { useState } from 'react';
 import { FamilyCMSState, MemberTitleTypes } from '../familyCMSState';
 import { m } from '../../../paraglide/messages.js';

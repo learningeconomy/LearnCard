@@ -3,7 +3,7 @@ import { useHistory } from 'react-router-dom';
 
 import { m } from '../../../paraglide/messages.js';
 
-import { AppSpinner } from '../../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import SlimCaretLeft from '../../svgs/SlimCaretLeft';
 import AiSessionsHeaderSkeleton from './AiSessionsHeaderSkeleton';
 import AiSessionsDesktopHeader from './AiSessionsDesktopHeader';

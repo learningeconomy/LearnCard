@@ -9,7 +9,7 @@ import { TransP } from '../../../i18n/TransP';
 import RequestInsightsSkeletonLoader from './RequestInsightsSkeletonLoader';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 import ConnectIcon from 'learn-card-base/svgs/ConnectIcon';
-import { AppIcon } from '../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import X from 'learn-card-base/svgs/X';
 
 import {
@@ -31,7 +31,7 @@ import { getAppBaseUrl } from '../../../config/bootstrapTenantConfig';
 import { useGetAiInsightsServicesContract } from '../learner-insights/learner-insights.helpers';
 import { RequestInsightStatusEnum } from './request-insights.helpers';
 import { person } from 'learn-card-base/icons/ionicons';
-import { AppFooter } from '../../../components/chrome';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 export const RequestInsightsFromUserModal: React.FC<{
     profile: LCNProfile;

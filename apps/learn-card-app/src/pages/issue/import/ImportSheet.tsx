@@ -1,5 +1,5 @@
 import React, { useCallback, useId, useMemo, useRef, useState } from 'react';
-import { AppIcon } from '../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     sparklesOutline,
     linkOutline,

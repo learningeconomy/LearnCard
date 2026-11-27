@@ -5,7 +5,7 @@ import { useHistory } from 'react-router-dom';
 import useBoost from '../hooks/useBoost';
 import useManagedBoost from 'apps/learn-card-app/src/hooks/useManagedBoost';
 
-import { AppCol } from '../../layout';
+import { AppCol } from 'learn-card-base/ui/layout';
 
 import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 import { BoostSmallCard } from '@learncard/react';

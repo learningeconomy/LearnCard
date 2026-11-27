@@ -21,8 +21,8 @@ import {
     useNetworkConsentMutation,
 } from 'learn-card-base';
 
-import { AppCol, AppRow } from '../layout';
-import { AppInput } from '../controls/AppInput';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 import HeaderBranding from 'learn-card-base/components/headerBranding/HeaderBranding';
 import ErrorLogout from './ErrorLogout';
@@ -42,7 +42,7 @@ import {
 } from '../../auth/classlink/classlinkProfileDefaults';
 import { generateRandomSuffix } from '../onboarding/v2/handleGenerator';
 import { getClassLinkDisplayName } from '../../auth/classlink/classlinkDisplayName';
-import { AppSpinner } from '../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const getStateValidator = () =>
     z.object({

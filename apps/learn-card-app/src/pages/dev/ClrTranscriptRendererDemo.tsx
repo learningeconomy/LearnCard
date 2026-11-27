@@ -6,8 +6,8 @@ import {
     type SupportedLanguage,
 } from '../../i18n';
 import * as m from '../../paraglide/messages.js';
-import { AppPopover } from '../../components/overlays/AppPopover';
-import { AppItem, AppLabel, AppList } from '../../components/list';
+import { AppPopover } from 'learn-card-base/ui/overlays/AppPopover';
+import { AppItem, AppLabel, AppList } from 'learn-card-base/ui/list';
 import type { VC } from '@learncard/types';
 
 import { CLR_TRANSCRIPT_DEMO_FIXTURES as FIXTURES } from './clrTranscriptDemo.fixtures';

@@ -1,12 +1,12 @@
 import React, { useCallback, useRef, useState } from 'react';
 import moment from 'moment';
 import { IonApp } from '@ionic/react';
-import { AppButton } from '../../src/components/controls/AppButton';
-import { AppButtons } from '../../src/components/controls/AppButtons';
-import AppDatetime, { type AppDatetimeHandle } from '../../src/components/datetime/AppDatetime';
+import { AppButton } from 'learn-card-base/ui/controls/AppButton';
+import { AppButtons } from 'learn-card-base/ui/controls/AppButtons';
+import AppDatetime, { type AppDatetimeHandle } from 'learn-card-base/ui/datetime/AppDatetime';
 
-import { AppOverlayManager } from '../../src/components/overlays/AppOverlayManager';
-import { useAppOverlayModal } from '../../src/components/overlays/useAppOverlayModal';
+import { AppOverlayManager } from 'learn-card-base/ui/overlays/AppOverlayManager';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
 import { useTheme } from '../../src/theme/hooks/useTheme';
 
 /**

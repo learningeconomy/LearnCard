@@ -1,6 +1,6 @@
 import React, { lazy, Suspense } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { AppSpinner } from '../../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 import * as m from '../../../paraglide/messages.js';
 

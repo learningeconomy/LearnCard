@@ -3,9 +3,9 @@ import { add } from 'learn-card-base/icons/ionicons';
 import moment from 'moment';
 import type { UnsignedVC, VC } from '@learncard/types';
 
-import AppDatetime from '../../datetime/AppDatetime';
-import { AppIcon } from '../../icon';
-import { AppReorder, AppReorderGroup } from '../../reorder';
+import AppDatetime from 'learn-card-base/ui/datetime/AppDatetime';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { AppReorder, AppReorderGroup } from 'learn-card-base/ui/reorder';
 import ResumeBuilderToggle from '../ResumeBuilderToggle';
 import { TrustedIcon } from 'learn-card-base/svgs/TrustedIcon';
 import VerticalArrowsIcon from '../../../components/svgs/VerticalArrowsIcon';

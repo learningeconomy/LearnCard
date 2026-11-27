@@ -2,7 +2,7 @@ import React from 'react';
 import { useModal } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
-import { AppSpinner } from '../../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import GamePromptHeader from './GamePromptHeader';
 
 import { ConsentFlowContractDetails } from '@learncard/types';

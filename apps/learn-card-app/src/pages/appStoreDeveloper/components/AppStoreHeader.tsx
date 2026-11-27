@@ -6,7 +6,7 @@ import { Shield, Code2, Hammer } from 'lucide-react';
 import { AccountSwitcher } from './AccountSwitcher';
 import { useDeveloperPortal } from '../useDeveloperPortal';
 import { useDeveloperPortalContext } from '../DeveloperPortalContext';
-import { AppHeader, AppToolbar } from '../../../components/chrome';
+import { AppHeader, AppToolbar } from 'learn-card-base/ui/chrome';
 
 interface AppStoreHeaderProps {
     title?: string;

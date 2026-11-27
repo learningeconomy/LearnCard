@@ -30,7 +30,7 @@
 
 import React from 'react';
 
-import { AppIcon } from '../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { Handle, Position } from '@xyflow/react';
 import {
     documentTextOutline,

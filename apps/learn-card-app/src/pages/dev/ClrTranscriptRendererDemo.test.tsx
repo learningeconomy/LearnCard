@@ -20,7 +20,7 @@ vi.mock('../../i18n', () => ({
     SUPPORTED_LANGUAGES: ['en', 'es', 'fr', 'ar'],
 }));
 
-vi.mock('../../components/overlays/AppPopover', () => ({
+vi.mock('learn-card-base/ui/overlays/AppPopover', () => ({
     AppPopover: ({ isOpen, children }: { isOpen: boolean; children: React.ReactNode }) =>
         isOpen ? <div role="dialog">{children}</div> : null,
 }));

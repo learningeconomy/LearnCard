@@ -44,7 +44,7 @@
 
 import React, { useMemo, useState } from 'react';
 
-import { AppIcon } from '../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { useHistory } from 'react-router-dom';
 import {
     arrowDownOutline,

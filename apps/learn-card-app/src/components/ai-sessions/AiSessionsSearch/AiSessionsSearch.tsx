@@ -2,7 +2,7 @@ import React from 'react';
 
 import { m } from '../../../paraglide/messages.js';
 
-import { AppInput } from '../../controls/AppInput';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import Search from 'learn-card-base/svgs/Search';
 import AiSessionsPopOverButton from './AiSessionsPopOverButton';
 

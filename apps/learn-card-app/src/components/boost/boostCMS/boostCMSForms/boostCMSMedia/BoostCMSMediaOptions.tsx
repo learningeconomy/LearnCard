@@ -8,7 +8,7 @@ import CreateMediaAttachmentForm from './CreateMediaAttachmentForm';
 import { BoostCMSState, BoostCMSAppearanceDisplayTypeEnum } from '../../../boost';
 import { getTopmostCancelPortal } from './boostCMSMedia.helpers';
 import * as m from '../../../../../paraglide/messages.js';
-import { AppHeader, AppToolbar } from '../../../../chrome';
+import { AppHeader, AppToolbar } from 'learn-card-base/ui/chrome';
 
 type BoostCMSMediaOptionsProps = {
     state: BoostCMSState;

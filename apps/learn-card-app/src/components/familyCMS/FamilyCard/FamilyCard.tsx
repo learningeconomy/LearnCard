@@ -1,7 +1,7 @@
 import React from 'react';
 import { VC } from '@learncard/types';
 
-import { useAppOverlayModal } from '../../overlays/useAppOverlayModal';
+import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
 
 import FamilyCrest from '../FamilyCrest/FamilyCrest';
 import VerifiedBadge from 'learn-card-base/svgs/VerifiedBadge';

@@ -6,7 +6,7 @@ import { CheckCircle2, FileText, Settings, Link2, ExternalLink, Smartphone } fro
 import type { AppStoreListingCreate } from '../types';
 import { LAUNCH_TYPE_INFO, CATEGORY_OPTIONS } from '../types';
 import type { CapturedAppManifest } from '@learncard/partner-connect-core';
-import { AppIcon } from '../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { shieldCheckmarkOutline } from 'learn-card-base/icons/ionicons';
 
 interface ReviewStepProps {

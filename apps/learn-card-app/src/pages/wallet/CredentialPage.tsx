@@ -27,7 +27,7 @@ import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader
 
 import useTheme from '../../theme/hooks/useTheme';
 import passportPageStore from '../../stores/passportPageStore';
-import { AppContent, AppPage } from '../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 interface CategoryConfig {
     boostCategory: CredentialCategoryEnum;

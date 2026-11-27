@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { AppIcon } from '../icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { documentTextOutline } from 'learn-card-base/icons/ionicons';
 import type { VC } from '@learncard/types';
 import type { CredentialCategoryEnum } from 'learn-card-base';

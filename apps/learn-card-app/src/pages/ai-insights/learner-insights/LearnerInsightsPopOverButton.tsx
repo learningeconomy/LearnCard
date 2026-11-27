@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 
-import { AppPopover } from '../../../components/overlays/AppPopover';
-import { AppItem, AppList } from '../../../components/list';
+import { AppPopover } from 'learn-card-base/ui/overlays/AppPopover';
+import { AppItem, AppList } from 'learn-card-base/ui/list';
 import SortIcon from 'learn-card-base/svgs/SortButton';
 import { Checkmark } from '@learncard/react';
 

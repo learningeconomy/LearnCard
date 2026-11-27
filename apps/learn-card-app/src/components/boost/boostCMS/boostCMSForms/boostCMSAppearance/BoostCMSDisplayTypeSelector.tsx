@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 
 import { BoostCategoryOptionsEnum, ModalTypes, getBoostMetadata, useModal } from 'learn-card-base';
-import { AppRow } from '../../../../layout';
+import { AppRow } from 'learn-card-base/ui/layout';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import BadgeDisplayTypeIcon from 'learn-card-base/assets/images/badge-display-type.svg';
 import CertificateDisplayTypeIcon from 'learn-card-base/assets/images/cert-display-type.svg';

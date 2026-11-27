@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useModal, useWallet } from 'learn-card-base';
-import { AppInput } from '../../components/controls/AppInput';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { LCNProfile } from '@learncard/types';
 import CaretDown from 'apps/learn-card-app/src/components/svgs/CaretDown';
@@ -8,7 +8,7 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('manage-framework-admins-modal');
 // import ScoutsTroopIcon from 'apps/learn-card-app/src/assets/icons/ScoutsTroopIcon';
 import TrashBin from 'learn-card-base/svgs/TrashBin';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type ManageFrameworkAdminsModalProps = {
     frameworkId: string;

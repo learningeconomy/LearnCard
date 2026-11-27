@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { AppItem, AppList } from '../../../components/list';
+import { AppItem, AppList } from 'learn-card-base/ui/list';
 import { Checkmark } from '@learncard/react';
 
 import {

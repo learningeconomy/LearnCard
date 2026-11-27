@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { IonApp } from '@ionic/react';
-import { AppItem, AppLabel, AppList } from '../../src/components/list';
+import { AppItem, AppLabel, AppList } from 'learn-card-base/ui/list';
 
 import { CheckListItemSkeleton } from '../../src/components/learncard/checklist/checklist-steps/CheckListItemSkeleton';
 

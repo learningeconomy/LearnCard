@@ -5,7 +5,7 @@ import { m } from '../../../paraglide/messages.js';
 import X from '../../svgs/X';
 import BurgerIcon from '../../svgs/Burger';
 import LearnCardTextLogo from '../../svgs/LearnCardTextLogo';
-import { AppMenuToggle } from '../../app-shell/AppMenuToggle';
+import { AppMenuToggle } from 'learn-card-base/ui/app-shell/AppMenuToggle';
 import IDSleeve from 'learn-card-base/svgs/IDSleeve';
 import { useTenantBrandingAssets } from '../../../config/brandingAssets';
 

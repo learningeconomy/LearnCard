@@ -4,7 +4,7 @@ import { Autoplay } from 'swiper/modules';
 
 import { m } from '../../paraglide/messages.js';
 
-import { AppSpinner } from '../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import Sparkles from '../../assets/images/purple-sparkles.gif';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 

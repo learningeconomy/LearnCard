@@ -1,5 +1,5 @@
 import NetworkErrorIcon from 'learn-card-base/svgs/NetworkErrorIcon';
-import { AppFooter } from '../chrome';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 const GenericNetworkError: React.FC<{
     text: string;

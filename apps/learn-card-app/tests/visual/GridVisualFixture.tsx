@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { IonApp } from '@ionic/react';
-import { AppCol, AppGrid, AppRow } from '../../src/components/layout';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import { CredentialCategoryEnum } from 'learn-card-base';
 
 import LaunchPadHeaderTitle from '../../src/pages/launchPad/LaunchPadHeader/LaunchPadHeaderTitle';

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 import { Checkmark } from '@learncard/react';
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import FrameworkImage from '../SkillFrameworks/FrameworkImage';
 import {
     SKILLSHUB_FILTER_OPTIONS,

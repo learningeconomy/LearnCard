@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-import { CONTENT_SELECTOR } from '../../../components/chrome/AppContent';
+import { CONTENT_SELECTOR } from 'learn-card-base/ui/chrome/AppContent';
 
 export const useLockBodyScroll = (locked: boolean = true): void => {
     useEffect(() => {

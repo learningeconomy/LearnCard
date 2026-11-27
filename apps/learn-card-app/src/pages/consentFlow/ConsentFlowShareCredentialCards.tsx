@@ -1,7 +1,7 @@
 import React from 'react';
 import { Updater } from 'use-immer';
 
-import { AppToggle } from '../../components/controls/AppToggle';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 
 import { ConsentFlowTerms, VC } from '@learncard/types';
 import { CredentialCategory, GenericCardWrapper, useVerifiableData } from 'learn-card-base';

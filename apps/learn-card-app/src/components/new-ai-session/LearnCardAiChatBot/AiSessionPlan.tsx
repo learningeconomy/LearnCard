@@ -14,7 +14,7 @@ import {
     planSections,
     isLoading,
 } from 'learn-card-base/stores/nanoStores/chatStore';
-import { AppSkeletonText } from '../../feedback/AppSkeletonText';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
 
 const containerVariants = {
     hidden: {},

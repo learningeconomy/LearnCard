@@ -1,7 +1,7 @@
 import React from 'react';
 import { IonApp } from '@ionic/react';
-import { AppCard, AppCardContent, AppFabButton } from '../../src/components/widgets';
-import { AppIcon } from '../../src/components/icon';
+import { AppCard, AppCardContent, AppFabButton } from 'learn-card-base/ui/widgets';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     alertCircleOutline,
     americanFootballOutline,
@@ -24,7 +24,7 @@ import {
     starOutline,
 } from 'learn-card-base/icons/ionicons';
 
-import { AppButton } from '../../src/components/controls/AppButton';
+import { AppButton } from 'learn-card-base/ui/controls/AppButton';
 import StaticStarRating from '../../src/components/ai-passport-apps/helpers/StaticStarRating';
 import ResumePreiewEditBlockButton from '../../src/components/resume-builder/resume-preview/ResumePreviewEditBlockButton';
 import PreviewVerificationBox from '../../src/components/boost/boostCMS/BoostPreview/PreviewVerificationBox';

@@ -1,5 +1,5 @@
 import React from 'react';
-import { AppIcon } from '../../../icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { checkmarkOutline, trashOutline } from 'learn-card-base/icons/ionicons';
 import DocIcon from 'learn-card-base/svgs/DocIcon';
 import { useUploadedDocumentPreview } from '../../../../hooks/useUploadedDocumentPreview';

@@ -38,12 +38,21 @@ export default createVitestConfig(happyDomPreset, {
         // DOMPurify's SVG sanitization and computed CSS serialization require jsdom semantics.
         environment: 'jsdom',
         setupFiles: ['./vitest.setup.ts'],
-        include: ['src/**/*.test.{ts,tsx}'],
+        // learn-card-base/src/ui holds the app-owned Ionic replacements; their DOM tests run here.
+        include: [
+            'src/**/*.test.{ts,tsx}',
+            '../../packages/learn-card-base/src/ui/**/*.test.{ts,tsx}',
+        ],
     },
     resolve: {
         alias: {
             'learn-card-base': path.resolve(__dirname, '../../packages/learn-card-base/src'),
             'apps/learn-card-app': path.resolve(__dirname),
+            // learn-card-base/src/ui tests use the app's user-event 12, not the root's 14.
+            '@testing-library/user-event': path.resolve(
+                __dirname,
+                'node_modules/@testing-library/user-event'
+            ),
         },
     },
 });

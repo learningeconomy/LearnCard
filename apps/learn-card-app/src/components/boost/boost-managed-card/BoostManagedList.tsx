@@ -5,7 +5,7 @@ import { useHistory } from 'react-router-dom';
 import { useLoadingLine } from '../../../stores/loadingStore';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
-import { AppCol, AppGrid, AppRow } from '../../layout';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import BoostManagedCard from '../../../components/boost/boost-managed-card/BoostManagedCard';
 import BoostErrorsDisplay from '../../../components/boost/boostErrors/BoostErrorsDisplay';
 import NewBoostButton from '../NewBoostButton';
@@ -22,7 +22,7 @@ import {
     credentialCategoryToSubheaderType,
     SubheaderContentType,
 } from '../../main-subheader/MainSubHeader.types';
-import { AppSpinner } from '../../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type BoostManagedListProps = {
     category: CredentialCategoryEnum;

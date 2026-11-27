@@ -4,8 +4,8 @@ import { QRCodeSVG } from 'qrcode.react';
 import moment from 'moment';
 
 import X from 'learn-card-base/svgs/X';
-import { AppGrid } from '../../layout';
-import { AppIcon } from '../../icon';
+import { AppGrid } from 'learn-card-base/ui/layout';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import { alertCircleOutline } from 'learn-card-base/icons/ionicons';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import IDSleeve from '../../../assets/images/id-sleeve.png';
@@ -45,7 +45,7 @@ import {
     getEndorsementRequestBaseUrl,
 } from '../../boost-endorsements/EndorsementRequestForm/endorsement-request.helpers';
 import { buildLinkedInCertificationUrl, buildLinkedInPostUrl } from './linkedInSharing';
-import { AppSpinner } from '../../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type ShareBoostLinkProps = {
     handleClose?: () => void;

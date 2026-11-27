@@ -7,7 +7,7 @@ import * as m from '../../../paraglide/messages.js';
 import { useLocale } from '../../../i18n';
 import type { DataSharingProfileViewModel } from '../DataSharingCenter.types';
 import GlassCard from './GlassCard';
-import { AppToggle } from '../../../components/controls/AppToggle';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 
 type ProfileVisibilityCardProps = DataSharingProfileViewModel & { delay?: number };
 

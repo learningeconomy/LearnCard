@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 import Plus from '../../svgs/Plus';
-import { AppSpinner } from '../../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import TrashBin from 'learn-card-base/svgs/TrashBin';
 import VerifiedBadge from 'learn-card-base/svgs/VerifiedBadge';
 

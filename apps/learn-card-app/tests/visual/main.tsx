@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { setupIonicReact } from '@ionic/react';
-import { AppCol, AppGrid, AppRow } from '../../src/components/layout';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import {
     ModalsProvider,
     TenantConfigProvider,

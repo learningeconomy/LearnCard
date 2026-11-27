@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import moment from 'moment';
 
-import { AppPopover } from '../overlays/AppPopover';
-import { AppItem, AppList } from '../list';
+import { AppPopover } from 'learn-card-base/ui/overlays/AppPopover';
+import { AppItem, AppList } from 'learn-card-base/ui/list';
 import ResumeHistoryIcon from '../../assets/images/resume-history-icon.svg';
 import ResumeHistoryIconPublished from '../../assets/images/resume-builder-icon-published.svg';
 
@@ -10,7 +10,7 @@ import useExistingResumes, { ExistingResume } from '../../hooks/useExistingResum
 import { getResumeDisplaySummary } from './resume-builder-history.helpers';
 
 import * as m from '../../paraglide/messages.js';
-import { AppSpinner } from '../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 export const ResumeBuilderHistoryDropdownButton: React.FC<{
     activeResumeRecordId?: string | null;

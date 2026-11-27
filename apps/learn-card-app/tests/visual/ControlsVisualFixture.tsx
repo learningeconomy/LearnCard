@@ -1,8 +1,8 @@
 import React, { useRef, useState } from 'react';
 import { IonApp, IonHeader, IonTitle, IonToolbar } from '@ionic/react';
-import { AppCol, AppGrid, AppRow } from '../../src/components/layout';
-import { AppIcon } from '../../src/components/icon';
-import { AppCard, AppCardContent, AppText } from '../../src/components/widgets';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
+import { AppIcon } from 'learn-card-base/ui/icon';
+import { AppCard, AppCardContent, AppText } from 'learn-card-base/ui/widgets';
 import { alertCircleOutline, homeOutline, refreshOutline } from 'learn-card-base/icons/ionicons';
 import type { ConsentFlowContract } from '@learncard/types';
 
@@ -12,12 +12,12 @@ import { getInfoFromContractKey } from '../../src/helpers/contract.helpers';
 import MultiTextInput from '../../src/pages/hidden/MultiTextInput';
 import BoostCMSMemberPrivacyOptions from '../../src/components/boost/boostCMS/boostCMSForms/boostCMSMemberPrivacyOptions/BoostCMSMemberPrivacyOptions';
 import { initialBoostCMSState, type BoostCMSState } from '../../src/components/boost/boost';
-import { AppBackButton } from '../../src/components/chrome';
-import { AppButton, type AppButtonProps } from '../../src/components/controls/AppButton';
-import { AppButtons } from '../../src/components/controls/AppButtons';
-import AppDatetime from '../../src/components/datetime/AppDatetime';
-import { AppCheckbox } from '../../src/components/controls/AppCheckbox';
-import { AppRadio, AppRadioGroup } from '../../src/components/controls/AppRadio';
+import { AppBackButton } from 'learn-card-base/ui/chrome';
+import { AppButton, type AppButtonProps } from 'learn-card-base/ui/controls/AppButton';
+import { AppButtons } from 'learn-card-base/ui/controls/AppButtons';
+import AppDatetime from 'learn-card-base/ui/datetime/AppDatetime';
+import { AppCheckbox } from 'learn-card-base/ui/controls/AppCheckbox';
+import { AppRadio, AppRadioGroup } from 'learn-card-base/ui/controls/AppRadio';
 import {
     storageOptionsList,
     StorageOptionsEnum,

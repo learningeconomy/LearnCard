@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 
-import { AppCol, AppRow } from '../../../layout';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 import { BoostUserTypeEnum } from '../../boost-options/boostOptions';
 
@@ -9,8 +9,8 @@ import * as m from '../../../../paraglide/messages.js';
 import keyboardStore from 'learn-card-base/stores/keyboardStore';
 import { BoostCMSStepsEnum } from '../../boost';
 import { BoostCategoryOptionsEnum, boostCategoryMetadata } from 'learn-card-base';
-import { AppFooter, AppToolbar } from '../../../chrome';
-import { AppSpinner } from '../../../feedback/AppSpinner';
+import { AppFooter, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const BoostCMSFooter: React.FC<{
     boostUserType: BoostUserTypeEnum;

@@ -5,7 +5,7 @@ import { EndorsmentThumbWithCircle } from 'learn-card-base/svgs/EndorsementThumb
 
 import { useModal } from 'learn-card-base';
 import * as m from '../../../paraglide/messages.js';
-import { AppFooter } from '../../chrome';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 const EndorsementFormFooter: React.FC<{
     isDisabled?: boolean;

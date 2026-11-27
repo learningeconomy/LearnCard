@@ -13,9 +13,9 @@ import { useLearnCardMessageHandlers } from '../../hooks/post-message/useLearnCa
 import { CredentialClaimModal } from './CredentialClaimModal';
 import { AppCredentialDashboard } from './AppCredentialDashboard';
 import { useAppNotificationToast } from '../../hooks/useAppNotificationToast';
-import { AppButton } from '../../components/controls/AppButton';
-import { AppButtons } from '../../components/controls/AppButtons';
-import { AppContent, AppHeader, AppPage, AppTitle, AppToolbar } from '../../components/chrome';
+import { AppButton } from 'learn-card-base/ui/controls/AppButton';
+import { AppButtons } from 'learn-card-base/ui/controls/AppButtons';
+import { AppContent, AppHeader, AppPage, AppTitle, AppToolbar } from 'learn-card-base/ui/chrome';
 
 interface EmbedAppParams {
     appId: string;

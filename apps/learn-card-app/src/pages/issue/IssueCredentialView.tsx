@@ -22,7 +22,7 @@ import type { ResolvedSkill } from './components/skillAlignment';
 import type { SelectedSkill } from '../skills/skillTypes';
 import type { SimpleMediaAttachment } from './components/MediaAttachments';
 import type { OBv3CredentialTemplate } from '../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
-import { AppContent, AppPage } from '../../components/chrome';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 export interface IssueCredentialViewProps {
     spreadsheet?: SpreadsheetView;

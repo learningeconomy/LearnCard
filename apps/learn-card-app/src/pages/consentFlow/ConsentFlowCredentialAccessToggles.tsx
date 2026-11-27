@@ -1,7 +1,7 @@
 import React from 'react';
 import { Updater } from 'use-immer';
 
-import { AppToggle } from '../../components/controls/AppToggle';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 
 import { boostVCTypeOptions } from '../../components/boost/boost-options/boostOptions';
 import BrokenLink from '../../components/svgs/BrokenLink';

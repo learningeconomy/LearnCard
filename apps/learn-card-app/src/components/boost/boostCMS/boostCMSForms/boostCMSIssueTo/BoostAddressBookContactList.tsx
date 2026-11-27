@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { AppList } from '../../../../list';
+import { AppList } from 'learn-card-base/ui/list';
 
 import BoostAddressBookContactItem from './BoostAddressBookContactItem';
 import { BoostUserTypeEnum, useGetCurrentLCNUser } from 'learn-card-base';

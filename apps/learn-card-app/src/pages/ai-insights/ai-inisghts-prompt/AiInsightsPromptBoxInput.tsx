@@ -2,7 +2,7 @@ import React from 'react';
 
 import { m } from '../../../paraglide/messages.js';
 
-import { AppTextarea } from '../../../components/controls/AppTextarea';
+import { AppTextarea } from 'learn-card-base/ui/controls/AppTextarea';
 
 export const AiInsightsPromptBoxInput: React.FC<{
     prompt: string;

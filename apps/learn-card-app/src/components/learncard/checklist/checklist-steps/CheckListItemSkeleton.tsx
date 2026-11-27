@@ -1,7 +1,7 @@
 import React from 'react';
-import { AppThumbnail } from '../../../widgets';
-import { AppLabel } from '../../../list';
-import { AppSkeletonText } from '../../../feedback/AppSkeletonText';
+import { AppThumbnail } from 'learn-card-base/ui/widgets';
+import { AppLabel } from 'learn-card-base/ui/list';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
 
 export const CheckListItemSkeleton: React.FC = () => {
     return (

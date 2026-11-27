@@ -35,7 +35,7 @@
 import React from 'react';
 
 import { LearnCardAiChatBot } from '../../../components/new-ai-session/LearnCardAiChatBot/LearnCardAiChatBot';
-import { AppPage } from '../../../components/chrome';
+import { AppPage } from 'learn-card-base/ui/chrome';
 
 export interface PathwayAiSessionModalProps {
     /** Topic boost URI — the tutor seeds its initial plan from this. */

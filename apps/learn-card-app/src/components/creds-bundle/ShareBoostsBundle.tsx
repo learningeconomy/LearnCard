@@ -11,9 +11,9 @@ import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credent
 import ProfilePicture from 'learn-card-base/components/profilePicture/ProfilePicture';
 import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarnedCard';
 
-import { useAppAlert } from '../overlays/useAppAlert';
-import { AppGrid } from '../layout';
-import { AppToggle } from '../controls/AppToggle';
+import { useAppAlert } from 'learn-card-base/ui/overlays/useAppAlert';
+import { AppGrid } from 'learn-card-base/ui/layout';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation } from 'swiper/modules';
 import 'swiper/css/navigation';
@@ -27,8 +27,8 @@ type ShareCredentialsProps = {
 };
 
 import { getLogger } from 'learn-card-base';
-import { AppContent, AppPage } from '../chrome';
-import { AppSpinner } from '../feedback/AppSpinner';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 const log = getLogger('share-boosts-bundle');
 
 const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({

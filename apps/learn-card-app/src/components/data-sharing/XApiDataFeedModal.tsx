@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 
-import { AppSpinner } from '../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import { ChevronLeft, Activity } from 'lucide-react';
 import { useXApiStatementsForContract } from 'learn-card-base/hooks/useXApiStatementsForContract';
 import * as m from '../../paraglide/messages.js';

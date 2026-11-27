@@ -26,7 +26,7 @@ import {
     useDeviceTypeByWidth,
 } from 'learn-card-base';
 
-import { AppSpinner } from '../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import Pencil from '../svgs/Pencil';
 import TrashBin from '../svgs/TrashBin';
 import InfoIcon from '../svgs/InfoIcon';

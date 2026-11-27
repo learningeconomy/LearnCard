@@ -3,9 +3,9 @@ import moment from 'moment';
 import { ConsentFlowTerm, CredentialRecord } from '@learncard/types';
 import { Updater } from 'use-immer';
 import { capitalizeFirstLetter } from '@learncard/helpers';
-import AppDatetime from '../../components/datetime/AppDatetime';
-import { AppCol, AppGrid, AppRow } from '../../components/layout';
-import { AppToggle } from '../../components/controls/AppToggle';
+import AppDatetime from 'learn-card-base/ui/datetime/AppDatetime';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 
 import {
     useGetCredentialList,
@@ -16,7 +16,7 @@ import {
 } from 'learn-card-base';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import Calendar from '../../components/svgs/Calendar';
-import { AppCheckbox } from '../../components/controls/AppCheckbox';
+import { AppCheckbox } from 'learn-card-base/ui/controls/AppCheckbox';
 import { getInfoFromContractKey } from '../../helpers/contract.helpers';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
@@ -26,7 +26,7 @@ import { CredentialMetadata } from 'learn-card-base/types/credential-records';
 
 import useTheme from '../../theme/hooks/useTheme';
 import * as m from '../../paraglide/messages.js';
-import { AppContent, AppHeader, AppPage, AppToolbar } from '../../components/chrome';
+import { AppContent, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
 
 type ConsentFlowReadSharingModalProps = {
     term: ConsentFlowTerm;

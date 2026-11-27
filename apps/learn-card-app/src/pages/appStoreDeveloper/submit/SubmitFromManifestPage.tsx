@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
-import { AppIcon } from '../../../components/icon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     alertCircleOutline,
     checkmarkCircleOutline,
@@ -202,8 +202,8 @@ const PERSONAL_FIELD_LABELS: Record<string, string> = {
 
 import { ManifestDiffPanel } from '../dashboards/components/ManifestDiffPanel';
 import type { AppManifestDiff, AppStoreListing } from '@learncard/types';
-import { AppContent, AppPage } from '../../../components/chrome';
-import { AppSpinner } from '../../../components/feedback/AppSpinner';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const AUTOSAVE_DELAY_MS = 800;
 

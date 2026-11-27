@@ -1,6 +1,6 @@
 import React from 'react';
 import * as m from '../../../../paraglide/messages.js';
-import { AppSpinner } from '../../../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const LoggingOutPanel: React.FC<{ isLoggingOut: boolean }> = ({ isLoggingOut }) => {
     if (!isLoggingOut) return null;

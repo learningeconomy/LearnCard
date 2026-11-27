@@ -3,7 +3,7 @@ import { formatLocaleDate } from '../../../i18n/formatters';
 
 import { m } from '../../../paraglide/messages.js';
 
-import { AppSpinner } from '../../feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import VerifiedBadge from 'learn-card-base/svgs/VerifiedBadge';
 import AiSessionAssessmentPreviewContainer from '../../ai-assessment/AiSessionAssessmentPreviewContainer';
 import { ellipsisVertical } from 'learn-card-base/icons/ionicons';

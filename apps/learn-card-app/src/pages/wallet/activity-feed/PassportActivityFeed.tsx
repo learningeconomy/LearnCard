@@ -1,5 +1,5 @@
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { AppSpinner } from '../../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import { useGetCurrentLCNUser } from 'learn-card-base';
 import Search from 'learn-card-base/svgs/Search';
 import SortButton from 'learn-card-base/svgs/SortButton';

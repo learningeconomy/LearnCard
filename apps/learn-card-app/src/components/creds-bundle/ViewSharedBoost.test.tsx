@@ -35,8 +35,10 @@ vi.mock('react-router-dom', () => ({
 vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => false } }));
 vi.mock('@capacitor/browser', () => ({ Browser: { open: vi.fn() } }));
 vi.mock('@learncard/react', () => ({ getVCDisplayCardVariant: () => 'default' }));
-vi.mock('../overlays/useAppAlert', () => ({ useAppAlert: () => [mocks.presentAlert] }));
-vi.mock('../overlays/useAppOverlayModal', () => ({
+vi.mock('learn-card-base/ui/overlays/useAppAlert', () => ({
+    useAppAlert: () => [mocks.presentAlert],
+}));
+vi.mock('learn-card-base/ui/overlays/useAppOverlayModal', () => ({
     useAppOverlayModal: () => [vi.fn(), vi.fn()],
 }));
 vi.mock('learn-card-base', () => ({

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Updater } from 'use-immer';
 import { curriedStateSlice } from '@learncard/helpers';
 
-import { AppCol, AppRow } from '../../../../layout';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 import BoostCMSMediaPhotoUpload from './BoostCMSMediaPhotoUpload';
 import BoostCMSMediaDocumentUpload from './BoostCMSMediaDocumentUpload';
@@ -28,7 +28,7 @@ import {
 import * as m from '../../../../../paraglide/messages.js';
 
 import { IMAGE_MIME_TYPES, VIEWER_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
-import { AppProgressBar } from '../../../../feedback/AppProgressBar';
+import { AppProgressBar } from 'learn-card-base/ui/feedback/AppProgressBar';
 
 type CreateMediaAttachmentFormProps = {
     initialState?: BoostCMSState;

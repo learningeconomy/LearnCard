@@ -45,7 +45,7 @@ import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
 import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
 import { AnalyticsEvents, useAnalytics } from '@analytics';
 import * as m from '../../../../paraglide/messages.js';
-import { AppPage } from '../../../chrome';
+import { AppPage } from 'learn-card-base/ui/chrome';
 
 type IssueHistory = {
     id?: string | number;

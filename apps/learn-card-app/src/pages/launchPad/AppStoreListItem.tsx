@@ -1,7 +1,7 @@
 import React from 'react';
 import type { AppStoreListing, InstalledApp } from '@learncard/types';
 
-import { AppSpinner } from '../../components/feedback/AppSpinner';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import { ThreeDotVertical } from '@learncard/react';
 
 import useTheme from '../../theme/hooks/useTheme';

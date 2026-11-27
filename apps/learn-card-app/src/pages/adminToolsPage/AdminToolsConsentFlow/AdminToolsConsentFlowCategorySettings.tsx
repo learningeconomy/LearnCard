@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { AppCol } from '../../../components/layout';
+import { AppCol } from 'learn-card-base/ui/layout';
 
 import type { ConsentFlowContract } from '@learncard/types';
 import {

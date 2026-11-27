@@ -1,5 +1,5 @@
 import React from 'react';
-import { AppSkeletonText } from '../../feedback/AppSkeletonText';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
 
 export const AiSessionLearningPathwayItemSkeleton: React.FC = () => {
     return (
