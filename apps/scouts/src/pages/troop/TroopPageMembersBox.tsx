@@ -1,5 +1,4 @@
 import React, { useState, useRef, useCallback, useMemo } from 'react';
-import { IonInput } from '@ionic/react';
 import useTroopIds from '../../hooks/useTroopIds';
 import { useTroopMembers } from '../../hooks/useTroopMembers';
 import BulkyAddUser from 'learn-card-base/svgs/BulkyAddUser';
@@ -21,6 +20,7 @@ import { ScoutsRoleEnum } from '../../stores/troopPageStore';
 import { useCanInviteTroop } from './useCanInviteTroop';
 import InviteSelectionModal from './InviteSelectionModal';
 import { VC } from '@learncard/types';
+import { AppInput, type AppInputHandle } from 'learn-card-base/ui/controls/AppInput';
 
 export enum MemberTabsEnum {
     All = 'All',
@@ -45,7 +45,7 @@ const TroopPageMembersBox: React.FC<TroopPageMembersBoxProps> = ({
         desktop: ModalTypes.Cancel,
         mobile: ModalTypes.Cancel,
     });
-    const inputRef = useRef<HTMLIonInputElement>(null);
+    const inputRef = useRef<AppInputHandle>(null);
 
     const [tab, setTab] = useState<MemberTabsEnum>(MemberTabsEnum.All);
     const [searchQuery, setSearchQuery] = useState('');
@@ -257,14 +257,14 @@ const TroopPageMembersBox: React.FC<TroopPageMembersBoxProps> = ({
                             {m['troops.members.searchLabel']()}
                         </label>
                         <Search className="h-5 w-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-900" />
-                        <IonInput
+                        <AppInput
                             id="member-search"
                             ref={inputRef}
                             autocapitalize="on"
                             placeholder={m['troops.members.searchPlh']()}
                             value={searchQuery}
                             className="pl-10! text-gray-800 text-[17px] font-notoSans py-1! w-full"
-                            onIonInput={e => handleSearch(e.detail.value ?? '')}
+                            onValueInput={value => handleSearch(value ?? '')}
                             type="text"
                             clearInput
                         />

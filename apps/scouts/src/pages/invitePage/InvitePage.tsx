@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useHistory } from 'react-router';
 
-import { IonContent, IonPage, IonSpinner } from '@ionic/react';
 import MainHeader from '../../components/main-header/MainHeader';
 import MiniGhost from 'learn-card-base/assets/images/emptystate-ghost.png';
 
@@ -12,6 +11,8 @@ import { AddressBookContact } from '../addressBook/addressBookHelpers';
 import AddContactView, { AddContactViewMode } from '../addressBook/addContactView/AddContactView';
 import * as m from '../../paraglide/messages.js';
 import { getLogger } from 'learn-card-base';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 const log = getLogger('invite-page');
 
 const InvitePage: React.FC = () => {
@@ -68,16 +69,16 @@ const InvitePage: React.FC = () => {
     }, []);
 
     return (
-        <IonPage className="bg-white">
+        <AppPage className="bg-white">
             <MainHeader
                 customClassName="bg-white px-0"
                 branding={BrandingEnum.scoutPass}
                 customHeaderClass="px-0"
             />
-            <IonContent fullscreen>
+            <AppContent fullscreen>
                 {loading && (
                     <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
-                        <IonSpinner color="black" />
+                        <AppSpinner color="black" />
                         <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                     </section>
                 )}
@@ -106,8 +107,8 @@ const InvitePage: React.FC = () => {
                         challenge={challenge}
                     />
                 )}
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

@@ -4,14 +4,8 @@ import { Capacitor, PluginListenerHandle } from '@capacitor/core';
 import { useLocation, useHistory, RouteComponentProps } from 'react-router-dom';
 import queryString from 'query-string';
 
-import {
-    IonRouterOutlet,
-    IonTabBar,
-    IonTabButton,
-    IonTabs,
-    IonSplitPane,
-    IonMenuToggle,
-} from '@ionic/react';
+import { AppTabs, AppTabBar, AppTabButton } from 'learn-card-base/ui/app-shell/AppTabs';
+import { AppOutlet } from 'learn-card-base/ui/app-shell/AppOutlet';
 import Burger from './components/svgs/Burger';
 import Campfire2 from 'learn-card-base/svgs/Campfire2';
 import SideMenu from './components/sidemenu/SideMenu';
@@ -50,6 +44,8 @@ import { useSetFirebaseAnalyticsUserId } from './hooks/useSetFirebaseAnalyticsUs
 import * as m from './paraglide/messages.js';
 import { useLocale } from './i18n';
 import { VC } from '@learncard/types';
+import { AppSplitPane } from 'learn-card-base/ui/app-shell/AppSplitPane';
+import { AppMenuToggle } from 'learn-card-base/ui/chrome';
 
 const Routes = lazyWithRetry(() => import('./Routes').then(module => ({ default: module.Routes })));
 
@@ -203,7 +199,7 @@ const AppRouter: React.FC = () => {
         <>
             <LoginOverlay isOpen={!!showLoginOverlay || !!initLoading} />
             <div id="app-router" style={{ display: showScanner ? 'none' : 'block' }}>
-                <IonSplitPane
+                <AppSplitPane
                     contentId="main"
                     className={
                         collapsed
@@ -213,15 +209,15 @@ const AppRouter: React.FC = () => {
                 >
                     {isLoggedIn && !hideSideMenu && <SideMenu branding={BrandingEnum.scoutPass} />}
                     <div id="main" className="w-full">
-                        <IonTabs
+                        <AppTabs
                             className={`${getNavBarColor(
                                 location.pathname,
                                 BrandingEnum.scoutPass
                             )}`}
                         >
-                            <IonRouterOutlet animated={true}>
+                            <AppOutlet>
                                 <Routes />
-                            </IonRouterOutlet>
+                            </AppOutlet>
                             <div
                                 className={`background-gradient-navbar ${getBackgroundGradientForNavbar(
                                     {
@@ -230,24 +226,23 @@ const AppRouter: React.FC = () => {
                                 )}`}
                             ></div>
                             {isLoggedIn && showNavBar(location.pathname) ? (
-                                <IonTabBar
-                                    slot="bottom"
+                                <AppTabBar
                                     style={{
                                         contain: 'none',
                                         overflow: 'visible',
                                         height: '70px',
                                     }}
                                 >
-                                    <IonTabButton
+                                    <AppTabButton
                                         tab="/"
                                         href="#"
                                         className="mobile-nav-hamburger-button"
                                     >
-                                        <IonMenuToggle menu="appSideMenu">
+                                        <AppMenuToggle menu="appSideMenu">
                                             <Burger className="text-black h-[24px] w-[24px]" />
-                                        </IonMenuToggle>
-                                    </IonTabButton>
-                                    <IonTabButton
+                                        </AppMenuToggle>
+                                    </AppTabButton>
+                                    <AppTabButton
                                         tab={tabRoutes.tab1}
                                         href={tabRoutes.tab1}
                                         className="nav-tab-boosts pl-[10px]"
@@ -259,8 +254,8 @@ const AppRouter: React.FC = () => {
                                             inlineStar="currentColor"
                                         />
                                         {m['navigation.boosts']()}
-                                    </IonTabButton>
-                                    <IonTabButton
+                                    </AppTabButton>
+                                    <AppTabButton
                                         tab={tabRoutes.tab2}
                                         href={tabRoutes.tab2}
                                         className="absolute bg-transparent left-[50%] translate-x-[-50%] z-50 nav-tab-campfire h-[85px] w-[85px]"
@@ -278,27 +273,26 @@ const AppRouter: React.FC = () => {
                                             />
                                             <p>{m['navigation.campfire']()}</p>
                                         </div>
-                                    </IonTabButton>
-                                    <IonTabButton
+                                    </AppTabButton>
+                                    <AppTabButton
                                         tab={tabRoutes.tab3}
                                         href={tabRoutes.tab3}
                                         className="nav-tab-badges"
                                     >
                                         <MeritBadgesIcon className="h-[40px] w-[40px] mt-[0px] mb-0" />
                                         {m['navigation.badges']()}
-                                    </IonTabButton>
-                                </IonTabBar>
+                                    </AppTabButton>
+                                </AppTabBar>
                             ) : (
-                                <IonTabBar
-                                    slot="bottom"
+                                <AppTabBar
                                     style={{
                                         display: 'none',
                                     }}
                                 />
                             )}
-                        </IonTabs>
+                        </AppTabs>
                     </div>
-                </IonSplitPane>
+                </AppSplitPane>
             </div>
             <Modals />
         </>

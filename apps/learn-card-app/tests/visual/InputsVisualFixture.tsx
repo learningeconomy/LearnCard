@@ -1,5 +1,4 @@
 import React, { useRef, useState } from 'react';
-import { IonApp } from '@ionic/react';
 import { X } from 'lucide-react';
 import Search from 'learn-card-base/svgs/Search';
 
@@ -933,13 +932,6 @@ const ChildInvite: React.FC<{ withError?: boolean; testId: string }> = ({ withEr
 
 export const InputsVisualFixture: React.FC = () => (
     <main className="mx-auto flex w-full max-w-[860px] flex-col items-stretch gap-6 p-6 font-poppins">
-        {/*
-         * IonApp starts Ionic's focus-visible and tap-click utilities (and, on iOS / Android web,
-         * the input shims), as it does at the real app root. Its host CSS (absolute, contain,
-         * overflow) would clip this long page, so it is mounted empty and hidden.
-         */}
-        <IonApp style={{ display: 'none' }} aria-hidden="true" />
-
         <Block testId="i1b-matrix" title="IonInput states × modes (synthetic)">
             <InputMatrix />
         </Block>

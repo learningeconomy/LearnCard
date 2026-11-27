@@ -13,7 +13,7 @@ import CircleCheckOutlineIcon from 'learn-card-base/svgs/CircleCheckOutlineIcon'
 import { ModalTypes, useModal } from 'learn-card-base';
 
 import { BadgeDataRow, ImageTrackingType } from './AdminToolsBulkBoostImportOption';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 export const AdminToolsBulkBoostImportUploadStep: React.FC<{
     fileInfo: { type: string; size: string; name: string } | null;
@@ -27,6 +27,7 @@ export const AdminToolsBulkBoostImportUploadStep: React.FC<{
     hasMissingImages: boolean;
     csvData: BadgeDataRow[];
     imageTracking: ImageTrackingType;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     handlePreview: (csvRow: any) => void;
     handleDeleteRow: (rowIndex: number) => void;
     showLoader: boolean;
@@ -173,7 +174,7 @@ export const AdminToolsBulkBoostImportUploadStep: React.FC<{
                             className={`w-full flex rounded-[30px] items-center justify-center  py-2 font-semibold text-[17px] bg-indigo-500 text-white`}
                         >
                             {showLoader ? (
-                                <IonSpinner name="crescent" className="inline mr-2" />
+                                <AppSpinner name="crescent" className="inline mr-2" />
                             ) : (
                                 <UploadIcon className="inline mr-2" strokeWidth="2" />
                             )}

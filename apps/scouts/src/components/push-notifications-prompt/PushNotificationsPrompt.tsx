@@ -4,7 +4,7 @@ import { Capacitor } from '@capacitor/core';
 import * as m from '../../paraglide/messages.js';
 import { NativeSettings, IOSSettings, AndroidSettings } from 'capacitor-native-settings';
 
-import { IonRow, IonCol } from '@ionic/react';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
 // @ts-ignore
 import NotificationImage from '../../assets/images/notification-polygon.png';
 import PushNotificationsSettings from '../push-notification-settings/PushNotificationsSettings';
@@ -17,6 +17,7 @@ import { pushUtilities, useModal, ModalTypes } from 'learn-card-base';
 import { openToS, openPP } from '../../helpers/externalLinkHelpers';
 import ModalLayout from '../../layout/ModalLayout';
 import { getLogger } from 'learn-card-base';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 const log = getLogger('push-notifications-prompt');
 
 export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }> = ({
@@ -57,19 +58,19 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
 
     return (
         <ModalLayout handleOnClick={handleCloseModal}>
-            <IonRow className="flex flex-col pb-4 pt-2 w-full">
-                <IonCol className="w-full flex items-center justify-center">
+            <AppRow className="flex flex-col pb-4 pt-2 w-full">
+                <AppCol className="w-full flex items-center justify-center">
                     <h6 className="tracking-[12px] text-base font-bold text-black">SCOUTPASS</h6>
-                </IonCol>
-                <IonCol className="w-full flex items-center justify-center mt-8">
+                </AppCol>
+                <AppCol className="w-full flex items-center justify-center mt-8">
                     <h6 className="text-center text-black text-2xl text-medium">
                         {m['notifications.stayInTheLoop']()}
                     </h6>
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
 
-            <IonRow className="w-full flex items-center justify-center">
-                <IonCol className="flex items-center justify-around w-full max-w-[600px]">
+            <AppRow className="w-full flex items-center justify-center">
+                <AppCol className="flex items-center justify-around w-full max-w-[600px]">
                     <div className="relative flex flex-col items-center justify-center p-4 rounded-3xl flex-1">
                         <div className="absolute top-0 left-[%50] w-[70px] h-[70px] bg-rose-100 rounded-full" />
                         <img
@@ -78,10 +79,10 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
                             className="z-50"
                         />
                     </div>
-                </IonCol>
-            </IonRow>
-            <IonRow className="flex items-center justify-center w-full">
-                <IonCol className="text-center">
+                </AppCol>
+            </AppRow>
+            <AppRow className="flex items-center justify-center w-full">
+                <AppCol className="text-center">
                     <p className="text-center text-sm font-semibold px-[16px] text-grayscale-600">
                         <span className="font-bold text-grayscale-800">
                             {m['notifications.receivePushFor']()}
@@ -96,10 +97,10 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
                             >
                                 Settings
                             </button> */}
-                </IonCol>
-            </IonRow>
-            <IonRow className="w-full flex items-center justify-center mt-4">
-                <IonCol className="flex items-center flex-col max-w-[90%] border-b border-grayscale-200">
+                </AppCol>
+            </AppRow>
+            <AppRow className="w-full flex items-center justify-center mt-4">
+                <AppCol className="flex items-center flex-col max-w-[90%] border-b border-grayscale-200">
                     <button
                         onClick={async () => {
                             const permissionState =
@@ -158,10 +159,10 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
                             {m['notifications.notYet']()}
                         </button>
                     </div>
-                </IonCol>
-            </IonRow>
-            <IonRow className="flex items-center justify-center mt-4 w-full">
-                <IonCol className="flex items-center justify-center">
+                </AppCol>
+            </AppRow>
+            <AppRow className="flex items-center justify-center mt-4 w-full">
+                <AppCol className="flex items-center justify-center">
                     <button onClick={openPP} className="text-indigo-500 font-bold text-sm">
                         {m['login.privacyPolicy']()}
                     </button>
@@ -169,8 +170,8 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
                     <button onClick={openToS} className="text-indigo-500 font-bold text-sm">
                         {m['login.termsOfService']()}
                     </button>
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
         </ModalLayout>
     );
 };

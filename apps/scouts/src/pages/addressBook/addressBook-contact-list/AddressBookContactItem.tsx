@@ -4,7 +4,6 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import AddressBookContactDetailsView from './AddressBookContactDetailsView';
-import { IonItem, useIonAlert } from '@ionic/react';
 import useHighlightedCredentials from 'apps/scouts/src/hooks/useHighlightedCredentials';
 import GirlScoutsIcon from 'apps/scouts/src/components/svgs/GirlScoutsLogo';
 import WorldScoutIcon from 'apps/scouts/src/components/svgs/WorldScoutsIcon';
@@ -23,6 +22,8 @@ import {
 } from 'learn-card-base';
 import { LCNProfileConnectionStatusEnum, LCNProfile, VC } from '@learncard/types';
 import * as m from '../../../paraglide/messages.js';
+import { AppItem } from 'learn-card-base/ui/list';
+import { useAppAlert } from 'learn-card-base/ui/overlays';
 
 type AddressBookContactItemProps = {
     contact: LCNProfile;
@@ -109,7 +110,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
         troopTypes[chosenHighlightedCred?.credentialSubject?.achievement?.achievementType] ?? '';
 
     const { presentToast } = useToast();
-    const [presentAlert, dismissAlert] = useIonAlert();
+    const [presentAlert, dismissAlert] = useAppAlert();
 
     const { mutate: connectMutate, isLoading: connectLoading } = useConnectWithMutation();
     const { mutate: acceptMutate, isLoading: acceptLoading } = useAcceptConnectionRequestMutation();
@@ -578,13 +579,13 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
     );
 
     return (
-        <IonItem
+        <AppItem
             lines="none"
             className="w-full max-w-3xl ion-no-border px-3 py-4 flex items-center justify-between cursor-pointer"
         >
             {userDetails}
             {boostOrArrowButton}
-        </IonItem>
+        </AppItem>
     );
 };
 

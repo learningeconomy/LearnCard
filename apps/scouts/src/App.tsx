@@ -1,8 +1,10 @@
 import React from 'react';
-import { IonReactRouter } from '@ionic/react-router';
+import { createBrowserHistory } from 'history';
+import { AppShellRouter } from 'learn-card-base/ui/app-shell/AppShellRouter';
 import * as Sentry from '@sentry/react';
 import { Capacitor } from '@capacitor/core';
-import { IonApp, setupIonicReact } from '@ionic/react';
+import { AppRoot } from 'learn-card-base/ui/app-shell/AppRoot';
+import { initAppPlatform } from 'learn-card-base/ui/app-shell/appPlatform';
 
 import { useIsLoggedIn, lazyWithRetry } from 'learn-card-base';
 
@@ -15,21 +17,17 @@ import { useLocale } from './i18n';
 
 import LoginLoadingPage from './pages/login/LoginPageLoader/LoginLoader';
 
-/* Core CSS required for Ionic components to work properly */
-import '@ionic/react/css/core.css';
-
-/* Basic CSS for apps built with Ionic */
-import '@ionic/react/css/normalize.css';
-import '@ionic/react/css/structure.css';
-import '@ionic/react/css/typography.css';
-
-/* Optional CSS utils that can be commented out */
-import '@ionic/react/css/padding.css';
-import '@ionic/react/css/float-elements.css';
-import '@ionic/react/css/text-alignment.css';
-import '@ionic/react/css/text-transformation.css';
-import '@ionic/react/css/flex-utils.css';
-import '@ionic/react/css/display.css';
+/* Global CSS LearnCard kept from Ionic (vendored verbatim into learn-card-base/ui/global) */
+import 'learn-card-base/ui/global/core.css';
+import 'learn-card-base/ui/global/normalize.css';
+import 'learn-card-base/ui/global/structure.css';
+import 'learn-card-base/ui/global/typography.css';
+import 'learn-card-base/ui/global/padding.css';
+import 'learn-card-base/ui/global/float-elements.css';
+import 'learn-card-base/ui/global/text-alignment.css';
+import 'learn-card-base/ui/global/text-transformation.css';
+import 'learn-card-base/ui/global/flex-utils.css';
+import 'learn-card-base/ui/global/display.css';
 
 /* Theme variables */
 import './theme/variables.css';
@@ -44,8 +42,9 @@ import './index.scss';
 import 'swiper/css';
 import 'learn-card-base/swiper/swiper-defaults.css';
 const FullApp = lazyWithRetry(() => import('./FullApp'));
+const history = createBrowserHistory();
 
-setupIonicReact({ swipeBackEnabled: false });
+initAppPlatform();
 
 const App: React.FC = () => {
     // Subscribe at the application boundary so catalog-backed data getters
@@ -64,11 +63,11 @@ const App: React.FC = () => {
     // If they have, then show the app as usual
     if (!introSlidesCompleted && !isLoggedIn && isNativePlatform) {
         return (
-            <IonReactRouter>
-                <IonApp>
+            <AppShellRouter history={history}>
+                <AppRoot>
                     <IntroSlides />
-                </IonApp>
-            </IonReactRouter>
+                </AppRoot>
+            </AppShellRouter>
         );
     } else {
         return <FullApp />;

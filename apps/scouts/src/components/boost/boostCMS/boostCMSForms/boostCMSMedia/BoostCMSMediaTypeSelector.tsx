@@ -1,9 +1,8 @@
 import React from 'react';
 
-import { IonCol, IonRow } from '@ionic/react';
-
 import { boostMediaOptions, BoostMediaOptionsEnum, mediaTypeTitle } from '../../../boost';
 import { useLocale } from '../../../../../i18n';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 export const BoostCMSMediaTypeSelector: React.FC<{
     setActiveMediaType: React.Dispatch<React.SetStateAction<BoostMediaOptionsEnum | null>>;
@@ -13,8 +12,8 @@ export const BoostCMSMediaTypeSelector: React.FC<{
     useLocale();
 
     return (
-        <IonRow className="flex w-full">
-            <IonCol className="flex items-center justify-center flex-wrap">
+        <AppRow className="flex w-full">
+            <AppCol className="flex items-center justify-center flex-wrap">
                 {boostMediaOptions.map(({ id, type, titleKey, color, Icon }) => {
                     return (
                         <button
@@ -35,8 +34,8 @@ export const BoostCMSMediaTypeSelector: React.FC<{
                         </button>
                     );
                 })}
-            </IonCol>
-        </IonRow>
+            </AppCol>
+        </AppRow>
     );
 };
 

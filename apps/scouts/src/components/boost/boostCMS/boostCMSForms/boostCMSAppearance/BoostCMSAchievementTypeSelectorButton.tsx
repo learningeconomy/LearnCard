@@ -1,6 +1,5 @@
 import React from 'react';
 
-import { IonRow } from '@ionic/react';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 
 import {
@@ -20,12 +19,15 @@ import {
 
 import { BoostCMSState } from '../../../boost';
 import BoostCMSAchievementTypeSelectorModal from './BoostCMSAchievementTypeSelectorModal';
+import { AppRow } from 'learn-card-base/ui/layout';
 
 type BoostCMSTypeSelectorButtonProps = {
     state: BoostCMSState;
     setState?: React.Dispatch<React.SetStateAction<BoostCMSState>>;
     boostUserType?: BoostUserTypeEnum;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     customTypes: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     setCustomTypes: React.Dispatch<any>;
     disabled?: boolean;
     handleCategoryAndTypeChange?: (
@@ -51,7 +53,9 @@ const BoostCMSAchievementTypeSelectorButton: React.FC<BoostCMSTypeSelectorButton
         );
     } else {
         achievementTypeSelected =
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
             CATEGORY_TO_SUBCATEGORY_LIST?.[state?.basicInfo?.type as any]?.find(
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 (options: any) => options?.type === state?.basicInfo?.achievementType
             )?.title ?? '';
     }
@@ -100,7 +104,7 @@ const BoostCMSAchievementTypeSelectorButton: React.FC<BoostCMSTypeSelectorButton
     };
 
     return (
-        <IonRow className="w-full flex flex-col items-center justify-center max-w-[600px] mt-4">
+        <AppRow className="w-full flex flex-col items-center justify-center max-w-[600px] mt-4">
             <button
                 className="w-full bg-white ion-padding rounded-[20px] flex items-center justify-between"
                 disabled={disabled}
@@ -119,7 +123,7 @@ const BoostCMSAchievementTypeSelectorButton: React.FC<BoostCMSTypeSelectorButton
                 </div>
                 <CaretLeft className="rtl-mirror rotate-180 text-grayscale-900" />
             </button>
-        </IonRow>
+        </AppRow>
     );
 };
 

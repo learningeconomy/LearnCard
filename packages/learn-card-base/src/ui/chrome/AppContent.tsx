@@ -132,12 +132,12 @@ const isIosPlatform = (): boolean => {
 const isRtl = (dir: string | undefined): boolean =>
     dir
         ? dir.toLowerCase() === 'rtl'
-        : typeof document !== 'undefined' && document.dir.toLowerCase() === 'rtl';
+        : typeof document !== 'undefined' && (document.dir ?? '').toLowerCase() === 'rtl';
 
 /** The box fullscreen offsets are measured against: tabs, else the page, else the parent. */
 const getPageElement = (el: HTMLElement): HTMLElement | null =>
     el.closest<HTMLElement>('ion-tabs') ??
-    el.closest<HTMLElement>('ion-app, ion-page, .ion-page, page-inner, .popover-content') ??
+    el.closest<HTMLElement>('.app-root, ion-page, .ion-page, page-inner, .popover-content') ??
     el.parentElement;
 
 const newDetail = (): AppContentScrollDetail => ({

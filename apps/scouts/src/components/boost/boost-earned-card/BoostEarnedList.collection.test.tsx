@@ -62,13 +62,6 @@ vi.mock('learn-card-base/hooks/useGetCredentialRecordForBoost', () => ({
 vi.mock('learn-card-base/stores/credentialSearchStore', () => ({
     default: { use: { isSearchActive: () => false, searchString: () => '' } },
 }));
-vi.mock('@ionic/react', () => ({
-    IonCol: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    IonGrid: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    IonRow: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    IonIcon: () => null,
-    IonSpinner: () => null,
-}));
 vi.mock('learn-card-base/icons/ionicons', () => ({ closeOutline: 'close' }));
 vi.mock('../../../stores/loadingStore', () => ({
     useLoadingLine: vi.fn(),

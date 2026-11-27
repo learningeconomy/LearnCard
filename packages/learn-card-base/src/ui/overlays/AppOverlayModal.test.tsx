@@ -9,7 +9,7 @@ import { useAppOverlayModal } from './useAppOverlayModal';
 let ionApp: HTMLElement;
 
 beforeEach(() => {
-    ionApp = document.createElement('ion-app');
+    ionApp = Object.assign(document.createElement('div'), { className: 'app-root' });
     ionApp.innerHTML = '<div id="ion-view-container-root"></div>';
     document.body.appendChild(ionApp);
 });
@@ -29,7 +29,7 @@ const presented = async () => {
 };
 
 describe('AppOverlayModal', () => {
-    it('renders a modal dialog in ion-app with the cssClass, mode and show-modal classes', async () => {
+    it('renders a modal dialog in the app root with the cssClass, mode and show-modal classes', async () => {
         render(
             <AppOverlayModal isOpen mode="md" cssClass="center-modal user-options-modal">
                 <div className="ion-page">

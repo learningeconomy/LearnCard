@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from 'react';
 
-import { IonRow, IonCol } from '@ionic/react';
-
 import Plus from 'learn-card-base/svgs/Plus';
 import PuzzlePiece from '../../../../svgs/PuzzlePiece';
 import BoostCMSSkillOptions from './BoostCMSSkillOptions';
@@ -18,6 +16,7 @@ import {
 } from './boostSkills';
 import { useModal, ModalTypes } from 'learn-card-base';
 import * as m from '../../../../../paraglide/messages.js';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 export enum BoostCMSSkillsAttachmentFormModeEnum {
     view = 'view',
@@ -232,7 +231,9 @@ export const BoostCMSSkillsAttachmentForm: React.FC<{
     const presentCenterSkillsModal = () => {
         newCenterModal(
             <BoostCMSSkillOptions
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 state={_state as any}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 setState={_setState as any}
                 title={
                     <p className="text-left text-2xl font-notoSans text-grayscale-900">
@@ -240,15 +241,19 @@ export const BoostCMSSkillsAttachmentForm: React.FC<{
                     </p>
                 }
                 showCloseButton={true}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 handleAddSkill={(skill: any) =>
                     handleAddSkill(skill, BoostCMSSkillsAttachmentFormModeEnum.edit)
                 }
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 handleRemoveSkill={(skill: any) =>
                     handleRemoveSkill(skill, BoostCMSSkillsAttachmentFormModeEnum.edit)
                 }
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 handleAddSubSkill={(skill: any, subskill: any) =>
                     handleAddSubSkill(skill, subskill, BoostCMSSkillsAttachmentFormModeEnum.edit)
                 }
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 handleRemoveSubSkill={(skill: any, subskill: any) =>
                     handleRemoveSubSkill(skill, subskill, BoostCMSSkillsAttachmentFormModeEnum.edit)
                 }
@@ -265,7 +270,9 @@ export const BoostCMSSkillsAttachmentForm: React.FC<{
     const presentSheetSkillsModal = () => {
         newSheetModal(
             <BoostCMSSkillOptions
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 state={_state as any}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 setState={_setState as any}
                 title={
                     <p className="text-left text-2xl font-notoSans text-grayscale-900">
@@ -273,15 +280,19 @@ export const BoostCMSSkillsAttachmentForm: React.FC<{
                     </p>
                 }
                 showCloseButton={false}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 handleAddSkill={(skill: any) =>
                     handleAddSkill(skill, BoostCMSSkillsAttachmentFormModeEnum.edit)
                 }
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 handleRemoveSkill={(skill: any) =>
                     handleRemoveSkill(skill, BoostCMSSkillsAttachmentFormModeEnum.edit)
                 }
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 handleAddSubSkill={(skill: any, subskill: any) =>
                     handleAddSubSkill(skill, subskill, BoostCMSSkillsAttachmentFormModeEnum.edit)
                 }
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 handleRemoveSubSkill={(skill: any, subskill: any) =>
                     handleRemoveSubSkill(skill, subskill, BoostCMSSkillsAttachmentFormModeEnum.edit)
                 }
@@ -296,8 +307,8 @@ export const BoostCMSSkillsAttachmentForm: React.FC<{
     };
 
     return (
-        <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
-            <IonCol
+        <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
+            <AppCol
                 size="12"
                 className="w-full flex-col items-center justify-center bg-white rounded-[20px]"
             >
@@ -347,8 +358,11 @@ export const BoostCMSSkillsAttachmentForm: React.FC<{
                                     key={index}
                                     state={state}
                                     setState={setState}
+                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                                     category={category as any}
+                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                                     skill={skill as any}
+                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                                     subSkills={subSkills as any}
                                     selectedSkills={selectedSkills}
                                     skillSelected={skillSelected}
@@ -361,8 +375,8 @@ export const BoostCMSSkillsAttachmentForm: React.FC<{
                         })}
                     </div>
                 )}
-            </IonCol>
-        </IonRow>
+            </AppCol>
+        </AppRow>
     );
 };
 

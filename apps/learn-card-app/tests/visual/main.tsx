@@ -2,7 +2,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { setupIonicReact } from '@ionic/react';
+import { initAppPlatform } from 'learn-card-base/ui/app-shell/appPlatform';
 import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import {
     ModalsProvider,
@@ -25,23 +25,23 @@ import {
 } from '../../src/pages/dashboard/dashboard.personas';
 
 // Keep this order aligned with App.tsx: Ionic, theme, shared cards, then app styles.
-import '@ionic/react/css/core.css';
-import '@ionic/react/css/normalize.css';
-import '@ionic/react/css/structure.css';
-import '@ionic/react/css/typography.css';
-import '@ionic/react/css/padding.css';
-import '@ionic/react/css/float-elements.css';
-import '@ionic/react/css/text-alignment.css';
-import '@ionic/react/css/text-transformation.css';
-import '@ionic/react/css/flex-utils.css';
-import '@ionic/react/css/display.css';
+import 'learn-card-base/ui/global/core.css';
+import 'learn-card-base/ui/global/normalize.css';
+import 'learn-card-base/ui/global/structure.css';
+import 'learn-card-base/ui/global/typography.css';
+import 'learn-card-base/ui/global/padding.css';
+import 'learn-card-base/ui/global/float-elements.css';
+import 'learn-card-base/ui/global/text-alignment.css';
+import 'learn-card-base/ui/global/text-transformation.css';
+import 'learn-card-base/ui/global/flex-utils.css';
+import 'learn-card-base/ui/global/display.css';
 import '../../src/theme/variables.css';
 import '../../src/theme/floating-tab-bar.css';
 import '@learncard/react/main.css';
 import '../../src/tailwind.css';
 import '../../src/index.scss';
 
-setupIonicReact({ swipeBackEnabled: false });
+initAppPlatform();
 
 const params = new URLSearchParams(location.search);
 const client = new QueryClient({

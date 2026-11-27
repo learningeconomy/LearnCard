@@ -1,5 +1,4 @@
 import React from 'react';
-import { IonAvatar, IonItem, IonLabel, IonThumbnail } from '@ionic/react';
 
 import TopicsItemSkeleton from '../../src/components/ai-passport-apps/AiPassportAppProfileTopics/TopicsItemSkeleton';
 import AiSessionItemSkeleton from '../../src/components/ai-sessions/AiSessions/AiSessionItemSkeleton';
@@ -20,6 +19,8 @@ import AiPathwaySessionItemSkeleton from '../../src/pages/ai-pathways/ai-pathway
 import AiPathwaySessionsSkeletonLoader from '../../src/pages/ai-pathways/ai-pathway-sessions/AiPathwaySessionsSkeletonLoader';
 import { AppProgressBar } from 'learn-card-base/ui/feedback/AppProgressBar';
 import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
+import { AppItem, AppLabel } from 'learn-card-base/ui/list';
+import { AppAvatar, AppThumbnail } from 'learn-card-base/ui/widgets';
 
 /**
  * `feedback-2`: the app's IonSkeletonText and IonProgressBar call sites (phase 4 feedback, skeleton and
@@ -114,32 +115,32 @@ export const SkeletonProgressVisualFixture: React.FC = () => (
                     </span>
                 </Cell>
                 <Cell label="in h2 / p (ion-label)">
-                    <IonLabel>
+                    <AppLabel>
                         <h2>
                             <AppSkeletonText animated style={{ width: '150px', height: '14px' }} />
                         </h2>
                         <p>
                             <AppSkeletonText animated style={{ width: '100px', height: '12px' }} />
                         </p>
-                    </IonLabel>
+                    </AppLabel>
                 </Cell>
                 <Cell label="in ion-avatar (in-media)">
-                    <IonAvatar style={{ width: 60, height: 60 }}>
+                    <AppAvatar style={{ width: 60, height: 60 }}>
                         <AppSkeletonText animated style={{ width: '100%', height: '100%' }} />
-                    </IonAvatar>
+                    </AppAvatar>
                 </Cell>
                 <Cell label="in ion-thumbnail (in-media)">
-                    <IonThumbnail>
+                    <AppThumbnail>
                         <AppSkeletonText
                             animated
                             style={{ width: '55px', height: '55px', borderRadius: '8px' }}
                         />
-                    </IonThumbnail>
+                    </AppThumbnail>
                 </Cell>
                 <Cell label="in ion-avatar, no size">
-                    <IonAvatar>
+                    <AppAvatar>
                         <AppSkeletonText />
-                    </IonAvatar>
+                    </AppAvatar>
                 </Cell>
                 <Cell label="--background">
                     <AppSkeletonText
@@ -177,9 +178,9 @@ export const SkeletonProgressVisualFixture: React.FC = () => (
                     <AppSkeletonText animated style={{ width: '80%', height: '14px' }} />
                 </Cell>
                 <Cell label="in ion-item">
-                    <IonItem lines="none">
+                    <AppItem lines="none">
                         <AppSkeletonText animated className="w-36 h-[15px]" />
-                    </IonItem>
+                    </AppItem>
                 </Cell>
             </Row>
         </Block>
@@ -288,7 +289,7 @@ export const SkeletonProgressVisualFixture: React.FC = () => (
         </Block>
 
         {/* WalletPageSquare.tsx:146-151 count bubble; ConsentFlowSyncCard.tsx:125-158; ConsentFlowSyncButton
-            (h-[45px] rounded-[25px]); LaunchPadContractListItem.tsx:45-64 (inside IonItem). */}
+            (h-[45px] rounded-[25px]); LaunchPadContractListItem.tsx:45-64 (inside AppItem). */}
         <Block testId="f2-x-wallet-consent" title="Wallet / consent / launchpad pending (excerpts)">
             <div className="flex gap-4 items-center bg-white p-4">
                 <div className="flex items-center justify-center rounded-full mt-1 relative h-[30px] w-[60px] bg-grayscale-200">
@@ -308,7 +309,7 @@ export const SkeletonProgressVisualFixture: React.FC = () => (
                     <AppSkeletonText animated className="h-[45px] w-full rounded-[25px]" />
                 </div>
             </div>
-            <IonItem
+            <AppItem
                 lines="none"
                 className="w-full max-w-[600px] ion-no-border px-[12px] py-[12px] max-h-[76px] border-gray-200 border-b-2 last:border-b-0 flex  bg-white items-center justify-between notificaion-list-item overflow-visible rounded-[12px] mt-2 first:mt-4 shadow-xs"
             >
@@ -323,7 +324,7 @@ export const SkeletonProgressVisualFixture: React.FC = () => (
                         </div>
                     </div>
                 </div>
-            </IonItem>
+            </AppItem>
         </Block>
 
         <Block testId="f2-bar-matrix" title="IonProgressBar states (synthetic)">

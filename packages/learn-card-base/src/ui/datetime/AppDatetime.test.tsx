@@ -14,7 +14,7 @@ let ionApp: HTMLElement;
 
 beforeEach(() => {
     env = installDatetimeTestEnv();
-    ionApp = document.createElement('ion-app');
+    ionApp = Object.assign(document.createElement('div'), { className: 'app-root' });
     document.body.appendChild(ionApp);
 });
 

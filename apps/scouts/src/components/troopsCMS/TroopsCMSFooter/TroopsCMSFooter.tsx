@@ -2,7 +2,6 @@ import { tailwindColorWithOpacity } from 'learn-card-base/helpers/colorHelpers';
 import React, { useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 
-import { IonFooter, IonLoading, IonToolbar } from '@ionic/react';
 import * as m from '../../../paraglide/messages.js';
 import TroopIDPreview from '../TroopsIDCMS/TroopIDPreview/TroopIDPreview';
 import X from '../../svgs/X';
@@ -12,6 +11,8 @@ import { TroopsCMSEditorModeEnum, TroopsCMSState, TroopsCMSViewModeEnum } from '
 import { isPlatformIOS, useModal, ModalTypes } from 'learn-card-base';
 
 import keyboardStore from 'learn-card-base/stores/keyboardStore';
+import { AppFooter, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppLoading } from 'learn-card-base/ui/overlays';
 
 type TroopsCMSFooterProps = {
     rootViewMode?: TroopsCMSViewModeEnum;
@@ -36,7 +37,7 @@ export const TroopsCMSFooter: React.FC<TroopsCMSFooterProps> = ({
     editorMode,
     editIdOnlyMode,
 }) => {
-    const bottomBarRef = useRef<HTMLIonFooterElement>(null);
+    const bottomBarRef = useRef<HTMLDivElement>(null);
     const isInMemberViewMode = viewMode === TroopsCMSViewModeEnum.member;
     const isInLeaderViewMode = viewMode === TroopsCMSViewModeEnum.leader;
     const isInIDMode = isInMemberViewMode || isInLeaderViewMode;
@@ -86,16 +87,16 @@ export const TroopsCMSFooter: React.FC<TroopsCMSFooterProps> = ({
         viewMode === TroopsCMSViewModeEnum.troop && !state?.basicInfo?.name;
 
     return (
-        <IonFooter
+        <AppFooter
             mode="ios"
             className="w-full flex justify-center items-center ion-no-border backdrop-blur-[10px] absolute bottom-0 bg-white/60 max-h-[85px]!"
             ref={bottomBarRef}
         >
-            <IonToolbar color="transparent" mode="ios">
+            <AppToolbar color="transparent" mode="ios">
                 {isInIDMode && (
                     <>
                         {editIdOnlyMode && (
-                            <IonLoading
+                            <AppLoading
                                 mode="ios"
                                 message={m['common.saving']()}
                                 isOpen={isSaving}
@@ -158,8 +159,8 @@ export const TroopsCMSFooter: React.FC<TroopsCMSFooterProps> = ({
                         </div>
                     </div>
                 )}
-            </IonToolbar>
-        </IonFooter>
+            </AppToolbar>
+        </AppFooter>
     );
 };
 

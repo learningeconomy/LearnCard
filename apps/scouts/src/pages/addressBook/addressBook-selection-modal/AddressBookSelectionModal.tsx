@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 
-import { IonRow, IonCol, IonInput, IonSpinner } from '@ionic/react';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import AllContactsIcon from 'apps/scouts/src/components/svgs/AllContactsIcon';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
@@ -11,6 +10,9 @@ import type { PaginatedBoostsType } from '@learncard/types';
 import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { getLogger } from 'learn-card-base';
 import * as m from '../../../paraglide/messages.js';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 const log = getLogger('address-book-selection-modal');
 
 type AddressBookSelectionModalProps = {
@@ -124,31 +126,31 @@ const AddressBookSelectionModal: React.FC<AddressBookSelectionModalProps> = ({
 
     return (
         <>
-            <IonRow class="w-full max-w-[600px] px-3 py-[20px]">
-                <IonCol className="flex w-full items-center justify-start">
+            <AppRow className="w-full max-w-[600px] px-3 py-[20px]">
+                <AppCol className="flex w-full items-center justify-start">
                     <div className="cursor-pointer text-grayscale-900" onClick={closeModal}>
                         <CaretLeft className="rtl-mirror" />
                     </div>
                     <h1 className="text-[22px] font-notoSans font-normal text-grayscale-900 ml-[15px]">
                         {m['addressBook.selectFromContacts']()}
                     </h1>
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
             <div className="bg-grayscale-100 flex flex-col items-center pb-[30px] pt-[10px] px-[20px]">
-                <IonRow className="w-full max-w-[600px] bg-grayscale-100 rounded-[20px] mt-[10px]">
-                    <IonCol className="flex w-full items-center justify-start">
-                        <IonInput
+                <AppRow className="w-full max-w-[600px] bg-grayscale-100 rounded-[20px] mt-[10px]">
+                    <AppCol className="flex w-full items-center justify-start">
+                        <AppInput
                             autocapitalize="on"
                             placeholder={m['common.search']()}
                             value={search}
                             className="bg-white text-grayscale-800 ion-padding rounded-[15px] text-base font-medium tracking-wider subpixel-antialiased font-notoSans"
-                            onIonInput={e => setSearch(e?.detail?.value as string)}
+                            onValueInput={value => setSearch(value as string)}
                             debounce={500}
                             type="text"
                             clearInput
                         />
-                    </IonCol>
-                </IonRow>
+                    </AppCol>
+                </AppRow>
                 {selectedGroup?.toLowerCase().includes(search.toLowerCase()) && (
                     <button
                         onClick={() => handleSelectingContactGroup('all')}
@@ -172,7 +174,7 @@ const AddressBookSelectionModal: React.FC<AddressBookSelectionModalProps> = ({
                 )}
                 {isLoadingRecords || loadingCounts ? (
                     <span className="flex items-center justify-center text-grayscale-600 font-poppins text-sm">
-                        <IonSpinner
+                        <AppSpinner
                             name="crescent"
                             color="dark"
                             className="scale-[1.5] mb-8 mt-6"

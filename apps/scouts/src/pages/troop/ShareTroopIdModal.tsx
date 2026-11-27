@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Clipboard } from '@capacitor/clipboard';
 import { QRCodeSVG } from 'qrcode.react';
-import { IonSpinner } from '@ionic/react';
 import {
     ProfilePicture,
     useGetCurrentLCNUser,
@@ -16,6 +15,7 @@ import { getScoutsNounForCred, useGetNetworkFromTroop } from '../../helpers/troo
 import { VC } from '@learncard/types';
 import { getCredentialSubject as getSubject } from 'learn-card-base/helpers/credentialHelpers';
 import * as m from '../../paraglide/messages.js';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type ShareTroopIdModalProps = {
     credential: VC;
@@ -37,6 +37,7 @@ const ShareTroopIdModal: React.FC<ShareTroopIdModalProps> = ({
 
     const [shareLink, setShareLink] = useState<string | undefined>('');
     const subject = getSubject(credential);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     const issueeDid = typeof subject?.id === 'string' ? subject?.id : (subject?.id as any)?.id;
     const issueeProfileId = issueeDid?.includes(':users:') ? issueeDid.split(':').pop() : undefined;
     const { data: issueeProfile } = useGetProfile(issueeProfileId);
@@ -47,6 +48,7 @@ const ShareTroopIdModal: React.FC<ShareTroopIdModalProps> = ({
         shareEarnedBoost(
             { credential, credentialUri: uri },
             {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 async onSuccess(data: any) {
                     setShareLink(data?.link);
                 },
@@ -119,7 +121,7 @@ const ShareTroopIdModal: React.FC<ShareTroopIdModalProps> = ({
 
                     {(isLinkLoading || shareLink?.length === 0) && (
                         <div className="min-w-[255px] min-h-[255px] h-full w-full relative flex items-center justify-center">
-                            <IonSpinner name="crescent" color="dark" className="scale-[1]" />
+                            <AppSpinner name="crescent" color="dark" className="scale-[1]" />
                         </div>
                     )}
                 </div>

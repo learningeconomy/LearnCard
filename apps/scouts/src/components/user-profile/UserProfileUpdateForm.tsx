@@ -19,7 +19,6 @@ import {
     ToastTypeEnum,
 } from 'learn-card-base';
 
-import { IonCol, IonRow, IonInput, IonSpinner } from '@ionic/react';
 import CopyStack from '../svgs/CopyStack';
 import InfoIcon from '../svgs/InfoIcon';
 import TrashBin from '../svgs/TrashBin';
@@ -38,6 +37,9 @@ import { getAuthToken } from 'learn-card-base/helpers/authHelpers';
 
 import BoostTextSkeleton from 'learn-card-base/components/boost/boostSkeletonLoaders/BoostSkeletons';
 import { getLogger } from 'learn-card-base';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 const log = getLogger('user-profile-update-form');
 
 const StateValidator = z.object({
@@ -333,13 +335,13 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
 
     return (
         <>
-            <IonRow className="w-full">
-                <IonCol>
+            <AppRow className="w-full">
+                <AppCol>
                     <p className="text-grayscale-900 font-notoSans m-0 flex h-full w-full items-center justify-center text-center text-xl font-bold">
                         {title}
                     </p>
-                </IonCol>
-                <IonCol size="12" className="flex items-center justify-center">
+                </AppCol>
+                <AppCol size="12" className="flex items-center justify-center">
                     <div className="bg-grayscale-100/40 relative m-0 flex items-center justify-between rounded-[40px] object-fill p-0 pb-[3px] pr-[10px] pt-[3px]">
                         <ProfilePicture
                             customContainerClass="flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-3xl min-w-[70px] min-h-[70px]"
@@ -350,7 +352,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                         >
                             {(imageUploadLoading || uploadProgress !== false) && (
                                 <div className="user-image-upload-inprogress absolute flex h-[70px] min-h-[70px] w-[70px] min-w-[70px] items-center justify-center overflow-hidden rounded-full border-2 border-solid border-white text-3xl font-medium text-white">
-                                    <IonSpinner
+                                    <AppSpinner
                                         name="crescent"
                                         color="dark"
                                         className="scale-[1.75]"
@@ -366,8 +368,8 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                             <Pencil className="h-[60%]" />
                         </button>
                     </div>
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
 
             {children}
 
@@ -395,7 +397,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                 }}
                 className="flex flex-col items-center justify-center w-full px-6 mt-4 mb-4"
             >
-                <IonRow className="flex flex-col items-center justify-center w-full">
+                <AppRow className="flex flex-col items-center justify-center w-full">
                     {profileLoading && (
                         <BoostTextSkeleton
                             containerClassName="w-full min-h-[52px] h-[52px] rounded-[15px] mb-4"
@@ -403,7 +405,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                         />
                     )}
                     {lcNetworkProfile && lcNetworkProfile?.profileId && !profileLoading && (
-                        <IonInput
+                        <AppInput
                             autocapitalize="on"
                             className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base mb-4`}
                             value={`@${lcNetworkProfile?.profileId}`}
@@ -442,8 +444,8 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                     </div>
 
                     {walletDid && (
-                        <IonRow className="flex items-center justify-center w-full bg-grayscale-100 mb-4 rounded-[15px]">
-                            <IonCol className="w-full flex items-center justify-between px-4 rounded-2xl">
+                        <AppRow className="flex items-center justify-center w-full bg-grayscale-100 mb-4 rounded-[15px]">
+                            <AppCol className="w-full flex items-center justify-between px-4 rounded-2xl">
                                 <div className="w-[80%] flex flex-col justify-center items-start text-left">
                                     <p className="text-grayscale-500 font-medium text-sm">
                                         {m['userProfile.scoutpassNumber']()}
@@ -458,14 +460,14 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                                 >
                                     <CopyStack className="w-[32px] h-[32px] text-grayscale-900" />
                                 </div>
-                            </IonCol>
-                        </IonRow>
+                            </AppCol>
+                        </AppRow>
                     )}
                     {email && (
-                        <IonInput
+                        <AppInput
                             autocapitalize="on"
                             className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base mb-4`}
-                            onIonInput={e => setEmail(e.detail.value)}
+                            onValueInput={value => setEmail(value)}
                             value={email as string}
                             placeholder={m['userProfile.emailAddress']()}
                             type="email"
@@ -473,19 +475,19 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                         />
                     )}
                     {phone && (
-                        <IonInput
+                        <AppInput
                             autocapitalize="on"
                             className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base mb-4`}
-                            onIonInput={e => setPhone(e.detail.value)}
+                            onValueInput={value => setPhone(value)}
                             value={phone as string}
                             placeholder={m['userProfile.phoneNumber']()}
                             type="tel"
                             disabled={true}
                         />
                     )}
-                </IonRow>
+                </AppRow>
                 {showDeleteAccountButton && (
-                    <IonRow className="w-full flex items-center justify-center">
+                    <AppRow className="w-full flex items-center justify-center">
                         <button
                             type="button"
                             onClick={e => {
@@ -498,24 +500,24 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                             <TrashBin className="ml-[5px] h-[30px] w-[30px] mr-2" />
                             {m['userProfile.deleteAccount']()}
                         </button>
-                    </IonRow>
+                    </AppRow>
                 )}
 
-                <IonRow className="w-full flex items-center justify-center mt-2">
+                <AppRow className="w-full flex items-center justify-center mt-2">
                     <button
                         disabled={isLoading || profileLoading}
                         aria-busy={isLoading || profileLoading}
                         type="submit"
                         className="flex items-center justify-center gap-2 py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm w-full hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                        {(isLoading || profileLoading) && <IonSpinner name="crescent" />}
+                        {(isLoading || profileLoading) && <AppSpinner name="crescent" />}
                         {profileLoading
                             ? m['common.loading']()
                             : isLoading
                               ? m['common.saving']()
                               : m['common.save']()}
                     </button>
-                </IonRow>
+                </AppRow>
             </form>
         </>
     );

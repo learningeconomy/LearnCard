@@ -9,11 +9,11 @@ import {
     getDetailsFromCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
 import useWallet from 'learn-card-base/hooks/useWallet';
-import { IonPage, IonContent } from '@ionic/react';
 import CredentialStorageFooter from './CredentialStorageFooter';
 import LoadingPage from '../loadingPage/LoadingPage';
 import { useAddCredentialToWallet } from '../../components/boost/mutations';
 import { getLogger } from 'learn-card-base';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 const log = getLogger('credential-storage');
 
 export const getCredentialFromVp = (vp: VP): VC => {
@@ -29,6 +29,7 @@ const CredentialStorage: React.FC = () => {
     const [event, setEvent] = useState<CredentialStoreEvent>();
     const [title, setTitle] = useState<string>('');
     const [isLoading, setIsLoading] = useState<boolean>(false);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     const [lcDid, setLcDid] = useState<any>();
 
     useEffect(() => {
@@ -108,8 +109,8 @@ const CredentialStorage: React.FC = () => {
     };
 
     return (
-        <IonPage>
-            <IonContent fullscreen>
+        <AppPage>
+            <AppContent fullscreen>
                 <div className="pb-[50px]">
                     <VCDisplayCardWrapper2
                         overrideCardImageUrl={imgUrl}
@@ -123,12 +124,12 @@ const CredentialStorage: React.FC = () => {
                         {...credentialStorageFooterProps}
                     />
                 </div>
-            </IonContent>
+            </AppContent>
             <CredentialStorageFooter
                 className="credential-storage-footer-mobile"
                 {...credentialStorageFooterProps}
             />
-        </IonPage>
+        </AppPage>
     );
 };
 

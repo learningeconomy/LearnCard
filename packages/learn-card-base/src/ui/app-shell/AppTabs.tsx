@@ -233,7 +233,7 @@ const getKeyboardResizeMode = async (): Promise<string | undefined> => {
 /**
  * ion-tab-bar hid itself while the native keyboard was open (`keyboardWillShow` /
  * `keyboardWillHide` window events from @capacitor/keyboard). On hide it waited for the resized
- * container (`ion-app`) to grow back first, so the bar didn't flash above the keyboard.
+ * container (the app root (`AppRoot`)) to grow back first, so the bar didn't flash above the keyboard.
  */
 const useKeyboardVisible = (): boolean => {
     const [visible, setVisible] = useState(false);
@@ -247,7 +247,7 @@ const useKeyboardVisible = (): boolean => {
         const container = (): Element | null =>
             resizeMode === undefined || resizeMode === 'none'
                 ? null
-                : (document.querySelector('ion-app') ?? document.body);
+                : (document.querySelector('.app-root') ?? document.body);
         const height = (): number => container()?.clientHeight ?? 0;
 
         const onShow = (): void => {

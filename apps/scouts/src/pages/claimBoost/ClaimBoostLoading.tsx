@@ -1,14 +1,15 @@
 import React from 'react';
-import { IonCol, IonContent, IonRow, IonGrid, IonHeader, IonPage } from '@ionic/react';
 import * as m from '../../paraglide/messages.js';
 
 import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
+import { AppContent, AppHeader, AppPage } from 'learn-card-base/ui/chrome';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 
 const ClaimBoostLoading: React.FC = () => {
     return (
-        <IonPage className="claim-boost-loading">
-            <IonContent className="">
-                <IonCol className="flex m-auto items-center flex-wrap w-full h-full">
+        <AppPage className="claim-boost-loading">
+            <AppContent className="">
+                <AppCol className="flex m-auto items-center flex-wrap w-full h-full">
                     <div className="flex flex-col w-full h-full items-center justify-center">
                         <h3 className="text-black text-2xl font-medium">
                             {m['claimBoost.claiming']()}
@@ -17,9 +18,9 @@ const ClaimBoostLoading: React.FC = () => {
                             <LoadingSpinner />
                         </div>
                     </div>
-                </IonCol>
-            </IonContent>
-        </IonPage>
+                </AppCol>
+            </AppContent>
+        </AppPage>
     );
 };
 

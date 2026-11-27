@@ -105,7 +105,7 @@ const classList = (value: string | string[] | undefined): string =>
 /**
  * App-owned `ion-modal` (@ionic/core 8.7.2, what @ionic/react resolves): a dialog over a backdrop, centered on tablets and
  * full screen on phones, or a bottom sheet with breakpoints, a drag gesture and a cycling handle.
- * Renders into `ion-app` while presented. `useAppOverlayModal` is the `useIonModal` replacement;
+ * Renders into the app root (`AppRoot`) while presented. `useAppOverlayModal` is the `useIonModal` replacement;
  * this component is its declarative form (`isOpen`) and what the hook renders.
  */
 export const AppOverlayModal = forwardRef<AppOverlayModalHandle, AppOverlayModalProps>(

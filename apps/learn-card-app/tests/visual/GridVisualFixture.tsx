@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { IonApp } from '@ionic/react';
 import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import { CredentialCategoryEnum } from 'learn-card-base';
 
@@ -74,8 +73,6 @@ const ClickRow: React.FC = () => {
 
 export const GridVisualFixture: React.FC = () => (
     <main className="flex flex-col gap-6 p-4">
-        <IonApp style={{ display: 'none' }} aria-hidden="true" />
-
         <Block testId="g1-sizes" title="Column sizes (synthetic)">
             <Frame label="equal">
                 <AppGrid>

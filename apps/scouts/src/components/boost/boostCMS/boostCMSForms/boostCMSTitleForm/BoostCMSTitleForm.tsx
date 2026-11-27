@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
-import { IonTextarea } from '@ionic/react';
-
 import useFirebaseAnalytics from '../../../../../hooks/useFirebaseAnalytics';
 import { isCustomBoostType } from 'learn-card-base';
 import { BoostCMSState } from '../../../boost';
 import * as m from '../../../../../paraglide/messages.js';
+import { AppTextarea } from 'learn-card-base/ui/controls/AppTextarea';
 
 const BoostCMSTitleForm: React.FC<{
     state: BoostCMSState;
@@ -40,6 +39,7 @@ const BoostCMSTitleForm: React.FC<{
         setCharCount(state?.basicInfo?.name?.length);
     }, [state?.basicInfo?.name]);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     const handleStateChange = (propName: string, value: any) => {
         setState(prevState => {
             return {
@@ -61,10 +61,10 @@ const BoostCMSTitleForm: React.FC<{
             {showTitle && (
                 <p className="font-medium ml-[5px] mb-[5px]">{m['boostCMS.boostTitle']()}</p>
             )}
-            <IonTextarea
+            <AppTextarea
                 autocapitalize="on"
                 value={basicInfo?.name}
-                onIonInput={e => handleStateChange('name', e?.detail?.value)}
+                onValueInput={value => handleStateChange('name', value)}
                 placeholder={placeHolder}
                 className={`relative bg-grayscale-900 text-grayscale-400 rounded-[15px] px-[16px] py-[4px] font-medium text-base ${
                     _disabled ? 'opacity-70!' : ''
@@ -72,11 +72,12 @@ const BoostCMSTitleForm: React.FC<{
                 disabled={_disabled}
                 rows={3}
                 maxlength={100}
-            >
-                <p className="absolute right-[10px] bottom-[10px] text-xs" slot="end">
-                    {charCount}/{maxCount}
-                </p>
-            </IonTextarea>
+                end={
+                    <p className="absolute right-[10px] bottom-[10px] text-xs">
+                        {charCount}/{maxCount}
+                    </p>
+                }
+            />
         </div>
     );
 };

@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { z } from 'zod';
 
-import { IonCol, IonInput, IonInputPasswordToggle } from '@ionic/react';
-
 import * as m from '../../../paraglide/messages.js';
 import { TransP } from '../../../i18n/TransP';
 import { useScoutsSSOLogin } from './useScoutsSSOLogin';
 import useFirebase from '../../../hooks/useFirebase';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
+import { AppInputPasswordToggle } from 'learn-card-base/ui/controls/AppInputPasswordToggle';
+import { AppCol } from 'learn-card-base/ui/layout';
 
 const StateValidator = z.object({
     username: z.string().nonempty('Username is Required'),
@@ -20,6 +21,7 @@ export const ScoutsSSOLogin: React.FC = () => {
 
     const [username, setUsername] = useState<string>('');
     const [password, setPassword] = useState<string>('');
+    const [passwordVisible, setPasswordVisible] = useState(false);
     const [errors, setErrors] = useState<Record<string, string[]>>({});
 
     const [loginError, setLoginError] = useState<string>('');
@@ -68,52 +70,53 @@ export const ScoutsSSOLogin: React.FC = () => {
 
     return (
         <form onSubmit={handleLogin} className="w-full">
-            <IonCol size="12">
+            <AppCol size="12">
                 <p className="font-medium text-sm text-grayscale-600 uppercase">
                     <TransP
                         m={m['login.worldScoutsAccount']}
                         components={[<span className="text-sp-purple-light" key="brand" />]}
                     />
                 </p>
-            </IonCol>
+            </AppCol>
             {loginError && (
-                <IonCol size="12">
+                <AppCol size="12">
                     <p className="login-input-error-msg">{loginError}</p>
-                </IonCol>
+                </AppCol>
             )}
-            <IonCol size="12">
-                <IonInput
+            <AppCol size="12">
+                <AppInput
                     autocapitalize="on"
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] px-4! py-2! font-medium font-notoSans tracking-wide text-base ${
                         errors.username ? 'login-input-email-error' : ''
                     }`}
                     placeholder={m['login.usernamePlaceholder']()}
-                    onIonInput={e => setUsername(e.detail.value)}
+                    onValueInput={value => setUsername(value)}
                     value={username}
                     type="text"
                 />
                 {errors.email && <p className="login-input-error-msg">{errors.email}</p>}
-            </IonCol>
-            <IonCol size="12">
-                <IonInput
+            </AppCol>
+            <AppCol size="12">
+                <AppInput
                     autocapitalize="on"
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] px-4! py-2! font-medium font-notoSans tracking-wide text-base ${
                         errors.password ? 'login-input-email-error' : ''
                     }`}
                     placeholder={m['common.password']()}
-                    onIonInput={e => setPassword(e.detail.value)}
+                    onValueInput={value => setPassword(value)}
                     value={password}
-                    type="password"
-                >
-                    <IonInputPasswordToggle
-                        color="grayscale-600"
-                        className="ion-no-padding p-0 m-0"
-                        slot="end"
-                    />
-                </IonInput>
+                    type={passwordVisible ? 'text' : 'password'}
+                    end={
+                        <AppInputPasswordToggle
+                            visible={passwordVisible}
+                            onVisibleChange={setPasswordVisible}
+                            className="ion-no-padding p-0 m-0"
+                        />
+                    }
+                />
                 {errors.password && <p className="login-input-error-msg">{errors.password}</p>}
-            </IonCol>
-            <IonCol size="12" className="flex items-center justify-center">
+            </AppCol>
+            <AppCol size="12" className="flex items-center justify-center">
                 <button
                     disabled={loading}
                     type="submit"
@@ -121,7 +124,7 @@ export const ScoutsSSOLogin: React.FC = () => {
                 >
                     {loading ? m['common.loading']() : m['common.login']()}
                 </button>
-            </IonCol>
+            </AppCol>
         </form>
     );
 };

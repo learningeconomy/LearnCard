@@ -4,9 +4,10 @@
  * ...). Ports the parts of @ionic/core 8.7.2
  * `utils/overlays.ts` the app relied on, and keeps both kinds behaving as one stack:
  *
- * - Ordering: Ionic appends a presented overlay to `ion-app` (or `body`) and app overlays portal
+ * - Ordering: Ionic appends a presented overlay to the app root (`AppRoot`) (or `body`) and app overlays portal
  *   into the same root when they open, so document order is presentation order for both.
- * - `aria-hidden`: the view container (`ion-router-outlet`, `ion-nav`, `#ion-view-container-root`)
+ * - `aria-hidden`: the view container (`AppOutlet`'s `[data-app-outlet]`, else `ion-router-outlet`,
+ *   `ion-nav`, `#ion-view-container-root`)
  *   is hidden while any non-toast overlay is presented, and overlays under the top-most one are
  *   hidden, with the same rules Ionic applies (toasts on top keep the overlay under them exposed).
  * - Focus: app popovers and loadings trap focus like their Ionic counterparts. While an app
@@ -69,8 +70,9 @@ let lastOverlayIndex = 0;
 /** A new overlay index (z-index offset), like Ionic's `prepareOverlay`. */
 export const nextOverlayIndex = (): number => ++lastOverlayIndex;
 
-/** `ion-app`, or `body` when there is none: where Ionic (and the app overlays) mount overlays. */
-export const getOverlayRoot = (): HTMLElement => document.querySelector('ion-app') ?? document.body;
+/** the app root (`AppRoot`), or `body` when there is none: where Ionic (and the app overlays) mount overlays. */
+export const getOverlayRoot = (): HTMLElement =>
+    document.querySelector('.app-root') ?? document.body;
 
 /** Ionic's z-index tiers are 20000 wide (modal / alert / popover 20000, loading 40000, toast 60000). */
 const Z_TIER = 20000;
@@ -171,7 +173,7 @@ export const dismissAllAppOverlays = (): void => {
 
 const setRootAriaHidden = (hidden: boolean): void => {
     const viewContainer = getOverlayRoot().querySelector(
-        'ion-router-outlet, ion-nav, #ion-view-container-root'
+        '[data-app-outlet], ion-router-outlet, ion-nav, #ion-view-container-root'
     );
     if (!viewContainer) return;
     if (hidden) viewContainer.setAttribute('aria-hidden', 'true');

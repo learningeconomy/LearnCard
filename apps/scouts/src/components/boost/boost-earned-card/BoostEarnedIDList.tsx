@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from 'react';
 
-import { IonCol, IonSpinner } from '@ionic/react';
 import BoostErrorsDisplay from '../../../components/boost/boostErrors/BoostErrorsDisplay';
 import { CredentialListSkeleton } from 'learn-card-base/components/loaders/CredentialListSkeleton';
 
@@ -15,6 +14,8 @@ import { useLoadingLine } from '../../../stores/loadingStore';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import BoostEarnedIDCard from './BoostEarnedIDCard';
 import { SignUpForWaitList } from '../../../pages/membership/MembershipPage';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { AppCol } from 'learn-card-base/ui/layout';
 
 type BoostEarnedIDListProps = {
     category: CredentialCategoryEnum;
@@ -50,7 +51,7 @@ const BoostEarnedIDList: React.FC<BoostEarnedIDListProps> = ({
         error: earnedBoostsError,
     } = useGetCredentialList(category);
 
-    const onScreen = useOnScreen(infiniteScrollRef as any, '-100px', [
+    const onScreen = useOnScreen(infiniteScrollRef, '-100px', [
         records?.pages?.[0]?.records?.length,
     ]);
 
@@ -88,7 +89,7 @@ const BoostEarnedIDList: React.FC<BoostEarnedIDListProps> = ({
         try {
             await earnedBoostsRefetch?.();
         } catch (e) {
-            throw new Error('There was an error, please try again.');
+            throw new Error('There was an error, please try again.', { cause: e });
         }
     };
 
@@ -111,7 +112,7 @@ const BoostEarnedIDList: React.FC<BoostEarnedIDListProps> = ({
                             <div role="presentation" ref={infiniteScrollRef} />
                             {credentialsFetching && (
                                 <div className="w-full flex items-center justify-center">
-                                    <IonSpinner
+                                    <AppSpinner
                                         name="crescent"
                                         color="grayscale-900"
                                         className="scale-[2] mb-8 mt-6"
@@ -121,7 +122,7 @@ const BoostEarnedIDList: React.FC<BoostEarnedIDListProps> = ({
                         </section>
                     )}
                     {!isCardView && (
-                        <IonCol className="flex m-auto items-center flex-wrap w-full achievements-list-container">
+                        <AppCol className="flex m-auto items-center flex-wrap w-full achievements-list-container">
                             <div className="bg-filler bg-sp-green-forest-light absolute h-full mt-[200px] w-[3000px] -z-10" />
                             <div className="flex flex-col gap-[10px] w-full max-w-[700px] px-[20px]">
                                 {credentials}
@@ -129,14 +130,14 @@ const BoostEarnedIDList: React.FC<BoostEarnedIDListProps> = ({
                             <div role="presentation" ref={infiniteScrollRef} />
                             {credentialsFetching && (
                                 <div className="w-full flex items-center justify-center">
-                                    <IonSpinner
+                                    <AppSpinner
                                         name="crescent"
                                         color="grayscale-900"
                                         className="scale-[2] mb-8 mt-6"
                                     />
                                 </div>
                             )}
-                        </IonCol>
+                        </AppCol>
                     )}
                 </>
             )}

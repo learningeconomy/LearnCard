@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useHistory } from 'react-router';
 
-import { IonContent, IonPage, IonSpinner, useIonAlert, IonRow } from '@ionic/react';
 import { getVCDisplayCardVariant } from '@learncard/react';
 // import MainHeader from '../../components/main-header/MainHeader';
 import X from 'learn-card-base/svgs/X';
@@ -49,6 +48,10 @@ import {
 } from 'learn-card-base/helpers/credentialHelpers';
 import { useHighlightedCredentials } from '../../hooks/useHighlightedCredentials';
 import { getLogger } from 'learn-card-base';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { AppRow } from 'learn-card-base/ui/layout';
+import { useAppAlert } from 'learn-card-base/ui/overlays';
 const log = getLogger('claim-boost');
 
 const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boostVC }) => {
@@ -138,7 +141,7 @@ export const ClaimBoostModal: React.FC<{
     const query = usePathQuery();
     const isLoggedIn = useIsLoggedIn();
     const { initWallet } = useWallet();
-    const [presentAlert, dismissAlert] = useIonAlert();
+    const [presentAlert, dismissAlert] = useAppAlert();
     const { logAnalyticsEvent } = useFirebaseAnalytics();
 
     const checkIfUserInNetwork = useCheckIfUserInNetwork();
@@ -327,13 +330,13 @@ export const ClaimBoostModal: React.FC<{
         getVCDisplayCardVariant(boost, getDefaultCategoryForCredential(boost)) === 'ribbon';
 
     return (
-        <IonPage>
+        <AppPage>
             {/* <MainHeader
                 showBackButton={false}
                 customClassName="bg-white"
                 customHeaderClass="main-header-branding-public-route"
             /> */}
-            <IonContent fullscreen color="grayscale-100">
+            <AppContent fullscreen color="grayscale-100">
                 <div
                     className={`pb-4 vc-preview-modal-safe-area h-full ${
                         isRibbonDisplayCard ? 'px-0' : 'px-[40px]'
@@ -341,7 +344,7 @@ export const ClaimBoostModal: React.FC<{
                 >
                     {!boostExists && (
                         <section className="relative loading-spinner-container flex flex-col items-center justify-center h-full w-full">
-                            <IonSpinner color="black" />
+                            <AppSpinner color="black" />
                             <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                         </section>
                     )}
@@ -389,8 +392,8 @@ export const ClaimBoostModal: React.FC<{
                         </>
                     )}
                 </div>
-            </IonContent>
-            <IonRow className="relative z-10 w-full flex justify-center items-center gap-8">
+            </AppContent>
+            <AppRow className="relative z-10 w-full flex justify-center items-center gap-8">
                 {!isTroopIdClaim && (
                     <BoostFooter
                         handleClose={handleCancel}
@@ -400,8 +403,8 @@ export const ClaimBoostModal: React.FC<{
                         claimBtnText={actionButtonText}
                     />
                 )}
-            </IonRow>
-        </IonPage>
+            </AppRow>
+        </AppPage>
     );
 };
 
@@ -452,7 +455,7 @@ const ClaimBoost: React.FC = () => {
         );
     }
 
-    return <IonPage className="bg-grayscale-100" />;
+    return <AppPage className="bg-grayscale-100" />;
 };
 
 export default ClaimBoost;

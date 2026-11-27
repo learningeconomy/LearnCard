@@ -1,24 +1,26 @@
 import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { IonApp, IonPage, setupIonicReact } from '@ionic/react';
+import { AppRoot } from 'learn-card-base/ui/app-shell/AppRoot';
+import { initAppPlatform } from 'learn-card-base/ui/app-shell/appPlatform';
 import { ResumeBuilderToolbar } from '../../src/components/resume-builder/ResumeBuilderToolbar';
 import { ResumeSummaryField } from '../../src/components/resume-builder/resume-preview/ResumeSummaryField';
 import { KeyboardFocusManager } from '../../../../packages/learn-card-base/src/components/keyboard/KeyboardFocusManager';
-import '@ionic/react/css/core.css';
-import '@ionic/react/css/normalize.css';
-import '@ionic/react/css/structure.css';
+import 'learn-card-base/ui/global/core.css';
+import 'learn-card-base/ui/global/normalize.css';
+import 'learn-card-base/ui/global/structure.css';
 import '../../src/tailwind.css';
 import '../../src/index.scss';
+import { AppPage } from 'learn-card-base/ui/chrome';
 
-setupIonicReact({ mode: 'ios' });
+initAppPlatform({ mode: 'ios' });
 const noop = (): void => {};
 
 const ResumeLayoutReview = () => {
     const [summary, setSummary] = useState('');
     return (
-        <IonApp>
+        <AppRoot>
             <KeyboardFocusManager />
-            <IonPage>
+            <AppPage>
                 <div id="app-router" className="flex h-full min-h-0 flex-col bg-grayscale-100">
                     <ResumeBuilderToolbar
                         loadingAction={null}
@@ -54,8 +56,8 @@ const ResumeLayoutReview = () => {
                         <div className="h-8" />
                     </div>
                 </div>
-            </IonPage>
-        </IonApp>
+            </AppPage>
+        </AppRoot>
     );
 };
 

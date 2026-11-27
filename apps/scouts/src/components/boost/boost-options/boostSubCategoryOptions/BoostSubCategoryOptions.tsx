@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { z } from 'zod';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
-import { IonHeader, IonContent, IonRow, IonCol, IonGrid, IonToolbar, IonInput } from '@ionic/react';
 import CaretLeft from '../../../svgs/CaretLeft';
 import BoostSubCategoryButton from './BoostSubCategoryButton';
 
@@ -20,6 +19,9 @@ import {
 import X from 'learn-card-base/svgs/X';
 import * as m from '../../../../paraglide/messages.js';
 import { useLocale } from '../../../../i18n';
+import { AppContent, AppHeader, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 
 const StateValidator = z.object({
     customType: z
@@ -38,6 +40,7 @@ type BoostSubCategoryOptionsProps = {
     otherUserProfileId?: string;
     hideBackButton: boolean;
     showCloseButton: boolean;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     history: any;
 };
 
@@ -109,18 +112,18 @@ export const BoostSubCategoryOptions: React.FC<BoostSubCategoryOptionsProps> = (
 
     return (
         <section className="h-full">
-            <IonContent fullscreen color={subColor}>
-                <IonHeader className={`ion-no-border pt-10 ${_subCategoryColor}`}>
-                    <IonToolbar color="#fffff">
-                        <IonRow className="flex flex-col pb-4">
+            <AppContent fullscreen color={subColor}>
+                <AppHeader className={`ion-no-border pt-10 ${_subCategoryColor}`}>
+                    <AppToolbar color="#fffff">
+                        <AppRow className="flex flex-col pb-4">
                             {/* {showCloseButton && ( */}
-                            <IonCol className="flex flex-1 justify-end items-center px-3">
+                            <AppCol className="flex flex-1 justify-end items-center px-3">
                                 <button className="z-[9999] pt-2" onClick={closeAllModals}>
                                     <X className="text-white h-8 w-8" />
                                 </button>
-                            </IonCol>
+                            </AppCol>
                             {/* )} */}
-                            <IonCol className="w-full flex items-center justify-center mt-4">
+                            <AppCol className="w-full flex items-center justify-center mt-4">
                                 <h6 className="flex items-center justify-center text-white text-3xl font-medium">
                                     {!hideBackButton && (
                                         <button
@@ -132,10 +135,10 @@ export const BoostSubCategoryOptions: React.FC<BoostSubCategoryOptionsProps> = (
                                     )}
                                     {title}
                                 </h6>
-                            </IonCol>
-                        </IonRow>
-                        <IonRow className="flex items-center justify-center w-full mt-4">
-                            <IonCol className="text-center">
+                            </AppCol>
+                        </AppRow>
+                        <AppRow className="flex items-center justify-center w-full mt-4">
+                            <AppCol className="text-center">
                                 <div className="relative flex flex-col items-center justify-center p-0 pb-0 rounded-3xl flex-1">
                                     <div
                                         className={`absolute top-0 left-[%50] w-[160px] h-[160px] bg-${color} rounded-full`}
@@ -146,20 +149,20 @@ export const BoostSubCategoryOptions: React.FC<BoostSubCategoryOptionsProps> = (
                                         className="z-50 w-[150px] h-[151px] mt-4"
                                     />
                                 </div>
-                            </IonCol>
-                        </IonRow>
-                    </IonToolbar>
-                </IonHeader>
-                <IonGrid>
-                    <IonRow className="w-full flex items-center justify-center pb-6">
+                            </AppCol>
+                        </AppRow>
+                    </AppToolbar>
+                </AppHeader>
+                <AppGrid>
+                    <AppRow className="w-full flex items-center justify-center pb-6">
                         {!flags?.disableCmsCustomization && (
                             <>
                                 <div className="max-w-[95%] w-full ion-padding rounded-tr-[20px] rounded-tl-[20px] mb-0 relative">
-                                    <IonInput
+                                    <AppInput
                                         autocapitalize="on"
                                         value={customBoostType}
-                                        onIonInput={e => {
-                                            setCustomBoostType(e.detail.value ?? '');
+                                        onValueInput={value => {
+                                            setCustomBoostType(value ?? '');
                                             setErrors({});
                                         }}
                                         placeholder={m['boost.customTypePlaceholder']()}
@@ -201,9 +204,9 @@ export const BoostSubCategoryOptions: React.FC<BoostSubCategoryOptionsProps> = (
                                 </div>
                             </>
                         )}
-                        <IonCol className="w-full flex flex-col items-center justify-center">
+                        <AppCol className="w-full flex flex-col items-center justify-center">
                             {boostOptionsItemList}
-                        </IonCol>
+                        </AppCol>
                         <div className="w-full flex items-center justify-center mt-4">
                             <button
                                 onClick={() => {
@@ -218,9 +221,9 @@ export const BoostSubCategoryOptions: React.FC<BoostSubCategoryOptionsProps> = (
                                 {m['common.cancel']()}
                             </button>
                         </div>
-                    </IonRow>
-                </IonGrid>
-            </IonContent>
+                    </AppRow>
+                </AppGrid>
+            </AppContent>
         </section>
     );
 };

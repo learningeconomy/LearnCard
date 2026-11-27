@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { IonApp } from '@ionic/react';
+import { AppRoot } from 'learn-card-base/ui/app-shell/AppRoot';
 
 import { AppLoading } from 'learn-card-base/ui/overlays/AppLoading';
 import { AppOverlayManager } from 'learn-card-base/ui/overlays/AppOverlayManager';
@@ -15,7 +15,7 @@ import { AppItem, AppList } from 'learn-card-base/ui/list';
 /**
  * `overlays-1`: the app's AppPopover, AppLoading, AppToast and useAppToast call sites (formerly
  * IonPopover, IonLoading, IonToast and useIonToast; section titles keep those names) as excerpts
- * (same props, classes and inline styles), plus the real ClrSourceInfo. A real IonApp hosts them,
+ * (same props, classes and inline styles), plus the real ClrSourceInfo. A real AppRoot hosts them,
  * with `#ion-view-container-root` as the view container overlays mark `aria-hidden`. A modal
  * (useAppOverlayModal, formerly useIonModal) checks stacking, Escape and focus with overlays
  * opened over it. Every scenario reports its open state and dismiss events in `ro-*` readouts.
@@ -496,7 +496,7 @@ const ModalBody: React.FC<{ report: Report; onClose: () => void }> = ({ report, 
     );
 };
 
-/** Inside IonApp, next to the AppOverlayManager that renders the modal. */
+/** Inside AppRoot, next to the AppOverlayManager that renders the modal. */
 const FixtureBody: React.FC = () => {
     const [readouts, setReadouts] = useState<Record<string, string>>({});
     const report = useCallback<Report>(
@@ -601,8 +601,8 @@ const FixtureBody: React.FC = () => {
 };
 
 export const OverlaysVisualFixture: React.FC = () => (
-    <IonApp>
+    <AppRoot>
         <FixtureBody />
         <AppOverlayManager />
-    </IonApp>
+    </AppRoot>
 );

@@ -2,8 +2,6 @@ import React, { useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 
-import { IonFooter, IonToolbar, IonGrid, IonRow, IonCol } from '@ionic/react';
-
 import User from '../../../components/svgs/User';
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
 
@@ -20,13 +18,15 @@ import {
 import { useCheckIfUserInNetwork } from 'apps/scouts/src/components/network-prompts/hooks/useCheckIfUserInNetwork';
 import useBoostModal from '../../../components/boost/hooks/useBoostModal';
 import * as m from '../../../paraglide/messages.js';
+import { AppFooter, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 
 export const AddressBookFooter: React.FC<{
     showSearch?: boolean;
     handleShowSearch?: () => void;
 }> = ({ showSearch, handleShowSearch }) => {
     const history = useHistory();
-    const bottomBarRef = useRef<HTMLIonFooterElement>(null);
+    const bottomBarRef = useRef<HTMLDivElement>(null);
 
     const { handlePresentBoostModal } = useBoostModal(
         history,
@@ -81,11 +81,11 @@ export const AddressBookFooter: React.FC<{
     };
 
     return (
-        <IonFooter className="learn-card-header ion-no-border" ref={bottomBarRef}>
-            <IonToolbar className="ion-no-border" color="light">
-                <IonGrid className="bg-white">
-                    <IonRow className="w-full mt-4 flex items-center justify-center">
-                        <IonCol className="flex items-center justify-between max-w-[600px]">
+        <AppFooter className="learn-card-header ion-no-border" ref={bottomBarRef}>
+            <AppToolbar className="ion-no-border" color="light">
+                <AppGrid className="bg-white">
+                    <AppRow className="w-full mt-4 flex items-center justify-center">
+                        <AppCol className="flex items-center justify-between max-w-[600px]">
                             <button
                                 onClick={() => {
                                     if (!checkIfUserInNetwork()) return;
@@ -121,11 +121,11 @@ export const AddressBookFooter: React.FC<{
                                 <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
                                 {m['boost.send']()}
                             </button>
-                        </IonCol>
-                    </IonRow>
-                </IonGrid>
-            </IonToolbar>
-        </IonFooter>
+                        </AppCol>
+                    </AppRow>
+                </AppGrid>
+            </AppToolbar>
+        </AppFooter>
     );
 };
 

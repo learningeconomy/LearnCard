@@ -11,7 +11,7 @@ import {
     observeConnectionQuality,
     CONNECTIVITY_PROBE_PATH,
 } from 'learn-card-base';
-import { IonApp } from '@ionic/react';
+import { AppRoot } from 'learn-card-base/ui/app-shell/AppRoot';
 import { AppOverlayManager } from 'learn-card-base/ui/overlays/AppOverlayManager';
 import { LoadingPageDumb } from './pages/loadingPage/LoadingPage';
 
@@ -225,7 +225,7 @@ const FullApp: React.FC = () => {
                             <ThemeInitializer />
                             <ExternalAuthServiceProvider>
                                 <ModalsProvider>
-                                    <IonApp>
+                                    <AppRoot>
                                         <div id="modal-mid-root"></div>
                                         <ModalAccessibilityManager />
                                         <KeyboardFocusManager />
@@ -291,7 +291,7 @@ const FullApp: React.FC = () => {
                                             overlay manager rendered useIonModal content
                                             here, outside the routes' contexts). */}
                                         <AppOverlayManager />
-                                    </IonApp>
+                                    </AppRoot>
                                 </ModalsProvider>
                             </ExternalAuthServiceProvider>
                         </AuthCoordinatorProvider>

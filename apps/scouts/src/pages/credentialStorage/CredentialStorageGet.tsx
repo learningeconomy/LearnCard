@@ -4,12 +4,13 @@ import type { VP, VC } from '@learncard/types';
 
 import { useCurrentUser, chapiStore, redirectStore } from 'learn-card-base';
 
-import { IonPage, IonContent, IonRow, IonCol } from '@ionic/react';
 import LoadingPage from '../loadingPage/LoadingPage';
 
 import VprDIDAuth from './vpr/VprDIDAuth';
 import VprQueryByExample from './vpr/VprQueryByExample';
 import { getLogger } from 'learn-card-base';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 const log = getLogger('credential-storage-get');
 
 export const getCredentialFromVp = (vp: VP): VC => {
@@ -21,6 +22,7 @@ export const getCredentialFromVp = (vp: VP): VC => {
 const CredentialStorageGet: React.FC = () => {
     const currentUser = useCurrentUser();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     const [event, setEvent] = useState<any>(null);
 
     useEffect(() => {

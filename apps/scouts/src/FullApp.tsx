@@ -1,10 +1,13 @@
 import React, { Suspense } from 'react';
-import { IonReactRouter } from '@ionic/react-router';
+import { createBrowserHistory } from 'history';
+import { AppShellRouter } from 'learn-card-base/ui/app-shell/AppShellRouter';
 import { QueryClient } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 
-import { IonApp, setupIonicReact } from '@ionic/react';
+import { AppRoot } from 'learn-card-base/ui/app-shell/AppRoot';
+import { initAppPlatform } from 'learn-card-base/ui/app-shell/appPlatform';
+import { AppOverlayManager } from 'learn-card-base/ui/overlays/AppOverlayManager';
 import { LoadingPageDumb } from './pages/loadingPage/LoadingPage';
 
 const AppRouter = lazyWithRetry(() => import('./AppRouter'));
@@ -59,7 +62,9 @@ const persister = {
     },
 };
 
-setupIonicReact({ swipeBackEnabled: false });
+initAppPlatform();
+
+const history = createBrowserHistory();
 
 const FullApp: React.FC = () => {
     useSQLiteInitWeb(); // initializes SQLite on web
@@ -72,9 +77,9 @@ const FullApp: React.FC = () => {
             persistOptions={{ persister, maxAge: CACHE_TTL, buster: CACHE_BUSTER }}
         >
             <div className="app-bar-top relative top-0 left-0 w-full z-[9999] bg-black" />
-            <IonReactRouter>
+            <AppShellRouter history={history}>
                 <Suspense fallback={<LoadingPageDumb />}>
-                    <IonApp>
+                    <AppRoot>
                         <SharedI18nProvider>
                             <AuthCoordinatorProvider>
                                 <LocaleProfileSync />
@@ -102,9 +107,11 @@ const FullApp: React.FC = () => {
                                 </ModalsProvider>
                             </AuthCoordinatorProvider>
                         </SharedI18nProvider>
-                    </IonApp>
+                        {/* Renders useAppOverlayModal content (IonApp's overlay manager did this for useIonModal). */}
+                        <AppOverlayManager />
+                    </AppRoot>
                 </Suspense>
-            </IonReactRouter>
+            </AppShellRouter>
         </PersistQueryClientProvider>
     );
 };

@@ -1,15 +1,5 @@
 import React from 'react';
 import { useHistory } from 'react-router-dom';
-import {
-    IonCol,
-    IonContent,
-    IonFooter,
-    IonGrid,
-    IonHeader,
-    IonPage,
-    IonRow,
-    IonToolbar,
-} from '@ionic/react';
 import { useModal } from 'learn-card-base';
 import { BoostCMSState, BoostCMSStepsEnum } from '../../boost';
 import {
@@ -18,6 +8,8 @@ import {
 } from '../../boost-options/boostOptions';
 import ModalLayout from '../../../layout/ModalLayout';
 import * as m from '../../../../paraglide/messages.js';
+import { AppContent, AppFooter, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 
 export const BoostCMSConfirmationPrompt: React.FC<{
     state: BoostCMSState;

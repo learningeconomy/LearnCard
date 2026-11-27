@@ -8,7 +8,7 @@ export type AppAlertOptions = Omit<AppAlertProps, 'isOpen'>;
 
 type PresentedAlert = { root: Root; setOpen: (open: boolean) => void };
 
-/** Renders an alert outside the caller's tree (it portals into `ion-app`). */
+/** Renders an alert outside the caller's tree (it portals into the app root (`AppRoot`)). */
 const ControlledAlert: React.FC<{
     options: AppAlertOptions;
     onRendered: (setOpen: (open: boolean) => void) => void;

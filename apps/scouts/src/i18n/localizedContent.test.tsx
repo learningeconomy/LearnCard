@@ -25,21 +25,6 @@ import { useLocalizedBoostFilter } from '../components/boost/boost-select-menu/u
 import { LocaleProvider, useChangeLocale } from './index';
 import { setLocale } from '../paraglide/runtime.js';
 
-vi.mock('@ionic/react', () => {
-    const MockIonicComponent = ({ children }: { children?: React.ReactNode }) =>
-        createElement('div', null, children);
-
-    return {
-        IonCol: MockIonicComponent,
-        IonContent: MockIonicComponent,
-        IonGrid: MockIonicComponent,
-        IonHeader: MockIonicComponent,
-        IonPage: MockIonicComponent,
-        IonRow: MockIonicComponent,
-        IonToolbar: MockIonicComponent,
-    };
-});
-
 vi.mock(
     '../components/boost/boostCMS/boostCMSForms/boostCMSSkills/BoostCMSSkillCategorySwiper',
     () => ({ default: () => null })

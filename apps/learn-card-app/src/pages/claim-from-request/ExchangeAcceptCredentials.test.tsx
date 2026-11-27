@@ -22,9 +22,6 @@ vi.mock('@capacitor/core', () => ({
 vi.mock('@learncard/react', () => ({
     getVCDisplayCardVariant: () => 'default',
 }));
-vi.mock('@ionic/react', () => ({
-    IonLoading: () => null,
-}));
 vi.mock('learn-card-base', () => ({
     BoostPageViewMode: { Card: 'card' },
     CredentialCategoryEnum: { achievement: 'Achievement' },

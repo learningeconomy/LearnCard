@@ -1,6 +1,5 @@
 import React from 'react';
 
-import { IonRow, IonCol, IonToggle } from '@ionic/react';
 import CaretLeft from '../svgs/CaretLeft';
 
 import {
@@ -10,6 +9,8 @@ import {
 } from './networkSettings.helpers';
 import ModalLayout from '../../layout/ModalLayout';
 import * as m from '../../paraglide/messages.js';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 const NetworkSettings: React.FC<{
     handleCloseModal: () => void;
@@ -18,11 +19,11 @@ const NetworkSettings: React.FC<{
 }> = ({ handleCloseModal, settings, handleStateChange }) => {
     const settingsList = getNetworkSettingOptions().map(setting => {
         return (
-            <IonRow key={setting.id} className="w-full flex items-center justify-center px-2">
-                <IonCol className="w-full max-w-[600px] flex-col ion-padding">
+            <AppRow key={setting.id} className="w-full flex items-center justify-center px-2">
+                <AppCol className="w-full max-w-[600px] flex-col ion-padding">
                     <div className="w-full flex items-center justify-between">
                         <p className="text-grayscale-900 font-semibold w-10/12">{setting.title}</p>
-                        <IonToggle
+                        <AppToggle
                             mode="ios"
                             checked={settings[NetworkSettingsEnum[setting.type]]}
                             onClick={() =>
@@ -37,15 +38,15 @@ const NetworkSettings: React.FC<{
                     <p className="text-left p-0 pt-2 pb-5 m-0 text-xs border-b border-grayscale-200">
                         {setting.description}
                     </p>
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
         );
     });
 
     return (
         <ModalLayout handleOnClick={handleCloseModal} allowScroll>
-            <IonRow className="flex items-center justify-center">
-                <IonCol className="w-full flex justify-start items-center text black max-w-[600px]">
+            <AppRow className="flex items-center justify-center">
+                <AppCol className="w-full flex justify-start items-center text black max-w-[600px]">
                     <button
                         className="text-grayscale-50 p-0 mr-[10px]"
                         onClick={() => handleCloseModal()}
@@ -55,8 +56,8 @@ const NetworkSettings: React.FC<{
                     <p className="font-bold text-black font-mouse text-3xl">
                         {m['networkPrompts.settings.editAccess']()}
                     </p>
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
 
             {settingsList}
         </ModalLayout>

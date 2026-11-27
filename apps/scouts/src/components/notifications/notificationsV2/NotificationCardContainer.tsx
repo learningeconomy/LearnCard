@@ -12,13 +12,14 @@ import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 import NotificationBoostCard from './NotificationBoostCard';
 import ConnectionRequestCard from './ConnectionRequestCard';
 import { useQueryClient } from '@tanstack/react-query';
-import { useIonAlert } from '@ionic/react';
 import { getLogger } from 'learn-card-base';
+import { useAppAlert } from 'learn-card-base/ui/overlays';
 const log = getLogger('notification-card-container');
 
 type NotificationCardProps = {
     className?: string;
     notification: NotificationType;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     queryOptions?: any;
 };
 
@@ -56,7 +57,7 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
     }
 
     const { type, message, from, to, sent } = notification;
-    const [presentAlert, dismissAlert] = useIonAlert();
+    const [presentAlert, dismissAlert] = useAppAlert();
     const displayDate = formatLocaleDate(sent, {
         month: 'long',
         day: 'numeric',

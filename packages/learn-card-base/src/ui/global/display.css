@@ -1,0 +1,306 @@
+/*
+ * Ionic Framework 8.7.2 css/display.css (https://ionicframework.com), MIT License, Copyright (c)
+ * Ionic. Copied verbatim so LearnCard keeps the same global styles without the @ionic packages.
+ */
+.ion-hide {
+    display: none !important;
+}
+.ion-hide-up {
+    display: none !important;
+}
+.ion-hide-down {
+    display: none !important;
+}
+@media (min-width: 576px) {
+    .ion-hide-sm-up {
+        display: none !important;
+    }
+}
+@media (max-width: 575.98px) {
+    .ion-hide-sm-down {
+        display: none !important;
+    }
+}
+@media (min-width: 768px) {
+    .ion-hide-md-up {
+        display: none !important;
+    }
+}
+@media (max-width: 767.98px) {
+    .ion-hide-md-down {
+        display: none !important;
+    }
+}
+@media (min-width: 992px) {
+    .ion-hide-lg-up {
+        display: none !important;
+    }
+}
+@media (max-width: 991.98px) {
+    .ion-hide-lg-down {
+        display: none !important;
+    }
+}
+@media (min-width: 1200px) {
+    .ion-hide-xl-up {
+        display: none !important;
+    }
+}
+@media (max-width: 1199.98px) {
+    .ion-hide-xl-down {
+        display: none !important;
+    }
+}
+.ion-display-none {
+    display: none !important;
+}
+@media (min-width: 576px) {
+    .ion-display-sm-none {
+        display: none !important;
+    }
+}
+@media (min-width: 768px) {
+    .ion-display-md-none {
+        display: none !important;
+    }
+}
+@media (min-width: 992px) {
+    .ion-display-lg-none {
+        display: none !important;
+    }
+}
+@media (min-width: 1200px) {
+    .ion-display-xl-none {
+        display: none !important;
+    }
+}
+.ion-display-inline {
+    display: inline !important;
+}
+@media (min-width: 576px) {
+    .ion-display-sm-inline {
+        display: inline !important;
+    }
+}
+@media (min-width: 768px) {
+    .ion-display-md-inline {
+        display: inline !important;
+    }
+}
+@media (min-width: 992px) {
+    .ion-display-lg-inline {
+        display: inline !important;
+    }
+}
+@media (min-width: 1200px) {
+    .ion-display-xl-inline {
+        display: inline !important;
+    }
+}
+.ion-display-inline-block {
+    display: inline-block !important;
+}
+@media (min-width: 576px) {
+    .ion-display-sm-inline-block {
+        display: inline-block !important;
+    }
+}
+@media (min-width: 768px) {
+    .ion-display-md-inline-block {
+        display: inline-block !important;
+    }
+}
+@media (min-width: 992px) {
+    .ion-display-lg-inline-block {
+        display: inline-block !important;
+    }
+}
+@media (min-width: 1200px) {
+    .ion-display-xl-inline-block {
+        display: inline-block !important;
+    }
+}
+.ion-display-block {
+    display: block !important;
+}
+@media (min-width: 576px) {
+    .ion-display-sm-block {
+        display: block !important;
+    }
+}
+@media (min-width: 768px) {
+    .ion-display-md-block {
+        display: block !important;
+    }
+}
+@media (min-width: 992px) {
+    .ion-display-lg-block {
+        display: block !important;
+    }
+}
+@media (min-width: 1200px) {
+    .ion-display-xl-block {
+        display: block !important;
+    }
+}
+.ion-display-flex {
+    display: flex !important;
+}
+@media (min-width: 576px) {
+    .ion-display-sm-flex {
+        display: flex !important;
+    }
+}
+@media (min-width: 768px) {
+    .ion-display-md-flex {
+        display: flex !important;
+    }
+}
+@media (min-width: 992px) {
+    .ion-display-lg-flex {
+        display: flex !important;
+    }
+}
+@media (min-width: 1200px) {
+    .ion-display-xl-flex {
+        display: flex !important;
+    }
+}
+.ion-display-inline-flex {
+    display: inline-flex !important;
+}
+@media (min-width: 576px) {
+    .ion-display-sm-inline-flex {
+        display: inline-flex !important;
+    }
+}
+@media (min-width: 768px) {
+    .ion-display-md-inline-flex {
+        display: inline-flex !important;
+    }
+}
+@media (min-width: 992px) {
+    .ion-display-lg-inline-flex {
+        display: inline-flex !important;
+    }
+}
+@media (min-width: 1200px) {
+    .ion-display-xl-inline-flex {
+        display: inline-flex !important;
+    }
+}
+.ion-display-grid {
+    display: grid !important;
+}
+@media (min-width: 576px) {
+    .ion-display-sm-grid {
+        display: grid !important;
+    }
+}
+@media (min-width: 768px) {
+    .ion-display-md-grid {
+        display: grid !important;
+    }
+}
+@media (min-width: 992px) {
+    .ion-display-lg-grid {
+        display: grid !important;
+    }
+}
+@media (min-width: 1200px) {
+    .ion-display-xl-grid {
+        display: grid !important;
+    }
+}
+.ion-display-inline-grid {
+    display: inline-grid !important;
+}
+@media (min-width: 576px) {
+    .ion-display-sm-inline-grid {
+        display: inline-grid !important;
+    }
+}
+@media (min-width: 768px) {
+    .ion-display-md-inline-grid {
+        display: inline-grid !important;
+    }
+}
+@media (min-width: 992px) {
+    .ion-display-lg-inline-grid {
+        display: inline-grid !important;
+    }
+}
+@media (min-width: 1200px) {
+    .ion-display-xl-inline-grid {
+        display: inline-grid !important;
+    }
+}
+.ion-display-table {
+    display: table !important;
+}
+@media (min-width: 576px) {
+    .ion-display-sm-table {
+        display: table !important;
+    }
+}
+@media (min-width: 768px) {
+    .ion-display-md-table {
+        display: table !important;
+    }
+}
+@media (min-width: 992px) {
+    .ion-display-lg-table {
+        display: table !important;
+    }
+}
+@media (min-width: 1200px) {
+    .ion-display-xl-table {
+        display: table !important;
+    }
+}
+.ion-display-table-cell {
+    display: table-cell !important;
+}
+@media (min-width: 576px) {
+    .ion-display-sm-table-cell {
+        display: table-cell !important;
+    }
+}
+@media (min-width: 768px) {
+    .ion-display-md-table-cell {
+        display: table-cell !important;
+    }
+}
+@media (min-width: 992px) {
+    .ion-display-lg-table-cell {
+        display: table-cell !important;
+    }
+}
+@media (min-width: 1200px) {
+    .ion-display-xl-table-cell {
+        display: table-cell !important;
+    }
+}
+.ion-display-table-row {
+    display: table-row !important;
+}
+@media (min-width: 576px) {
+    .ion-display-sm-table-row {
+        display: table-row !important;
+    }
+}
+@media (min-width: 768px) {
+    .ion-display-md-table-row {
+        display: table-row !important;
+    }
+}
+@media (min-width: 992px) {
+    .ion-display-lg-table-row {
+        display: table-row !important;
+    }
+}
+@media (min-width: 1200px) {
+    .ion-display-xl-table-row {
+        display: table-row !important;
+    }
+}

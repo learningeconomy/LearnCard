@@ -2,8 +2,6 @@ import React, { useEffect } from 'react';
 import { useRouteMatch } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 
-import { IonSpinner } from '@ionic/react';
-
 import AddressBookContactList from '../addressBook-contact-list/AddressBookContactList';
 import MiniGhost from 'learn-card-base/assets/images/emptystate-ghost.png';
 
@@ -17,6 +15,7 @@ import {
 import { AddressBookTabsEnum } from '../addressBookHelpers';
 import { getLogger } from 'learn-card-base';
 import * as m from '../../../paraglide/messages.js';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 const log = getLogger('address-book-pending-connections');
 
 const AddressBookPendingConnections: React.FC<{
@@ -65,6 +64,7 @@ const AddressBookPendingConnections: React.FC<{
                     presentToast(
                         error?.message || m['addressBook.toasts.unableToCancelRequest'](),
                         {
+                            // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
                             // @ts-ignore
                             type: ToastTypeEnum.Error,
                             hasDismissButton: true,
@@ -73,10 +73,12 @@ const AddressBookPendingConnections: React.FC<{
                 },
             }
         );
+        // eslint-disable-next-line no-empty -- existing intentionally empty block
         try {
         } catch (err) {
             log.debug('canceledConnectionReq::error', err);
             presentToast(err?.message || m['addressBook.toasts.unableToCancelRequest'](), {
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
                 // @ts-ignore
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
@@ -102,6 +104,7 @@ const AddressBookPendingConnections: React.FC<{
                         presentToast(
                             error?.message || m['addressBook.toasts.unableToBlockUser'](),
                             {
+                                // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
                                 // @ts-ignore
                                 type: ToastTypeEnum.Error,
                                 hasDismissButton: true,
@@ -113,6 +116,7 @@ const AddressBookPendingConnections: React.FC<{
         } catch (err) {
             log.debug('blockProfile::error', err);
             presentToast(err?.message || m['addressBook.toasts.unableToBlockUser'](), {
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
                 // @ts-ignore
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
@@ -124,7 +128,7 @@ const AddressBookPendingConnections: React.FC<{
         <>
             {isLoading && (
                 <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full pt-[100px]">
-                    <IonSpinner color="black" />
+                    <AppSpinner color="black" />
                     <p className="mt-2 font-bold text-lg">{m['addressBook.loading']()}</p>
                 </section>
             )}

@@ -23,7 +23,6 @@ import {
 
 import { useFirebase } from '../../hooks/useFirebase';
 
-import { IonCol, IonContent, IonGrid, IonPage, IonRow } from '@ionic/react';
 import ScoutsSSOLogin from './ScoutsSSO/ScoutSSOLogin';
 import SocialLogins from '../../components/social-logins/SocialLogins';
 import EmailForm from './forms/EmailForm';
@@ -44,6 +43,8 @@ import * as m from '../../paraglide/messages.js';
 import { TransP } from '../../i18n/TransP';
 import { getLogger } from 'learn-card-base';
 import { LanguagePickerCompact } from '../../components/sidemenu/LanguagePicker';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 const log = getLogger('login-page');
 
 const LoginPage: React.FC = () => {
@@ -166,22 +167,22 @@ const LoginPage: React.FC = () => {
     const activeLoginTypeStyles = 'border-[#FF8DFF]';
 
     return (
-        <IonPage>
+        <AppPage>
             {showConfirmation && (
                 <DeleteUserSuccessConfirmation branding={BrandingEnum.scoutPass} />
             )}
-            <IonContent fullscreen>
-                <IonGrid className="p-0 m-0 w-full flex-col items-center justify-center">
-                    <IonRow className="p-0 m-0 w-full flex items-center justify-center bg-sp-purple-base relative login-page-header overflow-hidden!">
+            <AppContent fullscreen>
+                <AppGrid className="p-0 m-0 w-full flex-col items-center justify-center">
+                    <AppRow className="p-0 m-0 w-full flex items-center justify-center bg-sp-purple-base relative login-page-header overflow-hidden!">
                         <LanguagePickerCompact className="absolute top-4 right-4 z-10" />
-                        <IonCol size="12" className="flex flex-col items-center justify-center">
+                        <AppCol size="12" className="flex flex-col items-center justify-center">
                             <img src={ScoutPassLogo} alt="" className="w-[55px]" />
                             <img src={ScoutPassTextLogo} alt="" className="mt-4" />
-                        </IonCol>
+                        </AppCol>
                         <div className="absolute bottom-[-150px] h-[75%] w-[106%] rounded-[100%] bg-white login-page-curve" />
-                    </IonRow>
+                    </AppRow>
                     {showQrLogin && !qrApproved ? (
-                        <IonRow className="w-full flex items-center justify-center p-4">
+                        <AppRow className="w-full flex items-center justify-center p-4">
                             <div className="w-full max-w-[500px] bg-white rounded-[20px] shadow-2xl">
                                 <QrLoginRequester
                                     serverUrl={getSSSConfig().serverUrl}
@@ -207,9 +208,9 @@ const LoginPage: React.FC = () => {
                                     )}
                                 />
                             </div>
-                        </IonRow>
+                        </AppRow>
                     ) : showQrLogin && qrApproved ? (
-                        <IonRow className="w-full flex items-center justify-center p-4">
+                        <AppRow className="w-full flex items-center justify-center p-4">
                             <div className="w-full max-w-[500px] bg-white rounded-[20px] shadow-2xl p-8 text-center font-poppins">
                                 <div className="w-16 h-16 mx-auto mb-4 bg-emerald-50 rounded-full flex items-center justify-center">
                                     <svg
@@ -259,11 +260,11 @@ const LoginPage: React.FC = () => {
                                     {m['login.continueToSignIn']()}
                                 </button>
                             </div>
-                        </IonRow>
+                        </AppRow>
                     ) : (
                         <>
                             {showLinkedBanner && (
-                                <IonRow className="w-full flex items-center justify-center px-4 mb-2">
+                                <AppRow className="w-full flex items-center justify-center px-4 mb-2">
                                     <div className="w-full max-w-[500px] p-3 bg-emerald-50 border border-emerald-100 rounded-[20px] flex items-center justify-center gap-2.5">
                                         <svg
                                             width="16"
@@ -296,10 +297,10 @@ const LoginPage: React.FC = () => {
                                             )}
                                         </span>
                                     </div>
-                                </IonRow>
+                                </AppRow>
                             )}
 
-                            <IonRow className="social-logins-container">
+                            <AppRow className="social-logins-container">
                                 <div className="w-full flex items-center justify-center">
                                     {enableWorldScoutsLogin && (
                                         <button
@@ -358,33 +359,33 @@ const LoginPage: React.FC = () => {
                                         </button>
                                     )}
                                 </div>
-                                <IonRow className="w-full max-w-[500px] ion-padding-horizontal">
+                                <AppRow className="w-full max-w-[500px] ion-padding-horizontal">
                                     {LoginTypeForm}
-                                </IonRow>
+                                </AppRow>
                                 <SocialLogins
                                     branding={BrandingEnum.scoutPass}
                                     activeLoginType={activeLoginType}
                                     setActiveLoginType={setActiveLoginType}
                                     extraSocialLogins={extraSocialLogins}
                                 />
-                            </IonRow>
+                            </AppRow>
 
                             {configCapabilities.deviceLinking && (
-                                <IonRow className="w-full flex items-center justify-center mt-2 mb-2">
+                                <AppRow className="w-full flex items-center justify-center mt-2 mb-2">
                                     <button
                                         onClick={() => setShowQrLogin(true)}
                                         className="text-sm text-grayscale-500 hover:text-grayscale-700 underline transition-colors"
                                     >
                                         {m['login.signInFromDevice']()}
                                     </button>
-                                </IonRow>
+                                </AppRow>
                             )}
                         </>
                     )}
-                </IonGrid>
+                </AppGrid>
                 <LoginFooter />
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

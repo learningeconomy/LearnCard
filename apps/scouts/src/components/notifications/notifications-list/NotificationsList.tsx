@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 
-import { IonItem, IonList } from '@ionic/react';
 import * as m from '../../../paraglide/messages.js';
 
 import { Notification, NotificationProps } from '@learncard/react';
@@ -17,6 +16,7 @@ import {
 } from 'learn-card-base';
 import { useAddCredentialToWallet } from '../../boost/mutations';
 import { getLogger } from 'learn-card-base';
+import { AppItem, AppList } from 'learn-card-base/ui/list';
 const log = getLogger('notifications-list');
 
 export const NotificationItem: React.FC<{
@@ -63,6 +63,7 @@ export const NotificationItem: React.FC<{
                     },
                 }
             );
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
         } catch (err: any) {
             log.debug('acceptCredential::error', err?.message);
         }
@@ -88,7 +89,7 @@ export const NotificationItem: React.FC<{
     }, []);
 
     return (
-        <IonItem
+        <AppItem
             lines="none"
             className="w-full max-w-3xl mb-2 mt-2 p-0 shadow-3xl rounded-3xl notificaion-list-item"
         >
@@ -102,7 +103,7 @@ export const NotificationItem: React.FC<{
                 claimStatus={isClaimed}
                 loadingState={isLoading}
             />
-        </IonItem>
+        </AppItem>
     );
 };
 
@@ -115,12 +116,12 @@ export const NotificationsList: React.FC<{
     ));
 
     return (
-        <IonList
+        <AppList
             lines="none"
             className="flex flex-col items-center justify-center px-2 w-[90%] max-w-[600px] pt-4"
         >
             {notificationItems}
-        </IonList>
+        </AppList>
     );
 };
 

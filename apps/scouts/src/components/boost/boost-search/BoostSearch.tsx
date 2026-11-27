@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { IonCol, IonContent, IonRow, IonGrid, IonToolbar, IonHeader, IonInput } from '@ionic/react';
 
 import useTroopMembers from '../../../hooks/useTroopMembers';
 import useNetworkMembers from '../../../hooks/useNetworkMembers';
@@ -25,17 +24,21 @@ import { MemberTabsEnum } from '../../../pages/troop/TroopPageMembersBox';
 import { getLogger } from 'learn-card-base';
 import * as m from '../../../paraglide/messages.js';
 import { formatLocaleCount } from '../../../i18n/formatters';
+import { AppContent, AppHeader, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 const log = getLogger('boost-search');
 
 type BoostSearchProps = {
     handleCloseModal: () => void;
     showCloseButton?: boolean;
-    title?: String | React.ReactNode;
+    title?: string | React.ReactNode;
     boostCredential: VC | UnsignedVC;
     boostUri: string;
     profileId: string;
     state: ShortBoostState; //parent state storing issued to
     setState: React.Dispatch<React.SetStateAction<ShortBoostState>>; // action for setting parent state
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     history: any;
 
     preserveStateIssueTo?: boolean;
@@ -69,6 +72,7 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
     const isNetworkAdmin = role === ScoutsRoleEnum.national;
 
     const { scoutRecipients: rawScouts, isLoading: scoutsLoading } = useTroopMembers(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
         contextCredential as any,
         MemberTabsEnum.Scouts,
         parentBoostUri
@@ -165,6 +169,7 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
 
     if (!ignoreBoostSearchRestriction) {
         if (isTroopLeader) {
+            // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
             contactCount = scouts?.length ?? 0;
             showInitialLoading = scoutsLoading;
             showConnectionsList = (scouts?.length ?? 0) > 0;
@@ -183,6 +188,7 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
             connectionsToShow = scouts ?? [];
         }
         if (isNetworkAdmin) {
+            // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
             contactCount = networkMembers?.length ?? 0;
             showInitialLoading = networkLoading;
             showConnectionsList = (networkMembers?.length ?? 0) > 0;
@@ -206,12 +212,12 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
 
     return (
         <section className="bg-white min-h-[700px] h-full text-grayscale-900">
-            <IonHeader className="learn-card-header ion-no-border my-[0px]">
-                <IonToolbar className="ion-no-border bg-white " color="white">
-                    <IonGrid className="bg-white">
-                        <IonRow className="w-full flex items-center justify-center pt-[20px]">
-                            <IonRow className="flex flex-col w-full max-w-[600px]">
-                                <IonCol className="flex flex-1 justify-start items-center">
+            <AppHeader className="learn-card-header ion-no-border my-[0px]">
+                <AppToolbar className="ion-no-border bg-white " color="white">
+                    <AppGrid className="bg-white">
+                        <AppRow className="w-full flex items-center justify-center pt-[20px]">
+                            <AppRow className="flex flex-col w-full max-w-[600px]">
+                                <AppCol className="flex flex-1 justify-start items-center">
                                     <button
                                         className="text-grayscale-50 p-0 mr-[10px]"
                                         onClick={() => {
@@ -225,24 +231,24 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
                                     <h3 className="text-grayscale-900 flex items-center justify-start text-2xl">
                                         {headerText}
                                     </h3>
-                                </IonCol>
+                                </AppCol>
 
                                 <div className="flex items-center justify-start w-full">
-                                    <IonInput
+                                    <AppInput
                                         autocapitalize="on"
                                         placeholder={searchPlaceholder}
                                         className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base"
-                                        onIonInput={e => handleSearch(e?.detail?.value)}
+                                        onValueInput={value => handleSearch(value)}
                                         debounce={150}
                                         type="text"
                                     />
                                 </div>
-                            </IonRow>
-                        </IonRow>
-                    </IonGrid>
-                </IonToolbar>
-            </IonHeader>
-            <IonContent className="h-full">
+                            </AppRow>
+                        </AppRow>
+                    </AppGrid>
+                </AppToolbar>
+            </AppHeader>
+            <AppContent className="h-full">
                 {showInitialLoading && (
                     <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full mt-[80px]">
                         <div className="max-w-[150px]">
@@ -306,20 +312,20 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
                     </section>
                 )}
                 <footer className="pb-[15px] bg-white fixed bottom-0 w-full" color="white">
-                    <IonRow className="w-full flex items-center justify-center">
+                    <AppRow className="w-full flex items-center justify-center">
                         <div className="w-full max-w-[600px] flex items-center justify-center">
-                            <IonCol size="12" className="w-full flex items-center justify-between">
+                            <AppCol size="12" className="w-full flex items-center justify-between">
                                 <button
                                     onClick={handleSaveContacts}
                                     className="relative flex flex-1 items-center justify-center bg-sp-purple-base rounded-full px-[18px] py-[8px] text-white text-2xl w-full shadow-lg text-center"
                                 >
                                     {m['common.save']()}
                                 </button>
-                            </IonCol>
+                            </AppCol>
                         </div>
-                    </IonRow>
+                    </AppRow>
                 </footer>
-            </IonContent>
+            </AppContent>
         </section>
     );
 };

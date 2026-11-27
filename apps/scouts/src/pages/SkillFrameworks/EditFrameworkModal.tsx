@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { withCompetencyAdmin } from './withCompetencyAdmin';
 import * as m from '../../paraglide/messages.js';
 import { useModal, useWallet, useImageUpload } from 'learn-card-base';
-import { IonInput } from '@ionic/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 // oxlint-disable-next-line no-unused-vars
 import { SkillFrameworkType } from '@learncard/types';
 import UploadIcon from 'learn-card-base/svgs/UploadIcon';
 import { getLogger } from 'learn-card-base';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 const log = getLogger('edit-framework-modal');
 
 type EditFrameworkModalProps = {
@@ -99,15 +99,15 @@ const EditFrameworkModal: React.FC<EditFrameworkModalProps> = ({ frameworkId }) 
                     </div>
                 ) : (
                     <>
-                        <IonInput
-                            onIonInput={e => setName(e.detail.value ?? '')}
+                        <AppInput
+                            onValueInput={value => setName(value ?? '')}
                             className="bg-grayscale-100 text-grayscale-800 rounded-[16px] py-[8px] px-[15px]! h-[40px]!"
                             placeholder={m['skillFrameworks.fwNameLabel']()}
                             value={name}
                         />
 
-                        <IonInput
-                            onIonInput={e => setDescription(e.detail.value ?? '')}
+                        <AppInput
+                            onValueInput={value => setDescription(value ?? '')}
                             className="bg-grayscale-100 text-grayscale-800 rounded-[16px] py-[8px] px-[15px]! h-[40px]!"
                             placeholder={m['skillFrameworks.descLabel']()}
                             value={description}

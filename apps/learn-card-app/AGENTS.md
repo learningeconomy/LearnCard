@@ -191,13 +191,9 @@ const page2 = await context2.newPage();
 | `consent-flow.spec.ts`       | ConsentFlow creation and acceptance                                                                 |
 | `connect.spec.ts`            | User connections                                                                                    |
 
-### Known Ionic Modal Gotchas
+### Modal Gotchas
 
-The app uses `useIonModal` (Ionic) in many components. These create phantom `ion-modal` DOM elements that:
-
-- Persist in the DOM with `show-modal` class even after dismiss
-- Set `aria-hidden="true"` on main content, blocking `getByRole` selectors
-- Intercept mouse events at the coordinate level, even with Playwright's `force: true`
+Modals are app-owned (`useAppOverlayModal` / `AppOverlayModal` in `learn-card-base/ui/overlays`). While a modal is open it sets `aria-hidden="true"` on the content behind it and its backdrop intercepts pointer events, so selectors and clicks aimed at the page underneath fail.
 
 **Workarounds for tests:**
 

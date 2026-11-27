@@ -1,18 +1,19 @@
 import React from 'react';
 import { HexColorPicker } from 'react-colorful';
 
-import { IonCol } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
 
 import { BoostCMSState } from '../../../boost';
 import { useModal, ModalTypes } from 'learn-card-base';
 import * as m from '../../../../../paraglide/messages.js';
+import { AppCol } from 'learn-card-base/ui/layout';
 
 const BoostIDCardFontForm: React.FC<{
     state: BoostCMSState;
     setState: React.Dispatch<React.SetStateAction<BoostCMSState>>;
     disabled?: boolean;
 }> = ({ state, setState, disabled = false }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     const handleStateChange = (propName: string, value: any) => {
         setState(prevState => {
             return {
@@ -63,11 +64,11 @@ const BoostIDCardFontForm: React.FC<{
 
     return (
         <>
-            <IonCol size="12" className="w-full bg-white flex items-center justify-between">
+            <AppCol size="12" className="w-full bg-white flex items-center justify-between">
                 <h3 className="text-grayscale-700 text-left w-full font-medium text-lg">
                     {m['boostCMS.fontColor']()}
                 </h3>
-            </IonCol>
+            </AppCol>
 
             <div className="w-full flex items-center justify-center p-0 m-0 mt-2">
                 <div className="relative w-full flex items-center justify-between">

@@ -66,6 +66,7 @@
         "crypto-js": "^4.2.0",
         "date-fns": "^4.1.0",
         "firebase": "12.8.0",
+        "history": "4.10.1",
         "immer": "^10.1.1",
         "ionicons": "8.0.13",
         "json-stringify-deterministic": "^1.0.12",

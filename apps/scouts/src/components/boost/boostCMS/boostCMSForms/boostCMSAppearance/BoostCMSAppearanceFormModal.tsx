@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
 
-import { IonPage, IonContent, IonGrid } from '@ionic/react';
 import { BoostUserTypeEnum } from '../../../boost-options/boostOptions';
 
 import BoostCMSAppearanceBadgeList from './BoostCMSAppearanceBadgeList';
@@ -11,6 +10,8 @@ import { BoostCMSState } from '../../../boost';
 
 import BoostCMSAppearanceForm from './BoostCMSAppearanceForm';
 import BoostCMSAppearanceFormHeader from './BoostCMSAppearanceFormHeader';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppGrid } from 'learn-card-base/ui/layout';
 
 export enum BoostCMSActiveAppearanceForm {
     appearanceForm = 'appearanceForm',
@@ -24,7 +25,9 @@ const BoostCMSAppearanceFormModal: React.FC<{
     showCloseButton: boolean;
     handleCloseModal: () => void;
     boostUserType: BoostUserTypeEnum;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     customTypes: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     setCustomTypes: React.Dispatch<any>;
     errors?: Record<string, string[]>;
     disabled?: boolean;
@@ -62,14 +65,16 @@ const BoostCMSAppearanceFormModal: React.FC<{
         });
     };
 
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let activeFormEl = null;
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let formBackgroundColor: string = '';
 
     if (activeForm === BoostCMSActiveAppearanceForm.badgeForm) {
         formBackgroundColor = '#FFFFFF'; // white
 
         activeFormEl = (
-            <IonGrid
+            <AppGrid
                 className="w-full h-full ion-no-padding flex justify-center items-start"
                 style={{
                     backgroundColor: formBackgroundColor,
@@ -83,7 +88,7 @@ const BoostCMSAppearanceFormModal: React.FC<{
                     boostUserType={boostUserType}
                     setActiveForm={setActiveForm}
                 />
-            </IonGrid>
+            </AppGrid>
         );
     } else {
         activeFormEl = (
@@ -100,7 +105,7 @@ const BoostCMSAppearanceFormModal: React.FC<{
     }
 
     return (
-        <IonPage>
+        <AppPage>
             <BoostCMSAppearanceFormHeader
                 state={appearanceFormState}
                 setState={setAppearanceFormState}
@@ -116,8 +121,8 @@ const BoostCMSAppearanceFormModal: React.FC<{
                 setActiveForm={setActiveForm}
                 handleSaveAppearance={handleSaveAppearance}
             />
-            <IonContent fullscreen>{activeFormEl}</IonContent>
-        </IonPage>
+            <AppContent fullscreen>{activeFormEl}</AppContent>
+        </AppPage>
     );
 };
 

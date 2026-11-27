@@ -3,7 +3,6 @@ import { Badge } from '@capawesome/capacitor-badge';
 import { Capacitor } from '@capacitor/core';
 import { useHistory } from 'react-router-dom';
 
-import { IonCol, IonGrid, IonRow } from '@ionic/react';
 import * as m from '../../../paraglide/messages.js';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import X from 'learn-card-base/svgs/X';
@@ -19,6 +18,7 @@ import {
     useWallet,
 } from 'learn-card-base';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 
 export const NotificationsSubHeader: React.FC<{
     notificationCount: number;
@@ -99,8 +99,8 @@ export const NotificationsSubHeader: React.FC<{
 
     return (
         <div>
-            <IonGrid className="w-full flex items-center justify-center px-3">
-                <IonRow className="w-full max-w-[600px]">
+            <AppGrid className="w-full flex items-center justify-center px-3">
+                <AppRow className="w-full max-w-[600px]">
                     <button
                         className="text-grayscale-50 p-0 mr-[2px] flex items-center justify-start"
                         onClick={() => {
@@ -114,7 +114,7 @@ export const NotificationsSubHeader: React.FC<{
                         </span>
                     </button>
 
-                    {/* <IonCol size="6" className="flex justify-end items-center">
+                    {/* <AppCol size="6" className="flex justify-end items-center">
                     <button
                         type="button"
                         className="flex justify-center items-center rounded-full text-grayscale-900 bg-grayscale-100 h-11 w-11 mr-1"
@@ -127,16 +127,16 @@ export const NotificationsSubHeader: React.FC<{
                     >
                         <Settings className="h-6 w-auto" />
                     </button>
-                </IonCol> */}
-                    <IonCol size="12">
+                </AppCol> */}
+                    <AppCol size="12">
                         <p className="font-light text-grayscale-600">
                             {/* All Notifications &bull;{' '}
                             <span className="text-indigo-600 text-sm font-bold">
                                 {notificationCount} Unclaimed
                             </span> */}
                         </p>
-                    </IonCol>
-                </IonRow>
+                    </AppCol>
+                </AppRow>
                 {!isEmptyState && (
                     <button
                         onClick={handleMarkAllRead}
@@ -146,10 +146,10 @@ export const NotificationsSubHeader: React.FC<{
                         <X className="ml-[5px] w-[15px] h-[15px]" />
                     </button>
                 )}
-            </IonGrid>
+            </AppGrid>
             <div className="w-full flex items-center justify-center px-3">
-                <IonRow class="w-full max-w-[600px]">
-                    <IonCol className="flex items-center justify-start w-full">
+                <AppRow className="w-full max-w-[600px]">
+                    <AppCol className="flex items-center justify-start w-full">
                         <button
                             onClick={() => {
                                 setTab('active');
@@ -178,8 +178,8 @@ export const NotificationsSubHeader: React.FC<{
                                   })
                                 : m['notifications.archived']()}
                         </button>
-                    </IonCol>
-                </IonRow>
+                    </AppCol>
+                </AppRow>
             </div>
         </div>
     );

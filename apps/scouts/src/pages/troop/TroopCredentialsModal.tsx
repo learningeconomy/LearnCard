@@ -16,10 +16,11 @@ import BoostManagedChildrenList from '../../components/boost/boost-managed-card/
 import NewBoostSelectMenu from '../../components/boost/boost-select-menu/NewBoostSelectMenuOld';
 import { BlueBoostOutline2 } from 'learn-card-base/svgs/BoostOutline2';
 import { PurpleMeritBadgesIcon } from 'learn-card-base/svgs/MeritBadgesIcon';
-import { IonRow, IonCol, IonInput } from '@ionic/react';
 import * as m from '../../paraglide/messages.js';
 import { selectLocalePlural } from '../../i18n/formatters';
 import { getLogger } from 'learn-card-base';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 const log = getLogger('troop-credentials-modal');
 
 type TroopCredentialsModalProps = {
@@ -162,14 +163,14 @@ const TroopCredentialsModal: React.FC<TroopCredentialsModalProps> = ({
             </h1>
             <section className="bg-grayscale-100 flex-1 min-h-0 w-full flex flex-col items-center">
                 <div className="flex shrink-0 items-center justify-between w-full max-w-[600px] px-[15px] pb-[8px]">
-                    <IonRow class="w-full max-w-[600px] mt-6 ion-no-padding">
-                        <IonCol className="flex w-full items-center justify-start ion-no-padding gap-[10px]">
-                            <IonInput
+                    <AppRow className="w-full max-w-[600px] mt-6 ion-no-padding">
+                        <AppCol className="flex w-full items-center justify-start ion-no-padding gap-[10px]">
+                            <AppInput
                                 autocapitalize="on"
                                 placeholder={m['troops.membersList.searchPlaceholder']()}
                                 value={search}
                                 className="bg-white text-grayscale-800 px-4! py-1! rounded-[15px] text-[17px] font-notoSans"
-                                onIonInput={e => setSearch(e?.detail?.value)}
+                                onValueInput={value => setSearch(value)}
                                 type="text"
                                 clearInput
                             />
@@ -181,8 +182,8 @@ const TroopCredentialsModal: React.FC<TroopCredentialsModalProps> = ({
                                     <Plus className="h-[25px] w-[25px] text-white" />
                                 </button>
                             )}
-                        </IonCol>
-                    </IonRow>
+                        </AppCol>
+                    </AppRow>
                 </div>
                 <div
                     className="lc-content-owns-bottom lc-scroll-to-edge relative flex-1 min-h-0 w-full overflow-y-auto [&>ion-grid]:pt-0"

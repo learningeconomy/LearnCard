@@ -12,7 +12,6 @@ import {
     useSearchFrameworkSkills,
 } from 'learn-card-base';
 
-import { IonPage, IonSpinner } from '@ionic/react';
 import ManageSkills from './ManageSkills';
 import FrameworkColumn from './FrameworkColumn';
 import ViewAlignmentInfo from './ViewAlignmentInfo';
@@ -40,6 +39,8 @@ import {
 import { SetState } from 'packages/shared-types/dist';
 import * as m from '../../paraglide/messages.js';
 import { getLogger } from 'learn-card-base';
+import { AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 const log = getLogger('browse-framework-page');
 
 type BrowseFrameworkPageProps = {
@@ -935,7 +936,7 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
     const useShortText = pageWidth < 989;
 
     return (
-        <IonPage ref={pageRef} className="bg-white text-grayscale-900">
+        <AppPage ref={pageRef} className="bg-white text-grayscale-900">
             {maxColumns > 1 && (
                 <BrowseFrameworkMultiColumnHeader
                     handleBack={handleBack}
@@ -967,7 +968,7 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
 
             {isLoading && !isFullSkillFramework ? (
                 <div className="w-full h-full flex items-center justify-center">
-                    <IonSpinner name="crescent" />
+                    <AppSpinner name="crescent" />
                 </div>
             ) : (
                 <div className="flex w-full relative h-full overflow-y-hidden">
@@ -1003,7 +1004,7 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
                     )}
                 </div>
             )}
-        </IonPage>
+        </AppPage>
     );
 };
 

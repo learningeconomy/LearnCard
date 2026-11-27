@@ -4,7 +4,6 @@ import { getVCDisplayCardVariant } from '@learncard/react';
 import { useIsLoggedIn } from 'learn-card-base/stores/currentUserStore';
 import { useClaimCredential, BrandingEnum } from 'learn-card-base';
 import useFirebaseAnalytics from '../../../hooks/useFirebaseAnalytics';
-import { IonContent, IonRow, IonSpinner, IonPage, IonFooter } from '@ionic/react';
 
 import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
@@ -20,6 +19,9 @@ import {
 } from 'learn-card-base/helpers/credentialHelpers';
 import { useHighlightedCredentials } from '../../../hooks/useHighlightedCredentials';
 import { getRoleFromCred, getScoutsNounForRole } from '../../../helpers/troop.helpers';
+import { AppContent, AppFooter, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { AppRow } from 'learn-card-base/ui/layout';
 
 type BoostClaimCardProps = {
     credential: VC | VP | undefined;
@@ -113,12 +115,12 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     }
 
     return (
-        <IonPage>
-            <IonContent
+        <AppPage>
+            <AppContent
                 fullscreen
                 className={`flex items-center justify-center ion-padding boost-cms-preview transition-colors [&::part(scroll)]:px-0 gradient-mask-b-80`}
             >
-                <IonRow
+                <AppRow
                     className={`flex flex-col items-center justify-center overflow-x-auto safe-area-top-margin pb-32 ${
                         shouldUseHostCardPadding ? 'px-6' : ''
                     }`}
@@ -158,20 +160,20 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                                 <section className="flex overflow-hidden flex-col items-center justify-between relative max-w-[400px] h-full max-h-[600px] min-h-[600px] p-7 w-full rounded-3xl shadow-3xl bg-white vc-display-card-full-container">
                                     <div className="w-full grow h-full flex items-center justify-center bg-white">
                                         <section className="loading-spinner-container flex flex-col items-center justify-center h-full w-full opacity-50 ">
-                                            <IonSpinner color="dark" />
+                                            <AppSpinner color="dark" />
                                         </section>
                                     </div>
                                 </section>
                             </section>
                         )}
                     </section>
-                </IonRow>
-            </IonContent>
-            <IonFooter
+                </AppRow>
+            </AppContent>
+            <AppFooter
                 mode="ios"
                 className="w-full flex justify-center items-center ion-no-border absolute bottom-0"
             >
-                <IonRow className="relative z-10 w-full flex flex-nowrap justify-center items-center gap-4">
+                <AppRow className="relative z-10 w-full flex flex-nowrap justify-center items-center gap-4">
                     <BoostFooter
                         handleClose={() => {
                             handleDismiss({ redirectToLogin: true });
@@ -194,9 +196,9 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                         }}
                         claimBtnText={claimStatusText}
                     />
-                </IonRow>
-            </IonFooter>
-        </IonPage>
+                </AppRow>
+            </AppFooter>
+        </AppPage>
     );
 };
 

@@ -1,14 +1,15 @@
 import * as m from '../../paraglide/messages.js';
 import React from 'react';
 import { ModalTypes, useModal } from 'learn-card-base';
-import { IonFooter } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
 import ShareModal from '../share/ShareModal';
 import { useCheckIfUserInNetwork } from '../network-prompts/hooks/useCheckIfUserInNetwork';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 type ScoutPassFooterProps = {
     hideShare?: boolean;
     buttonText?: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     icon?: any;
     buttonAction?: () => void;
 };
@@ -33,7 +34,7 @@ const ScoutPassFooter: React.FC<ScoutPassFooterProps> = ({
     };
 
     return (
-        <IonFooter
+        <AppFooter
             mode="ios"
             className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 bg-white/60 max-h-[100px]!"
         >
@@ -66,7 +67,7 @@ const ScoutPassFooter: React.FC<ScoutPassFooterProps> = ({
                     )}
                 </div>
             </div>
-        </IonFooter>
+        </AppFooter>
     );
 };
 

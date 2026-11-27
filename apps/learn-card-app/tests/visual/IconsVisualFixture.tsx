@@ -1,5 +1,4 @@
 import React from 'react';
-import { IonApp } from '@ionic/react';
 import { AppCard, AppCardContent, AppFabButton } from 'learn-card-base/ui/widgets';
 import { AppIcon } from 'learn-card-base/ui/icon';
 import {
@@ -80,9 +79,6 @@ const SHAPES: [string, string][] = [
 
 export const IconsVisualFixture: React.FC = () => (
     <main className="flex flex-col items-center gap-6 p-4">
-        {/* IonApp starts Ionic's tap-click / focus utilities, as the app's root IonApp does. */}
-        <IonApp style={{ display: 'none' }} aria-hidden="true" />
-
         <Block testId="i1-shapes" title="Icon shapes (synthetic)">
             <div className="flex flex-wrap gap-2">
                 {SHAPES.map(([name, icon]) => (

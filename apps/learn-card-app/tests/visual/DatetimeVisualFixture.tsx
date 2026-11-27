@@ -1,6 +1,6 @@
 import React, { useCallback, useRef, useState } from 'react';
 import moment from 'moment';
-import { IonApp } from '@ionic/react';
+import { AppRoot } from 'learn-card-base/ui/app-shell/AppRoot';
 import { AppButton } from 'learn-card-base/ui/controls/AppButton';
 import { AppButtons } from 'learn-card-base/ui/controls/AppButtons';
 import AppDatetime, { type AppDatetimeHandle } from 'learn-card-base/ui/datetime/AppDatetime';
@@ -337,8 +337,8 @@ const FixtureBody: React.FC = () => {
 };
 
 export const DatetimeVisualFixture: React.FC = () => (
-    <IonApp>
+    <AppRoot>
         <FixtureBody />
         <AppOverlayManager />
-    </IonApp>
+    </AppRoot>
 );

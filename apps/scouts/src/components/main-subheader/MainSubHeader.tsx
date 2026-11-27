@@ -5,7 +5,6 @@ import * as m from '../../paraglide/messages.js';
 
 import useBoostModal from '../boost/hooks/useBoostModal';
 
-import { IonRow, IonCol, IonSpinner } from '@ionic/react';
 import Plus from 'learn-card-base/svgs/Plus';
 import { BlueBoostOutline2 } from 'learn-card-base/svgs/BoostOutline2';
 import { GreenScoutsPledge2 } from 'learn-card-base/svgs/ScoutsPledge2';
@@ -21,6 +20,8 @@ import {
     getScoutPassSubheaderDisplayCopy,
     isScoutPassCategorySubheader,
 } from './scoutPassSubheaderCopy';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 const formatCount = (count: number | string): string => {
     if (typeof count === 'string') return count;
@@ -117,8 +118,8 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
     };
 
     return (
-        <IonRow className="max-w-[700px] mx-auto p-0">
-            <IonCol
+        <AppRow className="max-w-[700px] mx-auto p-0">
+            <AppCol
                 size={plusButtonOverride ? '9' : '10'}
                 className="flex items-center justify-start gap-[5px] pl-0"
             >
@@ -130,7 +131,7 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
                 >
                     <span className="font-notoSans text-[22px] leading-[130%] tracking-[-0.25px] flex items-center">
                         {countLoading && (
-                            <IonSpinner
+                            <AppSpinner
                                 name="crescent"
                                 className="text-white w-[20px] h-[20px] mr-[5px]"
                             />
@@ -147,9 +148,9 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
                         </button>
                     </span>
                 </h2>
-            </IonCol>
+            </AppCol>
 
-            <IonCol
+            <AppCol
                 size={plusButtonOverride ? '3' : '2'}
                 className="flex items-center justify-end p-0 ml-auto"
             >
@@ -164,8 +165,8 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
                         <Plus className={`h-[20px] w-[20px] ${iconColor}`} />
                     </button>
                 )}
-            </IonCol>
-        </IonRow>
+            </AppCol>
+        </AppRow>
     );
 };
 

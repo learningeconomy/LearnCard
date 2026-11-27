@@ -4,16 +4,6 @@ import Lottie from 'react-lottie-player';
 
 import useGoogle from 'react-google-autocomplete/lib/usePlacesAutocompleteService';
 
-import {
-    IonCol,
-    IonContent,
-    IonGrid,
-    IonHeader,
-    IonInput,
-    IonPage,
-    IonRow,
-    IonToolbar,
-} from '@ionic/react';
 import GoogleLogo from 'learn-card-base/assets/images/google-logo.png';
 import X from 'learn-card-base/svgs/X';
 
@@ -22,6 +12,9 @@ import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinne
 import { useObservabilityConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import { AddressSpec, formatLocationObject } from './location.helpers';
+import { AppContent, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 
 const LocationSearch: React.FC<{
     showCloseButton?: boolean;
@@ -61,39 +54,39 @@ const LocationSearch: React.FC<{
             placePredictions.length === 0);
 
     return (
-        <IonPage className="bg-white">
-            <IonHeader className="learn-card-header ion-no-border my-[0px]">
-                <IonToolbar className="ion-no-border bg-white " color="white">
-                    <IonGrid className="bg-white">
-                        <IonRow className="w-full flex items-center justify-center">
-                            <IonRow className="flex flex-col w-full max-w-[600px]">
+        <AppPage className="bg-white">
+            <AppHeader className="learn-card-header ion-no-border my-[0px]">
+                <AppToolbar className="ion-no-border bg-white " color="white">
+                    <AppGrid className="bg-white">
+                        <AppRow className="w-full flex items-center justify-center">
+                            <AppRow className="flex flex-col w-full max-w-[600px]">
                                 {showCloseButton && (
-                                    <IonCol className="flex flex-1 justify-end items-center">
+                                    <AppCol className="flex flex-1 justify-end items-center">
                                         <button onClick={handleCloseModal}>
                                             <X className="text-grayscale-600 h-6 w-6" />
                                         </button>
-                                    </IonCol>
+                                    </AppCol>
                                 )}
 
                                 <div className="flex items-center justify-start w-full mt-4">
-                                    <IonInput
+                                    <AppInput
                                         autocapitalize="on"
                                         placeholder={m['auth.locPlace']()}
                                         value={locationSearch}
                                         className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base"
-                                        onIonInput={e => {
-                                            setLocationSearch(e?.detail?.value);
-                                            getPlacePredictions({ input: e?.detail?.value });
+                                        onValueInput={value => {
+                                            setLocationSearch(value);
+                                            getPlacePredictions({ input: value });
                                         }}
                                         type="text"
                                     />
                                 </div>
-                            </IonRow>
-                        </IonRow>
-                    </IonGrid>
-                </IonToolbar>
-            </IonHeader>
-            <IonContent fullscreen>
+                            </AppRow>
+                        </AppRow>
+                    </AppGrid>
+                </AppToolbar>
+            </AppHeader>
+            <AppContent fullscreen>
                 <section className="relative flex flex-col items-center justify-center w-full">
                     <ul className="flex flex-col items-start justify-center w-full max-w-[600px]">
                         {isPlacePredictionsLoading && (
@@ -140,8 +133,8 @@ const LocationSearch: React.FC<{
                 <div className="absolute bottom-[5px] right-[15px] flex items-center justify-center text-grayscale-500">
                     {m['auth.poweredBy']()} <img src={GoogleLogo} className="ml-1 h-[20px]" />
                 </div>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

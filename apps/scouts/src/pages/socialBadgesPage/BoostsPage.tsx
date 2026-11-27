@@ -4,11 +4,11 @@ import { ErrorBoundary } from 'react-error-boundary';
 
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
 
-import { IonContent, IonPage } from '@ionic/react';
 import MainHeader from '../../components/main-header/MainHeader';
 import BoostEarnedList from '../../components/boost/boost-earned-card/BoostEarnedList';
 import BoostManagedList from '../../components/boost/boost-managed-card/BoostManagedList';
 import NewBoostSelectMenu from '../../components/boost/boost-select-menu/NewBoostSelectMenu';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
 // @ts-ignore
 import EmptySocialBoostIcon from '../../assets/images/emptySocialBoost.svg';
 import Plus from '../../components/svgs/Plus';
@@ -41,6 +41,7 @@ import {
     SubheaderTypeEnum,
 } from '../../components/main-subheader/MainSubHeader.types';
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const BoostsPage: React.FC = () => {
     const { newModal, closeModal } = useModal({
@@ -133,13 +134,14 @@ const BoostsPage: React.FC = () => {
         category: BoostCategoryOptionsEnum.socialBadge as unknown as CredentialCategoryEnum,
         title: m['skills.listTitle'](),
         bgFillerColor: '!bg-sp-blue-light-ocean',
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
         emptyImg: EmptySocialBoostIcon as any,
         emptyMessage: m['skills.emptyBoosts'](),
         emptyMessageStyle: 'text-[#03748D] -mt-4',
     };
 
     return (
-        <IonPage className="bg-sp-blue-ocean">
+        <AppPage className="bg-sp-blue-ocean">
             <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
                 <MainHeader
                     showBackButton
@@ -170,7 +172,7 @@ const BoostsPage: React.FC = () => {
                     )}
                 </MainHeader>
 
-                <IonContent
+                <AppContent
                     fullscreen
                     className="relative bg-[#3FBDD9]"
                     color="sp-blue-light-ocean"
@@ -181,9 +183,9 @@ const BoostsPage: React.FC = () => {
                     {activeTab === CredentialListTabEnum.Managed && (
                         <BoostManagedList {...listProps} />
                     )}
-                </IonContent>
+                </AppContent>
             </ErrorBoundary>
-        </IonPage>
+        </AppPage>
     );
 };
 

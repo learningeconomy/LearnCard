@@ -4,7 +4,6 @@ import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useLoadingLine } from '../../stores/loadingStore';
 
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
-import { IonContent, IonPage } from '@ionic/react';
 import { ErrorBoundary } from 'react-error-boundary';
 import MainHeader from '../../components/main-header/MainHeader';
 import BoostEarnedIDListAlternative from '../../components/boost/boost-earned-card/BoostEarnedIDListAlternative';
@@ -37,6 +36,7 @@ import {
 } from '../../components/main-subheader/MainSubHeader.types';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import { useSyncMembershipHighlights } from '../../hooks/useSyncMembershipHighlights';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const WAITLIST_FORM_LINK = 'https://r18y4ggjlxv.typeform.com/to/TKCrkKW5';
 
@@ -152,7 +152,7 @@ const MembershipPage: React.FC = () => {
     const idCount = earnedBoostIDs?.length;
 
     return (
-        <IonPage className="bg-sp-green-forest-light">
+        <AppPage className="bg-sp-green-forest-light">
             <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
                 <MainHeader
                     showBackButton
@@ -165,7 +165,7 @@ const MembershipPage: React.FC = () => {
                     countLoading={earnedBoostIDsLoading}
                 />
 
-                <IonContent fullscreen color="sp-green-forest-light">
+                <AppContent fullscreen color="sp-green-forest-light">
                     <div className="w-full flex items-center justify-center mt-8">
                         {/* <BoostEarnedIDList {...listProps} /> */}
 
@@ -175,9 +175,9 @@ const MembershipPage: React.FC = () => {
                         */}
                         <BoostEarnedIDListAlternative {...listProps} />
                     </div>
-                </IonContent>
+                </AppContent>
             </ErrorBoundary>
-        </IonPage>
+        </AppPage>
     );
 };
 

@@ -7,7 +7,6 @@ import useHighlightedCredentials from 'apps/scouts/src/hooks/useHighlightedCrede
 import { BlueBoostOutline2 } from 'learn-card-base/svgs/BoostOutline2';
 import { PurpleMeritBadgesIcon } from 'learn-card-base/svgs/MeritBadgesIcon';
 import { ContactButton } from 'learn-card-base/svgs/ContactButton';
-import { IonSpinner } from '@ionic/react';
 import {
     useModal,
     CredentialCategoryEnum,
@@ -17,6 +16,7 @@ import {
 } from 'learn-card-base';
 import { VC } from '@learncard/types';
 import * as m from '../../../paraglide/messages.js';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type AddressBookContactItemButtonProps = {
     troopTypes: Record<string, { label: string; icon: JSX.Element }>;
@@ -101,7 +101,7 @@ export const AddressBookContactItemButton: React.FC<AddressBookContactItemButton
 
     if (isLoading && !isInitialized) {
         return (
-            <IonSpinner
+            <AppSpinner
                 name="crescent"
                 color="dark"
                 className="scale-[1] flex items-center justify-end w-1/5"

@@ -5,16 +5,6 @@ import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { getVCDisplayCardVariant } from '@learncard/react';
 
-import {
-    useIonAlert,
-    IonContent,
-    IonPage,
-    IonHeader,
-    IonToolbar,
-    IonFooter,
-    IonRow,
-} from '@ionic/react';
-
 import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 import MainHeader from '../main-header/MainHeader';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
@@ -37,6 +27,9 @@ import { VC, VerificationItem, VP } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
 import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
+import { AppContent, AppFooter, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppRow } from 'learn-card-base/ui/layout';
+import { useAppAlert } from 'learn-card-base/ui/overlays';
 const log = getLogger('view-shared-boost');
 
 const ViewSharedBoost: React.FC = () => {
@@ -51,13 +44,16 @@ const ViewSharedBoost: React.FC = () => {
     const [tryRefetch, setTryRefetch] = useState(false);
     const [loading, setLoading] = useState<boolean>(true);
 
-    const [presentAlert] = useIonAlert();
+    const [presentAlert] = useAppAlert();
 
     const [boost, setBoost] = useState<VC | undefined>();
     const [category, setCategory] = useState<string>('');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     const [wallet, setWallet] = useState<any>();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     const isTroopId = isTroopCredential(boost as any);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     const issueeDid = (boost as any)?.credentialSubject?.id;
     const issueeProfileId = getUserHandleFromDid(issueeDid ?? '');
     const { data: issueeProfile } = useGetProfile(issueeProfileId);
@@ -73,6 +69,7 @@ const ViewSharedBoost: React.FC = () => {
                 handleCloseModal={() => closeModal()}
                 mode={SharedBoostVerificationBlockViewMode.modal}
                 verificationItems={verificationItems}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 boost={boost as any}
             />
         );
@@ -90,6 +87,7 @@ const ViewSharedBoost: React.FC = () => {
             const resolvedVc = await wallet.read.get(uri);
 
             const verifications = await wallet?.invoke?.verifyCredential(
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 resolvedVc?.verifiableCredential as any,
                 {},
                 true
@@ -102,9 +100,12 @@ const ViewSharedBoost: React.FC = () => {
             setVC(resolvedVc);
             if (resolvedVc?.verifiableCredential) {
                 // From array of credentials, sort them by type
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 const unwrappedVc = unwrapBoostCredential(resolvedVc.verifiableCredential as any);
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 const category = getDefaultCategoryForCredential(unwrappedVc as any);
 
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 setBoost(unwrappedVc as any);
                 setCategory(category);
             }
@@ -136,6 +137,7 @@ const ViewSharedBoost: React.FC = () => {
                 ],
             });
 
+            // eslint-disable-next-line preserve-caught-error -- adding { cause } changes the shape of the thrown error
             throw new Error(`Error fetching credential: ${e}`);
         }
     };
@@ -158,6 +160,7 @@ const ViewSharedBoost: React.FC = () => {
 
     const redirectHome = () => history.push('/');
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     const troopBackgroundStyles = getWallpaperBackgroundStyles(undefined, boost as any);
     const isRibbonDisplayCard = boost && getVCDisplayCardVariant(boost, category) === 'ribbon';
     let previewHorizontalPaddingClass = 'px-[32px]';
@@ -172,13 +175,16 @@ const ViewSharedBoost: React.FC = () => {
         <ViewTroopIdTemplate
             idMainText={issueeProfile?.displayName}
             idThumb={issueeProfile?.image}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
             credential={boost as any}
         />
     ) : (
         <div className="w-full max-w-[335px] mx-auto pt-[80px] pb-[120px]">
             <TroopIdDetails
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 credential={boost as any}
                 verificationItems={verificationItems}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 boostUri={(boost as any)?.boostId}
                 //profileId={current user profile id?}
             />
@@ -186,10 +192,10 @@ const ViewSharedBoost: React.FC = () => {
     );
 
     return (
-        <IonPage>
+        <AppPage>
             {!isLoggedIn && (
-                <IonHeader color="light">
-                    <IonToolbar className="flex">
+                <AppHeader color="light">
+                    <AppToolbar className="flex">
                         <div className="flex justify-between items-center pl-[10px] pr-[10px] py-3 w-full relative">
                             <div className="cursor-pointer" onClick={redirectHome}>
                                 <HeaderBranding
@@ -215,15 +221,16 @@ const ViewSharedBoost: React.FC = () => {
                                 </button>
                             </div>
                         </div>
-                    </IonToolbar>
-                </IonHeader>
+                    </AppToolbar>
+                </AppHeader>
             )}
             {isLoggedIn && <MainHeader showSideMenuButton branding={BrandingEnum.scoutPass} />}
-            <IonContent fullscreen className="share-page">
+            <AppContent fullscreen className="share-page">
                 {/* verification block */}
                 {boost && wallet && !loading && (
                     <SharedBoostVerificationBlock
                         verificationItems={verificationItems}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                         boost={boost as any}
                     />
                 )}
@@ -246,6 +253,7 @@ const ViewSharedBoost: React.FC = () => {
                         <SharedBoostVerificationBlock
                             mode={SharedBoostVerificationBlockViewMode.mini}
                             verificationItems={verificationItems}
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                             boost={boost as any}
                             handleOnClick={presentVerificationModal}
                         />
@@ -254,6 +262,7 @@ const ViewSharedBoost: React.FC = () => {
                             troopIdComponent
                         ) : (
                             <VCDisplayCardWrapper2
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                                 credential={boost as any}
                                 lc={wallet}
                                 hideNavButtons
@@ -265,19 +274,19 @@ const ViewSharedBoost: React.FC = () => {
                         )}
                     </section>
                 )}
-                <IonFooter
+                <AppFooter
                     mode="ios"
                     className="w-full flex justify-center items-center ion-no-border absolute bottom-0"
                 >
-                    <IonRow className="relative z-10 w-full flex justify-center items-center gap-8">
+                    <AppRow className="relative z-10 w-full flex justify-center items-center gap-8">
                         <BoostFooter
                             handleDetails={isFront ? () => setIsFront(!isFront) : undefined}
                             handleBack={!isFront ? () => setIsFront(!isFront) : undefined}
                         />
-                    </IonRow>
-                </IonFooter>
-            </IonContent>
-        </IonPage>
+                    </AppRow>
+                </AppFooter>
+            </AppContent>
+        </AppPage>
     );
 };
 

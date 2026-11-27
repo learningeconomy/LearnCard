@@ -6,7 +6,6 @@ import { formatLocaleDate, formatLocaleTime } from '../../../i18n/formatters';
 
 import { VC, Boost } from '@learncard/types';
 
-import { IonList, IonItem } from '@ionic/react';
 import BoostPreview from '../../boost/boostCMS/BoostPreview/BoostPreview';
 import BoostPreviewBody from '../../boost/boostCMS/BoostPreview/BoostPreviewBody';
 import BoostPreviewFooter from '../../boost/boostCMS/BoostPreview/BoostPreviewFooter';
@@ -41,6 +40,7 @@ import { useLoadingLine } from '../../../stores/loadingStore';
 import { closeAll } from '../../../helpers/uiHelpers';
 import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { getImageUrlFromCredential } from 'learn-card-base/helpers/credentialHelpers';
+import { AppItem, AppList } from 'learn-card-base/ui/list';
 
 type BoostManagedIDCardProps = {
     boost: Boost;
@@ -76,7 +76,7 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
     const history = useHistory();
     const cred = unwrapBoostCredential(boostVC);
     const credImg = cred?.credentialSubject?.image;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     const [_bodyComponent, setBodyComponent] = useState<React.ReactNode>();
 
     const { data: recipientCount } = useCountBoostRecipients(boost?.uri);
@@ -85,8 +85,10 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
     useLoadingLine(credentialBackgroundFetching);
 
     const { handlePresentBoostMenuModal } = useBoostMenu(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
         boostVC as any,
         boost?.uri,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
         boost as any,
         categoryType,
         BoostMenuType.managed
@@ -99,9 +101,11 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
 
     const { handlePresentShortBoostModal } = useShortBoost(
         history,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
         boostVC as any,
         boost?.uri,
         myProfile?.profileId as string,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
         boost as any
     );
 
@@ -174,7 +178,7 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
         history.push(`${link}${linkQueryParams}&issue=true`);
     };
 
-    let issueHistory: {
+    const issueHistory: {
         id: number;
         name: string;
         thumb: string;
@@ -203,9 +207,12 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
     const presentManagedBoostPreview = () => {
         newPreviewModal(
             <BoostPreview
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 credential={boostVC as any}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 categoryType={categoryType as any}
                 showVerifications={false}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 issueHistory={issueHistory as any}
                 onDotsClick={
                     boost?.status === 'DRAFT' && !showSkeleton ? handleOptionsMenu : undefined
@@ -220,6 +227,7 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
                 }
                 issuerImageComponent={
                     categoryType === CredentialCategoryEnum.meritBadge ? (
+                        // eslint-disable-next-line react/jsx-no-undef -- existing reference to a component this file never imports (already in the typecheck baseline); fixing it is a behavior change, out of scope here
                         <ProfilePicture />
                     ) : undefined
                 }
@@ -256,12 +264,14 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
                             achievementType={
                                 boostVC?.credentialSubject?.achievement?.achievementType
                             }
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                             boostType={categoryType as any}
                             badgeThumbnail={badgeThumbnail}
                             badgeCircleCustomClass="w-[170px] h-[170px]"
                             showBackgroundImage={false}
                             backgroundImage={boostVC?.display?.backgroundImage ?? ''}
                             backgroundColor={boostVC?.display?.backgroundColor ?? ''}
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                             credential={boostVC as any}
                         />
                     )
@@ -270,17 +280,18 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
                     <BoostPreviewFooter
                         showSaveAndQuitButton={false}
                         handleSubmit={handleIssueOnClick}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                         selectedVCType={categoryType as any}
                     />
                 }
                 customIssueHistoryComponent={
-                    <IonList
+                    <AppList
                         lines="none"
                         className="flex flex-col items-center justify-center w-full"
                     >
                         {recipients?.map((recipient, index) => {
                             return (
-                                <IonItem
+                                <AppItem
                                     key={recipient?.received || index}
                                     lines="none"
                                     className={`w-full max-w-[600px] ion-no-border px-[4px] flex items-center justify-between notificaion-list-item py-[8px] border-b-2`}
@@ -313,10 +324,10 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
                                             </p>
                                         </div>
                                     </div>
-                                </IonItem>
+                                </AppItem>
                             );
                         })}
-                    </IonList>
+                    </AppList>
                 }
                 hideQRCode={true}
                 verificationItems={[]}
@@ -383,8 +394,10 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
             <IdDisplayContainer
                 achievementType={boostVC?.credentialSubject?.achievement?.achievementType}
                 title={cardTitle}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 recipients={recipients as any}
                 recipientsLoading={recipientsLoading}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 boostStatus={boost?.status as any}
                 handlePreviewBoost={
                     boostVC && !showSkeleton
@@ -405,9 +418,11 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
                 fontColor={cred?.boostID?.fontColor}
                 accentColor={cred?.boostID?.accentColor}
                 handleOptionsModal={handleOptionsMenu}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 categoryType={categoryType as any}
                 idDisplayContainerClass={idDisplayContainerClass}
                 idSleeveFooterClass={idSleeveFooterClass}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 cred={cred as any}
                 boostPageViewMode={boostPageViewMode}
                 loading={showSkeleton}

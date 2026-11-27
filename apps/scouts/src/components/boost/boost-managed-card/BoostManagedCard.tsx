@@ -1,7 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { VC, Boost } from '@learncard/types';
-import { IonCol } from '@ionic/react';
 import { BoostSmallCard } from '@learncard/react';
 import BoostPreviewBody from '../../boost/boostCMS/BoostPreview/BoostPreviewBody';
 import CredentialBadge from 'learn-card-base/components/CredentialBadge/CredentialBadge';
@@ -32,6 +31,7 @@ import BoostTextSkeleton, {
 
 import { PurpleMeritBadgesIcon } from 'learn-card-base/svgs/MeritBadgesIcon';
 import useManagedBoost from '../../../hooks/useManagedBoost';
+import { AppCol } from 'learn-card-base/ui/layout';
 
 type BoostManagedCardProps = {
     boost: Boost;
@@ -74,7 +74,7 @@ export const BoostManagedCardSkeleton: React.FC<BoostManagedCardSkeletonProps> =
     return (
         <ErrorBoundary fallback={<div>Something went wrong</div>}>
             {isCardView ? (
-                <IonCol
+                <AppCol
                     size="6"
                     size-sm={sizeSm}
                     size-md={sizeMd}
@@ -130,7 +130,7 @@ export const BoostManagedCardSkeleton: React.FC<BoostManagedCardSkeletonProps> =
                         }
                         type={type}
                     />
-                </IonCol>
+                </AppCol>
             ) : (
                 <BoostListItem
                     categoryType={categoryType}
@@ -386,7 +386,7 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
     return (
         <ErrorBoundary fallback={<div>{m['boost.somethingWentWrong']()}</div>}>
             {isCardView && (
-                <IonCol
+                <AppCol
                     size="6"
                     size-sm={sizeSm}
                     size-md={sizeMd}
@@ -461,7 +461,7 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
                         issueHistory={showSelectMenuPlusButton ? undefined : issueHistory}
                         type={type}
                     />
-                </IonCol>
+                </AppCol>
             )}
 
             {!isCardView && (

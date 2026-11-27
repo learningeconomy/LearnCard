@@ -4,18 +4,19 @@ import { Capacitor } from '@capacitor/core';
 import { Clipboard } from '@capacitor/clipboard';
 import { Share } from '@capacitor/share';
 
-import { IonSpinner } from '@ionic/react';
 import User from 'learn-card-base/svgs/User';
 import CopyStack from '../svgs/CopyStack';
 
 import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
 import { getLogger } from 'learn-card-base';
 import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 const log = getLogger('share-modal');
 
 const ShareModal: React.FC<{
     handleCloseModal: () => void;
     showCloseButton?: boolean;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     history?: any;
 }> = ({ handleCloseModal, showCloseButton = true, history }) => {
     const { initWallet } = useWallet();
@@ -135,7 +136,7 @@ const ShareModal: React.FC<{
                     <div className="w-[80%] flex justify-start items-center text-left">
                         {loading ? (
                             <>
-                                <IonSpinner
+                                <AppSpinner
                                     name="crescent"
                                     color="dark"
                                     className="scale-[1] mr-1"

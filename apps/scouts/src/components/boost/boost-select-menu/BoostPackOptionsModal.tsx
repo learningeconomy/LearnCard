@@ -1,5 +1,4 @@
 import React, { useMemo, useCallback, useState } from 'react';
-import { IonCol, IonInput, IonRow } from '@ionic/react';
 import { VC } from '@learncard/types';
 import {
     BoostCategoryOptionsEnum,
@@ -26,6 +25,8 @@ import useGetTroopNetwork from '../../hooks/useGetTroopNetwork';
 import { selectLocalePlural } from '../../../i18n/formatters';
 import { getLocalizedBoostPackTypeTitle } from './boostPackCopy';
 import { useLocale } from '../../../i18n';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 export const BoostPackOptionsModal: React.FC<{
     boostPackSelected: BadgePackOption;
@@ -95,19 +96,19 @@ export const BoostPackOptionsModal: React.FC<{
             </header>
 
             <div className="flex flex-col items-center justify-between w-full bg-grayscale-100 rounded-t-[20px]">
-                <IonRow class="w-full ion-padding mt-2">
-                    <IonCol className="flex w-full items-center justify-start px-2">
-                        <IonInput
+                <AppRow className="w-full ion-padding mt-2">
+                    <AppCol className="flex w-full items-center justify-start px-2">
+                        <AppInput
                             autocapitalize="on"
                             placeholder={m['boost.searchPlaceholder']()}
                             value={search}
                             className="bg-white text-grayscale-800 px-4! py-1! rounded-[15px] text-[17px] font-notoSans"
-                            onIonInput={e => setSearch(e.detail.value!)}
+                            onValueInput={value => setSearch(value)}
                             type="text"
                             clearInput={true}
                         />
-                    </IonCol>
-                </IonRow>
+                    </AppCol>
+                </AppRow>
 
                 {hasSearchResults && (
                     <div className="w-full px-4 pb-4">
@@ -156,6 +157,7 @@ const BoostPackOptionItem: React.FC<{
     isSelected: boolean;
     category: BoostCategoryOptionsEnum;
     onSelect: () => void;
+    // eslint-disable-next-line react/display-name -- existing anonymous memo/forwardRef component; naming it is out of scope here
 }> = React.memo(({ badgePackOption, badgePackItemsCount, isSelected, onSelect, category }) => {
     const { name, color } = badgePackOption;
 

@@ -17,7 +17,6 @@ import {
     ToastTypeEnum,
 } from 'learn-card-base';
 import { useQueryClient } from '@tanstack/react-query';
-import { IonCol, IonLoading } from '@ionic/react';
 import { Capacitor } from '@capacitor/core';
 
 import LinkChain from 'learn-card-base/svgs/LinkChain';
@@ -40,6 +39,8 @@ import ScannerPermissionsPrompt from '../scanner-permissions-prompt/ScannerPermi
 import { useCheckIfUserInNetwork } from '../network-prompts/hooks/useCheckIfUserInNetwork';
 import { getLogger } from 'learn-card-base';
 import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
+import { AppCol } from 'learn-card-base/ui/layout';
+import { AppLoading } from 'learn-card-base/ui/overlays';
 const log = getLogger('qr-code-user-card');
 
 const QrCodeUserCard: React.FC<{

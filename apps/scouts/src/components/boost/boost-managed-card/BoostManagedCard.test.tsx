@@ -7,10 +7,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { setLocale } from '../../../paraglide/runtime.js';
 import BoostManagedCard from './BoostManagedCard';
 
-vi.mock('@ionic/react', () => ({
-    IonCol: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-}));
-
 vi.mock('@learncard/react', () => ({
     BoostSmallCard: ({ customButtonComponent }: { customButtonComponent?: React.ReactNode }) => (
         <div>{customButtonComponent}</div>

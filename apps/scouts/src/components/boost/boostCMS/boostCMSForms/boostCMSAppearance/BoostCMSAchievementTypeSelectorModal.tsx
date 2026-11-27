@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 
-import { IonContent, IonPage } from '@ionic/react';
 import BoostCMSAppearanceFormHeader from './BoostCMSAppearanceFormHeader';
 import BoostCMSCategoryAndTypeSelector from './BoostCMSAchievementTypeSelector';
 
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import { BoostUserTypeEnum } from '../../../boost-options/boostOptions';
 import { BoostCMSState } from '../../../boost';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 export enum BoostCMSActiveAppearanceForm {
     appearanceForm = 'appearanceForm',
@@ -20,7 +20,9 @@ const BoostCMSAchievementTypeSelectorModal: React.FC<{
     showCloseButton: boolean;
     handleCloseModal: () => void;
     boostUserType: BoostUserTypeEnum;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     customTypes: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     setCustomTypes: React.Dispatch<any>;
     errors?: Record<string, string[]>;
     disabled?: boolean;
@@ -48,7 +50,7 @@ const BoostCMSAchievementTypeSelectorModal: React.FC<{
     );
 
     return (
-        <IonPage>
+        <AppPage>
             <BoostCMSAppearanceFormHeader
                 state={state}
                 setState={setState}
@@ -63,7 +65,7 @@ const BoostCMSAchievementTypeSelectorModal: React.FC<{
                 activeForm={activeForm}
                 setActiveForm={handleCloseModal}
             />
-            <IonContent fullscreen>
+            <AppContent fullscreen>
                 <BoostCMSCategoryAndTypeSelector
                     activeCategoryType={activeCategoryType}
                     activeType={activeType}
@@ -71,8 +73,8 @@ const BoostCMSAchievementTypeSelectorModal: React.FC<{
                     customTypes={customTypes}
                     setCustomTypes={setCustomTypes}
                 />
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

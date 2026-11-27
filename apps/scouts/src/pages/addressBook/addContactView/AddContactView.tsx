@@ -11,7 +11,6 @@ import {
     ToastTypeEnum,
 } from 'learn-card-base';
 
-import { IonCol, IonRow, IonGrid } from '@ionic/react';
 import { UserProfilePicture, useCurrentUser } from 'learn-card-base';
 import { AddressBookContact } from '../addressBookHelpers';
 import ArrowRight from 'learn-card-base/svgs/ArrowRight';
@@ -24,6 +23,7 @@ import { useAcceptConnectionRequestMutation } from 'learn-card-base';
 import { getLogger } from 'learn-card-base';
 import * as m from '../../../paraglide/messages.js';
 import { TransP } from '../../../i18n/TransP';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 const log = getLogger('add-contact-view');
 
 export enum AddContactViewMode {
@@ -44,6 +44,7 @@ type AddContactViewProps = {
         e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
         profileId: string
     ) => void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     updateCacheOnSuccessCallback: any;
 };
 
@@ -107,8 +108,10 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
             // @ts-ignore
             if (err?.message.includes('Connection already requested')) setConnectionRequested(true);
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
             // @ts-ignore
             log.debug('connectionReq::error', err?.message);
             setLoading(false);
@@ -146,6 +149,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
             // @ts-ignore
             log.debug('connection::error', err?.message);
             setLoading(false);
@@ -186,6 +190,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
                         presentToast(
                             error?.message || m['addressBook.toasts.unableToAcceptRequest'](),
                             {
+                                // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
                                 // @ts-ignore
                                 type: ToastTypeEnum.Error,
                                 hasDismissButton: true,
@@ -221,7 +226,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
         if (isLoggedIn) {
             if (isIssuingBoost) {
                 actionButton = (
-                    <IonCol className="flex flex-col items-center justify-center px-4">
+                    <AppCol className="flex flex-col items-center justify-center px-4">
                         <button
                             onClick={e => handleAddBoostIssueTo(e, user?.profileId)}
                             className="w-full flex items-center justify-center bg-indigo-500 rounded-full px-[12px] py-[8px] text-white text-4xl shadow-lg mb-4"
@@ -229,11 +234,11 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
                             <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
                             {m['boost.boost']()}
                         </button>
-                    </IonCol>
+                    </AppCol>
                 );
             } else {
                 actionButton = (
-                    <IonCol className="flex flex-col items-center justify-center px-4">
+                    <AppCol className="flex flex-col items-center justify-center px-4">
                         {!connectionRequested ? (
                             <button
                                 onClick={e => handleConnectionRequest(e, user?.profileId)}
@@ -251,7 +256,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
                                 {m['addressBook.pendingRequest']()}
                             </button>
                         )}
-                    </IonCol>
+                    </AppCol>
                 );
             }
         }
@@ -272,7 +277,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
         }
     } else if (mode === AddContactViewMode.acceptInvite) {
         actionButton = (
-            <IonCol className="flex flex-col items-center justify-center px-4">
+            <AppCol className="flex flex-col items-center justify-center px-4">
                 {!connectionRequested ? (
                     <button
                         onClick={e => handleAcceptInvite(e, user?.profileId)}
@@ -288,7 +293,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
                         {m['addressBook.connected']()}
                     </button>
                 )}
-            </IonCol>
+            </AppCol>
         );
         if (!isLoggedIn) {
             const redirectTo = `/invite?challenge=${challenge}&profileId=${user?.profileId}`;
@@ -306,7 +311,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
         }
     } else if (mode === AddContactViewMode.acceptConnectionRequest) {
         actionButton = (
-            <IonCol className="flex flex-col items-center justify-center px-4">
+            <AppCol className="flex flex-col items-center justify-center px-4">
                 {!connectionRequested ? (
                     <button
                         onClick={e => onHandleAcceptConnectionRequest(e, user?.profileId)}
@@ -322,10 +327,11 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
                         {m['addressBook.connected']()}
                     </button>
                 )}
-            </IonCol>
+            </AppCol>
         );
     }
 
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let promptText = null;
 
     const userName = user?.displayName || `@${user?.profileId}`;
@@ -363,11 +369,11 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
     }
 
     return (
-        // <IonGrid className="flex flex-col items-center justify-center py-5 px-5">
-        <IonGrid className="relative flex flex-col items-center justify-center h-full w-full">
-            <IonRow className={`max-w-[375px] py-[75px] ${customContainerClass}`}>
-                <IonRow className="flex items-center justify-center w-full">
-                    <IonCol
+        // <AppGrid className="flex flex-col items-center justify-center py-5 px-5">
+        <AppGrid className="relative flex flex-col items-center justify-center h-full w-full">
+            <AppRow className={`max-w-[375px] py-[75px] ${customContainerClass}`}>
+                <AppRow className="flex items-center justify-center w-full">
+                    <AppCol
                         className={`w-full flex items-center justify-center ${
                             mode === AddContactViewMode?.acceptConnectionRequest
                                 ? 'flex-row-reverse'
@@ -395,23 +401,23 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
                             customSize={500}
                             user={user}
                         />
-                    </IonCol>
-                </IonRow>
-                <IonRow className="flex items-center justify-center w-full">
-                    <IonCol className="w-full flex items-center justify-center">
+                    </AppCol>
+                </AppRow>
+                <AppRow className="flex items-center justify-center w-full">
+                    <AppCol className="w-full flex items-center justify-center">
                         {promptText}
-                    </IonCol>
-                </IonRow>
-                <IonRow className="flex items-center justify-center w-full mt-8">
+                    </AppCol>
+                </AppRow>
+                <AppRow className="flex items-center justify-center w-full mt-8">
                     {actionButton}
-                </IonRow>
+                </AppRow>
                 <div onClick={handleCancel} className="w-full flex items-center justify-center">
                     <button className="text-grayscale-900 text-center text-sm">
                         {isLoggedIn ? m['common.cancel']() : m['addressBook.returnHome']()}
                     </button>
                 </div>
-            </IonRow>
-        </IonGrid>
+            </AppRow>
+        </AppGrid>
     );
 };
 

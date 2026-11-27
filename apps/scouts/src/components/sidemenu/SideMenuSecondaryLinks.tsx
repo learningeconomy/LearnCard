@@ -1,8 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-import { IonMenu, IonMenuToggle } from '@ionic/react';
-
 import {
     sidemenuLinks,
     sideMenuScoutPassStyles,
@@ -15,6 +13,8 @@ import { useGetCurrentUserTroopIdsResolved } from 'learn-card-base';
 import LanguagePicker from './LanguagePicker';
 import * as m from '../../paraglide/messages.js';
 import { getScoutPassSideMenuLinkLabel } from './scoutPassSideMenuLabels';
+import { AppMenu } from 'learn-card-base/ui/app-shell/AppMenu';
+import { AppMenuToggle } from 'learn-card-base/ui/chrome';
 
 const SideMenuSecondaryLinks: React.FC<{
     activeTab: string;
@@ -26,7 +26,7 @@ const SideMenuSecondaryLinks: React.FC<{
         useGetCurrentUserTroopIdsResolved();
     const isAdmin = myTroopIdData?.isNationalAdmin || myTroopIdData?.isScoutGlobalAdmin;
 
-    if (!isLoggedIn) return <IonMenu contentId="main" />;
+    if (!isLoggedIn) return <AppMenu contentId="main" />;
 
     const sideMenuBrandingStyles = sideMenuScoutPassStyles;
 
@@ -47,7 +47,7 @@ const SideMenuSecondaryLinks: React.FC<{
 
         const isWalletPath = link.path === '/wallet';
 
-        let linkEl = (
+        const linkEl = (
             <Link
                 to={link.path}
                 className={`${sideMenuBrandingStyles.secondaryLinkStyles} ${isSecondaryPathActive(
@@ -59,7 +59,7 @@ const SideMenuSecondaryLinks: React.FC<{
         );
 
         return (
-            <IonMenuToggle key={link.path} autoHide={false} className="w-full">
+            <AppMenuToggle key={link.path} autoHide={false} className="w-full">
                 <li color={sideMenuBrandingStyles?.mainBg} onClick={() => setActiveTab(link?.path)}>
                     {linkEl}
                 </li>
@@ -68,7 +68,7 @@ const SideMenuSecondaryLinks: React.FC<{
                         <div className="bottom-0 h-[1px] bg-gray-200 w-[90%]" />
                     </div>
                 )}
-            </IonMenuToggle>
+            </AppMenuToggle>
         );
     });
 

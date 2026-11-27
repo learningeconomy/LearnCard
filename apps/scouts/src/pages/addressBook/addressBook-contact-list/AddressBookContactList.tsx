@@ -1,12 +1,14 @@
 import React, { useEffect, useRef } from 'react';
 
-import { IonList, IonSpinner } from '@ionic/react';
 import AddressBookContactItem from './AddressBookContactItem';
 
 import { LCNProfile, VC } from '@learncard/types';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { AppList } from 'learn-card-base/ui/list';
 
 export const AddressBookContactList: React.FC<{
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     pages?: any[];
     hasNextPage?: boolean;
     fetchNextPage?: () => void;
@@ -53,6 +55,7 @@ export const AddressBookContactList: React.FC<{
 }) => {
     const infiniteScrollRef = useRef<HTMLDivElement>(null);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     const onScreen = useOnScreen(infiniteScrollRef as any, '-100px', [pages?.[0]?.records?.length]);
 
     useEffect(() => {
@@ -83,14 +86,14 @@ export const AddressBookContactList: React.FC<{
 
     if (!pages) {
         return (
-            <IonList lines="none" className="flex flex-col items-center justify-center w-full">
+            <AppList lines="none" className="flex flex-col items-center justify-center w-full">
                 {contactItems}
-            </IonList>
+            </AppList>
         );
     }
 
     return (
-        <IonList lines="none" className="flex flex-col items-center justify-center w-full">
+        <AppList lines="none" className="flex flex-col items-center justify-center w-full">
             {pages?.flatMap(page => (
                 <>
                     {page?.records?.map((record, index) => (
@@ -117,14 +120,14 @@ export const AddressBookContactList: React.FC<{
             <div role="presentation" ref={infiniteScrollRef} />
             {isFetching && (
                 <div className="w-full flex items-center justify-center">
-                    <IonSpinner
+                    <AppSpinner
                         name="crescent"
                         color="grayscale-900"
                         className="scale-[2] mb-8 mt-6"
                     />
                 </div>
             )}
-        </IonList>
+        </AppList>
     );
 };
 

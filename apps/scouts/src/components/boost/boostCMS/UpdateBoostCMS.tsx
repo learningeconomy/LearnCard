@@ -4,7 +4,6 @@ import { deriveAlignmentsFromVC } from '../alignmentHelpers';
 import { useHistory, useLocation } from 'react-router';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
-import { IonCol, IonContent, IonGrid, IonPage, IonRow } from '@ionic/react';
 import BoostCMSHeader from './BoostCMSHeader/BoostCMSHeader';
 import BoostAddressBook, {
     BoostAddressBookEditMode,
@@ -84,6 +83,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useScoutPassStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
 import { VC } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 const log = getLogger('update-boost-cms');
 
 type UpdateBoostCMSProps = {
@@ -906,7 +907,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
     }
 
     return (
-        <IonPage>
+        <AppPage>
             {(isBoostLoading || isLoading || isSaveLoading || isPublishLoading) && (
                 <BoostLoader text={loadingText} darkBackground />
             )}
@@ -923,22 +924,22 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                 isLoading={isLoading}
             />
 
-            <IonContent fullscreen color="grayscale-800">
-                <IonGrid className="flex items-center justify-center flex-col w-full px-4">
+            <AppContent fullscreen color="grayscale-800">
+                <AppGrid className="flex items-center justify-center flex-col w-full px-4">
                     {activeBoostCMSStep}
-                </IonGrid>
+                </AppGrid>
 
                 {currentStep !== BoostCMSStepsEnum.confirmation && (
-                    <IonRow className="w-full flex items-center justify-center pb-[200px]">
-                        <IonCol className="w-full flex items-center justify-center">
+                    <AppRow className="w-full flex items-center justify-center pb-[200px]">
+                        <AppCol className="w-full flex items-center justify-center">
                             <button onClick={handleConfirmationModal} className="mt-4 pb-4">
                                 {m['boostCMS.quit']()}
                             </button>
-                        </IonCol>
-                    </IonRow>
+                        </AppCol>
+                    </AppRow>
                 )}
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

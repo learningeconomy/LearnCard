@@ -1,6 +1,7 @@
 import React from 'react';
-import { IonCol, IonContent, IonRow, IonGrid, IonToolbar, IonHeader, IonPage } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
+import { AppContent, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 
 type BoostMediaModalLayoutWrapperProps = {
     showCloseButton?: boolean;
@@ -16,23 +17,23 @@ export const BoostMediaModalLayoutWrapper: React.FC<BoostMediaModalLayoutWrapper
     children,
 }) => {
     return (
-        <IonPage id="user-options-modal">
-            <IonHeader className="ion-no-border bg-white pt-5">
-                <IonRow className="w-full bg-white">
-                    <IonCol className="w-full flex items-center justify-end">
+        <AppPage id="user-options-modal">
+            <AppHeader className="ion-no-border bg-white pt-5">
+                <AppRow className="w-full bg-white">
+                    <AppCol className="w-full flex items-center justify-end">
                         {showCloseButton && (
                             <button onClick={handleCloseModal}>
                                 <X className="text-grayscale-600 h-8 w-8" />
                             </button>
                         )}
-                    </IonCol>
-                </IonRow>
-                {title && <IonToolbar color="#fffff">{title}</IonToolbar>}
-            </IonHeader>
-            <IonContent>
-                <IonGrid className="ion-padding">{children}</IonGrid>
-            </IonContent>
-        </IonPage>
+                    </AppCol>
+                </AppRow>
+                {title && <AppToolbar color="#fffff">{title}</AppToolbar>}
+            </AppHeader>
+            <AppContent>
+                <AppGrid className="ion-padding">{children}</AppGrid>
+            </AppContent>
+        </AppPage>
     );
 };
 

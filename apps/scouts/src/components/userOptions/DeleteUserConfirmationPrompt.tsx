@@ -8,13 +8,14 @@ import { authStore, SocialLoginTypes, useWallet, useModal, useCurrentUser } from
 
 import { getAuthToken } from 'learn-card-base/helpers/authHelpers';
 
-import { IonCol, IonRow, IonInput } from '@ionic/react';
 import WarningIcon from '../svgs/WarningIcon';
 import confirmationStore from 'learn-card-base/stores/confirmationStore';
 import deletingAccountStore from 'learn-card-base/stores/deletingAccountStore';
 import DeleteAccountModal from './DeleteAccountModal';
 import { AddressBookContact } from '../../pages/addressBook/addressBookHelpers';
 import { getLogger } from 'learn-card-base';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 const log = getLogger('delete-user-confirmation-prompt');
 
 const DeleteUserConfirmationPrompt: React.FC<{
@@ -114,18 +115,18 @@ const DeleteUserConfirmationPrompt: React.FC<{
 
     return (
         <div>
-            <IonRow className="flex flex-col items-center justify-center bg-white text-black w-full pt-6">
-                <IonRow className="delete-user-icon-wrap flex flex-col items-center justify-center bg-white text-black">
+            <AppRow className="flex flex-col items-center justify-center bg-white text-black w-full pt-6">
+                <AppRow className="delete-user-icon-wrap flex flex-col items-center justify-center bg-white text-black">
                     <WarningIcon className="h-[48px] w-[48px]" />
-                </IonRow>
-                <IonRow className="flex flex-col items-center justify-center bg-white text-black">
+                </AppRow>
+                <AppRow className="flex flex-col items-center justify-center bg-white text-black">
                     <h3 className="ion-text-center mt-2 bg-white text-2xl font-bold tracking-wider">
                         {m['userProfile.deleteAccountTitle']()}
                     </h3>
-                </IonRow>
-            </IonRow>
+                </AppRow>
+            </AppRow>
 
-            <IonRow className="flex flex-col items-center justify-center bg-white text-black">
+            <AppRow className="flex flex-col items-center justify-center bg-white text-black">
                 <p className="ion-text-center mt-2 font-normal text-sm tracking-wider bg-white px-2 delete-user-prompt-text max-w-[400px]">
                     <TransP m={m['userProfile.deleteWarning']} components={[<b key="b" />]} />
                 </p>
@@ -135,15 +136,15 @@ const DeleteUserConfirmationPrompt: React.FC<{
                 <p className="ion-text-center text-base font-bold">
                     {m['userProfile.confirmBelow']({ phrase })}
                 </p>
-            </IonRow>
-            <IonRow className="flex flex-col items-center justify-center w-full ion-padding mt-3">
-                <IonInput
+            </AppRow>
+            <AppRow className="flex flex-col items-center justify-center w-full ion-padding mt-3">
+                <AppInput
                     autocapitalize="on"
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base max-w-[400px] ${
                         error ? 'login-input-email-error' : ''
                     }`}
                     placeholder={phrase}
-                    onIonInput={e => setConfirmationPhrase(e.detail.value)}
+                    onValueInput={value => setConfirmationPhrase(value)}
                     value={confirmationPhrase}
                     type="text"
                 />
@@ -158,9 +159,9 @@ const DeleteUserConfirmationPrompt: React.FC<{
                         </button>
                     </p>
                 )}
-            </IonRow>
-            <IonRow className="w-full bg-white">
-                <IonCol
+            </AppRow>
+            <AppRow className="w-full bg-white">
+                <AppCol
                     size="12"
                     className="w-full flex items-center justify-center flex-col pt-2 pb-4"
                 >
@@ -173,8 +174,8 @@ const DeleteUserConfirmationPrompt: React.FC<{
                     >
                         {isLoading ? m['common.loading']() + ' ' : m['userProfile.deleteForever']()}
                     </button>
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
         </div>
     );
 };

@@ -32,12 +32,6 @@ vi.mock('learn-card-base', async () => {
     };
 });
 
-vi.mock('@ionic/react', () => ({
-    IonCol: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-    IonRow: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-        <div {...props}>{children}</div>
-    ),
-}));
 vi.mock('@learncard/react', () => ({
     BoostGenericCard: () => null,
     isDid: () => false,

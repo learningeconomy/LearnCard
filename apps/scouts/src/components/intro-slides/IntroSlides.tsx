@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { IonContent, IonPage, IonSpinner } from '@ionic/react';
 import { SwiperDefaults } from 'learn-card-base/swiper/swiperDefaults';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import type { Swiper as SwiperInterface } from 'swiper/types';
@@ -19,6 +18,8 @@ import 'swiper/css/keyboard';
 import 'swiper/css/pagination';
 import 'swiper/css/scrollbar';
 import 'learn-card-base/swiper/swiper-defaults.css';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const IntroSlides: React.FC = () => {
     // ref storing swiper instance
@@ -49,8 +50,8 @@ const IntroSlides: React.FC = () => {
     const isNativePlatform = Capacitor?.isNativePlatform();
 
     return (
-        <IonPage>
-            <IonContent fullscreen>
+        <AppPage>
+            <AppContent fullscreen>
                 <Swiper
                     modules={[Keyboard, Pagination, Scrollbar, SwiperDefaults, Navigation]}
                     keyboard={true}
@@ -90,8 +91,8 @@ const IntroSlides: React.FC = () => {
                         />
                     </SwiperSlide>
                 </Swiper>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 
@@ -238,7 +239,7 @@ const ScoutSlide4: React.FC<ScoutSlideProps> = ({ handleNextSlide, handlePrevSli
             <section className="font-medium font-rubik flex flex-col items-center justify-center base-gradient">
                 <img src={ScoutPassLogo} alt="" className="w-[55px]!" />
                 <img src={ScoutPassTextLogo} alt="" className="mt-4" />
-                <IonSpinner name="crescent" color="light" className="scale-[1.75] mt-8" />
+                <AppSpinner name="crescent" color="light" className="scale-[1.75] mt-8" />
             </section>
         </>
     );

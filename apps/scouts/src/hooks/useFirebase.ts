@@ -1,6 +1,5 @@
 import React from 'react';
 import { Capacitor } from '@capacitor/core';
-import { useIonAlert } from '@ionic/react';
 import {
     authStore,
     SocialLoginTypes,
@@ -14,6 +13,7 @@ import {
 import * as m from '../paraglide/messages.js';
 import useFirebaseAnalytics from './useFirebaseAnalytics';
 import GoogleLoginHelpModal from '../components/auth/GoogleLoginHelpModal';
+import { useAppAlert } from 'learn-card-base/ui/overlays';
 
 const log = getLogger('use-firebase');
 // Unique within this document, including attempts from different hook instances.
@@ -32,7 +32,7 @@ export const useFirebase = () => {
     const adapter = useSignInAdapter();
     const { newModal } = useModal({ desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel });
     const { presentToast } = useToast();
-    const [presentAlert] = useIonAlert();
+    const [presentAlert] = useAppAlert();
     const { logAnalyticsEvent } = useFirebaseAnalytics();
 
     const presentGoogleHelpModal = (message?: string): void => {

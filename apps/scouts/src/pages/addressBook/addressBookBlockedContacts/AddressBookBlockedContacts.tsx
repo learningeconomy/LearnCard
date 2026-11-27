@@ -1,8 +1,6 @@
 import React, { useEffect } from 'react';
 import { useRouteMatch } from 'react-router-dom';
 
-import { IonSpinner } from '@ionic/react';
-
 import AddressBookContactList from '../addressBook-contact-list/AddressBookContactList';
 import MiniGhost from 'learn-card-base/assets/images/emptystate-ghost.png';
 
@@ -11,6 +9,7 @@ import { AddressBookTabsEnum } from '../addressBookHelpers';
 import ReaperGhost from '../../../assets/lotties/reaperghost.json';
 import Lottie from 'react-lottie-player';
 import * as m from '../../../paraglide/messages.js';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 const AddressBookBlockedContacts: React.FC<{
     activeTab: AddressBookTabsEnum;
@@ -24,7 +23,7 @@ const AddressBookBlockedContacts: React.FC<{
         <>
             {isLoading && (
                 <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full pt-[100px]">
-                    <IonSpinner color="black" />
+                    <AppSpinner color="black" />
                     <p className="mt-2 font-bold text-lg">{m['addressBook.loading']()}</p>
                 </section>
             )}

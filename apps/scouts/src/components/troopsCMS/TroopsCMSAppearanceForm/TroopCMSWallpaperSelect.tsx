@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 
-import { IonSpinner } from '@ionic/react';
 import * as m from '../../../paraglide/messages.js';
 import Pencil from '../../svgs/Pencil';
 import TrashBin from '../../svgs/TrashBin';
@@ -9,6 +8,7 @@ import WallpaperEmptyState from '../../../assets/images/wallpaper-empty-state.pn
 import { UploadRes, useImageUpload } from 'learn-card-base';
 import { TroopsCMSState, TroopsCMSViewModeEnum } from '../troopCMSState';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 export const TroopCMSWallpaperSelect: React.FC<{
     state: TroopsCMSState;
@@ -36,6 +36,7 @@ export const TroopCMSWallpaperSelect: React.FC<{
 
     const [uploadProgress, setUploadProgress] = useState<number | false>(false);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     const handleStateChange = (key: string, value: any) => {
         if (isInMemberViewMode) {
             setState(prevState => {
@@ -123,7 +124,7 @@ export const TroopCMSWallpaperSelect: React.FC<{
                     )}
                     {imageUploadLoading && (
                         <div className="absolute z-50 flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-3xl min-w-[70px] min-h-[70px] user-image-upload-inprogress">
-                            <IonSpinner name="crescent" color="dark" className="scale-[1.75]" />
+                            <AppSpinner name="crescent" color="dark" className="scale-[1.75]" />
                         </div>
                     )}
                 </div>

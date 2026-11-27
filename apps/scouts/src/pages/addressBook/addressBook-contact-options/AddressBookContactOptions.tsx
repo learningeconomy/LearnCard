@@ -4,7 +4,6 @@ import { Share } from '@capacitor/share';
 import { Clipboard } from '@capacitor/clipboard';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 
-import { IonCol, IonPage } from '@ionic/react';
 import Camera from 'learn-card-base/svgs/Camera';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import AddressBookQRCode from '../addressBook-qrcode/AddressBookQRCode';
@@ -18,6 +17,8 @@ import Search from 'learn-card-base/svgs/Search';
 import ModalLayout from '../../../layout/ModalLayout';
 import { getAppBaseUrl } from '../../../config/bootstrapTenantConfig';
 import * as m from '../../../paraglide/messages.js';
+import { AppPage } from 'learn-card-base/ui/chrome';
+import { AppCol } from 'learn-card-base/ui/layout';
 
 const AddressBookContactOptions: React.FC<{
     handleCloseModal: () => void;

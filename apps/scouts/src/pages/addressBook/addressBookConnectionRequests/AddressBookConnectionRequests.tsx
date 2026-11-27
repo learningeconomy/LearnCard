@@ -2,9 +2,8 @@ import React, { useEffect } from 'react';
 import { useRouteMatch, useHistory } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 
-import { IonSpinner } from '@ionic/react';
-
 import AddressBookContactList from '../addressBook-contact-list/AddressBookContactList';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
 // @ts-ignore
 import MiniGhost from 'learn-card-base/assets/images/emptystate-ghost.png';
 import Pulpo from '../../../assets/lotties/cuteopulpo.json';
@@ -23,6 +22,7 @@ import { AddressBookTabsEnum } from '../addressBookHelpers';
 import ConnectModal from '../../connectPage/ConnectModal';
 import { getLogger } from 'learn-card-base';
 import * as m from '../../../paraglide/messages.js';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 const log = getLogger('address-book-connection-requests');
 
 const AddressBookConnectionRequests: React.FC<{
@@ -55,6 +55,7 @@ const AddressBookConnectionRequests: React.FC<{
                     async onSuccess(data, { profileId }, context) {
                         refetch();
                     },
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                     onError(error: any, variables, context) {
                         refetch();
                         presentToast(
@@ -67,6 +68,7 @@ const AddressBookConnectionRequests: React.FC<{
                     },
                 }
             );
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
         } catch (err: any) {
             log.debug('blockProfile::error', err);
             presentToast(err?.message || m['addressBook.toasts.unableToBlockUser'](), {
@@ -98,6 +100,7 @@ const AddressBookConnectionRequests: React.FC<{
 
         queryClient.setQueryData(
             ['getConnectionRequests'],
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
             (prevPendingRequest: any[] | undefined) => {
                 const updatedPendingRequests = prevPendingRequest?.filter(
                     connectionReq => connectionReq?.profileId !== userId
@@ -122,7 +125,7 @@ const AddressBookConnectionRequests: React.FC<{
         <>
             {isLoading && (
                 <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full pt-[100px]">
-                    <IonSpinner color="black" />
+                    <AppSpinner color="black" />
                     <p className="mt-2 font-bold text-lg">{m['addressBook.loading']()}</p>
                 </section>
             )}

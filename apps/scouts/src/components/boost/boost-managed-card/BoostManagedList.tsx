@@ -7,7 +7,6 @@ import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import useBoostModal from '../hooks/useBoostModal';
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
 
-import { IonRow, IonCol, IonGrid, IonSpinner } from '@ionic/react';
 import BoostManagedCard, { BoostManagedCardSkeleton } from './BoostManagedCard';
 import BoostErrorsDisplay from '../../../components/boost/boostErrors/BoostErrorsDisplay';
 import {
@@ -28,6 +27,8 @@ import {
     credentialCategoryToSubheaderType,
     SubheaderContentType,
 } from '../../main-subheader/MainSubHeader.types';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 
 type BoostManagedListProps = {
     category: CredentialCategoryEnum;
@@ -173,30 +174,30 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
     return (
         <>
             {managedBoostsLoading && !boostError && (
-                <IonCol
+                <AppCol
                     className="flex m-auto items-center flex-wrap w-full achievements-list-container"
                     role="status"
                     aria-label={m['common.searchResults.loadingManaged']()}
                 >
                     {isCardView ? (
-                        <IonGrid className="max-w-[600px] pt-[20px]">
-                            <IonRow>{loadingManagedBoosts}</IonRow>
-                        </IonGrid>
+                        <AppGrid className="max-w-[600px] pt-[20px]">
+                            <AppRow>{loadingManagedBoosts}</AppRow>
+                        </AppGrid>
                     ) : (
                         <div className="flex flex-col gap-[10px] w-full max-w-[700px] px-[20px] pt-[25px]">
                             {loadingManagedBoosts}
                         </div>
                     )}
-                </IonCol>
+                </AppCol>
             )}
 
             {!managedBoostsLoading && !boostError && managedBoostsList && (
                 <>
-                    <IonCol className="flex m-auto items-center flex-wrap w-full achievements-list-container ">
+                    <AppCol className="flex m-auto items-center flex-wrap w-full achievements-list-container ">
                         {isCardView && (
-                            <IonGrid className="max-w-[600px] pt-[20px]">
+                            <AppGrid className="max-w-[600px] pt-[20px]">
                                 {searchActive && searchResultsElement}
-                                <IonRow>
+                                <AppRow>
                                     {managedBoostsList}
                                     {enableCreateButton && (
                                         <NewBoostButton
@@ -214,9 +215,9 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
                                             viewMode={viewMode}
                                         />
                                     )}
-                                </IonRow>
+                                </AppRow>
                                 <div role="presentation" ref={managedBoostInfiniteScrollRef} />
-                            </IonGrid>
+                            </AppGrid>
                         )}
                         {!isCardView && (
                             <>
@@ -237,7 +238,7 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
                         )}
                         {managedBoostsFetching && (
                             <div className="w-full flex items-center justify-center">
-                                <IonSpinner
+                                <AppSpinner
                                     name="crescent"
                                     color="grayscale-900"
                                     className="scale-[2] mb-8 mt-6"
@@ -247,7 +248,7 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
                         <div
                             className={`bg-filler absolute h-full top-[0px] left-[0px] w-full mt-[110px] -z-50 ${bgFillerColor}`}
                         />
-                    </IonCol>
+                    </AppCol>
                 </>
             )}
 

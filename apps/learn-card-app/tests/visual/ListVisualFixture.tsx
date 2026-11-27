@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { IonApp } from '@ionic/react';
 import { AppItem, AppLabel, AppList } from 'learn-card-base/ui/list';
 
 import { CheckListItemSkeleton } from '../../src/components/learncard/checklist/checklist-steps/CheckListItemSkeleton';
@@ -63,11 +62,6 @@ export const ListVisualFixture: React.FC = () => {
 
     return (
         <main className="flex flex-col items-center gap-6 p-4">
-            {/*
-             * IonApp starts Ionic's focus-visible (`.ion-focused`) and tap-click (`.ion-activated` +
-             * ripple) utilities, as the app's root IonApp does. Hidden: it only hosts the listeners.
-             */}
-            <IonApp style={{ display: 'none' }} aria-hidden="true" />
             <Block testId="l1-list-matrix" title="IonList lines / role (synthetic)">
                 <div className="flex flex-wrap gap-2">
                     <Cell label="list default, items default">

@@ -2,7 +2,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { categoryMetadata, usePathQuery } from 'learn-card-base';
-import { IonContent, IonPage } from '@ionic/react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
@@ -37,6 +36,7 @@ import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader
 import { WalletCategoryTypes } from 'learn-card-base/components/IssueVC/types';
 import * as m from '../../paraglide/messages.js';
 import { useLocale } from '../../i18n';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const MeritBadgesPage: React.FC = () => {
     const locale = useLocale();
@@ -163,7 +163,7 @@ const MeritBadgesPage: React.FC = () => {
     }, []);
 
     return (
-        <IonPage className="bg-sp-purple-soft">
+        <AppPage className="bg-sp-purple-soft">
             <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
                 <MainHeader
                     showBackButton
@@ -178,16 +178,16 @@ const MeritBadgesPage: React.FC = () => {
                     {currentLCNUser && shouldShowCreateButton && earnedAndManagedTabs}
                 </MainHeader>
 
-                <IonContent fullscreen className="relative" color="sp-purple-light-medium">
+                <AppContent fullscreen className="relative" color="sp-purple-light-medium">
                     {activeTab === CredentialListTabEnum.Earned && (
                         <BoostEarnedList {...listProps} />
                     )}
                     {activeTab === CredentialListTabEnum.Managed && (
                         <BoostManagedList {...listProps} enableCreateButton={false} />
                     )}
-                </IonContent>
+                </AppContent>
             </ErrorBoundary>
-        </IonPage>
+        </AppPage>
     );
 };
 

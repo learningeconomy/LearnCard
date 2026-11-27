@@ -1,6 +1,5 @@
 import React from 'react';
 
-import { IonSpinner } from '@ionic/react';
 import Checkmark from '../../../components/svgs/Checkmark';
 
 import {
@@ -12,6 +11,7 @@ import {
 } from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { SetState } from 'packages/shared-types/dist';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type BulkBoostParentSelectorModalProps = {
     parentUri?: string;
@@ -38,7 +38,7 @@ const BulkBoostParentSelectorModal: React.FC<BulkBoostParentSelectorModalProps> 
         <div className="flex items-center justify-center py-[20px]">
             {isLoading && (
                 <div className="w-[300px] h-[300px] flex items-center justify-center">
-                    <IonSpinner color="dark" />
+                    <AppSpinner color="dark" />
                 </div>
             )}
             {!isLoading && (

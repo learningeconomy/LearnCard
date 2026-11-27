@@ -251,7 +251,7 @@ const leaveAnimation = (host: HTMLElement, mode: IonMode): OverlayAnimation => {
 /**
  * App-owned `ion-popover` (@ionic/core 8.7.2) for the inline uses in this app: a controlled
  * `isOpen` popover positioned against an `event`, or an uncontrolled one opened by its `trigger`
- * element. Renders into `ion-app` while presented; the content mounts only while open.
+ * element. Renders into the app root (`AppRoot`) while presented; the content mounts only while open.
  */
 export const AppPopover: React.FC<AppPopoverProps> = ({
     isOpen,

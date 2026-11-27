@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 
-import { IonCol, IonGrid } from '@ionic/react';
-
 import Plus from 'learn-card-base/svgs/Plus';
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
 import BoostAddressBookContactItem from '../../boostCMS/boostCMSForms/boostCMSIssueTo/BoostAddressBookContactItem';
@@ -13,10 +11,12 @@ import BoostShareableCode from '../../boostCMS/boostCMSForms/boostCMSIssueTo/Boo
 import LinkChain from 'learn-card-base/svgs/LinkChain';
 import { BoostCMSState } from '../../boost';
 import * as m from '../../../../paraglide/messages.js';
+import { AppCol, AppGrid } from 'learn-card-base/ui/layout';
 
 type ShortBoostSomeoneScreenProps = {
     boostUri: string;
     profileId: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     history: any;
     handleCloseModal: () => void;
     handleOpenModal?: () => void;
@@ -48,6 +48,7 @@ const ShortBoostSomeoneScreen: React.FC<ShortBoostSomeoneScreenProps> = ({
         mobile: ModalTypes.Cancel,
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     const _handleSetState = (value: any) => {
         setLocalState(value);
         setState(value);
@@ -96,8 +97,8 @@ const ShortBoostSomeoneScreen: React.FC<ShortBoostSomeoneScreenProps> = ({
 
     return (
         <section>
-            <IonGrid className="ion-padding">
-                <IonCol className="w-full flex items-center justify-between mt-8">
+            <AppGrid className="ion-padding">
+                <AppCol className="w-full flex items-center justify-between mt-8">
                     <div className="boost-issue-container w-full flex items-center justify-between mx-[20px] text-grayscale-900">
                         <p className="boost-issue-to-text text-[25px]">{m['boost.addSomeone']()}</p>
                         <div
@@ -107,9 +108,9 @@ const ShortBoostSomeoneScreen: React.FC<ShortBoostSomeoneScreenProps> = ({
                             <Plus className="w-8 h-auto round-bottom-shadow-btn w-[50px] h-[50px] shrink-0 p-[8px] flex justify-center items-center" />
                         </div>
                     </div>
-                </IonCol>
-                <IonCol>{renderIssuedTo}</IonCol>
-                <IonCol className="w-full flex flex-col items-center justify-center mt-[20px]">
+                </AppCol>
+                <AppCol>{renderIssuedTo}</AppCol>
+                <AppCol className="w-full flex flex-col items-center justify-center mt-[20px]">
                     <button
                         onClick={() => handleBoostSomeone(localState)}
                         className="flex items-center justify-center bg-sp-purple-base rounded-full px-[18px] py-[12px] font-medium text-white text-2xl w-full shadow-lg disabled:opacity-50"
@@ -119,7 +120,7 @@ const ShortBoostSomeoneScreen: React.FC<ShortBoostSomeoneScreenProps> = ({
                         {m['boost.send']()}
                     </button>
                     {boostStatus === 'LIVE' && (
-                        <IonCol className="w-full flex items-center justify-center mt-[40px] p-0">
+                        <AppCol className="w-full flex items-center justify-center mt-[40px] p-0">
                             <button
                                 onClick={() => {
                                     newModal(
@@ -136,9 +137,9 @@ const ShortBoostSomeoneScreen: React.FC<ShortBoostSomeoneScreenProps> = ({
                                 <LinkChain className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
                                 {m['boost.generateLink']()}
                             </button>
-                        </IonCol>
+                        </AppCol>
                     )}
-                </IonCol>
+                </AppCol>
                 <div className="w-full flex items-center justify-center mt-8">
                     <button
                         onClick={() => handleCloseModal()}
@@ -147,7 +148,7 @@ const ShortBoostSomeoneScreen: React.FC<ShortBoostSomeoneScreenProps> = ({
                         {m['common.cancel']()}
                     </button>
                 </div>
-            </IonGrid>
+            </AppGrid>
         </section>
     );
 };

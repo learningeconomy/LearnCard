@@ -7,7 +7,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import authStore from 'learn-card-base/stores/authStore';
 
-import { IonPage, IonCol, IonRow, IonSkeletonText, IonSpinner } from '@ionic/react';
 import ConsentFlowSyncCard from './ConsentFlowSyncCard';
 // import FullScreenGameFlow from './GameFlow/FullScreenGameFlow';
 // import ConsentFlowCredFrontDoor from './ConsentFlowCredFrontDoor';
@@ -27,6 +26,10 @@ import { LOGIN_REDIRECTS } from 'learn-card-base/constants/redirects';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
 import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
+import { AppPage } from 'learn-card-base/ui/chrome';
+import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 enum Step {
     landing,
@@ -83,16 +86,16 @@ const ExternalConsentFlowDoor: React.FC = () => {
 
     if (isPending) {
         return (
-            <IonPage className="bg-sp-purple-midnight p-[30px] flex items-center justify-center">
+            <AppPage className="bg-sp-purple-midnight p-[30px] flex items-center justify-center">
                 <div className="w-full flex flex-col items-center justify-center min-h-[300px]">
-                    <IonSpinner
+                    <AppSpinner
                         name="crescent"
                         color="grayscale-900"
                         className="scale-[2] mb-8 mt-6"
                     />
                     <p className="font-notoSans text-grayscale-900">{m['common.loading']()}</p>
                 </div>
-            </IonPage>
+            </AppPage>
         );
     }
 
@@ -108,22 +111,22 @@ const ExternalConsentFlowDoor: React.FC = () => {
 
     if (step === Step.consent) {
         return (
-            <IonPage className="bg-sp-purple-midnight p-[30px]">
+            <AppPage className="bg-sp-purple-midnight p-[30px]">
                 <div className=" m-auto max-w-[400px]">
                     <ConsentFlowSyncCard
                         contractDetails={contractDetails}
                         contractUri={contractUri}
                     />
                 </div>
-            </IonPage>
+            </AppPage>
         );
     }
 
     return (
-        <IonPage className="bg-sp-purple-midnight p-[30px]">
+        <AppPage className="bg-sp-purple-midnight p-[30px]">
             <div className="flex flex-col gap-[15px] items-center px-[40px] pb-[30px] pt-[40px] bg-white shadow-bottom rounded-[24px] m-auto max-w-[400px]">
                 {isPending ? (
-                    <IonSkeletonText animated className="h-[60px] w-[60px] rounded-[10px]" />
+                    <AppSkeletonText animated className="h-[60px] w-[60px] rounded-[10px]" />
                 ) : (
                     <img
                         className="w-[60px] h-[60px] object-cover rounded-[10px]"
@@ -135,8 +138,8 @@ const ExternalConsentFlowDoor: React.FC = () => {
                 <div className="flex flex-col items-center font-notoSans w-full gap-[2px]">
                     {isPending ? (
                         <>
-                            <IonSkeletonText animated className="h-[20px]" />
-                            <IonSkeletonText animated className="h-[17px]" />
+                            <AppSkeletonText animated className="h-[20px]" />
+                            <AppSkeletonText animated className="h-[17px]" />
                         </>
                     ) : (
                         <>
@@ -217,8 +220,8 @@ const ExternalConsentFlowDoor: React.FC = () => {
                     <span className="text-grayscale-700 text-[14px] font-notoSans">
                         {m['common.tagline']()}
                     </span>
-                    <IonRow className="flex items-center justify-center">
-                        <IonCol className="flex items-center justify-center font-notoSans">
+                    <AppRow className="flex items-center justify-center">
+                        <AppCol className="flex items-center justify-center font-notoSans">
                             <button
                                 onClick={openPP}
                                 className="text-indigo-500 font-semibold text-[12px]"
@@ -234,11 +237,11 @@ const ExternalConsentFlowDoor: React.FC = () => {
                             >
                                 {m['consentFlow.termsOfService']()}
                             </button>
-                        </IonCol>
-                    </IonRow>
+                        </AppCol>
+                    </AppRow>
                 </div>
             </div>
-        </IonPage>
+        </AppPage>
     );
 };
 

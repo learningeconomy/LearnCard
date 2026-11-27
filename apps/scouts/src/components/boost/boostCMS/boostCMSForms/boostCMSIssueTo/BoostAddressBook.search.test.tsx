@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -41,30 +41,6 @@ const { networkProfile, scoutProfile, roleState, scoutRecipients, searchProfiles
         })),
     })
 );
-
-vi.mock('@ionic/react', () => {
-    const Container = ({ children }: React.PropsWithChildren) => <div>{children}</div>;
-
-    return {
-        IonCol: Container,
-        IonContent: Container,
-        IonFooter: Container,
-        IonGrid: Container,
-        IonHeader: Container,
-        IonInput: ({ placeholder, onIonInput }: any) => (
-            <input
-                aria-label={placeholder}
-                onChange={event => onIonInput?.({ detail: { value: event.currentTarget.value } })}
-            />
-        ),
-        IonItem: Container,
-        IonList: Container,
-        IonPage: Container,
-        IonRow: Container,
-        IonSpinner: () => null,
-        IonToolbar: Container,
-    };
-});
 
 vi.mock('learn-card-base', () => ({
     BoostUserTypeEnum: { someone: 'someone' },
@@ -133,6 +109,7 @@ describe('BoostAddressBook network search', () => {
     it('shows Scout network results when the user has no contacts', async () => {
         render(
             <BoostAddressBook
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 state={{ issueTo: [] } as any}
                 setState={vi.fn()}
                 viewMode={BoostAddressBookViewMode.full}
@@ -159,6 +136,7 @@ describe('BoostAddressBook network search', () => {
     it('does not enable global profile search before the user types', () => {
         render(
             <BoostAddressBook
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 state={{ issueTo: [] } as any}
                 setState={vi.fn()}
                 viewMode={BoostAddressBookViewMode.full}
@@ -184,6 +162,7 @@ describe('BoostAddressBook network search', () => {
 
         render(
             <BoostAddressBook
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 state={{ issueTo: [] } as any}
                 setState={vi.fn()}
                 viewMode={BoostAddressBookViewMode.full}
@@ -206,8 +185,10 @@ describe('BoostAddressBook network search', () => {
 
         expect(await screen.findByText(scoutProfile.displayName)).toBeTruthy();
         expect(screen.queryByText(networkProfile.displayName)).toBeNull();
-        expect(searchProfiles).toHaveBeenLastCalledWith(scoutProfile.profileId, {
-            enabled: false,
-        });
+        await waitFor(() =>
+            expect(searchProfiles).toHaveBeenLastCalledWith(scoutProfile.profileId, {
+                enabled: false,
+            })
+        );
     });
 });

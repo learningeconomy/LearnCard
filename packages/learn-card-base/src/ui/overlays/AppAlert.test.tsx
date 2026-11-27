@@ -8,7 +8,7 @@ import { useAppAlert, type AppAlertOptions } from './useAppAlert';
 let ionApp: HTMLElement;
 
 beforeEach(() => {
-    ionApp = document.createElement('ion-app');
+    ionApp = Object.assign(document.createElement('div'), { className: 'app-root' });
     ionApp.innerHTML = '<div id="ion-view-container-root"></div>';
     document.body.appendChild(ionApp);
 });
@@ -26,7 +26,7 @@ const presented = async () => {
 };
 
 describe('AppAlert', () => {
-    it('renders an alertdialog labelled by its header and sub-header, in ion-app', async () => {
+    it('renders an alertdialog labelled by its header and sub-header, in the app root', async () => {
         render(
             <AppAlert
                 isOpen

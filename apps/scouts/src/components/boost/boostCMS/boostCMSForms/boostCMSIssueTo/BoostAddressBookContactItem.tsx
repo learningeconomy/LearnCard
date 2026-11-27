@@ -1,7 +1,5 @@
 import React from 'react';
 
-import { IonItem } from '@ionic/react';
-
 import X from 'learn-card-base/svgs/X';
 import Plus from 'learn-card-base/svgs/Plus';
 import { UserProfilePicture, BoostUserTypeEnum } from 'learn-card-base';
@@ -9,6 +7,7 @@ import Checkmark from 'learn-card-base/svgs/Checkmark';
 
 import { BoostCMSIssueTo, BoostCMSState } from '../../../boost';
 import { BoostAddressBookEditMode } from './BoostAddressBook';
+import { AppItem } from 'learn-card-base/ui/list';
 
 type BoostAddressBookContactItemProps = {
     mode: BoostAddressBookEditMode;
@@ -130,12 +129,12 @@ export const BoostAddressBookContactItem: React.FC<BoostAddressBookContactItemPr
     );
     return (
         <>
-            <IonItem
+            <AppItem
                 lines="none"
                 className={`w-[95%] max-w-[600px] ion-no-border px-[4px] flex items-center justify-between notificaion-list-item ${viewModeStyles}`}
             >
                 {contactItemDetails}
-            </IonItem>
+            </AppItem>
         </>
     );
 };

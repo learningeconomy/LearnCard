@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { IonApp, IonContent, IonFooter, IonHeader, IonPage, IonToolbar } from '@ionic/react';
+import { AppRoot } from 'learn-card-base/ui/app-shell/AppRoot';
 
 import { AppLoading } from 'learn-card-base/ui/overlays/AppLoading';
 import { AppOverlayManager } from 'learn-card-base/ui/overlays/AppOverlayManager';
@@ -7,12 +7,13 @@ import { useAppAlert as useAlertHook } from 'learn-card-base/ui/overlays/useAppA
 import { useAppOverlayModal as useModalHook } from 'learn-card-base/ui/overlays/useAppOverlayModal';
 import { AppPopover } from 'learn-card-base/ui/overlays/AppPopover';
 import { useAppToast } from 'learn-card-base/ui/overlays/useAppToast';
+import { AppContent, AppFooter, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
 
 /**
  * `modals-1`: the app's useIonModal / useIonAlert call sites (present options, cssClass values,
  * sheet breakpoints and alert shapes copied from the call sites) with content shaped like the
- * real modal bodies (IonPage + header/toolbar/content, IonContent fullscreen, plain prompt div,
- * IonFooter). A real IonApp hosts them, with `#ion-view-container-root` as the view container.
+ * real modal bodies (AppPage + header/toolbar/content, AppContent fullscreen, plain prompt div,
+ * AppFooter). A real AppRoot hosts them, with `#ion-view-container-root` as the view container.
  * The first modal opens a second modal, a popover, a loading, a toast and an alert over itself.
  * Every scenario reports its dismiss events (role + data) in `ro-*` readouts.
  */
@@ -66,7 +67,7 @@ const StackBody: React.FC<BodyProps> = ({ report, onClose, tick, onTick }) => {
     const [popEvent, setPopEvent] = useState<Event | undefined>(undefined);
     const [loading, setLoading] = useState(false);
     return (
-        <IonPage id="user-options-modal">
+        <AppPage id="user-options-modal">
             <div
                 className="flex h-full w-full flex-col gap-2 overflow-auto bg-white p-4"
                 data-testid="stack-body"
@@ -186,11 +187,11 @@ const StackBody: React.FC<BodyProps> = ({ report, onClose, tick, onTick }) => {
                     onDidDismiss={() => setLoading(false)}
                 />
             </div>
-        </IonPage>
+        </AppPage>
     );
 };
 
-/** DeleteUserConfirmationPrompt / ConnectModal confirmation shape (plain div, no IonPage). */
+/** DeleteUserConfirmationPrompt / ConnectModal confirmation shape (plain div, no AppPage). */
 const PromptBody: React.FC<BodyProps> = ({ onClose }) => (
     <div
         className="flex flex-col items-center justify-center bg-white text-black w-full pt-6 px-4 pb-4 gap-3"
@@ -221,11 +222,11 @@ const PromptBody: React.FC<BodyProps> = ({ onClose }) => (
 
 const ROWS = Array.from({ length: 40 }, (_, i) => `Result ${i + 1}`);
 
-/** LocationSearch shape: IonPage + IonHeader/IonToolbar + scrolling IonContent. */
+/** LocationSearch shape: AppPage + AppHeader/AppToolbar + scrolling AppContent. */
 const SheetBody: React.FC<BodyProps> = ({ onClose }) => (
-    <IonPage className="bg-white">
-        <IonHeader className="learn-card-header ion-no-border my-[0px]">
-            <IonToolbar className="ion-no-border bg-white " color="white">
+    <AppPage className="bg-white">
+        <AppHeader className="learn-card-header ion-no-border my-[0px]">
+            <AppToolbar className="ion-no-border bg-white " color="white">
                 <div className="flex w-full items-center justify-between px-2">
                     <h1 className="font-poppins text-lg">Search location</h1>
                     <button
@@ -237,9 +238,9 @@ const SheetBody: React.FC<BodyProps> = ({ onClose }) => (
                         Close
                     </button>
                 </div>
-            </IonToolbar>
-        </IonHeader>
-        <IonContent>
+            </AppToolbar>
+        </AppHeader>
+        <AppContent>
             <ul className="p-4" data-testid="sheet-list">
                 {ROWS.map(r => (
                     <li key={r} className="border-b border-grayscale-200 py-3 text-sm">
@@ -247,14 +248,14 @@ const SheetBody: React.FC<BodyProps> = ({ onClose }) => (
                     </li>
                 ))}
             </ul>
-        </IonContent>
-    </IonPage>
+        </AppContent>
+    </AppPage>
 );
 
-/** ConnectModal shape: IonContent fullscreen with no footer (gets the bottom safe-area padding). */
+/** ConnectModal shape: AppContent fullscreen with no footer (gets the bottom safe-area padding). */
 const FullBody: React.FC<BodyProps> = ({ onClose }) => (
     <>
-        <IonContent fullscreen className="bg-white" data-testid="full-content">
+        <AppContent fullscreen className="bg-white" data-testid="full-content">
             <section className="flex flex-col items-center justify-center gap-3 p-6">
                 <p className="font-bold text-lg">Synthetic full-screen modal</p>
                 <button
@@ -266,23 +267,23 @@ const FullBody: React.FC<BodyProps> = ({ onClose }) => (
                     Done
                 </button>
             </section>
-        </IonContent>
+        </AppContent>
     </>
 );
 
-/** ChildInviteModal / CustomWalletContractData shape: IonHeader + IonContent + IonFooter. */
+/** ChildInviteModal / CustomWalletContractData shape: AppHeader + AppContent + AppFooter. */
 const FooterBody: React.FC<BodyProps> = ({ onClose }) => (
     <>
-        <IonHeader className="ion-no-border">
-            <IonToolbar className="bg-white">
+        <AppHeader className="ion-no-border">
+            <AppToolbar className="bg-white">
                 <p className="px-4 font-poppins font-semibold">Invite a child</p>
-            </IonToolbar>
-        </IonHeader>
-        <IonContent className="bg-white">
-            <p className="p-4 text-sm">Body text inside IonContent.</p>
-        </IonContent>
-        <IonFooter className="ion-no-border">
-            <IonToolbar className="bg-white">
+            </AppToolbar>
+        </AppHeader>
+        <AppContent className="bg-white">
+            <p className="p-4 text-sm">Body text inside AppContent.</p>
+        </AppContent>
+        <AppFooter className="ion-no-border">
+            <AppToolbar className="bg-white">
                 <button
                     type="button"
                     className={btn}
@@ -291,8 +292,8 @@ const FooterBody: React.FC<BodyProps> = ({ onClose }) => (
                 >
                     Cancel
                 </button>
-            </IonToolbar>
-        </IonFooter>
+            </AppToolbar>
+        </AppFooter>
     </>
 );
 
@@ -605,8 +606,8 @@ const FixtureBody: React.FC = () => {
 };
 
 export const ModalsVisualFixture: React.FC = () => (
-    <IonApp>
+    <AppRoot>
         <FixtureBody />
         <AppOverlayManager />
-    </IonApp>
+    </AppRoot>
 );

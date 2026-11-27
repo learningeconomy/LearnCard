@@ -1,7 +1,6 @@
 import React, { useCallback, useMemo } from 'react';
 import { useHistory } from 'react-router-dom';
 import { z } from 'zod';
-import { IonCol, IonTextarea } from '@ionic/react';
 import Plus from 'learn-card-base/svgs/Plus';
 import {
     BoostCategoryOptionsEnum,
@@ -12,6 +11,8 @@ import {
 import BoostCMS from '../boostCMS/BoostCMS';
 import { BoostUserTypeEnum, boostCategoryOptions } from '../boost-options/boostOptions';
 import * as m from '../../../paraglide/messages.js';
+import { AppTextarea } from 'learn-card-base/ui/controls/AppTextarea';
+import { AppCol } from 'learn-card-base/ui/layout';
 
 const MAX_TYPE_LENGTH = 100;
 const StateValidator = z.object({
@@ -112,7 +113,7 @@ const NewBoostSelectMenuCustomTypeButton: React.FC<ComponentProps> = ({
     ]);
 
     return (
-        <IonCol
+        <AppCol
             size="6"
             size-sm="4"
             size-md="4"
@@ -123,9 +124,9 @@ const NewBoostSelectMenuCustomTypeButton: React.FC<ComponentProps> = ({
                 className={`h-full rounded-xl flex flex-col items-center justify-start gap-2.5 w-40 bg-${color} mt-0 pt-0 min-h-[220px]`}
             >
                 <div className="relative w-full flex items-center justify-center p-2 h-[72%]">
-                    <IonTextarea
+                    <AppTextarea
                         aria-label={m['boost.createTitleNew']({ title: title ?? '' })}
-                        onIonInput={e => handleInputChange(e.detail.value?.trim() || '')}
+                        onValueInput={value => handleInputChange(value?.trim() || '')}
                         placeholder={m['boost.newTitle']({ title })}
                         className="bg-white rounded-lg px-2 h-full"
                         maxlength={MAX_TYPE_LENGTH}
@@ -157,7 +158,7 @@ const NewBoostSelectMenuCustomTypeButton: React.FC<ComponentProps> = ({
                     <Plus className="h-5 w-5" />
                 </button>
             </div>
-        </IonCol>
+        </AppCol>
     );
 };
 

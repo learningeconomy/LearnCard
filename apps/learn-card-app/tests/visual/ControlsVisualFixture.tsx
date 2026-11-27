@@ -1,5 +1,4 @@
 import React, { useRef, useState } from 'react';
-import { IonApp, IonHeader, IonTitle, IonToolbar } from '@ionic/react';
 import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import { AppIcon } from 'learn-card-base/ui/icon';
 import { AppCard, AppCardContent, AppText } from 'learn-card-base/ui/widgets';
@@ -26,6 +25,7 @@ import {
     networkOptionsList,
     NetworkOptionsEnum,
 } from '../../src/pages/adminToolsPage/AdminToolsNetwork/AdminToolsNetwork';
+import { AppHeader, AppTitle, AppToolbar } from 'learn-card-base/ui/chrome';
 
 /**
  * `controls-1a`: every app call site that used IonButton / IonButtons / IonCheckbox / IonRadio /
@@ -65,8 +65,8 @@ const Value: React.FC<{ testId: string; value: unknown }> = ({ testId, value }) 
 
 /** src/components/creds-bundle/ViewCredsBundle.tsx:117-147 (header only; page opens a PIN alert). */
 const ViewCredsBundleToolbar: React.FC = () => (
-    <IonHeader translucent={true}>
-        <IonToolbar className="flex">
+    <AppHeader translucent={true}>
+        <AppToolbar className="flex">
             <div className="flex justify-between items-center">
                 <div>
                     <a
@@ -83,8 +83,8 @@ const ViewCredsBundleToolbar: React.FC = () => (
                     Learn More
                 </AppButton>
             </div>
-        </IonToolbar>
-    </IonHeader>
+        </AppToolbar>
+    </AppHeader>
 );
 
 /**
@@ -93,13 +93,13 @@ const ViewCredsBundleToolbar: React.FC = () => (
  */
 const DevCliToolbar: React.FC = () => (
     <div className="cli-page">
-        <IonHeader className="cli-header">
-            <IonToolbar className="cli-toolbar">
+        <AppHeader className="cli-header">
+            <AppToolbar className="cli-toolbar">
                 <AppButtons slot="start">
                     <AppBackButton defaultHref="/launchpad" className="cli-back-btn" />
                 </AppButtons>
 
-                <IonTitle className="cli-title">LearnCard CLI</IonTitle>
+                <AppTitle className="cli-title">LearnCard CLI</AppTitle>
 
                 <AppButtons slot="end">
                     <button
@@ -110,8 +110,8 @@ const DevCliToolbar: React.FC = () => (
                         📖 Tutorial
                     </button>
                 </AppButtons>
-            </IonToolbar>
-        </IonHeader>
+            </AppToolbar>
+        </AppHeader>
         <style>{`
             .cli-page {
                 --ion-background-color: #1d2021;
@@ -176,8 +176,8 @@ const DevCliToolbar: React.FC = () => (
  * `AppCredentialDashboard`, which reads app credential queries.
  */
 const EmbedAppFullScreenToolbar: React.FC = () => (
-    <IonHeader>
-        <IonToolbar>
+    <AppHeader>
+        <AppToolbar>
             <AppButtons slot="start">
                 <AppButton onClick={() => undefined}>
                     <svg
@@ -196,15 +196,15 @@ const EmbedAppFullScreenToolbar: React.FC = () => (
                     </svg>
                 </AppButton>
             </AppButtons>
-            <IonTitle>Community Academy</IonTitle>
+            <AppTitle>Community Academy</AppTitle>
             <AppButtons className="mr-[10px]" slot="end">
                 <span
                     data-testid="c1a-embedapp-dashboard-placeholder"
                     className="inline-block h-[36px] w-[36px] rounded-full bg-grayscale-200"
                 />
             </AppButtons>
-        </IonToolbar>
-    </IonHeader>
+        </AppToolbar>
+    </AppHeader>
 );
 
 /**
@@ -280,12 +280,12 @@ const InteractionsErrorCard: React.FC = () => (
                                 color="danger"
                                 style={{ fontSize: '48px', marginBottom: '16px' }}
                             />
-                            <IonTitle
+                            <AppTitle
                                 color="danger"
                                 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}
                             >
                                 Interaction Error
-                            </IonTitle>
+                            </AppTitle>
                             <AppText color="medium" className="ion-margin-top ion-margin-bottom">
                                 <p>Interaction not found or expired.</p>
                             </AppText>
@@ -752,19 +752,12 @@ const ButtonMatrix: React.FC = () => {
 
 export const ControlsVisualFixture: React.FC = () => (
     <main className="mx-auto flex w-full max-w-[860px] flex-col items-stretch gap-6 p-6 font-poppins">
-        {/*
-         * IonApp starts Ionic's focus-visible (`.ion-focused`) and tap-click (`.ion-activated`)
-         * utilities, as it does at the real app root. Its host CSS (absolute, contain, overflow)
-         * would clip this long page, so it is mounted empty and hidden instead of as a wrapper.
-         */}
-        <IonApp style={{ display: 'none' }} aria-hidden="true" />
-
         <Block testId="c1a-button-matrix" title="IonButton variants used by the app">
             <ButtonMatrix />
         </Block>
         <Block
             testId="c1a-viewcredsbundle-toolbar"
-            title="ViewCredsBundle: IonButton in IonToolbar"
+            title="ViewCredsBundle: IonButton in AppToolbar"
         >
             <ViewCredsBundleToolbar />
         </Block>

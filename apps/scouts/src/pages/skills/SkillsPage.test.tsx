@@ -23,11 +23,6 @@ vi.mock('learn-card-base', () => ({
     useListMySkillFrameworks: () => mocks.listFrameworks(),
     useModal: () => ({ newModal: vi.fn(), closeModal: vi.fn() }),
 }));
-vi.mock('@ionic/react', () => ({
-    IonPage: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-    IonContent: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-    IonSpinner: () => null,
-}));
 vi.mock('../../stores/loadingStore', () => ({ useLoadingLine: vi.fn() }));
 vi.mock('../../components/main-header/MainHeader', () => ({ default: () => null }));
 vi.mock('../../components/main-subheader/MainSubHeader.types', () => ({

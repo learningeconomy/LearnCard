@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { IonIcon } from '@ionic/react';
 import {
     fingerPrint,
     documentTextOutline,
@@ -18,6 +17,7 @@ import type { RecoveryReason } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
 import { TransP } from '../../i18n/TransP';
 import { DirectionalIcon } from '../i18n/DirectionalIcon';
+import { AppIcon } from 'learn-card-base/ui/icon';
 
 export type RecoveryFlowType = 'passkey' | 'phrase' | 'backup' | 'device' | 'email';
 
@@ -265,7 +265,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                                         : 'bg-grayscale-200 text-grayscale-400'
                                 }`}
                             >
-                                <IonIcon icon={method.icon} className="text-lg" />
+                                <AppIcon icon={method.icon} className="text-lg" />
                             </div>
 
                             <div className="flex-1 text-left">
@@ -303,14 +303,14 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                 className="flex items-center gap-1 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors mb-5 disabled:opacity-40 disabled:cursor-not-allowed"
             >
                 <DirectionalIcon>
-                    <IonIcon icon={chevronBackOutline} className="text-xs" />
+                    <AppIcon icon={chevronBackOutline} className="text-xs" />
                 </DirectionalIcon>
                 {m['common.back']()}
             </button>
 
             {error && (
                 <div className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
-                    <IonIcon
+                    <AppIcon
                         icon={alertCircleOutline}
                         className="text-red-400 text-lg mt-0.5 shrink-0"
                     />
@@ -332,7 +332,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                     </div>
 
                     <div className="p-6 bg-emerald-50 rounded-2xl text-center">
-                        <IonIcon icon={fingerPrint} className="text-5xl text-emerald-600 mb-3" />
+                        <AppIcon icon={fingerPrint} className="text-5xl text-emerald-600 mb-3" />
 
                         <p className="text-sm text-emerald-800">
                             {m['recovery.passkey.tapDesc']()}
@@ -558,7 +558,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                         />
 
                         <label htmlFor="backup-file-input" className="cursor-pointer block">
-                            <IonIcon
+                            <AppIcon
                                 icon={cloudUploadOutline}
                                 className={`text-4xl mb-2 ${
                                     backupFile ? 'text-emerald-600' : 'text-grayscale-400'

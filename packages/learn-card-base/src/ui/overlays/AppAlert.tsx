@@ -141,7 +141,7 @@ const parts = (host: HTMLElement) => ({
 
 /**
  * App-owned `ion-alert` (@ionic/core 8.7.2): a dialog with a header, message, text inputs and
- * buttons. Renders into `ion-app` while presented; `useAppAlert` is the `useIonAlert`
+ * buttons. Renders into the app root (`AppRoot`) while presented; `useAppAlert` is the `useIonAlert`
  * replacement. Buttons with role `cancel` (or a backdrop / Escape dismiss) run the cancel
  * button's handler; any other button's handler runs first and can keep the alert open by
  * returning `false`.

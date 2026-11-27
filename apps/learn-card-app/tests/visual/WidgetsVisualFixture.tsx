@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { IonApp, IonContent, IonTitle } from '@ionic/react';
 import { alertCircleOutline, homeOutline, refreshOutline } from 'learn-card-base/icons/ionicons';
 
 import { AppButton } from 'learn-card-base/ui/controls/AppButton';
@@ -24,6 +23,7 @@ import ResumeConfigPanelFAB from '../../src/components/resume-builder/resume-con
 import ResumePreviewFAB from '../../src/components/resume-builder/resume-preview/ResumePreviewFAB';
 import CheckListItemSkeleton from '../../src/components/learncard/checklist/checklist-steps/CheckListItemSkeleton';
 import EndorsementRequestModalSkeletonLoader from '../../src/components/boost-endorsements/EndorsementRequestModal/EndorsementRequestModalSkeletonLoader';
+import { AppContent, AppTitle } from 'learn-card-base/ui/chrome';
 
 /**
  * `widgets-1`: the app's IonSegment / IonSegmentButton (+ segment IonLabel), IonFab / IonFabButton,
@@ -110,17 +110,17 @@ const FabHarness: React.FC = () => {
     const [previewing, setPreviewing] = useState(false);
     return (
         <>
-            {/* ResumeBuilder.tsx:650: the config FAB as a direct child of the page's IonContent. */}
+            {/* ResumeBuilder.tsx:650: the config FAB as a direct child of the page's AppContent. */}
             <div data-testid="fab-config" style={{ height: 160, position: 'relative' }}>
-                <IonContent style={{ '--background': '#f1f5f9' } as React.CSSProperties}>
+                <AppContent style={{ '--background': '#f1f5f9' } as React.CSSProperties}>
                     <p style={{ padding: 8, fontSize: 12 }}>
-                        IonContent with slot=&quot;fixed&quot; FAB
+                        AppContent with slot=&quot;fixed&quot; FAB
                     </p>
                     <ResumeConfigPanelFAB openResumeConfigPanel={() => setOpens(o => o + 1)} />
-                </IonContent>
+                </AppContent>
             </div>
             <Readout testId="fab-config-state">{`opens=${opens}`}</Readout>
-            {/* ResumePreviewFAB outside IonContent (positions against the nearest positioned box). */}
+            {/* ResumePreviewFAB outside AppContent (positions against the nearest positioned box). */}
             <div
                 data-testid="fab-preview"
                 style={{ height: 120, position: 'relative', background: '#e2e8f0' }}
@@ -170,8 +170,6 @@ const ROW =
 
 export const WidgetsVisualFixture: React.FC = () => (
     <main className="flex flex-col gap-6 p-4">
-        <IonApp style={{ display: 'none' }} aria-hidden="true" />
-
         <Block testId="w1-segments" title="Segment tab bars (real components)">
             <FamilyTabsHarness />
             <IdTabsHarness />
@@ -256,9 +254,9 @@ export const WidgetsVisualFixture: React.FC = () => (
                             color="danger"
                             style={{ fontSize: '48px', marginBottom: '16px' }}
                         />
-                        <IonTitle color="danger" style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
+                        <AppTitle color="danger" style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
                             Interaction Error
-                        </IonTitle>
+                        </AppTitle>
                         <AppText color="medium" className="ion-margin-top ion-margin-bottom">
                             <p>Something went wrong while processing the interaction.</p>
                         </AppText>

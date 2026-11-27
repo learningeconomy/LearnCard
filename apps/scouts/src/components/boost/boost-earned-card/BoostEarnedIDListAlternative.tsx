@@ -1,6 +1,5 @@
 import React from 'react';
 
-import { IonCol, IonSpinner } from '@ionic/react';
 import BoostErrorsDisplay from '../../../components/boost/boostErrors/BoostErrorsDisplay';
 import { CredentialListSkeleton } from 'learn-card-base/components/loaders/CredentialListSkeleton';
 import BoostEarnedIDCard from './BoostEarnedIDCard';
@@ -13,6 +12,8 @@ import {
 } from 'learn-card-base';
 
 import { useLoadingLine } from '../../../stores/loadingStore';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { AppCol } from 'learn-card-base/ui/layout';
 
 type BoostEarnedIDListProps = {
     category: CredentialCategoryEnum;
@@ -86,7 +87,7 @@ const BoostEarnedIDListAlternative: React.FC<BoostEarnedIDListProps> = ({
                             {credentials}
                             {credentialsFetching && (
                                 <div className="w-full flex items-center justify-center">
-                                    <IonSpinner
+                                    <AppSpinner
                                         name="crescent"
                                         color="grayscale-900"
                                         className="scale-[2] mb-8 mt-6"
@@ -96,21 +97,21 @@ const BoostEarnedIDListAlternative: React.FC<BoostEarnedIDListProps> = ({
                         </section>
                     )}
                     {!isCardView && (
-                        <IonCol className="flex m-auto items-center flex-wrap w-full achievements-list-container">
+                        <AppCol className="flex m-auto items-center flex-wrap w-full achievements-list-container">
                             <div className="bg-filler bg-sp-green-forest-light absolute h-full mt-[200px] w-[3000px] -z-10" />
                             <div className="flex flex-col gap-[10px] w-full max-w-[700px] px-[20px]">
                                 {credentials}
                             </div>
                             {credentialsFetching && (
                                 <div className="w-full flex items-center justify-center">
-                                    <IonSpinner
+                                    <AppSpinner
                                         name="crescent"
                                         color="grayscale-900"
                                         className="scale-[2] mb-8 mt-6"
                                     />
                                 </div>
                             )}
-                        </IonCol>
+                        </AppCol>
                     )}
                 </>
             )}

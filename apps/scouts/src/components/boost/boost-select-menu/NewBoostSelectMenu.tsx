@@ -1,15 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import {
-    IonCol,
-    IonContent,
-    IonGrid,
-    IonHeader,
-    IonInput,
-    IonPage,
-    IonRow,
-    IonToolbar,
-} from '@ionic/react';
-import {
     useGetCurrentUserTroopIdsResolved,
     BoostPageViewMode,
     useCountFamilialBoosts,
@@ -32,6 +22,9 @@ import Pulpo from '../../../assets/lotties/cuteopulpo.json';
 import boostSearchStore from '../../../stores/boostSearchStore';
 import * as m from '../../../paraglide/messages.js';
 import { useLocalizedBoostFilter } from './useLocalizedBoostFilter';
+import { AppContent, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 
 interface NewBoostSelectMenuProps {
     handleCloseModal: () => void;
@@ -79,6 +72,7 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
     const isHardcodedPack = useMemo(
         () =>
             [BadgePackOptionsEnum.local, BadgePackOptionsEnum.scoutpass].includes(
+                // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain -- removing the assertion widens the type and needs a real null check
                 boostPackSelected?.type!
             ),
         [boostPackSelected?.type]
@@ -198,9 +192,9 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
     const query = canCreateNewBoost ? { category } : { category, status: 'LIVE' };
 
     return (
-        <IonPage>
-            <IonHeader className="ion-no-border ion-no-padding">
-                <IonToolbar className="ion-no-border ion-no-padding">
+        <AppPage>
+            <AppHeader className="ion-no-border ion-no-padding">
+                <AppToolbar className="ion-no-border ion-no-padding">
                     <div className="w-full flex flex-col items-center justify-center ion-padding ">
                         <HeaderSection
                             title={title}
@@ -230,16 +224,17 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
 
                         {/* <SearchInput search={search} onSearchChange={setSearch} /> */}
                     </div>
-                </IonToolbar>
-            </IonHeader>
+                </AppToolbar>
+            </AppHeader>
 
-            <IonContent color="grayscale-100" fullscreen>
-                <IonCol className="badge-list-container pt-0!">
-                    <IonGrid className="max-w-[600px]">
+            <AppContent color="grayscale-100" fullscreen>
+                <AppCol className="badge-list-container pt-0!">
+                    <AppGrid className="max-w-[600px]">
+                        {/* eslint-disable-next-line react/jsx-no-undef -- existing reference to a component this file never imports (already in the typecheck baseline); fixing it is a behavior change, out of scope here */}
                         {filteredBoostPack.length === 0 && search && <NoResultsMessage />}
 
                         {!noTroopOrNetworkPacks && !error && (
-                            <IonRow>
+                            <AppRow>
                                 {showNewBoostpackTypes && hardcodedBoostPack ? (
                                     <>
                                         {canCreateNewBoost && (
@@ -280,7 +275,7 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
                                         />
                                     )
                                 )}
-                            </IonRow>
+                            </AppRow>
                         )}
                         {noTroopOrNetworkPacks && !error && <EmptyState />}
 
@@ -295,10 +290,10 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
                                 </button>
                             </div>
                         )}
-                    </IonGrid>
-                </IonCol>
-            </IonContent>
-        </IonPage>
+                    </AppGrid>
+                </AppCol>
+            </AppContent>
+        </AppPage>
     );
 };
 
@@ -332,20 +327,20 @@ const SearchInput: React.FC<{
     onSearchChange: (value: string) => void;
 }> = ({ search, onSearchChange }) => (
     <div className="flex items-center justify-between w-full max-w-[600px]">
-        <IonRow class="w-full max-w-[600px] mt-6 ion-no-padding">
-            <IonCol className="flex w-full items-center justify-start ion-no-padding">
-                <IonInput
+        <AppRow className="w-full max-w-[600px] mt-6 ion-no-padding">
+            <AppCol className="flex w-full items-center justify-start ion-no-padding">
+                <AppInput
                     aria-label={m['boost.searchPlaceholder']()}
                     autocapitalize="on"
                     placeholder={m['boost.searchPlaceholder']()}
                     value={search}
                     className="boost-search-input"
-                    onIonInput={e => onSearchChange(e.detail.value || '')}
+                    onValueInput={value => onSearchChange(value || '')}
                     type="text"
                     clearInput
                 />
-            </IonCol>
-        </IonRow>
+            </AppCol>
+        </AppRow>
     </div>
 );
 

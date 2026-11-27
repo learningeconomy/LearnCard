@@ -1,13 +1,12 @@
 import React from 'react';
 
-import { IonRow, IonCol } from '@ionic/react';
-
 import { useModal, ModalTypes } from 'learn-card-base';
 import { openToS, openPP } from '../../helpers/externalLinkHelpers';
 import ModalLayout from '../../layout/ModalLayout';
 import { JoinNetworkModalWrapper } from './hooks/useJoinLCNetworkModal';
 import * as m from '../../paraglide/messages.js';
 import { TransP } from '../../i18n/TransP';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 export const RejectNetworkPrompt: React.FC<{ handleCloseModal: () => void }> = ({
     handleCloseModal,
@@ -30,24 +29,24 @@ export const RejectNetworkPrompt: React.FC<{ handleCloseModal: () => void }> = (
 
     return (
         <ModalLayout handleOnClick={handleCloseModal}>
-            <IonRow className="flex flex-col pb-4 pt-2 w-full">
-                <IonCol className="w-full flex items-center justify-center">
+            <AppRow className="flex flex-col pb-4 pt-2 w-full">
+                <AppCol className="w-full flex items-center justify-center">
                     <h6 className="tracking-[12px] text-base font-bold text-black">SCOUTPASS</h6>
-                </IonCol>
-                <IonCol className="w-full flex items-center justify-center mt-8">
+                </AppCol>
+                <AppCol className="w-full flex items-center justify-center mt-8">
                     <h6 className="text-center text-black text-2xl">
                         {m['networkPrompts.reject.noProblem']()}
                     </h6>
-                </IonCol>
-                <IonCol className="w-full flex items-center justify-center mt-8">
+                </AppCol>
+                <AppCol className="w-full flex items-center justify-center mt-8">
                     <h6 className="text-center text-black text-2xl">
                         {m['networkPrompts.reject.stillUse']()}
                     </h6>
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
 
-            <IonRow className="flex items-center justify-center w-full">
-                <IonCol className="text-center">
+            <AppRow className="flex items-center justify-center w-full">
+                <AppCol className="text-center">
                     <p className="text-center text-sm font-semibold px-[16px] text-grayscale-600">
                         <TransP
                             m={m['networkPrompts.reject.credAccess']}
@@ -56,10 +55,10 @@ export const RejectNetworkPrompt: React.FC<{ handleCloseModal: () => void }> = (
                             ]}
                         />
                     </p>
-                </IonCol>
-            </IonRow>
-            <IonRow className="w-full flex items-center justify-center mt-6">
-                <IonCol className="flex items-center flex-col max-w-[90%] border-b border-grayscale-200">
+                </AppCol>
+            </AppRow>
+            <AppRow className="w-full flex items-center justify-center mt-6">
+                <AppCol className="flex items-center flex-col max-w-[90%] border-b border-grayscale-200">
                     <button
                         onClick={() => handleCloseModal()}
                         type="submit"
@@ -79,20 +78,20 @@ export const RejectNetworkPrompt: React.FC<{ handleCloseModal: () => void }> = (
                             {m['networkPrompts.reject.joinNet']()}
                         </button>
                     </div>
-                </IonCol>
-            </IonRow>
-            <IonRow className="flex items-center justify-center mt-4 w-full">
-                <IonCol className="flex flex-col items-center justify-center text-center">
+                </AppCol>
+            </AppRow>
+            <AppRow className="flex items-center justify-center mt-4 w-full">
+                <AppCol className="flex flex-col items-center justify-center text-center">
                     <p className="text-center text-sm font-normal px-16 text-grayscale-600">
                         {m['networkPrompts.dataOwn']()}
                         <br />
                         {m['networkPrompts.encrypted']()}
                     </p>
                     <button className="text-indigo-500 font-bold">{m['common.learnMore']()}</button>
-                </IonCol>
-            </IonRow>
-            <IonRow className="flex items-center justify-center w-full">
-                <IonCol className="flex items-center justify-center">
+                </AppCol>
+            </AppRow>
+            <AppRow className="flex items-center justify-center w-full">
+                <AppCol className="flex items-center justify-center">
                     <button onClick={openPP} className="text-indigo-500 font-bold text-sm">
                         {m['login.privacyPolicy']()}
                     </button>
@@ -102,8 +101,8 @@ export const RejectNetworkPrompt: React.FC<{ handleCloseModal: () => void }> = (
                     <button onClick={openToS} className="text-indigo-500 font-bold text-sm">
                         {m['login.termsOfService']()}
                     </button>
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
         </ModalLayout>
     );
 };

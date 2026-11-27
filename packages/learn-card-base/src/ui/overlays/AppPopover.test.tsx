@@ -9,7 +9,7 @@ import type { OverlayDismissEvent } from './overlayStack';
 let ionApp: HTMLElement;
 
 beforeEach(() => {
-    ionApp = document.createElement('ion-app');
+    ionApp = Object.assign(document.createElement('div'), { className: 'app-root' });
     ionApp.innerHTML = '<div id="ion-view-container-root"></div>';
     document.body.appendChild(ionApp);
 });
@@ -78,7 +78,7 @@ const openPopover = async () => {
 };
 
 describe('AppPopover', () => {
-    it('mounts its content in ion-app only while open, hiding the page from assistive tech', async () => {
+    it('mounts its content in the app root only while open, hiding the page from assistive tech', async () => {
         render(<Harness />);
         expect(host()).toBeNull();
         expect(screen.queryByText('First')).toBeNull();
@@ -95,6 +95,18 @@ describe('AppPopover', () => {
         expect(screen.getByText('First')).toBeInTheDocument();
         expect(root()).toHaveAttribute('aria-hidden', 'true');
         expect(document.body).toHaveClass('backdrop-no-scroll');
+    });
+
+    it('hides the AppOutlet view container while open', async () => {
+        ionApp.innerHTML = '<div class="app-router-outlet" data-app-outlet=""></div>';
+        const outlet = ionApp.querySelector<HTMLElement>('[data-app-outlet]')!;
+        render(<Harness />);
+        const opener = await openPopover();
+        expect(outlet).toHaveAttribute('aria-hidden', 'true');
+        fireEvent.keyDown(document.activeElement!, { key: 'Escape' });
+        await waitFor(() => expect(host()).toBeNull());
+        expect(outlet).not.toHaveAttribute('aria-hidden');
+        expect(opener).toBeInTheDocument();
     });
 
     it('dismisses on Escape with the backdrop role and restores focus to the opener', async () => {

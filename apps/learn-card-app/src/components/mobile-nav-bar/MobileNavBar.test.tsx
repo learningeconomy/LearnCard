@@ -12,10 +12,6 @@ vi.mock('react-router-dom', () => ({
     useLocation: () => ({ pathname: '/dashboard' }),
 }));
 
-vi.mock('@ionic/react', () => ({
-    IonLabel: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-}));
-
 vi.mock('learn-card-base/ui/app-shell/AppTabs', () => {
     const Container = ({ children }: React.PropsWithChildren) => <div>{children}</div>;
 

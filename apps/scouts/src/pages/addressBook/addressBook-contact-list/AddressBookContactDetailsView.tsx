@@ -1,8 +1,6 @@
 import React from 'react';
 import { Clipboard } from '@capacitor/clipboard';
 
-import { IonRow, IonCol, useIonAlert } from '@ionic/react';
-
 import X from 'learn-card-base/svgs/X';
 import Plus from 'learn-card-base/svgs/Plus';
 import Block from 'learn-card-base/svgs/Block';
@@ -26,6 +24,8 @@ import { useIsCurrentUserLCNUser } from 'learn-card-base';
 import { useCheckIfUserInNetwork } from 'apps/scouts/src/components/network-prompts/hooks/useCheckIfUserInNetwork';
 import useBoostModal from '../../../components/boost/hooks/useBoostModal';
 import * as m from '../../../paraglide/messages.js';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
+import { useAppAlert } from 'learn-card-base/ui/overlays';
 
 type AddressBookContactDetailsViewProps = {
     contact: LCNProfile | null;
@@ -62,6 +62,7 @@ type AddressBookContactDetailsViewProps = {
         e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
         profileId: string
     ) => void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     history: any;
 };
 
@@ -85,7 +86,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
     history,
 }) => {
     const { presentToast } = useToast();
-    const [presentAlert, dismissAlert] = useIonAlert();
+    const [presentAlert, dismissAlert] = useAppAlert();
     const { closeModal } = useModal();
     const sectionPortal = document.getElementById('section-cancel-portal');
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
@@ -93,6 +94,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
 
     const showConfirmationAlert = (
         header: string,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
         handler: (e: any, profileId?: string) => void
     ) => {
         closeModal();
@@ -212,25 +214,25 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
 
     return (
         <section className="pt-[36px] pb-[16px]">
-            <IonRow className="flex items-center justify-center w-full">
-                <IonCol className="w-full flex items-center justify-center">
+            <AppRow className="flex items-center justify-center w-full">
+                <AppCol className="w-full flex items-center justify-center">
                     <UserProfilePicture
                         customContainerClass="flex justify-center items-center h-[70px] w-[70px] min-h-[70px] min-w-[70px] rounded-full overflow-hidden text-white font-medium text-xl"
                         customImageClass="flex justify-center items-center h-[70px] w-[70px] min-h-[70px] min-w-[70px] rounded-full overflow-hidden object-cover"
                         customSize={164}
                         user={contact}
                     />
-                </IonCol>
-            </IonRow>
-            <IonRow className="flex items-center justify-center w-full">
-                <IonCol className="w-full flex items-center justify-center">
+                </AppCol>
+            </AppRow>
+            <AppRow className="flex items-center justify-center w-full">
+                <AppCol className="w-full flex items-center justify-center">
                     <h2 className="text-center w-full font-poppins text-2xl font-semibold text-grayscale-900">
                         {contact?.displayName || contact?.profileId}
                     </h2>
-                </IonCol>
-            </IonRow>
-            <IonRow className="flex items-center justify-center w-full mt-2 px-4 pb-1">
-                <IonCol className="flex flex-col items-center justify-center">
+                </AppCol>
+            </AppRow>
+            <AppRow className="flex items-center justify-center w-full mt-2 px-4 pb-1">
+                <AppCol className="flex flex-col items-center justify-center">
                     {showBoostButton && (
                         <button
                             onClick={() => {
@@ -325,10 +327,10 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                             <Block className="ml-[5px] h-[30px] w-[30px] text-grayscale-700" />
                         </button>
                     )}
-                </IonCol>
-            </IonRow>
-            <IonRow className="flex items-center justify-center w-full px-4 mb-4">
-                <IonCol className="w-full bg-grayscale-100 flex items-center justify-between px-4 rounded-2xl">
+                </AppCol>
+            </AppRow>
+            <AppRow className="flex items-center justify-center w-full px-4 mb-4">
+                <AppCol className="w-full bg-grayscale-100 flex items-center justify-between px-4 rounded-2xl">
                     <div className="w-[80%] flex flex-col justify-center items-start text-left">
                         <p className="text-grayscale-500 font-medium text-sm">
                             {m['addressBook.scoutpassNumber']()}
@@ -341,8 +343,8 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                     >
                         <CopyStack className="w-[32px] h-[32px] text-grayscale-900" />
                     </div>
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
             {sectionPortal &&
                 showAcceptButton &&
                 createPortal(

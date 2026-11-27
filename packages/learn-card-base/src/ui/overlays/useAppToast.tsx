@@ -8,7 +8,7 @@ export type AppToastOptions = Omit<AppToastProps, 'isOpen'>;
 
 type PresentedToast = { root: Root; setOpen: (open: boolean) => void };
 
-/** Renders a toast outside the caller's tree (it portals into `ion-app` like inline toasts). */
+/** Renders a toast outside the caller's tree (it portals into the app root (`AppRoot`) like inline toasts). */
 const ControlledToast: React.FC<{
     options: AppToastOptions;
     onRendered: (setOpen: (open: boolean) => void) => void;

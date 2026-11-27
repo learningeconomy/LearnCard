@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react';
-import { IonApp, IonContent } from '@ionic/react';
+import { AppRoot } from 'learn-card-base/ui/app-shell/AppRoot';
 import { AppReorder as Reorder, AppReorderGroup as ReorderGroup } from 'learn-card-base/ui/reorder';
 import { CredentialCategoryEnum } from 'learn-card-base';
 
@@ -12,6 +12,7 @@ import type {
 import { resumeBuilderStore } from '../../src/stores/resumeBuilderStore';
 import { personaCredentials } from '../../src/pages/dashboard/dashboard.personas';
 import VerticalArrowsIcon from '../../src/components/svgs/VerticalArrowsIcon';
+import { AppContent } from 'learn-card-base/ui/chrome';
 
 /**
  * `reorder-1`: the reorder call sites in learn-card-app, one per page (`&case=<id>`).
@@ -188,9 +189,9 @@ const CASES: Record<string, (report: Report) => React.ReactNode> = {
     ),
     'resume-content': () => (
         <div className="relative h-[520px]">
-            <IonContent data-testid="scroll">
+            <AppContent data-testid="scroll">
                 <Resume />
-            </IonContent>
+            </AppContent>
         </div>
     ),
     simple: report => <Simple report={report} />,
@@ -236,7 +237,7 @@ const FixtureBody: React.FC = () => {
 };
 
 export const ReorderVisualFixture: React.FC = () => (
-    <IonApp>
+    <AppRoot>
         <FixtureBody />
-    </IonApp>
+    </AppRoot>
 );

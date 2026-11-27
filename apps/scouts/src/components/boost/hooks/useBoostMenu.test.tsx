@@ -106,9 +106,6 @@ vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
     unwrapBoostCredential: (credential: unknown) => credential,
 }));
 
-vi.mock('@ionic/react', () => ({
-    IonCol: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-}));
 vi.mock('learn-card-base/hooks/useVerifyCredential', () => ({
     default: () => ({ verifyCredential: vi.fn(), worstVerificationStatus: undefined }),
 }));

@@ -1452,3 +1452,176 @@ div.app-textarea-disabled:where(.app-textarea.md) {
 .app-textarea.md .app-textarea-counter {
     letter-spacing: 0.0333333333em;
 }
+
+/*
+ * AppInputPasswordToggle: ion-input-password-toggle's ion-button (fill="clear", shape="round",
+ * icon-only). Clear buttons take the surrounding text color here; Ionic's `color` names without
+ * palette tokens resolved the same way.
+ */
+.app-input-password-toggle {
+    display: inline-flex;
+}
+
+.app-input-password-toggle-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 4px 2px;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+}
+
+.app-input-password-toggle-button-ios {
+    min-width: clamp(30px, 2.125em, 60px);
+    min-height: clamp(30px, 2.125em, 60px);
+    font-size: min(1rem, 48px);
+}
+
+.app-input-password-toggle-button-md {
+    min-width: clamp(30px, 2.86em, 60px);
+    min-height: clamp(30px, 2.86em, 60px);
+    font-size: 0.875rem;
+}
+
+.app-input-password-toggle-button-ios .app-input-password-toggle-icon {
+    font-size: clamp(15.12px, 1.125em, 43.02px);
+}
+
+.app-input-password-toggle-button-md .app-input-password-toggle-icon {
+    font-size: clamp(15.104px, 1.6em, 43.008px);
+}
+
+.app-input-password-toggle-button:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+}
+
+/*
+ * AppSelect: ion-select (interface="popover", no label) and ion-select-popover's radio list, from
+ * @ionic/core 8.7.2 select.ios/md.css and select-popover.css.
+ */
+.app-select {
+    display: flex;
+    position: relative;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    line-height: normal;
+    white-space: nowrap;
+    text-align: start;
+    cursor: pointer;
+    z-index: 2;
+}
+
+.app-select-disabled {
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+.app-select-md.app-select-disabled {
+    opacity: 0.38;
+}
+
+.app-select-text {
+    flex: 1;
+    min-width: 16px;
+    overflow: hidden;
+    font-size: inherit;
+    text-overflow: ellipsis;
+    white-space: inherit;
+}
+
+.app-select-placeholder {
+    opacity: var(--ion-placeholder-opacity, 0.6);
+}
+
+.app-select-icon {
+    position: relative;
+    flex-shrink: 0;
+    margin-inline-start: 4px;
+    color: inherit;
+}
+
+.app-select-ios .app-select-icon {
+    width: 1.125rem;
+    height: 1.125rem;
+    color: var(--ion-color-step-650, var(--ion-text-color-step-350, #595959));
+}
+
+.app-select-md .app-select-icon {
+    width: 0.8125rem;
+    color: var(--ion-color-step-500, var(--ion-text-color-step-500, gray));
+    transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.app-select-md.app-select-expanded .app-select-icon {
+    transform: rotate(180deg);
+    color: var(--ion-color-primary, #0054e9);
+}
+
+.app-select-options {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.app-select-option {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-height: 48px;
+    padding: 0 16px;
+    border: 0;
+    background: transparent;
+    color: var(--ion-text-color, #000);
+    font: inherit;
+    font-size: 1rem;
+    text-align: start;
+    cursor: pointer;
+}
+
+.app-select-options-ios .app-select-option {
+    min-height: 44px;
+}
+
+.app-select-option-radio {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--ion-color-step-600, var(--ion-background-color-step-600, #666666));
+    border-radius: 50%;
+}
+
+.app-select-option-checked .app-select-option-radio {
+    border-color: var(--ion-color-primary, #0054e9);
+    background: radial-gradient(circle, var(--ion-color-primary, #0054e9) 0 4.5px, transparent 5px);
+}
+
+.app-select-options-ios .app-select-option-radio {
+    display: none;
+}
+
+.app-select-options-ios .app-select-option-checked::after {
+    content: '';
+    width: 7px;
+    height: 12px;
+    margin-inline-start: auto;
+    border: solid var(--ion-color-primary, #0054e9);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.app-select-option:focus-visible {
+    outline: 2px solid var(--ion-color-primary, #0054e9);
+    outline-offset: -2px;
+}

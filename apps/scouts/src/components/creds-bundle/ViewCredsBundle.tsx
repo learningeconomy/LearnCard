@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { IonContent, IonButton, IonPage, useIonAlert, IonHeader, IonToolbar } from '@ionic/react';
 
 import { initLearnCard } from '@learncard/init';
 import { VC, VP } from '@learncard/types';
@@ -10,6 +9,9 @@ import * as m from '../../paraglide/messages.js';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import ShareBoostsBundle from './ShareBoostsBundle';
+import { AppContent, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppButton } from 'learn-card-base/ui/controls/AppButton';
+import { useAppAlert } from 'learn-card-base/ui/overlays';
 
 const PIN_INPUT_NAME = 'pin';
 
@@ -21,10 +23,11 @@ const ViewCredsBundle: React.FC = () => {
     const [errMsg, setErrMsg] = useState<string | undefined | null>();
     const [username, setUsername] = useState();
     const [loading, setLoading] = useState<boolean>(true);
-    const [presentAlert] = useIonAlert();
+    const [presentAlert] = useAppAlert();
 
     const [credentials, setCredentials] = useState<VC[] | undefined>();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     const [jobMetaData, setJobMetaData] = useState<any>(null);
 
     const showPinInputAlert = () => {
@@ -61,7 +64,7 @@ const ViewCredsBundle: React.FC = () => {
 
         try {
             const wallet = await initLearnCard({ seed: _seed });
-            let bundleWalletIndex = await wallet.invoke.getIDXIndex();
+            const bundleWalletIndex = await wallet.invoke.getIDXIndex();
             // There should never be more than one in job id in this case
             //const jobId = jobWalletIndex?.jobs?.[0]?.jobId;
 
@@ -84,6 +87,7 @@ const ViewCredsBundle: React.FC = () => {
         } catch (e) {
             setLoading(false);
             setErrMsg(`Error: wrong PIN: ${e}`);
+            // eslint-disable-next-line preserve-caught-error -- adding { cause } changes the shape of the thrown error
             throw new Error(`Error fetching credential: ${e}`);
         }
     };
@@ -115,9 +119,9 @@ const ViewCredsBundle: React.FC = () => {
     };
 
     return (
-        <IonPage className="metaversity-primary-blue">
-            <IonHeader translucent={true}>
-                <IonToolbar className="flex">
+        <AppPage className="metaversity-primary-blue">
+            <AppHeader translucent={true}>
+                <AppToolbar className="flex">
                     <div className="flex justify-between items-center">
                         <div>
                             <h6
@@ -128,20 +132,20 @@ const ViewCredsBundle: React.FC = () => {
                             </h6>
                         </div>
 
-                        <IonButton className="text-grayscale-600 mr-[20px]" onClick={openWebsite}>
+                        <AppButton className="text-grayscale-600 mr-[20px]" onClick={openWebsite}>
                             {m['common.learnMore']()}
-                        </IonButton>
+                        </AppButton>
                     </div>
-                </IonToolbar>
-            </IonHeader>
-            <IonContent
+                </AppToolbar>
+            </AppHeader>
+            <AppContent
                 fullscreen
                 color="metaversity-primary-blue"
                 className="metaversity-dark-blue"
             >
                 {credentials && <ShareBoostsBundle initialCredentials={credentials} readOnly />}
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

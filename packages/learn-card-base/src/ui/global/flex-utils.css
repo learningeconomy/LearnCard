@@ -1,0 +1,880 @@
+/*
+ * Ionic Framework 8.7.2 css/flex-utils.css (https://ionicframework.com), MIT License, Copyright (c)
+ * Ionic. Copied verbatim so LearnCard keeps the same global styles without the @ionic packages.
+ */
+.ion-align-content-start {
+    align-content: flex-start !important;
+}
+.ion-align-content-end {
+    align-content: flex-end !important;
+}
+.ion-align-content-center {
+    align-content: center !important;
+}
+.ion-align-content-between {
+    align-content: space-between !important;
+}
+.ion-align-content-around {
+    align-content: space-around !important;
+}
+.ion-align-content-stretch {
+    align-content: stretch !important;
+}
+@media (min-width: 576px) {
+    .ion-align-content-sm-start {
+        align-content: flex-start !important;
+    }
+    .ion-align-content-sm-end {
+        align-content: flex-end !important;
+    }
+    .ion-align-content-sm-center {
+        align-content: center !important;
+    }
+    .ion-align-content-sm-between {
+        align-content: space-between !important;
+    }
+    .ion-align-content-sm-around {
+        align-content: space-around !important;
+    }
+    .ion-align-content-sm-stretch {
+        align-content: stretch !important;
+    }
+}
+@media (min-width: 768px) {
+    .ion-align-content-md-start {
+        align-content: flex-start !important;
+    }
+    .ion-align-content-md-end {
+        align-content: flex-end !important;
+    }
+    .ion-align-content-md-center {
+        align-content: center !important;
+    }
+    .ion-align-content-md-between {
+        align-content: space-between !important;
+    }
+    .ion-align-content-md-around {
+        align-content: space-around !important;
+    }
+    .ion-align-content-md-stretch {
+        align-content: stretch !important;
+    }
+}
+@media (min-width: 992px) {
+    .ion-align-content-lg-start {
+        align-content: flex-start !important;
+    }
+    .ion-align-content-lg-end {
+        align-content: flex-end !important;
+    }
+    .ion-align-content-lg-center {
+        align-content: center !important;
+    }
+    .ion-align-content-lg-between {
+        align-content: space-between !important;
+    }
+    .ion-align-content-lg-around {
+        align-content: space-around !important;
+    }
+    .ion-align-content-lg-stretch {
+        align-content: stretch !important;
+    }
+}
+@media (min-width: 1200px) {
+    .ion-align-content-xl-start {
+        align-content: flex-start !important;
+    }
+    .ion-align-content-xl-end {
+        align-content: flex-end !important;
+    }
+    .ion-align-content-xl-center {
+        align-content: center !important;
+    }
+    .ion-align-content-xl-between {
+        align-content: space-between !important;
+    }
+    .ion-align-content-xl-around {
+        align-content: space-around !important;
+    }
+    .ion-align-content-xl-stretch {
+        align-content: stretch !important;
+    }
+}
+.ion-align-items-start {
+    align-items: start !important;
+}
+.ion-align-items-end {
+    align-items: end !important;
+}
+.ion-align-items-center {
+    align-items: center !important;
+}
+.ion-align-items-stretch {
+    align-items: stretch !important;
+}
+.ion-align-items-baseline {
+    align-items: baseline !important;
+}
+@media (min-width: 576px) {
+    .ion-align-items-sm-start {
+        align-items: start !important;
+    }
+    .ion-align-items-sm-end {
+        align-items: end !important;
+    }
+    .ion-align-items-sm-center {
+        align-items: center !important;
+    }
+    .ion-align-items-sm-stretch {
+        align-items: stretch !important;
+    }
+    .ion-align-items-sm-baseline {
+        align-items: baseline !important;
+    }
+}
+@media (min-width: 768px) {
+    .ion-align-items-md-start {
+        align-items: start !important;
+    }
+    .ion-align-items-md-end {
+        align-items: end !important;
+    }
+    .ion-align-items-md-center {
+        align-items: center !important;
+    }
+    .ion-align-items-md-stretch {
+        align-items: stretch !important;
+    }
+    .ion-align-items-md-baseline {
+        align-items: baseline !important;
+    }
+}
+@media (min-width: 992px) {
+    .ion-align-items-lg-start {
+        align-items: start !important;
+    }
+    .ion-align-items-lg-end {
+        align-items: end !important;
+    }
+    .ion-align-items-lg-center {
+        align-items: center !important;
+    }
+    .ion-align-items-lg-stretch {
+        align-items: stretch !important;
+    }
+    .ion-align-items-lg-baseline {
+        align-items: baseline !important;
+    }
+}
+@media (min-width: 1200px) {
+    .ion-align-items-xl-start {
+        align-items: start !important;
+    }
+    .ion-align-items-xl-end {
+        align-items: end !important;
+    }
+    .ion-align-items-xl-center {
+        align-items: center !important;
+    }
+    .ion-align-items-xl-stretch {
+        align-items: stretch !important;
+    }
+    .ion-align-items-xl-baseline {
+        align-items: baseline !important;
+    }
+}
+.ion-align-self-start {
+    align-self: start !important;
+}
+.ion-align-self-end {
+    align-self: end !important;
+}
+.ion-align-self-center {
+    align-self: center !important;
+}
+.ion-align-self-stretch {
+    align-self: stretch !important;
+}
+.ion-align-self-baseline {
+    align-self: baseline !important;
+}
+.ion-align-self-auto {
+    align-self: auto !important;
+}
+@media (min-width: 576px) {
+    .ion-align-self-sm-start {
+        align-self: start !important;
+    }
+    .ion-align-self-sm-end {
+        align-self: end !important;
+    }
+    .ion-align-self-sm-center {
+        align-self: center !important;
+    }
+    .ion-align-self-sm-stretch {
+        align-self: stretch !important;
+    }
+    .ion-align-self-sm-baseline {
+        align-self: baseline !important;
+    }
+    .ion-align-self-sm-auto {
+        align-self: auto !important;
+    }
+}
+@media (min-width: 768px) {
+    .ion-align-self-md-start {
+        align-self: start !important;
+    }
+    .ion-align-self-md-end {
+        align-self: end !important;
+    }
+    .ion-align-self-md-center {
+        align-self: center !important;
+    }
+    .ion-align-self-md-stretch {
+        align-self: stretch !important;
+    }
+    .ion-align-self-md-baseline {
+        align-self: baseline !important;
+    }
+    .ion-align-self-md-auto {
+        align-self: auto !important;
+    }
+}
+@media (min-width: 992px) {
+    .ion-align-self-lg-start {
+        align-self: start !important;
+    }
+    .ion-align-self-lg-end {
+        align-self: end !important;
+    }
+    .ion-align-self-lg-center {
+        align-self: center !important;
+    }
+    .ion-align-self-lg-stretch {
+        align-self: stretch !important;
+    }
+    .ion-align-self-lg-baseline {
+        align-self: baseline !important;
+    }
+    .ion-align-self-lg-auto {
+        align-self: auto !important;
+    }
+}
+@media (min-width: 1200px) {
+    .ion-align-self-xl-start {
+        align-self: start !important;
+    }
+    .ion-align-self-xl-end {
+        align-self: end !important;
+    }
+    .ion-align-self-xl-center {
+        align-self: center !important;
+    }
+    .ion-align-self-xl-stretch {
+        align-self: stretch !important;
+    }
+    .ion-align-self-xl-baseline {
+        align-self: baseline !important;
+    }
+    .ion-align-self-xl-auto {
+        align-self: auto !important;
+    }
+}
+.ion-justify-content-start {
+    justify-content: flex-start !important;
+}
+.ion-justify-content-end {
+    justify-content: flex-end !important;
+}
+.ion-justify-content-center {
+    justify-content: center !important;
+}
+.ion-justify-content-between {
+    justify-content: space-between !important;
+}
+.ion-justify-content-around {
+    justify-content: space-around !important;
+}
+.ion-justify-content-evenly {
+    justify-content: space-evenly !important;
+}
+@media (min-width: 576px) {
+    .ion-justify-content-sm-start {
+        justify-content: flex-start !important;
+    }
+    .ion-justify-content-sm-end {
+        justify-content: flex-end !important;
+    }
+    .ion-justify-content-sm-center {
+        justify-content: center !important;
+    }
+    .ion-justify-content-sm-between {
+        justify-content: space-between !important;
+    }
+    .ion-justify-content-sm-around {
+        justify-content: space-around !important;
+    }
+    .ion-justify-content-sm-evenly {
+        justify-content: space-evenly !important;
+    }
+}
+@media (min-width: 768px) {
+    .ion-justify-content-md-start {
+        justify-content: flex-start !important;
+    }
+    .ion-justify-content-md-end {
+        justify-content: flex-end !important;
+    }
+    .ion-justify-content-md-center {
+        justify-content: center !important;
+    }
+    .ion-justify-content-md-between {
+        justify-content: space-between !important;
+    }
+    .ion-justify-content-md-around {
+        justify-content: space-around !important;
+    }
+    .ion-justify-content-md-evenly {
+        justify-content: space-evenly !important;
+    }
+}
+@media (min-width: 992px) {
+    .ion-justify-content-lg-start {
+        justify-content: flex-start !important;
+    }
+    .ion-justify-content-lg-end {
+        justify-content: flex-end !important;
+    }
+    .ion-justify-content-lg-center {
+        justify-content: center !important;
+    }
+    .ion-justify-content-lg-between {
+        justify-content: space-between !important;
+    }
+    .ion-justify-content-lg-around {
+        justify-content: space-around !important;
+    }
+    .ion-justify-content-lg-evenly {
+        justify-content: space-evenly !important;
+    }
+}
+@media (min-width: 1200px) {
+    .ion-justify-content-xl-start {
+        justify-content: flex-start !important;
+    }
+    .ion-justify-content-xl-end {
+        justify-content: flex-end !important;
+    }
+    .ion-justify-content-xl-center {
+        justify-content: center !important;
+    }
+    .ion-justify-content-xl-between {
+        justify-content: space-between !important;
+    }
+    .ion-justify-content-xl-around {
+        justify-content: space-around !important;
+    }
+    .ion-justify-content-xl-evenly {
+        justify-content: space-evenly !important;
+    }
+}
+.ion-flex-row {
+    flex-direction: row !important;
+}
+.ion-flex-row-reverse {
+    flex-direction: row-reverse !important;
+}
+.ion-flex-column {
+    flex-direction: column !important;
+}
+.ion-flex-column-reverse {
+    flex-direction: column-reverse !important;
+}
+@media (min-width: 576px) {
+    .ion-flex-sm-row {
+        flex-direction: row !important;
+    }
+    .ion-flex-sm-row-reverse {
+        flex-direction: row-reverse !important;
+    }
+    .ion-flex-sm-column {
+        flex-direction: column !important;
+    }
+    .ion-flex-sm-column-reverse {
+        flex-direction: column-reverse !important;
+    }
+}
+@media (min-width: 768px) {
+    .ion-flex-md-row {
+        flex-direction: row !important;
+    }
+    .ion-flex-md-row-reverse {
+        flex-direction: row-reverse !important;
+    }
+    .ion-flex-md-column {
+        flex-direction: column !important;
+    }
+    .ion-flex-md-column-reverse {
+        flex-direction: column-reverse !important;
+    }
+}
+@media (min-width: 992px) {
+    .ion-flex-lg-row {
+        flex-direction: row !important;
+    }
+    .ion-flex-lg-row-reverse {
+        flex-direction: row-reverse !important;
+    }
+    .ion-flex-lg-column {
+        flex-direction: column !important;
+    }
+    .ion-flex-lg-column-reverse {
+        flex-direction: column-reverse !important;
+    }
+}
+@media (min-width: 1200px) {
+    .ion-flex-xl-row {
+        flex-direction: row !important;
+    }
+    .ion-flex-xl-row-reverse {
+        flex-direction: row-reverse !important;
+    }
+    .ion-flex-xl-column {
+        flex-direction: column !important;
+    }
+    .ion-flex-xl-column-reverse {
+        flex-direction: column-reverse !important;
+    }
+}
+.ion-wrap {
+    flex-wrap: wrap !important;
+}
+.ion-nowrap {
+    flex-wrap: nowrap !important;
+}
+.ion-wrap-reverse {
+    flex-wrap: wrap-reverse !important;
+}
+.ion-flex-wrap {
+    flex-wrap: wrap !important;
+}
+.ion-flex-nowrap {
+    flex-wrap: nowrap !important;
+}
+.ion-flex-wrap-reverse {
+    flex-wrap: wrap-reverse !important;
+}
+@media (min-width: 576px) {
+    .ion-flex-sm-wrap {
+        flex-wrap: wrap !important;
+    }
+    .ion-flex-sm-nowrap {
+        flex-wrap: nowrap !important;
+    }
+    .ion-flex-sm-wrap-reverse {
+        flex-wrap: wrap-reverse !important;
+    }
+}
+@media (min-width: 768px) {
+    .ion-flex-md-wrap {
+        flex-wrap: wrap !important;
+    }
+    .ion-flex-md-nowrap {
+        flex-wrap: nowrap !important;
+    }
+    .ion-flex-md-wrap-reverse {
+        flex-wrap: wrap-reverse !important;
+    }
+}
+@media (min-width: 992px) {
+    .ion-flex-lg-wrap {
+        flex-wrap: wrap !important;
+    }
+    .ion-flex-lg-nowrap {
+        flex-wrap: nowrap !important;
+    }
+    .ion-flex-lg-wrap-reverse {
+        flex-wrap: wrap-reverse !important;
+    }
+}
+@media (min-width: 1200px) {
+    .ion-flex-xl-wrap {
+        flex-wrap: wrap !important;
+    }
+    .ion-flex-xl-nowrap {
+        flex-wrap: nowrap !important;
+    }
+    .ion-flex-xl-wrap-reverse {
+        flex-wrap: wrap-reverse !important;
+    }
+}
+.ion-flex-1 {
+    flex: 1 !important;
+}
+.ion-flex-auto {
+    flex: auto !important;
+}
+.ion-flex-initial {
+    flex: initial !important;
+}
+.ion-flex-none {
+    flex: none !important;
+}
+@media (min-width: 576px) {
+    .ion-flex-sm-1 {
+        flex: 1 !important;
+    }
+    .ion-flex-sm-auto {
+        flex: auto !important;
+    }
+    .ion-flex-sm-initial {
+        flex: initial !important;
+    }
+    .ion-flex-sm-none {
+        flex: none !important;
+    }
+}
+@media (min-width: 768px) {
+    .ion-flex-md-1 {
+        flex: 1 !important;
+    }
+    .ion-flex-md-auto {
+        flex: auto !important;
+    }
+    .ion-flex-md-initial {
+        flex: initial !important;
+    }
+    .ion-flex-md-none {
+        flex: none !important;
+    }
+}
+@media (min-width: 992px) {
+    .ion-flex-lg-1 {
+        flex: 1 !important;
+    }
+    .ion-flex-lg-auto {
+        flex: auto !important;
+    }
+    .ion-flex-lg-initial {
+        flex: initial !important;
+    }
+    .ion-flex-lg-none {
+        flex: none !important;
+    }
+}
+@media (min-width: 1200px) {
+    .ion-flex-xl-1 {
+        flex: 1 !important;
+    }
+    .ion-flex-xl-auto {
+        flex: auto !important;
+    }
+    .ion-flex-xl-initial {
+        flex: initial !important;
+    }
+    .ion-flex-xl-none {
+        flex: none !important;
+    }
+}
+.ion-flex-grow-0 {
+    flex-grow: 0 !important;
+}
+.ion-flex-grow-1 {
+    flex-grow: 1 !important;
+}
+.ion-flex-shrink-0 {
+    flex-shrink: 0 !important;
+}
+.ion-flex-shrink-1 {
+    flex-shrink: 1 !important;
+}
+@media (min-width: 576px) {
+    .ion-flex-sm-grow-0 {
+        flex-grow: 0 !important;
+    }
+    .ion-flex-sm-grow-1 {
+        flex-grow: 1 !important;
+    }
+    .ion-flex-sm-shrink-0 {
+        flex-shrink: 0 !important;
+    }
+    .ion-flex-sm-shrink-1 {
+        flex-shrink: 1 !important;
+    }
+}
+@media (min-width: 768px) {
+    .ion-flex-md-grow-0 {
+        flex-grow: 0 !important;
+    }
+    .ion-flex-md-grow-1 {
+        flex-grow: 1 !important;
+    }
+    .ion-flex-md-shrink-0 {
+        flex-shrink: 0 !important;
+    }
+    .ion-flex-md-shrink-1 {
+        flex-shrink: 1 !important;
+    }
+}
+@media (min-width: 992px) {
+    .ion-flex-lg-grow-0 {
+        flex-grow: 0 !important;
+    }
+    .ion-flex-lg-grow-1 {
+        flex-grow: 1 !important;
+    }
+    .ion-flex-lg-shrink-0 {
+        flex-shrink: 0 !important;
+    }
+    .ion-flex-lg-shrink-1 {
+        flex-shrink: 1 !important;
+    }
+}
+@media (min-width: 1200px) {
+    .ion-flex-xl-grow-0 {
+        flex-grow: 0 !important;
+    }
+    .ion-flex-xl-grow-1 {
+        flex-grow: 1 !important;
+    }
+    .ion-flex-xl-shrink-0 {
+        flex-shrink: 0 !important;
+    }
+    .ion-flex-xl-shrink-1 {
+        flex-shrink: 1 !important;
+    }
+}
+.ion-order-first {
+    order: -1 !important;
+}
+.ion-order-0 {
+    order: 0 !important;
+}
+.ion-order-1 {
+    order: 1 !important;
+}
+.ion-order-2 {
+    order: 2 !important;
+}
+.ion-order-3 {
+    order: 3 !important;
+}
+.ion-order-4 {
+    order: 4 !important;
+}
+.ion-order-5 {
+    order: 5 !important;
+}
+.ion-order-6 {
+    order: 6 !important;
+}
+.ion-order-7 {
+    order: 7 !important;
+}
+.ion-order-8 {
+    order: 8 !important;
+}
+.ion-order-9 {
+    order: 9 !important;
+}
+.ion-order-10 {
+    order: 10 !important;
+}
+.ion-order-11 {
+    order: 11 !important;
+}
+.ion-order-12 {
+    order: 12 !important;
+}
+.ion-order-last {
+    order: 13 !important;
+}
+@media (min-width: 576px) {
+    .ion-order-sm-first {
+        order: -1 !important;
+    }
+    .ion-order-sm-0 {
+        order: 0 !important;
+    }
+    .ion-order-sm-1 {
+        order: 1 !important;
+    }
+    .ion-order-sm-2 {
+        order: 2 !important;
+    }
+    .ion-order-sm-3 {
+        order: 3 !important;
+    }
+    .ion-order-sm-4 {
+        order: 4 !important;
+    }
+    .ion-order-sm-5 {
+        order: 5 !important;
+    }
+    .ion-order-sm-6 {
+        order: 6 !important;
+    }
+    .ion-order-sm-7 {
+        order: 7 !important;
+    }
+    .ion-order-sm-8 {
+        order: 8 !important;
+    }
+    .ion-order-sm-9 {
+        order: 9 !important;
+    }
+    .ion-order-sm-10 {
+        order: 10 !important;
+    }
+    .ion-order-sm-11 {
+        order: 11 !important;
+    }
+    .ion-order-sm-12 {
+        order: 12 !important;
+    }
+    .ion-order-sm-last {
+        order: 13 !important;
+    }
+}
+@media (min-width: 768px) {
+    .ion-order-md-first {
+        order: -1 !important;
+    }
+    .ion-order-md-0 {
+        order: 0 !important;
+    }
+    .ion-order-md-1 {
+        order: 1 !important;
+    }
+    .ion-order-md-2 {
+        order: 2 !important;
+    }
+    .ion-order-md-3 {
+        order: 3 !important;
+    }
+    .ion-order-md-4 {
+        order: 4 !important;
+    }
+    .ion-order-md-5 {
+        order: 5 !important;
+    }
+    .ion-order-md-6 {
+        order: 6 !important;
+    }
+    .ion-order-md-7 {
+        order: 7 !important;
+    }
+    .ion-order-md-8 {
+        order: 8 !important;
+    }
+    .ion-order-md-9 {
+        order: 9 !important;
+    }
+    .ion-order-md-10 {
+        order: 10 !important;
+    }
+    .ion-order-md-11 {
+        order: 11 !important;
+    }
+    .ion-order-md-12 {
+        order: 12 !important;
+    }
+    .ion-order-md-last {
+        order: 13 !important;
+    }
+}
+@media (min-width: 992px) {
+    .ion-order-lg-first {
+        order: -1 !important;
+    }
+    .ion-order-lg-0 {
+        order: 0 !important;
+    }
+    .ion-order-lg-1 {
+        order: 1 !important;
+    }
+    .ion-order-lg-2 {
+        order: 2 !important;
+    }
+    .ion-order-lg-3 {
+        order: 3 !important;
+    }
+    .ion-order-lg-4 {
+        order: 4 !important;
+    }
+    .ion-order-lg-5 {
+        order: 5 !important;
+    }
+    .ion-order-lg-6 {
+        order: 6 !important;
+    }
+    .ion-order-lg-7 {
+        order: 7 !important;
+    }
+    .ion-order-lg-8 {
+        order: 8 !important;
+    }
+    .ion-order-lg-9 {
+        order: 9 !important;
+    }
+    .ion-order-lg-10 {
+        order: 10 !important;
+    }
+    .ion-order-lg-11 {
+        order: 11 !important;
+    }
+    .ion-order-lg-12 {
+        order: 12 !important;
+    }
+    .ion-order-lg-last {
+        order: 13 !important;
+    }
+}
+@media (min-width: 1200px) {
+    .ion-order-xl-first {
+        order: -1 !important;
+    }
+    .ion-order-xl-0 {
+        order: 0 !important;
+    }
+    .ion-order-xl-1 {
+        order: 1 !important;
+    }
+    .ion-order-xl-2 {
+        order: 2 !important;
+    }
+    .ion-order-xl-3 {
+        order: 3 !important;
+    }
+    .ion-order-xl-4 {
+        order: 4 !important;
+    }
+    .ion-order-xl-5 {
+        order: 5 !important;
+    }
+    .ion-order-xl-6 {
+        order: 6 !important;
+    }
+    .ion-order-xl-7 {
+        order: 7 !important;
+    }
+    .ion-order-xl-8 {
+        order: 8 !important;
+    }
+    .ion-order-xl-9 {
+        order: 9 !important;
+    }
+    .ion-order-xl-10 {
+        order: 10 !important;
+    }
+    .ion-order-xl-11 {
+        order: 11 !important;
+    }
+    .ion-order-xl-12 {
+        order: 12 !important;
+    }
+    .ion-order-xl-last {
+        order: 13 !important;
+    }
+}

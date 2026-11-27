@@ -13,13 +13,17 @@ import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarne
 
 import MiniGhost from 'learn-card-base/assets/images/emptystate-ghost.png';
 
-import { IonContent, IonPage, IonToggle, IonSpinner, IonGrid, useIonAlert } from '@ionic/react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation } from 'swiper/modules';
 import 'swiper/css/navigation';
 import { VC } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { AppGrid } from 'learn-card-base/ui/layout';
+import { useAppAlert } from 'learn-card-base/ui/overlays';
 const log = getLogger('share-boosts-bundle');
 
 type ShareCredentialsProps = {
@@ -36,12 +40,12 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
     readOnly,
 }) => {
     const currentUser = useCurrentUser();
-    const [presentAlert] = useIonAlert();
+    const [presentAlert] = useAppAlert();
 
     const [isSharing, setIsSharing] = useState(false);
 
     const { search } = useLocation();
-    let { skipReload } = queryString.parse(search);
+    const { skipReload } = queryString.parse(search);
     const skipReloadBool = skipReload === 'true';
 
     const {
@@ -98,6 +102,7 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
                 message: e?.toString(),
                 buttons: [m['common.ok']()],
             });
+            // eslint-disable-next-line preserve-caught-error -- adding { cause } changes the shape of the thrown error
             throw new Error('There was an error. Please try again later.');
         } finally {
             setIsSharing(false);
@@ -105,9 +110,9 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
     };
 
     return (
-        <IonPage>
-            <IonContent>
-                <IonGrid className="flex items-center justify-center p-[20px] pb-[100px] max-w-[700px]">
+        <AppPage>
+            <AppContent>
+                <AppGrid className="flex items-center justify-center p-[20px] pb-[100px] max-w-[700px]">
                     <section className="w-full">
                         <div className="flex flex-col gap-[15px] text-grayscale-900">
                             <h1 className="text-[17px] font-medium leading-[21px]">
@@ -144,7 +149,7 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
                                     <div className="mt-[15px] text--[14px]">
                                         {credentialsLoading && (
                                             <div className="w-full h-full flex flex-col opacity-50 items-center justify-center mt-[40px]">
-                                                <IonSpinner />
+                                                <AppSpinner />
                                                 <p className="mt-[20px]">
                                                     {m['credsBundle.fetchingBoosts']()}
                                                 </p>
@@ -186,8 +191,7 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
                                             <span className="mr-[10px] text-[14px] font-semibold">
                                                 {m['credsBundle.shareAll']({ type: name })}
                                             </span>
-                                            <IonToggle
-                                                slot="end"
+                                            <AppToggle
                                                 checked={allSelected}
                                                 onClick={() => handleToggleSelectAll()}
                                             />
@@ -212,13 +216,12 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
                                                     {!readOnly && (
                                                         <span className="flex justify-center items-center font-medium">
                                                             {m['boostCMS.all']()}
-                                                            <IonToggle
+                                                            <AppToggle
                                                                 onClick={() =>
                                                                     handleToggleSelectAllType(
                                                                         vcType
                                                                     )
                                                                 }
-                                                                slot="end"
                                                                 className="ml-[5px]"
                                                                 checked={getAllSelected(vcType)}
                                                                 aria-label={`${vcType} toggle`}
@@ -269,7 +272,7 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
 
                         {/* <section className="bottom-spacer-offset h-[150px] w-full"></section> */}
                     </section>
-                </IonGrid>
+                </AppGrid>
                 {!credentialsLoading && !readOnly && (
                     <section className="fixed-bottom-container fixed w-full bottom-[0px] px-[20px] py-[10px] z-[3] h-fit bg-grayscale-50 flex flex items-start justify-center">
                         <button
@@ -284,8 +287,8 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
                         </button>
                     </section>
                 )}
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

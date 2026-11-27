@@ -40,7 +40,7 @@ const parts = (host: HTMLElement) => ({
 
 /**
  * App-owned `ion-loading` (@ionic/core 8.7.2): a modal spinner (`AppSpinner`) + message over a
- * backdrop. Renders into `ion-app` while presented.
+ * backdrop. Renders into the app root (`AppRoot`) while presented.
  */
 export const AppLoading: React.FC<AppLoadingProps> = ({
     isOpen,

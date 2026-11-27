@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Badge } from '@capawesome/capacitor-badge';
 
-import { IonContent, IonPage, IonCol, IonRow } from '@ionic/react';
 import MainHeader from '../../components/main-header/MainHeader';
 import NewNotificationsList from '../../components/notifications/notificationsV2/NewNotificationsList';
 import NotificationsSubHeader from '../../components/notifications/notifications-subheader/NotificationsSubheader';
@@ -21,6 +20,8 @@ import {
     BrandingEnum,
     useMarkAllNotificationsRead,
 } from 'learn-card-base';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 const NotificationNavTabsContainer: React.FC<{
     isEmptyState: boolean;
@@ -113,7 +114,7 @@ const NotificationsPage: React.FC = () => {
     const notificationCount = 0;
 
     return (
-        <IonPage className="bg-white h-full">
+        <AppPage className="bg-white h-full">
             <MainHeader customClassName="bg-white" branding={BrandingEnum.scoutPass}>
                 <NotificationsSubHeader
                     isEmptyState={isEmptyState}
@@ -122,16 +123,16 @@ const NotificationsPage: React.FC = () => {
                     setTab={setTab}
                 />
             </MainHeader>
-            <IonContent fullscreen className="bg-white h-full w-full">
-                <IonCol className="flex mx-auto relative items-start flex-wrap w-full h-auto min-h-full notifications-list-container bg-white px-[20px]">
+            <AppContent fullscreen className="bg-white h-full w-full">
+                <AppCol className="flex mx-auto relative items-start flex-wrap w-full h-auto min-h-full notifications-list-container bg-white px-[20px]">
                     <NotificationNavTabsContainer
                         isEmptyState={isEmptyState}
                         setIsEmptyState={setIsEmptyState}
                         tab={tab}
                     />
-                </IonCol>
-            </IonContent>
-        </IonPage>
+                </AppCol>
+            </AppContent>
+        </AppPage>
     );
 };
 

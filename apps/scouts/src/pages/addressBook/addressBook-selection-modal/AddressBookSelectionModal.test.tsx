@@ -24,12 +24,6 @@ vi.mock('learn-card-base', () => ({
     useGetConnections: () => ({ data: [] }),
     getLogger: () => ({ error: host.error }),
 }));
-vi.mock('@ionic/react', () => ({
-    IonRow: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    IonCol: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    IonInput: () => <input aria-label="Search" />,
-    IonSpinner: () => <span>Loading contacts</span>,
-}));
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
     unwrapBoostCredential: (vc: VC) => vc.boostCredential ?? vc,
 }));

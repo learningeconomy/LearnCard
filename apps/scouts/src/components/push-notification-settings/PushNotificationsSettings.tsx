@@ -1,6 +1,5 @@
 import React from 'react';
 
-import { IonRow, IonCol, IonToggle } from '@ionic/react';
 import * as m from '../../paraglide/messages.js';
 import CaretLeft from '../svgs/CaretLeft';
 
@@ -10,6 +9,8 @@ import {
     PushNotificationSettingsEnum,
 } from './pushNotifications.helpers';
 import ModalLayout from '../../layout/ModalLayout';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 const PushNotificationsSettings: React.FC<{
     handleCloseModal: () => void;
@@ -40,13 +41,13 @@ const PushNotificationsSettings: React.FC<{
 
     const settingsList = pushNotificationSettingOptions.map(setting => {
         return (
-            <IonRow key={setting.id} className="w-full flex items-center justify-center px-2">
-                <IonCol className="w-full max-w-[600px] flex-col ion-padding">
+            <AppRow key={setting.id} className="w-full flex items-center justify-center px-2">
+                <AppCol className="w-full max-w-[600px] flex-col ion-padding">
                     <div className="w-full flex items-center justify-between">
                         <p className="text-grayscale-900 font-semibold w-10/12">
                             {getSettingTitle(setting.type)}
                         </p>
-                        <IonToggle
+                        <AppToggle
                             mode="ios"
                             checked={settings[PushNotificationSettingsEnum[setting.type]]}
                             onClick={() =>
@@ -61,15 +62,15 @@ const PushNotificationsSettings: React.FC<{
                     <p className="text-left p-0 pt-2 pb-5 m-0 text-xs border-b border-grayscale-200">
                         {getSettingDescription(setting.type)}
                     </p>
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
         );
     });
 
     return (
         <ModalLayout handleOnClick={handleCloseModal}>
-            <IonRow className="flex items-center justify-center px-4">
-                <IonCol className="w-full flex justify-start items-center text black max-w-[600px]">
+            <AppRow className="flex items-center justify-center px-4">
+                <AppCol className="w-full flex justify-start items-center text black max-w-[600px]">
                     <button
                         className="text-grayscale-50 p-0 mr-[10px]"
                         onClick={() => handleCloseModal()}
@@ -79,8 +80,8 @@ const PushNotificationsSettings: React.FC<{
                     <p className="font-bold text-black font-mouse text-3xl">
                         {m['notifications.editSettings']()}
                     </p>
-                </IonCol>
-            </IonRow>
+                </AppCol>
+            </AppRow>
 
             {settingsList}
         </ModalLayout>

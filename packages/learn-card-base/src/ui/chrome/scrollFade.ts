@@ -15,7 +15,7 @@ type IonContentElement = HTMLElement & {
  * scroll area carries `.ion-content-scroll-host`, so it is found first.
  */
 const findScrollElement = async (el: HTMLElement): Promise<HTMLElement | null> => {
-    const page = el.closest<HTMLElement>('ion-app, ion-page, .ion-page, page-inner');
+    const page = el.closest<HTMLElement>('.app-root, ion-page, .ion-page, page-inner');
     if (!page) return null;
     const custom = page.querySelector<HTMLElement>(CONTENT_SCROLL_HOST);
     if (custom) return custom;

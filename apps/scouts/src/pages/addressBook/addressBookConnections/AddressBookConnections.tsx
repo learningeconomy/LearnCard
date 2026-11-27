@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useRouteMatch } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 
-import { IonSpinner } from '@ionic/react';
-
 import AddressBookContactList from '../addressBook-contact-list/AddressBookContactList';
 import MiniGhost from 'learn-card-base/assets/images/emptystate-ghost.png';
 
@@ -24,6 +22,7 @@ import Lottie from 'react-lottie-player';
 import { VC } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
 import * as m from '../../../paraglide/messages.js';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 const log = getLogger('address-book-connections');
 
 const AddressBookConnections: React.FC<{
@@ -44,11 +43,13 @@ const AddressBookConnections: React.FC<{
     const queryClient = useQueryClient();
     const { url } = useRouteMatch();
     const { initWallet } = useWallet();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     const [matchingConnections, setMatchingConnections] = useState<any[] | null>(null);
 
     const { data, isLoading, error, refetch } = useGetConnections();
 
     const parentBoostQuery = useGetBoostParents(boostId, 2);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     const troopParent = parentBoostQuery?.data?.records?.find((p: any) => p.type === 'ext:TroopID');
 
     const getTroopConnections = async (id: string) => {
@@ -131,6 +132,7 @@ const AddressBookConnections: React.FC<{
                             pages: Array<{
                                 cursor: string;
                                 hasMore: boolean;
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                                 records: Array<any>;
                             }>;
                             pageParams: Array<string | null>;
@@ -155,6 +157,7 @@ const AddressBookConnections: React.FC<{
                         presentToast(
                             error?.message || m['addressBook.toasts.unableToRemoveContact'](),
                             {
+                                // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
                                 // @ts-ignore
                                 type: ToastTypeEnum.Error,
                                 hasDismissButton: true,
@@ -165,6 +168,7 @@ const AddressBookConnections: React.FC<{
             );
         } catch (err) {
             presentToast(err?.message || m['addressBook.toasts.unableToRemoveContact'](), {
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
                 // @ts-ignore
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
@@ -190,6 +194,7 @@ const AddressBookConnections: React.FC<{
                         presentToast(
                             error?.message || m['addressBook.toasts.unableToBlockUser'](),
                             {
+                                // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
                                 // @ts-ignore
                                 type: ToastTypeEnum.Error,
                                 hasDismissButton: true,
@@ -201,6 +206,7 @@ const AddressBookConnections: React.FC<{
         } catch (err) {
             log.debug('blockProfile::error', err);
             presentToast(err?.message || m['addressBook.toasts.unableToBlockUser'](), {
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
                 // @ts-ignore
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
@@ -212,7 +218,7 @@ const AddressBookConnections: React.FC<{
         <>
             {isLoading && (
                 <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full pt-[100px]">
-                    <IonSpinner color="black" />
+                    <AppSpinner color="black" />
                     <p className="mt-2 font-bold text-lg">{m['addressBook.loading']()}</p>
                 </section>
             )}

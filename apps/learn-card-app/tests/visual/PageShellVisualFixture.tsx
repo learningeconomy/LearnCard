@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { IonApp } from '@ionic/react';
+import { AppRoot } from 'learn-card-base/ui/app-shell/AppRoot';
 
 import { Page, Content, SCROLL_JUSTIFY_END } from './pageShim';
 import { AppFooter, AppHeader, AppTitle, AppToolbar } from 'learn-card-base/ui/chrome';
@@ -412,7 +412,7 @@ export const PageShellVisualFixture: React.FC = () => {
         readyRef.current?.setAttribute('data-testid', 'ro-ready');
     }, []);
     return (
-        <IonApp>
+        <AppRoot>
             <div id="ion-view-container-root" className="ion-page absolute inset-0">
                 <PageCase id={CASE} />
             </div>
@@ -420,7 +420,7 @@ export const PageShellVisualFixture: React.FC = () => {
                 <output ref={readyRef}>yes</output>
             </div>
             <AppOverlayManager />
-        </IonApp>
+        </AppRoot>
     );
 };
 

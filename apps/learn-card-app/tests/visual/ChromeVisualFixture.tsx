@@ -1,6 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { IonApp } from '@ionic/react';
+import { AppRoot } from 'learn-card-base/ui/app-shell/AppRoot';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
 
 import { BackButton, Footer, Header, Title, Toolbar } from './chromeShim';
@@ -519,7 +519,7 @@ export const ChromeVisualFixture: React.FC = () => {
         readyRef.current?.setAttribute('data-testid', 'ro-ready');
     }, []);
     return (
-        <IonApp>
+        <AppRoot>
             <div id="ion-view-container-root" className="ion-page absolute inset-0">
                 <PageCase id={CASE} />
             </div>
@@ -528,7 +528,7 @@ export const ChromeVisualFixture: React.FC = () => {
                 <PathReadout />
             </div>
             <AppOverlayManager />
-        </IonApp>
+        </AppRoot>
     );
 };
 

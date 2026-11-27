@@ -4,8 +4,9 @@ import { createBrowserHistory } from 'history';
 import { AppShellRouter } from 'learn-card-base/ui/app-shell/AppShellRouter';
 import { QueryClient } from '@tanstack/react-query';
 import * as Sentry from '@sentry/react';
-import { IonApp, setupIonicReact } from '@ionic/react';
-// Eager: registers the app-overlay Escape / back-button listeners before Ionic's (FullApp is lazy).
+import { AppRoot } from 'learn-card-base/ui/app-shell/AppRoot';
+import { initAppPlatform } from 'learn-card-base/ui/app-shell/appPlatform';
+// Eager: registers the app-overlay Escape / back-button listeners (FullApp is lazy).
 import 'learn-card-base/ui/overlays/overlayStack';
 import LoginLoadingPage from './pages/login/LoginPageLoader/LoginLoader';
 
@@ -15,21 +16,17 @@ import firstStartupStore, {
     useIntroSlidesCompleted,
 } from 'learn-card-base/stores/firstStartupStore';
 import { Capacitor } from '@capacitor/core';
-/* Core CSS required for Ionic components to work properly */
-import '@ionic/react/css/core.css';
-
-/* Basic CSS for apps built with Ionic */
-import '@ionic/react/css/normalize.css';
-import '@ionic/react/css/structure.css';
-import '@ionic/react/css/typography.css';
-
-/* Optional CSS utils that can be commented out */
-import '@ionic/react/css/padding.css';
-import '@ionic/react/css/float-elements.css';
-import '@ionic/react/css/text-alignment.css';
-import '@ionic/react/css/text-transformation.css';
-import '@ionic/react/css/flex-utils.css';
-import '@ionic/react/css/display.css';
+/* Global CSS LearnCard kept from Ionic (vendored verbatim into learn-card-base/ui/global) */
+import 'learn-card-base/ui/global/core.css';
+import 'learn-card-base/ui/global/normalize.css';
+import 'learn-card-base/ui/global/structure.css';
+import 'learn-card-base/ui/global/typography.css';
+import 'learn-card-base/ui/global/padding.css';
+import 'learn-card-base/ui/global/float-elements.css';
+import 'learn-card-base/ui/global/text-alignment.css';
+import 'learn-card-base/ui/global/text-transformation.css';
+import 'learn-card-base/ui/global/flex-utils.css';
+import 'learn-card-base/ui/global/display.css';
 
 /* Theme variables */
 import './theme/variables.css';
@@ -49,7 +46,7 @@ const CACHE_TTL = 1000 * 60 * 60 * 24 * 7; // 1 Week
 
 const client = new QueryClient({ defaultOptions: { queries: { gcTime: CACHE_TTL } } });
 
-setupIonicReact({ swipeBackEnabled: false });
+initAppPlatform();
 
 // Dynamically import the component
 const LazyFullApp = lazyWithRetry(() => import('./FullApp'));
@@ -74,11 +71,11 @@ const App: React.FC = () => {
     ) {
         return (
             <AppShellRouter history={history}>
-                <IonApp>
+                <AppRoot>
                     <React.Suspense fallback={null}>
                         <IntroSlides />
                     </React.Suspense>
-                </IonApp>
+                </AppRoot>
             </AppShellRouter>
         );
     } else {
@@ -87,9 +84,9 @@ const App: React.FC = () => {
         return (
             <React.Suspense
                 fallback={
-                    <IonApp>
+                    <AppRoot>
                         <LoginLoadingPage />
-                    </IonApp>
+                    </AppRoot>
                 }
             >
                 <LazyFullApp />

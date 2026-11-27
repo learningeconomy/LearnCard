@@ -41,10 +41,6 @@ vi.mock('learn-card-base', async () => {
         getLogger: () => ({ debug: vi.fn(), error: vi.fn() }),
     };
 });
-vi.mock('@ionic/react', () => ({
-    IonRow: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-    IonCol: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-}));
 vi.mock('@tanstack/react-query', () => ({ useQueryClient: () => ({}) }));
 vi.mock('launchdarkly-react-client-sdk', () => ({ useFlags: () => ({}) }));
 vi.mock('learn-card-base/hooks/useGetCurrentUser', () => ({

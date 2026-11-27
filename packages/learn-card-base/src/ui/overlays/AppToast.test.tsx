@@ -8,7 +8,7 @@ import { useAppToast } from './useAppToast';
 let ionApp: HTMLElement;
 
 beforeEach(() => {
-    ionApp = document.createElement('ion-app');
+    ionApp = Object.assign(document.createElement('div'), { className: 'app-root' });
     ionApp.innerHTML = '<div id="ion-view-container-root"></div>';
     document.body.appendChild(ionApp);
 });

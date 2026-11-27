@@ -7,12 +7,12 @@ import BrowseFrameworkPage from '../SkillFrameworks/BrowseFrameworkPage';
 import CreateFrameworkModal from '../SkillFrameworks/CreateFrameworkModal';
 import SkillsAdminPanelFramework from './SkillsAdminPanelFramework';
 import SelectFrameworkToManageModal from '../SkillFrameworks/SelectFrameworkToManageModal';
-import { IonSpinner } from '@ionic/react';
 
 import { useModal, ModalTypes, useListMySkillFrameworks } from 'learn-card-base';
 import { SetState } from 'packages/shared-types/dist';
 import * as m from '../../paraglide/messages.js';
 import { SkillFramework } from '../../components/boost/boost';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type SkillsAdminPanelProps = { setFrameworkToBrowse: SetState<SkillFramework | null> };
 
@@ -47,7 +47,7 @@ const SkillsAdminPanel: React.FC<SkillsAdminPanelProps> = ({ setFrameworkToBrows
         <section className="flex flex-col gap-[15px] w-full pb-[222px]">
             {isLoadingFrameworks && (
                 <div className="flex items-center justify-center pt-[111px]">
-                    <IonSpinner />
+                    <AppSpinner />
                 </div>
             )}
             {!isLoadingFrameworks && (

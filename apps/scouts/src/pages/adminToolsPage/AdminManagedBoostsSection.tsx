@@ -3,10 +3,9 @@ import React, { useEffect, useRef } from 'react';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import { useGetPaginatedManagedBoosts, BoostCategoryOptionsEnum } from 'learn-card-base';
 
-import { IonSpinner } from '@ionic/react';
-
 import { boostCategoryOptions } from '../../components/boost/boost-options/boostOptions';
 import AdminManagedBoostRow from './AdminManagedBoostRow';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type AdminManagedBoostsSectionProps = {
     category: BoostCategoryOptionsEnum;
@@ -22,6 +21,7 @@ const AdminManagedBoostsSection: React.FC<AdminManagedBoostsSectionProps> = ({ c
     } = useGetPaginatedManagedBoosts(category, { limit: 12 });
 
     const managedBoostInfiniteScrollRef = useRef<HTMLDivElement>(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     const managedBoostsOnScreen = useOnScreen(managedBoostInfiniteScrollRef as any, '-20px', [
         managedBoosts?.pages?.[0]?.records?.length,
     ]);
@@ -60,7 +60,7 @@ const AdminManagedBoostsSection: React.FC<AdminManagedBoostsSectionProps> = ({ c
                             );
                         })
                 )}
-                {isLoading && <IonSpinner color="dark" />}
+                {isLoading && <AppSpinner color="dark" />}
                 <div role="presentation" ref={managedBoostInfiniteScrollRef} />
             </div>
         </div>

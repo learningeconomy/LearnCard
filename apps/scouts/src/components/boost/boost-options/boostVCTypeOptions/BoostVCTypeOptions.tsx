@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 
-import { IonHeader, IonContent, IonRow, IonCol, IonGrid, IonPage, IonToolbar } from '@ionic/react';
-
 import BoostVCTypeOptionButton from './BoostVCTypeOptionButton';
 import BoostSubCategoryOptions from '../boostSubCategoryOptions/BoostSubCategoryOptions';
 import MiniGhost from 'learn-card-base/assets/images/ghostboost.png';
@@ -10,6 +8,8 @@ import CaretLeft from '../../../svgs/CaretLeft';
 import { boostVCTypeOptions, BoostUserTypeEnum } from '../boostOptions';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import * as m from '../../../../paraglide/messages.js';
+import { AppContent, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 
 type BoostVCTypeOptionsProps = {
     boostUserType: BoostUserTypeEnum;
@@ -19,6 +19,7 @@ type BoostVCTypeOptionsProps = {
     boostCategoryType?: BoostCategoryOptionsEnum;
     hideBackButton: boolean;
     showCloseButton: boolean;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     history: any;
 };
 
@@ -84,11 +85,11 @@ export const BoostVCTypeOptions: React.FC<BoostVCTypeOptionsProps> = ({
                 </>
             ) : (
                 <>
-                    <IonContent fullscreen className="bg-indigo-500" color="indigo-500">
-                        <IonHeader className="ion-no-border bg-indigo-500 pt-5">
-                            <IonToolbar color="#fffff">
-                                <IonRow className="flex flex-col pb-4">
-                                    <IonCol className="w-full flex items-center justify-center mt-8">
+                    <AppContent fullscreen className="bg-indigo-500" color="indigo-500">
+                        <AppHeader className="ion-no-border bg-indigo-500 pt-5">
+                            <AppToolbar color="#fffff">
+                                <AppRow className="flex flex-col pb-4">
+                                    <AppCol className="w-full flex items-center justify-center mt-8">
                                         <h6 className="flex items-center justify-center text-white font-mouse text-3xl tracking-wide">
                                             <button
                                                 className="text-grayscale-50 p-0 mr-[10px]"
@@ -98,17 +99,17 @@ export const BoostVCTypeOptions: React.FC<BoostVCTypeOptionsProps> = ({
                                             </button>
                                             {title}
                                         </h6>
-                                    </IonCol>
-                                </IonRow>
-                                <IonRow className="flex items-center justify-center w-full">
-                                    <IonCol className="text-center">
+                                    </AppCol>
+                                </AppRow>
+                                <AppRow className="flex items-center justify-center w-full">
+                                    <AppCol className="text-center">
                                         <p className="text-center text-sm font-semibold px-[16px] text-white">
                                             {subtext}
                                         </p>
-                                    </IonCol>
-                                </IonRow>
-                                <IonRow className="flex items-center justify-center w-full mt-4">
-                                    <IonCol className="text-center">
+                                    </AppCol>
+                                </AppRow>
+                                <AppRow className="flex items-center justify-center w-full mt-4">
+                                    <AppCol className="text-center">
                                         <div className="relative flex flex-col items-center justify-center p-4 pb-0 rounded-3xl flex-1">
                                             <div className="absolute top-0 left-[%50] w-[170px] h-[170px] bg-indigo-800 rounded-full" />
                                             <img
@@ -117,15 +118,15 @@ export const BoostVCTypeOptions: React.FC<BoostVCTypeOptionsProps> = ({
                                                 className="z-50 w-[240px] h-[214px] mt-[-35px]"
                                             />
                                         </div>
-                                    </IonCol>
-                                </IonRow>
-                            </IonToolbar>
-                        </IonHeader>
-                        <IonGrid>
-                            <IonRow className="w-full flex items-center justify-center pb-6">
-                                <IonCol className="w-full flex flex-col items-center justify-center">
+                                    </AppCol>
+                                </AppRow>
+                            </AppToolbar>
+                        </AppHeader>
+                        <AppGrid>
+                            <AppRow className="w-full flex items-center justify-center pb-6">
+                                <AppCol className="w-full flex flex-col items-center justify-center">
                                     {boostOptionsItemList}
-                                </IonCol>
+                                </AppCol>
                                 <div className="w-full flex items-center justify-center mt-4">
                                     <button
                                         onClick={() => handleCloseModal()}
@@ -134,9 +135,9 @@ export const BoostVCTypeOptions: React.FC<BoostVCTypeOptionsProps> = ({
                                         {m['common.cancel']()}
                                     </button>
                                 </div>
-                            </IonRow>
-                        </IonGrid>
-                    </IonContent>
+                            </AppRow>
+                        </AppGrid>
+                    </AppContent>
                 </>
             )}
         </section>

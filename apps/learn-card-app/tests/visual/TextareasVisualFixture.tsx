@@ -1,5 +1,4 @@
 import React, { useRef, useState } from 'react';
-import { IonApp } from '@ionic/react';
 
 import { AppTextarea } from 'learn-card-base/ui/controls/AppTextarea';
 import { X } from 'lucide-react';
@@ -772,13 +771,6 @@ const FrameworkDescription: React.FC = () => {
 
 export const TextareasVisualFixture: React.FC = () => (
     <main className="mx-auto flex w-full max-w-[860px] flex-col items-stretch gap-6 p-6 font-poppins">
-        {/*
-         * IonApp starts Ionic's focus-visible and tap-click utilities (and, on iOS / Android web,
-         * the input shims), as it does at the real app root. Its host CSS (absolute, contain,
-         * overflow) would clip this long page, so it is mounted empty and hidden.
-         */}
-        <IonApp style={{ display: 'none' }} aria-hidden="true" />
-
         <Block testId="x1b-matrix" title="IonTextarea states × modes (synthetic)">
             <TextareaMatrix />
         </Block>

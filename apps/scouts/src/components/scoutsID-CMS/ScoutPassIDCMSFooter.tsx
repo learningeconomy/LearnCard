@@ -2,11 +2,11 @@ import React from 'react';
 
 import * as m from '../../paraglide/messages.js';
 
-import { IonFooter, IonToolbar } from '@ionic/react';
 import X from '../svgs/X';
 import ScoutPassIDPreview from './ScoutPassIDPreview';
 import { userAccount, UserCMSAppearance } from './scouts-cms.helpers';
 import { ModalTypes, useModal } from 'learn-card-base';
+import { AppFooter, AppToolbar } from 'learn-card-base/ui/chrome';
 
 export const ScoutPassIDCMSFooter: React.FC<{
     user: userAccount;
@@ -16,14 +16,14 @@ export const ScoutPassIDCMSFooter: React.FC<{
 }> = ({ user, scoutPassID, handleSave, handleCloseModal }) => {
     const { newModal, closeModal } = useModal();
 
-    let actionButtonColor = 'bg-grayscale-900';
+    const actionButtonColor = 'bg-grayscale-900';
 
     return (
-        <IonFooter
+        <AppFooter
             mode="ios"
             className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] absolute bottom-0 bg-white/60 max-h-[100px]"
         >
-            <IonToolbar color="transparent" mode="ios">
+            <AppToolbar color="transparent" mode="ios">
                 <div className="w-full flex items-center justify-center">
                     <div className="w-full flex items-center justify-between max-w-[600px] ion-padding">
                         <button
@@ -59,8 +59,8 @@ export const ScoutPassIDCMSFooter: React.FC<{
                         </button>
                     </div>
                 </div>
-            </IonToolbar>
-        </IonFooter>
+            </AppToolbar>
+        </AppFooter>
     );
 };
 

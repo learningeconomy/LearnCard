@@ -1,7 +1,6 @@
 import React from 'react';
 import { ConsentFlowTerms } from '@learncard/types';
 import { Updater } from 'use-immer';
-import { IonRippleEffect } from '@ionic/react';
 
 import { useGetCredentialCount, CredentialCategory, ModalTypes, useModal } from 'learn-card-base';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
@@ -9,6 +8,7 @@ import ConsentFlowReadSharingStatus from './ConsentFlowReadSharingStatus';
 import ConsentFlowReadSharingModal from './ConsentFlowReadSharingModal';
 import { getInfoFromContractKey } from '../../helpers/contract.helpers';
 import * as m from '../../paraglide/messages.js';
+import { AppRippleEffect } from 'learn-card-base/ui/widgets';
 
 type ConsentFlowReadSharingItemProps = {
     term: ConsentFlowTerms['read']['credentials']['categories'][string];
@@ -80,7 +80,7 @@ const ConsentFlowReadSharingItem: React.FC<ConsentFlowReadSharingItemProps> = ({
                     <SkinnyCaretRight className="rtl-mirror h-[20px] w-[20px] text-grayscale-500" />
                 </section>
 
-                <IonRippleEffect />
+                <AppRippleEffect />
             </button>
         </li>
     );

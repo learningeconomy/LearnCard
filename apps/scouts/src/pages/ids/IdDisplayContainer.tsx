@@ -2,7 +2,6 @@ import React from 'react';
 
 import * as m from '../../paraglide/messages.js';
 
-import { IonRow, IonCol } from '@ionic/react';
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
 import MembershipSleeve from 'learn-card-base/assets/images/troops-sleeve.svg';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
@@ -32,6 +31,7 @@ import {
     BoostTextSkeleton,
 } from 'learn-card-base/components/boost/boostSkeletonLoaders/BoostSkeletons';
 import { getDefaultBadgeThumbForCredential } from '../../helpers/troop.helpers';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 type IdDisplayContainerProps = {
     achievementType: string;
@@ -102,6 +102,7 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
         mobile: ModalTypes.FullScreen,
     });
 
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let idBody = null;
 
     let credSleeve;
@@ -146,9 +147,9 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                 }}
                 className="min-w-full w-full h-[55%] bg-repeat bg-contain z-50"
             >
-                <IonRow className="w-full flex items-center">
-                    <IonCol className="flex justify-start items-center pl-2">
-                        <IonCol className="flex justify-start items-center pl-2">
+                <AppRow className="w-full flex items-center">
+                    <AppCol className="flex justify-start items-center pl-2">
+                        <AppCol className="flex justify-start items-center pl-2">
                             {loading && (
                                 <div className="flex items-start justify-start">
                                     <BoostSkeleton
@@ -161,9 +162,9 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                                     />
                                 </div>
                             )}
-                        </IonCol>
-                    </IonCol>
-                    <IonCol className="flex justify-end items-center pr-2 relative">
+                        </AppCol>
+                    </AppCol>
+                    <AppCol className="flex justify-end items-center pr-2 relative">
                         <div className="w-full absolute top-[30px] right-[35px]">
                             <TroopIdStatusButton
                                 credential={cred?.boostCredential ?? cred}
@@ -176,8 +177,8 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                                 }}
                             />
                         </div>
-                    </IonCol>
-                </IonRow>
+                    </AppCol>
+                </AppRow>
             </div>
         );
     } else {
@@ -229,8 +230,8 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                 }}
                 className="min-w-full w-full h-[55%] bg-repeat bg-contain z-50"
             >
-                <IonRow className="w-full flex items-center">
-                    <IonCol className="flex justify-start items-center pl-2 mt-1">
+                <AppRow className="w-full flex items-center">
+                    <AppCol className="flex justify-start items-center pl-2 mt-1">
                         {!loading && recipientsEl}
                         {loading && (
                             <div className="flex items-start justify-start">
@@ -244,8 +245,8 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                                 />
                             </div>
                         )}
-                    </IonCol>
-                    <IonCol className="flex justify-end items-center pr-2 mt-1">
+                    </AppCol>
+                    <AppCol className="flex justify-end items-center pr-2 mt-1">
                         {loading ? (
                             <BoostSkeleton
                                 containerClassName="small-boost-boost-btn flex boost-btn-click rounded-[40px] w-[96px] h-[40px] text-white flex justify-center items-center"
@@ -267,14 +268,14 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                                 {m['scoutsId.send']()}
                             </button>
                         )}
-                    </IonCol>
-                </IonRow>
+                    </AppCol>
+                </AppRow>
             </div>
         );
     }
 
     return (
-        <IonRow
+        <AppRow
             className="flex items-center justify-center cursor-pointer mx-4 max-h-[200px] overflow-hidden"
             onClick={() => {
                 if (!cred) return;
@@ -289,8 +290,8 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
             <div className="relative id-card-sleeve-container max-w-[360px] bg-sp-green-forest rounded-[20px] px-[8px] pt-[8px]">
                 <div className="bg-white px-[6px] rounded-t-[15px]">
                     {!loading && (
-                        <IonRow className="min-h-[55px]">
-                            <IonCol
+                        <AppRow className="min-h-[55px]">
+                            <AppCol
                                 size="11"
                                 className="flex items-center justify-start gap-[10px] z-50 mt-2"
                             >
@@ -330,7 +331,7 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                                 </p>
                             )} */}
                                 </div>
-                            </IonCol>
+                            </AppCol>
                             <button
                                 onClick={e => {
                                     e.stopPropagation();
@@ -340,11 +341,11 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                             >
                                 <ThreeDots className="text-grayscale-600 w-[20px] h-[20px]" />
                             </button>
-                        </IonRow>
+                        </AppRow>
                     )}
                     {loading && (
-                        <IonRow className="min-h-[55px] pb-1">
-                            <IonCol size="11" className="flex items-center justify-start z-50 mt-2">
+                        <AppRow className="min-h-[55px] pb-1">
+                            <AppCol size="11" className="flex items-center justify-start z-50 mt-2">
                                 {showIssuerThumbnail && (
                                     <div className="relative mr-2">
                                         <div className="w-[45px] h-[45px] min-w-[45px] min-h-[45px] rounded-full bg-none flex items-center justify-center overflow-hidden relative">
@@ -365,8 +366,8 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                                         skeletonStyles={{ width: '50%' }}
                                     />
                                 </div>
-                            </IonCol>
-                        </IonRow>
+                            </AppCol>
+                        </AppRow>
                     )}
 
                     <div className={`relative p-[4px] ${idDisplayContainerClass}`}>
@@ -393,7 +394,7 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                     {idBody}
                 </div>
             </div>
-        </IonRow>
+        </AppRow>
     );
 };
 

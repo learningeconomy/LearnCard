@@ -63,8 +63,6 @@ vi.mock('../components/boost/boostCMS/BoostPreview/BoostPreviewFooter', () => ({
     default: () => null,
 }));
 vi.mock('../components/boost/boostCMS/UpdateBoostCMS', () => ({ default: () => null }));
-vi.mock('@ionic/react', () => ({ IonItem: () => null, IonList: () => null }));
-
 const ManagedBoostHarness: React.FC = () => {
     const { handleEditOnClick } = useManagedBoost(
         {

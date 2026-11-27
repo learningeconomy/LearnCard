@@ -3,7 +3,7 @@
  * ion-footer used to drop its bottom safe-area padding while the native keyboard is up.
  *
  * Capacitor's Keyboard plugin fires `keyboardWillShow` / `keyboardWillHide` on window. When the
- * plugin resizes the web view, the hide is reported only once the resize container (`ion-app`, or
+ * plugin resizes the web view, the hide is reported only once the resize container (the app root (`AppRoot`), or
  * the body) is back to the height it had before the keyboard opened, so the padding doesn't come
  * back while the page is still short.
  */
@@ -34,7 +34,7 @@ const getResizeMode = async (): Promise<string | undefined> => {
 const getResizeContainer = (resizeMode: string | undefined): HTMLElement | null =>
     resizeMode === undefined || resizeMode === 'none'
         ? null
-        : (document.querySelector<HTMLElement>('ion-app') ?? document.body);
+        : (document.querySelector<HTMLElement>('.app-root') ?? document.body);
 
 const getResizeContainerHeight = (resizeMode: string | undefined): number =>
     getResizeContainer(resizeMode)?.clientHeight ?? 0;

@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import * as m from '../../paraglide/messages.js';
 import { useModal, useGetCurrentUserTroopIdsResolved, useGetMultipleBoosts } from 'learn-card-base';
-import { IonSpinner } from '@ionic/react';
 import CaretDown from 'apps/scouts/src/components/svgs/CaretDown';
 import ScoutsTroopIcon from 'apps/scouts/src/assets/icons/ScoutsTroopIcon';
 import SkillsFrameworkNetworkSelectorItem from './SkillsFrameworkNetworkSelectorItem';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type SkillsFrameworkNetworkSelectorProps = {
     selectedNetworks?: string[];
@@ -32,11 +32,13 @@ const SkillsFrameworkNetworkSelector: React.FC<SkillsFrameworkNetworkSelectorPro
         const ids: Array<{ boostId: string; credType: 'global' | 'national' }> = [];
 
         troopIds?.globalAdmin?.forEach(credential => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
             const boostId = (credential as any)?.boostId;
             if (boostId) ids.push({ boostId, credType: 'global' });
         });
 
         troopIds?.nationalAdmin?.forEach(credential => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
             const boostId = (credential as any)?.boostId;
             if (boostId) ids.push({ boostId, credType: 'national' });
         });
@@ -76,6 +78,7 @@ const SkillsFrameworkNetworkSelector: React.FC<SkillsFrameworkNetworkSelectorPro
                     (credType === 'global'
                         ? m['skillFrameworks.globalNetwork']()
                         : m['skillFrameworks.nationalNetwork']()),
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 image: (boost.meta as any)?.image,
                 type: credType === 'global' ? 'Global Network' : 'National Network',
             });
@@ -103,7 +106,7 @@ const SkillsFrameworkNetworkSelector: React.FC<SkillsFrameworkNetworkSelectorPro
             <div className="grow p-[15px] min-h-[300px] max-h-[500px] overflow-y-auto">
                 {isLoading ? (
                     <div className="flex items-center justify-center h-full">
-                        <IonSpinner name="crescent" />
+                        <AppSpinner name="crescent" />
                     </div>
                 ) : networks.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center p-[20px]">

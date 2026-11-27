@@ -17,25 +17,28 @@
     bottom: -106px;
     z-index: 99999;
     height: 140px;
-   
+
     @media (min-width: 992px) {
         display: none;
     }
 }
 
 .boosts {
-    background: linear-gradient(181deg, rgba(166, 112, 214, 0.00) 0%, #3FBDD9 100%);
+    background: linear-gradient(181deg, rgba(166, 112, 214, 0) 0%, #3fbdd9 100%);
 }
 
 .badges {
-    background: linear-gradient(181deg, rgba(166, 112, 214, 0.00) 0%, #A670D6 100%);
+    background: linear-gradient(181deg, rgba(166, 112, 214, 0) 0%, #a670d6 100%);
 }
 
 .campfire {
-    background: var(--Faded-White-Gradient, linear-gradient(181deg, rgba(251, 251, 252, 0.00) 0%, #FFF 100%));
+    background: var(
+        --Faded-White-Gradient,
+        linear-gradient(181deg, rgba(251, 251, 252, 0) 0%, #fff 100%)
+    );
 }
 
-ion-tab-bar {
+.app-tab-bar {
     backdrop-filter: blur(10px);
 
     @media (min-width: 992px) {
@@ -43,7 +46,7 @@ ion-tab-bar {
     }
 }
 
-ion-tab-bar .nav-tab-badges,
+.app-tab-bar .nav-tab-badges,
 .nav-tab-troops,
 .nav-tab-boosts {
     --color: #6f7590;
@@ -55,7 +58,7 @@ ion-tab-bar .nav-tab-badges,
     }
 }
 
-ion-tab-bar .nav-tab-campfire {
+.app-tab-bar .nav-tab-campfire {
     --color: #ffff;
     font-weight: 700;
     font-size: 12px;
@@ -67,12 +70,12 @@ ion-tab-bar .nav-tab-campfire {
 
     &.tab-selected {
         & > div {
-            background-color: #FF5655;
+            background-color: #ff5655;
         }
-        .flames{
-            fill: #FFAE80;
+        .flames {
+            fill: #ffae80;
         }
-    }           
+    }
 
     & > div {
         color: currentColor;
@@ -83,7 +86,7 @@ ion-tab-bar .nav-tab-campfire {
     }
 }
 
-ion-tab-bar .nav-tab-badges {
+.app-tab-bar .nav-tab-badges {
     margin-left: 30px;
     position: relative;
     --color-focused: #622599;
@@ -91,36 +94,36 @@ ion-tab-bar .nav-tab-badges {
     font-size: 13px;
     font-weight: 700;
     font-family: 'Noto Sans', 'Montserrat', 'Noto Sans', sans-serif;
-    color: #353E64;
+    color: #353e64;
 
     &.tab-selected {
         color: #622599;
         & > svg {
             .mountain {
-                fill: #ff8dff; 
+                fill: #ff8dff;
             }
             .badge-outline {
-                fill: #622599; 
+                fill: #622599;
             }
         }
     }
 }
 
-ion-tab-bar .nav-tab-boosts {
+.app-tab-bar .nav-tab-boosts {
     position: relative;
     // --color-focused: #0094B4;
     // --color-selected: #0094B4;
     font-size: 13px;
     font-weight: 700;
     font-family: 'Noto Sans', 'Montserrat', 'Noto Sans', sans-serif;
-    color: #353E64;
+    color: #353e64;
 
     & > svg {
         fill: currentColor;
     }
-    
+
     &.tab-selected {
-        color: #0094B4;
+        color: #0094b4;
         & > svg {
             .inside-star {
                 fill: #82e6de;
@@ -132,7 +135,7 @@ ion-tab-bar .nav-tab-boosts {
     }
 }
 
-ion-tab-bar .nav-tab-troops {
+.app-tab-bar .nav-tab-troops {
     margin-right: 40px;
     --color-focused: #05b65d;
     --color-selected: #05b65d;

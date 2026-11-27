@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 
 import * as m from '../../paraglide/messages.js';
 
-import { IonSpinner } from '@ionic/react';
 import Pencil from '../svgs/Pencil';
 import TrashBin from '../svgs/TrashBin';
 import EmptyImage from '../../assets/images/wallpaper-empty-state.png';
@@ -10,9 +9,11 @@ import EmptyImage from '../../assets/images/wallpaper-empty-state.png';
 import { UploadRes, useImageUpload } from 'learn-card-base';
 
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 export const ScoutPassIDWallpaperSelect: React.FC<{
     idBackgroundImage: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     handleSetState: (key: string, value: any) => void;
 }> = ({ idBackgroundImage, handleSetState }) => {
     const [wallpaper, setWallpaper] = useState<string>(idBackgroundImage ?? '');
@@ -58,7 +59,7 @@ export const ScoutPassIDWallpaperSelect: React.FC<{
                     )}
                     {imageUploadLoading && (
                         <div className="absolute z-50 flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-3xl min-w-[70px] min-h-[70px] user-image-upload-inprogress">
-                            <IonSpinner name="crescent" color="dark" className="scale-[1.75]" />
+                            <AppSpinner name="crescent" color="dark" className="scale-[1.75]" />
                         </div>
                     )}
                 </div>

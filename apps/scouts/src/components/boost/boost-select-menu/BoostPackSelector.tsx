@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react';
-import { IonSpinner } from '@ionic/react';
 import { WorldScoutIcon } from '../../svgs/WorldScoutsIcon';
 import CaretDown from 'learn-card-base/svgs/CaretDown';
 import { ModalTypes, useModal, BoostCategoryOptionsEnum } from 'learn-card-base';
@@ -10,6 +9,7 @@ import { VC } from '@learncard/types';
 import * as m from '../../../paraglide/messages.js';
 import { getLocalizedBoostPackTypeTitle } from './boostPackCopy';
 import { useLocale } from '../../../i18n';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 interface BoostPackSelectorProps {
     boostPackType: BoostCategoryOptionsEnum;
@@ -161,7 +161,7 @@ const BoostPackListItem: React.FC<BoostPackListItemProps> = ({
     <>
         <div className="flex items-center justify-start">
             {loading ? (
-                <IonSpinner
+                <AppSpinner
                     name="crescent"
                     color="grayscale-900"
                     className="scale-[1]"

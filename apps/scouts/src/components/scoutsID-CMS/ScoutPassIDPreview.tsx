@@ -2,11 +2,11 @@ import React from 'react';
 
 import * as m from '../../paraglide/messages.js';
 
-import { IonFooter, IonPage, IonToolbar } from '@ionic/react';
 import ScoutPassIDCMSLayout from './ScoutPassIDCMSLayout';
 import IDSleeve from 'learn-card-base/svgs/IDSleeve';
 import ScoutPassID from './ScoutPassID';
 import { userAccount, UserCMSAppearance } from './scouts-cms.helpers';
+import { AppFooter, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
 
 export const ScoutPassIDPreview: React.FC<{
     user: userAccount;
@@ -14,7 +14,7 @@ export const ScoutPassIDPreview: React.FC<{
     handleCloseModal: () => void;
 }> = ({ user, scoutPassID, handleCloseModal }) => {
     return (
-        <IonPage>
+        <AppPage>
             <ScoutPassIDCMSLayout
                 scoutPassID={scoutPassID}
                 containerClassName="justify-center!"
@@ -38,11 +38,11 @@ export const ScoutPassIDPreview: React.FC<{
                     </div>
                 </div>
             </ScoutPassIDCMSLayout>
-            <IonFooter
+            <AppFooter
                 mode="ios"
                 className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] absolute bottom-0 bg-white/60 max-h-[100px]"
             >
-                <IonToolbar color="transparent" mode="ios">
+                <AppToolbar color="transparent" mode="ios">
                     <div className="w-full flex items-center justify-center">
                         <div className="w-full flex items-center justify-between max-w-[600px] ion-padding">
                             <button
@@ -53,9 +53,9 @@ export const ScoutPassIDPreview: React.FC<{
                             </button>
                         </div>
                     </div>
-                </IonToolbar>
-            </IonFooter>
-        </IonPage>
+                </AppToolbar>
+            </AppFooter>
+        </AppPage>
     );
 };
 

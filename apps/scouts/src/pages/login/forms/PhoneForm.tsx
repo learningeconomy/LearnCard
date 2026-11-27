@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import React, { useState, useEffect, useRef } from 'react';
 import PhoneInput from 'react-phone-number-input';
 import { Capacitor } from '@capacitor/core';
@@ -5,8 +6,6 @@ import { z } from 'zod';
 
 import { useSignInAdapter, useToast, ToastTypeEnum } from 'learn-card-base';
 import { useFirebase } from '../../../hooks/useFirebase';
-
-import { IonCol, IonInput, IonCheckbox, IonToggle, IonRouterLink } from '@ionic/react';
 
 import { PhoneFormStepsEnum } from 'learn-card-base';
 import { getLogger } from 'learn-card-base';
@@ -17,6 +16,10 @@ import AccessibleCodeInput from './AccessibleCodeInput';
 import { TransP } from '../../../i18n/TransP';
 
 import 'react-phone-number-input/style.css';
+import { AppCheckbox } from 'learn-card-base/ui/controls/AppCheckbox';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
+import { AppCol } from 'learn-card-base/ui/layout';
 
 const PhoneValidator = z.object({
     phone: z.string().nonempty('Phone is required!'),
@@ -243,7 +246,7 @@ const PhoneForm: React.FC = () => {
         );
 
         activeStep = (
-            <IonCol size="12">
+            <AppCol size="12">
                 <PhoneInput
                     placeholder={m['login.phonePlaceholder']()}
                     countryOptionsOrder={['US', 'CA', 'AU', '|', '...']}
@@ -262,7 +265,7 @@ const PhoneForm: React.FC = () => {
                 {error && (
                     <p className="w-full text-center mt-2 text-red-500 font-medium">{error}</p>
                 )}
-            </IonCol>
+            </AppCol>
         );
         buttonTitle = isLoading ? m['common.loading']() : m['login.sendCode']();
     } else if (currentStep === PhoneFormStepsEnum.verification) {
@@ -281,7 +284,7 @@ const PhoneForm: React.FC = () => {
             </p>
         );
         activeStep = (
-            <IonCol size="12" className="w-full flex flex-col items-center justify-center">
+            <AppCol size="12" className="w-full flex flex-col items-center justify-center">
                 <AccessibleCodeInput
                     name="phoneVerification"
                     label={m['login.verificationCode']()}
@@ -302,7 +305,7 @@ const PhoneForm: React.FC = () => {
                 {codeError && (
                     <p className="w-full text-center mt-2 text-red-500 font-medium">{codeError}</p>
                 )}
-            </IonCol>
+            </AppCol>
         );
         buttonTitle = isLoading ? m['common.verifying']() : m['common.verify']();
     } else if (currentStep === PhoneFormStepsEnum.passwordExistingUser) {
@@ -310,82 +313,82 @@ const PhoneForm: React.FC = () => {
             <p className="font-medium text-grayscale-600 uppercase">{m['common.password']()}</p>
         );
         activeStep = (
-            <IonCol size="12">
-                <IonInput
+            <AppCol size="12">
+                <AppInput
                     autocapitalize="on"
                     className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base"
                     placeholder={m['common.password']()}
                     // todo: add view password toggle
-                    onIonInput={e => setPassword(e.detail.value)}
+                    onValueInput={value => setPassword(value)}
                     value={password}
                     type="password"
                 />
-                <IonCol size="12" className="flex items-center justify-end mt-3">
+                <AppCol size="12" className="flex items-center justify-end mt-3">
                     <p className="mr-3 text-gray-700 font-medium text-lg">
                         {m['common.staySignedIn']()}
                     </p>{' '}
-                    <IonToggle />
-                </IonCol>
-            </IonCol>
+                    <AppToggle />
+                </AppCol>
+            </AppCol>
         );
         buttonTitle = m['common.login']();
     } else if (currentStep === PhoneFormStepsEnum.passwordNewUser) {
         formTitle = m['common.password']();
         activeStep = (
-            <IonCol size="12">
-                <IonInput
+            <AppCol size="12">
+                <AppInput
                     autocapitalize="on"
                     className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base"
                     placeholder={m['common.password']()}
                     // todo: add view password toggle
-                    onIonInput={e => setPassword(e.detail.value)}
+                    onValueInput={value => setPassword(value)}
                     value={password}
                     type="password"
                 />
-                <IonCol size="12" className="flex items-center justify-end mt-3">
+                <AppCol size="12" className="flex items-center justify-end mt-3">
                     <p className="mr-3 text-gray-700 font-medium text-lg">
                         <TransP
                             m={m['common.agreeToTerms']}
                             components={[
-                                <IonRouterLink
-                                    href="#"
+                                <Link
+                                    to="#"
                                     className="font-semibold login-terms-span"
                                     key="terms"
                                 />,
                             ]}
                         />
                     </p>{' '}
-                    <IonCheckbox />
-                </IonCol>
-            </IonCol>
+                    <AppCheckbox />
+                </AppCol>
+            </AppCol>
         );
         buttonTitle = m['common.createAccount']();
     }
 
     return (
         <form onSubmit={handleOnClick} className="w-full">
-            <IonCol size="12">{formTitle}</IonCol>
+            <AppCol size="12">{formTitle}</AppCol>
             {activeStep}
-            <IonCol size="12" className="flex items-center justify-center">
+            <AppCol size="12" className="flex items-center justify-center">
                 <button
                     onClick={handleOnClick}
                     className="bg-sp-purple-base text-white ion-padding w-full font-bold rounded-[30px]"
                 >
                     {buttonTitle}
                 </button>
-            </IonCol>
+            </AppCol>
             {currentStep === PhoneFormStepsEnum.verification && (
-                <IonCol size="12">
+                <AppCol size="12">
                     <button
                         onClick={e => handleOnClick(e, true)}
                         className="text-gray-700 ion-padding w-full font-bold rounded-[30px] mt-4 border-solid border-gray-300 border-2"
                     >
                         {resendCodeButtonText}
                     </button>
-                </IonCol>
+                </AppCol>
             )}
             {currentStep === PhoneFormStepsEnum.passwordNewUser && (
-                <IonCol
+                <AppCol
                     size="12"
                     className="text-center mt-4 text-gray-700 font-medium text-lg login-existing-account"
                 >
@@ -396,7 +399,7 @@ const PhoneForm: React.FC = () => {
                     >
                         {m['common.differentEmail']()}
                     </button>
-                </IonCol>
+                </AppCol>
             )}
         </form>
     );

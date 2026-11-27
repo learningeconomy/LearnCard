@@ -24,11 +24,6 @@ vi.mock('learn-card-base', () => ({
     useModal: () => ({ newModal: mocks.newModal, closeModal: vi.fn() }),
     useListMySkillFrameworks: () => mocks.frameworks(),
 }));
-vi.mock('@ionic/react', () => ({
-    IonFooter: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-    IonInput: () => <input placeholder="Search" />,
-    IonSpinner: () => null,
-}));
 vi.mock('../../components/boost/boost', () => ({
     FrameworkNodeRole: { tier: 'tier', competency: 'competency' },
 }));

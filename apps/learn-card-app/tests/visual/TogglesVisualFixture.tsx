@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { IonApp } from '@ionic/react';
 import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 import { AppLabel } from 'learn-card-base/ui/list';
 import { useImmer } from 'use-immer';
@@ -1740,13 +1739,6 @@ const MyDataSettingsToggles: React.FC = () => (
 
 export const TogglesVisualFixture: React.FC = () => (
     <main className="mx-auto flex w-full max-w-[860px] flex-col items-stretch gap-6 p-6 font-poppins">
-        {/*
-         * IonApp starts Ionic's focus-visible (`.ion-focused`) and tap-click (`.ion-activated`)
-         * utilities, as it does at the real app root. Its host CSS (absolute, contain, overflow)
-         * would clip this long page, so it is mounted empty and hidden instead of as a wrapper.
-         */}
-        <IonApp style={{ display: 'none' }} aria-hidden="true" />
-
         <Block testId="t1b-matrix" title="IonToggle states × colors × modes">
             <ToggleMatrix />
         </Block>

@@ -24,8 +24,8 @@ const mocks = vi.hoisted(() => ({
     log: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }));
 
+vi.mock('learn-card-base/ui/overlays', () => ({ useAppAlert: () => [mocks.alert] }));
 vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: mocks.native } }));
-vi.mock('@ionic/react', () => ({ useIonAlert: () => [mocks.alert] }));
 vi.mock('./useFirebaseAnalytics', () => ({
     default: () => ({ logAnalyticsEvent: mocks.analytics }),
 }));

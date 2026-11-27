@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { IonContent, IonPage, IonCol, IonGrid, IonRow } from '@ionic/react';
 import MainHeader from '../../components/main-header/MainHeader';
 import BoostManagedCard from '../../components/boost/boost-managed-card/BoostManagedCard';
 import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarnedCard';
@@ -25,6 +24,8 @@ import { usePathQuery } from 'learn-card-base';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import BoostErrorsDisplay from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
+import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 
 const WorkHistoryPage: React.FC = () => {
     const query = usePathQuery();
@@ -94,12 +95,13 @@ const WorkHistoryPage: React.FC = () => {
             await earnedBoostsRefetch?.();
             await managedBoostRefetch?.();
         } catch (e) {
+            // eslint-disable-next-line preserve-caught-error -- adding { cause } changes the shape of the thrown error
             throw new Error('There was an error, please try again.');
         }
     };
 
     return (
-        <IonPage className="bg-white">
+        <AppPage className="bg-white">
             <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
                 <MainHeader
                     showBackButton
@@ -114,7 +116,7 @@ const WorkHistoryPage: React.FC = () => {
                         />
                     )}
                 </MainHeader>
-                <IonContent fullscreen className="job-history-page relative" color={'rose-400'}>
+                <AppContent fullscreen className="job-history-page relative" color={'rose-400'}>
                     <CurvedBackdropEl className="bg-rose-300" />
                     {loading && activeTab === CredentialListTabEnum.Earned && !boostError && (
                         <CredentialListSkeleton cardSize="credential" />
@@ -125,12 +127,12 @@ const WorkHistoryPage: React.FC = () => {
                         activeTab === CredentialListTabEnum.Earned &&
                         !boostError && (
                             <>
-                                <IonCol className="flex m-auto items-center flex-wrap  w-full achievements-list-container">
-                                    <IonGrid className="max-w-[600px]">
-                                        <IonRow> {credentials}</IonRow>
-                                    </IonGrid>
+                                <AppCol className="flex m-auto items-center flex-wrap  w-full achievements-list-container">
+                                    <AppGrid className="max-w-[600px]">
+                                        <AppRow> {credentials}</AppRow>
+                                    </AppGrid>
                                     <div className="bg-filler bg-rose-300 absolute h-full top-[0px] left-[0px] w-full mt-[200px]" />
-                                </IonCol>
+                                </AppCol>
                             </>
                         )}
                     {!loading &&
@@ -158,12 +160,12 @@ const WorkHistoryPage: React.FC = () => {
                         boosts?.length > 0 &&
                         activeTab === CredentialListTabEnum.Managed && (
                             <>
-                                <IonCol className="flex m-auto items-center flex-wrap w-full  achievements-list-container">
-                                    <IonGrid className="max-w-[600px]">
-                                        <IonRow>{renderBoostsList}</IonRow>
-                                    </IonGrid>
+                                <AppCol className="flex m-auto items-center flex-wrap w-full  achievements-list-container">
+                                    <AppGrid className="max-w-[600px]">
+                                        <AppRow>{renderBoostsList}</AppRow>
+                                    </AppGrid>
                                     <div className="bg-filler bg-rose-300 absolute h-full top-[0px] left-[0px] w-full mt-[110px]" />
-                                </IonCol>
+                                </AppCol>
                             </>
                         )}
                     {!boostsLoading &&
@@ -177,9 +179,9 @@ const WorkHistoryPage: React.FC = () => {
                             </section>
                         )}
                     {boostError && <BoostErrorsDisplay refetch={handleRefetch} />}
-                </IonContent>
+                </AppContent>
             </ErrorBoundary>
-        </IonPage>
+        </AppPage>
     );
 };
 

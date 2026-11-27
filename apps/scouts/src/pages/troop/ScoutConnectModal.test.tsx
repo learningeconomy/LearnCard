@@ -6,11 +6,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import ScoutConnectModal from './ScoutConnectModal';
 
-vi.mock('@ionic/react', () => ({
-    IonList: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-    IonItem: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-}));
-
 vi.mock('@capacitor/clipboard', () => ({ Clipboard: { write: vi.fn() } }));
 vi.mock('@capacitor/share', () => ({ Share: { share: vi.fn() } }));
 vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => false } }));

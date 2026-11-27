@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import { createMemoryHistory } from 'history';
-import { IonApp } from '@ionic/react';
+import { AppRoot } from 'learn-card-base/ui/app-shell/AppRoot';
 import { BrandingEnum } from 'learn-card-base';
 import { AppShellRouter } from 'learn-card-base/ui/app-shell/AppShellRouter';
 import { AppSplitPane } from 'learn-card-base/ui/app-shell/AppSplitPane';
@@ -13,7 +13,7 @@ const history = createMemoryHistory({ initialEntries: ['/launchpad'] });
 export const SignedInLaunchpadFixture: React.FC = () => (
     <Suspense fallback={<p>Loading app...</p>}>
         <AppShellRouter history={history}>
-            <IonApp>
+            <AppRoot>
                 <div id="app-router">
                     <AppSplitPane
                         contentId="main"
@@ -25,7 +25,7 @@ export const SignedInLaunchpadFixture: React.FC = () => (
                         </main>
                     </AppSplitPane>
                 </div>
-            </IonApp>
+            </AppRoot>
         </AppShellRouter>
     </Suspense>
 );

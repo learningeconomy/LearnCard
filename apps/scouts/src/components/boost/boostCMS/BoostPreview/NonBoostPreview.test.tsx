@@ -10,12 +10,6 @@ const host = vi.hoisted(() => ({
     verify: vi.fn(async () => []),
 }));
 
-vi.mock('@ionic/react', () => ({
-    IonPage: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-    IonContent: ({ children }: React.PropsWithChildren) => <main>{children}</main>,
-    IonFooter: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-    IonRow: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-}));
 vi.mock('@learncard/react', () => ({ getVCDisplayCardVariant: () => 'ribbon' }));
 vi.mock('learn-card-base', () => ({
     useWallet: () => ({ initWallet: async () => ({ invoke: { verifyCredential: host.verify } }) }),

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 
-import { IonToggle } from '@ionic/react';
 import * as m from '../../../paraglide/messages.js';
 import TroopCMSWallpaperSelect from './TroopCMSWallpaperSelect';
 import TroopCMSThumbnailSelect from './TroopsCMSThumbnailSelect';
@@ -17,6 +16,7 @@ import {
 import TroopsCMSAppearanceTabs, { TroopsAppearanceTabs } from './TroopsCMSAppearanceTabs';
 import AddWallpaper from '../../svgs/AddWallpaper';
 import { DEFAULT_COLOR_DARK, DEFAULT_COLOR_LIGHT, isFontColorDark } from '../troops.helpers';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
 
 export const TroopCMSAppearanceForm: React.FC<{
     state: TroopsCMSState;
@@ -32,6 +32,7 @@ export const TroopCMSAppearanceForm: React.FC<{
 
     const appearance = isInMemberViewMode ? state?.memberID?.appearance : state?.appearance;
     const parentAppearance = state?.parentID?.appearance;
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let inheritNetworkStyles = false;
     if (isInMemberViewMode) {
         inheritNetworkStyles = state?.memberID?.appearance?.inheritNetworkStyles;
@@ -74,6 +75,7 @@ export const TroopCMSAppearanceForm: React.FC<{
         return;
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     const handleStateChange = (key: string, value: any) => {
         if (isInMemberViewMode) {
             setState(prevState => {
@@ -133,10 +135,10 @@ export const TroopCMSAppearanceForm: React.FC<{
                         </div>
                         {m['troops.useNetworkStyles']()}
                     </div>
-                    <IonToggle
+                    <AppToggle
                         mode="ios"
                         className="troops-cms-toggle"
-                        onIonChange={e => {
+                        onCheckedChange={checked => {
                             setToggleStyles(!toggleStyles);
                             handleSetDefaultStyles(!toggleStyles);
                         }}
@@ -168,12 +170,12 @@ export const TroopCMSAppearanceForm: React.FC<{
                         <p className="text-grayscale-900 font-notoSans text-lg flex items-center justify-start w-[80%]">
                             {m['scoutsId.fadeImage']()}
                         </p>
-                        <IonToggle
+                        <AppToggle
                             mode="ios"
                             className={`${
                                 isDisabled ? 'troops-cms-toggle-disabled' : 'troops-cms-toggle'
                             }`}
-                            onIonChange={e => {
+                            onCheckedChange={checked => {
                                 const isFadedBackground = !fadeBackground;
                                 setFadeBackground(isFadedBackground);
 
@@ -200,13 +202,13 @@ export const TroopCMSAppearanceForm: React.FC<{
                         <p className="text-grayscale-900 font-notoSans text-lg flex items-center justify-start w-[80%]">
                             {m['scoutsId.darkText']()}
                         </p>
-                        <IonToggle
+                        <AppToggle
                             mode="ios"
                             className={`${
                                 isDisabled ? 'troops-cms-toggle-disabled' : 'troops-cms-toggle'
                             }`}
-                            onIonChange={e => {
-                                const isChecked = e.detail.checked;
+                            onCheckedChange={checked => {
+                                const isChecked = checked;
                                 setIsTextDark(isChecked);
                                 if (isChecked) {
                                     handleStateChange('fontColor', DEFAULT_COLOR_DARK);
@@ -300,14 +302,14 @@ export const TroopCMSAppearanceForm: React.FC<{
                                 <p className="text-grayscale-900 font-notoSans text-lg flex items-center justify-start w-[80%]">
                                     {m['scoutsId.fadeImage']()}
                                 </p>
-                                <IonToggle
+                                <AppToggle
                                     mode="ios"
                                     className={`${
                                         isDisabled
                                             ? 'troops-cms-toggle-disabled'
                                             : 'troops-cms-toggle'
                                     }`}
-                                    onIonChange={e => {
+                                    onCheckedChange={checked => {
                                         const isFadedBackground = !fadeBackground;
                                         setFadeBackground(isFadedBackground);
 
@@ -336,12 +338,12 @@ export const TroopCMSAppearanceForm: React.FC<{
                             <p className="text-grayscale-900 font-notoSans text-lg flex items-center justify-start w-[80%]">
                                 {m['troops.repeatImage']()}
                             </p>
-                            <IonToggle
+                            <AppToggle
                                 mode="ios"
                                 className={`${
                                     isDisabled ? 'troops-cms-toggle-disabled' : 'troops-cms-toggle'
                                 }`}
-                                onIonChange={e => {
+                                onCheckedChange={checked => {
                                     const isTiledBackground = !repeatBackground;
                                     setRepeatBackground(isTiledBackground);
 

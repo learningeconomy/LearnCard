@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import * as m from '../../paraglide/messages.js';
 import { useModal } from 'learn-card-base';
-import { IonFooter, IonInput } from '@ionic/react';
 import {
     FrameworkNodeRole,
     SkillFramework,
@@ -14,6 +13,8 @@ import SlimCaretLeft from 'apps/scouts/src/components/svgs/SlimCaretLeft';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
 import Pencil from 'apps/scouts/src/components/svgs/Pencil';
+import { AppFooter } from 'learn-card-base/ui/chrome';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 
 type SkillPreviewProps = {
     framework: SkillFramework;
@@ -108,7 +109,7 @@ const SkillPreview: React.FC<SkillPreviewProps> = ({
         let truncatedSecondLast = secondLast;
         const lastItemWidth = getTextWidth(lastItem);
         const ellipsisWidth = getTextWidth('... > ');
-        let maxSecondLastWidth = availableWidth - lastItemWidth - ellipsisWidth - 20; // 20px buffer
+        const maxSecondLastWidth = availableWidth - lastItemWidth - ellipsisWidth - 20; // 20px buffer
 
         if (getTextWidth(secondLast) > maxSecondLastWidth) {
             // Binary search for optimal truncation
@@ -249,11 +250,11 @@ const SkillPreview: React.FC<SkillPreviewProps> = ({
             </div>
 
             <section className="h-full flex flex-col gap-[10px] pt-[15px] px-[20px] pb-[170px] overflow-y-auto z-0">
-                <IonInput
+                <AppInput
                     className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-poppins text-[14px] w-full"
                     placeholder={m['skillFrameworks.searchPlh']()}
                     value={search}
-                    onIonInput={e => setSearch(e.detail.value)}
+                    onValueInput={value => setSearch(value)}
                 />
 
                 <TiersAndCompetencies
@@ -277,7 +278,7 @@ const SkillPreview: React.FC<SkillPreviewProps> = ({
                 />
             </section>
 
-            <IonFooter
+            <AppFooter
                 mode="ios"
                 className="w-full flex justify-center items-center  backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white/80 border-solid border border-white"
             >
@@ -306,7 +307,7 @@ const SkillPreview: React.FC<SkillPreviewProps> = ({
                         {successButtonText}
                     </button>
                 </div>
-            </IonFooter>
+            </AppFooter>
         </div>
     );
 };

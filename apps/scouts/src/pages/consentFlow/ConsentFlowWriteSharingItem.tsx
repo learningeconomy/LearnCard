@@ -1,11 +1,11 @@
 import React from 'react';
 import { ConsentFlowTerms } from '@learncard/types';
 import { Updater } from 'use-immer';
-import { IonRippleEffect } from '@ionic/react';
 
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 import { getInfoFromContractKey } from '../../helpers/contract.helpers';
 import * as m from '../../paraglide/messages.js';
+import { AppRippleEffect } from 'learn-card-base/ui/widgets';
 
 type ConsentFlowWriteSharingItemProps = {
     term: ConsentFlowTerms['write']['credentials']['categories'][string];
@@ -55,7 +55,7 @@ const ConsentFlowWriteSharingItem: React.FC<ConsentFlowWriteSharingItemProps> = 
 
                 <SkinnyCaretRight className="rtl-mirror h-[20px] w-[20px] text-grayscale-500" />
 
-                <IonRippleEffect />
+                <AppRippleEffect />
             </button>
         </li>
     );

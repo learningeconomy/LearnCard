@@ -17,7 +17,6 @@ const TroopsCMSWrapper = lazyWithRetry(() => import('../../components/troopsCMS/
 const TroopListItemCard = lazyWithRetry(() => import('./TroopListItemCard'));
 
 import { GreenScoutsPledge2 } from 'learn-card-base/svgs/ScoutsPledge2';
-import { IonRow, IonCol, IonInput, IonSpinner } from '@ionic/react';
 
 import { ModalTypes } from 'learn-card-base';
 import { TroopsCMSViewModeEnum } from '../../components/troopsCMS/troopCMSState';
@@ -25,6 +24,9 @@ import * as m from '../../paraglide/messages.js';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 import { TroopParentLevel, troopParentLevelToChildDepth } from './troopConstants';
 import { selectLocalePlural } from '../../i18n/formatters';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 type TroopsModalProps = {
     credentialType: CredentialCategoryEnum.troops;
@@ -112,14 +114,14 @@ const TroopsModal: React.FC<TroopsModalProps> = ({
             <section className="flex flex-col h-full w-full bg-white items-center shadow-bottom-1-4 ">
                 <section className="bg-grayscale-100 grow w-full flex flex-col items-center">
                     <div className="flex items-center justify-between w-full max-w-[600px] px-[15px]">
-                        <IonRow class="w-full max-w-[600px] mt-6 ion-no-padding">
-                            <IonCol className="flex w-full items-center justify-start ion-no-padding gap-[10px]">
-                                <IonInput
+                        <AppRow className="w-full max-w-[600px] mt-6 ion-no-padding">
+                            <AppCol className="flex w-full items-center justify-start ion-no-padding gap-[10px]">
+                                <AppInput
                                     autocapitalize="on"
                                     placeholder={m['troops.membersList.troopPlaceholder']()}
                                     value={search}
                                     className="bg-white text-grayscale-800 px-4! py-1! rounded-[15px] text-[17px] font-notoSans"
-                                    onIonInput={e => setSearch(e?.detail?.value)}
+                                    onValueInput={value => setSearch(value)}
                                     type="text"
                                     clearInput
                                 />
@@ -129,8 +131,8 @@ const TroopsModal: React.FC<TroopsModalProps> = ({
                                 >
                                     <Plus className="h-[25px] w-[25px] text-white" />
                                 </button>
-                            </IonCol>
-                        </IonRow>
+                            </AppCol>
+                        </AppRow>
                     </div>
                     <div className="w-full max-w-[600px]">
                         <TroopList
@@ -174,6 +176,7 @@ const TroopList: React.FC<TroopListProps> = ({
 
     const managedBoostInfiniteScrollRef = useRef<HTMLDivElement>(null);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     const onScreen = useOnScreen(managedBoostInfiniteScrollRef as any, '0px', [
         boostChildren?.pages?.[0]?.records?.length,
     ]);
@@ -187,7 +190,7 @@ const TroopList: React.FC<TroopListProps> = ({
     if (!boostChildren && boostChildrenLoading) {
         return (
             <div className="w-full px-[20px] flex justify-center">
-                <IonSpinner />
+                <AppSpinner />
             </div>
         );
     }
@@ -206,7 +209,7 @@ const TroopList: React.FC<TroopListProps> = ({
             {renderTroopList}
             {isFetching && (
                 <div className="w-full flex items-center justify-center">
-                    <IonSpinner
+                    <AppSpinner
                         name="crescent"
                         color="grayscale-900"
                         className="scale-[2] mb-8 mt-6"

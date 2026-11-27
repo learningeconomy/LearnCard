@@ -16,7 +16,6 @@ import {
     useGetProfile,
 } from 'learn-card-base';
 
-import { IonCol, IonRow, IonInput, IonSpinner } from '@ionic/react';
 import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 
 import { useImageUpload, UploadRes } from 'learn-card-base';
@@ -26,6 +25,9 @@ import { getAuthToken } from 'learn-card-base/helpers/authHelpers';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
 import { getLogger } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 const log = getLogger('new-join-network-prompt');
 
 const StateValidator = z.object({
@@ -235,14 +237,14 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
         <>
             {createLoading && (
                 <div className="absolute top-0 z-[10000] flex h-full w-full flex-col items-center justify-center gap-[5px] bg-white/70  backdrop-blur-[3px]">
-                    <IonSpinner color="dark" />
+                    <AppSpinner color="dark" />
                     <span className="text-grayscale-900">{m['networkPrompts.joiningNet']()}</span>
                 </div>
             )}
 
             <section className="relative pt-[32px] pb-[16px]">
-                <IonRow className="w-full">
-                    <IonRow className="flex w-full flex-col items-center justify-center mb-2">
+                <AppRow className="w-full">
+                    <AppRow className="flex w-full flex-col items-center justify-center mb-2">
                         <div className="flex w-full items-center justify-center">
                             <h5
                                 className={`font-notoSans select-none text-xl font-medium tracking-wider text-center`}
@@ -261,8 +263,8 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
                                 {m['networkPrompts.setupProf']()}
                             </h1>
                         </div>
-                    </IonRow>
-                    <IonCol size="12" className="flex items-center justify-center">
+                    </AppRow>
+                    <AppCol size="12" className="flex items-center justify-center">
                         <div className="bg-grayscale-100/40 relative m-0 flex items-center justify-between rounded-[40px] object-fill p-0 pb-[3px] pr-[10px] pt-[3px]">
                             <ProfilePicture
                                 customContainerClass="flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-3xl min-w-[70px] min-h-[70px]"
@@ -273,7 +275,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
                             >
                                 {imageUploadLoading && (
                                     <div className="user-image-upload-inprogress absolute flex h-[70px] min-h-[70px] w-[70px] min-w-[70px] items-center justify-center overflow-hidden rounded-full border-2 border-solid border-white text-3xl font-medium text-white">
-                                        <IonSpinner
+                                        <AppSpinner
                                             name="crescent"
                                             color="dark"
                                             className="scale-[1.75]"
@@ -289,14 +291,14 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
                                 <Pencil className="h-[60%]" />
                             </button>
                         </div>
-                    </IonCol>
-                </IonRow>
+                    </AppCol>
+                </AppRow>
 
                 <div className="flex flex-col items-center justify-center w-full px-6 mt-2">
                     {/* profile setup */}
-                    <IonRow className="flex flex-col items-center justify-center w-full">
+                    <AppRow className="flex flex-col items-center justify-center w-full">
                         {lcNetworkProfile && lcNetworkProfile?.profileId && (
-                            <IonInput
+                            <AppInput
                                 autocapitalize="on"
                                 className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base mb-4`}
                                 value={`@${lcNetworkProfile?.profileId}`}
@@ -333,10 +335,10 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
                                 </p>
                             )}
                         </div>
-                    </IonRow>
+                    </AppRow>
 
                     {/* network setup */}
-                    <IonRow className="w-full flex flex-col items-center justify-center">
+                    <AppRow className="w-full flex flex-col items-center justify-center">
                         <div className="w-full flex items-center justify-between">
                             <p className="text-grayscale-900 text-base font-medium w-10/12 text-left pr-2 font-notoSans">
                                 {m['networkPrompts.join.joinNet']()}
@@ -354,25 +356,25 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
                                 </p>
                             </>
                         )}
-                    </IonRow>
+                    </AppRow>
 
                     {/* opting into network */}
                     {networkToggle && (
-                        <IonRow className="flex flex-col items-center justify-center w-full mt-1">
+                        <AppRow className="flex flex-col items-center justify-center w-full mt-1">
                             <div className="flex flex-col items-center justify-center w-full mb-4">
                                 <div className="flex w-full items-center">
                                     <p className="font-medium mr-[5px] text-grayscale-600 text-[20px]">
                                         @
                                     </p>
-                                    <IonInput
+                                    <AppInput
                                         autocapitalize="on"
                                         className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium text-base text-left ${
                                             error || errors?.profileId
                                                 ? 'login-input-email-error'
                                                 : ''
                                         }`}
-                                        onIonInput={e => {
-                                            setProfileId(e.detail.value);
+                                        onValueInput={value => {
+                                            setProfileId(value);
                                             if (error) {
                                                 setError('');
                                             }
@@ -393,22 +395,22 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
                                     </p>
                                 )}
                             </div>
-                        </IonRow>
+                        </AppRow>
                     )}
 
                     {/* opting out of network */}
                     {!networkToggle && (
-                        <IonRow className="w-full flex flex-col items-center justify-center mt-4">
+                        <AppRow className="w-full flex flex-col items-center justify-center mt-4">
                             <p className="text-grayscale-900 font-normal text-base w-full text-left font-notoSans">
                                 {m['networkPrompts.optOut.joinLater']()}
                             </p>
                             <p className="text-grayscale-600 font-normal text-[14px] w-full text-left font-notoSans mt-2">
                                 {m['networkPrompts.optOut.limit']()}
                             </p>
-                        </IonRow>
+                        </AppRow>
                     )}
 
-                    <IonRow className="w-full flex items-center justify-center mt-4">
+                    <AppRow className="w-full flex items-center justify-center mt-4">
                         <button
                             onClick={handleUpdateUser}
                             disabled={isLoading || profileLoading}
@@ -416,18 +418,18 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
                             type="button"
                             className="flex items-center justify-center gap-2 py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm w-full hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                            {(isLoading || profileLoading) && <IonSpinner name="crescent" />}
+                            {(isLoading || profileLoading) && <AppSpinner name="crescent" />}
                             {profileLoading
                                 ? m['common.loading']()
                                 : isLoading
                                   ? m['common.saving']()
                                   : m['networkPrompts.letsGo']()}
                         </button>
-                    </IonRow>
+                    </AppRow>
                 </div>
 
-                <IonRow className="flex items-center justify-center mt-3 w-full">
-                    <IonCol className="flex flex-col items-center justify-center text-center">
+                <AppRow className="flex items-center justify-center mt-3 w-full">
+                    <AppCol className="flex flex-col items-center justify-center text-center">
                         <p className="text-center text-sm font-normal px-16 text-grayscale-600">
                             {m['networkPrompts.dataOwn']()}
                             <br />
@@ -436,11 +438,11 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
                         <button className="text-indigo-500 font-bold">
                             {m['common.learnMore']()}
                         </button>
-                    </IonCol>
-                </IonRow>
+                    </AppCol>
+                </AppRow>
 
-                <IonRow className="flex items-center justify-center w-full">
-                    <IonCol className="flex items-center justify-center">
+                <AppRow className="flex items-center justify-center w-full">
+                    <AppCol className="flex items-center justify-center">
                         <button onClick={openPP} className="text-indigo-500 font-bold text-sm">
                             {m['login.privacyPolicy']()}
                         </button>
@@ -450,8 +452,8 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
                         <button onClick={openToS} className="text-indigo-500 font-bold text-sm">
                             {m['login.termsOfService']()}
                         </button>
-                    </IonCol>
-                </IonRow>
+                    </AppCol>
+                </AppRow>
             </section>
         </>
     );

@@ -1,6 +1,5 @@
 import React from 'react';
 
-import { IonHeader, IonRow, IonToolbar } from '@ionic/react';
 import TroopsNetworkToggle from '../TroopsNetworkToggle/TroopsNetworkToggle';
 import TransP, { type ParaglideMessage } from '../../../i18n/TransP';
 import * as m from '../../../paraglide/messages.js';
@@ -11,6 +10,8 @@ import {
     TroopsCMSState,
     TroopsCMSViewModeEnum,
 } from '../troopCMSState';
+import { AppHeader, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppRow } from 'learn-card-base/ui/layout';
 
 type TroopsCMSHeaderProps = {
     state: TroopsCMSState;
@@ -49,9 +50,9 @@ export const TroopsCMSHeader: React.FC<TroopsCMSHeaderProps> = ({
     };
 
     return (
-        <IonHeader color="white" className="bg-white">
+        <AppHeader color="white" className="bg-white">
             <div className="ion-no-border px-2">
-                <IonRow className="w-full flex items-center justify-center">
+                <AppRow className="w-full flex items-center justify-center">
                     <div className="w-full flex flex-col items-start justify-center max-w-[600px] ion-padding">
                         <h2 className="text-grayscale-800 flex items-center justify-center text-[22px] font-notoSans text-graycale-900">
                             <Icon
@@ -60,6 +61,7 @@ export const TroopsCMSHeader: React.FC<TroopsCMSHeaderProps> = ({
                             <TransP
                                 m={headingMessages[viewMode]}
                                 components={[
+                                    // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                     <span
                                         className={`font-semibold text-${color} m-0 p-0 ml-1 mt-[2px]`}
                                     />,
@@ -75,9 +77,9 @@ export const TroopsCMSHeader: React.FC<TroopsCMSHeaderProps> = ({
                             enableSwitching={isCreate}
                         />
                     </div>
-                </IonRow>
+                </AppRow>
             </div>
-        </IonHeader>
+        </AppHeader>
     );
 };
 

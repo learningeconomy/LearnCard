@@ -1,12 +1,12 @@
 import React from 'react';
 
-import { IonHeader, IonToolbar, IonRow, IonCol } from '@ionic/react';
-
 import { BoostUserTypeEnum, boostCategoryOptions } from '../../boost-options/boostOptions';
 import { BoostCMSStepsEnum } from '../../boost';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import * as m from '../../../../paraglide/messages.js';
+import { AppHeader, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 type BoostCMSHeaderProps = {
     boostUserType: BoostUserTypeEnum | string | null;
@@ -89,11 +89,11 @@ const BoostCMSHeader: React.FC<BoostCMSHeaderProps> = ({
     };
 
     return (
-        <IonHeader className="shadow-none">
-            <IonToolbar color="grayscale-800" className="ion-no-border px-2">
-                <IonRow className="flex items-center justify-center w-full py-[10px]">
+        <AppHeader className="shadow-none">
+            <AppToolbar color="grayscale-800" className="ion-no-border px-2">
+                <AppRow className="flex items-center justify-center w-full py-[10px]">
                     <div className="w-full max-w-[600px] flex items-center justify-between">
-                        <IonCol className="w-full flex justify-start items-center px-0!">
+                        <AppCol className="w-full flex justify-start items-center px-0!">
                             {(currentStep === BoostCMSStepsEnum.publish ||
                                 (currentStep === BoostCMSStepsEnum.create &&
                                     returnToParentAfterSave)) && (
@@ -108,7 +108,7 @@ const BoostCMSHeader: React.FC<BoostCMSHeaderProps> = ({
                             <div>
                                 <p className="text-white text-lg font-notoSans">{headerTitle}</p>
                             </div>
-                        </IonCol>
+                        </AppCol>
                         <div className="right-cms-header flex items-center gap-2">
                             {!returnToParentAfterSave && (
                                 <button
@@ -169,9 +169,9 @@ const BoostCMSHeader: React.FC<BoostCMSHeaderProps> = ({
                             )}
                         </div>
                     </div>
-                </IonRow>
-            </IonToolbar>
-        </IonHeader>
+                </AppRow>
+            </AppToolbar>
+        </AppHeader>
     );
 };
 

@@ -1,5 +1,4 @@
 import React, { useState, useEffect, memo, useCallback } from 'react';
-import { IonList, IonItem } from '@ionic/react';
 import { Clipboard } from '@capacitor/clipboard';
 import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
@@ -34,6 +33,7 @@ import {
 import { VC } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
+import { AppItem, AppList } from 'learn-card-base/ui/list';
 const log = getLogger('scout-connect-modal');
 
 // Types
@@ -54,6 +54,7 @@ const INITIAL_STATE = {
     issueTo: [],
 };
 
+// eslint-disable-next-line react/display-name, @typescript-eslint/no-explicit-any -- existing anonymous memo/forwardRef component; naming it is out of scope here; existing loose type; tightening it is a typing change, out of scope for the Ionic removal
 const RecipientAvatars = memo(({ recipients }: { recipients: any[] }) => (
     <div className="flex">
         {recipients?.slice(0, 5)?.map((r, index) => (
@@ -222,7 +223,7 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
 
     return (
         <div className="w-full max-w-[600px] mx-auto h-full p-4 mt-[5px] md:mt-16 lg:mt-24 flex flex-col gap-4">
-            <IonList className="ion-no-padding py-2">
+            <AppList className="ion-no-padding py-2">
                 <div className="p-[15px]">
                     <TroopID
                         credential={boost}
@@ -257,7 +258,7 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
                 </div>
 
                 {/* Copy to Clipboard */}
-                <IonItem lines="none" className="mt-2">
+                <AppItem lines="none" className="mt-2">
                     <div className="flex flex-row items-center p-5 gap-[10px] w-full h-[70px] bg-[#EFF0F5] rounded-[15px] flex-none order-0 grow-0">
                         <div className="flex flex-row items-center gap-[15px] h-[19px] flex-1 min-w-0 order-0">
                             {linkLoading ? (
@@ -278,10 +279,10 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
                             <CopyStack className="w-full h-full text-[#18224E]" />
                         </div>
                     </div>
-                </IonItem>
+                </AppItem>
 
                 {/* Show QR Code*/}
-                <IonItem lines="inset" className="mt-2">
+                <AppItem lines="inset" className="mt-2">
                     <button
                         className="flex justify-between items-center w-full disabled:opacity-60"
                         onClick={() => {
@@ -305,10 +306,10 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
                         </p>
                         <QRCodeIcon height="30px" width="30px" />
                     </button>
-                </IonItem>
+                </AppItem>
 
                 {/* Share Link */}
-                <IonItem lines="inset" className="mt-2">
+                <AppItem lines="inset" className="mt-2">
                     <button
                         className="flex justify-between items-center w-full disabled:opacity-60"
                         onClick={handleShare}
@@ -319,10 +320,10 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
                         </p>
                         <ShareArrow />
                     </button>
-                </IonItem>
+                </AppItem>
 
                 {/* Browse Contacts */}
-                <IonItem lines="none" className="mt-2">
+                <AppItem lines="none" className="mt-2">
                     <button
                         onClick={() => {
                             newModal(
@@ -352,8 +353,8 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
                         </p>
                         <AddUserIcon />
                     </button>
-                </IonItem>
-            </IonList>
+                </AppItem>
+            </AppList>
         </div>
     );
 };

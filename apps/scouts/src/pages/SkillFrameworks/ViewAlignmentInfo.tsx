@@ -13,7 +13,6 @@ import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import FrameworkImage from './FrameworkImage';
 import SkillBreadcrumbText from './SkillBreadcrumbText';
 import SkillsFrameworkIcon from '../../components/svgs/SkillsFrameworkIcon';
-import { IonFooter } from '@ionic/react';
 
 import {
     FrameworkNodeRole,
@@ -24,6 +23,7 @@ import {
     ApiSkillNode,
     convertApiSkillNodeToSkillTreeNode,
 } from '../../helpers/skillFramework.helpers';
+import { AppFooter } from 'learn-card-base/ui/chrome';
 
 type ViewAlignmentInfoProps = {
     alignment?: SkillFrameworkNode;
@@ -179,7 +179,7 @@ const ViewAlignmentInfo: React.FC<ViewAlignmentInfoProps> = ({
                     </section>
                 </div>
                 {isMobile && (
-                    <IonFooter
+                    <AppFooter
                         mode="ios"
                         className="w-full flex justify-center items-center  backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white/80 border-solid border border-white"
                     >
@@ -191,7 +191,7 @@ const ViewAlignmentInfo: React.FC<ViewAlignmentInfoProps> = ({
                                 {m['common.close']()}
                             </button>
                         </div>
-                    </IonFooter>
+                    </AppFooter>
                 )}
             </div>
         </div>

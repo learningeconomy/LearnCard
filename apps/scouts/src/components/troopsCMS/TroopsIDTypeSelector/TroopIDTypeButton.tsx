@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 
-import { IonContent } from '@ionic/react';
 import * as m from '../../../paraglide/messages.js';
 import { useGetSearchProfiles, useModal, ModalTypes } from 'learn-card-base';
 import { formatLocaleCount } from '../../../i18n/formatters';
@@ -19,6 +18,7 @@ import BoostAddressBook, {
 
 import { TroopsCMSState, TroopsCMSViewModeEnum } from '../troopCMSState';
 import { BoostCMSIssueTo } from '../../boost/boost';
+import { AppContent } from 'learn-card-base/ui/chrome';
 
 type TroopIDTypeButtonProps = {
     state: TroopsCMSState;
@@ -107,7 +107,9 @@ export const TroopIDTypeButton: React.FC<TroopIDTypeButtonProps> = ({
     const openAddressBook = () => {
         newAddressBookModal(
             <BoostAddressBook
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 state={state as any}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 setState={setState as any}
                 viewMode={BoostAddressBookViewMode.full}
                 mode={BoostAddressBookEditMode.edit}
@@ -116,6 +118,7 @@ export const TroopIDTypeButton: React.FC<TroopIDTypeButtonProps> = ({
                 _setIssueTo={isInLeaderViewMode ? setAdmins : setMembers}
                 search={search}
                 setSearch={setSearch}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
                 searchResults={searchResults as any}
                 isLoading={loading}
                 collectionPropName={

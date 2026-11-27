@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useCanManageCompetencies } from '../../hooks/useCanManageCompetencies';
 
 import * as m from '../../paraglide/messages.js';
-import { IonInput, IonSpinner } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
 import Pencil from '../../components/svgs/Pencil';
 import CodeIcon from 'learn-card-base/svgs/CodeIcon';
@@ -13,6 +12,8 @@ import FrameworkSearchResults from './FrameworkSearchResults';
 import { SetState } from 'packages/shared-types/dist';
 import { ApiFrameworkInfo } from '../../helpers/skillFramework.helpers';
 import { SkillFrameworkNode, SkillFrameworkNodeWithSearchInfo } from '../../components/boost/boost';
+import { AppInput, type AppInputHandle } from 'learn-card-base/ui/controls/AppInput';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type BrowseFrameworkMultiColumnHeaderProps = {
     handleBack: () => void;
@@ -72,7 +73,7 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
 }) => {
     const canManageCompetencies = useCanManageCompetencies();
     const isEdit = canManageCompetencies && editRequested;
-    const inputRef = useRef<HTMLIonInputElement>(null);
+    const inputRef = useRef<AppInputHandle>(null);
     const [showResults, setShowResults] = useState(false);
 
     // fixes some weird case where search results opens after clicking a search result item from fullscreen
@@ -112,13 +113,13 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
                 )}
                 <div className="relative flex-1">
                     <div className="relative">
-                        <IonInput
+                        <AppInput
                             ref={inputRef}
                             className="bg-grayscale-100 text-grayscale-800 rounded-[10px] ion-padding font-poppins text-[14px] w-full pr-[24px]!"
                             placeholder={m['skillFrameworks.searchPlh']()}
                             value={search}
-                            onIonInput={e => {
-                                const value = e.detail.value || '';
+                            onValueInput={nextValue => {
+                                const value = nextValue || '';
                                 setSearch(value);
                                 setShowResults(value.length > 0);
                             }}
@@ -146,14 +147,14 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
                         <div
                             className="absolute z-10 max-h-[70vh] bg-white border border-t-0 border-gray-200 rounded-b-[15px] shadow-lg overflow-y-auto p-[20px]"
                             style={{
-                                width: inputRef.current?.offsetWidth || '100%',
+                                width: inputRef.current?.host?.offsetWidth || '100%',
                                 left: 0,
                                 right: 0,
                             }}
                         >
                             {searchLoading && !isApproveFlow && (
                                 <div className="h-[100px] w-full flex items-center justify-center">
-                                    <IonSpinner color="dark" name="crescent" />
+                                    <AppSpinner color="dark" name="crescent" />
                                 </div>
                             )}
                             {(!searchLoading || isApproveFlow) && (
