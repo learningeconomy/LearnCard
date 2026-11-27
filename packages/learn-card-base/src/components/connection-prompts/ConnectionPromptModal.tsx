@@ -1,7 +1,7 @@
 import React, { useCallback, useImperativeHandle, useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import type { LCNConnectionPrompt } from '@learncard/types';
-import { alertCircleOutline } from 'ionicons/icons';
+import { alertCircleOutline } from 'learn-card-base/icons/ionicons';
 
 import { UserProfilePicture } from '../profilePicture/ProfilePicture';
 

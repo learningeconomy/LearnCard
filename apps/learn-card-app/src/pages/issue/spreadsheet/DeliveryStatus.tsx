@@ -8,7 +8,7 @@ import {
     paperPlaneOutline,
     searchOutline,
     timeOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import * as m from '../../../paraglide/messages.js';
 import { recipientDisplayName, recipientKey } from '../components/recipientTypes';
 import { getFriendlyIssueError } from '../issueErrors';

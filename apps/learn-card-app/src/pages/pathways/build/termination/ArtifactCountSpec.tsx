@@ -9,7 +9,7 @@
 
 import React from 'react';
 
-import { attachOutline } from 'ionicons/icons';
+import { attachOutline } from 'learn-card-base/icons/ionicons';
 
 import type { ArtifactType, Termination } from '../../types';
 import { INPUT, LABEL } from '../shared/inputs';

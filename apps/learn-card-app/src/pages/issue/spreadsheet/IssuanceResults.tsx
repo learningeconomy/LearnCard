@@ -1,6 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 import { AppIcon } from '../../../components/icon';
-import { alertCircleOutline, checkmarkCircleOutline, chevronForwardOutline } from 'ionicons/icons';
+import {
+    alertCircleOutline,
+    checkmarkCircleOutline,
+    chevronForwardOutline,
+} from 'learn-card-base/icons/ionicons';
 import * as m from '../../../paraglide/messages.js';
 import type { IssuanceRun } from './issuanceTypes';
 import { useSpreadsheetDialog } from './SpreadsheetDialog';

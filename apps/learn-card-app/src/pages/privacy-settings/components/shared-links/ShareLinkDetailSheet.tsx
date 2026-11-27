@@ -10,7 +10,7 @@ import {
     qrCodeOutline,
     refreshOutline,
     stopCircleOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import type { ShareLink } from '@learncard/types';
 import { QRCodeSVG } from 'qrcode.react';
 

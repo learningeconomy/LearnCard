@@ -22,7 +22,7 @@
 import React from 'react';
 
 import { AppIcon } from '../../../../components/icon';
-import { alertCircleOutline } from 'ionicons/icons';
+import { alertCircleOutline } from 'learn-card-base/icons/ionicons';
 
 import type { NodeRequirement } from '../../types';
 import { ComparisonOpSchema } from '../../types/outcome';

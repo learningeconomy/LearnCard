@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AppIcon } from '../icon';
-import { alertCircleOutline } from 'ionicons/icons';
+import { alertCircleOutline } from 'learn-card-base/icons/ionicons';
 import { useStore } from '@nanostores/react';
 
 import { lastAiError } from 'learn-card-base/stores/nanoStores/chatStore';

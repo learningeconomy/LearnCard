@@ -6,7 +6,7 @@ import type {
     LCNConnectionPromptMetadata,
     LCNPublicProfile,
 } from '@learncard/types';
-import { alertCircleOutline } from 'ionicons/icons';
+import { alertCircleOutline } from 'learn-card-base/icons/ionicons';
 
 import { getLogger } from '../../logging/logger';
 import {

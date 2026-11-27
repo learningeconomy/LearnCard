@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { IonContent, IonPage, IonicSlides, IonSpinner } from '@ionic/react';
+import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { SwiperDefaults } from 'learn-card-base/swiper/swiperDefaults';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import type { Swiper as SwiperInterface } from 'swiper/types';
 import { Keyboard, Navigation, Pagination, Scrollbar } from 'swiper/modules';
@@ -17,7 +18,7 @@ import 'swiper/css';
 import 'swiper/css/keyboard';
 import 'swiper/css/pagination';
 import 'swiper/css/scrollbar';
-import '@ionic/react/css/ionic-swiper.css';
+import 'learn-card-base/swiper/swiper-defaults.css';
 
 const IntroSlides: React.FC = () => {
     // ref storing swiper instance
@@ -51,7 +52,7 @@ const IntroSlides: React.FC = () => {
         <IonPage>
             <IonContent fullscreen>
                 <Swiper
-                    modules={[Keyboard, Pagination, Scrollbar, IonicSlides, Navigation]}
+                    modules={[Keyboard, Pagination, Scrollbar, SwiperDefaults, Navigation]}
                     keyboard={true}
                     pagination={pagination}
                     grabCursor={true}

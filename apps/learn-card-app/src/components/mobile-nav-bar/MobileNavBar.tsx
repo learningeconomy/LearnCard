@@ -1,6 +1,5 @@
 import { useLocation } from 'react-router-dom';
 
-import { IonLabel } from '@ionic/react';
 import { AppTabs, AppTabBar, AppTabButton } from '../app-shell/AppTabs';
 import { AppOutlet } from '../app-shell/AppOutlet';
 import { AppMenuToggle } from '../app-shell/AppMenuToggle';
@@ -26,6 +25,7 @@ import { NATIVE_CREDENTIAL_PATH } from '../../native-digital-credentials/types';
 import { RoutesOutlet } from './RoutesOutlet';
 
 import { MobileNavBarLinks } from './mobileNavBarLinks';
+import { AppLabel } from '../list';
 
 export { MobileNavBarLinks };
 
@@ -130,7 +130,7 @@ const MobileNavBar: React.FC = () => {
                                                 was hardcoded to always show. */}
                                             {/* <span className="absolute top-[4px] right-[2px] h-[6px] w-[6px] rounded-full bg-red-500" /> */}
                                         </div>
-                                        <IonLabel
+                                        <AppLabel
                                             className={`font-poppins font-semibold text-[11px] mt-[3px] ${
                                                 isDashboardTabActive
                                                     ? colors?.activeColor
@@ -138,7 +138,7 @@ const MobileNavBar: React.FC = () => {
                                             }`}
                                         >
                                             {getNavBarLinkLabel(link)}
-                                        </IonLabel>
+                                        </AppLabel>
                                     </AppTabButton>
                                 );
                             }
@@ -165,7 +165,7 @@ const MobileNavBar: React.FC = () => {
                                                 />
                                             )}
                                         </div>
-                                        <IonLabel
+                                        <AppLabel
                                             className={`font-poppins font-semibold text-[11px] ${
                                                 isWalletTabActive
                                                     ? colors?.activeColor
@@ -173,7 +173,7 @@ const MobileNavBar: React.FC = () => {
                                             } ${walletTextStyles}`}
                                         >
                                             {walletText ?? link.label}
-                                        </IonLabel>
+                                        </AppLabel>
                                     </AppTabButton>
                                 );
                             }
@@ -189,7 +189,7 @@ const MobileNavBar: React.FC = () => {
                                                 />
                                             )}
                                         </div>
-                                        <IonLabel
+                                        <AppLabel
                                             className={`font-poppins font-semibold text-[11px] mt-[3px] ${
                                                 isLaunchPadTabActive
                                                     ? colors?.activeColor
@@ -197,7 +197,7 @@ const MobileNavBar: React.FC = () => {
                                             }`}
                                         >
                                             {getNavBarLinkLabel(link)}
-                                        </IonLabel>
+                                        </AppLabel>
                                     </AppTabButton>
                                 );
                             }

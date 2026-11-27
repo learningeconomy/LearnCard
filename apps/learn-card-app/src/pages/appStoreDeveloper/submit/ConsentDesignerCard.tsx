@@ -8,7 +8,7 @@ import {
     chevronUpOutline,
     closeOutline,
     checkmarkCircleOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import { WALLET_CATEGORIES, PERSONAL_FIELDS } from '@learncard/partner-connect-core';
 import type {
     ConsentRequest,

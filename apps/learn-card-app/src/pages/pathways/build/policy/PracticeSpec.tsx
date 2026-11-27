@@ -7,7 +7,7 @@
 
 import React from 'react';
 
-import { repeatOutline } from 'ionicons/icons';
+import { repeatOutline } from 'learn-card-base/icons/ionicons';
 
 import type { ArtifactType, Policy } from '../../types';
 import { CHIP_ACTIVE, CHIP_BASE, CHIP_INACTIVE, INPUT, LABEL } from '../shared/inputs';

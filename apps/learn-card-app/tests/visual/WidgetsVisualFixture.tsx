@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { IonApp, IonContent, IonTitle } from '@ionic/react';
-import { alertCircleOutline, homeOutline, refreshOutline } from 'ionicons/icons';
+import { alertCircleOutline, homeOutline, refreshOutline } from 'learn-card-base/icons/ionicons';
 
 import { AppButton } from '../../src/components/controls/AppButton';
 import { AppIcon } from '../../src/components/icon';

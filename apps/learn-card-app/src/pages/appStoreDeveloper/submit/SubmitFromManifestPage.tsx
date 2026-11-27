@@ -20,7 +20,7 @@ import {
     notificationsOutline,
     rocketOutline,
     statsChartOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import { AppStoreHeader } from '../components/AppStoreHeader';
 import { useDeveloperPortal } from '../useDeveloperPortal';
 import { useModal, ModalTypes, useDeviceTypeByWidth, getLogger } from 'learn-card-base';

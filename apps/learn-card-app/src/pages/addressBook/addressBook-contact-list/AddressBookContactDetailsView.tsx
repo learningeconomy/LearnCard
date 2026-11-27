@@ -14,7 +14,7 @@ import {
     personAddOutline,
     ribbonOutline,
     trashOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import moment from 'moment';
 
 import type { LCNProfile, VC } from '@learncard/types';

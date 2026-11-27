@@ -2,7 +2,11 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AppPopover } from '../../components/overlays/AppPopover';
 import { AppIcon } from '../../components/icon';
-import { alertCircleOutline, chevronDownOutline, filterOutline } from 'ionicons/icons';
+import {
+    alertCircleOutline,
+    chevronDownOutline,
+    filterOutline,
+} from 'learn-card-base/icons/ionicons';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { ErrorBoundary } from 'react-error-boundary';
 import { CredentialCategoryEnum, useGetCurrentLCNUser, useWallet } from 'learn-card-base';

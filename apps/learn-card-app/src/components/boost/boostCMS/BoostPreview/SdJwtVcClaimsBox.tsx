@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AppIcon } from '../../../icon';
-import { lockClosedOutline, alertCircleOutline } from 'ionicons/icons';
+import { lockClosedOutline, alertCircleOutline } from 'learn-card-base/icons/ionicons';
 import { VC } from '@learncard/types';
 import { LearnCard } from '@learncard/core';
 import { useWallet } from 'learn-card-base';

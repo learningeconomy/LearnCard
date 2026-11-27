@@ -1,4 +1,3 @@
-import { HTMLIonOverlayElement } from '@ionic/core';
 import { dismissAllAppOverlays } from '../components/overlays/overlayStack';
 
 export const closeAll = () => {
@@ -6,7 +5,8 @@ export const closeAll = () => {
     const overlays = document.querySelectorAll(
         'ion-alert, ion-action-sheet, ion-loading, ion-modal, ion-picker, ion-popover'
     );
-    const overlaysArr = Array.from(overlays) as HTMLIonOverlayElement[];
-    overlaysArr.forEach(o => o.dismiss());
+    // Ionic overlay elements (still presented by learn-card-base) expose `dismiss()`.
+    const overlaysArr = Array.from(overlays) as (Element & { dismiss?: () => Promise<boolean> })[];
+    overlaysArr.forEach(o => void o.dismiss?.());
     dismissAllAppOverlays();
 };

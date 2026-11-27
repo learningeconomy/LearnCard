@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AppIcon } from '../../../components/icon';
-import { flaskOutline } from 'ionicons/icons';
+import { flaskOutline } from 'learn-card-base/icons/ionicons';
 
 import { displayHost, isValidTestAddress, type TestAddressState } from './testAddress';
 

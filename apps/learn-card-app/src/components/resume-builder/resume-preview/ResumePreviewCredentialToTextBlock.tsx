@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { add } from 'ionicons/icons';
+import { add } from 'learn-card-base/icons/ionicons';
 import moment from 'moment';
 import type { UnsignedVC, VC } from '@learncard/types';
 

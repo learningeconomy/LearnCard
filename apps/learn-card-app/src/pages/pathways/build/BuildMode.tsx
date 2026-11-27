@@ -43,7 +43,7 @@ import {
     arrowRedoOutline,
     arrowUndoOutline,
     cloudDownloadOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 
 import { pathwayStore } from '../../../stores/pathways';
 import { useLearnerDid } from '../hooks/useLearnerDid';

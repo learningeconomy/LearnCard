@@ -42,7 +42,7 @@ import './index.scss';
 
 // base styles of swiper js
 import 'swiper/css';
-import '@ionic/react/css/ionic-swiper.css';
+import 'learn-card-base/swiper/swiper-defaults.css';
 const history = createBrowserHistory();
 
 const CACHE_TTL = 1000 * 60 * 60 * 24 * 7; // 1 Week

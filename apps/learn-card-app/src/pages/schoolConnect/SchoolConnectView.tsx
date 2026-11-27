@@ -8,7 +8,7 @@ import {
     shareSocialOutline,
     shieldCheckmarkOutline,
     schoolOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import type { SchoolConnection } from '@learncard/lca-api-plugin';
 
 import SchoolConnectTileIcon from '../myApps/icons/SchoolConnectTileIcon';

@@ -6,7 +6,7 @@ import {
     gitNetworkOutline,
     informationCircleOutline,
     thumbsDownOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import { useHistory } from 'react-router-dom';
 
 import type { LearnCardAssistantCard, LearnCardAssistantCardType } from './learnCardAssistant.api';

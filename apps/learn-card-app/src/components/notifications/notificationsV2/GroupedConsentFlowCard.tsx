@@ -1,7 +1,7 @@
 import React from 'react';
 import moment from 'moment';
 import { AppIcon } from '../../icon';
-import { chevronForwardOutline, syncOutline } from 'ionicons/icons';
+import { chevronForwardOutline, syncOutline } from 'learn-card-base/icons/ionicons';
 
 import { ErrorBoundary } from '@sentry/react';
 import X from 'learn-card-base/svgs/X';

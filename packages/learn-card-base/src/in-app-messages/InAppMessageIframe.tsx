@@ -1,6 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { IonIcon } from '@ionic/react';
-import { closeOutline } from 'ionicons/icons';
+import { closeOutline } from 'learn-card-base/icons/ionicons';
 import { useT } from '../i18n';
 import { useInAppMessageActions } from './useInAppMessageActions';
 import { parseIframeMessage } from './iframeBridge';

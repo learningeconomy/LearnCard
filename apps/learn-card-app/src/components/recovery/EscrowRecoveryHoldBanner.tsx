@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { AppIcon } from '../icon';
-import { alertCircleOutline, shieldHalfOutline, checkmarkCircleOutline } from 'ionicons/icons';
+import {
+    alertCircleOutline,
+    shieldHalfOutline,
+    checkmarkCircleOutline,
+} from 'learn-card-base/icons/ionicons';
 import * as m from '../../paraglide/messages.js';
 import { getLocale } from '../../paraglide/runtime.js';
 

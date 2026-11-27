@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AppIcon } from '../icon';
-import { checkmarkCircleOutline } from 'ionicons/icons';
+import { checkmarkCircleOutline } from 'learn-card-base/icons/ionicons';
 import { Overlay, isSameEscrowPinError } from 'learn-card-base';
 import { validatePin } from '@learncard/sss-key-manager';
 import { RecoveryPinInput } from './RecoveryPinInput';

@@ -4,7 +4,7 @@ import { ShareCredentialMetadata } from './ShareCredentialMetadata';
 import { CredentialPreviewButton } from './CredentialPreviewButton';
 import React from 'react';
 import { AppIcon } from '../icon';
-import { alertCircleOutline, checkmarkCircleOutline } from 'ionicons/icons';
+import { alertCircleOutline, checkmarkCircleOutline } from 'learn-card-base/icons/ionicons';
 import type { SharePayload, VC } from '@learncard/types';
 import { getShareCredentialCategories } from 'learn-card-base/helpers/share-links';
 import * as m from '../../paraglide/messages.js';

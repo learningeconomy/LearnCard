@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { AppIcon } from '../icon';
-import { alertCircleOutline, checkmarkCircleOutline, shieldCheckmarkOutline } from 'ionicons/icons';
+import {
+    alertCircleOutline,
+    checkmarkCircleOutline,
+    shieldCheckmarkOutline,
+} from 'learn-card-base/icons/ionicons';
 import { Overlay, isSameEscrowPinError } from 'learn-card-base';
 import { focusOnMount } from './focusOnMount';
 import { validatePin } from '@learncard/sss-key-manager';

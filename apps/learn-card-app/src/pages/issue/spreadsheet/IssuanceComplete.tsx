@@ -1,6 +1,6 @@
 import React from 'react';
 import { AppIcon } from '../../../components/icon';
-import { checkmarkCircleOutline } from 'ionicons/icons';
+import { checkmarkCircleOutline } from 'learn-card-base/icons/ionicons';
 import * as m from '../../../paraglide/messages.js';
 import { Confetti } from '../components/Confetti';
 

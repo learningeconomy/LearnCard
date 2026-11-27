@@ -7,7 +7,7 @@ import {
     openOutline,
     sparklesOutline,
     storefrontOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import type { LaunchType } from '@learncard/types';
 
 import { Overlay } from 'learn-card-base';

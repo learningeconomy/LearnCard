@@ -6,7 +6,7 @@ import moment from 'moment';
 import X from 'learn-card-base/svgs/X';
 import { AppGrid } from '../../layout';
 import { AppIcon } from '../../icon';
-import { alertCircleOutline } from 'ionicons/icons';
+import { alertCircleOutline } from 'learn-card-base/icons/ionicons';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import IDSleeve from '../../../assets/images/id-sleeve.png';
 import FamilyCrest from '../../familyCMS/FamilyCrest/FamilyCrest';

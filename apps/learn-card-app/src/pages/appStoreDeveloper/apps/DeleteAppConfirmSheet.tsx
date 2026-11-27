@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AppIcon } from '../../../components/icon';
-import { alertCircleOutline } from 'ionicons/icons';
+import { alertCircleOutline } from 'learn-card-base/icons/ionicons';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { getLogger, useToast, ToastTypeEnum, useWallet } from 'learn-card-base';

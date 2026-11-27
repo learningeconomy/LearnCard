@@ -9,7 +9,7 @@ import {
     copyOutline,
     checkmarkOutline,
     mailOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';

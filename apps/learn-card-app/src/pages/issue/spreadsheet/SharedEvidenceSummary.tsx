@@ -6,7 +6,7 @@ import {
     imageOutline,
     videocamOutline,
     linkOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import type { SimpleMediaAttachment, SimpleMediaType } from '../components/MediaAttachments';
 import * as m from '../../../paraglide/messages.js';
 

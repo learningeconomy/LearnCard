@@ -12,7 +12,7 @@ import {
     chevronBack,
     chevronDown,
     chevronForward,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 
 import { getIonMode, type IonMode } from '../app-shell/ionMode';
 import AppButton from '../controls/AppButton';

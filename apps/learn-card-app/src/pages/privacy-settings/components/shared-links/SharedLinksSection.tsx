@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
-import { addOutline } from 'ionicons/icons';
+import { addOutline } from 'learn-card-base/icons/ionicons';
 import type { ShareLink } from '@learncard/types';
 import { ModalTypes, useModal } from 'learn-card-base';
 

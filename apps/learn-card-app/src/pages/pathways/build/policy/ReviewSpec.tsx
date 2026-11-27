@@ -9,7 +9,7 @@
 
 import React from 'react';
 
-import { refreshOutline } from 'ionicons/icons';
+import { refreshOutline } from 'learn-card-base/icons/ionicons';
 
 import type { Policy } from '../../types';
 import { INPUT, LABEL } from '../shared/inputs';

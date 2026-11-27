@@ -13,7 +13,7 @@ import {
     alertCircleOutline,
     checkmarkOutline,
     eyeOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 
 import { getLogger } from 'learn-card-base';
 

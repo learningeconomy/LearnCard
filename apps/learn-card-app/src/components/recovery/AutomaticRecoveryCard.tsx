@@ -1,6 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AppIcon } from '../icon';
-import { alertCircleOutline, shieldCheckmarkOutline, keypadOutline } from 'ionicons/icons';
+import {
+    alertCircleOutline,
+    shieldCheckmarkOutline,
+    keypadOutline,
+} from 'learn-card-base/icons/ionicons';
 import { Toggle, isSameEscrowPinError } from 'learn-card-base';
 import type { KeyDerivationStrategy } from '@learncard/types';
 import * as m from '../../paraglide/messages.js';

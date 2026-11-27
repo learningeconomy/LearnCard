@@ -7,7 +7,7 @@ import type { AppStoreListingCreate } from '../types';
 import { LAUNCH_TYPE_INFO, CATEGORY_OPTIONS } from '../types';
 import type { CapturedAppManifest } from '@learncard/partner-connect-core';
 import { AppIcon } from '../../../components/icon';
-import { shieldCheckmarkOutline } from 'ionicons/icons';
+import { shieldCheckmarkOutline } from 'learn-card-base/icons/ionicons';
 
 interface ReviewStepProps {
     data: Partial<AppStoreListingCreate>;

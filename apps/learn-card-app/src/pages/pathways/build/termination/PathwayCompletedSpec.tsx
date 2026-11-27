@@ -14,7 +14,7 @@
 import React from 'react';
 
 import { AppIcon } from '../../../../components/icon';
-import { informationCircleOutline, trophyOutline } from 'ionicons/icons';
+import { informationCircleOutline, trophyOutline } from 'learn-card-base/icons/ionicons';
 
 import type { Termination } from '../../types';
 

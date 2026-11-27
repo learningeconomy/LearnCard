@@ -1,12 +1,12 @@
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { IonLabel } from '@ionic/react';
 
 import { AppSplitPane } from './AppSplitPane';
 import { AppMenu } from './AppMenu';
 import { AppMenuToggle } from './AppMenuToggle';
 import { AppTabs, AppTabBar, AppTabButton } from './AppTabs';
 import { AppOutlet } from './AppOutlet';
+import { AppLabel } from '../list';
 
 const LINKS = [
     { id: 'dashboard', path: '/dashboard', label: 'Dashboard' },
@@ -70,9 +70,9 @@ const AppShellPreview: React.FC = () => (
                         </AppTabButton>
                         {LINKS.map(link => (
                             <AppTabButton key={link.id} tab={link.id} href={link.path}>
-                                <IonLabel className="font-poppins font-semibold text-[11px] mt-[3px] text-grayscale-900">
+                                <AppLabel className="font-poppins font-semibold text-[11px] mt-[3px] text-grayscale-900">
                                     {link.label}
-                                </IonLabel>
+                                </AppLabel>
                             </AppTabButton>
                         ))}
                     </AppTabBar>

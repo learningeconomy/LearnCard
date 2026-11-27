@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { AppIcon } from '../../../../components/icon';
-import { arrowBack, refreshOutline } from 'ionicons/icons';
+import { arrowBack, refreshOutline } from 'learn-card-base/icons/ionicons';
 import type { ShareLink } from '@learncard/types';
 
 import * as m from '../../../../paraglide/messages.js';

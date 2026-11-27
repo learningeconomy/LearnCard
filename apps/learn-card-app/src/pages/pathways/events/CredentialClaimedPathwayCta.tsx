@@ -54,7 +54,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 
 import { AppIcon } from '../../../components/icon';
-import { checkmarkCircleOutline } from 'ionicons/icons';
+import { checkmarkCircleOutline } from 'learn-card-base/icons/ionicons';
 
 import { usePathwayProgressForCredential } from './usePathwayProgressForCredential';
 import { resolveCtaCopy, type ProgressTier } from './progressCtaCopy';

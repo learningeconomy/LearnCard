@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AppIcon } from '../../../components/icon';
-import { checkmarkCircleOutline, timeOutline } from 'ionicons/icons';
+import { checkmarkCircleOutline, timeOutline } from 'learn-card-base/icons/ionicons';
 
 import type { ListingMode } from './listingLifecycle';
 

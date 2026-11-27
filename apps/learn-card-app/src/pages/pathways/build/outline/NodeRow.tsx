@@ -28,7 +28,7 @@
 import React from 'react';
 
 import { AppIcon } from '../../../../components/icon';
-import { flagOutline, flashOutline, gitBranchOutline, peopleOutline } from 'ionicons/icons';
+import { flagOutline, flashOutline, gitBranchOutline, peopleOutline } from 'learn-card-base/icons/ionicons';
 
 import type { PathwayNode } from '../../types';
 import { summarizePolicy, type SummarizeContext } from '../summarize/summarizePolicy';

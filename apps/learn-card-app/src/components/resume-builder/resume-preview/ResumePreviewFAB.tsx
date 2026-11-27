@@ -2,7 +2,7 @@ import React from 'react';
 
 import { AppFab, AppFabButton } from '../../widgets';
 import { AppIcon } from '../../icon';
-import { eyeOutline, eyeOffOutline } from 'ionicons/icons';
+import { eyeOutline, eyeOffOutline } from 'learn-card-base/icons/ionicons';
 
 export const ResumePreviewFAB: React.FC<{
     isPreviewing: boolean;

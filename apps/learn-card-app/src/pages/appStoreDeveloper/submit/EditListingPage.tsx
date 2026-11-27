@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
 import { AppIcon } from '../../../components/icon';
-import { alertCircleOutline, arrowBackOutline } from 'ionicons/icons';
+import { alertCircleOutline, arrowBackOutline } from 'learn-card-base/icons/ionicons';
 import { useQuery } from '@tanstack/react-query';
 
 import { getLogger, useDeviceTypeByWidth, useWallet } from 'learn-card-base';

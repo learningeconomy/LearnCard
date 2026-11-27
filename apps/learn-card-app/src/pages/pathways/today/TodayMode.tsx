@@ -12,7 +12,7 @@
 import React, { useEffect, useMemo } from 'react';
 
 import { AppIcon } from '../../../components/icon';
-import { checkmarkCircleOutline } from 'ionicons/icons';
+import { checkmarkCircleOutline } from 'learn-card-base/icons/ionicons';
 import { AnimatePresence, motion } from 'motion/react';
 import { useHistory } from 'react-router-dom';
 

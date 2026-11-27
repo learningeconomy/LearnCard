@@ -31,7 +31,7 @@ import {
     layersOutline,
     searchOutline,
     sparklesOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 
 import { wouldCreateCycle, type PathwayMap } from '../../core/composition';
 import { useLockBodyScroll } from '../../hooks/useLockBodyScroll';

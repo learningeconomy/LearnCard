@@ -1,6 +1,6 @@
 import React, { useId, useMemo, useState } from 'react';
 import { AppIcon } from '../../../components/icon';
-import { expandOutline, contractOutline } from 'ionicons/icons';
+import { expandOutline, contractOutline } from 'learn-card-base/icons/ionicons';
 import * as m from '../../../paraglide/messages.js';
 import { useLocale } from '../../../i18n';
 import { ROSTER_LONG_TEXT_LIMIT } from './longText';

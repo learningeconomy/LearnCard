@@ -42,7 +42,7 @@
 import React from 'react';
 
 import { AppIcon } from '../../components/icon';
-import { constructOutline, sparklesOutline } from 'ionicons/icons';
+import { constructOutline, sparklesOutline } from 'learn-card-base/icons/ionicons';
 import { NavLink, useRouteMatch } from 'react-router-dom';
 
 import { proposalStore } from '../../stores/pathways';

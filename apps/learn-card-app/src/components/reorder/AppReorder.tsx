@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { reorderThreeOutline, reorderTwoSharp } from 'ionicons/icons';
+import { reorderThreeOutline, reorderTwoSharp } from 'learn-card-base/icons/ionicons';
 
 import { getIonMode, type IonMode } from '../app-shell/ionMode';
 import { AppIcon } from '../icon';

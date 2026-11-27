@@ -1,6 +1,6 @@
 import React from 'react';
 import { AppIcon } from '../../../components/icon';
-import { flaskOutline, informationCircleOutline } from 'ionicons/icons';
+import { flaskOutline, informationCircleOutline } from 'learn-card-base/icons/ionicons';
 
 import type { AddressProblem } from './launchSettings';
 import { displayHost } from './testAddress';

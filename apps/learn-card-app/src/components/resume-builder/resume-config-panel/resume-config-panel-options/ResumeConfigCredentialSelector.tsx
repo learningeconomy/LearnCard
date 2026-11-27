@@ -3,7 +3,11 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import type { Swiper as SwiperInstance } from 'swiper';
 
 import BoostEarnedCard from '../../../boost/boost-earned-card/BoostEarnedCard';
-import { chevronDownOutline, chevronUpOutline, searchOutline } from 'ionicons/icons';
+import {
+    chevronDownOutline,
+    chevronUpOutline,
+    searchOutline,
+} from 'learn-card-base/icons/ionicons';
 import SlimCaretRight from '../../../svgs/SlimCaretRight';
 import SlimCaretLeft from '../../../svgs/SlimCaretLeft';
 import { AppIcon } from '../../../icon';

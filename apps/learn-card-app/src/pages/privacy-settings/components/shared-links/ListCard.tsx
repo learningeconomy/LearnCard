@@ -1,6 +1,6 @@
 import React from 'react';
 import { AppIcon } from '../../../../components/icon';
-import { chevronForward } from 'ionicons/icons';
+import { chevronForward } from 'learn-card-base/icons/ionicons';
 
 import * as m from '../../../../paraglide/messages.js';
 import GlassCard from '../GlassCard';

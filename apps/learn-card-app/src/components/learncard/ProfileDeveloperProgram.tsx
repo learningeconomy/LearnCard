@@ -1,6 +1,6 @@
 import React from 'react';
 import { AppIcon } from '../icon';
-import { codeSlashOutline } from 'ionicons/icons';
+import { codeSlashOutline } from 'learn-card-base/icons/ionicons';
 import { useHistory } from 'react-router-dom';
 import { ModalTypes, switchedProfileStore, useGetProfile, useModal } from 'learn-card-base';
 

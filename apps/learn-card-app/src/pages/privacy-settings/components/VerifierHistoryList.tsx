@@ -1,6 +1,6 @@
 import React, { useId, useState } from 'react';
 import { AppIcon } from '../../../components/icon';
-import { chevronDownOutline } from 'ionicons/icons';
+import { chevronDownOutline } from 'learn-card-base/icons/ionicons';
 import { useLocale } from '../../../i18n';
 import type { VerifierReceipt } from '../../../helpers/verifier-history/history';
 import * as m from '../../../paraglide/messages.js';

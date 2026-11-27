@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 import { AppIcon } from '../../../icon';
-import { chevronDownOutline, chevronUpOutline } from 'ionicons/icons';
+import { chevronDownOutline, chevronUpOutline } from 'learn-card-base/icons/ionicons';
 import { resumeBuilderStore } from '../../../../stores/resumeBuilderStore';
 import ResumeBuilderToggle from '../../ResumeBuilderToggle';
 import { getOnOffLabel } from '../../resumeBuilderI18n';

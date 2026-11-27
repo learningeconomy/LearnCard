@@ -1,8 +1,8 @@
 import React from 'react';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import * as ionicons from 'ionicons/icons';
-import { americanFootballOutline, arrowDownLeftBox, star } from 'ionicons/icons';
+import * as ionicons from 'learn-card-base/icons/ionicons';
+import { americanFootballOutline, arrowDownLeftBox, star } from 'learn-card-base/icons/ionicons';
 
 import { AppIcon } from './AppIcon';
 
@@ -35,9 +35,9 @@ describe('AppIcon', () => {
         expect(svgOf(host)).toHaveClass('ionicon');
     });
 
-    it('renders every ionicons export with the same svg tree ionicons would inject', () => {
+    it('renders every vendored ionicons icon with the same svg tree ionicons would inject', () => {
         const icons = Object.entries(ionicons).filter(([, v]) => typeof v === 'string');
-        expect(icons.length).toBeGreaterThan(1000);
+        expect(icons.length).toBeGreaterThan(100);
 
         const { rerender } = render(<AppIcon icon={star} data-testid="icon" />);
         for (const [name, icon] of icons) {

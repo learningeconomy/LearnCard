@@ -12,7 +12,7 @@ import {
     rocketOutline,
     shieldCheckmarkOutline,
     sparklesOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 
 import { mDynamic } from '../../../i18n/mDynamic';
 import { AppStoreHeader } from '../components/AppStoreHeader';

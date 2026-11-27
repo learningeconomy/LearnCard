@@ -1,6 +1,10 @@
 import React from 'react';
 import { AppIcon } from '../../components/icon';
-import { alertCircleOutline, checkmarkCircleOutline, megaphoneOutline } from 'ionicons/icons';
+import {
+    alertCircleOutline,
+    checkmarkCircleOutline,
+    megaphoneOutline,
+} from 'learn-card-base/icons/ionicons';
 import type { CampaignStatus } from '@learncard/types';
 import type { CampaignSectionProps, CampaignToggleProps } from './types';
 

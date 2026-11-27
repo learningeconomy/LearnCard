@@ -7,7 +7,7 @@ import {
     arrowForwardOutline,
     chevronForwardOutline,
     rocketOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 
 import { AppStoreHeader } from '../components/AppStoreHeader';
 import { useDeveloperPortalContext } from '../DeveloperPortalContext';

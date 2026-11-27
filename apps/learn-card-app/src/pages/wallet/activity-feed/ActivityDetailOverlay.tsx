@@ -2,7 +2,7 @@ import React, { useEffect, useId, useRef } from 'react';
 import { formatLocaleDate } from '../../../i18n/formatters';
 import { useHistory } from 'react-router-dom';
 import { AppIcon } from '../../../components/icon';
-import { closeOutline, arrowForwardOutline, calendarOutline } from 'ionicons/icons';
+import { closeOutline, arrowForwardOutline, calendarOutline } from 'learn-card-base/icons/ionicons';
 import { UserProfilePicture } from 'learn-card-base';
 import { CATEGORY_TO_ROUTE } from '../../../helpers/categoryRoutes';
 import { ActivityCredentialIcon } from './ActivityCredentialIcon';

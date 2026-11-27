@@ -29,7 +29,7 @@ import {
     refreshOutline,
     repeatOutline,
     ribbonOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import { motion } from 'motion/react';
 
 import { pathwayStore } from '../../../stores/pathways';

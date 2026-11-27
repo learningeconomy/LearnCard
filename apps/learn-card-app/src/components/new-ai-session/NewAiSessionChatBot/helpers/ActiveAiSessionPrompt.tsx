@@ -1,6 +1,6 @@
 import React from 'react';
 import { AppIcon } from '../../../icon';
-import { timeOutline } from 'ionicons/icons';
+import { timeOutline } from 'learn-card-base/icons/ionicons';
 
 import { m } from '../../../../paraglide/messages.js';
 

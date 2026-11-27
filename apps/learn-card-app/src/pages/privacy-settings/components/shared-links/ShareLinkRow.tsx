@@ -1,6 +1,6 @@
 import React from 'react';
 import { AppIcon } from '../../../../components/icon';
-import { chevronForward, hourglassOutline, lockClosed } from 'ionicons/icons';
+import { chevronForward, hourglassOutline, lockClosed } from 'learn-card-base/icons/ionicons';
 import type { ShareLink } from '@learncard/types';
 
 import * as m from '../../../../paraglide/messages.js';

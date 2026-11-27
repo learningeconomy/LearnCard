@@ -6,7 +6,7 @@ import {
     gridOutline,
     checkmarkCircleOutline,
     alertCircleOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import { useModal } from 'learn-card-base';
 import * as m from '../../../paraglide/messages.js';
 import { parseSpreadsheet, readSpreadsheetFile, readSpreadsheetText } from './parseSpreadsheet';

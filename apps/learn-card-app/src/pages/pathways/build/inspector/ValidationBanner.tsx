@@ -25,7 +25,7 @@
 import React from 'react';
 
 import { AppIcon } from '../../../../components/icon';
-import { alertCircleOutline, warningOutline } from 'ionicons/icons';
+import { alertCircleOutline, warningOutline } from 'learn-card-base/icons/ionicons';
 
 import type { Issue, IssueSection } from '../validate/validatePathway';
 

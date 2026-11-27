@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 
 import { AppIcon } from '../icon';
-import { menuOutline } from 'ionicons/icons';
+import { menuOutline } from 'learn-card-base/icons/ionicons';
 import ResumeIframePreview from './ResumeIframePreview';
 import ResumeBuilderLoader from './ResumeBuilderLoader';
 import ResumeShareLink from './ResumeShareLink';

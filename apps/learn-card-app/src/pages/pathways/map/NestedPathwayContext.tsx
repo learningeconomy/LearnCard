@@ -32,7 +32,7 @@
 import React from 'react';
 
 import { AppIcon } from '../../../components/icon';
-import { arrowBackOutline, sparklesOutline } from 'ionicons/icons';
+import { arrowBackOutline, sparklesOutline } from 'learn-card-base/icons/ionicons';
 import { motion } from 'framer-motion';
 
 import type { Pathway, PathwayNode } from '../types';

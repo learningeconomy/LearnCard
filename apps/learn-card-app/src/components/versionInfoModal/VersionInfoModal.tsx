@@ -39,7 +39,7 @@ import {
     refreshOutline,
     swapHorizontalOutline,
     warningOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import { Capacitor } from '@capacitor/core';
 import { Clipboard } from '@capacitor/clipboard';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';

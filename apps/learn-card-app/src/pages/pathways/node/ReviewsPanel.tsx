@@ -27,7 +27,7 @@
 import React, { useMemo } from 'react';
 
 import { AppIcon } from '../../../components/icon';
-import { timeOutline } from 'ionicons/icons';
+import { timeOutline } from 'learn-card-base/icons/ionicons';
 import { motion } from 'motion/react';
 
 import { pathwayStore } from '../../../stores/pathways';

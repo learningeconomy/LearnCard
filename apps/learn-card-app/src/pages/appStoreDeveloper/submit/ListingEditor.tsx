@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AppIcon } from '../../../components/icon';
-import { addOutline, chevronDownOutline, closeOutline } from 'ionicons/icons';
+import { addOutline, chevronDownOutline, closeOutline } from 'learn-card-base/icons/ionicons';
 
 import { ImageUpload, ScreenshotUpload } from '../components/ImageUpload';
 import { AGE_RATING_OPTIONS, CATEGORY_OPTIONS } from '../types';

@@ -36,7 +36,7 @@ import {
     schoolOutline,
     sparklesOutline,
     starOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 
 import type { ActionDescriptor, Policy, Termination } from '../../types';
 

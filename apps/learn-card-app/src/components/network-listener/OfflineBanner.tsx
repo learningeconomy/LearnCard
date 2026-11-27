@@ -6,7 +6,7 @@ import {
     wifiOutline,
     refreshOutline,
     closeOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import * as m from '../../paraglide/messages.js';
 import { connectivityStore, walletModeStore } from 'learn-card-base';
 

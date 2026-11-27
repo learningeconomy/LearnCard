@@ -16,7 +16,7 @@ import {
     qrCodeOutline,
     lockClosedOutline,
     bookmarkOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import { Clipboard } from '@capacitor/clipboard';
 import type { ShareLinkPublicState, SharePayload } from '@learncard/types';
 import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';

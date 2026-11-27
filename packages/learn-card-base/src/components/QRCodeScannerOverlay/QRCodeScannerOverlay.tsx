@@ -1,6 +1,6 @@
 import React from 'react';
 import { IonIcon } from '@ionic/react';
-import { alertCircleOutline, checkmarkCircleOutline } from 'ionicons/icons';
+import { alertCircleOutline, checkmarkCircleOutline } from 'learn-card-base/icons/ionicons';
 
 import QRCodeScannerStore from 'learn-card-base/stores/QRCodeScannerStore';
 import { QRCodeScannerCloseButton } from './QRCodeScannerFooter';

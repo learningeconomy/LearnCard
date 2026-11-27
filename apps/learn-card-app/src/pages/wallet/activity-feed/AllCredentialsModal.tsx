@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { AppIcon } from '../../../components/icon';
-import { closeOutline } from 'ionicons/icons';
+import { closeOutline } from 'learn-card-base/icons/ionicons';
 import { useCredentialCollection } from 'learn-card-base';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import PassportCredentialCard from './PassportCredentialCard';

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AppIcon } from '../icon';
-import { documentTextOutline } from 'ionicons/icons';
+import { documentTextOutline } from 'learn-card-base/icons/ionicons';
 import type { VC } from '@learncard/types';
 import type { CredentialCategoryEnum } from 'learn-card-base';
 import {

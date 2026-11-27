@@ -1,6 +1,6 @@
 import React from 'react';
 import { AppIcon } from '../../../icon';
-import { checkmarkCircle, ellipseOutline } from 'ionicons/icons';
+import { checkmarkCircle, ellipseOutline } from 'learn-card-base/icons/ionicons';
 
 import { VC, UnsignedVC } from '@learncard/types';
 import {

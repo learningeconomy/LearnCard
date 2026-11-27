@@ -69,7 +69,7 @@ vi.mock('@ionic/react', () => ({
     IonIcon: () => null,
     IonSpinner: () => null,
 }));
-vi.mock('ionicons/icons', () => ({ closeOutline: 'close' }));
+vi.mock('learn-card-base/icons/ionicons', () => ({ closeOutline: 'close' }));
 vi.mock('../../../stores/loadingStore', () => ({
     useLoadingLine: vi.fn(),
 }));

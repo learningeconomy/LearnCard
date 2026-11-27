@@ -1,6 +1,6 @@
 import React, { useEffect, useId, useState } from 'react';
 import { AppIcon } from '../../components/icon';
-import { peopleOutline } from 'ionicons/icons';
+import { peopleOutline } from 'learn-card-base/icons/ionicons';
 import type { CampaignApi } from './types';
 import { Busy, Field, Notice, buttonClass, inputClass, primaryClass } from './ui';
 

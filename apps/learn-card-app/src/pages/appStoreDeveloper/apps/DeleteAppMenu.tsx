@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AppIcon } from '../../../components/icon';
-import { ellipsisHorizontal, trashOutline } from 'ionicons/icons';
+import { ellipsisHorizontal, trashOutline } from 'learn-card-base/icons/ionicons';
 
 import { ModalTypes, useModal } from 'learn-card-base';
 

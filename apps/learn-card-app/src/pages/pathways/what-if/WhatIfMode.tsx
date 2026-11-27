@@ -58,7 +58,7 @@ import {
     linkOutline,
     removeOutline,
     timeOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 
 import { AnalyticsEvents, useAnalytics } from '../../../analytics';
 import { pathwayStore } from '../../../stores/pathways';

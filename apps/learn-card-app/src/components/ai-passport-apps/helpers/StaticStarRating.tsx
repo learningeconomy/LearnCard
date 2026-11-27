@@ -1,5 +1,5 @@
 import { AppIcon } from '../../icon';
-import { star, starOutline } from 'ionicons/icons';
+import { star, starOutline } from 'learn-card-base/icons/ionicons';
 
 interface StaticStarRatingProps {
     // The rating value, which may include decimals (e.g., 4.7)

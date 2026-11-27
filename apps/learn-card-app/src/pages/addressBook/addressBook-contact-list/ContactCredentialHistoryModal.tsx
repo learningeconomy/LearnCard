@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { AppIcon } from '../../../components/icon';
-import { alertCircleOutline } from 'ionicons/icons';
+import { alertCircleOutline } from 'learn-card-base/icons/ionicons';
 
 import type { LCNProfile } from '@learncard/types';
 import X from 'learn-card-base/svgs/X';

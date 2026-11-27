@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AppIcon } from '../../components/icon';
-import { closeOutline, sendOutline } from 'ionicons/icons';
+import { closeOutline, sendOutline } from 'learn-card-base/icons/ionicons';
 
 import AssistantAvatar from './AssistantAvatar';
 import {

@@ -11,7 +11,7 @@ import {
     cloudUploadOutline,
     lockClosedOutline,
     chevronForwardOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import { useScreenWidth } from 'learn-card-base/hooks/useScreenWidth';
 import { SpreadsheetDialog, useSpreadsheetDialog } from './SpreadsheetDialog';
 import * as m from '../../../paraglide/messages.js';

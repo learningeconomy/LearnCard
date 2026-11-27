@@ -2,7 +2,11 @@ import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AppIcon } from '../icon';
-import { checkmarkCircleOutline, timeOutline, documentTextOutline } from 'ionicons/icons';
+import {
+    checkmarkCircleOutline,
+    timeOutline,
+    documentTextOutline,
+} from 'learn-card-base/icons/ionicons';
 import type { VC } from '@learncard/types';
 import {
     useTranscriptStatus,

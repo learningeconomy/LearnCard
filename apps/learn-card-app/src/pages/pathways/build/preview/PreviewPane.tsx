@@ -19,7 +19,7 @@
 import React, { useMemo } from 'react';
 
 import { AppIcon } from '../../../../components/icon';
-import { flagOutline, phonePortraitOutline } from 'ionicons/icons';
+import { flagOutline, phonePortraitOutline } from 'learn-card-base/icons/ionicons';
 
 import type { Pathway, PathwayNode, Policy } from '../../types';
 import { summarizePolicy } from '../summarize/summarizePolicy';

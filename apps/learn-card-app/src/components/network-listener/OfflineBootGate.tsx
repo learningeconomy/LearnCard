@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Overlay } from 'learn-card-base';
 import { AppIcon } from '../icon';
-import { cloudOfflineOutline } from 'ionicons/icons';
+import { cloudOfflineOutline } from 'learn-card-base/icons/ionicons';
 import * as m from '../../paraglide/messages.js';
 
 import { requestConnectivityCheck } from './connectivity';

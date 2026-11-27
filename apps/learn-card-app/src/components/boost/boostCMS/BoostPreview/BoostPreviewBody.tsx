@@ -3,8 +3,6 @@ import { formatNumber } from '@learncard/helpers';
 import { UserProfilePicture, useCurrentUser } from 'learn-card-base';
 import { AppGrid, AppRow } from '../../../layout';
 
-// import { IonSpinner } from '@ionic/react';
-
 import { filterBoostRecipients } from '../../boostHelpers';
 
 import { BoostRecipientInfo, VC } from '@learncard/types';

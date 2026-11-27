@@ -14,7 +14,7 @@ import {
     eyeOutline,
     lockClosedOutline,
     notificationsOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import type { ShareLink, ShareRecoveryPlaintext, VC } from '@learncard/types';
 import { QRCodeSVG } from 'qrcode.react';
 import { Clipboard } from '@capacitor/clipboard';

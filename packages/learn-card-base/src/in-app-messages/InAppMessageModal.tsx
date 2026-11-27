@@ -1,6 +1,6 @@
 import React from 'react';
 import { IonIcon } from '@ionic/react';
-import { closeOutline } from 'ionicons/icons';
+import { closeOutline } from 'learn-card-base/icons/ionicons';
 import { motion, useReducedMotion, Variants } from 'framer-motion';
 import { MessageMedia } from './MessageMedia';
 import { MessageActions } from './MessageActions';

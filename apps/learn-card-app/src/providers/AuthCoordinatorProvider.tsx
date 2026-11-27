@@ -86,7 +86,7 @@ import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 
 import { useQueryClient } from '@tanstack/react-query';
-import { alertCircleOutline } from 'ionicons/icons';
+import { alertCircleOutline } from 'learn-card-base/icons/ionicons';
 
 import {
     createSSSStrategy,

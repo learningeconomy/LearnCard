@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { AppIcon } from '../../components/icon';
-import { imageOutline } from 'ionicons/icons';
+import { imageOutline } from 'learn-card-base/icons/ionicons';
 
 import * as m from '../../paraglide/messages.js';
 import type { FeedbackDraft, FeedbackReport, FeedbackScreenshot } from './types';

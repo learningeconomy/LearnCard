@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { IonIcon } from '@ionic/react';
-import { shieldOutline, closeOutline } from 'ionicons/icons';
+import { shieldOutline, closeOutline } from 'learn-card-base/icons/ionicons';
 
 import { isPublicComputerMode } from '@learncard/sss-key-manager';
 import * as m from '../../paraglide/messages.js';

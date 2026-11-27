@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AppIcon } from '../../../components/icon';
-import { chevronDownOutline } from 'ionicons/icons';
+import { chevronDownOutline } from 'learn-card-base/icons/ionicons';
 
 interface AppCapabilitiesSummaryProps {
     lines: string[];

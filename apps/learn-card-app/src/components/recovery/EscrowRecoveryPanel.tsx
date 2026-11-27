@@ -7,7 +7,7 @@ import {
     checkmarkCircleOutline,
     shieldCheckmarkOutline,
     mailOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import type { KeyDerivationStrategy } from '@learncard/types';
 import {
     EscrowHoldRestartThrottledError,

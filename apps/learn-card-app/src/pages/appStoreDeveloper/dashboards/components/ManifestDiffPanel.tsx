@@ -6,7 +6,7 @@ import {
     addOutline,
     removeOutline,
     swapHorizontalOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 
 interface ManifestDiffPanelProps {
     diff: AppManifestDiff;

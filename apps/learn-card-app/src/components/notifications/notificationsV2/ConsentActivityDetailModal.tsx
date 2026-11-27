@@ -1,6 +1,10 @@
 import React, { useMemo } from 'react';
 import { AppIcon } from '../../icon';
-import { checkmarkCircleOutline, closeCircleOutline, syncOutline } from 'ionicons/icons';
+import {
+    checkmarkCircleOutline,
+    closeCircleOutline,
+    syncOutline,
+} from 'learn-card-base/icons/ionicons';
 
 import { ErrorBoundary } from '@sentry/react';
 import { UserProfilePicture, useGetProfile, useModal } from 'learn-card-base';

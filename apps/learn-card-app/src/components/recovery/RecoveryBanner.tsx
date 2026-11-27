@@ -7,7 +7,7 @@ import {
     shieldOutline,
     keypadOutline,
     shieldCheckmarkOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 
 import { isPublicComputerMode, isWebAuthnSupported } from '@learncard/sss-key-manager';
 import firstStartupStore, {

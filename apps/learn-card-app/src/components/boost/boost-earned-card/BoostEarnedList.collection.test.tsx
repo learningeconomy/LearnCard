@@ -62,7 +62,7 @@ vi.mock('learn-card-base/hooks/useGetCredentialRecordForBoost', () => ({
 vi.mock('learn-card-base/stores/credentialSearchStore', () => ({
     default: { use: { isSearchActive: () => false, searchString: () => '' } },
 }));
-vi.mock('ionicons/icons', () => ({ closeOutline: 'close' }));
+vi.mock('learn-card-base/icons/ionicons', () => ({ closeOutline: 'close' }));
 vi.mock('../../../stores/loadingStore', () => ({
     useLoadingLine: vi.fn(),
 }));

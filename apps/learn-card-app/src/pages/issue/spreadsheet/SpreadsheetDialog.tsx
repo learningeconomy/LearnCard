@@ -6,7 +6,7 @@ import React, {
     useSyncExternalStore,
 } from 'react';
 import { AppIcon } from '../../../components/icon';
-import { closeOutline } from 'ionicons/icons';
+import { closeOutline } from 'learn-card-base/icons/ionicons';
 import { ModalTypes, useModal } from 'learn-card-base';
 import * as m from '../../../paraglide/messages.js';
 import './spreadsheet-dialog.scss';

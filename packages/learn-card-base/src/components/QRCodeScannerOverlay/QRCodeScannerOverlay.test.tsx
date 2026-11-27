@@ -24,7 +24,7 @@ vi.mock('@ionic/react', () => ({
         <span className={className} data-icon={icon} />
     ),
 }));
-vi.mock('ionicons/icons', () => ({
+vi.mock('learn-card-base/icons/ionicons', () => ({
     alertCircleOutline: 'alert-circle',
     checkmarkCircleOutline: 'checkmark-circle',
     closeOutline: 'close',

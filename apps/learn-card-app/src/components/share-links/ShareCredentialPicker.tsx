@@ -1,6 +1,6 @@
 import React, { useId } from 'react';
 import { AppIcon } from '../icon';
-import { searchOutline, closeOutline } from 'ionicons/icons';
+import { searchOutline, closeOutline } from 'learn-card-base/icons/ionicons';
 import type { CredentialCategoryEnum } from 'learn-card-base';
 import useTheme from '../../theme/hooks/useTheme';
 import * as m from '../../paraglide/messages.js';

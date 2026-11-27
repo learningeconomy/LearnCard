@@ -42,7 +42,7 @@ import './index.scss';
 
 // base styles of swiper js
 import 'swiper/css';
-import '@ionic/react/css/ionic-swiper.css';
+import 'learn-card-base/swiper/swiper-defaults.css';
 const FullApp = lazyWithRetry(() => import('./FullApp'));
 
 setupIonicReact({ swipeBackEnabled: false });

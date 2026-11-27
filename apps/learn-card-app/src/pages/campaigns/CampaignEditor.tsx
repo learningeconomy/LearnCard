@@ -7,7 +7,7 @@ import {
     mailOutline,
     eyeOutline,
     paperPlaneOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import { Link, Prompt, useHistory } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { setInAppMessageOverride } from 'learn-card-base/in-app-messages/debugOverrideStore';

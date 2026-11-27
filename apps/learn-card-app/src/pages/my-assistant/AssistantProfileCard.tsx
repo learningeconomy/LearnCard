@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { AppIcon } from '../../components/icon';
-import { createOutline, hardwareChipOutline, pencilOutline, settingsOutline } from 'ionicons/icons';
+import {
+    createOutline,
+    hardwareChipOutline,
+    pencilOutline,
+    settingsOutline,
+} from 'learn-card-base/icons/ionicons';
 
 import AssistantAvatar from './AssistantAvatar';
 import type { LearnCardAssistantProfile } from './learnCardAssistant.api';

@@ -3,7 +3,7 @@ import { IonApp, IonHeader, IonTitle, IonToolbar } from '@ionic/react';
 import { AppCol, AppGrid, AppRow } from '../../src/components/layout';
 import { AppIcon } from '../../src/components/icon';
 import { AppCard, AppCardContent, AppText } from '../../src/components/widgets';
-import { alertCircleOutline, homeOutline, refreshOutline } from 'ionicons/icons';
+import { alertCircleOutline, homeOutline, refreshOutline } from 'learn-card-base/icons/ionicons';
 import type { ConsentFlowContract } from '@learncard/types';
 
 import * as m from '../../src/paraglide/messages.js';

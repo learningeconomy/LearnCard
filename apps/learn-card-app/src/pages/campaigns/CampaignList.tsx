@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AppIcon } from '../../components/icon';
-import { addOutline, refreshOutline, chevronForwardOutline } from 'ionicons/icons';
+import { addOutline, refreshOutline, chevronForwardOutline } from 'learn-card-base/icons/ionicons';
 import { Link } from 'react-router-dom';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { dropMalformedInfiniteCacheEntry } from 'learn-card-base/react-query/infiniteQueryGuard';

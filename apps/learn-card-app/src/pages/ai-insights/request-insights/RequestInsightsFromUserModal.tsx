@@ -30,7 +30,7 @@ import { getAppBaseUrl } from '../../../config/bootstrapTenantConfig';
 
 import { useGetAiInsightsServicesContract } from '../learner-insights/learner-insights.helpers';
 import { RequestInsightStatusEnum } from './request-insights.helpers';
-import { person } from 'ionicons/icons';
+import { person } from 'learn-card-base/icons/ionicons';
 import { AppFooter } from '../../../components/chrome';
 
 export const RequestInsightsFromUserModal: React.FC<{

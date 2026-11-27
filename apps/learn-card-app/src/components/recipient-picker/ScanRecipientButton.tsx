@@ -3,7 +3,7 @@ import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Capacitor } from '@capacitor/core';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { AppIcon } from '../icon';
-import { qrCodeOutline } from 'ionicons/icons';
+import { qrCodeOutline } from 'learn-card-base/icons/ionicons';
 
 import {
     QRCodeScannerStore,

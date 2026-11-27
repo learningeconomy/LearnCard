@@ -31,7 +31,7 @@ import {
     cloudDownloadOutline,
     gitBranchOutline,
     warningOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 
 import type { PathwayMap } from '../../core/composition';
 import { detectCollections } from '../../map/collectionDetection';

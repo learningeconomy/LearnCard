@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { AppIcon } from '../icon';
-import { calendarOutline, closeOutline } from 'ionicons/icons';
+import { calendarOutline, closeOutline } from 'learn-card-base/icons/ionicons';
 import type { SharePayload } from '@learncard/types';
 
 import type { SavedCredentialCollection } from '../../pages/privacy-settings/DataSharingCenter.types';

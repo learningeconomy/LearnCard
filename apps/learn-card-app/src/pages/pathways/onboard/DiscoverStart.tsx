@@ -45,7 +45,7 @@ import React, { useState } from 'react';
 import * as m from '../../../paraglide/messages.js';
 
 import { AppIcon } from '../../../components/icon';
-import { cloudDownloadOutline, sparklesOutline } from 'ionicons/icons';
+import { cloudDownloadOutline, sparklesOutline } from 'learn-card-base/icons/ionicons';
 import { useHistory } from 'react-router-dom';
 
 import { AnalyticsEvents, useAnalytics } from '../../../analytics';

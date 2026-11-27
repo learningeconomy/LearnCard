@@ -18,7 +18,7 @@
 import React from 'react';
 
 import { AppIcon } from '../../../components/icon';
-import { closeOutline } from 'ionicons/icons';
+import { closeOutline } from 'learn-card-base/icons/ionicons';
 import { motion } from 'motion/react';
 
 interface CompletionMomentProps {

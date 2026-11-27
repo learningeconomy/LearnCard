@@ -7,7 +7,7 @@ import {
     notificationsOutline,
     paperPlaneOutline,
     ribbonOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import { useRequestTranscript, useTranscriptStatus, getLogger } from 'learn-card-base';
 import { formatClrGpa } from 'learn-card-base/helpers/credentials/clr/helpers';
 

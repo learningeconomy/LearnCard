@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AppIcon } from '../../components/icon';
-import { cloudOfflineOutline } from 'ionicons/icons';
+import { cloudOfflineOutline } from 'learn-card-base/icons/ionicons';
 
 interface AppEmbedOfflineStateProps {
     appName?: string;

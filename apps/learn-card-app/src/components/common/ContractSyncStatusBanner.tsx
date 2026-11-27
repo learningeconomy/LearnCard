@@ -1,6 +1,6 @@
 import React from 'react';
 import { AppIcon } from '../icon';
-import { checkmarkCircleOutline, closeOutline } from 'ionicons/icons';
+import { checkmarkCircleOutline, closeOutline } from 'learn-card-base/icons/ionicons';
 
 import type { PendingContractSyncJob } from 'learn-card-base';
 

@@ -1,6 +1,6 @@
 import React, { lazy, Suspense } from 'react';
 import { AppIcon } from '../icon';
-import { arrowForwardOutline } from 'ionicons/icons';
+import { arrowForwardOutline } from 'learn-card-base/icons/ionicons';
 import type { VC } from '@learncard/types';
 import { ModalTypes, useModal, type BoostCategoryOptionsEnum } from 'learn-card-base';
 import {

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AppIcon } from '../../../components/icon';
-import { star } from 'ionicons/icons';
+import { star } from 'learn-card-base/icons/ionicons';
 import { DEFAULT_APP_ICON_URL } from './constants';
 import { DEFAULT_HERO_COLOR } from './listingForm';
 import { CATEGORY_OPTIONS, AGE_RATING_OPTIONS } from '../types';

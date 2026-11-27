@@ -22,7 +22,7 @@ import {
     refreshOutline,
     star,
     starOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 
 import { AppButton } from '../../src/components/controls/AppButton';
 import StaticStarRating from '../../src/components/ai-passport-apps/helpers/StaticStarRating';

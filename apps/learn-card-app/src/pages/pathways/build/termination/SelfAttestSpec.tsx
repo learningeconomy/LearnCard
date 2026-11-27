@@ -7,7 +7,7 @@
 
 import React from 'react';
 
-import { handRightOutline } from 'ionicons/icons';
+import { handRightOutline } from 'learn-card-base/icons/ionicons';
 
 import type { Termination } from '../../types';
 import { INPUT, LABEL } from '../shared/inputs';

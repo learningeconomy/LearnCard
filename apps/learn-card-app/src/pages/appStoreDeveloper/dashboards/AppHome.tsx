@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { AppIcon } from '../../../components/icon';
-import { alertCircleOutline, checkmarkCircleOutline, chevronForwardOutline } from 'ionicons/icons';
+import {
+    alertCircleOutline,
+    checkmarkCircleOutline,
+    chevronForwardOutline,
+} from 'learn-card-base/icons/ionicons';
 import type { LCNIntegration, AppStoreListing, CapturedTemplateRecord } from '@learncard/types';
 import { useDeveloperPortal } from '../useDeveloperPortal';
 import { ManifestDiffPanel } from './components/ManifestDiffPanel';

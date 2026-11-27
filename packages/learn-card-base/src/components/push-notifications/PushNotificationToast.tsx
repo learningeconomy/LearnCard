@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { IonIcon } from '@ionic/react';
-import { notificationsOutline } from 'ionicons/icons';
+import { notificationsOutline } from 'learn-card-base/icons/ionicons';
 
 export type PushNotificationToastProps = {
     title: string;

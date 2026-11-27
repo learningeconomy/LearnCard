@@ -10,7 +10,7 @@ import {
     linkOutline,
     calendarOutline,
     calculatorOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import * as m from '../../../paraglide/messages.js';
 import {
     normalizeColumn,

@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { AppIcon } from '../../../components/icon';
-import { alertCircleOutline, checkmarkCircle, rocketOutline } from 'ionicons/icons';
+import { alertCircleOutline, checkmarkCircle, rocketOutline } from 'learn-card-base/icons/ionicons';
 
 import { redirectStore } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';

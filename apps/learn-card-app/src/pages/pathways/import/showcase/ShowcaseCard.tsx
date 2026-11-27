@@ -33,7 +33,7 @@ import {
     layersOutline,
     schoolOutline,
     timeOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 
 import type { ShowcasePreview } from './types';
 

@@ -55,7 +55,7 @@ import {
     flagOutline,
     hourglassOutline,
     openOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import { AnimatePresence, motion } from 'motion/react';
 
 import { mcpRegistryStore } from '../../../stores/pathways';

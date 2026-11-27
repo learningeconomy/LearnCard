@@ -1,7 +1,7 @@
 import React, { useId, useMemo, useState } from 'react';
 import { inAppMessageValidator } from '@learncard/types';
 import { AppIcon } from '../../components/icon';
-import { codeSlashOutline, optionsOutline } from 'ionicons/icons';
+import { codeSlashOutline, optionsOutline } from 'learn-card-base/icons/ionicons';
 import { z } from 'zod';
 import { buttonClass, primaryClass, textButtonClass } from './ui';
 import { SchemaField } from './message-editor/SchemaField';

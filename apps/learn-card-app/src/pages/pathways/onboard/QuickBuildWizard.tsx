@@ -35,7 +35,7 @@ import {
     searchOutline,
     sparklesOutline,
     trashOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import { AnimatePresence } from 'motion/react';
 import { useHistory } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';

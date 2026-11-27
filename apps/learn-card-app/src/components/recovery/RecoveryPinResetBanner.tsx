@@ -1,6 +1,6 @@
 import React from 'react';
 import { AppIcon } from '../icon';
-import { alertCircleOutline, closeOutline } from 'ionicons/icons';
+import { alertCircleOutline, closeOutline } from 'learn-card-base/icons/ionicons';
 import { m } from '../../paraglide/messages.js';
 
 interface RecoveryPinResetBannerProps {

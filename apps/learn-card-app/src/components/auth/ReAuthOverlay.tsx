@@ -16,7 +16,7 @@ const log = getLogger('re-auth-overlay');
 
 import React, { useState, useEffect, useRef } from 'react';
 import { AppIcon } from '../icon';
-import { alertCircleOutline, checkmarkCircleOutline } from 'ionicons/icons';
+import { alertCircleOutline, checkmarkCircleOutline } from 'learn-card-base/icons/ionicons';
 
 import { authStore, SocialLoginTypes, useSignInAdapter, currentUserStore } from 'learn-card-base';
 

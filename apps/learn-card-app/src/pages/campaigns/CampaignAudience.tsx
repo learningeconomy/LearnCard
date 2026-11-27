@@ -1,5 +1,5 @@
 import { AppIcon } from '../../components/icon';
-import { cloudUploadOutline, ribbonOutline } from 'ionicons/icons';
+import { cloudUploadOutline, ribbonOutline } from 'learn-card-base/icons/ionicons';
 import React, { useEffect, useRef, useState } from 'react';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { dropMalformedInfiniteCacheEntry } from 'learn-card-base/react-query/infiniteQueryGuard';

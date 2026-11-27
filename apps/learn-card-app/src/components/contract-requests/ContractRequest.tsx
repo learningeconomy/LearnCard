@@ -5,7 +5,7 @@ import {
     alertCircleOutline,
     peopleOutline,
     shieldCheckmarkOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
     useWallet,

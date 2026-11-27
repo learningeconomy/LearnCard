@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { AppIcon } from '../../components/icon';
-import { alertCircleOutline, checkmarkCircleOutline, documentTextOutline } from 'ionicons/icons';
+import {
+    alertCircleOutline,
+    checkmarkCircleOutline,
+    documentTextOutline,
+} from 'learn-card-base/icons/ionicons';
 import type { VC } from '@learncard/types';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import { getCredentialName, getIssuerName } from 'learn-card-base/helpers/credentialHelpers';

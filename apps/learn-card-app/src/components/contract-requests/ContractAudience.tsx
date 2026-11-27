@@ -1,6 +1,6 @@
 import React from 'react';
 import { AppIcon } from '../icon';
-import { businessOutline, shieldCheckmarkOutline } from 'ionicons/icons';
+import { businessOutline, shieldCheckmarkOutline } from 'learn-card-base/icons/ionicons';
 import type { ConsentFlowContractDetails } from '@learncard/types';
 import * as m from '../../paraglide/messages.js';
 

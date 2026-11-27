@@ -11,7 +11,7 @@ import {
     openOutline,
     rocketOutline,
     sparklesOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 
 import { openExternalLink } from '../../../../helpers/externalLinkHelpers';
 import { DEVELOPER_DOCS_URL } from '../../apps/NewAppSheet';

@@ -23,7 +23,11 @@
 import React, { useMemo, useState } from 'react';
 
 import { AppIcon } from '../../../components/icon';
-import { chevronDownOutline, chevronUpOutline, ribbonOutline } from 'ionicons/icons';
+import {
+    chevronDownOutline,
+    chevronUpOutline,
+    ribbonOutline,
+} from 'learn-card-base/icons/ionicons';
 import { AnimatePresence, motion } from 'motion/react';
 
 import { ProjectionError, toAchievementCredential } from '../projection/toAchievementCredential';

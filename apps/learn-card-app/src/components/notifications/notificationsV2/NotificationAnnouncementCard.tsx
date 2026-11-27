@@ -6,7 +6,7 @@ import {
     arrowUndoOutline,
     checkmarkOutline,
     megaphoneOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import {
     ToastTypeEnum,
     useToast,

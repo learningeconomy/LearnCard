@@ -1,6 +1,6 @@
 import React from 'react';
 import { AppIcon } from '../../../icon';
-import { checkmarkOutline, trashOutline } from 'ionicons/icons';
+import { checkmarkOutline, trashOutline } from 'learn-card-base/icons/ionicons';
 import DocIcon from 'learn-card-base/svgs/DocIcon';
 import { useUploadedDocumentPreview } from '../../../../hooks/useUploadedDocumentPreview';
 import * as m from '../../../../paraglide/messages.js';

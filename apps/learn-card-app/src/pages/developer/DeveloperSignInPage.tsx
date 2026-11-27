@@ -8,7 +8,7 @@ import {
     eyeOffOutline,
     alertCircleOutline,
     personCircleOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import {
     useIsLoggedIn,
     useCurrentUser,

@@ -45,7 +45,7 @@ import {
     libraryOutline,
     searchOutline,
     warningOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 
 import { AnalyticsEvents, useAnalytics } from '../../../analytics';
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll';

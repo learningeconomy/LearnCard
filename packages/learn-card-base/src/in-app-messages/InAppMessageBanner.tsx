@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { IonIcon } from '@ionic/react';
-import { closeOutline, checkmarkCircleOutline, alertCircleOutline } from 'ionicons/icons';
+import {
+    closeOutline,
+    checkmarkCircleOutline,
+    alertCircleOutline,
+} from 'learn-card-base/icons/ionicons';
 import { InAppMessageAction } from '@learncard/types';
 import { motion, useReducedMotion, Variants } from 'framer-motion';
 import { useInAppMessageActions } from './useInAppMessageActions';

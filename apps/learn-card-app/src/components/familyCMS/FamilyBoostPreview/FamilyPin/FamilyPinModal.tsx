@@ -4,7 +4,7 @@ import { ModalTypes, ProfilePicture, currentUserStore, useCurrentUser } from 'le
 import Backspace from '../../../svgs/Backspace';
 import { AppCol, AppRow } from '../../../layout';
 import { AppIcon } from '../../../icon';
-import { alertCircleOutline } from 'ionicons/icons';
+import { alertCircleOutline } from 'learn-card-base/icons/ionicons';
 import { FamilyPinViewModeEnum } from './FamilyPinWrapper';
 import ForgotPinConfirmation from './ForgotPinConfirmation';
 import { m } from '../../../../paraglide/messages.js';

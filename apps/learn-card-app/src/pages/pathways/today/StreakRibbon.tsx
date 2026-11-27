@@ -15,7 +15,7 @@
 import React from 'react';
 
 import { AppIcon } from '../../../components/icon';
-import { flame } from 'ionicons/icons';
+import { flame } from 'learn-card-base/icons/ionicons';
 import { motion } from 'motion/react';
 
 interface StreakRibbonProps {

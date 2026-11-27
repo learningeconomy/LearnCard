@@ -8,7 +8,7 @@ import {
     homeOutline,
     alertCircleOutline,
     informationCircleOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import { getAppBaseUrl, getLCNApiUrl } from '../../config/bootstrapTenantConfig';
 import { AppButton } from '../../components/controls/AppButton';
 

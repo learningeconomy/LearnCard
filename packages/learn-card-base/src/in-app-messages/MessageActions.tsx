@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { IonIcon } from '@ionic/react';
-import { checkmarkCircleOutline, alertCircleOutline } from 'ionicons/icons';
+import { checkmarkCircleOutline, alertCircleOutline } from 'learn-card-base/icons/ionicons';
 import type { InAppMessageAction } from '@learncard/types';
 import { useInAppMessageActions } from './useInAppMessageActions';
 import { useCapgoUpdate } from './useCapgoUpdate';

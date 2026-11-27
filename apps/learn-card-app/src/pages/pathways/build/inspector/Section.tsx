@@ -38,7 +38,7 @@ import React, { useState } from 'react';
 
 import { AppIcon } from '../../../../components/icon';
 import { AnimatePresence, motion } from 'framer-motion';
-import { chevronDownOutline } from 'ionicons/icons';
+import { chevronDownOutline } from 'learn-card-base/icons/ionicons';
 
 interface SectionProps {
     /**

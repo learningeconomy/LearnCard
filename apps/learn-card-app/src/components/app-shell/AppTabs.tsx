@@ -354,7 +354,7 @@ export const AppTabButton: React.FC<AppTabButtonProps> = ({
     const [hasLabel, setHasLabel] = useState(false);
 
     useLayoutEffect(() => {
-        const next = !!hostRef.current?.querySelector('ion-label');
+        const next = !!hostRef.current?.querySelector('ion-label, .app-label');
         if (next !== hasLabel) setHasLabel(next);
     });
 

@@ -6,7 +6,7 @@ import { m } from '../../../paraglide/messages.js';
 import { AppSpinner } from '../../feedback/AppSpinner';
 import VerifiedBadge from 'learn-card-base/svgs/VerifiedBadge';
 import AiSessionAssessmentPreviewContainer from '../../ai-assessment/AiSessionAssessmentPreviewContainer';
-import { ellipsisVertical } from 'ionicons/icons';
+import { ellipsisVertical } from 'learn-card-base/icons/ionicons';
 
 import { VC } from '@learncard/types';
 import { getAiSessionTitle } from '../aiSessions.helpers';

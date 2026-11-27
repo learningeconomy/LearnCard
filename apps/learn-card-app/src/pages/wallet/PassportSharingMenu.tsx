@@ -2,7 +2,7 @@ import React, { Suspense, useState } from 'react';
 
 import { AppPopover } from '../../components/overlays/AppPopover';
 import { AppIcon } from '../../components/icon';
-import { chevronDownOutline, eyeOutline, shareOutline } from 'ionicons/icons';
+import { chevronDownOutline, eyeOutline, shareOutline } from 'learn-card-base/icons/ionicons';
 import { lazyWithRetry, ModalTypes, useDeviceTypeByWidth, useModal } from 'learn-card-base';
 
 import * as m from '../../paraglide/messages.js';

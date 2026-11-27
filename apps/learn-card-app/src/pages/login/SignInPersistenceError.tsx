@@ -1,6 +1,6 @@
 import React from 'react';
 import { AppIcon } from '../../components/icon';
-import { alertCircleOutline } from 'ionicons/icons';
+import { alertCircleOutline } from 'learn-card-base/icons/ionicons';
 import { useSignInPersistence } from '../../auth/signInPersistence';
 
 export const SignInPersistenceError = (): React.ReactElement | null => {

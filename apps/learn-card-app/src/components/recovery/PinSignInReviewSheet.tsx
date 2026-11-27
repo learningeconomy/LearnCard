@@ -1,6 +1,6 @@
 import React, { useId } from 'react';
 import { AppIcon } from '../icon';
-import { checkmarkCircleOutline, warningOutline } from 'ionicons/icons';
+import { checkmarkCircleOutline, warningOutline } from 'learn-card-base/icons/ionicons';
 import { Overlay } from 'learn-card-base';
 import { focusOnMount } from './focusOnMount';
 import * as m from '../../paraglide/messages.js';

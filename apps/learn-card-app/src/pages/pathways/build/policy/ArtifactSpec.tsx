@@ -6,7 +6,7 @@
 
 import React from 'react';
 
-import { cloudUploadOutline } from 'ionicons/icons';
+import { cloudUploadOutline } from 'learn-card-base/icons/ionicons';
 
 import type { ArtifactType, Policy } from '../../types';
 import { INPUT, LABEL } from '../shared/inputs';

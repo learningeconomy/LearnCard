@@ -1,7 +1,7 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { IonIcon } from '@ionic/react';
-import { closeOutline } from 'ionicons/icons';
+import { closeOutline } from 'learn-card-base/icons/ionicons';
 import { MessageMedia } from './MessageMedia';
 import { MessageActions } from './MessageActions';
 import type { MessagePresentationProps } from './presentationTypes';

@@ -1,6 +1,10 @@
 import React from 'react';
 import { AppIcon } from '../../../icon';
-import { shieldCheckmarkOutline, calendarOutline, ribbonOutline } from 'ionicons/icons';
+import {
+    shieldCheckmarkOutline,
+    calendarOutline,
+    ribbonOutline,
+} from 'learn-card-base/icons/ionicons';
 
 const PreviewVerificationBox: React.FC = () => {
     return (

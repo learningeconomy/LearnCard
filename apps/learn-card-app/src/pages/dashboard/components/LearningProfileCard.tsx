@@ -1,6 +1,6 @@
 import React from 'react';
 import { AppIcon } from '../../../components/icon';
-import { shieldCheckmarkOutline } from 'ionicons/icons';
+import { shieldCheckmarkOutline } from 'learn-card-base/icons/ionicons';
 import { formatDistanceToNow } from 'date-fns';
 import { ChevronRight } from 'lucide-react';
 

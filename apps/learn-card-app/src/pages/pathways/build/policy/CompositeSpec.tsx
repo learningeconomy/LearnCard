@@ -19,7 +19,7 @@ import {
     gitBranchOutline,
     searchOutline,
     swapHorizontalOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 
 import { wouldCreateCycle } from '../../core/composition';
 import type { CompositeRenderStyle, Pathway, Policy } from '../../types';

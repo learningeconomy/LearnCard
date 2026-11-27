@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AppIcon } from '../../components/icon';
-import { alertCircleOutline, informationCircleOutline } from 'ionicons/icons';
+import { alertCircleOutline, informationCircleOutline } from 'learn-card-base/icons/ionicons';
 import { Toggle } from 'learn-card-base';
 
 import * as m from '../../paraglide/messages.js';

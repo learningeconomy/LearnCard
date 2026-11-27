@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 
 import { AppIcon } from '../icon';
-import { alertCircleOutline } from 'ionicons/icons';
+import { alertCircleOutline } from 'learn-card-base/icons/ionicons';
 import { ModalTypes, useGetCurrentLCNUser, useModal } from 'learn-card-base';
 
 import * as m from '../../paraglide/messages.js';

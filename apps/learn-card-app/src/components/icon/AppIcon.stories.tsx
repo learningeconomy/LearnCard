@@ -10,7 +10,7 @@ import {
     refreshOutline,
     star,
     starOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 
 import { AppButton } from '../controls/AppButton';
 import { AppIcon } from './AppIcon';

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { AppIcon } from '../../../components/icon';
-import { alertCircleOutline, arrowBackOutline } from 'ionicons/icons';
+import { alertCircleOutline, arrowBackOutline } from 'learn-card-base/icons/ionicons';
 import type { LCNIntegration } from '@learncard/types';
 
 import { getLogger } from 'learn-card-base';

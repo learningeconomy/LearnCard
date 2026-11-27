@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { VC } from '@learncard/types';
 import { AppIcon } from '../../icon';
-import { alertCircleOutline } from 'ionicons/icons';
+import { alertCircleOutline } from 'learn-card-base/icons/ionicons';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('endorsement-draft-request-success');
 

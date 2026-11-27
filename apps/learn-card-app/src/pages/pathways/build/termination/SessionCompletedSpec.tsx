@@ -33,7 +33,7 @@
 
 import React from 'react';
 
-import { sparklesOutline } from 'ionicons/icons';
+import { sparklesOutline } from 'learn-card-base/icons/ionicons';
 
 import type { Termination } from '../../types';
 

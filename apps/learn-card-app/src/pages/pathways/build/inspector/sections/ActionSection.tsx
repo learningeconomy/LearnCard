@@ -64,7 +64,7 @@ import {
     searchOutline,
     sparklesOutline,
     terminalOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import type { AppStoreListing } from '@learncard/types';
 
 import type {

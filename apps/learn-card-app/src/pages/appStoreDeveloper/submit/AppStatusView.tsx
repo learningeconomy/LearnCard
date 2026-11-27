@@ -6,7 +6,7 @@ import {
     createOutline,
     openOutline,
     sparklesOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import type { AppStoreListing } from '@learncard/types';
 
 import { Confetti } from '../../issue/components/Confetti';

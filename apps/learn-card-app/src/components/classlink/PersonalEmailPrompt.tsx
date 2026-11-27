@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AppIcon } from '../icon';
-import { alertCircleOutline, checkmarkCircleOutline } from 'ionicons/icons';
+import { alertCircleOutline, checkmarkCircleOutline } from 'learn-card-base/icons/ionicons';
 import {
     useClassLinkPersonalEmail,
     useFeatureConfig,

@@ -2,7 +2,7 @@ import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 
-import { checkmark, copyOutline } from 'ionicons/icons';
+import { checkmark, copyOutline } from 'learn-card-base/icons/ionicons';
 
 import { AppIcon } from '../../../../components/icon';
 import CopyIconButton from './CopyIconButton';

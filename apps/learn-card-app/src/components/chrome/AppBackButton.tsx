@@ -1,5 +1,5 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
-import { arrowBackSharp, chevronBack } from 'ionicons/icons';
+import { arrowBackSharp, chevronBack } from 'learn-card-base/icons/ionicons';
 
 import { useAppGoBack } from '../app-shell/AppShellRouter';
 import type { IonMode } from '../app-shell/ionMode';

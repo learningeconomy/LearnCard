@@ -2,7 +2,7 @@ import React from 'react';
 
 import { AppFab, AppFabButton } from '../../widgets';
 import { AppIcon } from '../../icon';
-import { pencilOutline } from 'ionicons/icons';
+import { pencilOutline } from 'learn-card-base/icons/ionicons';
 
 export const ResumeConfigPanelFAB: React.FC<{ openResumeConfigPanel: () => void }> = ({
     openResumeConfigPanel,

@@ -17,7 +17,7 @@ import {
     sendOutline,
     trashOutline,
     warningOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import { Clipboard } from '@capacitor/clipboard';
 import type {
     IntegrationTestEventResult,

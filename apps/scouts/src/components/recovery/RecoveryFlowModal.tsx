@@ -8,7 +8,7 @@ import {
     phonePortraitOutline,
     chevronBackOutline,
     mailOutline,
-} from 'ionicons/icons';
+} from 'learn-card-base/icons/ionicons';
 import { QRCodeSVG } from 'qrcode.react';
 
 import { Capacitor } from '@capacitor/core';
