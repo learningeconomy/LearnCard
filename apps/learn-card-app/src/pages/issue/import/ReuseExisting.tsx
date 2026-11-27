@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import type { BoostExclusion } from '@learncard/types';
 import {
     X,
@@ -129,7 +129,7 @@ const achievementTypeOf = (vc: Record<string, unknown>): string | undefined => {
 };
 
 export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleCloseModal }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
     const { currentLCNUser } = useGetCurrentLCNUser();
@@ -540,7 +540,7 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
                                 type="button"
                                 onClick={() => {
                                     handleCloseModal();
-                                    history.push('/wallet');
+                                    navigate('/wallet');
                                 }}
                                 className="flex-1 py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
                             >

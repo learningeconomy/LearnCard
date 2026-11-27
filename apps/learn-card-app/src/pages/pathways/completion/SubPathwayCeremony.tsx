@@ -28,7 +28,7 @@ import React from 'react';
 import { AppIcon } from 'learn-card-base/ui/icon';
 import { arrowForwardOutline, closeOutline } from 'learn-card-base/icons/ionicons';
 import { motion } from 'motion/react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import { pathwayStore } from '../../../stores/pathways';
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
@@ -82,7 +82,7 @@ const SubPathwayCeremony: React.FC<SubPathwayCeremonyProps> = ({
     parent,
     completedAt,
 }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
 
     useLockBodyScroll();
 
@@ -109,7 +109,7 @@ const SubPathwayCeremony: React.FC<SubPathwayCeremonyProps> = ({
         // effect, so the visual continuity holds.
         pathwayStore.set.dismissCelebration();
         pathwayStore.set.setActivePathway(parent.id);
-        history.push('/pathways/map');
+        navigate('/pathways/map');
     };
 
     const handleStayHere = () => {
@@ -118,7 +118,7 @@ const SubPathwayCeremony: React.FC<SubPathwayCeremonyProps> = ({
         // affordance.
         pathwayStore.set.dismissCelebration();
         pathwayStore.set.setActivePathway(subPathway.id);
-        history.push('/pathways/map');
+        navigate('/pathways/map');
     };
 
     return (

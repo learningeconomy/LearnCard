@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { PushNotificationSchema } from '@capacitor/push-notifications';
 
@@ -20,7 +20,7 @@ const FOREGROUND_TOAST_DURATION_MS = 6000;
 export const PushNotificationListener = () => {
     const { initWallet } = useWallet();
     const isLoggedIn = useIsLoggedIn();
-    const history = useHistory();
+    const navigate = useNavigate();
     const queryClient = useQueryClient();
 
     const { presentToast, dismissToast } = useToast();
@@ -46,27 +46,27 @@ export const PushNotificationListener = () => {
                     body={body}
                     imageUrl={imageUrl}
                     onClick={() => {
-                        history.push(path);
+                        navigate(path);
                         dismissToast();
                     }}
                 />,
                 { autoDismiss: true, duration: FOREGROUND_TOAST_DURATION_MS }
             );
         },
-        [queryClient, presentToast, dismissToast, history]
+        [queryClient, presentToast, dismissToast, navigate]
     );
 
     useEffect(() => {
         pushUtilities.addBackgroundPushNotificationListeners(
             initWallet,
-            history,
+            navigate,
             isLoggedIn,
             // Background registration failures are logged by pushUtilities.
             // They should not interrupt startup with an account-like error toast.
             undefined,
             handleForegroundNotification
         );
-    }, [history, isLoggedIn, handleForegroundNotification]);
+    }, [navigate, isLoggedIn, handleForegroundNotification]);
 
     return null;
 };

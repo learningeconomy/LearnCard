@@ -14,7 +14,7 @@ import {
     useWallet,
 } from 'learn-card-base';
 import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import 'swiper/css';
 import { AppSkeletonText } from 'learn-card-base/ui/feedback/AppSkeletonText';
@@ -34,7 +34,7 @@ export const AiSessionLearningPathways: React.FC<{ isLoading: boolean }> = ({ is
     const { data: aiInsightCredential, isLoading: aiInsightCredentialLoading } =
         useExistingAiInsightCredential();
     const { resolveCredential, initWallet } = useWallet();
-    const history = useHistory();
+    const navigate = useNavigate();
 
     const [learningPathwaysData, setLearningPathwaysData] = React.useState<PathwayItem[]>([]);
 
@@ -126,7 +126,7 @@ export const AiSessionLearningPathways: React.FC<{ isLoading: boolean }> = ({ is
     const handleStart = (item: PathwayItem) => {
         if (!item?.topicUri || !item?.pathwayUri) return;
 
-        history.push(
+        navigate(
             `/chats?topicUri=${encodeURIComponent(item.topicUri)}&pathwayUri=${encodeURIComponent(
                 item.pathwayUri
             )}`

@@ -28,9 +28,12 @@ const mocks = vi.hoisted(() => ({
     verifyCredential: vi.fn(),
 }));
 
-vi.mock('react-router-dom', () => ({
-    useHistory: () => ({ push: mocks.push, replace: mocks.replace }),
-}));
+vi.mock('react-router', async () => {
+    const { navigateFromHistory } = await import('learn-card-base/test-utils/navigateFromHistory');
+    return {
+        useNavigate: () => navigateFromHistory({ push: mocks.push, replace: mocks.replace }),
+    };
+});
 vi.mock('@capacitor/core', () => ({
     Capacitor: { isNativePlatform: () => false },
 }));

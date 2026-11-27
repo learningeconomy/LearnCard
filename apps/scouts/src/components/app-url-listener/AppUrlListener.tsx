@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { App, URLOpenListenerEvent } from '@capacitor/app';
 import { Capacitor, PluginListenerHandle } from '@capacitor/core';
 import { getLogger } from 'learn-card-base';
@@ -8,7 +8,7 @@ import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
 const log = getLogger('scouts/app-url-listener');
 
 export const AppUrlListener: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
 
     const deepLinkDomains = useMemo(
         () => [
@@ -34,11 +34,11 @@ export const AppUrlListener: React.FC = () => {
 
                     if (eventUrl.protocol === 'https:' && eventUrl.origin === domainUrl.origin) {
                         if (/^\/m\/[^/]+\/?$/.test(eventUrl.pathname)) {
-                            history.push(encodeURI(eventUrl.pathname));
+                            navigate(eventUrl.pathname);
                             return;
                         }
                         const path = eventUrl.pathname + eventUrl.search + eventUrl.hash;
-                        history.push(path);
+                        navigate(path);
                         return;
                     }
                 }
@@ -71,7 +71,7 @@ export const AppUrlListener: React.FC = () => {
                 listener.remove();
             }
         };
-    }, [history, deepLinkDomains]);
+    }, [navigate, deepLinkDomains]);
 
     return null;
 };

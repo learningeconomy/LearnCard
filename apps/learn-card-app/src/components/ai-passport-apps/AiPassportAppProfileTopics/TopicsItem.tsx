@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import SlimCaretRight from '../../svgs/SlimCaretRight';
 import AiSessionsContainer from '../../ai-sessions/AiSessionsContainer';
@@ -16,7 +16,7 @@ export const TopicsItem: React.FC<{
     topicBoost?: Boost;
     sessions?: Boost[];
 }> = ({ topicVc, topicBoost, sessions }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { newModal, closeModal, closeAllModals } = useModal();
     const { isDesktop } = useDeviceTypeByWidth();
 
@@ -28,7 +28,7 @@ export const TopicsItem: React.FC<{
             onClick={() => {
                 if (isDesktop) {
                     closeAllModals();
-                    history.push(
+                    navigate(
                         `/ai/sessions?topicBoostUri=${encodeURIComponent(topicBoost?.uri ?? '')}`
                     );
                 } else {

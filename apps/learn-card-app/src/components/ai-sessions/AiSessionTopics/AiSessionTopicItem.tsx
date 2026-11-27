@@ -1,4 +1,4 @@
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import SlimCaretRight from '../../svgs/SlimCaretRight';
 
@@ -28,7 +28,7 @@ export const AiSessionTopicItem: React.FC<{
     hasUnfinishedSessions,
     onSelectTopic,
 }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
 
     const app = aiPassportApps?.find(appItem => appItem?.contractUri === topicRecord?.contractUri);
     const topicTitle = topicTitleOverride ?? getAiTopicTitle(topicVc) ?? '';
@@ -42,9 +42,7 @@ export const AiSessionTopicItem: React.FC<{
             type="button"
             onClick={() => {
                 if (onSelectTopic) return onSelectTopic();
-                history.push(
-                    `/ai/sessions?topicBoostUri=${encodeURIComponent(topicBoost?.uri ?? '')}`
-                );
+                navigate(`/ai/sessions?topicBoostUri=${encodeURIComponent(topicBoost?.uri ?? '')}`);
             }}
             className="flex items-center justify-between w-full bg-white rounded-2xl shadow-xs px-4 py-3 mb-3"
         >

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import * as m from '../../paraglide/messages.js';
 
@@ -92,7 +92,7 @@ const DashboardPage: React.FC = () => {
     markDashboardPath('page_body_render', true);
     useDashboardPathMark('dashboard_commit');
     useEffect(() => markFirstScreenPainted(), []);
-    const history = useHistory();
+    const navigate = useNavigate();
     const { track } = useAnalytics();
     const {
         state,
@@ -223,15 +223,15 @@ const DashboardPage: React.FC = () => {
         openHeaderModal(
             <QrCodeUserCardModal
                 branding={BrandingEnum.learncard}
-                history={history}
+                history={navigate}
                 connections={connections ?? []}
                 qrOnly
             />
         );
     };
     const openManageDataSharing = useCallback(() => {
-        history.push('/privacy-and-data');
-    }, [history]);
+        navigate('/privacy-and-data');
+    }, [navigate]);
 
     const pathways = pathwayStore.use.pathways();
     const activePathwayId = pathwayStore.use.activePathwayId();
@@ -292,31 +292,31 @@ const DashboardPage: React.FC = () => {
             { desktop: ModalTypes.Center, mobile: ModalTypes.BottomSheet }
         );
     };
-    const goToInsights = () => history.push('/ai/insights');
-    const goToSkills = () => history.push('/skills');
+    const goToInsights = () => navigate('/ai/insights');
+    const goToSkills = () => navigate('/skills');
     const goToSetGoal = () => {
-        history.push(pathwaysEnabled ? '/pathways/onboard' : '/ai/pathways');
+        navigate(pathwaysEnabled ? '/pathways/onboard' : '/ai/pathways');
     };
     const goToBrowsePathways = () => {
-        history.push(pathwaysEnabled ? '/pathways' : '/ai/pathways');
+        navigate(pathwaysEnabled ? '/pathways' : '/ai/pathways');
     };
 
     const goToPathway = () => {
         if (!pathwaysEnabled) {
-            history.push('/ai/pathways');
+            navigate('/ai/pathways');
             return;
         }
         if (goalSummary?.nextNode && goalSummary.pathwayId) {
-            history.push(`/pathways/node/${goalSummary.pathwayId}/${goalSummary.nextNode.id}`);
+            navigate(`/pathways/node/${goalSummary.pathwayId}/${goalSummary.nextNode.id}`);
         } else if (activePathway) {
-            history.push('/pathways/today');
+            navigate('/pathways/today');
         } else {
-            history.push('/pathways/onboard');
+            navigate('/pathways/onboard');
         }
     };
 
     const goToReviews = () => {
-        if (pathwaysEnabled) history.push('/pathways/today');
+        if (pathwaysEnabled) navigate('/pathways/today');
     };
 
     const hasCredentials = (totalCredentialCount ?? 0) > 0 || allCredentialRecords.length > 0;
@@ -324,8 +324,8 @@ const DashboardPage: React.FC = () => {
     const hasSkillProfile = skillProfilePercentage >= 100;
     const hasDiscoveredApps = installedApps.length > 0;
 
-    const goToWallet = () => history.push('/wallet');
-    const goToDiscoverApps = () => history.push('/launchpad?tab=All');
+    const goToWallet = () => navigate('/wallet');
+    const goToDiscoverApps = () => navigate('/launchpad?tab=All');
 
     const secondChecklistStep = pathwaysEnabled
         ? {
@@ -413,7 +413,7 @@ const DashboardPage: React.FC = () => {
         goToSetGoal,
         goToPathway,
         goToBrowsePathways,
-        goToBrowseAppStore: () => history.push('/launchpad'),
+        goToBrowseAppStore: () => navigate('/launchpad'),
     };
 
     const slotIcons: SlotIcons = {

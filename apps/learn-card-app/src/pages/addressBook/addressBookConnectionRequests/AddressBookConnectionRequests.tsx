@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useRouteMatch, useHistory } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('address-book-connection-requests');
@@ -33,8 +33,8 @@ const AddressBookConnectionRequests: React.FC<{
     const { floatingBottle: FloatingBottleIcon } = icons;
 
     const queryClient = useQueryClient();
-    const history = useHistory();
-    const { url } = useRouteMatch();
+    const navigate = useNavigate();
+    const { pathname: url } = useLocation();
     const query = usePathQuery();
 
     const _profileId = query.get('profileId') ?? '';
@@ -130,7 +130,7 @@ const AddressBookConnectionRequests: React.FC<{
                 cssClass: 'center-modal add-contact-modal',
                 backdropDismiss: false,
                 showBackdrop: false,
-                onDidDismiss: () => history.push('/contacts'),
+                onDidDismiss: () => navigate('/contacts'),
             });
         }
     }, []);

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import SkillsInsightIcon from 'learn-card-base/svgs/SkillsInsightIcon';
 import SkillsIcon from 'learn-card-base/svgs/wallet/SkillsIcon';
@@ -7,10 +7,10 @@ import SkillsIcon from 'learn-card-base/svgs/wallet/SkillsIcon';
 import { useSkillsCount } from '../../hooks/useSkillsCount';
 
 const AiInsightsSkillsCard: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
 
     const handleExploreClick = () => {
-        history.push('/skills');
+        navigate('/skills');
     };
 
     const { total } = useSkillsCount();

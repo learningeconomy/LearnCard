@@ -45,7 +45,7 @@
 import React, { useMemo, useState } from 'react';
 
 import { AppIcon } from 'learn-card-base/ui/icon';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import {
     arrowDownOutline,
     arrowForwardOutline,
@@ -807,7 +807,7 @@ const EmptyFrame: React.FC<{
 
 const WhatIfMode: React.FC = () => {
     const activePathway = pathwayStore.use.activePathway();
-    const history = useHistory();
+    const navigate = useNavigate();
     const analytics = useAnalytics();
 
     // Set while a scenario is being turned into a proposal. Single-
@@ -969,7 +969,7 @@ const WhatIfMode: React.FC = () => {
                 costCents: 0,
             });
 
-            history.push('/pathways/map');
+            navigate('/pathways/map');
         } catch (err) {
             setAcceptError(
                 err instanceof Error ? err.message : 'Something went wrong. Please try again.'
@@ -1001,7 +1001,7 @@ const WhatIfMode: React.FC = () => {
                 costCents: 0,
             });
 
-            history.push('/pathways/map');
+            navigate('/pathways/map');
         } catch (err) {
             setAcceptError(
                 err instanceof Error ? err.message : 'Something went wrong. Please try again.'
@@ -1017,7 +1017,7 @@ const WhatIfMode: React.FC = () => {
                     title="Pick a pathway first"
                     body="What-if compares alternative shapes against your current pathway. Start or choose one and come back."
                     ctaLabel="Start a pathway"
-                    onCta={() => history.push('/pathways/onboard')}
+                    onCta={() => navigate('/pathways/onboard')}
                 />
             </div>
         );
@@ -1100,7 +1100,7 @@ const WhatIfMode: React.FC = () => {
                         title="Can't simulate this pathway yet"
                         body="Scenarios compare routes to a destination. Set a destination in Build, then come back here to see alternatives."
                         ctaLabel="Open Build"
-                        onCta={() => history.push('/pathways/build')}
+                        onCta={() => navigate('/pathways/build')}
                     />
                 ) : results.length === 0 ? (
                     <EmptyFrame

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
-import { Link, useHistory } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router';
 import Countdown from 'react-countdown';
 import { z } from 'zod';
 
@@ -47,7 +47,7 @@ const EmailForm: React.FC = () => {
     const adapter = useSignInAdapter();
     const flags = useFlags();
     const query = usePathQuery();
-    const history = useHistory();
+    const navigate = useNavigate();
     const { initWallet } = useWallet();
     const { setCurrentUser, getCurrentUser } = useSQLiteStorage();
     const { sendSignInLink, signInWithCustomFirebaseToken } = useFirebase();
@@ -258,7 +258,7 @@ const EmailForm: React.FC = () => {
 
     const resetForm = () => {
         setCurrentStep(EmailFormStepsEnum.email);
-        history.replace('/login');
+        navigate('/login', { replace: true });
         redirectStore.set.email(null);
         setEmail('');
         setPassword('');

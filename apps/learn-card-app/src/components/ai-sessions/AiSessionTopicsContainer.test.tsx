@@ -17,10 +17,13 @@ const mocks = vi.hoisted(() => ({
     existingTopics: [] as { uri: string }[],
 }));
 
-vi.mock('react-router-dom', () => ({
-    useHistory: () => ({ replace: mocks.replace }),
-    useLocation: () => ({ search: mocks.search }),
-}));
+vi.mock('react-router', async () => {
+    const { navigateFromHistory } = await import('learn-card-base/test-utils/navigateFromHistory');
+    return {
+        useNavigate: () => navigateFromHistory({ replace: mocks.replace }),
+        useLocation: () => ({ search: mocks.search }),
+    };
+});
 
 vi.mock('../../paraglide/messages.js', () => ({ m: {} }));
 

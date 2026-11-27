@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import queryString from 'query-string';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import useGetFamilyCredential from 'apps/learn-card-app/src/hooks/useGetFamilyCredential';
 
 import {
@@ -39,7 +39,7 @@ type FullScreenGameFlowProps = {
 };
 
 const FullScreenGameFlow: React.FC<FullScreenGameFlowProps> = ({ contractDetails, isPreview }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const location = useLocation();
     const pathName = location?.pathname?.replace('/', '');
     const isFromGame = pathName === 'consent-flow'; // assume they came here directly from the game for consent-flow route
@@ -70,7 +70,7 @@ const FullScreenGameFlow: React.FC<FullScreenGameFlowProps> = ({ contractDetails
         // update url 'step' param every time step changes
         const searchParams = new URLSearchParams(window.location.search);
         searchParams.set('step', step);
-        history.push({
+        navigate({
             search: searchParams.toString(),
         });
     }, [step]);

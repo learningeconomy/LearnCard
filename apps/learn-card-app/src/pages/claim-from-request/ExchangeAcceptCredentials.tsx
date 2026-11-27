@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { Capacitor } from '@capacitor/core';
 import { VC, VP, VerificationItem } from '@learncard/types';
 import { prettifyVerificationItems } from 'learn-card-base/helpers/verificationPrettifier';
@@ -109,7 +109,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
 
     const selectedCredentials = credentials.filter((_, i) => selectedIndices.has(i));
 
-    const history = useHistory();
+    const navigate = useNavigate();
     const { presentToast } = useToast();
     const { storeAndAddVCToWallet, initWallet } = useWallet();
     const { track } = useAnalytics();
@@ -613,7 +613,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                                 <div className="space-y-v3-3">
                                     <button
                                         type="button"
-                                        onClick={() => history.push('/')}
+                                        onClick={() => navigate('/')}
                                         className="w-full py-3 px-4 bg-grayscale-900 text-white font-medium text-sm rounded-[20px] hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                                     >
                                         <Home className="w-4 h-4" />
@@ -680,7 +680,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                     footerProps={{
                         handleClose: () => {
                             completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_CANCELLED);
-                            history.push('/');
+                            navigate('/');
                         },
                         handleDetails: isMobile
                             ? () => openSingleCredentialDetails(credential)
@@ -735,7 +735,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                 footerProps={{
                     handleClose: () => {
                         completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_CANCELLED);
-                        history.push('/');
+                        navigate('/');
                     },
                     handleClaim,
                     claimBtnText,

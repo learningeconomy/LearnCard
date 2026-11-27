@@ -2,8 +2,9 @@ import React from 'react';
 import { within, act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Router } from 'react-router-dom';
-import { createMemoryHistory } from 'history';
+
+import { Route, Routes } from 'react-router';
+import { createTestHistory, TestRouter } from 'learn-card-base/test-utils/testRouter';
 import type { Campaign } from '@learncard/types';
 import { CampaignValidator } from '@learncard/types';
 import { CampaignRoutes } from './CampaignRoutes';
@@ -78,13 +79,18 @@ const mount = (
     container?: HTMLElement
 ) => {
     const queries = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-    const history = createMemoryHistory({
-        initialEntries: [path],
-        getUserConfirmation: (_message, callback) => callback(false),
-    });
+    // Rejects every leave prompt, so navigation while the editor blocks it fails.
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const history = createTestHistory({ initialEntries: [path] });
     const view = render(
         <QueryClientProvider client={queries}>
-            <Router history={history}>{element ?? <CampaignRoutes api={api} />}</Router>
+            <TestRouter history={history}>
+                {element ?? (
+                    <Routes>
+                        <Route path="/admin/campaigns/*" element={<CampaignRoutes api={api} />} />
+                    </Routes>
+                )}
+            </TestRouter>
         </QueryClientProvider>,
         { wrapper: ModalsProvider, ...(container ? { container } : {}) }
     );
@@ -164,7 +170,7 @@ describe('campaign composer', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Save Draft' }));
         expect(view.history.location.search).toBe('?create=1');
         await act(async () => save.resolve(campaign()));
-        // This history rejects navigation while Prompt is active, catching a save/blocker race.
+        // Leave prompts are rejected, so a save/blocker race would keep the create URL.
         await waitFor(() =>
             expect(view.history.location.pathname).toBe('/admin/campaigns/test-campaign')
         );
@@ -438,7 +444,8 @@ describe('campaign composer', () => {
         });
         fireEvent.click(screen.getByLabelText('In-app & push notification'));
         expect(screen.getByRole('button', { name: 'Go Live' })).toBeDisabled();
-        act(() => view.history.push('/admin/campaigns'));
+        await act(() => view.history.push('/admin/campaigns'));
+        expect(window.confirm).toHaveBeenCalled();
         expect(view.history.location.pathname).toBe('/admin/campaigns/test-campaign');
         fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
         await waitFor(() =>

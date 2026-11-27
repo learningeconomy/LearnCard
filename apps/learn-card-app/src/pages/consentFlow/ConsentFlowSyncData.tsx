@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import queryString from 'query-string';
-import { useLocation, useHistory } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 
 import ConsentFlowSyncButton from './ConsentFlowSyncButton';
 import ConsentFlowSyncCard from './ConsentFlowSyncCard';
@@ -32,7 +32,7 @@ const ConsentFlowSyncData: React.FC = () => {
     const { presentToast } = useToast();
 
     const location = useLocation();
-    const history = useHistory();
+    const navigate = useNavigate();
 
     const { newModal } = useModal();
 
@@ -172,8 +172,8 @@ const ConsentFlowSyncData: React.FC = () => {
                                         returnTo,
                                         wallet,
                                     });
-                                } else history.push(returnTo);
-                            } else history.push('/home');
+                                } else navigate(returnTo);
+                            } else navigate('/home');
                         } catch {
                             presentToast('Unable to complete sign in. Please try again.', {
                                 type: ToastTypeEnum.Error,

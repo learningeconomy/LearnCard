@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHistory, useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router';
 import { useTrustedAppsRegistry } from 'learn-card-base/hooks/useRegistry';
 
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
@@ -16,9 +16,9 @@ import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import { AppGrid } from 'learn-card-base/ui/layout';
 
 const ViewCredentialsSharedWithApp: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const currentUser = useCurrentUser();
-    const { profileId } = useParams<{ profileId: string }>();
+    const { profileId } = useParams() as { profileId: string };
     const { data: appRegistryInfo, isLoading: trustedAppInfoLoading } =
         useTrustedAppsRegistry(profileId);
     const { data: sharedCredentials, isLoading: loadingSharedCredentials } =
@@ -43,7 +43,7 @@ const ViewCredentialsSharedWithApp: React.FC = () => {
                     <AppButtons slot="start">
                         <button
                             className="text-grayscale-600 bg-transparent"
-                            onClick={() => history.push('/launchpad')}
+                            onClick={() => navigate('/launchpad')}
                         >
                             <LeftArrow className="w-10 h-auto text-grayscale-600" />
                         </button>
@@ -85,7 +85,7 @@ const ViewCredentialsSharedWithApp: React.FC = () => {
                                     <button
                                         className="bg-grayscale-900 rounded-[20px] px-[20px] py-[8px] text-white text-[14px] font-[600]"
                                         onClick={() =>
-                                            history.push(
+                                            navigate(
                                                 `/select-credentials/${encodeURI(
                                                     profileId
                                                 )}?skipReload=true`

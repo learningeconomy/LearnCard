@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import queryString from 'query-string';
-import { useLocation, useHistory } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { getVCDisplayCardVariant } from '@learncard/react';
@@ -33,7 +33,7 @@ import { useAppAlert } from 'learn-card-base/ui/overlays';
 const log = getLogger('view-shared-boost');
 
 const ViewSharedBoost: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const location = useLocation();
     const isLoggedIn = useIsLoggedIn();
     const { uri, seed, pin } = queryString.parse(location.search);
@@ -158,7 +158,7 @@ const ViewSharedBoost: React.FC = () => {
         }
     };
 
-    const redirectHome = () => history.push('/');
+    const redirectHome = () => navigate('/');
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
     const troopBackgroundStyles = getWallpaperBackgroundStyles(undefined, boost as any);

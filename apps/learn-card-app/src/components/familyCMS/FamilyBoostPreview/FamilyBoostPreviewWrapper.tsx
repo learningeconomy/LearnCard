@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import FamilyPreview from './FamilyBoostPreview';
 import BoostLoader from '../../boost/boostLoader/BoostLoader';
@@ -11,7 +11,7 @@ import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers
 
 export const FamilyBoostPreviewWrapper: React.FC<{ uri: string }> = ({ uri }) => {
     const { closeModal } = useModal();
-    const history = useHistory();
+    const navigate = useNavigate();
 
     const {
         data: resolvedCredential,
@@ -31,7 +31,7 @@ export const FamilyBoostPreviewWrapper: React.FC<{ uri: string }> = ({ uri }) =>
             credential={cred}
             boostUri={uri}
             handleCloseModal={() => {
-                history.replace('/families');
+                navigate('/families', { replace: true });
                 closeModal();
             }}
         />

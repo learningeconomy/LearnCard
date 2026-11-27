@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { PendingContractRequests } from '../contract-requests/ContractRequest';
 import { ContractAudience } from '../contract-requests/ContractAudience';
 import { getLogger } from 'learn-card-base';
@@ -245,7 +245,7 @@ export const ConsentedContractRow: React.FC<ConsentedContractRowProps> = ({
     onUpdate,
 }) => {
     const { closeModal, newModal } = useModal();
-    const history = useHistory();
+    const navigate = useNavigate();
     // Contract details are already in the record
     const contractDetails = contract.contract;
 
@@ -263,7 +263,7 @@ export const ConsentedContractRow: React.FC<ConsentedContractRowProps> = ({
 
         if (hasPendingUpdate) {
             closeModal();
-            history.push(`/consent-flow/review?uri=${encodeURIComponent(contractDetails.uri)}`);
+            navigate(`/consent-flow/review?uri=${encodeURIComponent(contractDetails.uri)}`);
             return;
         }
         newModal(

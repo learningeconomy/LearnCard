@@ -3,7 +3,7 @@ import moment from 'moment';
 import 'moment/dist/locale/ar';
 import 'moment/dist/locale/es';
 import 'moment/dist/locale/fr';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import {
     BoostPageViewMode,
@@ -202,7 +202,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
     isLoading = false,
     emptyTips = [],
 }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
 
     const locale = useLocale();
 
@@ -216,7 +216,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                 title: m['dashboard.activity.wantsToConnect']({ name }),
                 imageUrl: conn.image?.trim() || undefined,
                 timestamp: Date.now(),
-                onClick: () => history.push('/contacts/requests'),
+                onClick: () => navigate('/contacts/requests'),
             });
         }
 
@@ -228,7 +228,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                 subtitle: req.contract?.name,
                 imageUrl: req.profile?.image?.trim() || undefined,
                 timestamp: Date.now(),
-                onClick: () => history.push('/notifications'),
+                onClick: () => navigate('/notifications'),
             });
         }
 
@@ -252,12 +252,12 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                 subtitle: n.sent ? moment(n.sent).locale(locale).fromNow() : undefined,
                 imageUrl: senderImage || undefined,
                 timestamp: sortMs,
-                onClick: () => history.push('/notifications'),
+                onClick: () => navigate('/notifications'),
             });
         }
 
         return out;
-    }, [pendingConnections, pendingContractRequests, notifications, history, locale]);
+    }, [pendingConnections, pendingContractRequests, notifications, navigate, locale]);
 
     const actionableTotal = actionableItems.length;
     const visibleActionable = actionableItems.slice(0, MAX_ACTIONABLE);
@@ -320,7 +320,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                     ))}
                     <button
                         type="button"
-                        onClick={() => history.push('/notifications')}
+                        onClick={() => navigate('/notifications')}
                         className="flex items-center gap-1 self-end text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors mt-0.5 rounded-xs focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                     >
                         {actionableTotal > MAX_ACTIONABLE
@@ -373,7 +373,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                           })}
                     <button
                         type="button"
-                        onClick={() => history.push('/wallet')}
+                        onClick={() => navigate('/wallet')}
                         className="flex items-center gap-1 self-end text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors mt-1 rounded-xs focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                     >
                         {m['dashboard.activity.viewAllPassport']()}

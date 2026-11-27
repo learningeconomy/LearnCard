@@ -1,6 +1,6 @@
 import { ActionPerformed, PushNotificationSchema } from '@capacitor/push-notifications';
 import { LCNNotification, LCNNotificationTypeEnumValidator } from '@learncard/types';
-import { RouteComponentProps } from 'react-router-dom';
+import type { NavigateFunction } from 'react-router';
 
 import { getLogger } from '../logging/logger';
 
@@ -141,16 +141,16 @@ export const getNotificationToastCopy = (
 
 export const handlePushNotificationActionPerformed = (
     notificationPayload: ActionPerformed,
-    history: RouteComponentProps['history']
+    navigate: NavigateFunction
 ) => {
     if (!notificationPayload) return;
-    if (!history) return;
+    if (!navigate) return;
 
     const notification = parseNotificationFromPushRaw(notificationPayload.notification?.data?.raw);
 
     if (!notification) return;
 
-    history.push(resolveNotificationRoute(notification));
+    void navigate(resolveNotificationRoute(notification));
 };
 
 export const parseForegroundPushNotification = (

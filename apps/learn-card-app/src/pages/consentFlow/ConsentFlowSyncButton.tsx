@@ -1,5 +1,5 @@
 import React, { useEffect, useContext } from 'react';
-import { useLocation, useHistory } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import queryString from 'query-string';
 import { AuthContext, IAuthContext } from 'react-oauth2-code-pkce';
 
@@ -28,14 +28,14 @@ const ConsentFlowSyncButton: React.FC<ConsentFlowSyncButtonProps> = ({ preLogin,
     const { mutateAsync: syncDataSource } = useSyncDataSource(id);
 
     const location = useLocation();
-    const history = useHistory();
+    const navigate = useNavigate();
     const { dataSource, ...otherParams } = queryString.parse(location.search);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const { token, login }: IAuthContext = useContext(AuthContext as any);
 
     useEffect(() => {
         if (dataSource === id) {
-            history.replace({ search: queryString.stringify(otherParams) });
+            navigate({ search: queryString.stringify(otherParams) }, { replace: true });
 
             syncDataSource(membershipId ? undefined : token);
         }
@@ -82,7 +82,7 @@ const ConsentFlowSyncButton: React.FC<ConsentFlowSyncButtonProps> = ({ preLogin,
         }
 
         if (membershipId) {
-            history.replace({ search: queryString.stringify(otherParams) });
+            navigate({ search: queryString.stringify(otherParams) }, { replace: true });
 
             return syncDataSource(undefined);
         }

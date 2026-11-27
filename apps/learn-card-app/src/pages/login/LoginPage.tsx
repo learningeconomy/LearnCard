@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import * as m from '../../paraglide/messages.js';
 import { TransP } from '../../i18n/TransP';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { QRCodeSVG } from 'qrcode.react';
 import {
     LoginTypesEnum,
@@ -89,7 +89,7 @@ export const LoginContent: React.FC = () => {
 
     // const { installChapi } = useWallet();
     const query = usePathQuery();
-    const history = useHistory();
+    const navigate = useNavigate();
     const { initWallet } = useWallet();
     const [showSocialLogins, setShowSocialLogins] = useState<boolean>(true);
 
@@ -290,18 +290,18 @@ export const LoginContent: React.FC = () => {
                 redirectStore.set.lcnRedirect(null);
                 redirectStore.set.authRedirect(null);
                 chapiStore.set.isChapiInteraction(null);
-                resumeAuthRedirect(history, redirectTo);
+                resumeAuthRedirect(navigate, redirectTo);
                 void handleGeneratePinUpdateToken();
                 if (canRepromptOnboarding) void handlePromptOnboarding();
             } else if (lcnRedirectTo) {
                 redirectStore.set.lcnRedirect(null);
-                history.push(lcnRedirectTo);
+                navigate(lcnRedirectTo);
                 void handleGeneratePinUpdateToken();
                 if (canRepromptOnboarding) void handlePromptOnboarding();
             } else {
                 // Preserve the demo shortcut's existing landing page after the
                 // profile/onboarding gates above have completed.
-                history.push(currentUser?.uid === 'demo' ? '/wallet' : '/dashboard');
+                navigate(currentUser?.uid === 'demo' ? '/wallet' : '/dashboard');
                 void handleGeneratePinUpdateToken();
                 if (canRepromptOnboarding) void handlePromptOnboarding();
             }
@@ -314,7 +314,7 @@ export const LoginContent: React.FC = () => {
         currentUser,
         isLoggedIn,
         coordinatorState.status,
-        history,
+        navigate,
         query,
         handleGeneratePinUpdateToken,
         handlePromptOnboarding,
@@ -343,9 +343,7 @@ export const LoginContent: React.FC = () => {
 
     /** Resolves `true` while navigating away, so the button keeps its loading state. */
     const classLinkLogin = async (): Promise<boolean> => {
-        const outcome = await runClassLinkLogin(getClassLinkAuthorizeUrl, path =>
-            history.push(path)
-        );
+        const outcome = await runClassLinkLogin(getClassLinkAuthorizeUrl, path => navigate(path));
         // 'handled' (sheet closed / timed out) is reported by the callback route.
         if (outcome === 'failed') {
             presentClassLinkToast(m['login.classlink.failed'](), {

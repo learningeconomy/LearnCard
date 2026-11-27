@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useHistory } from 'react-router';
+import { useParams, useNavigate } from 'react-router';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('connect-page');
 
@@ -17,9 +17,9 @@ import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 const ConnectPage: React.FC = () => {
     const isLoggedIn = useIsLoggedIn();
     const { initWallet } = useWallet();
-    const history = useHistory();
+    const navigate = useNavigate();
     const query = usePathQuery();
-    const { profileId } = useParams<{ profileId: string }>();
+    const { profileId } = useParams() as { profileId: string };
 
     const userDid = query.get('did');
 
@@ -124,7 +124,7 @@ const ConnectPage: React.FC = () => {
                 {!loading && lcNetworkProfile && (
                     <AddContactView
                         user={lcNetworkProfile}
-                        handleCancel={() => history.push('/')}
+                        handleCancel={() => navigate('/')}
                         customContainerClass="mb-20"
                         mode={AddContactViewMode.requestConnection}
                     />

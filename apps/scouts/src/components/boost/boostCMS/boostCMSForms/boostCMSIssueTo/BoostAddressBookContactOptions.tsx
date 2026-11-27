@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
 import { Clipboard } from '@capacitor/clipboard';
-import { useLocation, useHistory } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 
 import X from 'learn-card-base/svgs/X';
@@ -72,7 +72,7 @@ const BoostAddressBookContactOptions: React.FC<{
     );
     const [walletDid, setWalletDid] = useState<string>('');
     const query = usePathQuery();
-    const history = useHistory();
+    const navigate = useNavigate();
     const location = useLocation();
 
     useEffect(() => {
@@ -245,14 +245,17 @@ const BoostAddressBookContactOptions: React.FC<{
     const handleAddSomeoneElse = () => {
         setIssueMode?.(BoostUserTypeEnum.someone);
 
-        if (history) {
+        if (navigate) {
             const searchParams = new URLSearchParams(window.location.search);
             searchParams.set('boostUserType', BoostUserTypeEnum.someone);
 
-            history.replace({
-                pathname: location?.pathname,
-                search: searchParams.toString(),
-            });
+            navigate(
+                {
+                    pathname: location?.pathname,
+                    search: searchParams.toString(),
+                },
+                { replace: true }
+            );
         }
 
         // Looping back to re-use BoostAddressBook here is insanity

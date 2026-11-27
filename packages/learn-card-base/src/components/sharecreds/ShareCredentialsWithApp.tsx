@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useHistory, useLocation, useParams } from 'react-router-dom';
+import { useLocation, useParams, useNavigate } from 'react-router';
 import queryString from 'query-string';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -26,12 +26,12 @@ import { useAppAlert } from 'learn-card-base/ui/overlays';
 const log = getLogger('share-credentials-with-app');
 
 const ShareCredentialsWithApp: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const queryClient = useQueryClient();
     const currentUser = useCurrentUser();
     const [presentAlert] = useAppAlert();
     const { initWallet } = useWallet();
-    const { profileId } = useParams<{ profileId: string; skipReload?: boolean }>();
+    const { profileId } = useParams() as { profileId: string };
     const { data: trustedAppRegistry } = useTrustedAppsRegistry();
 
     const [isSharing, setIsSharing] = useState(false);
@@ -89,7 +89,7 @@ const ShareCredentialsWithApp: React.FC = () => {
                 window.location.replace(redirectUrl);
             } else {
                 // otherwise redirect to view shared crednetials
-                history.push(`/view-shared-credentials/${encodeURI(profileId)}`);
+                navigate(`/view-shared-credentials/${encodeURI(profileId)}`);
             }
         } catch (e) {
             log.debug('///handleSubmit create credential bundle Error', e);
@@ -112,7 +112,7 @@ const ShareCredentialsWithApp: React.FC = () => {
                     <AppButtons slot="start">
                         <button
                             className="text-grayscale-600 bg-transparent"
-                            onClick={() => history.push('/launchpad')}
+                            onClick={() => navigate('/launchpad')}
                         >
                             <LeftArrow className="w-10 h-auto text-grayscale-600" />
                         </button>

@@ -1,6 +1,6 @@
 import React, { Suspense, lazy, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import { ModalTypes, QRCodeScannerStore, useModal, getLogger } from 'learn-card-base';
 
@@ -38,7 +38,7 @@ type AddToLearnCardActions = {
 };
 
 const useAddToLearnCardActions = (): AddToLearnCardActions => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { newModal: openRightModal, closeAllModals } = useModal({
         mobile: ModalTypes.Right,
         desktop: ModalTypes.Right,
@@ -63,7 +63,7 @@ const useAddToLearnCardActions = (): AddToLearnCardActions => {
     const openIssueCredential = () => {
         checkAndPromptRecovery(() => {
             closeAllModals();
-            history.push('/issue', { entryPoint: 'dashboard' });
+            navigate('/issue', { state: { entryPoint: 'dashboard' } });
         });
     };
 

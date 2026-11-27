@@ -22,7 +22,10 @@ vi.mock('learn-card-base', async () => ({
         withContext: vi.fn(),
     }),
 }));
-vi.mock('react-router-dom', () => ({ useHistory: () => ({ push: vi.fn() }) }));
+vi.mock('react-router', async () => {
+    const { navigateFromHistory } = await import('learn-card-base/test-utils/navigateFromHistory');
+    return { useNavigate: () => navigateFromHistory({ push: vi.fn() }) };
+});
 vi.mock('learn-card-base/hooks/useOnScreen', () => ({ default: () => false }));
 // Stub the theme hook so importing the feed (via ActivityFilterPopover /
 // ActivityCredentialIcon) doesn't pull the full theme -> nav-bar module chain.

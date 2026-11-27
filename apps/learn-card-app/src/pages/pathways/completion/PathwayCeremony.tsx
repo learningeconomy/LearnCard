@@ -36,7 +36,7 @@ import React, { useState } from 'react';
 import { AppIcon } from 'learn-card-base/ui/icon';
 import { arrowForwardOutline, closeOutline, sparklesOutline } from 'learn-card-base/icons/ionicons';
 import { motion } from 'motion/react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import { pathwayStore } from '../../../stores/pathways';
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
@@ -78,7 +78,7 @@ const findDestinationProjection = (
 };
 
 const PathwayCeremony: React.FC<PathwayCeremonyProps> = ({ pathway, subPathways, completedAt }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
 
     useLockBodyScroll();
 
@@ -110,13 +110,13 @@ const PathwayCeremony: React.FC<PathwayCeremonyProps> = ({ pathway, subPathways,
 
     const handleStartNewChapter = () => {
         pathwayStore.set.dismissCelebration();
-        history.push('/pathways/onboard');
+        navigate('/pathways/onboard');
     };
 
     const handleStayHere = () => {
         pathwayStore.set.dismissCelebration();
         pathwayStore.set.setActivePathway(pathway.id);
-        history.push('/pathways/map');
+        navigate('/pathways/map');
     };
 
     return (
@@ -376,7 +376,7 @@ const PathwayCeremony: React.FC<PathwayCeremonyProps> = ({ pathway, subPathways,
                                     type="button"
                                     onClick={() => {
                                         pathwayStore.set.dismissCelebration();
-                                        history.push(
+                                        navigate(
                                             `/pathways/node/${pathway.id}/${projection.node.id}`
                                         );
                                     }}

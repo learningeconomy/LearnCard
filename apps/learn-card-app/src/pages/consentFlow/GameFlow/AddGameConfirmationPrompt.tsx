@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import queryString from 'query-string';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import useConsentFlow from '../useConsentFlow';
 
 import GamePromptHeader from './GamePromptHeader';
@@ -44,7 +44,7 @@ export const AddGameConfirmationPrompt: React.FC<AddGamePromptConfirmationPrompt
     const primaryColor = colors?.defaults?.primaryColor;
     const brandingConfig = useBrandingConfig();
 
-    const history = useHistory();
+    const navigate = useNavigate();
     const { newModal, closeAllModals } = useModal();
     const currentUser = useCurrentUser()!;
 
@@ -106,7 +106,7 @@ export const AddGameConfirmationPrompt: React.FC<AddGamePromptConfirmationPrompt
             if (returnTo.startsWith('http://') || returnTo.startsWith('https://')) {
                 const urlObj = new URL(returnTo);
                 window.location.href = urlObj.toString();
-            } else history.push(returnTo);
+            } else navigate(returnTo);
         }
     };
 

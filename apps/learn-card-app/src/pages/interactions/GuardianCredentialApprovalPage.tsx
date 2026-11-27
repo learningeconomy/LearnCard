@@ -5,7 +5,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import AccessibleCodeInput from '../login/forms/AccessibleCodeInput';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 
 import { initLearnCard } from '@learncard/init';
 import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url';
@@ -64,7 +64,7 @@ const getNetworkUrl = (): string => {
 };
 
 const GuardianCredentialApprovalPage: React.FC = () => {
-    const { token } = useParams<{ token: string }>();
+    const { token } = useParams() as { token: string };
 
     const { textLogo, brandMarkLight } = useTenantBrandingAssets();
     const { brandName } = useBrandingConfig();

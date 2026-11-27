@@ -10,10 +10,13 @@ const mocks = vi.hoisted(() => ({
     searchStringWithMatch: vi.fn(),
 }));
 
-vi.mock('react-router-dom', () => ({
-    useHistory: () => ({ replace: vi.fn() }),
-    useLocation: () => ({ pathname: '/socialbadges' }),
-}));
+vi.mock('react-router', async () => {
+    const { navigateFromHistory } = await import('learn-card-base/test-utils/navigateFromHistory');
+    return {
+        useNavigate: () => navigateFromHistory({ replace: vi.fn() }),
+        useLocation: () => ({ pathname: '/socialbadges' }),
+    };
+});
 vi.mock('learn-card-base/stores/credentialSearchStore', () => ({
     default: {
         useStore: () => ({ searchString: 'badge', isSearchActive: true }),

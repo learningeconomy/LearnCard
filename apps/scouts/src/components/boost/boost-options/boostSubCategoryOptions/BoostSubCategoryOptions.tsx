@@ -1,3 +1,4 @@
+import type { NavigateFunction } from 'react-router';
 import React, { useState } from 'react';
 import { z } from 'zod';
 import { useFlags } from 'launchdarkly-react-client-sdk';
@@ -41,7 +42,7 @@ type BoostSubCategoryOptionsProps = {
     hideBackButton: boolean;
     showCloseButton: boolean;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
-    history: any;
+    history: NavigateFunction;
 };
 
 export const BoostSubCategoryOptions: React.FC<BoostSubCategoryOptionsProps> = ({
@@ -104,7 +105,7 @@ export const BoostSubCategoryOptions: React.FC<BoostSubCategoryOptionsProps> = (
             ? `${baseLink}&otherUserProfileId=${otherUserProfileId}`
             : baseLink;
 
-        history.push(link);
+        history(link);
         closeAllModals();
     };
 

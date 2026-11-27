@@ -1,6 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { MemoryRouter, Route } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router';
+import { RouteProbe } from 'learn-card-base/test-utils/RouteProbe';
 import { describe, expect, it, vi } from 'vitest';
 
 import BuildHomePage from './BuildHomePage';
@@ -39,15 +40,17 @@ vi.mock('../DeveloperPortalContext', () => ({
 const renderPage = () =>
     render(
         <MemoryRouter initialEntries={['/app-store/developer/build']}>
-            <Route exact path="/app-store/developer/build" component={BuildHomePage} />
-            <Route
-                path="/app-store/developer/guides/:useCase"
-                render={({ match }) => <div>Guide {match.params.useCase}</div>}
-            />
-            <Route
-                path="/app-store/developer/integrations/:id/guides/:useCase"
-                render={({ match }) => <div>Resume {match.params.id}</div>}
-            />
+            <Routes>
+                <Route path="/app-store/developer/build" element={<BuildHomePage />} />
+                <Route
+                    path="/app-store/developer/guides/:useCase/*"
+                    element={<RouteProbe render={({ useCase }) => <div>Guide {useCase}</div>} />}
+                />
+                <Route
+                    path="/app-store/developer/integrations/:id/guides/:useCase/*"
+                    element={<RouteProbe render={({ id }) => <div>Resume {id}</div>} />}
+                />
+            </Routes>
         </MemoryRouter>
     );
 

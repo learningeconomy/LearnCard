@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import { m } from '../../../paraglide/messages.js';
 
@@ -22,7 +22,7 @@ export const AiSessionsSubHeader: React.FC<{
     topicTitle: string;
     handleGoBack?: () => void;
 }> = ({ isLoading, sessions, appContractUri, topicTitle, handleGoBack }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const sessionsCount = sessions?.length ?? 0;
     const { newModal } = useModal();
 
@@ -46,7 +46,7 @@ export const AiSessionsSubHeader: React.FC<{
                         onClick={() => {
                             if (handleGoBack) return handleGoBack();
 
-                            history.push('/ai/topics');
+                            navigate('/ai/topics');
                         }}
                         className="text-grayscale-50 p-0 mr-[10px]"
                     >
@@ -66,7 +66,7 @@ export const AiSessionsSubHeader: React.FC<{
                     onClick={() => {
                         if (handleGoBack) return handleGoBack();
 
-                        history.push('/ai/topics');
+                        navigate('/ai/topics');
                     }}
                     className="text-grayscale-50 p-0 mr-[10px]"
                 >
@@ -114,7 +114,7 @@ export const AiSessionsHeader: React.FC<{
     isLoading: boolean;
     handleGoBack?: () => void;
 }> = ({ topicTitle, appContractUri, isLoading, handleGoBack }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { isDesktop } = useDeviceTypeByWidth();
 
     const app = getAiPassportAppByContractUri(appContractUri);
@@ -133,7 +133,7 @@ export const AiSessionsHeader: React.FC<{
                 onClick={() => {
                     if (handleGoBack) return handleGoBack();
 
-                    history.push('/ai/topics');
+                    navigate('/ai/topics');
                 }}
                 className="text-grayscale-50 p-0 shrink-0"
             >

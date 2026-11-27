@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLocation, useHistory } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import * as m from '../../paraglide/messages.js';
 
 import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
@@ -71,7 +71,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
 
     const isLoggedIn = useIsLoggedIn();
     const location = useLocation();
-    const history = useHistory();
+    const navigate = useNavigate();
 
     // Back button defaults ON for non-top-level routes (LC-1921); an explicit
     // prop still wins. Keeps deep pages consistent without per-page wiring.
@@ -140,7 +140,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
                                     aria-label="Go back"
                                     className="p-0 mr-[10px] main-header-back-button"
                                     onClick={() => {
-                                        history.goBack();
+                                        navigate(-1);
                                     }}
                                 >
                                     <LeftArrow className={`w-7 h-auto ${headerColors}`} />

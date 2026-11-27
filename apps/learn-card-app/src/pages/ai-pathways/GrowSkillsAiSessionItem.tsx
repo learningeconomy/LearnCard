@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useModal } from 'learn-card-base';
 
 import GrowSkillsSkillChips from './GrowSkillsSkillChips';
@@ -11,7 +11,7 @@ type GrowSkillsAiSessionItemProps = {
 };
 
 const GrowSkillsAiSessionItem: React.FC<GrowSkillsAiSessionItemProps> = ({ data }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { closeModal } = useModal();
 
     const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -25,7 +25,7 @@ const GrowSkillsAiSessionItem: React.FC<GrowSkillsAiSessionItemProps> = ({ data 
         if (!topicUri || !pathwayUri) return;
 
         closeModal();
-        history.push(
+        navigate(
             `/chats?topicUri=${encodeURIComponent(topicUri)}&pathwayUri=${encodeURIComponent(
                 pathwayUri
             )}`

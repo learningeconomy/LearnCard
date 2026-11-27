@@ -37,7 +37,7 @@ import {
     trashOutline,
 } from 'learn-card-base/icons/ionicons';
 import { AnimatePresence } from 'motion/react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { v4 as uuid } from 'uuid';
 import type { AppStoreListing, Boost } from '@learncard/types';
@@ -97,7 +97,7 @@ interface QuickBuildWizardProps {
 }
 
 const QuickBuildWizard: React.FC<QuickBuildWizardProps> = ({ onExit }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const analytics = useAnalytics();
     const learnerDid = useLearnerDid();
 
@@ -266,7 +266,7 @@ const QuickBuildWizard: React.FC<QuickBuildWizardProps> = ({ onExit }) => {
             importSource: 'onboard',
         });
 
-        history.replace('/pathways/map');
+        navigate('/pathways/map', { replace: true });
     };
 
     return (

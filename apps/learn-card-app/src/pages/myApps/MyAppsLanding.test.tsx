@@ -1,15 +1,20 @@
 import { vi } from 'vitest';
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 
 const push = vi.fn();
 const replace = vi.fn();
 let mockLocation = { search: '' };
 
-vi.mock('react-router-dom', async orig => {
-    const actual = await orig<typeof import('react-router-dom')>();
-    return { ...actual, useHistory: () => ({ push, replace }), useLocation: () => mockLocation };
+vi.mock('react-router', async orig => {
+    const { navigateFromHistory } = await import('learn-card-base/test-utils/navigateFromHistory');
+    const actual = await orig<typeof import('react-router')>();
+    return {
+        ...actual,
+        useNavigate: () => navigateFromHistory({ push, replace }),
+        useLocation: () => mockLocation,
+    };
 });
 
 vi.mock('../../components/main-header/MainHeader', () => ({ default: () => null }));

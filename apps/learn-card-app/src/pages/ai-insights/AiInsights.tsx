@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ErrorBoundary } from 'react-error-boundary';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import AiInsightsTopSkills from './AiInsightsTopSkills';
 import MySkillProfile from '../ai-pathways/ai-pathways-skill-profile/MySkillProfile';
 import { AiFeatureGate } from '../../components/ai-feature-gate/AiFeatureGate';

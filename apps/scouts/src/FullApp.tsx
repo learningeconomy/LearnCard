@@ -1,5 +1,4 @@
 import React, { Suspense } from 'react';
-import { createBrowserHistory } from 'history';
 import { AppShellRouter } from 'learn-card-base/ui/app-shell/AppShellRouter';
 import { QueryClient } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
@@ -64,8 +63,6 @@ const persister = {
 
 initAppPlatform();
 
-const history = createBrowserHistory();
-
 const FullApp: React.FC = () => {
     useSQLiteInitWeb(); // initializes SQLite on web
     sqliteInit(); // initializes SQLite on native
@@ -77,7 +74,7 @@ const FullApp: React.FC = () => {
             persistOptions={{ persister, maxAge: CACHE_TTL, buster: CACHE_BUSTER }}
         >
             <div className="app-bar-top relative top-0 left-0 w-full z-[9999] bg-black" />
-            <AppShellRouter history={history}>
+            <AppShellRouter>
                 <Suspense fallback={<LoadingPageDumb />}>
                     <AppRoot>
                         <SharedI18nProvider>

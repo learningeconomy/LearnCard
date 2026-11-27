@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import * as m from '../../../paraglide/messages.js';
 import { createPortal } from 'react-dom';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { ChevronDown, Plus, Loader2, Check, Settings, LayoutDashboard } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
@@ -23,7 +23,7 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
     onSelect,
     isLoading,
 }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const location = useLocation();
     const [isOpen, setIsOpen] = useState(false);
     const [isCreating, setIsCreating] = useState(false);

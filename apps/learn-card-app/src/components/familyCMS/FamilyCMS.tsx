@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
 import { cloneDeep } from 'lodash-es';
 
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import useJoinLCNetworkModal from '../network-prompts/hooks/useJoinLCNetworkModal';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAddCredentialToWallet } from '../boost/mutations';
@@ -86,7 +86,7 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
     onFamilyCreationSuccess,
     editBoostUri,
 }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const queryClient = useQueryClient();
     const currentUser = useCurrentUser();
     const { currentLCNUser, currentLCNUserLoading } = useGetCurrentLCNUser();
@@ -476,7 +476,7 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
             handleCloseModal?.();
             onFamilyCreationSuccess?.();
             if (queryParamUri) {
-                history.replace(`/families?boostUri=${queryParamUri}&showPreview=true`);
+                navigate(`/families?boostUri=${queryParamUri}&showPreview=true`, { replace: true });
             }
 
             return;

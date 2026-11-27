@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 
 import useTheme from '../../theme/hooks/useTheme';
 import useAlignments from '../../hooks/useAlignments';

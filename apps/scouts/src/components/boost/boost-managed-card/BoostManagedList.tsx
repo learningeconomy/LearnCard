@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useMemo } from 'react';
 import { useLocale } from '../../../i18n';
 
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useLoadingLine } from '../../../stores/loadingStore';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import useBoostModal from '../hooks/useBoostModal';
@@ -48,7 +48,7 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
     enableCreateButton = false,
 }) => {
     useLocale();
-    const history = useHistory();
+    const navigate = useNavigate();
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
@@ -98,7 +98,7 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
     const noResultsLineColor =
         SubheaderContentType[credentialCategoryToSubheaderType(category)].bgColor;
 
-    const { handlePresentBoostModal } = useBoostModal(history, category);
+    const { handlePresentBoostModal } = useBoostModal(navigate, category);
 
     const credentialsBackgroundFetching = managedBoostsFetching && !managedBoostsLoading;
 

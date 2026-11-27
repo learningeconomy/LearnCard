@@ -7,9 +7,12 @@ const { newModalMock, replaceMock } = vi.hoisted(() => ({
     replaceMock: vi.fn(),
 }));
 
-vi.mock('react-router-dom', () => ({
-    useHistory: () => ({ replace: replaceMock }),
-}));
+vi.mock('react-router', async () => {
+    const { navigateFromHistory } = await import('learn-card-base/test-utils/navigateFromHistory');
+    return {
+        useNavigate: () => navigateFromHistory({ replace: replaceMock }),
+    };
+});
 
 vi.mock('react-error-boundary', () => ({
     ErrorBoundary: ({ children }: React.PropsWithChildren) => <>{children}</>,

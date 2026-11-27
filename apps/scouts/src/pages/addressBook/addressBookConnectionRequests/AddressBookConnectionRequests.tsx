@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useRouteMatch, useHistory } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 
 import AddressBookContactList from '../addressBook-contact-list/AddressBookContactList';
@@ -30,8 +30,8 @@ const AddressBookConnectionRequests: React.FC<{
     setRequestCount: React.Dispatch<React.SetStateAction<number>>;
 }> = ({ setRequestCount, activeTab }) => {
     const queryClient = useQueryClient();
-    const history = useHistory();
-    const { url } = useRouteMatch();
+    const navigate = useNavigate();
+    const { pathname: url } = useLocation();
     const query = usePathQuery();
 
     const _profileId = query.get('profileId') ?? '';

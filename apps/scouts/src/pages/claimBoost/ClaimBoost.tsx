@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useHistory } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 
 import { getVCDisplayCardVariant } from '@learncard/react';
 // import MainHeader from '../../components/main-header/MainHeader';
@@ -137,7 +137,7 @@ export const ClaimBoostModal: React.FC<{
     claimChallenge?: string;
     dismissClaimModal?: () => void;
 }> = ({ uri, claimChallenge, dismissClaimModal = () => {} }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const query = usePathQuery();
     const isLoggedIn = useIsLoggedIn();
     const { initWallet } = useWallet();
@@ -223,7 +223,7 @@ export const ClaimBoostModal: React.FC<{
 
     const handleCancel = () => {
         dismissClaimModal?.();
-        history?.push('/');
+        navigate('/');
     };
 
     const handleClaimBoost = async () => {
@@ -261,7 +261,7 @@ export const ClaimBoostModal: React.FC<{
             }
             dismissClaimModal?.();
 
-            history?.push('/');
+            navigate('/');
 
             presentToast(m['notifications.toasts.successfullyClaimed'](), {
                 type: ToastTypeEnum.Success,
@@ -409,7 +409,8 @@ export const ClaimBoostModal: React.FC<{
 };
 
 const ClaimBoost: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
+    const location = useLocation();
     const query = usePathQuery();
     const isLoggedIn = useIsLoggedIn();
 
@@ -420,7 +421,7 @@ const ClaimBoost: React.FC = () => {
 
     const boostUri = query.get('boostUri') || undefined;
     const challenge = query.get('challenge') || undefined;
-    const redirectTo = `${history.location.pathname}${history.location.search}`;
+    const redirectTo = `${location.pathname}${location.search}`;
 
     useEffect(() => {
         redirectStore.set.lcnRedirect(redirectTo);
@@ -444,12 +445,14 @@ const ClaimBoost: React.FC = () => {
     if (!isLoggedIn) {
         return (
             <ClaimBoostLoggedOutPrompt
-                handleCloseModal={() => history.push('/')}
+                handleCloseModal={() => {
+                    navigate('/');
+                }}
                 handleRedirectTo={() => {
-                    const redirectTo = `${history.location.pathname}${history.location.search}`;
+                    const redirectTo = `${location.pathname}${location.search}`;
 
                     redirectStore.set.lcnRedirect(redirectTo);
-                    history.push(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
+                    navigate(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
                 }}
             />
         );

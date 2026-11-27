@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     alertCircleOutline,
@@ -19,7 +19,7 @@ interface AppHomeProps {
 }
 
 export const AppHome: React.FC<AppHomeProps> = ({ integration, onBack, onToggleAdvanced }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const {
         useListingsForIntegration,
         useManifestVersions,
@@ -206,7 +206,7 @@ export const AppHome: React.FC<AppHomeProps> = ({ integration, onBack, onToggleA
                 action: latestListing ? (
                     <button
                         onClick={() =>
-                            history.push(
+                            navigate(
                                 `/app-store/developer/integrations/${integration.id}/apps/${latestListing.listing_id}/listing`
                             )
                         }

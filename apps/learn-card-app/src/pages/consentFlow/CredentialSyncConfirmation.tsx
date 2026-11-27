@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useImmer } from 'use-immer';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import { useModal, useToast, ToastTypeEnum, useCurrentUser, ModalTypes } from 'learn-card-base';
 import { useGuardianGate } from '../../hooks/useGuardianGate';
@@ -51,7 +51,7 @@ const CredentialSyncConfirmation: React.FC<CredentialSyncConfirmationProps> = ({
     contractDetails,
     handleAcceptContract,
 }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { newModal, closeModal } = useModal();
     const { presentToast } = useToast();
 
@@ -79,7 +79,7 @@ const CredentialSyncConfirmation: React.FC<CredentialSyncConfirmationProps> = ({
                 setSyncState(SyncStateEnum.synced);
                 setTimeout(() => {
                     closeModal();
-                    history.push('/wallet');
+                    navigate('/wallet');
                 }, 500);
             });
         } catch {

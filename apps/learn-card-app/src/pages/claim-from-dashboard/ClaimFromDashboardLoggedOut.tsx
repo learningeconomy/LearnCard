@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { AppCol, AppRow } from 'learn-card-base/ui/layout';
 
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
@@ -21,7 +21,7 @@ const ClaimFromDashboardLoggedOut: React.FC<ClaimFromDashboardLoggedOutProps> = 
     const currentUser = useCurrentUser();
     const brandingConfig = useBrandingConfig();
 
-    const history = useHistory();
+    const navigate = useNavigate();
     const location = useLocation();
 
     const { colors } = useTheme();
@@ -29,7 +29,7 @@ const ClaimFromDashboardLoggedOut: React.FC<ClaimFromDashboardLoggedOutProps> = 
 
     const redirectToLogin = () => {
         redirectStore.set.authRedirect(location.pathname + location.search);
-        history.push('/login');
+        navigate('/login');
     };
 
     const claimText = metadata?.credentialName

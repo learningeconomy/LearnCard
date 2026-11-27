@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import moment from 'moment';
 import { ErrorBoundary } from '@sentry/react';
 import { UserProfilePicture, useModal } from 'learn-card-base';
@@ -23,7 +23,7 @@ const NotificationGuardianOutcomeCard: React.FC<NotificationGuardianOutcomeCardP
     variant,
     onRead,
 }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { closeAllModals } = useModal();
     const transactionDate = notification.sent;
     const formattedDate = moment(transactionDate).format('MMM D, YYYY h:mma');
@@ -44,7 +44,7 @@ const NotificationGuardianOutcomeCard: React.FC<NotificationGuardianOutcomeCardP
             const achievementType = notification?.data?.achievementType as string | undefined;
             const route = getCategoryRouteForAchievementType(achievementType);
             closeAllModals();
-            history.push(route ?? '/wallet');
+            navigate(route ?? '/wallet');
         }
     };
 

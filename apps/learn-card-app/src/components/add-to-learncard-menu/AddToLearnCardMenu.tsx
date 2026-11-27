@@ -3,7 +3,7 @@ import { Capacitor } from '@capacitor/core';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('add-to-learn-card-menu');
 
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import * as m from '../../paraglide/messages.js';
 
@@ -67,7 +67,7 @@ export type AddToLearnCardMenuItem = {
 };
 
 export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { isDesktop } = useDeviceTypeByWidth();
     const { newModal, closeModal, closeAllModals } = useModal();
     const { gate } = useLCNGatedAction();
@@ -108,7 +108,7 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
     const handleSimpleSend = () => {
         checkAndPromptRecovery(() => {
             closeAllModals();
-            history.push('/issue');
+            navigate('/issue');
         });
     };
 

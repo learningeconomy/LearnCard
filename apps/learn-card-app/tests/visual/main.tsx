@@ -1,6 +1,6 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { initAppPlatform } from 'learn-card-base/ui/app-shell/appPlatform';
 import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';

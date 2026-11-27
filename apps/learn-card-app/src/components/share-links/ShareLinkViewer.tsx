@@ -5,7 +5,7 @@ import LearnCardBrandMark from '../../assets/images/lca-brandmark.png';
 import LearnCardTextLogo from '../svgs/LearnCardTextLogo';
 import { ShareCredentialsIllustration } from './ShareCredentialsIllustration';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useParams, useLocation, useHistory } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router';
 import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     checkmarkOutline,
@@ -90,7 +90,7 @@ const isRateLimited = (error: unknown): boolean =>
 const ShareLinkViewerContent = ({ id }: { id: string }) => {
     enterSharePrivacy();
     const location = useLocation();
-    const history = useHistory();
+    const navigate = useNavigate();
     const { hash } = location;
     const isLoggedIn = useIsLoggedIn();
     const { initWallet } = useWallet();
@@ -270,7 +270,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                     readShareAddress(id, saved.hash)
                 ) {
                     sessionStorage.removeItem(PRIVATE_RETURN_KEY);
-                    history.replace({ pathname: location.pathname, hash: saved.hash });
+                    navigate({ pathname: location.pathname, hash: saved.hash }, { replace: true });
                     return () => {
                         cancelled = true;
                     };
@@ -394,7 +394,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
             currentReady.current = undefined;
             budget?.cancel();
         };
-    }, [id, hash, attempt, submittedPasscode, history, location.pathname]);
+    }, [id, hash, attempt, submittedPasscode, navigate, location.pathname]);
 
     useEffect(() => {
         if (state !== 'ready' || !ready || !visible.current) return;
@@ -796,7 +796,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                                                 ref={destinationButtonRef}
                                                                 type="button"
                                                                 onClick={() =>
-                                                                    history.push(
+                                                                    navigate(
                                                                         '/privacy-and-data?view=saved'
                                                                     )
                                                                 }
@@ -847,7 +847,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                                                 redirectStore.set.authRedirect(
                                                                     location.pathname
                                                                 );
-                                                                history.push('/login');
+                                                                navigate('/login');
                                                             }}
                                                             className="block w-full rounded-[20px] bg-grayscale-900 px-5 py-3 text-center text-sm font-medium text-white transition-opacity hover:opacity-90"
                                                         >
@@ -1009,7 +1009,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
 // Discard private link state and in-flight save results when the route or
 // active account changes, including organization/profile switches.
 const ShareLinkViewer = () => {
-    const { id } = useParams<{ id: string }>();
+    const { id } = useParams() as { id: string };
     const isLoggedIn = useIsLoggedIn();
     const wallet = walletStore.use.wallet();
     const switchedDid = switchedProfileStore.use.switchedDid();

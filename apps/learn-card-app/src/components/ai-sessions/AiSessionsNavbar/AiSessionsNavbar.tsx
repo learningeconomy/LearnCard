@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 
 import { m } from '../../../paraglide/messages.js';
 
@@ -26,7 +26,7 @@ import keyboardStore from 'learn-card-base/stores/keyboardStore';
 import { AppFooter } from 'learn-card-base/ui/chrome';
 
 const AiSessionsNavbar: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const location = useLocation();
     const isLoggedIn = useIsLoggedIn();
     const safeArea = useSafeArea();
@@ -87,7 +87,7 @@ const AiSessionsNavbar: React.FC = () => {
                     </div>
 
                     <button
-                        onClick={() => history.push('/ai/topics')}
+                        onClick={() => navigate('/ai/topics')}
                         className="flex flex-col items-center"
                     >
                         <BlueMagicWand

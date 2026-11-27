@@ -1,15 +1,15 @@
 import React from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import SkillsInsightIcon from 'learn-card-base/svgs/SkillsInsightIcon';
 import * as m from '../../paraglide/messages.js';
 import { TransP } from '../../i18n/TransP';
 
 const SkillsInsightCard: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
 
     const handleExploreClick = () => {
-        history.push('/ai/insights');
+        navigate('/ai/insights');
     };
 
     return (

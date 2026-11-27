@@ -34,11 +34,14 @@ vi.mock('learn-card-base/helpers/share-links', () => ({
     decryptSharePayload: mocks.decrypt,
     validateShareManifest: () => ({ ok: true, manifest: mocks.manifest }),
 }));
-vi.mock('react-router-dom', () => ({
-    useParams: () => ({ id: 'id' }),
-    useLocation: () => ({ hash: '#PRIVATE', pathname: '/share/id' }),
-    useHistory: () => mocks.history,
-}));
+vi.mock('react-router', async () => {
+    const { navigateFromHistory } = await import('learn-card-base/test-utils/navigateFromHistory');
+    return {
+        useParams: () => ({ id: 'id' }),
+        useLocation: () => ({ hash: '#PRIVATE', pathname: '/share/id' }),
+        useNavigate: () => navigateFromHistory(mocks.history),
+    };
+});
 vi.mock('./ShareCredentialsIllustration', () => ({ ShareCredentialsIllustration: () => null }));
 vi.mock('./sharePrivacy', () => ({ enterSharePrivacy: mocks.privacy }));
 vi.mock('./shareLinkFlow', () => ({

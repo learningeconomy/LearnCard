@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useRouteMatch } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 
 import AddressBookContactList from '../addressBook-contact-list/AddressBookContactList';
@@ -24,7 +24,7 @@ const AddressBookPendingConnections: React.FC<{
     setConnectionCount: React.Dispatch<React.SetStateAction<number>>;
 }> = ({ activeTab, connectionCount, setConnectionCount }) => {
     const queryClient = useQueryClient();
-    const { url } = useRouteMatch();
+    const { pathname: url } = useLocation();
 
     const { data, isLoading, error, refetch } = useGetPendingConnections();
     const { mutate } = useCancelConnectionRequestMutation();

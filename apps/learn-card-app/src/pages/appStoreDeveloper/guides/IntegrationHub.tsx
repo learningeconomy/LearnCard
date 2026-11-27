@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useHistory, Redirect } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import {
     Award,
     Layout,
@@ -131,7 +131,7 @@ const UseCaseCard: React.FC<UseCaseCardProps> = ({
 };
 
 const IntegrationHub: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const [newProjectName, setNewProjectName] = useState('');
 
     // Use context for all state management
@@ -466,7 +466,7 @@ const IntegrationHub: React.FC = () => {
                                 </button>
 
                                 <button
-                                    onClick={() => history.push('/app-store/developer')}
+                                    onClick={() => navigate('/app-store/developer')}
                                     className="flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors group text-left"
                                 >
                                     <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-xs">

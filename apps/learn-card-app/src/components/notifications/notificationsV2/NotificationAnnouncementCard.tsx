@@ -1,5 +1,5 @@
 import React, { useId, useRef, useState } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     archiveOutline,
@@ -26,7 +26,7 @@ type Action = 'read' | 'archive' | 'restore';
 export const NotificationAnnouncementCard: React.FC<Props> = ({ notification, className }) => {
     const titleId = useId();
     const destination = resolveNotificationRoute(notification);
-    const history = useHistory();
+    const navigate = useNavigate();
     const { closeAllModals } = useModal();
     const { mutateAsync: updateNotification } = useUpdateNotification();
     const { presentToast } = useToast();
@@ -66,7 +66,7 @@ export const NotificationAnnouncementCard: React.FC<Props> = ({ notification, cl
     const open = (): void => {
         if (!isRead) void update('read');
         closeAllModals();
-        history.push(destination);
+        navigate(destination);
     };
 
     const archiveAction = notification.archived ? 'restore' : 'archive';

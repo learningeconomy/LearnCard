@@ -1,10 +1,13 @@
 import React from 'react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render as rtlRender, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { VC, VP } from '@learncard/types';
 import { createDeferred } from 'learn-card-base/helpers/deferred';
 
 import ExchangeAcceptCredentials from './ExchangeAcceptCredentials';
+
+const render = (ui: React.ReactElement) => rtlRender(ui, { wrapper: MemoryRouter });
 
 const mocks = vi.hoisted(() => ({
     initWallet: vi.fn(),

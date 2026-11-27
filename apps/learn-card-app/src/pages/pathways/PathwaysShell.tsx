@@ -9,7 +9,7 @@
 import React, { Suspense } from 'react';
 import * as m from '../../paraglide/messages.js';
 
-import { Redirect, Route, Switch, useRouteMatch } from 'react-router-dom';
+import { Navigate, Route, Routes, useMatch } from 'react-router';
 import { ErrorBoundary } from 'react-error-boundary';
 import { lazyWithRetry } from 'learn-card-base';
 
@@ -56,7 +56,7 @@ const PathwaysShell: React.FC = () => {
 
     // Whether we're on the cold-start discovery surface. Used to
     // suppress the shell header — see the JSX block below for why.
-    const isOnOnboard = !!useRouteMatch('/pathways/onboard');
+    const isOnOnboard = !!useMatch('/pathways/onboard/*');
 
     // Emit the daily cost snapshot once per UTC day.
     useCostSnapshot();
@@ -127,31 +127,30 @@ const PathwaysShell: React.FC = () => {
 
                         <div className="flex-1 min-h-0 overflow-y-auto">
                             <Suspense fallback={<ModeFallback />}>
-                                <Switch>
-                                    <Route exact path="/pathways">
-                                        {/*
-                                            Land returning learners on
-                                            Map, not Today. Map is the
-                                            spatial home — it shows the
-                                            whole journey at a glance,
-                                            which is the orienting view
-                                            a learner re-entering from
-                                            the side menu actually
-                                            wants. Today is a great
-                                            focus surface but doesn't
-                                            answer "where am I in the
-                                            bigger picture" on first
-                                            sight. Mirrors the
-                                            post-import landing target
-                                            (`history.replace('/pathways/map')`)
-                                            used by `DiscoverStart`.
-                                        */}
-                                        {activePathway ? (
-                                            <Redirect to="/pathways/map" />
-                                        ) : (
-                                            <Redirect to="/pathways/onboard" />
-                                        )}
-                                    </Route>
+                                <Routes>
+                                    {/*
+                                        Land returning learners on Map, not
+                                        Today. Map is the spatial home — it
+                                        shows the whole journey at a glance,
+                                        which is the orienting view a learner
+                                        re-entering from the side menu
+                                        actually wants. Today is a great focus
+                                        surface but doesn't answer "where am I
+                                        in the bigger picture" on first sight.
+                                        Mirrors the post-import landing target
+                                        (`navigate('/pathways/map', { replace: true })`)
+                                        used by `DiscoverStart`.
+                                    */}
+                                    <Route
+                                        index
+                                        element={
+                                            activePathway ? (
+                                                <Navigate replace to="/pathways/map" />
+                                            ) : (
+                                                <Navigate replace to="/pathways/onboard" />
+                                            )
+                                        }
+                                    />
 
                                     {/*
                                         Today / Map / What-if have nothing
@@ -170,48 +169,46 @@ const PathwaysShell: React.FC = () => {
                                         on their intended tab automatically
                                         once a pathway is loaded.
                                     */}
-                                    <Route exact path="/pathways/today">
-                                        {activePathway ? (
-                                            <TodayMode />
-                                        ) : (
-                                            <Redirect to="/pathways/onboard" />
-                                        )}
-                                    </Route>
-                                    <Route exact path="/pathways/map">
-                                        {activePathway ? (
-                                            <MapMode />
-                                        ) : (
-                                            <Redirect to="/pathways/onboard" />
-                                        )}
-                                    </Route>
-                                    <Route exact path="/pathways/what-if">
-                                        {activePathway ? (
-                                            <WhatIfMode />
-                                        ) : (
-                                            <Redirect to="/pathways/onboard" />
-                                        )}
-                                    </Route>
-                                    <Route exact path="/pathways/build" component={BuildMode} />
                                     <Route
-                                        exact
-                                        path="/pathways/onboard"
-                                        component={OnboardRoute}
+                                        path="today"
+                                        element={
+                                            activePathway ? (
+                                                <TodayMode />
+                                            ) : (
+                                                <Navigate replace to="/pathways/onboard" />
+                                            )
+                                        }
                                     />
                                     <Route
-                                        exact
-                                        path="/pathways/proposals"
-                                        component={ProposalsRoute}
+                                        path="map"
+                                        element={
+                                            activePathway ? (
+                                                <MapMode />
+                                            ) : (
+                                                <Navigate replace to="/pathways/onboard" />
+                                            )
+                                        }
                                     />
                                     <Route
-                                        exact
-                                        path="/pathways/node/:pathwayId/:nodeId"
-                                        component={NodeDetail}
+                                        path="what-if"
+                                        element={
+                                            activePathway ? (
+                                                <WhatIfMode />
+                                            ) : (
+                                                <Navigate replace to="/pathways/onboard" />
+                                            )
+                                        }
+                                    />
+                                    <Route path="build/*" element={<BuildMode />} />
+                                    <Route path="onboard/*" element={<OnboardRoute />} />
+                                    <Route path="proposals/*" element={<ProposalsRoute />} />
+                                    <Route
+                                        path="node/:pathwayId/:nodeId/*"
+                                        element={<NodeDetail />}
                                     />
 
-                                    <Route>
-                                        <Redirect to="/pathways" />
-                                    </Route>
-                                </Switch>
+                                    <Route path="*" element={<Navigate replace to="/pathways" />} />
+                                </Routes>
                             </Suspense>
                         </div>
                     </div>

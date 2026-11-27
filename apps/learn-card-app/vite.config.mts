@@ -391,7 +391,6 @@ export default defineConfig(async ({ mode, command }) => {
                 'buffer',
                 'process',
                 'react-router',
-                'react-router-dom',
                 'crypto-browserify',
                 '@learncard/helpers > @noble/hashes/sha2',
                 '@learncard/helpers > @sd-jwt/decode',
@@ -485,8 +484,6 @@ export default defineConfig(async ({ mode, command }) => {
                 'react',
                 'react-dom',
                 'react-router',
-                'react-router-dom',
-                'history',
                 // Required: learn-card-base is aliased to raw TS source and imports
                 // react-query with bare specifiers. Without this pin the prod build
                 // resolves two react-query instances, splitting the QueryClient React

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { RouteComponentProps } from 'react-router-dom';
+import type { NavigateFunction } from 'react-router';
 import { createPortal } from 'react-dom';
 import { getLogger } from 'learn-card-base';
 import * as m from '../../../../paraglide/messages.js';
@@ -55,7 +55,7 @@ const ShortBoostUserOptions: React.FC<{
     boost: any;
     boostUri: string;
     profileId: string;
-    history: RouteComponentProps['history'];
+    history: NavigateFunction;
     handleEditOnClick: () => void;
     onSuccess: () => void;
     overrideClosingAllModals?: boolean;

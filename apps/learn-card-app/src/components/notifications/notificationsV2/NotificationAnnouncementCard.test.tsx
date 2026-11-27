@@ -11,7 +11,10 @@ const mocks = vi.hoisted(() => ({
     close: vi.fn(),
     push: vi.fn(),
 }));
-vi.mock('react-router-dom', () => ({ useHistory: () => ({ push: mocks.push }) }));
+vi.mock('react-router', async () => {
+    const { navigateFromHistory } = await import('learn-card-base/test-utils/navigateFromHistory');
+    return { useNavigate: () => navigateFromHistory({ push: mocks.push }) };
+});
 vi.mock('learn-card-base', async () => ({
     ...(await import('learn-card-base/helpers/pushNotificationHelpers')),
     useModal: () => ({ closeAllModals: mocks.close }),

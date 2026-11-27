@@ -1,5 +1,5 @@
 import React from 'react';
-import { Route, Switch, useLocation } from 'react-router-dom';
+import { Route, Routes, useLocation, useParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import type { CampaignApi } from './types';
 import { CampaignEditor } from './CampaignEditor';
@@ -12,6 +12,11 @@ export const CampaignNotFound = () => (
         <p className="text-sm text-grayscale-600">This page is unavailable.</p>
     </div>
 );
+
+const CampaignEditorRoute: React.FC<{ api: CampaignApi }> = ({ api }) => {
+    const { id = '' } = useParams();
+    return <CampaignEditor key={`campaign:${id}`} api={api} id={id} />;
+};
 
 /** Nothing below the admin gate mounts or fetches until the server grants access. */
 export const CampaignRoutes: React.FC<{ api: CampaignApi }> = ({ api }) => {
@@ -42,11 +47,11 @@ export const CampaignRoutes: React.FC<{ api: CampaignApi }> = ({ api }) => {
         );
     if (!access.data) return <CampaignNotFound />;
     return (
-        <Switch>
+        // Mounted at `/admin/campaigns/*`: paths are relative to it.
+        <Routes>
             <Route
-                exact
-                path="/admin/campaigns"
-                render={() =>
+                index
+                element={
                     creating ? (
                         <CampaignEditor key="create-campaign" api={api} />
                     ) : (
@@ -54,18 +59,8 @@ export const CampaignRoutes: React.FC<{ api: CampaignApi }> = ({ api }) => {
                     )
                 }
             />
-            <Route
-                exact
-                path="/admin/campaigns/:id"
-                render={({ match }) => (
-                    <CampaignEditor
-                        key={`campaign:${match.params.id}`}
-                        api={api}
-                        id={match.params.id}
-                    />
-                )}
-            />
-            <Route component={CampaignNotFound} />
-        </Switch>
+            <Route path=":id" element={<CampaignEditorRoute api={api} />} />
+            <Route path="*" element={<CampaignNotFound />} />
+        </Routes>
     );
 };

@@ -36,10 +36,13 @@ vi.mock('learn-card-base', () => ({
     ModalTypes: { Center: 'center', Right: 'right', FullScreen: 'fullscreen' },
     ToastTypeEnum: { Error: 'error', Success: 'success' },
 }));
-vi.mock('react-router-dom', () => ({
-    useHistory: () => ({}),
-    useLocation: () => ({ search: '' }),
-}));
+vi.mock('react-router', async () => {
+    const { navigateFromHistory } = await import('learn-card-base/test-utils/navigateFromHistory');
+    return {
+        useNavigate: () => navigateFromHistory({}),
+        useLocation: () => ({ search: '' }),
+    };
+});
 vi.mock('learn-card-base/config/TenantConfigProvider', () => ({
     useBrandingConfig: () => ({ name: 'LearnCard' }),
 }));

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import ProfilePicture from 'learn-card-base/components/profilePicture/ProfilePicture';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
@@ -10,7 +10,7 @@ import QrCodeUserCardModal from '../qrcode-user-card/QRCodeUserCard';
 
 export const QRCodeScannerButton: React.FC<{ branding: BrandingEnum }> = ({ branding }) => {
     const currentUser = useCurrentUser();
-    const history = useHistory();
+    const navigate = useNavigate();
 
     const { newModal, closeModalById } = useModal({
         desktop: ModalTypes.FullScreen,
@@ -31,7 +31,7 @@ export const QRCodeScannerButton: React.FC<{ branding: BrandingEnum }> = ({ bran
         const cardId = newModal(
             <QrCodeUserCardModal
                 branding={branding}
-                history={history}
+                history={navigate}
                 handleQRCodeCardModal={() => closeModalById(cardId)}
                 qrOnly
             />,

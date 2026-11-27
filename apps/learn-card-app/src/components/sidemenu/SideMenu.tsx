@@ -3,7 +3,7 @@ import * as Sentry from '@sentry/browser';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { Capacitor } from '@capacitor/core';
 
-import { useLocation, useHistory } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { useIsLoggedIn } from 'learn-card-base/stores/currentUserStore';
 import { useDeviceTypeByWidth } from 'learn-card-base/hooks/useDeviceTypeByWidth';
 import useAiSession from '../../hooks/useAiSession';
@@ -47,7 +47,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
     const colors = getColorSet(ColorSetEnum.sideMenu);
     const resolvedAssets = useTenantBrandingAssets();
     const { isMobile } = useDeviceTypeByWidth();
-    const history = useHistory();
+    const navigate = useNavigate();
     const location = useLocation();
     const isLoggedIn = useIsLoggedIn();
     const { page: setCurrentScreen } = useAnalytics();
@@ -105,7 +105,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
         const { prompted } = await gate();
         if (prompted) return;
 
-        checkAndPromptRecovery(() => history.push('/issue'));
+        checkAndPromptRecovery(() => navigate('/issue'));
     };
 
     return (

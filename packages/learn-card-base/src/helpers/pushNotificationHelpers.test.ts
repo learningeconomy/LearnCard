@@ -166,7 +166,7 @@ describe('getNotificationToastCopy — CREDENTIAL_REFRESHED', () => {
 
 describe('handlePushNotificationActionPerformed — CREDENTIAL_REFRESHED', () => {
     it('pushes the encoded refresh route for a well-formed payload', () => {
-        const history = { push: vi.fn() };
+        const navigate = vi.fn();
 
         handlePushNotificationActionPerformed(
             {
@@ -177,23 +177,23 @@ describe('handlePushNotificationActionPerformed — CREDENTIAL_REFRESHED', () =>
                     },
                 },
             } as never,
-            history as never
+            navigate
         );
 
-        expect(history.push).toHaveBeenCalledWith(
+        expect(navigate).toHaveBeenCalledWith(
             `/notifications?refreshId=${encodeURIComponent('refresh-9?&')}&refresh=true`
         );
     });
 
     it('does nothing for a malformed push payload', () => {
-        const history = { push: vi.fn() };
+        const navigate = vi.fn();
 
         handlePushNotificationActionPerformed(
             { actionId: 'tap', notification: { data: { raw: '{not-json' } } } as never,
-            history as never
+            navigate
         );
 
-        expect(history.push).not.toHaveBeenCalled();
+        expect(navigate).not.toHaveBeenCalled();
     });
 });
 

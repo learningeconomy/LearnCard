@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, useHistory } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { Capacitor } from '@capacitor/core';
 import * as Sentry from '@sentry/browser';
@@ -34,7 +34,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum }> = ({ branding = BrandingEnu
         mobile: ModalTypes.FullScreen,
         desktop: ModalTypes.FullScreen,
     });
-    const history = useHistory();
+    const navigate = useNavigate();
     const location = useLocation();
     const isLoggedIn = useIsLoggedIn();
     const { setCurrentScreen } = useFirebaseAnalytics();
@@ -127,7 +127,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum }> = ({ branding = BrandingEnu
                     >
                         <div className="mt-4 flex w-full flex-col items-center justify-center">
                             <button
-                                onClick={() => history.push('/campfire')}
+                                onClick={() => navigate('/campfire')}
                                 className="w-full flex items-center justify-center"
                             >
                                 <div className="max-w-[90%] flex items-center justify-center ml-[25px]">

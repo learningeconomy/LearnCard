@@ -1,7 +1,7 @@
 import * as m from '../../../paraglide/messages.js';
 // oxlint-disable-next-line no-unused-vars
 import React, { useEffect, useRef, useState } from 'react';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import BoostCMSHeader from './BoostCMSHeader/BoostCMSHeader';
@@ -115,7 +115,7 @@ const BoostCMS: React.FC<{
         getBoostPresetLocalization(flags?.localizeBoostTemplateContent)
     ).current;
     const locale = useLocale();
-    const history = useHistory();
+    const navigate = useNavigate();
     const location = useLocation();
     const query = usePathQuery();
     const { initWallet } = useWallet();
@@ -409,7 +409,7 @@ const BoostCMS: React.FC<{
         if (_otherUserProfileId) {
             link = `${link}&otherUserProfileId=${_otherUserProfileId}`;
         }
-        history.replace(link);
+        navigate(link, { replace: true });
     };
 
     const handleNextStep = () => {
@@ -512,8 +512,9 @@ const BoostCMS: React.FC<{
                 });
 
                 if (!handleCloseModal) {
-                    history.replace(
-                        `/${BOOST_CATEGORY_TO_WALLET_ROUTE?.[state?.basicInfo?.type]}?managed=true`
+                    navigate(
+                        `/${BOOST_CATEGORY_TO_WALLET_ROUTE?.[state?.basicInfo?.type]}?managed=true`,
+                        { replace: true }
                     );
                 } else {
                     handleCloseModal?.();
@@ -675,7 +676,7 @@ const BoostCMS: React.FC<{
                         hasDismissButton: true,
                     });
                     if (!handleCloseModal) {
-                        history.goBack();
+                        navigate(-1);
                     }
                     handleCloseModal?.();
                 }
@@ -689,7 +690,7 @@ const BoostCMS: React.FC<{
                         hasDismissButton: true,
                     });
                     if (!handleCloseModal) {
-                        history.goBack();
+                        navigate(-1);
                     }
                     handleCloseModal?.();
                 }

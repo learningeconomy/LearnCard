@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import { m } from '../../../paraglide/messages.js';
 
@@ -18,7 +18,7 @@ import { ChatBotQuestionsEnum } from '../../../components/new-ai-session/NewAiSe
 
 export const AiInsightsPromptBox: React.FC = () => {
     const { closeModal } = useModal();
-    const history = useHistory();
+    const navigate = useNavigate();
     const { gate } = useLCNGatedAction();
 
     const setMode = chatBotStore.set.setMode;
@@ -69,9 +69,7 @@ export const AiInsightsPromptBox: React.FC = () => {
         ]);
         setInternalAiChatBot(true);
         chatBotStore.set.setMode(AiSessionMode.insights);
-        history.push(
-            `/ai/topics?shortCircuitStep=${NewAiSessionStepEnum.newTopic}&selectedAppId=${1}`
-        );
+        navigate(`/ai/topics?shortCircuitStep=${NewAiSessionStepEnum.newTopic}&selectedAppId=${1}`);
     };
 
     return (

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 import { AppCol } from 'learn-card-base/ui/layout';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { getLogger, useWallet } from 'learn-card-base';
 import MainHeader from '../../components/main-header/MainHeader';
 import NotificationsListView from '../../components/notifications/NotificationsListView';
@@ -20,7 +20,7 @@ const NotificationsPage: React.FC = () => {
     const [tab, setTab] = useState('active');
 
     const onHeaderScroll = useHeaderScrollSync();
-    const history = useHistory();
+    const navigate = useNavigate();
     const location = useLocation();
     const { initWallet } = useWallet();
     const { forceRefresh } = useForceRefreshLearnCloudCredential();
@@ -40,10 +40,13 @@ const NotificationsPage: React.FC = () => {
         params.delete('refresh');
         params.delete('refreshId');
 
-        history.replace({
-            ...location,
-            search: params.toString() ? `?${params.toString()}` : '',
-        });
+        navigate(
+            {
+                ...location,
+                search: params.toString() ? `?${params.toString()}` : '',
+            },
+            { replace: true }
+        );
 
         void (async () => {
             try {
@@ -55,7 +58,7 @@ const NotificationsPage: React.FC = () => {
                 log.error('refresh.deep-link.failed', error);
             }
         })();
-    }, [forceRefresh, history, initWallet, location]);
+    }, [forceRefresh, navigate, initWallet, location]);
 
     return (
         <AppPage className="bg-white h-full">

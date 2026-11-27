@@ -9,10 +9,13 @@ const mocks = vi.hoisted(() => ({
     send: vi.fn(),
     resilience: { resetRun: vi.fn(), callbacks: {}, pendingPrompt: null, resolvePrompt: vi.fn() },
 }));
-vi.mock('react-router-dom', () => ({
-    useHistory: () => ({ push: vi.fn() }),
-    useLocation: () => ({ search: '?request=https://verifier.example/request' }),
-}));
+vi.mock('react-router', async () => {
+    const { navigateFromHistory } = await import('learn-card-base/test-utils/navigateFromHistory');
+    return {
+        useNavigate: () => navigateFromHistory({ push: vi.fn() }),
+        useLocation: () => ({ search: '?request=https://verifier.example/request' }),
+    };
+});
 vi.mock('learn-card-base', () => ({
     getLogger: () => ({ error: vi.fn(), warn: vi.fn() }),
     useIsLoggedIn: () => true,

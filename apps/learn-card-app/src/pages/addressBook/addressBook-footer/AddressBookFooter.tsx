@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { Capacitor } from '@capacitor/core';
 
 import { useJoinLCNetworkModal } from '../../../components/network-prompts/hooks/useJoinLCNetworkModal';
@@ -19,7 +19,7 @@ export const AddressBookFooter: React.FC<{
     showSearch?: boolean;
     handleShowSearch?: () => void;
 }> = ({ showSearch, handleShowSearch }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const bottomBarRef = useRef<HTMLDivElement>(null);
 
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
@@ -69,7 +69,7 @@ export const AddressBookFooter: React.FC<{
                                     const { prompted } = await gate();
                                     if (prompted) return;
 
-                                    history.push('/issue');
+                                    navigate('/issue');
                                 }}
                                 className="bg-gradient-rainbow text-lg text-white flex items-center justify-center font-semibold py-[5px] rounded-full w-1/2 border-solid border-white border-2 px-[18px] shadow-soft-bottom mb-[10px]"
                             >

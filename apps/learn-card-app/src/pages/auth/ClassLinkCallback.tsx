@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import {
     usePathQuery,
     useToast,
@@ -55,7 +55,7 @@ const shouldRestartLaunch = (code: string | null): boolean => {
 
 const ClassLinkSignInCallback: React.FC = () => {
     const query = usePathQuery();
-    const history = useHistory();
+    const navigate = useNavigate();
     const { logout: coordinatorLogout } = useAuthCoordinator();
     const { signInWithCustomFirebaseToken } = useFirebase();
     const { mutateAsync: exchangeCode } = useClassLinkExchangeCode();
@@ -87,12 +87,12 @@ const ClassLinkSignInCallback: React.FC = () => {
                         hasDismissButton: true,
                     }
                 );
-                history.replace('/login');
+                navigate('/login', { replace: true });
                 return;
             }
 
             if (!state && shouldRestartLaunch(code)) {
-                history.replace('/auth/classlink/start');
+                navigate('/auth/classlink/start', { replace: true });
                 return;
             }
 
@@ -101,13 +101,13 @@ const ClassLinkSignInCallback: React.FC = () => {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
-                history.replace('/login');
+                navigate('/login', { replace: true });
                 return;
             }
 
             const attempt = await consumeClassLinkAttempt(state);
             if (!attempt && shouldRestartLaunch(code)) {
-                history.replace('/auth/classlink/start');
+                navigate('/auth/classlink/start', { replace: true });
                 return;
             }
             if (!attempt) {
@@ -115,7 +115,7 @@ const ClassLinkSignInCallback: React.FC = () => {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
-                history.replace('/login');
+                navigate('/login', { replace: true });
                 return;
             }
 
@@ -148,7 +148,7 @@ const ClassLinkSignInCallback: React.FC = () => {
                             : undefined;
                     if (requestRedirect && destination)
                         redirectStore.set.clearRequestRedirect(requestRedirect.requestId);
-                    history.replace(destination || attempt.redirectTo || '/wallet');
+                    navigate(destination || attempt.redirectTo || '/wallet', { replace: true });
                 } else {
                     throw new Error('No token returned');
                 }
@@ -175,14 +175,14 @@ const ClassLinkSignInCallback: React.FC = () => {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
-                history.replace('/login');
+                navigate('/login', { replace: true });
             }
         };
 
         void processCallback().finally(release);
     }, [
         query,
-        history,
+        navigate,
         coordinatorLogout,
         signInWithCustomFirebaseToken,
         exchangeCode,

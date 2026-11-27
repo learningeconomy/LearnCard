@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import useBoostMenu, { BoostMenuType } from '../components/boost/hooks/useBoostMenu';
 import useShortBoost from '../components/boost/hooks/useShortBoost';
@@ -46,7 +46,7 @@ export const useManagedBoost = (
         issuerProfileOverride?: LCNProfile;
     }
 ) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const currentUser = useCurrentUser();
 
     const { newModal, closeModal, closeAllModals } = useModal({
@@ -165,16 +165,16 @@ export const useManagedBoost = (
 
     const handleEditOnClick = () => {
         closeModal();
-        history.push(`${link}${linkQueryParams}`);
+        navigate(`${link}${linkQueryParams}`);
     };
 
     const handleIssueOnClick = () => {
         closeModal();
-        history.push(`${link}${linkQueryParams}&issue=true`);
+        navigate(`${link}${linkQueryParams}&issue=true`);
     };
 
     const { handlePresentShortBoostModal } = useShortBoost(
-        history,
+        navigate,
         boostVC,
         boost?.uri,
         myProfile?.profileId,

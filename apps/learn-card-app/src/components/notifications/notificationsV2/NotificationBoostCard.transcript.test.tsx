@@ -48,7 +48,10 @@ mocks.wallet = {
     index: { LearnCloud: { get: mocks.indexGet } },
 };
 
-vi.mock('react-router-dom', () => ({ useHistory: () => ({ replace: mocks.replace }) }));
+vi.mock('react-router', async () => {
+    const { navigateFromHistory } = await import('learn-card-base/test-utils/navigateFromHistory');
+    return { useNavigate: () => navigateFromHistory({ replace: mocks.replace }) };
+});
 vi.mock('@tanstack/react-query', () => ({
     useQueryClient: () => ({ invalidateQueries: mocks.invalidateQueries }),
 }));

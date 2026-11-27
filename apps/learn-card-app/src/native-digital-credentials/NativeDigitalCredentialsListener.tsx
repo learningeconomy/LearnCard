@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { Capacitor } from '@capacitor/core';
 import { App } from '@capacitor/app';
 import { useQueryClient } from '@tanstack/react-query';
@@ -21,7 +21,11 @@ import * as m from '../paraglide/messages.js';
 
 /** Account-aware registry synchronization plus native pending-intent routing. */
 export default function NativeDigitalCredentialsListener() {
-    const history = useHistory();
+    const navigate = useNavigate();
+    // The effect below reads the current pathname without re-subscribing on every navigation.
+    const location = useLocation();
+    const locationRef = useRef(location);
+    locationRef.current = location;
     const loggedIn = useIsLoggedIn();
     const hydrated = useHasCurrentUserHydrated();
     const { state } = useAppAuth();
@@ -98,8 +102,8 @@ export default function NativeDigitalCredentialsListener() {
                 }
                 if (stopped) return;
                 if (pending || isProvider) {
-                    if (history.location.pathname !== NATIVE_CREDENTIAL_PATH)
-                        history.replace(NATIVE_CREDENTIAL_PATH);
+                    if (locationRef.current.pathname !== NATIVE_CREDENTIAL_PATH)
+                        navigate(NATIVE_CREDENTIAL_PATH, { replace: true });
                     return;
                 }
                 if (!loggedIn || !isHistoryAccountEligible()) return;
@@ -184,6 +188,6 @@ export default function NativeDigitalCredentialsListener() {
             unsubscribeProfile();
             void foreground.then(listener => listener.remove());
         };
-    }, [history, loggedIn, hydrated, revision, queryClient, state.status]);
+    }, [navigate, loggedIn, hydrated, revision, queryClient, state.status]);
     return null;
 }

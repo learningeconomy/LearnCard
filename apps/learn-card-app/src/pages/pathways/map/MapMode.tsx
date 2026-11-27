@@ -22,7 +22,7 @@ import {
     type Node as RfNode,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 
 import { pathwayStore } from '../../../stores/pathways';
 import { seedChosenRoute } from '../core/chosenRoute';
@@ -186,8 +186,8 @@ interface MapModeLocationState {
 const MapModeInner: React.FC = () => {
     const activePathway = pathwayStore.use.activePathway();
     const allPathways = pathwayStore.use.pathways();
-    const history = useHistory();
-    const location = useLocation<MapModeLocationState | undefined>();
+    const navigate = useNavigate();
+    const location = useLocation();
     const isDesktop = useIsDesktop();
 
     // Sub-pathway context — if the active pathway is embedded inside
@@ -590,12 +590,14 @@ const MapModeInner: React.FC = () => {
         (nodeId: string) => {
             if (!activePathway) return;
 
-            history.push(`/pathways/node/${activePathway.id}/${nodeId}`, {
-                returnTo: '/pathways/map',
-                restoreFocusId: nodeId,
-            } satisfies NodeDetailLocationState);
+            navigate(`/pathways/node/${activePathway.id}/${nodeId}`, {
+                state: {
+                    returnTo: '/pathways/map',
+                    restoreFocusId: nodeId,
+                } satisfies NodeDetailLocationState,
+            });
         },
-        [activePathway, history]
+        [activePathway, navigate]
     );
 
     // ------------------------------------------------------------------

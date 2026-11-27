@@ -5,7 +5,7 @@ import {
     Token,
     ActionPerformed,
 } from '@capacitor/push-notifications';
-import { RouteComponentProps } from 'react-router-dom';
+import type { NavigateFunction } from 'react-router';
 import { handlePushNotificationActionPerformed } from 'learn-card-base/helpers/pushNotificationHelpers';
 
 import authStore from 'learn-card-base/stores/authStore';
@@ -104,7 +104,7 @@ export const pushUtilities = {
 
     addBackgroundPushNotificationListeners: async (
         initWallet: any,
-        history: RouteComponentProps['history'],
+        navigate: NavigateFunction,
         syncToken: boolean,
         handleNotificationRegistrationError?: (text: string) => void,
         handleForegroundNotification?: (payload: PushNotificationSchema) => void
@@ -155,7 +155,7 @@ export const pushUtilities = {
             'pushNotificationActionPerformed',
             (payload: ActionPerformed) => {
                 log.info('Push notification action performed:', payload);
-                handlePushNotificationActionPerformed(payload, history);
+                handlePushNotificationActionPerformed(payload, navigate);
             }
         );
 

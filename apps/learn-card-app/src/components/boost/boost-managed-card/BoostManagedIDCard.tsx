@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import moment from 'moment';
 
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { ErrorBoundary } from 'react-error-boundary';
 
 import { VC, Boost } from '@learncard/types';
@@ -90,7 +90,7 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
 
     const { data: recipientCount } = useCountBoostRecipients(boost?.uri);
 
-    const history = useHistory();
+    const navigate = useNavigate();
     const cred = unwrapBoostCredential(boostVC);
     const credImg = cred?.credentialSubject?.image;
     const [bodyComponent, setBodyComponent] = useState<React.ReactNode>();
@@ -116,7 +116,7 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
     const showSkeleton = loading || resolvedBoostLoading || recipientsLoading || myProfileLoading;
 
     const { handlePresentShortBoostModal } = useShortBoost(
-        history,
+        navigate,
         boostVC,
         boost?.uri,
         myProfile?.profileId,
@@ -129,7 +129,7 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
     };
 
     const [issueLoading, setIssueLoading] = useState(false);
-    const { handleSubmitExistingBoostOther } = useBoost(history);
+    const { handleSubmitExistingBoostOther } = useBoost(navigate);
 
     const handleBoostClick = async () => {
         if (userToBoostProfileId) {
@@ -178,12 +178,12 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
 
     const handleEditOnClick = () => {
         closeModal();
-        history.push(`${link}${linkQueryParams}`);
+        navigate(`${link}${linkQueryParams}`);
     };
 
     const handleIssueOnClick = () => {
         closeModal();
-        history.push(`${link}${linkQueryParams}&issue=true`);
+        navigate(`${link}${linkQueryParams}&issue=true`);
     };
 
     const issueHistory: {

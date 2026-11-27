@@ -1,7 +1,6 @@
 import React, { Suspense } from 'react';
-import { Redirect, Route, Switch, matchPath, useLocation } from 'react-router-dom';
-import type { RouteComponentProps, RouteProps } from 'react-router-dom';
-import type { Location } from 'history';
+import { Navigate, Route, Routes as RouterRoutes, useLocation } from 'react-router';
+import type { Location } from 'react-router';
 import {
     DIDAuthModal,
     VCClaimModalController,
@@ -12,7 +11,6 @@ import {
     getInAppMessageEntryPath,
 } from 'learn-card-base';
 
-import { createBrowserHistory } from 'history';
 import * as Sentry from '@sentry/react';
 import { LoadingPageDumb } from './pages/loadingPage/LoadingPage';
 import WalletPage from './pages/wallet/WalletPage';
@@ -64,36 +62,27 @@ const ExternalConsentFlowDoor = lazyWithRetry(
     () => import('./pages/consentFlow/ExternalConsentFlowDoor')
 );
 
-// Create Custom Sentry Route component
-// https://docs.sentry.io/platforms/javascript/guides/react/configuration/integrations/react-router/#react-router-v4v5
-const SentryRoute = Sentry.withSentryRouting(Route);
+// Sentry names transactions after the matched route pattern.
+// https://docs.sentry.io/platforms/javascript/guides/react/configuration/integrations/react-router/
+const SentryRoutes = Sentry.withSentryReactRouterV6Routing(RouterRoutes);
 
-const history = createBrowserHistory();
-
-type PrivateRouteProps = Omit<RouteProps, 'component'> & {
-    component: React.ComponentType<RouteComponentProps>;
-};
-
-const PrivateRoute = ({ component: Component, ...rest }: PrivateRouteProps) => {
+const PrivateRoute = ({
+    path,
+    component: Component,
+}: {
+    path: string;
+    component: React.ComponentType;
+}) => {
     const isLoggedIn = useIsLoggedIn();
     const location = useLocation();
-    const matchesCurrentLocation = !!matchPath(location.pathname, {
-        path: rest.path,
-        exact: rest.exact,
-        strict: rest.strict,
-        sensitive: rest.sensitive,
-    });
-
-    if (!matchesCurrentLocation) {
-        return null;
-    }
 
     return isLoggedIn ? (
-        <SentryRoute {...rest} render={props => <Component {...props} {...rest} />} />
+        <Component />
     ) : (
-        <Redirect
+        <Navigate
+            replace
             to={
-                rest.path === '/m/:messageId'
+                path === '/m/:messageId'
                     ? `/login?redirectTo=${encodeURIComponent(getInAppMessageEntryPath(location.pathname))}`
                     : '/login'
             }
@@ -101,13 +90,17 @@ const PrivateRoute = ({ component: Component, ...rest }: PrivateRouteProps) => {
     );
 };
 
-export const Routes: React.FC = () => {
+const RootRedirect: React.FC = () => {
     const isLoggedIn = useIsLoggedIn();
-    const location = useLocation<{ background: Location }>();
+    return <Navigate replace to={isLoggedIn ? tabRoutes.tab2 : '/login'} />;
+};
+
+export const Routes: React.FC = () => {
+    const location = useLocation();
 
     // The `backgroundLocation` state is the location that we were at when one of
     // it's what is displayed in the background when we open the modal route
-    const background = location.state && location?.state?.background;
+    const background = (location.state as { background?: Location } | null)?.background;
     const isModalRoute =
         location.pathname.startsWith('/claim-credential/') ||
         location.pathname.startsWith('/did-auth/') ||
@@ -117,122 +110,219 @@ export const Routes: React.FC = () => {
     return (
         <ChunkBoundary>
             <Suspense fallback={<LoadingPageDumb />}>
-                <Switch location={switchLocation}>
-                    <GenericErrorBoundary>
-                        <SentryRoute exact path="/login" component={LoginPage} />
-                        <SentryRoute exact path="/acctmgmt/__/auth/action" component={LoginPage} />
-                        <SentryRoute
-                            exact
+                <GenericErrorBoundary>
+                    <SentryRoutes location={switchLocation}>
+                        <Route path="/login" element={<LoginPage />} />
+                        <Route path="/acctmgmt/__/auth/action" element={<LoginPage />} />
+                        <Route path="/share-boost" element={<ViewSharedBoost />} />
+                        <Route
                             path="/share-creds/:uri/:seed"
-                            component={ViewCredsBundle}
+                            element={
+                                <PrivateRoute
+                                    path="/share-creds/:uri/:seed"
+                                    component={ViewCredsBundle}
+                                />
+                            }
                         />
-                        <SentryRoute exact path="/share-boost" component={ViewSharedBoost} />
-                        <PrivateRoute
-                            exact
-                            path="/share-creds/:uri/:seed"
-                            component={ViewCredsBundle}
+                        {/* <Route path="/home" element={<PrivateRoute path="/home" component={WalletPage} />} /> */}
+                        <Route
+                            path="/wallet"
+                            element={<PrivateRoute path="/wallet" component={WalletPage} />}
                         />
-                        {/* <PrivateRoute exact path="/home" component={WalletPage} /> */}
-                        <PrivateRoute exact path="/wallet" component={WalletPage} />
-                        <PrivateRoute exact path="/home" component={LaunchPad} />
-                        <PrivateRoute exact path="/launchpad" component={LaunchPad} />
-                        <PrivateRoute exact path="/campfire" component={LaunchPad} />
-                        <PrivateRoute exact path="/notifications" component={NotificationsPage} />
-                        <PrivateRoute exact path="/contacts" component={AddressBook} />
-                        <PrivateRoute exact path="/contacts/pending" component={AddressBook} />
-                        <PrivateRoute exact path="/contacts/requests" component={AddressBook} />
-                        <PrivateRoute exact path="/contacts/blocked" component={AddressBook} />
-                        <PrivateRoute exact path="/contacts/search" component={AddressBook} />
-                        <PrivateRoute exact path="/badges" component={MeritBadgesPage} />
-                        <PrivateRoute exact path="/boosts" component={BoostsPage} />
-                        {/* <PrivateRoute exact path="/socialBadges" component={BoostsPage} /> */}
-                        <PrivateRoute exact path="/achievements" component={AchievementsPage} />
-                        <PrivateRoute exact path="/currencies" component={CurrenciesPage} />
-                        <PrivateRoute exact path="/ids" component={IdsPage} />
-                        <PrivateRoute exact path="/workhistory" component={WorkHistoryPage} />
-                        <PrivateRoute exact path="/competencies" component={SkillsPage} />
-                        <PrivateRoute
-                            exact
+                        <Route
+                            path="/home"
+                            element={<PrivateRoute path="/home" component={LaunchPad} />}
+                        />
+                        <Route
+                            path="/launchpad"
+                            element={<PrivateRoute path="/launchpad" component={LaunchPad} />}
+                        />
+                        <Route
+                            path="/campfire"
+                            element={<PrivateRoute path="/campfire" component={LaunchPad} />}
+                        />
+                        <Route
+                            path="/notifications"
+                            element={
+                                <PrivateRoute path="/notifications" component={NotificationsPage} />
+                            }
+                        />
+                        <Route
+                            path="/contacts"
+                            element={<PrivateRoute path="/contacts" component={AddressBook} />}
+                        />
+                        <Route
+                            path="/contacts/pending"
+                            element={
+                                <PrivateRoute path="/contacts/pending" component={AddressBook} />
+                            }
+                        />
+                        <Route
+                            path="/contacts/requests"
+                            element={
+                                <PrivateRoute path="/contacts/requests" component={AddressBook} />
+                            }
+                        />
+                        <Route
+                            path="/contacts/blocked"
+                            element={
+                                <PrivateRoute path="/contacts/blocked" component={AddressBook} />
+                            }
+                        />
+                        <Route
+                            path="/contacts/search"
+                            element={
+                                <PrivateRoute path="/contacts/search" component={AddressBook} />
+                            }
+                        />
+                        <Route
+                            path="/badges"
+                            element={<PrivateRoute path="/badges" component={MeritBadgesPage} />}
+                        />
+                        <Route
+                            path="/boosts"
+                            element={<PrivateRoute path="/boosts" component={BoostsPage} />}
+                        />
+                        {/* <Route path="/socialBadges" element={<PrivateRoute path="/socialBadges" component={BoostsPage} />} /> */}
+                        <Route
+                            path="/achievements"
+                            element={
+                                <PrivateRoute path="/achievements" component={AchievementsPage} />
+                            }
+                        />
+                        <Route
+                            path="/currencies"
+                            element={<PrivateRoute path="/currencies" component={CurrenciesPage} />}
+                        />
+                        <Route
+                            path="/ids"
+                            element={<PrivateRoute path="/ids" component={IdsPage} />}
+                        />
+                        <Route
+                            path="/workhistory"
+                            element={
+                                <PrivateRoute path="/workhistory" component={WorkHistoryPage} />
+                            }
+                        />
+                        <Route
+                            path="/competencies"
+                            element={<PrivateRoute path="/competencies" component={SkillsPage} />}
+                        />
+                        <Route
                             path="/learninghistory"
-                            component={LearningHistoryPage}
+                            element={
+                                <PrivateRoute
+                                    path="/learninghistory"
+                                    component={LearningHistoryPage}
+                                />
+                            }
                         />
-                        <PrivateRoute exact path="/memberships" component={MembershipPage} />
-                        <PrivateRoute exact path="/troops" component={MembershipPage} />
-                        <PrivateRoute
-                            exact
+                        <Route
+                            path="/memberships"
+                            element={
+                                <PrivateRoute path="/memberships" component={MembershipPage} />
+                            }
+                        />
+                        <Route
+                            path="/troops"
+                            element={<PrivateRoute path="/troops" component={MembershipPage} />}
+                        />
+                        <Route
                             path="/m/:messageId"
-                            component={InAppMessageDeepLinkRoute}
+                            element={
+                                <PrivateRoute
+                                    path="/m/:messageId"
+                                    component={InAppMessageDeepLinkRoute}
+                                />
+                            }
                         />
-                        <PrivateRoute exact path="/boost" component={BoostCMS} />
-                        <PrivateRoute exact path="/boost/update" component={UpdateBoostCMS} />
-
-                        <SentryRoute exact path="/wallet-worker" component={WalletServiceWorker} />
-                        <PrivateRoute exact path="/store" component={CredentialStorage} />
-                        <PrivateRoute exact path="/get" component={CredentialStorageGet} />
-
-                        <SentryRoute path="/waitingsofa">
-                            <LoadingPage2 />
-                        </SentryRoute>
-                        <PrivateRoute exact path="/admin-tools" component={AdminToolsPage} />
-                        <PrivateRoute
-                            exact
-                            path="/admin-tools/view-managed-boosts"
-                            component={ViewAllManagedBoosts}
+                        <Route
+                            path="/boost"
+                            element={<PrivateRoute path="/boost" component={BoostCMS} />}
                         />
-                        <PrivateRoute
-                            exact
-                            path="/admin-tools/bulk-import"
-                            component={BulkBoostImportPage}
-                        />
-
-                        <SentryRoute path="/claim-credential/:uri">
-                            <VCClaimModalController />
-                        </SentryRoute>
-                        <SentryRoute path="/did-auth/:challenge">
-                            <DIDAuthModal />
-                        </SentryRoute>
-
-                        <SentryRoute exact path="/connect" component={ConnectPage} />
-                        <SentryRoute exact path="/connect/:profileId" component={ConnectPage} />
-                        <SentryRoute exact path="/invite" component={InvitePage} />
-                        <SentryRoute exact path="/claim/boost" component={ClaimBoost} />
-
-                        <SentryRoute
-                            exact
-                            path="/frameworks/:frameworkId/skills/:skillId"
-                            component={LaunchPad}
-                        />
-
-                        <PrivateRoute
-                            exact
-                            path="/select-credentials/:profileId"
-                            component={ShareCredentialsWithApp}
-                        />
-                        <PrivateRoute
-                            exact
-                            path="/view-shared-credentials/:profileId"
-                            component={ViewCredentialsSharedWithApp}
-                        />
-
-                        <SentryRoute
-                            exact
-                            path="/"
-                            render={() =>
-                                isLoggedIn ? (
-                                    <Redirect to={tabRoutes.tab2} />
-                                ) : (
-                                    <Redirect to="/login" />
-                                )
+                        <Route
+                            path="/boost/update"
+                            element={
+                                <PrivateRoute path="/boost/update" component={UpdateBoostCMS} />
                             }
                         />
 
-                        <SentryRoute
-                            exact
-                            path="/consent-flow"
-                            component={ExternalConsentFlowDoor}
+                        <Route path="/wallet-worker" element={<WalletServiceWorker />} />
+                        <Route
+                            path="/store"
+                            element={<PrivateRoute path="/store" component={CredentialStorage} />}
                         />
-                    </GenericErrorBoundary>
-                </Switch>
+                        <Route
+                            path="/get"
+                            element={<PrivateRoute path="/get" component={CredentialStorageGet} />}
+                        />
+
+                        <Route path="/waitingsofa/*" element={<LoadingPage2 />} />
+                        <Route
+                            path="/admin-tools"
+                            element={
+                                <PrivateRoute path="/admin-tools" component={AdminToolsPage} />
+                            }
+                        />
+                        <Route
+                            path="/admin-tools/view-managed-boosts"
+                            element={
+                                <PrivateRoute
+                                    path="/admin-tools/view-managed-boosts"
+                                    component={ViewAllManagedBoosts}
+                                />
+                            }
+                        />
+                        <Route
+                            path="/admin-tools/bulk-import"
+                            element={
+                                <PrivateRoute
+                                    path="/admin-tools/bulk-import"
+                                    component={BulkBoostImportPage}
+                                />
+                            }
+                        />
+
+                        <Route
+                            path="/claim-credential/:uri/*"
+                            element={<VCClaimModalController />}
+                        />
+                        <Route path="/did-auth/:challenge/*" element={<DIDAuthModal />} />
+
+                        <Route path="/connect" element={<ConnectPage />} />
+                        <Route path="/connect/:profileId" element={<ConnectPage />} />
+                        <Route path="/invite" element={<InvitePage />} />
+                        <Route path="/claim/boost" element={<ClaimBoost />} />
+
+                        <Route
+                            path="/frameworks/:frameworkId/skills/:skillId"
+                            element={<LaunchPad />}
+                        />
+
+                        <Route
+                            path="/select-credentials/:profileId"
+                            element={
+                                <PrivateRoute
+                                    path="/select-credentials/:profileId"
+                                    component={ShareCredentialsWithApp}
+                                />
+                            }
+                        />
+                        <Route
+                            path="/view-shared-credentials/:profileId"
+                            element={
+                                <PrivateRoute
+                                    path="/view-shared-credentials/:profileId"
+                                    component={ViewCredentialsSharedWithApp}
+                                />
+                            }
+                        />
+
+                        <Route path="/" element={<RootRedirect />} />
+
+                        <Route path="/consent-flow" element={<ExternalConsentFlowDoor />} />
+                    </SentryRoutes>
+                </GenericErrorBoundary>
             </Suspense>
         </ChunkBoundary>
     );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import X from 'learn-card-base/svgs/X';
 import * as m from '../../../paraglide/messages.js';
@@ -76,7 +76,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     const onScreen: boolean = useOnScreen<HTMLDivElement>(ref, '-130px');
 
     const credentialUri = notification?.data?.vcUris?.[0];
-    const history = useHistory();
+    const navigate = useNavigate();
     const query = usePathQuery();
     const _uri = query.get('uri') ?? '';
     const _claim = query.get('claim') ?? '';

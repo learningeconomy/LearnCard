@@ -4,7 +4,7 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 
 import { useViewWillEnter } from 'learn-card-base/ui/app-shell/AppOutlet';
 import { useFlags } from 'launchdarkly-react-client-sdk';
-import { useHistory } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import {
     AllowConnectionRequestsEnum,
     ProfileVisibilityEnum,
@@ -55,7 +55,8 @@ type PrivacySettingsProfile = {
 
 const PrivacySettingsPage: React.FC = () => {
     const flags = useFlags();
-    const history = useHistory();
+    const navigate = useNavigate();
+    const location = useLocation();
     const historyEligible = useVerifierHistoryEligibility();
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.FullScreen,
@@ -79,7 +80,7 @@ const PrivacySettingsPage: React.FC = () => {
     const [savingField, setSavingField] = useState<string | null>(null);
 
     useViewWillEnter(() => {
-        const requested = new URLSearchParams(history.location.search).get('view') === 'saved';
+        const requested = new URLSearchParams(location.search).get('view') === 'saved';
         setOpenSavedOnEntry(requested);
         if (hasEnteredRef.current) {
             void refreshSharedRef.current?.();
@@ -89,11 +90,14 @@ const PrivacySettingsPage: React.FC = () => {
 
     const handleSavedOpened = useCallback(() => {
         setOpenSavedOnEntry(false);
-        const search = new URLSearchParams(history.location.search);
+        const search = new URLSearchParams(location.search);
         if (search.get('view') !== 'saved') return;
         search.delete('view');
-        history.replace({ ...history.location, search: search.toString() });
-    }, [history]);
+        navigate(
+            { pathname: location.pathname, hash: location.hash, search: search.toString() },
+            { replace: true }
+        );
+    }, [navigate, location]);
     const handleUpdateShare = useCallback(
         (share: ShareLink) => {
             newModal(

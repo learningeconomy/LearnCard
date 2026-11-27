@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import queryString from 'query-string';
 
 import {
@@ -90,7 +90,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
     onCloseCallback,
     onBackCallback,
 }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const location = useLocation();
     const { initWallet } = useWallet();
     const [refreshedContract, setRefreshedContract] = useState<ConsentFlowContractDetails>();
@@ -235,7 +235,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                         window.location.href = externalDestination;
                         return;
                     }
-                    if (typeof returnTo === 'string' && returnTo) history.push(returnTo);
+                    if (typeof returnTo === 'string' && returnTo) navigate(returnTo);
                 }
 
                 if (childInsightsProfile && isSwitchedProfile) {
@@ -303,7 +303,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                 data.reason === CONTRACT_APPROVAL_REQUIRED;
             if (isApprovalUpdateRequired && contractDetails?.uri) {
                 closeAllModals();
-                history.push(`/consent-flow/review?uri=${encodeURIComponent(contractDetails.uri)}`);
+                navigate(`/consent-flow/review?uri=${encodeURIComponent(contractDetails.uri)}`);
                 return;
             }
             const isGuardianApprovalRequired =

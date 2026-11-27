@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useRouteMatch } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
 import { LCNProfile } from '@learncard/types';
@@ -36,7 +36,7 @@ const AddressBookConnections: React.FC<{
     const { floatingBottle: FloatingBottleIcon } = icons;
 
     const queryClient = useQueryClient();
-    const { url } = useRouteMatch();
+    const { pathname: url } = useLocation();
 
     const { data, isLoading: connectionsLoading, error, refetch } = useGetConnections();
 

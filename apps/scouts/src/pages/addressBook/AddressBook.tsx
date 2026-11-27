@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { useRouteMatch } from 'react-router-dom';
+import { useLocation } from 'react-router';
 
 import { AddressBookHeader } from './addressBook-header/AddressBookHeader';
 import AddressBookContactList from './addressBook-contact-list/AddressBookContactList';
@@ -60,7 +60,7 @@ const getActiveRouteTab = (url: string): AddressBookTabsEnum | undefined => {
 };
 
 const AddressBook: React.FC = () => {
-    const { url } = useRouteMatch();
+    const { pathname: url } = useLocation();
     const { presentToast } = useToast();
     const { newModal } = useModal({ mobile: ModalTypes.Cancel, desktop: ModalTypes.Cancel });
     const searchInputRef = useRef<AppInputHandle>(null);

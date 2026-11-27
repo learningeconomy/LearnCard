@@ -1,6 +1,6 @@
 import type { DisclosureAttempt } from '../../helpers/verifier-history/history';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { formatCredentialDate } from 'learn-card-base/helpers/credentialHelpers';
 import queryString from 'query-string';
 import { VC, VP } from '@learncard/types';
@@ -562,7 +562,7 @@ const ClaimFromRequest: React.FC = () => {
     const queryClient = useQueryClient();
     const registry = useRegistry();
 
-    const history = useHistory();
+    const navigate = useNavigate();
     const { search } = useLocation();
     const { vc_request_url } = queryString.parse(search);
     const claimInteractionBoostUri = useMemo(
@@ -619,7 +619,7 @@ const ClaimFromRequest: React.FC = () => {
         const redirectTo = `/request?vc_request_url=${vc_request_url}`;
         redirectStore.set.lcnRedirect(redirectTo);
         dismissModal();
-        history.push('/');
+        navigate('/');
     };
 
     const [presentModal, dismissModal] = useAppOverlayModal(ClaimBoostLoggedOutPrompt, {
@@ -783,7 +783,7 @@ const ClaimFromRequest: React.FC = () => {
             ]).catch(() => undefined);
         }
 
-        history.replace(route);
+        navigate(route, { replace: true });
     };
 
     const handleClaimCredential = async () => {
@@ -898,7 +898,7 @@ const ClaimFromRequest: React.FC = () => {
                         verifiablePresentationRequest={exchangeState.data}
                         onSubmit={handleRequest}
                         strategy={exchangeState.strategy}
-                        onCancel={() => history.push('/')}
+                        onCancel={() => navigate('/')}
                     />
                 );
             case ExchangeState.AcceptCredentials:
@@ -928,7 +928,7 @@ const ClaimFromRequest: React.FC = () => {
                     <ExchangeSuccessDisplay
                         title={exchangeState.data?.title}
                         description={exchangeState.data?.description}
-                        onDone={() => history.push('/')}
+                        onDone={() => navigate('/')}
                     />
                 );
             case ExchangeState.Loading:
@@ -938,7 +938,7 @@ const ClaimFromRequest: React.FC = () => {
                     <ExchangeErrorDisplay
                         errorData={exchangeState.data}
                         onRetry={handleRequest}
-                        onCancel={() => history.push('/')}
+                        onCancel={() => navigate('/')}
                     />
                 );
             default:

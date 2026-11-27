@@ -1,7 +1,7 @@
 import React from 'react';
 import * as m from '../../paraglide/messages.js';
 import { TransP } from '../../i18n/TransP';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import { AppCol } from 'learn-card-base/ui/layout';
 import SeedPhraseModal from './SeedPhraseModal';
@@ -14,7 +14,7 @@ import { ModalTypes, useModal } from 'learn-card-base';
 const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
     hideSelfCustodialLogin = false,
 }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const links = useTenantLinks();
 
     const { newModal } = useModal({
@@ -75,7 +75,7 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
                         type="button"
                         onClick={e => {
                             e.preventDefault();
-                            history.push('/ai/pathways/discovery');
+                            navigate('/ai/pathways/discovery');
                         }}
                         className="flex items-center whitespace-nowrap text-white font-bold text-xs hover:underline"
                     >

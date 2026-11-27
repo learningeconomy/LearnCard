@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import useBoost from '../hooks/useBoost';
 import useManagedBoost from 'apps/learn-card-app/src/hooks/useManagedBoost';
@@ -66,7 +66,7 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
     loading,
     renderPreviewTrigger,
 }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { newModal, closeAllModals } = useModal({
         mobile: ModalTypes.FullScreen,
         desktop: ModalTypes.FullScreen,
@@ -96,7 +96,7 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
         isClrCredential && boostVC ? getClrTranscriptIssuerInfo(boostVC) : {};
 
     const [issueLoading, setIssueLoading] = useState(false);
-    const { handleSubmitExistingBoostOther } = useBoost(history);
+    const { handleSubmitExistingBoostOther } = useBoost(navigate);
 
     const handleShowShortBoostModal = () => {
         closeAll();

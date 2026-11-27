@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useRef } from 'react';
 
 import { Capacitor } from '@capacitor/core';
-import { useHistory } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 
 import { useModal, ModalTypes } from 'learn-card-base';
 
@@ -20,7 +20,10 @@ import NotificationsModal from './NotificationsModal';
  * The `/notifications` route is also the deep-link / push-notification target.
  */
 export const useOpenNotifications = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
+    // A ref, so a handler captured before a navigation still reads the current path.
+    const pathnameRef = useRef('');
+    pathnameRef.current = useLocation().pathname;
 
     const { newModal: openNotificationsModal } = useModal({
         desktop: ModalTypes.Right,
@@ -30,8 +33,8 @@ export const useOpenNotifications = () => {
     return () => {
         if (Capacitor.isNativePlatform()) {
             // Guard against pushing a duplicate entry when already on the page.
-            if (history.location.pathname !== '/notifications') {
-                history.push('/notifications');
+            if (pathnameRef.current !== '/notifications') {
+                navigate('/notifications');
             }
             return;
         }

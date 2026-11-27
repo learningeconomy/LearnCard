@@ -1,8 +1,8 @@
 import React from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { Router } from 'react-router-dom';
-import { createMemoryHistory } from 'history';
+
+import { createTestHistory, TestRouter } from 'learn-card-base/test-utils/testRouter';
 import type { ConsentFlowContractDetails, ConsentFlowTermsStatus } from '@learncard/types';
 import useConsentFlow from './useConsentFlow';
 
@@ -44,11 +44,11 @@ it.each(['needs_reconsent', 'suspended'] as const)(
     'opens the required review for a %s connection before showing ordinary consent',
     async status => {
         state.status = status;
-        const history = createMemoryHistory({ initialEntries: ['/consent-flow'] });
+        const history = createTestHistory({ initialEntries: ['/consent-flow'] });
         render(
-            <Router history={history}>
+            <TestRouter history={history}>
                 <Launcher />
-            </Router>
+            </TestRouter>
         );
         fireEvent.click(screen.getByRole('button', { name: 'Open request' }));
         await waitFor(() => expect(history.location.pathname).toBe('/consent-flow/review'));
@@ -59,11 +59,11 @@ it.each(['needs_reconsent', 'suspended'] as const)(
 );
 
 it('keeps an already approved connection on the ordinary consent path', async () => {
-    const history = createMemoryHistory({ initialEntries: ['/consent-flow'] });
+    const history = createTestHistory({ initialEntries: ['/consent-flow'] });
     render(
-        <Router history={history}>
+        <TestRouter history={history}>
             <Launcher />
-        </Router>
+        </TestRouter>
     );
     fireEvent.click(screen.getByRole('button', { name: 'Open request' }));
     await waitFor(() => expect(state.newModal).toHaveBeenCalledOnce());

@@ -1,6 +1,6 @@
 import React, { useRef, useState, useMemo } from 'react';
 import Papa from 'papaparse';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('admin-tools-bulk-boost-import-option');
 
@@ -125,7 +125,7 @@ const AdminToolsBulkBoostImportOption: React.FC<{
     option: AdminToolOption;
     showFooter?: boolean;
 }> = ({ option, showFooter }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const confirm = useConfirmation();
     const { presentToast } = useToast();
     const { newModal, closeModal, closeAllModals } = useModal();

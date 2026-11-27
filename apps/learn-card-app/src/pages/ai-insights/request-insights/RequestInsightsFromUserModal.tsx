@@ -1,6 +1,6 @@
 import type { ConsentFlowContractRequestStatus } from '@learncard/types';
 import React from 'react';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import queryString from 'query-string';
 
 import { m } from '../../../paraglide/messages.js';
@@ -42,7 +42,7 @@ export const RequestInsightsFromUserModal: React.FC<{
 }> = ({ profile, contractUri, onSuccessCallback, redirectToLink, requestStatus }) => {
     const { presentToast } = useToast();
     const { closeModal, closeAllModals } = useModal();
-    const history = useHistory();
+    const navigate = useNavigate();
     const currentUser = useCurrentUser();
     const isLoggedIn = useIsLoggedIn();
 
@@ -69,7 +69,7 @@ export const RequestInsightsFromUserModal: React.FC<{
         if (!isAuthenticated) {
             redirectStore.set.authRedirect(redirectToLink || '/login');
             closeModal();
-            history.push(`/login?redirectTo=${encodeURIComponent(redirectToLink || '/login')}`);
+            navigate(`/login?redirectTo=${encodeURIComponent(redirectToLink || '/login')}`);
             return;
         }
 
@@ -180,7 +180,7 @@ export const RequestInsightsFromUserModalWrapper: React.FC<{
     profileId: string;
     redirectToLink: string;
 }> = ({ profileId, redirectToLink }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const location = useLocation();
     const currentUser = useCurrentUser();
     const isLoggedIn = useIsLoggedIn();
@@ -203,7 +203,7 @@ export const RequestInsightsFromUserModalWrapper: React.FC<{
         // clear route params
         const params = queryString.parse(location.search);
         const { shareInsights, learnerProfileId, ...allOtherSearchParams } = params;
-        history.replace({ search: queryString.stringify(allOtherSearchParams) });
+        navigate({ search: queryString.stringify(allOtherSearchParams) }, { replace: true });
     };
 
     if (isLoading || (isAuthenticated && contractLoading) || requestLoading) {

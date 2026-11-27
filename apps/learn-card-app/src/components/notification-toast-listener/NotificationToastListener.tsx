@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { Capacitor } from '@capacitor/core';
 
 import {
@@ -24,7 +24,7 @@ const TOAST_DURATION_MS = 6000;
 // listener only toasts on web — where there is no push channel at all. It still
 // polls everywhere to keep the Alerts badge fresh from the same source.
 const NotificationToastListener: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { mutate: markRead } = useMarkNotificationRead();
     const isLoggedIn = useIsLoggedIn();
     const switchedDid = switchedProfileStore.use.switchedDid();
@@ -89,13 +89,13 @@ const NotificationToastListener: React.FC = () => {
                         if (newest._id) markRead({ notificationId: newest._id });
                         const route = resolveNotificationRoute(newest);
                         if (route === '/notifications') openNotifications();
-                        else history.push(route);
+                        else navigate(route);
                     } else openNotifications();
                 }}
             />,
             { autoDismiss: true, duration: TOAST_DURATION_MS }
         );
-    }, [data, presentToast, dismissToast, openNotifications, history, markRead]);
+    }, [data, presentToast, dismissToast, openNotifications, navigate, markRead]);
 
     return null;
 };

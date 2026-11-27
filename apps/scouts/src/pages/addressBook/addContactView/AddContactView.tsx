@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useLocation, useHistory, useRouteMatch } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 
 import {
     useWallet,
@@ -58,7 +58,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
     updateCacheOnSuccessCallback,
 }) => {
     const location = useLocation();
-    const history = useHistory();
+    const navigate = useNavigate();
     const query = usePathQuery();
 
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
@@ -170,7 +170,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
             _url = `/boost?boostUserType=${_boostUserType}&boostCategoryType=${_boostCategoryType}&boostSubCategoryType=${_boostSubCategoryType}&otherUserProfileId=${profileId}`;
         }
 
-        history.replace(_url);
+        navigate(_url, { replace: true });
         handleCancel();
     };
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import { AiInsightsIconOutline } from 'learn-card-base/svgs/wallet/AiInsightsIcon';
 import RightArrow from 'learn-card-base/svgs/RightArrow';
@@ -17,7 +17,7 @@ import { resetChatStores } from 'learn-card-base/stores/nanoStores/chatStore';
 import { ChatBotQuestionsEnum } from '../../../../components/new-ai-session/NewAiSessionChatBot/newAiSessionChatbot.helpers';
 
 export const AiInsightsPromptListItem: React.FC<{ prompt: string }> = ({ prompt }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { gate } = useLCNGatedAction();
     const { closeModal } = useModal();
 
@@ -61,9 +61,7 @@ export const AiInsightsPromptListItem: React.FC<{ prompt: string }> = ({ prompt 
         ]);
         setInternalAiChatBot(true);
         chatBotStore.set.setMode(AiSessionMode.insights);
-        history.push(
-            `/ai/topics?shortCircuitStep=${NewAiSessionStepEnum.newTopic}&selectedAppId=${1}`
-        );
+        navigate(`/ai/topics?shortCircuitStep=${NewAiSessionStepEnum.newTopic}&selectedAppId=${1}`);
     };
 
     return (

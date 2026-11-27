@@ -1,6 +1,6 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { MemoryRouter, Route } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { encodeManifestForUrl } from '@learncard/partner-connect-core';
 import type { CapturedAppManifest } from '@learncard/partner-connect-core';
@@ -47,8 +47,10 @@ const manifest: CapturedAppManifest = {
 const renderAt = (search: string) =>
     render(
         <MemoryRouter initialEntries={[`/app-store/developer/submit${search}`]}>
-            <Route path="/app-store/developer/submit" component={PublishSignInGate} />
-            <Route path="/login" render={() => <div>Login page</div>} />
+            <Routes>
+                <Route path="/app-store/developer/submit/*" element={<PublishSignInGate />} />
+                <Route path="/login/*" element={<div>Login page</div>} />
+            </Routes>
         </MemoryRouter>
     );
 

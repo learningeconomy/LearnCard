@@ -21,7 +21,7 @@ import { getAiTopicTitle } from '../../new-ai-session/newAiSession.helpers';
 import { useGetLearningPathwaysForSession } from './ai-learningPathways.helpers';
 import type { Boost } from '@learncard/types';
 
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import {
     AiPassportAppsEnum,
     getAiPassportAppByContractUri,
@@ -30,7 +30,7 @@ import {
 export const AiSessionLearningPathways: React.FC<{ chatBotQA: ChatBotQA[] }> = ({ chatBotQA }) => {
     const { newModal, closeAllModals } = useModal();
     const { isDesktop } = useDeviceTypeByWidth();
-    const history = useHistory();
+    const navigate = useNavigate();
 
     const sessionUri = chatBotQA?.find(qa => qa.type === ChatBotQuestionsEnum.ResumeTopic)?.answer;
     const { data, isLoading } = useGetEnrichedSession(sessionUri || '');
@@ -60,13 +60,13 @@ export const AiSessionLearningPathways: React.FC<{ chatBotQA: ChatBotQA[] }> = (
             closeAllModals?.();
 
             if (app?.type === AiPassportAppsEnum.learncardapp) {
-                history.push(`/chats?topicUri=${encodeURIComponent(sessionUri)}`);
+                navigate(`/chats?topicUri=${encodeURIComponent(sessionUri)}`);
             } else {
                 const url = app?.url;
                 if (url) {
                     window.location.href = `${url}/chats?topicUri=${encodeURIComponent(sessionUri)}`;
                 } else {
-                    history.push(`/chats?topicUri=${encodeURIComponent(sessionUri)}`);
+                    navigate(`/chats?topicUri=${encodeURIComponent(sessionUri)}`);
                 }
             }
         }
@@ -76,7 +76,7 @@ export const AiSessionLearningPathways: React.FC<{ chatBotQA: ChatBotQA[] }> = (
         sessions,
         isLoadingPathways,
         learningPathwaysData,
-        history,
+        navigate,
         app,
         closeAllModals,
     ]);

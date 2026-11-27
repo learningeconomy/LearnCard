@@ -76,15 +76,18 @@ vi.mock('learn-card-base/helpers/walletHelpers', () => ({
 vi.mock('../../config/bootstrapTenantConfig', () => ({
     getAppBaseUrl: () => mocks.appBaseUrl,
 }));
-vi.mock('react-router-dom', () => ({
-    useHistory: () => mocks.history,
-    useParams: () => ({ id: mocks.route.id }),
-    useLocation: () => ({
-        pathname: window.location.pathname,
-        search: window.location.search,
-        hash: window.location.hash,
-    }),
-}));
+vi.mock('react-router', async () => {
+    const { navigateFromHistory } = await import('learn-card-base/test-utils/navigateFromHistory');
+    return {
+        useNavigate: () => navigateFromHistory(mocks.history),
+        useParams: () => ({ id: mocks.route.id }),
+        useLocation: () => ({
+            pathname: window.location.pathname,
+            search: window.location.search,
+            hash: window.location.hash,
+        }),
+    };
+});
 vi.mock('../../theme/hooks/useTheme', () => ({
     default: () => ({ getThemedCategory: () => ({ icons: {}, colors: {} }) }),
     useTheme: () => ({ getThemedCategory: () => ({ icons: {}, colors: {} }) }),

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import queryString from 'query-string';
 
 import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import { VC, VerificationItem, VP } from '@learncard/types';
 
 import HeaderBranding from 'learn-card-base/components/headerBranding/HeaderBranding';

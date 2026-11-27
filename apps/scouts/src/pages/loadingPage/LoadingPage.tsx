@@ -4,7 +4,7 @@ import ScoutPassTextLogo from '../../assets/images/scoutpass-text-logo.svg';
 import ScoutPassLogo from '../../assets/images/scoutpass-logo.svg';
 import LoginLoadingPage from '../login/LoginPageLoader/LoginLoader';
 
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('loading-page');
 import {
@@ -73,7 +73,7 @@ export const LoadingPage2: React.FC = React.memo(() => {
 
     const { installChapi } = useWallet();
 
-    const history = useHistory();
+    const navigate = useNavigate();
 
     useEffect(() => {
         // handles redirecting a user to an LC network specific action / page
@@ -83,10 +83,10 @@ export const LoadingPage2: React.FC = React.memo(() => {
                 const currentUserLCProfile = await wallet?.invoke?.getProfile();
 
                 if (currentUserLCProfile) {
-                    history.push(redirect);
+                    navigate(redirect);
                 }
             } catch (e) {
-                history.push(redirect);
+                navigate(redirect);
             }
         };
 
@@ -101,11 +101,11 @@ export const LoadingPage2: React.FC = React.memo(() => {
                 } catch (e) {
                     log.error(e);
                 }
-                history.push(redirectTo);
+                navigate(redirectTo);
             } else if (lcnRedirectTo) {
                 handleLCNetworkRedirect(lcnRedirectTo);
             } else {
-                history.push('/campfire');
+                navigate('/campfire');
             }
             if (!isChapiInteraction) {
                 installChapi();

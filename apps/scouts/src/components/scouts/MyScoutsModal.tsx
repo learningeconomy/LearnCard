@@ -1,6 +1,6 @@
 import * as m from '../../paraglide/messages.js';
 import React, { useState } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import CaretListItem from '../../pages/troop/CaretListItem';
 import ScoutsIdView from './ScoutsIdView';
@@ -94,7 +94,7 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
 
     const { newModal, newModalWithToken, closeModal, closeModalById, forceCloseModalByToken } =
         useModal();
-    const history = useHistory();
+    const navigate = useNavigate();
     const { handleLogout, isLoggingOut } = useLogout();
     const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
 
@@ -151,7 +151,7 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
             caretText: connections?.length.toString() ?? '...',
             onClick: () => {
                 closeModal();
-                history.push('/contacts');
+                navigate('/contacts');
             },
             hide: notInNetwork,
         },
@@ -606,7 +606,7 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
         const cardId = newModal(
             <QrCodeUserCardModal
                 branding={branding}
-                history={history}
+                history={navigate}
                 handleQRCodeCardModal={() => closeModalById(cardId)}
                 qrOnly
             />,

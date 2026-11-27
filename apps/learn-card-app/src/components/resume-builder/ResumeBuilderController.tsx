@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import * as m from '../../paraglide/messages.js';
@@ -19,7 +19,7 @@ export const ResumeBuilderController: React.FC<{
     mode?: ResumeBuilderControllerMode;
 }> = ({ className = '', mode = 'default' }) => {
     const flags = useFlags();
-    const history = useHistory();
+    const navigate = useNavigate();
     const { gate } = useLCNGatedAction();
     const { colors } = useTheme();
     const brandingConfig = useBrandingConfig();
@@ -29,7 +29,7 @@ export const ResumeBuilderController: React.FC<{
     const handleResumeBuilderButton = async () => {
         const { prompted } = await gate();
         if (prompted) return;
-        history.push('/resume-builder');
+        navigate('/resume-builder');
     };
 
     if (!flags?.enableResumeBuilder) return null;

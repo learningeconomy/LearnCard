@@ -6,9 +6,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
     newModal: vi.fn().mockReturnValue(42),
     closeModalById: vi.fn(),
-    history: { push: vi.fn() },
+    navigate: vi.fn(),
 }));
-vi.mock('react-router-dom', () => ({ useHistory: () => mocks.history }));
+vi.mock('react-router', () => ({ useNavigate: () => mocks.navigate }));
 vi.mock('learn-card-base', () => ({
     useCurrentUser: () => ({}),
     useGetProfile: () => ({ data: undefined }),
@@ -32,7 +32,7 @@ describe('header QR card', () => {
         render(<QRCodeScannerButton branding={BrandingEnum.scoutPass} />);
         fireEvent.click(screen.getAllByRole('button', { name: 'Scan QR' })[1]);
         const card = mocks.newModal.mock.calls[0][0];
-        expect(card.props.history).toBe(mocks.history);
+        expect(card.props.history).toBe(mocks.navigate);
         expect(card.props.handleQRCodeCardModal).toBeTypeOf('function');
         card.props.handleQRCodeCardModal();
         expect(mocks.closeModalById).toHaveBeenCalledExactlyOnceWith(42);

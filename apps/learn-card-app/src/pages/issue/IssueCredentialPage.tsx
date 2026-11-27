@@ -4,7 +4,7 @@ import { materializePreview } from './spreadsheet/columnMapping';
 import type { IssueImportResult } from './import/issueImport';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { UnsignedVC } from '@learncard/types';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { useAppAlert } from 'learn-card-base/ui/overlays/useAppAlert';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -142,7 +142,7 @@ const hasAchievementImage = (subject: unknown): boolean => {
 };
 
 const IssueCredentialPage: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { initWallet, addVCtoWallet } = useWallet();
     const queryClient = useQueryClient();
     const { presentToast } = useToast();
@@ -153,7 +153,7 @@ const IssueCredentialPage: React.FC = () => {
     const { track } = useAnalytics();
     const { capture: captureProfileSnapshot, snapshotRef: profileSnapshotRef } =
         useProfileSnapshotCapture();
-    const location = useLocation<IssueCredentialLocationState | undefined>();
+    const location = useLocation();
     const issueEntryPoint = location.state?.entryPoint;
     const initialRecipient = location.state?.recipient;
 
@@ -897,7 +897,7 @@ const IssueCredentialPage: React.FC = () => {
         reset();
     }, [claimLink, linkConsumed, presentAlert, reset]);
 
-    const handleBack = useCallback(() => history.goBack(), [history]);
+    const handleBack = useCallback(() => navigate(-1), [navigate]);
     const handleToggleJson = useCallback(() => setShowJson(v => !v), []);
     const handleDismissProvenance = useCallback(() => setProvenance(null), []);
     const handleLinkConsumed = useCallback(() => setLinkConsumed(true), []);
@@ -911,8 +911,8 @@ const IssueCredentialPage: React.FC = () => {
             recipientMode === 'self' && category
                 ? CATEGORY_TO_ROUTE[category as CredentialCategoryEnum]
                 : undefined;
-        history.push(route ?? '/wallet');
-    }, [previewCredential, recipientMode, history]);
+        navigate(route ?? '/wallet');
+    }, [previewCredential, recipientMode, navigate]);
 
     const spreadsheet: SpreadsheetView = {
         locked: roster.locked,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import { AiPathwaysIconWithShape } from 'learn-card-base/svgs/wallet/AiPathwaysIcon';
 import CheckListButton from '../../components/learncard/checklist/CheckListButton';
@@ -10,7 +10,7 @@ import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import * as m from '../../paraglide/messages.js';
 
 export const AiPathwaysEmptyPlaceholder: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const isLoggedIn = useIsLoggedIn();
     const brandingConfig = useBrandingConfig();
     const { colors } = useTheme();
@@ -37,7 +37,7 @@ export const AiPathwaysEmptyPlaceholder: React.FC = () => {
                 {!isLoggedIn && (
                     <button
                         onClick={() => {
-                            history.push('/');
+                            navigate('/');
                         }}
                         className={`p-[11px] bg-${primaryColor} rounded-full text-white flex-1 font-poppins text-[17px] font-semibold w-full`}
                     >

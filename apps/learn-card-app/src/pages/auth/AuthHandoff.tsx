@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import { usePathQuery, redirectStore } from 'learn-card-base';
 import { useVerifyNetworkHandoffToken } from 'learn-card-base/react-query/mutations/firebase';
@@ -11,22 +11,23 @@ import jwtDecode from 'jwt-decode';
 
 import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
 
-const shouldSkipLogout = (verifiedToken?: string, currentAuthUser?: { email?: string; phone?: string } | null) => {
+const shouldSkipLogout = (
+    verifiedToken?: string,
+    currentAuthUser?: { email?: string; phone?: string } | null
+) => {
     // Decode token JWT to get nonce which will look like this, e.g. contact_method_session:fc026367-a056-45ac-8135-ee2cdee1b75c:email:custard7@gmail.com
     // Then get the last two parts of the nonce, e.g. email:custard7@gmail.com as 'type' and 'value' of contact method.
     // Then compare the 'value' of the contact method with the current user's email if it's an email contact method.
     // If it's not an email contact method, then compare the 'value' of the contact method with the current user's phone number.
     // If they match, then continue with the handoff process but skip logout.
     // If they don't match, then continue with the handoff process and ensure logout is called.
-    
+
     if (!verifiedToken || !currentAuthUser) {
         return false;
     }
 
     const normalizePhone = (val?: string | null) =>
-        (val ?? '')
-            .replace(/[^0-9+]/g, '')
-            .replace(/(?!^)[+]/g, '');
+        (val ?? '').replace(/[^0-9+]/g, '').replace(/(?!^)[+]/g, '');
     let _shouldSkipLogout = false;
     try {
         const decoded = jwtDecode<{ nonce?: string }>(verifiedToken);
@@ -40,10 +41,12 @@ const shouldSkipLogout = (verifiedToken?: string, currentAuthUser?: { email?: st
             if (contactType && contactValue && currentAuthUser) {
                 if (contactType.toLowerCase() === 'email') {
                     const userEmail = currentAuthUser?.email;
-                    _shouldSkipLogout = !!userEmail && userEmail.toLowerCase() === contactValue.toLowerCase();
+                    _shouldSkipLogout =
+                        !!userEmail && userEmail.toLowerCase() === contactValue.toLowerCase();
                 } else {
                     const userPhone = currentAuthUser?.phone;
-                    _shouldSkipLogout = !!userPhone && normalizePhone(userPhone) === normalizePhone(contactValue);
+                    _shouldSkipLogout =
+                        !!userPhone && normalizePhone(userPhone) === normalizePhone(contactValue);
                 }
             }
         }
@@ -52,11 +55,10 @@ const shouldSkipLogout = (verifiedToken?: string, currentAuthUser?: { email?: st
     }
     return _shouldSkipLogout;
 };
-    
 
 const AuthHandoff: React.FC = () => {
     const query = usePathQuery();
-    const history = useHistory();
+    const navigate = useNavigate();
     const { logout: coordinatorLogout } = useAuthCoordinator();
     const currentAuthUser = authUserStore.get.currentUser();
 
@@ -68,7 +70,7 @@ const AuthHandoff: React.FC = () => {
             const token = query.get('token');
 
             if (!token) {
-                history.replace('/login');
+                navigate('/login', { replace: true });
                 return;
             }
 
@@ -91,9 +93,7 @@ const AuthHandoff: React.FC = () => {
 
                         if (contactType && contactValue) {
                             const normalizePhone = (val?: string | null) =>
-                                (val ?? '')
-                                    .replace(/[^0-9+]/g, '')
-                                    .replace(/(?!^)[+]/g, '');
+                                (val ?? '').replace(/[^0-9+]/g, '').replace(/(?!^)[+]/g, '');
 
                             const isMatch =
                                 contactType.toLowerCase() === 'email'
@@ -105,7 +105,7 @@ const AuthHandoff: React.FC = () => {
                                           normalizePhone(contactValue);
 
                             if (isMatch) {
-                                history.replace(redirectTo);
+                                navigate(redirectTo, { replace: true });
                                 return;
                             }
                         }
@@ -125,12 +125,12 @@ const AuthHandoff: React.FC = () => {
 
                     await signInWithCustomFirebaseToken(response.token);
 
-                    history.replace(redirectTo);
+                    navigate(redirectTo, { replace: true });
                 } else {
-                    history.replace('/login');
+                    navigate('/login', { replace: true });
                 }
             } catch (e) {
-                history.replace('/login');
+                navigate('/login', { replace: true });
             }
         };
 

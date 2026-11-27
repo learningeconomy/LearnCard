@@ -18,7 +18,10 @@ const state = vi.hoisted(() => ({
     archive: vi.fn(),
     error: vi.fn(),
 }));
-vi.mock('react-router-dom', () => ({ useHistory: () => ({ push: state.push }) }));
+vi.mock('react-router', async () => {
+    const { navigateFromHistory } = await import('learn-card-base/test-utils/navigateFromHistory');
+    return { useNavigate: () => navigateFromHistory({ push: state.push }) };
+});
 vi.mock('learn-card-base', async () => ({
     getLogger: () => ({ error: state.error }),
     useModal: (await import('learn-card-base/components/modals/useModal')).useModal,

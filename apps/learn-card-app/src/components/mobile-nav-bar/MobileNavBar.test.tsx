@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
     renderTabBar: vi.fn(),
 }));
 
-vi.mock('react-router-dom', () => ({
+vi.mock('react-router', () => ({
     useLocation: () => ({ pathname: '/dashboard' }),
 }));
 

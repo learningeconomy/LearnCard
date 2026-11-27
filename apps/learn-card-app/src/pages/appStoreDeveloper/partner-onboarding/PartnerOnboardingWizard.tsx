@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { useHistory, useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('partner-onboarding-wizard');
@@ -130,8 +130,8 @@ interface RouteParams {
 }
 
 const PartnerOnboardingWizard: React.FC = () => {
-    const history = useHistory();
-    const { integrationId } = useParams<RouteParams>();
+    const navigate = useNavigate();
+    const { integrationId } = useParams() as RouteParams;
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
     const initWalletRef = useRef(initWallet);
@@ -155,7 +155,7 @@ const PartnerOnboardingWizard: React.FC = () => {
             const integration = integrations?.find(i => i.id === id);
             if (integration) {
                 const route = getIntegrationRoute(integration);
-                history.push(route);
+                navigate(route);
             }
         }
     };
@@ -253,14 +253,14 @@ const PartnerOnboardingWizard: React.FC = () => {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
-                history.push('/app-store/developer/guides');
+                navigate('/app-store/developer/guides');
             } finally {
                 setIsLoadingIntegration(false);
             }
         };
 
         loadIntegration();
-    }, [integrationId, history, presentToast]);
+    }, [integrationId, navigate, presentToast]);
 
     const goToStep = useCallback(
         (step: number) => {
@@ -372,7 +372,7 @@ const PartnerOnboardingWizard: React.FC = () => {
             setState(prev => ({ ...prev, isLive: true }));
 
             // Redirect to the integration dashboard
-            history.push(`/app-store/developer/integrations/${state.project.id}`);
+            navigate(`/app-store/developer/integrations/${state.project.id}`);
         } catch (error) {
             log.error('Failed to activate integration:', error);
             presentToast(m['developerPortal.onboarding.wizard.failedToGoLive'](), {
@@ -382,7 +382,7 @@ const PartnerOnboardingWizard: React.FC = () => {
         }
     }, [
         state.project?.id,
-        history,
+        navigate,
         currentIntegration?.guideState,
         updateIntegrationMutation,
         presentToast,
@@ -489,7 +489,7 @@ const PartnerOnboardingWizard: React.FC = () => {
                     const guidesPath = integrationId
                         ? `/app-store/developer/integrations/${integrationId}/guides`
                         : '/app-store/developer/guides';
-                    history.push(guidesPath);
+                    navigate(guidesPath);
                 }}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
             >
@@ -605,7 +605,7 @@ export const PartnerOnboardingWizardContent: React.FC<{
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     selectedIntegration: any;
 }> = ({ integrationId }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
     const initWalletRef = useRef(initWallet);
@@ -832,7 +832,7 @@ export const PartnerOnboardingWizardContent: React.FC<{
 
             setState(prev => ({ ...prev, isLive: true }));
 
-            history.push(`/app-store/developer/integrations/${state.project.id}`);
+            navigate(`/app-store/developer/integrations/${state.project.id}`);
         } catch (error) {
             log.error('Failed to activate integration:', error);
             presentToast(m['developerPortal.onboarding.wizard.failedToGoLive'](), {
@@ -842,7 +842,7 @@ export const PartnerOnboardingWizardContent: React.FC<{
         }
     }, [
         state.project?.id,
-        history,
+        navigate,
         currentIntegration?.guideState,
         updateIntegrationMutation,
         presentToast,

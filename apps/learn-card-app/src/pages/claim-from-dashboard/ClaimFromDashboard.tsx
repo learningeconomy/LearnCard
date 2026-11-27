@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import moment from 'moment';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import queryString from 'query-string';
 import { VC, UnsignedVP } from '@learncard/types';
 import { getVCDisplayCardVariant } from '@learncard/react';
@@ -250,7 +250,7 @@ const ClaimFromDashboard: React.FC = () => {
     const queryClient = useQueryClient();
     const registry = useRegistry();
 
-    const history = useHistory();
+    const navigate = useNavigate();
     const { search } = useLocation();
     const { url, token } = queryString.parse(search);
 
@@ -270,7 +270,7 @@ const ClaimFromDashboard: React.FC = () => {
         const redirectTo = `/claim/from-dashboard?url=${url}&token=${token}`;
         redirectStore.set.lcnRedirect(redirectTo);
         dismissModal();
-        history.push('/');
+        navigate('/');
     };
 
     const [presentModal, dismissModal] = useAppOverlayModal(ClaimBoostLoggedOutPrompt, {
@@ -282,7 +282,7 @@ const ClaimFromDashboard: React.FC = () => {
         NewDataSource,
         {
             handleCloseModal: () => {
-                history.replace('/home');
+                navigate('/home', { replace: true });
                 dismissNewDataSourceModal();
             },
             entryId: credential?.id,
@@ -374,7 +374,7 @@ const ClaimFromDashboard: React.FC = () => {
         );
 
         if (entryForCredential) presentNewDataSourceModal();
-        else history.replace('/home');
+        else navigate('/home', { replace: true });
     };
 
     const handleClaimCredential = async () => {
@@ -383,7 +383,7 @@ const ClaimFromDashboard: React.FC = () => {
             const duplicateResolution = await requestDuplicateResolution(credential);
             if (duplicateResolution.action === 'cancel') return;
             if (duplicateResolution.action === 'skip') {
-                history.replace('/home');
+                navigate('/home', { replace: true });
                 presentToast(m['claim.duplicate.skippedToast'](), {
                     type: ToastTypeEnum.Success,
                     hasDismissButton: true,
@@ -547,7 +547,7 @@ const ClaimFromDashboard: React.FC = () => {
                                     credential,
                                     AnalyticsEvents.CREDENTIAL_CLAIM_CANCELLED
                                 );
-                                history.push('/');
+                                navigate('/');
                             }}
                             className="w-[50px] h-[50px] min-h-[50px] min-w-[50px] bg-white rounded-full flex items-center justify-center shadow-3xl"
                         >

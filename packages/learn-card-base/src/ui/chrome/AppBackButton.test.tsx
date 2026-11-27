@@ -1,17 +1,19 @@
 import React from 'react';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { createMemoryHistory, type MemoryHistory } from 'history';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { AppShellRouter } from '../app-shell/AppShellRouter';
+import { AppShellRouter, resetInAppHistory } from '../app-shell/AppShellRouter';
+import { createTestHistory, TestRouter, type TestHistory } from '../../test-utils/testRouter';
 import { AppBackButton } from './AppBackButton';
 import { AppToolbar } from './AppToolbar';
 
-const renderAt = (history: MemoryHistory) =>
+const renderAt = (history: TestHistory) =>
     render(
-        <AppShellRouter history={history}>
-            <AppBackButton defaultHref="/launchpad" className="cli-back-btn" />
-        </AppShellRouter>
+        <TestRouter history={history}>
+            <AppShellRouter>
+                <AppBackButton defaultHref="/launchpad" className="cli-back-btn" />
+            </AppShellRouter>
+        </TestRouter>
     );
 
 const clickBack = async (): Promise<void> => {
@@ -22,6 +24,7 @@ const clickBack = async (): Promise<void> => {
 
 describe('AppBackButton', () => {
     const startHref = window.location.href;
+    beforeEach(() => resetInAppHistory());
     afterEach(() => {
         cleanup();
         document.documentElement.removeAttribute('mode');
@@ -30,34 +33,32 @@ describe('AppBackButton', () => {
     });
 
     it('goes back when the page was opened from an in-app page', async () => {
-        const history = createMemoryHistory({ initialEntries: ['/dashboard'] });
+        const history = createTestHistory({ initialEntries: ['/dashboard'] });
         renderAt(history);
-        act(() => history.push('/cli'));
-        const length = history.length;
+        await act(() => history.push('/cli'));
 
         await clickBack();
 
         expect(history.location.pathname).toBe('/dashboard');
         expect(history.action).toBe('POP');
-        expect(history.length).toBe(length);
     });
 
     it('replaces with defaultHref on a cold load', async () => {
-        const history = createMemoryHistory({ initialEntries: ['/cli'] });
+        const history = createTestHistory({ initialEntries: ['/cli'] });
         renderAt(history);
 
         await clickBack();
 
         expect(history.location.pathname).toBe('/launchpad');
         expect(history.action).toBe('REPLACE');
-        expect(history.length).toBe(1);
+        expect(history.entries).toEqual(['REPLACE /launchpad']);
     });
 
     it('returns to the pushing page when the page replaced an intermediate entry', async () => {
-        const history = createMemoryHistory({ initialEntries: ['/launchpad'] });
+        const history = createTestHistory({ initialEntries: ['/launchpad'] });
         renderAt(history);
-        act(() => history.push('/apps/dev?x=1'));
-        act(() => history.replace('/cli'));
+        await act(() => history.push('/apps/dev?x=1'));
+        await act(() => history.replace('/cli'));
 
         await clickBack();
 
@@ -66,7 +67,7 @@ describe('AppBackButton', () => {
     });
 
     it('is shown with a defaultHref and keeps call-site classes on the host', () => {
-        renderAt(createMemoryHistory({ initialEntries: ['/cli'] }));
+        renderAt(createTestHistory({ initialEntries: ['/cli'] }));
         const host = screen.getByRole('button').parentElement as HTMLElement;
 
         expect(host).toHaveClass('app-back-button', 'app-show-back-button', 'cli-back-btn');

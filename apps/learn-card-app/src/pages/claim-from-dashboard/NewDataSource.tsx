@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import queryString from 'query-string';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 
 import { AppLoading } from 'learn-card-base/ui/overlays/AppLoading';
 import ConsentFlowSyncButton from '../../pages/consentFlow/ConsentFlowSyncButton';

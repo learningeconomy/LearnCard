@@ -1,7 +1,7 @@
 import React from 'react';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { Route, Router } from 'react-router-dom';
-import { createMemoryHistory } from 'history';
+import { Route, Routes } from 'react-router';
+import { createTestHistory, TestRouter } from 'learn-card-base/test-utils/testRouter';
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
 import AppListingPage from './AppListingPage';
 
@@ -93,14 +93,16 @@ beforeEach(() => {
 afterEach(cleanup);
 
 const setup = (path = '/course?unit=2#lesson') => {
-    const history = createMemoryHistory({
+    const history = createTestHistory({
         initialEntries: ['/wallet', `/app/library?launch=1&path=${encodeURIComponent(path)}`],
         initialIndex: 1,
     });
     const view = render(
-        <Router history={history}>
-            <Route path="/app/:listingId" component={AppListingPage} />
-        </Router>
+        <TestRouter history={history}>
+            <Routes>
+                <Route path="/app/:listingId" element={<AppListingPage />} />
+            </Routes>
+        </TestRouter>
     );
     return { history, view };
 };
@@ -112,9 +114,10 @@ it('launches an installed app once at the requested path and Back skips the list
         path: '/course?unit=2#lesson',
         isInstalled: true,
     });
-    expect(history.length).toBe(2);
+    // One REPLACE: the listing entry became the app, so Back skips it.
+    expect(history.entries).toEqual([expect.stringMatching(/^REPLACE \/apps\/library/)]);
     expect(state.install).not.toHaveBeenCalled();
-    history.goBack();
+    await act(() => history.goBack());
     expect(history.location.pathname).toBe('/wallet');
 });
 
@@ -129,7 +132,7 @@ it('waits for explicit installation consent, then opens the same requested page'
     await waitFor(() => expect(history.location.pathname).toBe('/apps/library'));
     expect(state.install).toHaveBeenCalledExactlyOnceWith('library');
     expect(history.location.state).toMatchObject({ path: '/learn', isInstalled: true });
-    history.goBack();
+    await act(() => history.goBack());
     expect(history.location.pathname).toBe('/wallet');
 });
 
@@ -165,7 +168,7 @@ it('does not pull a learner back after they leave while installation is pending'
     await waitFor(() => expect(state.modal).not.toBeNull());
     render(<>{state.modal}</>);
     fireEvent.click(screen.getByRole('button', { name: 'Accept installation' }));
-    act(() => history.goBack());
+    await act(() => history.goBack());
     await act(async () => complete(true));
     expect(history.location.pathname).toBe('/wallet');
 });

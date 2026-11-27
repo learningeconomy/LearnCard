@@ -4,10 +4,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const assets = vi.hoisted(() => ({ textLogoDark: '/branding/logo.svg' }));
 const themeMocks = vi.hoisted(() => ({ getThemedCategoryIcons: vi.fn() }));
-vi.mock('react-router-dom', () => ({
-    useLocation: () => ({ pathname: '/home' }),
-    useHistory: () => ({ push: vi.fn() }),
-}));
+vi.mock('react-router', async () => {
+    const { navigateFromHistory } = await import('learn-card-base/test-utils/navigateFromHistory');
+    return {
+        useLocation: () => ({ pathname: '/home' }),
+        useNavigate: () => navigateFromHistory({ push: vi.fn() }),
+    };
+});
 vi.mock('../config/brandingAssets', () => ({ useTenantBrandingAssets: () => assets }));
 vi.mock('../theme/hooks/useTheme', () => ({
     default: () => ({

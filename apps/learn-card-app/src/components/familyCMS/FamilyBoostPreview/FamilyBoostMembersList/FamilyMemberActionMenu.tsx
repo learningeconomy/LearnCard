@@ -28,7 +28,7 @@ import {
     UserProfilePicture,
 } from 'learn-card-base';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { closeAll } from '../../../../helpers/uiHelpers';
 import { BoostSkeleton } from 'learn-card-base/components/boost/boostSkeletonLoaders/BoostSkeletons';
 import { MemberActionMenuEnum } from './FamilyMemberActionMenu.types';
@@ -39,7 +39,7 @@ export const FamilyMemberActionMenu: React.FC<{
     user: FamilyMember;
     closeModal: () => void;
 }> = ({ credential, user, closeModal }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { newModal, newModalWithToken, forceCloseModalByToken, closeAllModals } = useModal({
         mobile: ModalTypes.Cancel,
         desktop: ModalTypes.Cancel,
@@ -89,7 +89,7 @@ export const FamilyMemberActionMenu: React.FC<{
             link = `${baseLink}&otherUserProfileId=${user.profileId}`;
         }
 
-        history.push(link);
+        navigate(link);
         closeAllModals();
         closeAll();
     };

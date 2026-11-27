@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { authUserStore, useSignInAdapter } from 'learn-card-base';
 import { Check, Loader2, Edit2, ShieldCheck, User } from 'lucide-react';
 
@@ -162,7 +162,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
     const brandingConfig = useBrandingConfig();
     const brandName = brandingConfig?.name || 'LearnCard';
-    const history = useHistory();
+    const navigate = useNavigate();
 
     const currentUser = useCurrentUser();
     const authToken = getAuthToken();
@@ -796,11 +796,11 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
         const pendingRedirect = resolvePostOnboardingRedirect(redirectStore.get.lcnRedirect());
         if (pendingRedirect) {
             redirectStore.set.lcnRedirect(null);
-            history.push(pendingRedirect);
+            navigate(pendingRedirect);
             return;
         }
 
-        history.push('/dashboard');
+        navigate('/dashboard');
     };
 
     const handleRoleSelect = async (selectedRole: LearnCardRolesEnum) => {

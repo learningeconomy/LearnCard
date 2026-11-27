@@ -1,7 +1,7 @@
 import React from 'react';
 import { AppIcon } from 'learn-card-base/ui/icon';
 import { codeSlashOutline } from 'learn-card-base/icons/ionicons';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { ModalTypes, switchedProfileStore, useGetProfile, useModal } from 'learn-card-base';
 
 import { LearnCardRolesEnum } from '../onboarding/onboarding.helpers';
@@ -11,14 +11,14 @@ import DeveloperRoleConfirmation from './DeveloperRoleConfirmation';
 const ProfileDeveloperProgram: React.FC = () => {
     const { data: profile, isPending, isError } = useGetProfile();
     const profileType = switchedProfileStore.use.profileType();
-    const history = useHistory();
+    const navigate = useNavigate();
     const { closeAllModals, newModalWithToken, forceCloseModalByToken } = useModal();
     const isDeveloper =
         profile && 'role' in profile && profile.role === LearnCardRolesEnum.developer;
 
     const handleOpenProgram = (): void => {
         closeAllModals();
-        history.push('/app-store/developer');
+        navigate('/app-store/developer');
     };
 
     const handleBecomeDeveloper = (): void => {

@@ -1,7 +1,6 @@
 import UnsubscribePage from './pages/unsubscribe/UnsubscribePage';
 import React, { Suspense } from 'react';
-import { Redirect, Route, Switch, useLocation } from 'react-router-dom';
-import type { RouteComponentProps, RouteProps } from 'react-router-dom';
+import { Navigate, Route, Routes as RouterRoutes, useLocation } from 'react-router';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import {
     DIDAuthModal,
@@ -186,27 +185,31 @@ const LearnCardAiChatBot = lazyWithRetry(
 const TermsOfServicePage = lazyWithRetry(() => import('./pages/legal/TermsOfServicePage'));
 const PrivacyPolicyPage = lazyWithRetry(() => import('./pages/legal/PrivacyPolicyPage'));
 
-// Create Custom Sentry Route component
-// https://docs.sentry.io/platforms/javascript/guides/react/configuration/integrations/react-router/#react-router-v4v5
-const SentryRoute = Sentry.withSentryRouting(Route);
+// Sentry names transactions after the matched route pattern.
+// https://docs.sentry.io/platforms/javascript/guides/react/configuration/integrations/react-router/
+const SentryRoutes = Sentry.withSentryReactRouterV6Routing(RouterRoutes);
 
 const PrivateRoute = ({
+    path,
     component: Component,
-    ...rest
-}: Omit<RouteProps, 'component'> & { component: React.ComponentType<RouteComponentProps> }) => {
+}: {
+    path: string;
+    component: React.ComponentType;
+}) => {
     const isLoggedIn = useIsLoggedIn();
     const location = useLocation();
 
     return isLoggedIn ? (
-        <SentryRoute {...rest} render={props => <Component {...props} {...rest} />} />
+        <Component />
     ) : (
-        <Redirect
+        <Navigate
+            replace
             to={
-                rest.path === '/m/:messageId'
+                path === '/m/:messageId'
                     ? `/login?redirectTo=${encodeURIComponent(getInAppMessageEntryPath(location.pathname))}`
-                    : rest.path === '/notifications'
+                    : path === '/notifications'
                       ? '/login?redirectTo=%2Fnotifications'
-                      : rest.path === '/account/secure'
+                      : path === '/account/secure'
                         ? '/login?redirectTo=%2Faccount%2Fsecure'
                         : '/login'
             }
@@ -214,18 +217,33 @@ const PrivateRoute = ({
     );
 };
 
-// Publish links arrive from app builders, often before the developer has an account.
-const PublishFromManifestRoute: React.FC = () => {
+/** Root redirect: home when signed in, otherwise login. */
+const RootRedirect: React.FC<{ dashboardAsHome: boolean }> = ({ dashboardAsHome }) => {
     const isLoggedIn = useIsLoggedIn();
+    markDashboardPath(isLoggedIn ? 'root_redirect' : 'root_redirect_login');
+    return (
+        <Navigate
+            replace
+            to={isLoggedIn ? (dashboardAsHome ? '/dashboard' : '/wallet') : '/login'}
+        />
+    );
+};
 
-    return isLoggedIn ? <DeveloperPortalRoutes /> : <PublishSignInGate />;
+// Developer portal routes need sign-in, except publish links, which arrive from app builders,
+// often before the developer has an account.
+const DeveloperPortalGate: React.FC = () => {
+    const isLoggedIn = useIsLoggedIn();
+    const location = useLocation();
+
+    if (isLoggedIn) return <DeveloperPortalRoutes />;
+    if (/^\/app-store\/developer\/submit\/?$/.test(location.pathname)) return <PublishSignInGate />;
+    return <Navigate replace to="/login" />;
 };
 
 export const Routes: React.FC = () => {
     markDashboardPath('routes_render');
     useDashboardPathMark('routes_commit');
-    const isLoggedIn = useIsLoggedIn();
-    const location = useLocation<{ background: any }>();
+    const location = useLocation();
     const flags = useFlags();
     const learnCardAssistantEnabled = environment.DEV || Boolean(flags.enableLearnCardAssistant);
     // Pathways v2 visibility — see `usePathwaysEnabled` for the
@@ -254,117 +272,240 @@ export const Routes: React.FC = () => {
                 }
             >
                 <GenericErrorBoundary>
-                    <Switch location={background || location}>
-                        <SentryRoute exact path="/recovery/cancel" component={CancelRecoveryPage} />
-                        <Route exact path="/s/:id" component={ShareLinkViewer} />
-                        <SentryRoute exact path="/unsubscribe" component={UnsubscribePage} />
-                        <SentryRoute exact path="/login" component={LoginPage} />
-                        <SentryRoute
-                            exact
-                            path="/developer/sign-in"
-                            component={DeveloperSignInPage}
+                    <SentryRoutes location={background || location}>
+                        <Route path="/recovery/cancel" element={<CancelRecoveryPage />} />
+                        <Route path="/s/:id" element={<ShareLinkViewer />} />
+                        <Route path="/unsubscribe" element={<UnsubscribePage />} />
+                        <Route path="/login" element={<LoginPage />} />
+                        <Route path="/developer/sign-in" element={<DeveloperSignInPage />} />
+                        <Route path="/__/auth/action" element={<LoginPage />} />
+                        <Route path="/legal/terms" element={<TermsOfServicePage />} />
+                        <Route path="/legal/privacy" element={<PrivacyPolicyPage />} />
+                        <Route path="/share-creds/:uri/:seed" element={<ViewCredsBundle />} />
+                        <Route path="/auth/handoff" element={<AuthHandoff />} />
+                        <Route path="/auth/classlink/callback" element={<ClassLinkCallback />} />
+                        <Route path="/auth/classlink/start" element={<ClassLinkStart />} />
+                        <Route path="/share-boost" element={<ViewSharedBoost />} />
+                        <Route path="/verify/resume" element={<VerifySharedResume />} />
+                        <Route path="/waitingsofa/*" element={<LoadingPage2 />} />
+                        <Route
+                            path="/dashboard"
+                            element={
+                                <PrivateRoute path="/dashboard" component={DashboardPageRoute} />
+                            }
                         />
-                        <SentryRoute exact path="/__/auth/action" component={LoginPage} />
-                        <SentryRoute exact path="/legal/terms" component={TermsOfServicePage} />
-                        <SentryRoute exact path="/legal/privacy" component={PrivacyPolicyPage} />
-                        <SentryRoute
-                            exact
-                            path="/share-creds/:uri/:seed"
-                            component={ViewCredsBundle}
+                        <Route
+                            path="/home"
+                            element={<PrivateRoute path="/home" component={WalletPage} />}
                         />
-                        <SentryRoute exact path="/auth/handoff" component={AuthHandoff} />
-                        <SentryRoute
-                            exact
-                            path="/auth/classlink/callback"
-                            component={ClassLinkCallback}
+                        <Route
+                            path="/wallet"
+                            element={<PrivateRoute path="/wallet" component={WalletPage} />}
                         />
-                        <SentryRoute
-                            exact
-                            path="/auth/classlink/start"
-                            component={ClassLinkStart}
+                        <Route
+                            path="/passport"
+                            element={<PrivateRoute path="/passport" component={WalletPage} />}
                         />
-                        <SentryRoute exact path="/share-boost" component={ViewSharedBoost} />
-                        <SentryRoute exact path="/verify/resume" component={VerifySharedResume} />
-                        <SentryRoute path="/waitingsofa" children={<LoadingPage2 />} />
-                        <PrivateRoute
-                            exact
-                            path="/share-creds/:uri/:seed"
-                            component={ViewCredsBundle}
+                        <Route
+                            path="/launchpad"
+                            element={<PrivateRoute path="/launchpad" component={MyAppsLanding} />}
                         />
-                        <PrivateRoute exact path="/dashboard" component={DashboardPageRoute} />
-                        <PrivateRoute exact path="/home" component={WalletPage} />
-                        <PrivateRoute exact path="/wallet" component={WalletPage} />
-                        <PrivateRoute exact path="/passport" component={WalletPage} />
-                        <PrivateRoute exact path="/launchpad" component={MyAppsLanding} />
-                        <PrivateRoute exact path="/launchpad/browse" component={LaunchPad} />
-                        <PrivateRoute exact path="/apps/:appId" component={EmbedAppFullScreen} />
-                        <PrivateRoute
-                            exact
+                        <Route
+                            path="/launchpad/browse"
+                            element={
+                                <PrivateRoute path="/launchpad/browse" component={LaunchPad} />
+                            }
+                        />
+                        <Route
+                            path="/apps/:appId"
+                            element={
+                                <PrivateRoute path="/apps/:appId" component={EmbedAppFullScreen} />
+                            }
+                        />
+                        <Route
                             path="/m/:messageId"
-                            component={InAppMessageDeepLinkRoute}
+                            element={
+                                <PrivateRoute
+                                    path="/m/:messageId"
+                                    component={InAppMessageDeepLinkRoute}
+                                />
+                            }
                         />
-                        <SentryRoute exact path="/app/:listingId" component={AppListingPage} />
-
-                        <SentryRoute
-                            exact
-                            path="/app-store/developer/submit"
-                            component={PublishFromManifestRoute}
-                        />
+                        <Route path="/app/:listingId" element={<AppListingPage />} />
 
                         {/* App Store Developer Portal - all routes wrapped in context provider */}
-                        <PrivateRoute
-                            path="/app-store/developer"
-                            component={DeveloperPortalRoutes}
-                        />
+                        <Route path="/app-store/developer/*" element={<DeveloperPortalGate />} />
 
-                        <PrivateRoute
-                            exact
-                            path="/app-store/admin"
-                            component={AppStoreAdminWithProvider}
-                        />
-
-                        <SentryRoute path="/admin/campaigns" component={CampaignsPage} />
-
-                        <PrivateRoute exact path="/notifications" component={NotificationsPage} />
-                        {/* Linked from the "New device signed in with your PIN" email. */}
-                        <PrivateRoute exact path="/account/secure" component={SecureAccountPage} />
-                        <PrivateRoute exact path="/contacts" component={AddressBook} />
-                        <PrivateRoute exact path="/contacts/pending" component={AddressBook} />
-                        <PrivateRoute exact path="/contacts/requests" component={AddressBook} />
-                        <PrivateRoute exact path="/contacts/blocked" component={AddressBook} />
-                        <PrivateRoute exact path="/contacts/search" component={AddressBook} />
-                        <PrivateRoute exact path="/socialBadges" component={SocialBadgesPage} />
-                        <PrivateRoute exact path="/achievements" component={AchievementsPage} />
-                        <PrivateRoute exact path="/qualifications" component={QualificationsPage} />
-                        <PrivateRoute
-                            exact
-                            path="/accomplishments"
-                            component={AccomplishmentsPage}
-                        />
-                        <PrivateRoute exact path="/accommodations" component={AccommodationsPage} />
-                        <PrivateRoute exact path="/currencies" component={CurrenciesPage} />
-                        <PrivateRoute exact path="/ids" component={IdsPage} />
-                        <PrivateRoute exact path="/memberships" component={MembershipPage} />
-                        <PrivateRoute exact path="/workhistory" component={WorkHistoryPage} />
-                        <PrivateRoute exact path="/families" component={FamilyPage} />
-                        <PrivateRoute exact path="/school-connect" component={SchoolConnectPage} />
-                        <PrivateRoute exact path="/skills" component={SkillsPage} />
-                        <PrivateRoute exact path="/ai/insights" component={AiInsights} />
-                        {learnCardAssistantEnabled && (
-                            <PrivateRoute exact path="/ai/assistant" component={MyAssistantPage} />
-                        )}
-                        <PrivateRoute
-                            exact
-                            path="/privacy-and-data"
-                            component={PrivacySettingsPage}
-                        />
-                        <PrivateRoute exact path="/resume-builder" component={ResumeBuilderPage} />
-                        <PrivateRoute exact path="/ai/pathways" component={AiPathways} />
                         <Route
-                            exact
-                            path="/ai/pathways/discovery"
-                            component={AiPathwaysDiscovery}
+                            path="/app-store/admin"
+                            element={
+                                <PrivateRoute
+                                    path="/app-store/admin"
+                                    component={AppStoreAdminWithProvider}
+                                />
+                            }
                         />
+
+                        <Route path="/admin/campaigns/*" element={<CampaignsPage />} />
+
+                        <Route
+                            path="/notifications"
+                            element={
+                                <PrivateRoute path="/notifications" component={NotificationsPage} />
+                            }
+                        />
+                        {/* Linked from the "New device signed in with your PIN" email. */}
+                        <Route
+                            path="/account/secure"
+                            element={
+                                <PrivateRoute
+                                    path="/account/secure"
+                                    component={SecureAccountPage}
+                                />
+                            }
+                        />
+                        <Route
+                            path="/contacts"
+                            element={<PrivateRoute path="/contacts" component={AddressBook} />}
+                        />
+                        <Route
+                            path="/contacts/pending"
+                            element={
+                                <PrivateRoute path="/contacts/pending" component={AddressBook} />
+                            }
+                        />
+                        <Route
+                            path="/contacts/requests"
+                            element={
+                                <PrivateRoute path="/contacts/requests" component={AddressBook} />
+                            }
+                        />
+                        <Route
+                            path="/contacts/blocked"
+                            element={
+                                <PrivateRoute path="/contacts/blocked" component={AddressBook} />
+                            }
+                        />
+                        <Route
+                            path="/contacts/search"
+                            element={
+                                <PrivateRoute path="/contacts/search" component={AddressBook} />
+                            }
+                        />
+                        <Route
+                            path="/socialBadges"
+                            element={
+                                <PrivateRoute path="/socialBadges" component={SocialBadgesPage} />
+                            }
+                        />
+                        <Route
+                            path="/achievements"
+                            element={
+                                <PrivateRoute path="/achievements" component={AchievementsPage} />
+                            }
+                        />
+                        <Route
+                            path="/qualifications"
+                            element={
+                                <PrivateRoute
+                                    path="/qualifications"
+                                    component={QualificationsPage}
+                                />
+                            }
+                        />
+                        <Route
+                            path="/accomplishments"
+                            element={
+                                <PrivateRoute
+                                    path="/accomplishments"
+                                    component={AccomplishmentsPage}
+                                />
+                            }
+                        />
+                        <Route
+                            path="/accommodations"
+                            element={
+                                <PrivateRoute
+                                    path="/accommodations"
+                                    component={AccommodationsPage}
+                                />
+                            }
+                        />
+                        <Route
+                            path="/currencies"
+                            element={<PrivateRoute path="/currencies" component={CurrenciesPage} />}
+                        />
+                        <Route
+                            path="/ids"
+                            element={<PrivateRoute path="/ids" component={IdsPage} />}
+                        />
+                        <Route
+                            path="/memberships"
+                            element={
+                                <PrivateRoute path="/memberships" component={MembershipPage} />
+                            }
+                        />
+                        <Route
+                            path="/workhistory"
+                            element={
+                                <PrivateRoute path="/workhistory" component={WorkHistoryPage} />
+                            }
+                        />
+                        <Route
+                            path="/families"
+                            element={<PrivateRoute path="/families" component={FamilyPage} />}
+                        />
+                        <Route
+                            path="/school-connect"
+                            element={
+                                <PrivateRoute
+                                    path="/school-connect"
+                                    component={SchoolConnectPage}
+                                />
+                            }
+                        />
+                        <Route
+                            path="/skills"
+                            element={<PrivateRoute path="/skills" component={SkillsPage} />}
+                        />
+                        <Route
+                            path="/ai/insights"
+                            element={<PrivateRoute path="/ai/insights" component={AiInsights} />}
+                        />
+                        {learnCardAssistantEnabled && (
+                            <Route
+                                path="/ai/assistant"
+                                element={
+                                    <PrivateRoute
+                                        path="/ai/assistant"
+                                        component={MyAssistantPage}
+                                    />
+                                }
+                            />
+                        )}
+                        <Route
+                            path="/privacy-and-data"
+                            element={
+                                <PrivateRoute
+                                    path="/privacy-and-data"
+                                    component={PrivacySettingsPage}
+                                />
+                            }
+                        />
+                        <Route
+                            path="/resume-builder"
+                            element={
+                                <PrivateRoute
+                                    path="/resume-builder"
+                                    component={ResumeBuilderPage}
+                                />
+                            }
+                        />
+                        <Route
+                            path="/ai/pathways"
+                            element={<PrivateRoute path="/ai/pathways" component={AiPathways} />}
+                        />
+                        <Route path="/ai/pathways/discovery" element={<AiPathwaysDiscovery />} />
                         {/*
                          * Pathways v2 — greenfield alongside the existing
                          * /ai/pathways feature. Gated by `usePathwaysEnabled`
@@ -373,123 +514,166 @@ export const Routes: React.FC = () => {
                          * pages/pathways/docs/architecture.md.
                          */}
                         {pathwaysEnabled && (
-                            <PrivateRoute path="/pathways" component={PathwaysShell} />
+                            <Route
+                                path="/pathways/*"
+                                element={
+                                    <PrivateRoute path="/pathways" component={PathwaysShell} />
+                                }
+                            />
                         )}
-                        <PrivateRoute
-                            exact
+                        <Route
                             path="/learninghistory"
-                            component={LearningHistoryPage}
+                            element={
+                                <PrivateRoute
+                                    path="/learninghistory"
+                                    component={LearningHistoryPage}
+                                />
+                            }
                         />
-                        <PrivateRoute exact path="/boost" component={BoostCMS} />
-                        <PrivateRoute exact path="/boost/update" component={UpdateBoostCMS} />
-                        <PrivateRoute exact path="/issue" component={IssueCredentialPage} />
-                        <PrivateRoute exact path="/boost-a-friend" component={BoostAFriendPage} />
-                        <PrivateRoute exact path="/test" component={VprQueryByExample} />
-                        <SentryRoute exact path="/wallet-worker" component={WalletServiceWorker} />
-                        <PrivateRoute exact path="/store" component={CredentialStorage} />
-                        <PrivateRoute exact path="/exchange" component={CredentialExchange} />
-                        <PrivateRoute exact path="/get" component={CredentialStorageGet} />
+                        <Route
+                            path="/boost"
+                            element={<PrivateRoute path="/boost" component={BoostCMS} />}
+                        />
+                        <Route
+                            path="/boost/update"
+                            element={
+                                <PrivateRoute path="/boost/update" component={UpdateBoostCMS} />
+                            }
+                        />
+                        <Route
+                            path="/issue"
+                            element={<PrivateRoute path="/issue" component={IssueCredentialPage} />}
+                        />
+                        <Route
+                            path="/boost-a-friend"
+                            element={
+                                <PrivateRoute path="/boost-a-friend" component={BoostAFriendPage} />
+                            }
+                        />
+                        <Route
+                            path="/test"
+                            element={<PrivateRoute path="/test" component={VprQueryByExample} />}
+                        />
+                        <Route path="/wallet-worker" element={<WalletServiceWorker />} />
+                        <Route
+                            path="/store"
+                            element={<PrivateRoute path="/store" component={CredentialStorage} />}
+                        />
+                        <Route
+                            path="/exchange"
+                            element={
+                                <PrivateRoute path="/exchange" component={CredentialExchange} />
+                            }
+                        />
+                        <Route
+                            path="/get"
+                            element={<PrivateRoute path="/get" component={CredentialStorageGet} />}
+                        />
 
-                        <PrivateRoute
-                            exact
+                        <Route
                             path="/ai/topics"
-                            component={AiSessionTopicsContainer}
+                            element={
+                                <PrivateRoute
+                                    path="/ai/topics"
+                                    component={AiSessionTopicsContainer}
+                                />
+                            }
                         />
-                        <PrivateRoute exact path="/ai/sessions" component={AiSessionsContainer} />
+                        <Route
+                            path="/ai/sessions"
+                            element={
+                                <PrivateRoute path="/ai/sessions" component={AiSessionsContainer} />
+                            }
+                        />
 
-                        <SentryRoute
-                            path="/claim-credential/:uri"
-                            children={<VCClaimModalController />}
+                        <Route
+                            path="/claim-credential/:uri/*"
+                            element={<VCClaimModalController />}
                         />
-                        <SentryRoute path="/did-auth/:challenge" children={<DIDAuthModal />} />
+                        <Route path="/did-auth/:challenge/*" element={<DIDAuthModal />} />
 
-                        <SentryRoute exact path="/connect" component={ConnectPage} />
-                        <SentryRoute exact path="/connect/:profileId" component={ConnectPage} />
-                        <SentryRoute exact path="/invite" component={InvitePage} />
-                        <SentryRoute exact path="/claim/boost" component={ClaimBoost} />
-                        <SentryRoute exact path="/approve-account" component={ApproveAccount} />
-                        <SentryRoute
-                            exact
-                            path="/claim/from-dashboard"
-                            component={ClaimFromDashboard}
-                        />
-                        <SentryRoute
-                            exact
+                        <Route path="/connect" element={<ConnectPage />} />
+                        <Route path="/connect/:profileId" element={<ConnectPage />} />
+                        <Route path="/invite" element={<InvitePage />} />
+                        <Route path="/claim/boost" element={<ClaimBoost />} />
+                        <Route path="/approve-account" element={<ApproveAccount />} />
+                        <Route path="/claim/from-dashboard" element={<ClaimFromDashboard />} />
+                        <Route
                             path="/interactions/guardian-credential-approval/:token"
-                            component={GuardianCredentialApprovalPage}
+                            element={<GuardianCredentialApprovalPage />}
                         />
-                        <SentryRoute
-                            exact
+                        <Route
                             path="/interactions/guardian-approval/:token"
-                            component={GuardianAccountApprovalPage}
+                            element={<GuardianAccountApprovalPage />}
                         />
-                        <SentryRoute path="/interactions/*" component={InteractionsPage} />
-                        <SentryRoute exact path="/request" component={ClaimFromRequest} />
-                        <SentryRoute exact path="/oid4vci" component={Oid4vciExchange} />
-                        <SentryRoute exact path="/oid4vp" component={Oid4vpExchange} />
-                        <SentryRoute
-                            exact
+                        <Route path="/interactions/*" element={<InteractionsPage />} />
+                        <Route path="/request" element={<ClaimFromRequest />} />
+                        <Route path="/oid4vci" element={<Oid4vciExchange />} />
+                        <Route path="/oid4vp" element={<Oid4vpExchange />} />
+                        <Route
                             path="/native-digital-credentials"
-                            component={NativeDigitalCredentialFlow}
+                            element={<NativeDigitalCredentialFlow />}
                         />
 
-                        <SentryRoute
-                            exact
-                            path="/consent-flow"
-                            component={ExternalConsentFlowDoor}
-                        />
-                        <SentryRoute
-                            exact
+                        <Route path="/consent-flow" element={<ExternalConsentFlowDoor />} />
+                        <Route
                             path="/consent-flow-login"
-                            render={() => <ExternalConsentFlowDoor login />}
+                            element={<ExternalConsentFlowDoor login />}
                         />
-                        <SentryRoute exact path="/consent-flow-sync-data" component={LaunchPad} />
-                        <PrivateRoute
-                            exact
+                        <Route path="/consent-flow-sync-data" element={<LaunchPad />} />
+                        <Route
                             path="/consent-flow/review"
-                            component={ContractUpdateReviewRoute}
+                            element={
+                                <PrivateRoute
+                                    path="/consent-flow/review"
+                                    component={ContractUpdateReviewRoute}
+                                />
+                            }
                         />
 
-                        <PrivateRoute
-                            exact
+                        <Route
                             path="/select-credentials/:profileId"
-                            component={ShareCredentialsWithApp}
+                            element={
+                                <PrivateRoute
+                                    path="/select-credentials/:profileId"
+                                    component={ShareCredentialsWithApp}
+                                />
+                            }
                         />
-                        <PrivateRoute
-                            exact
+                        <Route
                             path="/view-shared-credentials/:profileId"
-                            component={ViewCredentialsSharedWithApp}
+                            element={
+                                <PrivateRoute
+                                    path="/view-shared-credentials/:profileId"
+                                    component={ViewCredentialsSharedWithApp}
+                                />
+                            }
                         />
-                        <PrivateRoute path="/chats" component={LearnCardAiChatBot} />
+                        <Route
+                            path="/chats/*"
+                            element={<PrivateRoute path="/chats" component={LearnCardAiChatBot} />}
+                        />
 
-                        <SentryRoute
-                            exact
+                        <Route
                             path="/"
-                            render={() => {
-                                markDashboardPath(
-                                    isLoggedIn ? 'root_redirect' : 'root_redirect_login'
-                                );
-                                return isLoggedIn ? (
-                                    <Redirect to={dashboardAsHome ? '/dashboard' : '/wallet'} />
-                                ) : (
-                                    <Redirect to="/login" />
-                                );
-                            }}
+                            element={<RootRedirect dashboardAsHome={dashboardAsHome} />}
                         />
 
-                        <SentryRoute exact path="/verify-email" component={UserVerifyEmail} />
+                        <Route path="/verify-email" element={<UserVerifyEmail />} />
 
-                        <Route exact path="/hidden/custom-wallet" component={CustomWallet} />
+                        <Route path="/hidden/custom-wallet" element={<CustomWallet />} />
 
-                        <Redirect from="/hidden/seed" to="/developer/sign-in" />
-
-                        <PrivateRoute exact path="/cli" component={DevCli} />
-                        <SentryRoute
-                            exact
-                            path="/dev/clr-transcript"
-                            component={ClrTranscriptRendererDemo}
+                        <Route
+                            path="/hidden/seed/*"
+                            element={<Navigate replace to="/developer/sign-in" />}
                         />
-                    </Switch>
+
+                        <Route
+                            path="/cli"
+                            element={<PrivateRoute path="/cli" component={DevCli} />}
+                        />
+                        <Route path="/dev/clr-transcript" element={<ClrTranscriptRendererDemo />} />
+                    </SentryRoutes>
                 </GenericErrorBoundary>
             </Suspense>
         </ChunkBoundary>

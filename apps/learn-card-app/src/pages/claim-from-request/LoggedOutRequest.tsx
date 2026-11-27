@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import { buildInboxClaimRedirect } from './inboxClaimGate';
 import ClaimBoostLoggedOutPrompt from 'learn-card-base/components/boost/claimBoostLoggedOutPrompt/ClaimBoostLoggedOutPrompt';
 import { redirectStore } from 'learn-card-base';
-import { useHistory } from 'react-router-dom';
 import ClaimLoginPage from '../login/ClaimLoginPage';
 import DoubleTrapezoid from 'learn-card-base/svgs/DoubeTrapezoid';
 import { AppRow } from 'learn-card-base/ui/layout';

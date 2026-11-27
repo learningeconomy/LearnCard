@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 import { m } from '../../../paraglide/messages.js';
 
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { createPortal } from 'react-dom';
 import { useStore } from '@nanostores/react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -61,7 +61,7 @@ const getDefaultPlaceholder = (mode: AiSessionMode): string => {
 
 const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = true }) => {
     const { closeAllModals } = useModal();
-    const history = useHistory();
+    const navigate = useNavigate();
     const $planReady = useStore(planReady);
     const $sessionEnded = useStore(sessionEnded);
     const $currentThreadId = useStore(currentThreadId);
@@ -157,7 +157,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                                         closeAllModals();
                                         chatBotStore.set.resetStore();
                                         await invalidateSessionQueries();
-                                        history.push('/ai/topics');
+                                        navigate('/ai/topics');
                                     }}
                                     className="bg-emerald-700 text-white font-semibold text-[17px] px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
                                 >
@@ -182,7 +182,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                                             thread?.summaries?.[0]?.credential_uri ?? ''
                                         );
 
-                                        history.push(
+                                        navigate(
                                             `/ai/sessions?topicBoostUri=${topicParam}&summaryUri=${summaryParam}`
                                         );
                                     }, 500);

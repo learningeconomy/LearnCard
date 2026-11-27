@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { NotificationType } from '@learncard/lca-api-plugin';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import type { ConsentFlowContractChangeKind, ConsentFlowContractDiff } from '@learncard/types';
 import { buildContractUpdatePreview } from '@learncard/helpers';
 import { getLogger, useModal, useUpdateNotification } from 'learn-card-base';
@@ -12,7 +12,7 @@ const log = getLogger('notification-contract-update-card');
 type Props = { notification: NotificationType; handleArchive?: () => void | Promise<void> };
 
 const NotificationContractUpdateCard: React.FC<Props> = ({ notification, handleArchive }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { closeAllModals } = useModal();
     const locale = useLocale();
     const { mutateAsync: updateNotification } = useUpdateNotification();
@@ -63,7 +63,7 @@ const NotificationContractUpdateCard: React.FC<Props> = ({ notification, handleA
     const openReview = async () => {
         if (!data?.contractUri) return;
         closeAllModals();
-        history.push(`/consent-flow/review?uri=${encodeURIComponent(data.contractUri)}`);
+        navigate(`/consent-flow/review?uri=${encodeURIComponent(data.contractUri)}`);
         if (notification._id) {
             try {
                 await updateNotification({

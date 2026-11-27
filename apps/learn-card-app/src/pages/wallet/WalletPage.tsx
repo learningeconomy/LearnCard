@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import * as m from '../../paraglide/messages.js';
-import { useHistory, Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { Capacitor } from '@capacitor/core';
 import { getLogger } from 'learn-card-base';
@@ -55,7 +55,7 @@ const WalletPage: React.FC = () => {
         desktop: ModalTypes.Cancel,
         mobile: ModalTypes.Cancel,
     });
-    const history = useHistory();
+    const navigate = useNavigate();
 
     const { theme, colors } = useTheme();
     const { isMobile } = useDeviceTypeByWidth();
@@ -144,7 +144,7 @@ const WalletPage: React.FC = () => {
             ]).catch(() => undefined);
         }
 
-        history.push(path);
+        navigate(path);
     };
 
     const renderWalletList = categories?.map(category => (
@@ -228,9 +228,7 @@ const WalletPage: React.FC = () => {
 
                                         {flags?.shareMultipleEnabled === true && (
                                             <PassportSharingMenu
-                                                onViewShared={() =>
-                                                    history.push('/privacy-and-data')
-                                                }
+                                                onViewShared={() => navigate('/privacy-and-data')}
                                             />
                                         )}
 

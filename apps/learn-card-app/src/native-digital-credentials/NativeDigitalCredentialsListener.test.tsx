@@ -36,7 +36,13 @@ vi.mock('@capacitor/app', () => ({
         },
     },
 }));
-vi.mock('react-router-dom', () => ({ useHistory: () => mocks.history }));
+vi.mock('react-router', async () => {
+    const { navigateFromHistory } = await import('learn-card-base/test-utils/navigateFromHistory');
+    return {
+        useNavigate: () => navigateFromHistory(mocks.history),
+        useLocation: () => mocks.history.location,
+    };
+});
 const client = {
     getQueryCache: () => ({
         subscribe: (callback: typeof mocks.query) => {

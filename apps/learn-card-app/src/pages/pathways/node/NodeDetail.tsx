@@ -25,7 +25,7 @@ import * as m from '../../../paraglide/messages.js';
 import { AppIcon } from 'learn-card-base/ui/icon';
 import { closeOutline, mapOutline, openOutline } from 'learn-card-base/icons/ionicons';
 import { AnimatePresence, motion } from 'motion/react';
-import { useHistory, useLocation, useParams } from 'react-router-dom';
+import { useLocation, useParams, useNavigate } from 'react-router';
 import { v4 as uuid } from 'uuid';
 
 import { AnalyticsEvents, useAnalytics } from '../../../analytics';
@@ -294,9 +294,9 @@ const SECTION_MOTION = {
 };
 
 const NodeDetail: React.FC = () => {
-    const params = useParams<{ pathwayId: string; nodeId: string }>();
-    const history = useHistory();
-    const location = useLocation<NodeDetailLocationState | undefined>();
+    const params = useParams() as { pathwayId: string; nodeId: string };
+    const navigate = useNavigate();
+    const location = useLocation();
     const analytics = useAnalytics();
 
     useLockBodyScroll();
@@ -325,12 +325,12 @@ const NodeDetail: React.FC = () => {
     // it (see `handleComplete`) — the return surface should
     // auto-advance, not restore.
     const close = () =>
-        history.replace(
-            returnTo,
-            location.state?.restoreFocusId
+        navigate(returnTo, {
+            replace: true,
+            state: location.state?.restoreFocusId
                 ? { initialFocusId: location.state.restoreFocusId }
-                : undefined
-        );
+                : undefined,
+        });
 
     if (!pathway) {
         return (
@@ -452,7 +452,7 @@ const NodeDetail: React.FC = () => {
         // uncompleted node on the route; Today picks the next daily
         // action) will advance focus to the step that comes after
         // the one the learner just finished.
-        history.replace(returnTo);
+        navigate(returnTo, { replace: true });
     };
 
     const handleEndorsementRequested = (pending: EndorsementRef) => {
@@ -798,7 +798,7 @@ const NodeDetail: React.FC = () => {
                                     destination,
                                 });
                             }}
-                            onInAppNavigate={href => history.push(href)}
+                            onInAppNavigate={href => navigate(href)}
                         />
                     )}
 
@@ -952,7 +952,7 @@ const NodeDetail: React.FC = () => {
 
                                 <button
                                     type="button"
-                                    onClick={() => history.push('/pathways/map')}
+                                    onClick={() => navigate('/pathways/map')}
                                     className="py-3 px-4 rounded-[20px] border border-grayscale-300
                                                text-grayscale-700 font-medium text-sm
                                                hover:bg-grayscale-10 transition-colors

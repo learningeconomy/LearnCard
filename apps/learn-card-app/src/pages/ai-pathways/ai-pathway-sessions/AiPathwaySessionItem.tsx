@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import SlimCaretRight from '../../../components/svgs/SlimCaretRight';
 import LockSimple from 'learn-card-base/svgs/LockSimple';
@@ -14,7 +14,7 @@ export const AiPathwaySessionsItem: React.FC<{
     topicUri: string | undefined;
     pathwayUri: string | undefined;
 }> = ({ title, description, skills, topicUri, pathwayUri }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const fireEngagement = useEngagementSignal();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
@@ -25,7 +25,7 @@ export const AiPathwaySessionsItem: React.FC<{
         // in the same session only counts as one engagement signal.
         fireEngagement('ai_pathway');
 
-        history.push(
+        navigate(
             `/chats?topicUri=${encodeURIComponent(item.topicUri)}&pathwayUri=${encodeURIComponent(
                 item.pathwayUri
             )}`

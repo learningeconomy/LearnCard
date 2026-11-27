@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Redirect, useHistory } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router';
 import { Capacitor } from '@capacitor/core';
 
 import {
@@ -21,7 +21,7 @@ import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 /** Holds every lca-api query, so it only mounts once the School Connect flags are on. */
 const SchoolConnectPageContent: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const links = useLinksConfig();
     const { state: coordinatorState } = useAppAuth();
     const isReady = coordinatorState.status === 'ready';
@@ -50,7 +50,7 @@ const SchoolConnectPageContent: React.FC = () => {
         setConnectError('');
         const outcome = await runClassLinkLogin(
             getClassLinkAuthorizeUrl,
-            path => history.push(path),
+            path => navigate(path),
             '/school-connect',
             'connect'
         );
@@ -90,7 +90,8 @@ const SchoolConnectPageContent: React.FC = () => {
  */
 const SchoolConnectPage: React.FC = () => {
     const features = useFeatureConfig();
-    if (!features.schoolConnect || !features.classlinkSso) return <Redirect to="/launchpad" />;
+    if (!features.schoolConnect || !features.classlinkSso)
+        return <Navigate replace to="/launchpad" />;
     return <SchoolConnectPageContent />;
 };
 

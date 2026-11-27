@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
 import { useJoinLCNetworkModal } from '../../../components/network-prompts/hooks/useJoinLCNetworkModal';
@@ -84,7 +84,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
     refetchRequestContacts,
 }) => {
     const queryClient = useQueryClient();
-    const history = useHistory();
+    const navigate = useNavigate();
     const { gate } = useLCNGatedAction();
     const { newModal } = useModal({
         desktop: ModalTypes.Center,
@@ -664,7 +664,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                             handleBlockUser={handleBlockUser}
                             showUnblockButton={showUnblockButton}
                             handleUnblockUser={handleUnblockUser}
-                            history={history}
+                            history={navigate}
                         />,
                         contactModalOptions
                     );
@@ -679,14 +679,16 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                             const { prompted } = await gate();
                             if (prompted) return;
 
-                            history.push('/issue', {
-                                entryPoint: 'contact-list',
-                                recipient: {
-                                    kind: 'profile',
-                                    profileId: contact.profileId,
-                                    displayName: contact.displayName || contact.profileId,
-                                    image: contact.image,
-                                    did: contact.did,
+                            navigate('/issue', {
+                                state: {
+                                    entryPoint: 'contact-list',
+                                    recipient: {
+                                        kind: 'profile',
+                                        profileId: contact.profileId,
+                                        displayName: contact.displayName || contact.profileId,
+                                        image: contact.image,
+                                        did: contact.did,
+                                    },
                                 },
                             });
                         }}
@@ -730,7 +732,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                                     handleBlockUser={handleBlockUser}
                                     showUnblockButton={showUnblockButton}
                                     handleUnblockUser={handleUnblockUser}
-                                    history={history}
+                                    history={navigate}
                                 />,
                                 contactModalOptions
                             );

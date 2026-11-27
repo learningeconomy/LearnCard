@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useHistory, useLocation, useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router';
 import queryString from 'query-string';
 import { useQueryClient } from '@tanstack/react-query';
 

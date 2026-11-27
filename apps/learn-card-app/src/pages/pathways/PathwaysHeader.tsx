@@ -43,7 +43,7 @@ import React from 'react';
 
 import { AppIcon } from 'learn-card-base/ui/icon';
 import { constructOutline, sparklesOutline } from 'learn-card-base/icons/ionicons';
-import { NavLink, useRouteMatch } from 'react-router-dom';
+import { NavLink, useMatch } from 'react-router';
 
 import { proposalStore } from '../../stores/pathways';
 
@@ -89,8 +89,8 @@ interface PathwaysHeaderProps {
 
 const PathwaysHeader: React.FC<PathwaysHeaderProps> = () => {
     const openProposalCount = proposalStore.use.openProposalCount();
-    const isOnProposals = !!useRouteMatch('/pathways/proposals');
-    const isOnBuild = !!useRouteMatch(BUILD_PATH);
+    const isOnProposals = !!useMatch('/pathways/proposals/*');
+    const isOnBuild = !!useMatch(`${BUILD_PATH}/*`);
 
     // Proposals alert visibility — render when there's something to
     // alert about *or* when the learner is already on the Proposals
@@ -149,11 +149,16 @@ const PathwaysHeader: React.FC<PathwaysHeaderProps> = () => {
                             <NavLink
                                 key={mode.to}
                                 to={mode.to}
-                                className="py-1.5 px-2.5 sm:px-3 rounded-full
+                                className={({ isActive }) =>
+                                    `py-1.5 px-2.5 sm:px-3 rounded-full
                                            text-xs sm:text-sm font-medium
                                            text-grayscale-700
-                                           transition-colors"
-                                activeClassName="bg-white! text-grayscale-900! shadow-xs"
+                                           transition-colors${
+                                               isActive
+                                                   ? ' active bg-white! text-grayscale-900! shadow-xs'
+                                                   : ''
+                                           }`
+                                }
                             >
                                 {mode.label}
                             </NavLink>

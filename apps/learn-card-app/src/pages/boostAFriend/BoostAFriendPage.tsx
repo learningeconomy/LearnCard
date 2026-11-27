@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { useHistory } from 'react-router';
+import { useNavigate } from 'react-router';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Media } from '@capacitor-community/media';
@@ -63,7 +63,7 @@ const ensureQrAlbumExists = async (): Promise<string | undefined> => {
 };
 
 const BoostAFriendPage: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { initWallet, addVCtoWallet } = useWallet();
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { getRegisteredSigningAuthorities, getRegisteredSigningAuthority } =
@@ -374,7 +374,7 @@ const BoostAFriendPage: React.FC = () => {
                         {step === 'pick' && (
                             <BadgePicker
                                 onSelect={handleSelectBadge}
-                                onBack={() => history.goBack()}
+                                onBack={() => navigate(-1)}
                                 stylePacks={stylePacks}
                                 badgeGroups={badgeGroups}
                             />
@@ -575,7 +575,7 @@ const BoostAFriendPage: React.FC = () => {
                                         <div className="space-y-v3-3 pt-5 border-t border-grayscale-200">
                                             <button
                                                 type="button"
-                                                onClick={() => history.push('/wallet')}
+                                                onClick={() => navigate('/wallet')}
                                                 className="w-full py-3.5 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-base hover:opacity-90 transition-opacity shadow-xs"
                                             >
                                                 {m['common.done']()}
@@ -632,7 +632,7 @@ const BoostAFriendPage: React.FC = () => {
                                         <button
                                             type="button"
                                             onClick={() =>
-                                                history.push(
+                                                navigate(
                                                     recipientMode === 'self'
                                                         ? '/socialBadges'
                                                         : '/wallet'

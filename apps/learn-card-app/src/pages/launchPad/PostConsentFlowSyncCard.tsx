@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import queryString from 'query-string';
 import { useImmer } from 'use-immer';
 import isEqual from 'lodash-es/isEqual';
@@ -95,7 +95,7 @@ const PostConsentFlowSyncCard: React.FC<PostConsentFlowSyncCardProps> = ({
     const [terms, setTerms] = useImmer(consentedContract?.terms);
     const [loading, setLoading] = useState(false);
 
-    const history = useHistory();
+    const navigate = useNavigate();
     const location = useLocation();
 
     const { returnTo } = queryString.parse(location.search);
@@ -139,7 +139,7 @@ const PostConsentFlowSyncCard: React.FC<PostConsentFlowSyncCardProps> = ({
                 }
 
                 window.location.href = urlObj.toString();
-            } else history.push(returnTo);
+            } else navigate(returnTo);
         }
 
         closeModal();

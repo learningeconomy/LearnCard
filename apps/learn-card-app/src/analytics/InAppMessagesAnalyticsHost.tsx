@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { InAppMessageHost, useMyCampaigns } from 'learn-card-base';
 import { useAnalytics } from './context';
 import { AnalyticsEvents } from './events';
@@ -9,7 +9,7 @@ import { useCampaignTestDelivery } from '../pages/campaigns/useCampaignTestDeliv
 export const InAppMessagesAnalyticsHost: React.FC = () => {
     const campaigns = useMyCampaigns();
     const { track } = useAnalytics();
-    const history = useHistory();
+    const navigate = useNavigate();
     const testDelivery = useCampaignTestDelivery();
     return (
         <InAppMessageHost
@@ -18,7 +18,7 @@ export const InAppMessagesAnalyticsHost: React.FC = () => {
             onOpenApp={(listingId, path) => {
                 const query = new URLSearchParams({ launch: '1' });
                 if (path !== undefined) query.set('path', path);
-                history.push(`/app/${encodeURIComponent(listingId)}?${query}`);
+                navigate(`/app/${encodeURIComponent(listingId)}?${query}`);
             }}
             onEvent={event => {
                 if (event.source === 'override' || event.source === 'test') return;

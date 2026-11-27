@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 
 import { m } from '../../paraglide/messages.js';
 
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 import { useDeviceTypeByWidth, useGetEnrichedSession, useModal } from 'learn-card-base';
@@ -44,7 +44,7 @@ const TopicNewSessionGate: React.FC<Props> = ({
     app,
     seedRevisit,
 }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { initWallet } = useWallet();
     const { closeAllModals } = useModal();

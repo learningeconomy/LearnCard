@@ -1,6 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { MemoryRouter, Route } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router';
+import { RouteProbe } from 'learn-card-base/test-utils/RouteProbe';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import MyAppsPage from './MyAppsPage';
@@ -37,16 +38,24 @@ vi.mock('../useDeveloperPortal', () => ({
 const renderPage = () =>
     render(
         <MemoryRouter initialEntries={['/app-store/developer']}>
-            <Route exact path="/app-store/developer" component={MyAppsPage} />
-            <Route
-                path="/app-store/developer/apps/:listingId"
-                render={({ match }) => <div>Status for {match.params.listingId}</div>}
-            />
-            <Route path="/app-store/developer/build" render={() => <div>Projects</div>} />
-            <Route
-                path="/app-store/developer/apps/new"
-                render={({ location }) => <div>New listing {location.search}</div>}
-            />
+            <Routes>
+                <Route path="/app-store/developer" element={<MyAppsPage />} />
+                <Route
+                    path="/app-store/developer/apps/:listingId/*"
+                    element={
+                        <RouteProbe render={({ listingId }) => <div>Status for {listingId}</div>} />
+                    }
+                />
+                <Route path="/app-store/developer/build/*" element={<div>Projects</div>} />
+                <Route
+                    path="/app-store/developer/apps/new/*"
+                    element={
+                        <RouteProbe
+                            render={(_params, location) => <div>New listing {location.search}</div>}
+                        />
+                    }
+                />
+            </Routes>
         </MemoryRouter>
     );
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { QRCodeSVG } from 'qrcode.react';
 import {
     useWallet,
@@ -56,7 +56,7 @@ const LoginPage: React.FC = () => {
     const { appleLogin, googleLogin } = useFirebase();
     // const { installChapi } = useWallet();
     const query = usePathQuery();
-    const history = useHistory();
+    const navigate = useNavigate();
 
     const enableWorldScoutsLogin = flags?.enableWorldScoutsLogin;
 
@@ -91,12 +91,12 @@ const LoginPage: React.FC = () => {
                         });
                     }
 
-                    history.push(redirect);
+                    navigate(redirect);
                 }
 
-                history.push(redirect);
+                navigate(redirect);
             } catch (e) {
-                history.push(redirect);
+                navigate(redirect);
             }
         };
 
@@ -111,7 +111,7 @@ const LoginPage: React.FC = () => {
                 } catch (e) {
                     log.error(e);
                 }
-                resumeAuthRedirect(history, redirectTo);
+                resumeAuthRedirect(navigate, redirectTo);
             } else if (lcnRedirectTo) {
                 handleLCNetworkRedirect(lcnRedirectTo);
             } else {

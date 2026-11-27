@@ -1,5 +1,5 @@
 import React from 'react';
-import { useParams, useHistory, Redirect } from 'react-router-dom';
+import { useParams, Navigate, useNavigate } from 'react-router';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
 
@@ -41,8 +41,8 @@ const GUIDE_COMPONENTS: Record<UseCaseId, React.FC<GuideProps>> = {
 };
 
 const GuidePage: React.FC = () => {
-    const history = useHistory();
-    const { useCase } = useParams<{ useCase: string }>();
+    const navigate = useNavigate();
+    const { useCase } = useParams() as { useCase: string };
 
     // Use context for all state management
     const {
@@ -64,7 +64,9 @@ const GuidePage: React.FC = () => {
     // If integration is active, redirect to dashboard (shouldn't be on guides page)
     // Cast to string since server can return 'active' but type may not include it
     if (currentIntegration && (currentIntegration.status as string) === 'active') {
-        return <Redirect to={`/app-store/developer/integrations/${currentIntegration.id}`} />;
+        return (
+            <Navigate replace to={`/app-store/developer/integrations/${currentIntegration.id}`} />
+        );
     }
 
     // Show loader while waiting for integration to load (need to check if active)
@@ -151,7 +153,7 @@ const GuidePage: React.FC = () => {
         <div className="flex items-center gap-3">
             {!isActive && currentIntegrationId && (
                 <button
-                    onClick={() => history.push('/app-store/developer/build')}
+                    onClick={() => navigate('/app-store/developer/build')}
                     className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
@@ -184,7 +186,7 @@ const GuidePage: React.FC = () => {
                         </p>
                         <button
                             type="button"
-                            onClick={() => history.push(getAppStatusPath(submittedApp.listing_id))}
+                            onClick={() => navigate(getAppStatusPath(submittedApp.listing_id))}
                             className="py-2 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity shrink-0"
                         >
                             See App Status

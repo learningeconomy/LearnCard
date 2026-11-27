@@ -1,7 +1,7 @@
 import React from 'react';
 import { Badge } from '@capawesome/capacitor-badge';
 import { Capacitor } from '@capacitor/core';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
@@ -56,7 +56,7 @@ export const NotificationsSubHeader: React.FC<{
     );
     const numberArchived = data?.pages[0]?.notifications?.length;
 
-    const history = useHistory();
+    const navigate = useNavigate();
     const { initWallet } = useWallet();
     const {
         mutate: markAllNotificationsRead,
@@ -126,7 +126,7 @@ export const NotificationsSubHeader: React.FC<{
                         className="text-grayscale-50 p-0 mr-[2px] flex items-center justify-start"
                         onClick={() => {
                             if (onBack) onBack();
-                            else history.goBack();
+                            else navigate(-1);
                         }}
                         aria-label={onBack ? 'Close alerts' : 'Back button'}
                     >

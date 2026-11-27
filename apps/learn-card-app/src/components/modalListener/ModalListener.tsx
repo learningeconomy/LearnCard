@@ -1,17 +1,17 @@
 import React, { useEffect } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import modalStateStore from 'learn-card-base/stores/modalStateStore';
 import { VCClaim } from 'learn-card-base';
 import { useAppOverlayModal } from 'learn-card-base/ui/overlays/useAppOverlayModal';
 
 export const PresentVcModalListener: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const presentVcModalState = modalStateStore.useTracked.presentVcModal();
     const [present, dismiss] = useAppOverlayModal(VCClaim, {
         dismiss: ({ historyPush, callback }) => {
             dismiss();
-            history.push(historyPush ?? '/wallet');
+            navigate(historyPush ?? '/wallet');
             modalStateStore.set.presentVcModal({
                 open: false,
                 name: null,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import { useIsCurrentUserLCNUser, useModal, ModalTypes } from 'learn-card-base';
@@ -31,7 +31,7 @@ export const AddressBookHeader: React.FC<{
     showSearch,
     handleShowSearch,
 }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
     const checkIfUserInNetwork = useCheckIfUserInNetwork();
 
@@ -66,7 +66,7 @@ export const AddressBookHeader: React.FC<{
                         <button
                             className="font-rubik mr-[10px] flex items-center p-0 text-xl font-bold"
                             onClick={() => {
-                                history.goBack();
+                                navigate(-1);
                             }}
                             aria-label={m['addressBook.backBtnAria']()}
                         >

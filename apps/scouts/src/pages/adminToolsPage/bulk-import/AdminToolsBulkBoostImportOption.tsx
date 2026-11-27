@@ -2,7 +2,7 @@ import React, { useRef, useState, useMemo } from 'react';
 import * as m from '../../../paraglide/messages.js';
 import Papa from 'papaparse';
 import JSZip from 'jszip';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import AdminToolsModalFooter from '../AdminToolsModal/AdminToolsModalFooter';
 import AdminToolsBulkBoostImportUploadStep from './AdminToolsBulkBoostImportUploadStep';
@@ -60,7 +60,7 @@ export const extractFilename = (path: string): string => {
     if (!path) return '';
 
     // Extract filename from URL or path
-    const parts = path.split(/[\/\\]/);
+    const parts = path.split(/[/\\]/);
     return parts[parts.length - 1];
 };
 
@@ -116,6 +116,7 @@ export type BadgeDataRow = {
     [DataKeys.skills]: string[]; // e.g. [ "Durable - Adaptability - Flexibility", "Durable - Lifelong Learning - Critical Thinking"]
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy typing, out of scope for the router migration
 export const deleteFromMapByIndex = (map: Map<number, any>, index: number) => {
     const iterator = map.keys(); // Get an iterator over the keys
     let keyToDelete;
@@ -129,6 +130,7 @@ export const deleteFromMapByIndex = (map: Map<number, any>, index: number) => {
     }
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy typing, out of scope for the router migration
 export const deleteIndexAndReindex = (map: Map<number, any>, idx: number) => {
     const entries = [...map.entries()].sort(([a], [b]) => a - b);
     entries.splice(idx, 1); // drop the idx-th row
@@ -139,7 +141,7 @@ const AdminToolsBulkBoostImportOption: React.FC<{
     option: AdminToolOption;
     showFooter?: boolean;
 }> = ({ option, showFooter }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const confirm = useConfirmation();
     const { presentToast } = useToast();
     const { newModal, closeModal, closeAllModals } = useModal();
@@ -468,6 +470,7 @@ const AdminToolsBulkBoostImportOption: React.FC<{
         });
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy typing, out of scope for the router migration
     const csvRowToState = async (csvRow: any) => {
         const category = mapCategoryToBoostEnum(csvRow[DataKeys.category]);
         const defaultBadgeThumb = boostCategoryOptions[category].CategoryImage;
@@ -556,6 +559,7 @@ const AdminToolsBulkBoostImportOption: React.FC<{
         }
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy typing, out of scope for the router migration
     const handlePreview = async (csvRow: any) => {
         const state = await csvRowToState(csvRow);
 

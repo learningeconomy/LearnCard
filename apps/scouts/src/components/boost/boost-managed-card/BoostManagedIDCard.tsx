@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { ErrorBoundary } from 'react-error-boundary';
 import * as m from '../../../paraglide/messages.js';
 import { formatLocaleDate, formatLocaleTime } from '../../../i18n/formatters';
@@ -73,7 +73,7 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
     } = useResolveBoost(boost?.uri, !_boostVC);
     const boostVC = _boostVC || resolvedBoost;
 
-    const history = useHistory();
+    const navigate = useNavigate();
     const cred = unwrapBoostCredential(boostVC);
     const credImg = cred?.credentialSubject?.image;
 
@@ -100,7 +100,7 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
     const showSkeleton = loading || resolvedBoostLoading || recipientsLoading || myProfileLoading;
 
     const { handlePresentShortBoostModal } = useShortBoost(
-        history,
+        navigate,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for the Ionic removal
         boostVC as any,
         boost?.uri,
@@ -115,7 +115,7 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
     };
 
     const [issueLoading, setIssueLoading] = useState(false);
-    const { handleSubmitExistingBoostOther } = useBoost(history);
+    const { handleSubmitExistingBoostOther } = useBoost(navigate);
 
     const { newModal: newIssueLoadingModal, closeModal: closeIssueLoadingModal } = useModal({
         desktop: ModalTypes.Center,
@@ -170,12 +170,12 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
 
     const handleEditOnClick = () => {
         closePreviewModal();
-        history.push(`${link}${linkQueryParams}`);
+        navigate(`${link}${linkQueryParams}`);
     };
 
     const handleIssueOnClick = () => {
         closePreviewModal();
-        history.push(`${link}${linkQueryParams}&issue=true`);
+        navigate(`${link}${linkQueryParams}&issue=true`);
     };
 
     const issueHistory: {

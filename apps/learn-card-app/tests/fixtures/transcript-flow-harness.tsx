@@ -2,7 +2,7 @@ import React, { createContext } from 'react';
 import { createRoot } from 'react-dom/client';
 import { initAppPlatform } from 'learn-card-base/ui/app-shell/appPlatform';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import type { VC } from '@learncard/types';
 
 import '../../src/tailwind.css';

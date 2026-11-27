@@ -102,10 +102,13 @@ vi.mock('learn-card-base/components/modals/useModal', () => ({
 vi.mock('launchdarkly-react-client-sdk', () => ({
     useFlags: () => ({ enableContractRequests: state.enabled }),
 }));
-vi.mock('react-router-dom', () => ({
-    useHistory: () => ({}),
-    useLocation: () => ({ search: '?recipientToken=synthetic-token' }),
-}));
+vi.mock('react-router', async () => {
+    const { navigateFromHistory } = await import('learn-card-base/test-utils/navigateFromHistory');
+    return {
+        useNavigate: () => navigateFromHistory({}),
+        useLocation: () => ({ search: '?recipientToken=synthetic-token' }),
+    };
+});
 vi.mock('@analytics', () => ({ AnalyticsEvents: {}, useAnalytics: () => ({ track: vi.fn() }) }));
 vi.mock('../../components/network-prompts/hooks/useLCNGatedAction', () => ({
     default: () => ({ gate: async () => ({ prompted: false }) }),

@@ -21,10 +21,13 @@ vi.mock('launchdarkly-react-client-sdk', () => ({
     }),
 }));
 
-vi.mock('react-router-dom', async importOriginal => ({
-    ...(await importOriginal<typeof import('react-router-dom')>()),
-    useHistory: () => ({ push: vi.fn() }),
-}));
+vi.mock('react-router', async importOriginal => {
+    const { navigateFromHistory } = await import('learn-card-base/test-utils/navigateFromHistory');
+    return {
+        ...(await importOriginal<typeof import('react-router')>()),
+        useNavigate: () => navigateFromHistory({ push: vi.fn() }),
+    };
+});
 
 vi.mock('@learncard/react', () => ({
     BoostSmallCard: ({ customButtonComponent }: { customButtonComponent?: React.ReactNode }) => (

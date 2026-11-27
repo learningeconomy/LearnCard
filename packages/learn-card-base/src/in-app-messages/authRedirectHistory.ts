@@ -1,7 +1,4 @@
-type RedirectHistory = {
-    push: (path: string) => unknown;
-    replace: (path: string) => unknown;
-};
+import type { NavigateFunction } from 'react-router';
 
 export const isSafeInAppMessageAuthRedirect = (path: string): boolean => {
     // The final segment is an opaque message ID, not an embedded-app navigation path.
@@ -19,7 +16,10 @@ export const isSafeInAppMessageAuthRedirect = (path: string): boolean => {
     }
 };
 
-/** Recover the original URL component before history@4's partial decodeURI decoding. */
+/**
+ * Recover the address bar's encoded pathname when `pathname` arrived decoded (React Router 5's
+ * history@4 decoded it once; React Router 8 keeps it encoded, so this returns it unchanged).
+ */
 export const getInAppMessageEntryPath = (pathname: string): string => {
     if (typeof window === 'undefined') return pathname;
     const rawPath = window.location.pathname;
@@ -27,12 +27,12 @@ export const getInAppMessageEntryPath = (pathname: string): string => {
     return rawPath === pathname || decodeURI(rawPath) === pathname ? rawPath : pathname;
 };
 
-export const resumeAuthRedirect = (history: RedirectHistory, path: string): void => {
+export const resumeAuthRedirect = (navigate: NavigateFunction, path: string): void => {
     if (isSafeInAppMessageAuthRedirect(path)) {
-        // history@4 decodes pathname once before writing it back to the address bar.
-        history.replace(encodeURI(path));
+        // The message ID stays percent-encoded: React Router 8 writes the path as given.
+        void navigate(path, { replace: true });
         return;
     }
 
-    history.push(path);
+    void navigate(path);
 };

@@ -1,3 +1,4 @@
+import type { NavigateFunction } from 'react-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { Clipboard } from '@capacitor/clipboard';
 import { useAppAlert } from 'learn-card-base/ui/overlays/useAppAlert';
@@ -93,7 +94,7 @@ type AddressBookContactDetailsViewProps = {
         event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
         profileId: string
     ) => void;
-    history: { push: (path: string, state?: unknown) => void };
+    history: NavigateFunction;
 };
 
 const PRIMARY_BUTTON_CLASSES =
@@ -263,14 +264,16 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
             if (prompted) return;
 
             closeModal();
-            history.push('/issue', {
-                entryPoint: 'contact-card',
-                recipient: {
-                    kind: 'profile',
-                    profileId: contact.profileId,
-                    displayName: contact.displayName || contact.profileId,
-                    image: contact.image,
-                    did: contact.did,
+            history('/issue', {
+                state: {
+                    entryPoint: 'contact-card',
+                    recipient: {
+                        kind: 'profile',
+                        profileId: contact.profileId,
+                        displayName: contact.displayName || contact.profileId,
+                        image: contact.image,
+                        did: contact.did,
+                    },
                 },
             });
         } finally {

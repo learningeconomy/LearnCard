@@ -111,7 +111,7 @@ export default defineConfig(({ mode, command }) => {
         },
         optimizeDeps: {
             // disabled: false,
-            include: ['buffer', 'process', 'react-router', 'react-router-dom', 'crypto-browserify'],
+            include: ['buffer', 'process', 'react-router', 'crypto-browserify'],
             // Vite 8 pre-bundles with Rolldown, which can't run esbuild plugins. Oxc's inject and
             // define do what NodeGlobalsPolyfillPlugin did: provide `process`, `Buffer` and `global`.
             rolldownOptions: {
@@ -161,7 +161,7 @@ export default defineConfig(({ mode, command }) => {
                 // directory without baseUrl. Keep repository imports rooted at the workspace.
                 { find: 'packages', replacement: path.resolve(__dirname, '../../packages') },
             ],
-            dedupe: ['react', 'react-dom', 'react-router', 'react-router-dom'],
+            dedupe: ['react', 'react-dom', 'react-router'],
         },
         server: {
             port: 3000,

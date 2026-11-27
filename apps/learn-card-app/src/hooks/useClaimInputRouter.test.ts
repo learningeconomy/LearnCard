@@ -19,9 +19,12 @@ const { trackMock, pushMock, getProfileMock, initWalletMock, validateTextVCMock,
         fetchMock: vi.fn(),
     }));
 
-vi.mock('react-router-dom', () => ({
-    useHistory: () => ({ push: pushMock }),
-}));
+vi.mock('react-router', async () => {
+    const { navigateFromHistory } = await import('learn-card-base/test-utils/navigateFromHistory');
+    return {
+        useNavigate: () => navigateFromHistory({ push: pushMock }),
+    };
+});
 
 vi.mock('learn-card-base', () => ({
     useWallet: () => ({ initWallet: initWalletMock }),

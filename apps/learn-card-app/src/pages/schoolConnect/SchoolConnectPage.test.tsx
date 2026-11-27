@@ -39,15 +39,17 @@ vi.mock('../../components/main-header/MainHeader', () => ({
 const mockHistoryReplace = vi.fn();
 const mockHistoryPush = vi.fn();
 const mockRedirect = vi.fn();
-vi.mock('react-router-dom', async () => {
-    const actual = await vi.importActual('react-router-dom');
+vi.mock('react-router', async () => {
+    const { navigateFromHistory } = await import('learn-card-base/test-utils/navigateFromHistory');
+    const actual = await vi.importActual('react-router');
     return {
         ...actual,
-        useHistory: () => ({
-            replace: mockHistoryReplace,
-            push: mockHistoryPush,
-        }),
-        Redirect: ({ to }: { to: string }) => {
+        useNavigate: () =>
+            navigateFromHistory({
+                replace: mockHistoryReplace,
+                push: mockHistoryPush,
+            }),
+        Navigate: ({ to }: { to: string }) => {
             mockRedirect(to);
             return null;
         },

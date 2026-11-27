@@ -17,7 +17,7 @@
 
 import React, { useMemo, useState } from 'react';
 
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import { AnalyticsEvents, useAnalytics } from '../../../analytics';
 import { pathwayStore } from '../../../stores/pathways';
@@ -38,7 +38,7 @@ import { suggestPathways, type PathwaySuggestion, type WalletSignal } from './su
 type Step = 'discover' | 'quick-build' | 'scan' | 'suggestions';
 
 const OnboardRoute: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const analytics = useAnalytics();
     const learnerDid = useLearnerDid();
 
@@ -124,7 +124,7 @@ const OnboardRoute: React.FC = () => {
             recommendation_type: 'pathway',
         });
 
-        history.replace('/pathways/today');
+        navigate('/pathways/today', { replace: true });
     };
 
     switch (step) {

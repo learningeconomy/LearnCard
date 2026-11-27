@@ -25,7 +25,7 @@ export type ChunkMeta = {
 };
 
 const VENDOR_CHUNKS: Record<string, readonly string[]> = {
-    'vendor-react': ['react', 'react-dom', 'react-router', 'react-router-dom', 'scheduler'],
+    'vendor-react': ['react', 'react-dom', 'react-router', 'scheduler'],
     'vendor-firebase': ['firebase', '@firebase'],
     'vendor-sentry': ['@sentry', '@sentry-internal'],
     'vendor-launchdarkly': ['launchdarkly-react-client-sdk', 'launchdarkly-js-client-sdk'],

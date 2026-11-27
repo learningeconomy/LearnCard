@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { AppIcon } from 'learn-card-base/ui/icon';
 import {
     alertCircleOutline,
@@ -215,7 +215,7 @@ export const SubmitFromManifestPage: React.FC = () => {
 };
 
 const SubmitManifest: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const location = useLocation();
     const [manifest, setManifest] = useState<CapturedAppManifest | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -1352,7 +1352,7 @@ const SubmitManifest: React.FC = () => {
                                 <p className="text-sm text-red-700">{error}</p>
                             </div>
                             <button
-                                onClick={() => history.push('/app-store/developer')}
+                                onClick={() => navigate('/app-store/developer')}
                                 className="mt-2 px-6 py-3 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
                             >
                                 Go to Developer Portal
@@ -1451,14 +1451,14 @@ const SubmitManifest: React.FC = () => {
     if (ownedListing && listingMode !== 'draft' && !isEditing) {
         const viewListing = () => {
             if (listingMode === 'live') {
-                history.push(`/app/${ownedListing.listing_id}`);
+                navigate(`/app/${ownedListing.listing_id}`);
                 return;
             }
             const working = withPendingChanges(ownedListing);
-            history.push({
-                pathname: `/app/${ownedListing.listing_id}`,
-                state: { listing: working, isPreview: true },
-            });
+            navigate(
+                { pathname: `/app/${ownedListing.listing_id}` },
+                { state: { listing: working, isPreview: true } }
+            );
         };
 
         return (
@@ -1494,7 +1494,7 @@ const SubmitManifest: React.FC = () => {
                             onViewInStore={viewListing}
                             onOpenDashboard={() =>
                                 previewIntegrationId &&
-                                history.push(
+                                navigate(
                                     `/app-store/developer/integrations/${previewIntegrationId}`
                                 )
                             }
@@ -2222,7 +2222,7 @@ const SubmitManifest: React.FC = () => {
                             type="button"
                             onClick={() =>
                                 previewIntegrationId &&
-                                history.push(
+                                navigate(
                                     `/app-store/developer/integrations/${previewIntegrationId}`
                                 )
                             }

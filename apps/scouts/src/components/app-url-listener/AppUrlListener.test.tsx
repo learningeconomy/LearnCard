@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { act, cleanup, render, waitFor } from '@testing-library/react';
-import { Router } from 'react-router-dom';
-import { createMemoryHistory } from 'history';
+
+import { createTestHistory, TestRouter } from 'learn-card-base/test-utils/testRouter';
 import { afterEach, expect, it, vi } from 'vitest';
 import AppUrlListener from './AppUrlListener';
 
@@ -30,11 +30,11 @@ afterEach(() => {
 });
 
 it('handles cold and warm message links on the configured ScoutPass origin', async () => {
-    const history = createMemoryHistory();
+    const history = createTestHistory();
     const view = render(
-        <Router history={history}>
+        <TestRouter history={history}>
             <AppUrlListener />
-        </Router>
+        </TestRouter>
     );
     await waitFor(() => expect(history.location.pathname).toBe('/m/welcome'));
     state.callback?.({ url: 'https://scout.example/m/next' });
@@ -50,11 +50,11 @@ it('handles cold and warm message links on the configured ScoutPass origin', asy
 it.each(['guide/intro', 'discount%off', 'literal%2Fvalue'])(
     'preserves the encoded message ID %s for the shared route decoder',
     async messageId => {
-        const history = createMemoryHistory();
+        const history = createTestHistory();
         render(
-            <Router history={history}>
+            <TestRouter history={history}>
                 <AppUrlListener />
-            </Router>
+            </TestRouter>
         );
         await waitFor(() => expect(history.location.pathname).toBe('/m/welcome'));
         const path = `/m/${encodeURIComponent(messageId)}/`;

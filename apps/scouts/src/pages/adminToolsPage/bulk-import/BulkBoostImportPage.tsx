@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import * as m from '../../../paraglide/messages.js';
-import { useHistory } from 'react-router';
+import { useNavigate } from 'react-router';
 import Papa from 'papaparse';
 import JSZip from 'jszip';
 import {
@@ -63,7 +63,7 @@ export const extractFilename = (path: string): string => {
     if (!path) return '';
 
     // Extract filename from URL or path
-    const parts = path.split(/[\/\\]/);
+    const parts = path.split(/[/\\]/);
     return parts[parts.length - 1];
 };
 
@@ -120,7 +120,7 @@ export type BadgeDataRow = {
 };
 
 const BulkBoostImportPage: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const confirm = useConfirmation();
     const { presentToast } = useToast();
     const { newModal, closeModal } = useModal();
@@ -452,9 +452,10 @@ const BulkBoostImportPage: React.FC = () => {
         });
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy typing, out of scope for the router migration
     const csvRowToState = async (csvRow: any) => {
-        let badgeThumb = csvRow[DataKeys.image];
-        let bgImage = csvRow[DataKeys.backgroundImage];
+        const badgeThumb = csvRow[DataKeys.image];
+        const bgImage = csvRow[DataKeys.backgroundImage];
 
         // assumes images (thumb + background) have already been uploaded to filestack if necessary
 
@@ -537,7 +538,7 @@ const BulkBoostImportPage: React.FC = () => {
                 type: ToastTypeEnum.Success,
             });
 
-            history.push('/admin-tools');
+            navigate('/admin-tools');
         } catch (e) {
             log.error('Failed to bulk import boosts: ', e.message);
 
@@ -552,6 +553,7 @@ const BulkBoostImportPage: React.FC = () => {
         }
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy typing, out of scope for the router migration
     const handlePreview = async (csvRow: any) => {
         const state = await csvRowToState(csvRow);
 
@@ -604,6 +606,7 @@ const BulkBoostImportPage: React.FC = () => {
     const handleDeleteRow = (rowIndex: number) => {
         setCsvData(csvData.filter((data, index) => index !== rowIndex));
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy typing, out of scope for the router migration
         function deleteFromMapByIndex(map: Map<number, any>, index: number) {
             const iterator = map.keys(); // Get an iterator over the keys
             let keyToDelete;

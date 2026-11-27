@@ -10,7 +10,10 @@ vi.mock('@capacitor/clipboard', () => ({ Clipboard: { write: vi.fn() } }));
 vi.mock('@capacitor/share', () => ({ Share: { share: vi.fn() } }));
 vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => false } }));
 
-vi.mock('react-router', () => ({ useHistory: () => ({ push: vi.fn() }) }));
+vi.mock('react-router', async () => {
+    const { navigateFromHistory } = await import('learn-card-base/test-utils/navigateFromHistory');
+    return { useNavigate: () => navigateFromHistory({ push: vi.fn() }) };
+});
 
 vi.mock('learn-card-base', () => ({
     getLogger: () => ({ error: vi.fn() }),

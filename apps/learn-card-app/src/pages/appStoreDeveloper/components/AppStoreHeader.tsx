@@ -1,6 +1,6 @@
 import React from 'react';
 import * as m from '../../../paraglide/messages.js';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { Shield, Code2, Hammer } from 'lucide-react';
 
 import { AccountSwitcher } from './AccountSwitcher';
@@ -14,7 +14,7 @@ interface AppStoreHeaderProps {
 }
 
 export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title, rightContent }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const location = useLocation();
     const { useIsAdmin } = useDeveloperPortal();
     const { data: isAdmin } = useIsAdmin();
@@ -38,13 +38,13 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title, rightCont
             location.pathname.includes('/integrations') ||
             location.pathname.includes('/guides'));
 
-    const goToMyApps = () => history.push('/app-store/developer');
+    const goToMyApps = () => navigate('/app-store/developer');
 
     const handlePortalToggle = () => {
         if (isOnAdminPage) {
-            history.push('/app-store/developer');
+            navigate('/app-store/developer');
         } else {
-            history.push('/app-store/admin');
+            navigate('/app-store/admin');
         }
     };
 
@@ -53,7 +53,7 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title, rightCont
             <AppToolbar className="shadow-none! border-b border-gray-200 overflow-visible! [&>.toolbar-container]:overflow-visible!">
                 <div className="flex items-center justify-between px-2 sm:px-4 py-2 overflow-visible">
                     <button
-                        onClick={() => history.push('/launchpad')}
+                        onClick={() => navigate('/launchpad')}
                         className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity"
                     >
                         <img

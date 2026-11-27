@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import * as m from '../../paraglide/messages.js';
 
@@ -48,7 +48,7 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
     countLoading,
 }) => {
     const flags = useFlags();
-    const history = useHistory();
+    const navigate = useNavigate();
     const location = useLocation();
 
     let category = BoostCategoryOptionsEnum.socialBadge;
@@ -67,7 +67,7 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
             break;
     }
 
-    const { handlePresentBoostModal } = useBoostModal(history, category);
+    const { handlePresentBoostModal } = useBoostModal(navigate, category);
 
     const { IconComponent, iconColor, textColor } = SubheaderContentType[subheaderType];
 

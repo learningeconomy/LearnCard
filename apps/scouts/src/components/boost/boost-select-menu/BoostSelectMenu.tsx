@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, RouteComponentProps } from 'react-router-dom';
+import { useLocation, type NavigateFunction } from 'react-router';
 import Lottie from 'react-lottie-player';
 
 import {
@@ -49,7 +49,7 @@ type BoostSelectMenuProps = {
     boostCredential: VC | UnsignedVC;
     boostUri: string;
     profileId: string;
-    history: RouteComponentProps['history'];
+    history: NavigateFunction;
     showNewBoost?: boolean;
     otherUserProfileId?: string;
 };

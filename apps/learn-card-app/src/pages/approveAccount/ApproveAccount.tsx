@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('approve-account');
 
@@ -37,7 +37,7 @@ const ApproveAccount: React.FC = () => {
             ? err.message
             : 'We could not approve this account. The approval link may be invalid or expired.';
 
-    const history = useHistory();
+    const navigate = useNavigate();
     const query = usePathQuery();
 
     const [loading, setLoading] = useState<boolean>(false);
@@ -87,8 +87,8 @@ const ApproveAccount: React.FC = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const handleGoHome = () => history.replace('/');
-    const handleGoLogin = () => history.replace('/login');
+    const handleGoHome = () => navigate('/', { replace: true });
+    const handleGoLogin = () => navigate('/login', { replace: true });
 
     return (
         <AppPage color="emerald-700">

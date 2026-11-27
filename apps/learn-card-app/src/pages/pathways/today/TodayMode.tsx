@@ -14,7 +14,7 @@ import React, { useEffect, useMemo } from 'react';
 import { AppIcon } from 'learn-card-base/ui/icon';
 import { checkmarkCircleOutline } from 'learn-card-base/icons/ionicons';
 import { AnimatePresence, motion } from 'motion/react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import { AnalyticsEvents, useAnalytics } from '../../../analytics';
 import { pathwayStore } from '../../../stores/pathways';
@@ -35,7 +35,7 @@ const HOURS_12 = 12 * 60 * 60 * 1000;
 const TodayMode: React.FC = () => {
     const activePathway = pathwayStore.use.activePathway();
     const analytics = useAnalytics();
-    const history = useHistory();
+    const navigate = useNavigate();
 
     const now = useMemo(() => new Date().toISOString(), [activePathway?.updatedAt]);
 
@@ -172,7 +172,7 @@ const TodayMode: React.FC = () => {
 
                 <button
                     type="button"
-                    onClick={() => history.push('/pathways/onboard')}
+                    onClick={() => navigate('/pathways/onboard')}
                     className="inline-block py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm
                                hover:opacity-90 transition-opacity"
                 >
@@ -291,7 +291,7 @@ const TodayMode: React.FC = () => {
                         routeStep={pick?.routeStep}
                         onOpen={() => {
                             pathwayStore.set.clearRecentCompletion();
-                            history.push(
+                            navigate(
                                 `/pathways/node/${scored.node.pathwayId}/${scored.node.nodeId}`
                             );
                         }}

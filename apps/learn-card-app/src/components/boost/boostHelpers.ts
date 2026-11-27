@@ -6,7 +6,7 @@ import {
     BoostCMSMediaAttachment,
 } from './boost';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
-import { RouteComponentProps } from 'react-router-dom';
+import type { NavigateFunction } from 'react-router';
 import {
     BoostCMSAlignment,
     BoostCMSState,
@@ -574,7 +574,7 @@ export const getDefaultDisplayType = (category: BoostCategoryOptionsEnum) => {
 };
 
 export const setQueryParam = (
-    history: RouteComponentProps['history'],
+    history: NavigateFunction,
     pathname: string,
     queryParamName: string,
     newValue: string
@@ -583,10 +583,7 @@ export const setQueryParam = (
         const searchParams = new URLSearchParams(window.location.search);
         searchParams.set(queryParamName, newValue);
 
-        history.replace({
-            pathname,
-            search: searchParams.toString(),
-        });
+        history({ pathname, search: searchParams.toString() }, { replace: true });
     } else {
         throw new Error('History object is required but missing');
     }

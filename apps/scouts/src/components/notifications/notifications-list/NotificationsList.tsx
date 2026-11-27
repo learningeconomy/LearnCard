@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import * as m from '../../../paraglide/messages.js';
 
@@ -22,7 +22,7 @@ const log = getLogger('notifications-list');
 export const NotificationItem: React.FC<{
     notification: NotificationProps;
 }> = ({ notification }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const query = usePathQuery();
 
     const _uri = query.get('uri') ?? '';

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { RouteComponentProps } from 'react-router-dom';
+import type { NavigateFunction } from 'react-router';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('use-boost');
 
@@ -18,7 +18,7 @@ import {
 import { BoostCMSIssueTo, LCNBoostStatusEnum } from '../boost';
 import * as m from '../../../paraglide/messages.js';
 
-const useBoost = (history: RouteComponentProps['history']) => {
+const useBoost = (history: NavigateFunction) => {
     const { initWallet, addVCtoWallet } = useWallet();
     const queryClient = useQueryClient();
     const { presentToast } = useToast();

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import type { AppStoreListing, InstalledApp } from '@learncard/types';
 
@@ -41,7 +41,7 @@ const AppsCard: React.FC<AppsCardProps> = ({
     onInstallSuccess,
     variant = 'compact',
 }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const maxTiles = variant === 'featured' ? FEATURED_MAX_TILES : COMPACT_MAX_TILES;
 
     const tiles = useMemo<ResolvedTile[]>(() => {
@@ -84,7 +84,7 @@ const AppsCard: React.FC<AppsCardProps> = ({
                     </div>
                     <button
                         type="button"
-                        onClick={() => history.push('/launchpad')}
+                        onClick={() => navigate('/launchpad')}
                         className="flex items-center gap-1 text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors rounded-xs focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                     >
                         {m['dashboard.apps.browseAll']()}
@@ -117,7 +117,7 @@ const AppsCard: React.FC<AppsCardProps> = ({
                 </h2>
                 <button
                     type="button"
-                    onClick={() => history.push('/launchpad')}
+                    onClick={() => navigate('/launchpad')}
                     className="flex items-center gap-1 text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors rounded-xs focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
                     {m['dashboard.apps.viewAll']()}

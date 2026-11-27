@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { loadContractAudience } from 'learn-card-base/hooks/consentAudience';
 import React, { useMemo, useCallback, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import type { ConsentRequest } from '@learncard/partner-connect-core';
 import {
     useIsLoggedIn,
@@ -120,7 +120,7 @@ export function useLearnCardMessageHandlers({
 }: UseLearnCardMessageHandlersOptions): ActionHandlers {
     const isLoggedIn = useIsLoggedIn();
     const { initWallet, storeAndAddVCToWallet } = useWallet();
-    const history = useHistory();
+    const navigate = useNavigate();
     const { newModal, closeModal } = useModal();
     const { data: consentedContracts } = useConsentedContracts();
     const queryClient = useQueryClient();
@@ -1047,7 +1047,7 @@ export function useLearnCardMessageHandlers({
                         // navigation rather than silently doing nothing.
                         if (!opened) {
                             log('Popup blocked for feature launch; navigating in place:', path);
-                            history.push(path + queryParams);
+                            navigate(path + queryParams);
                             onNavigate?.();
                         }
 
@@ -1055,7 +1055,7 @@ export function useLearnCardMessageHandlers({
                         return;
                     }
 
-                    history.push(path + queryParams);
+                    navigate(path + queryParams);
 
                     // Call optional onNavigate callback (e.g., to close modal)
                     if (onNavigate) {
@@ -1133,7 +1133,7 @@ export function useLearnCardMessageHandlers({
                                     boost,
                                     boostUri: boost.uri,
                                     profileId,
-                                    history,
+                                    history: navigate,
                                     handleEditOnClick: () => {
                                         // Edit functionality not needed for issued boosts
                                         log('Edit not available for issued templates');
@@ -1455,7 +1455,7 @@ export function useLearnCardMessageHandlers({
             isLoggedIn,
             initWallet,
             storeAndAddVCToWallet,
-            history,
+            navigate,
             embedOrigin,
             onNavigate,
             showConsentFlow,

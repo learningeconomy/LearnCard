@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import { AppItem, AppList } from 'learn-card-base/ui/list';
 
@@ -11,7 +11,7 @@ import { usePathQuery, useModal } from 'learn-card-base';
 export const NotificationItem: React.FC<{
     notification: NotificationProps;
 }> = ({ notification }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const query = usePathQuery();
 
     const _uri = query.get('uri') ?? '';
@@ -24,7 +24,7 @@ export const NotificationItem: React.FC<{
                 credentialUri={notification.uri}
                 onDismiss={() => {
                     dismissModal();
-                    if (_claim) history.replace('/notifications');
+                    if (_claim) navigate('/notifications', { replace: true });
                 }}
             />
         );

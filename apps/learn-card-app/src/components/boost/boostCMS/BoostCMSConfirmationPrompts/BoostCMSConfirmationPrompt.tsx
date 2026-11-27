@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useModal } from 'learn-card-base';
 import { BoostCMSState, BoostCMSStepsEnum } from '../../boost';
 import { BOOST_CATEGORY_TO_WALLET_ROUTE } from '../../boost-options/boostOptions';
@@ -34,13 +34,13 @@ export const BoostCMSConfirmationPrompt: React.FC<BoostCMSConfirmationPromptProp
     const brandingConfig = useBrandingConfig();
 
     const { closeModal } = useModal();
-    const history = useHistory();
+    const navigate = useNavigate();
 
     const handleQuit = () => {
         clearLocalSave?.();
         onIntentionalNavigation?.();
         closeModal();
-        history.goBack();
+        navigate(-1);
     };
 
     const handleQuitAndSave = async () => {
@@ -100,7 +100,7 @@ export const BoostCMSConfirmationPrompt: React.FC<BoostCMSConfirmationPromptProp
                         <button
                             onClick={() => {
                                 closeModal();
-                                history.push(
+                                navigate(
                                     `/${
                                         BOOST_CATEGORY_TO_WALLET_ROUTE?.[state?.basicInfo?.type]
                                     }?managed=true`

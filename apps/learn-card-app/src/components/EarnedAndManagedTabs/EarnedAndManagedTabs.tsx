@@ -1,6 +1,6 @@
 import { tailwindColorWithOpacity } from 'learn-card-base/helpers/colorHelpers';
 import React from 'react';
-import { useLocation, useHistory } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
 
@@ -64,7 +64,7 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
     const colors = getThemedCategoryColors(category ?? CredentialCategoryEnum.achievement);
 
     const location = useLocation();
-    const history = useHistory();
+    const navigate = useNavigate();
 
     const { searchString, isSearchActive } = credentialSearchStore.useStore();
     const searchInputRef = React.useRef<HTMLInputElement>(null);
@@ -75,10 +75,10 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
 
     const handleOnChange = (tab: CredentialListTabEnum) => {
         if (tab === CredentialListTabEnum.Managed) {
-            history.replace(`${location.pathname}?managed=true`);
+            navigate(`${location.pathname}?managed=true`, { replace: true });
             handleActiveTab(tab);
         } else {
-            history.replace(`${location.pathname}`);
+            navigate(`${location.pathname}`, { replace: true });
             handleActiveTab(tab);
         }
     };

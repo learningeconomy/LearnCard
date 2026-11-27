@@ -5,7 +5,10 @@ import type { NotificationType } from 'packages/plugins/lca-api-plugin/src/types
 import NotificationBoostCard from './NotificationBoostCard';
 
 const mocks = vi.hoisted(() => ({ newModal: vi.fn(), accept: vi.fn() }));
-vi.mock('react-router-dom', () => ({ useHistory: () => ({ replace: vi.fn() }) }));
+vi.mock('react-router', async () => {
+    const { navigateFromHistory } = await import('learn-card-base/test-utils/navigateFromHistory');
+    return { useNavigate: () => navigateFromHistory({ replace: vi.fn() }) };
+});
 vi.mock('learn-card-base/hooks/useOnScreen', () => ({ default: () => true }));
 vi.mock('@tanstack/react-query', () => ({
     useQueryClient: () => ({ invalidateQueries: vi.fn() }),

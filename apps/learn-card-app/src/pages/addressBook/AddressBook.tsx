@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { useRouteMatch } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import { AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('address-book');
@@ -57,7 +57,7 @@ const AddressBook: React.FC = () => {
     const icons = getIconSet(IconSetEnum.placeholders);
     const { floatingBottle: FloatingBottleIcon } = icons;
 
-    const { url } = useRouteMatch();
+    const { pathname: url } = useLocation();
     const { presentToast } = useToast();
     const searchInputRef = useRef<HTMLInputElement>(null);
 

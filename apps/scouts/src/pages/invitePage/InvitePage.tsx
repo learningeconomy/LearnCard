@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useHistory } from 'react-router';
+import { useNavigate } from 'react-router';
 
 import MainHeader from '../../components/main-header/MainHeader';
 import MiniGhost from 'learn-card-base/assets/images/emptystate-ghost.png';
@@ -18,7 +18,7 @@ const log = getLogger('invite-page');
 const InvitePage: React.FC = () => {
     const isLoggedIn = useIsLoggedIn();
     const { initWallet } = useWallet();
-    const history = useHistory();
+    const navigate = useNavigate();
     const query = usePathQuery();
 
     const profileId = query.get('profileId');
@@ -100,7 +100,7 @@ const InvitePage: React.FC = () => {
                 {!loading && lcNetworkProfile && (
                     <AddContactView
                         user={lcNetworkProfile}
-                        handleCancel={() => history.push('/')}
+                        handleCancel={() => navigate('/')}
                         customContainerClass="mb-20"
                         mode={AddContactViewMode.acceptInvite}
                         profileId={profileId}

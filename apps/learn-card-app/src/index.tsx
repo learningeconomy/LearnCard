@@ -19,6 +19,8 @@ import { bootstrapTenantConfig } from './config/bootstrapTenantConfig';
 import { applyNativeViewportRestrictions } from './helpers/applyNativeViewportRestrictions';
 import { getLaunchDarklyProviderProps } from './constants/runtimeLaunchDarkly';
 import App from './App';
+import { createBrowserRouter } from 'react-router';
+import { RouterProvider } from 'react-router/dom';
 import { markStartupPhase } from './helpers/startupDiagnostics';
 import { prewarmDidKit } from 'learn-card-base/helpers/didkitPrewarm';
 import { startNativeSQLiteInit } from 'learn-card-base/hooks/useSQLiteStorage';
@@ -112,7 +114,9 @@ startNativeSQLiteInit();
             <TenantConfigProvider config={tenantConfig}>
                 <LocaleProvider>
                     <LDProvider {...getLaunchDarklyProviderProps()}>
-                        <App />
+                        <RouterProvider
+                            router={createBrowserRouter([{ path: '*', element: <App /> }])}
+                        />
                     </LDProvider>
                 </LocaleProvider>
             </TenantConfigProvider>

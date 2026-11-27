@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('user-verify-email');
 
@@ -15,7 +15,7 @@ const UserVerifyEmail: React.FC = () => {
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
-    const history = useHistory();
+    const navigate = useNavigate();
     const query = usePathQuery();
     const token = query.get('token');
 
@@ -70,7 +70,7 @@ const UserVerifyEmail: React.FC = () => {
                         </h1>
                         <button
                             type="button"
-                            onClick={() => history.push('/')}
+                            onClick={() => navigate('/')}
                             className={`mt-2 bg-${primaryColor} py-[10px] px-[20px] rounded-[30px] font-notoSans text-[17px] font-semibold leading-[24px] tracking-[0.25px] text-white shadow-button-bottom flex gap-[5px] items-center justify-center w-[80%] max-w-[280px]`}
                         >
                             {m['profile.verify.returnHome']()}
@@ -88,7 +88,7 @@ const UserVerifyEmail: React.FC = () => {
                         </p>
                         <button
                             type="button"
-                            onClick={() => history.push('/')}
+                            onClick={() => navigate('/')}
                             className={`bg-${primaryColor} py-[10px] px-[20px] rounded-[30px] font-notoSans text-[17px] font-semibold leading-[24px] tracking-[0.25px] text-white shadow-button-bottom flex gap-[5px] items-center justify-center w-[80%] max-w-[280px]`}
                         >
                             {m['profile.verify.returnHome']()}

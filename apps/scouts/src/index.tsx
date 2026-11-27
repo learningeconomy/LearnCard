@@ -1,4 +1,6 @@
 import { createRoot } from 'react-dom/client';
+import { createBrowserRouter } from 'react-router';
+import { RouterProvider } from 'react-router/dom';
 import { Buffer } from 'buffer';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
@@ -63,12 +65,15 @@ installInsetSimulator();
     });
     const container = document.getElementById('root');
     if (container) {
+        // Created after bootstrap so the router reads the final startup URL.
+        // App renders for every path and owns its own route table.
+        const router = createBrowserRouter([{ path: '*', element: <App /> }]);
         const root = createRoot(container);
         root.render(
             <TenantConfigProvider config={tenantConfig}>
                 <LocaleProvider>
                     <LDProvider>
-                        <App />
+                        <RouterProvider router={router} />
                     </LDProvider>
                 </LocaleProvider>
             </TenantConfigProvider>

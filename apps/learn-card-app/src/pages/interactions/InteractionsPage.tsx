@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useLocation, useHistory } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 import { AppIcon } from 'learn-card-base/ui/icon';
 import { AppCard, AppCardContent, AppText } from 'learn-card-base/ui/widgets';
@@ -45,7 +45,7 @@ const isLocalhost = (): boolean => {
 
 const InteractionsPage: React.FC = () => {
     const location = useLocation();
-    const history = useHistory();
+    const navigate = useNavigate();
 
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -82,7 +82,7 @@ const InteractionsPage: React.FC = () => {
         // On localhost, there's no edge function to handle content negotiation
         // so we redirect directly to the request page
         if (isLocalhost()) {
-            history.replace(`/request?vc_request_url=${encodeURIComponent(vcapiUrl)}`);
+            navigate(`/request?vc_request_url=${encodeURIComponent(vcapiUrl)}`, { replace: true });
             return;
         }
 
@@ -106,9 +106,9 @@ const InteractionsPage: React.FC = () => {
 
             if (data && data.protocols && typeof data.protocols.vcapi === 'string') {
                 // Successfully fetched vcapi URL, redirect
-                history.replace(
-                    `/request?vc_request_url=${encodeURIComponent(data.protocols.vcapi)}`
-                );
+                navigate(`/request?vc_request_url=${encodeURIComponent(data.protocols.vcapi)}`, {
+                    replace: true,
+                });
             } else {
                 throw new Error('Invalid interaction data received from the server.');
             }
@@ -118,7 +118,7 @@ const InteractionsPage: React.FC = () => {
             setError(e.message || 'An unknown error occurred while processing the interaction.');
             setLoading(false);
         }
-    }, [location, history]);
+    }, [location, navigate]);
 
     useEffect(() => {
         fetchInteractionDetails();
@@ -129,7 +129,7 @@ const InteractionsPage: React.FC = () => {
     };
 
     const handleGoHome = () => {
-        history.push('/home'); // Or your app's main/home route
+        navigate('/home'); // Or your app's main/home route
     };
 
     if (loading) {

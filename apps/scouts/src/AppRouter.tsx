@@ -1,7 +1,7 @@
 import { useEffect, useCallback, memo, useState } from 'react';
 import { App } from '@capacitor/app';
 import { Capacitor, PluginListenerHandle } from '@capacitor/core';
-import { useLocation, useHistory, RouteComponentProps } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import queryString from 'query-string';
 
 import { AppTabs, AppTabBar, AppTabButton } from 'learn-card-base/ui/app-shell/AppTabs';
@@ -73,7 +73,7 @@ const AppRouter: React.FC = () => {
     // Once walletReady is true, we always show the app regardless of other signals.
     const initLoading = walletReady ? false : coordinatorLoading;
     const { verifySignInLinkAndLogin } = useFirebase();
-    const history = useHistory();
+    const navigate = useNavigate();
     const location = useLocation();
     const isLoggedIn = useIsLoggedIn();
     const collapsed = useIsCollapsed();
@@ -126,7 +126,7 @@ const AppRouter: React.FC = () => {
                 handleCloseModal={closeBoostSelectModal}
                 showCloseButton={false}
                 showNewBoost={true}
-                history={history as RouteComponentProps['history']}
+                history={navigate}
                 boostCredential={{} as VC}
                 boostUri=""
                 profileId=""
@@ -141,7 +141,7 @@ const AppRouter: React.FC = () => {
 
         if (params.get('verifyCode') === 'true' && isNative) {
             redirectStore.set.email(params.get('email') as string);
-            history.replace('/login?verifyCode=true');
+            navigate('/login?verifyCode=true', { replace: true });
         } else if (data.url) {
             const savedEmailNative = localStorage.getItem('emailForSignIn') ?? '';
             await verifySignInLinkAndLogin(savedEmailNative, data.url);
@@ -186,9 +186,9 @@ const AppRouter: React.FC = () => {
             const email = params.email as string;
             redirectStore.set.email(email);
 
-            history.replace(`/login?verifyCode=true`);
+            navigate(`/login?verifyCode=true`, { replace: true });
         }
-    }, [params, history]);
+    }, [params, navigate]);
 
     const unreadCount = notificationsData?.notifications?.length || null;
 

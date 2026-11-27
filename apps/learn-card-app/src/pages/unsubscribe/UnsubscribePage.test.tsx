@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
     location: { search: '?token=signed' },
     privacy: vi.fn(),
 }));
-vi.mock('react-router-dom', () => ({ useLocation: () => mocks.location }));
+vi.mock('react-router', () => ({ useLocation: () => mocks.location }));
 vi.mock('learn-card-base', () => ({
     networkStore: { get: { networkUrl: () => 'https://brain.example/trpc' } },
 }));

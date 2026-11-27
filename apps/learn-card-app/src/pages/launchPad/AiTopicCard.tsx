@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { formatLocaleDate } from '../../i18n/formatters';
 
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { Compass, Check, Hourglass, MessagesSquare, ChevronRight } from 'lucide-react';
 
 import { useModal } from 'learn-card-base';
@@ -40,7 +40,7 @@ export const isAiTopicRecord = (record: CredentialRecord): boolean => {
 
 const AiTopicCard: React.FC<AiTopicCardProps> = ({ record, isNew, index }) => {
     const [isAnimating, setIsAnimating] = useState(isNew);
-    const history = useHistory();
+    const navigate = useNavigate();
     const { closeAllModals } = useModal();
 
     useEffect(() => {
@@ -72,7 +72,7 @@ const AiTopicCard: React.FC<AiTopicCardProps> = ({ record, isNew, index }) => {
     const handleOpenTopic = () => {
         if (!topicBoostUri) return;
         closeAllModals();
-        history.push(`/ai/sessions?topicBoostUri=${encodeURIComponent(topicBoostUri)}`);
+        navigate(`/ai/sessions?topicBoostUri=${encodeURIComponent(topicBoostUri)}`);
     };
 
     return (

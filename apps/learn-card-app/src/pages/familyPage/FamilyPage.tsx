@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
 import { lazyWithRetry } from 'learn-card-base';
@@ -49,7 +49,7 @@ const FamilyPage: React.FC = () => {
     const { backgroundSecondaryColor, backgroundPrimaryColor, headerTextColor } = colors;
 
     const query = usePathQuery();
-    const history = useHistory();
+    const navigate = useNavigate();
 
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.FullScreen,
@@ -119,7 +119,7 @@ const FamilyPage: React.FC = () => {
             showFamilyCMS();
         }
 
-        history.replace('/families');
+        navigate('/families', { replace: true });
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [credentialsLoading]);
 
@@ -134,9 +134,9 @@ const FamilyPage: React.FC = () => {
                 {},
                 { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
             );
-            history.replace('/families');
+            navigate('/families', { replace: true });
         }
-    }, [_showPreview, _boostUri, newModal, history]);
+    }, [_showPreview, _boostUri, newModal, navigate]);
 
     const imgSrc = RelationshipCats;
     const { iconColor, textColor } = SubheaderContentType[SubheaderTypeEnum.Family];
@@ -190,7 +190,7 @@ const FamilyPage: React.FC = () => {
                     {currentLCNUser && (
                         <EarnedAndManagedTabs
                             handleActiveTab={setActiveTab}
-                            handlePlusClick={() => history.push('/issue')}
+                            handlePlusClick={() => navigate('/issue')}
                             activeTab={activeTab}
                             containerClassName="px-[5px]"
                             className="bg-amber-900"

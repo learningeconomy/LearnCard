@@ -1,6 +1,6 @@
 import { enterSharePrivacy, isShareViewerPath } from '../components/share-links/sharePrivacy';
 import { useCallback, useMemo } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import type { VC } from '@learncard/types';
 import { useWallet } from 'learn-card-base';
 
@@ -129,7 +129,7 @@ const SURFACE_TO_PATH: Record<ClaimSurface, (parsed: ParsedClaimInput) => string
 export const useClaimInputRouter = ({
     defaultSource,
 }: UseClaimInputRouterOptions): ClaimInputRouter => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { initWallet } = useWallet();
     const { validateTextVC } = useUploadVcFromText();
     const { track } = useAnalytics();
@@ -145,7 +145,7 @@ export const useClaimInputRouter = ({
                 const incoming = new URL(input);
                 if (isShareViewerPath(incoming.pathname)) {
                     enterSharePrivacy();
-                    history.push(incoming.pathname + incoming.hash);
+                    navigate(incoming.pathname + incoming.hash);
                     return {
                         kind: 'routed',
                         surface: 'lcw-https',
@@ -182,7 +182,7 @@ export const useClaimInputRouter = ({
                 if (!path) {
                     return emit({ kind: 'unrecognized', reason: 'unknown_format', raw: input });
                 }
-                history.push(path);
+                navigate(path);
                 return emit({ kind: 'routed', surface, path });
             }
 
@@ -217,7 +217,7 @@ export const useClaimInputRouter = ({
             if (parsed.kind === 'interaction-url') {
                 const sameOriginPath = getSameOriginInteractionPath(parsed.url);
                 if (sameOriginPath) {
-                    history.push(sameOriginPath);
+                    navigate(sameOriginPath);
                     return emit({ kind: 'routed', surface: 'interaction', path: sameOriginPath });
                 }
 
@@ -239,21 +239,21 @@ export const useClaimInputRouter = ({
                         const path = `/oid4vci?offer=${encodeURIComponent(
                             interactionData.protocols.openid4vci
                         )}`;
-                        history.push(path);
+                        navigate(path);
                         return emit({ kind: 'routed', surface: 'oid4vci', path });
                     }
                     if (interactionData?.protocols?.openid4vp) {
                         const path = `/oid4vp?request=${encodeURIComponent(
                             interactionData.protocols.openid4vp
                         )}`;
-                        history.push(path);
+                        navigate(path);
                         return emit({ kind: 'routed', surface: 'oid4vp', path });
                     }
                     if (interactionData?.protocols?.vcapi) {
                         const path = `/request?vc_request_url=${encodeURIComponent(
                             interactionData.protocols.vcapi
                         )}`;
-                        history.push(path);
+                        navigate(path);
                         return emit({
                             kind: 'routed',
                             surface: 'vc-api-custom-scheme',
@@ -283,6 +283,6 @@ export const useClaimInputRouter = ({
 
             return emit({ kind: 'unrecognized', reason: 'unknown_format', raw: input });
         },
-        [history, initWallet, validateTextVC, defaultSource, track, parserConfig]
+        [navigate, initWallet, validateTextVC, defaultSource, track, parserConfig]
     );
 };

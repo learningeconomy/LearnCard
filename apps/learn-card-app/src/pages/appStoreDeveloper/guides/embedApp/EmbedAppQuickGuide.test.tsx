@@ -1,6 +1,6 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { MemoryRouter, Route } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 
 import EmbedAppQuickGuide from './EmbedAppQuickGuide';
@@ -41,10 +41,18 @@ vi.mock('../shared/useGuideState', async () => {
 const renderGuide = () =>
     render(
         <MemoryRouter initialEntries={['/guide']}>
-            <Route path="/guide">
-                <EmbedAppQuickGuide selectedIntegration={null} setSelectedIntegration={vi.fn()} />
-            </Route>
-            <Route path="/app-store/developer" render={() => <div>Your Apps page</div>} />
+            <Routes>
+                <Route
+                    path="/guide/*"
+                    element={
+                        <EmbedAppQuickGuide
+                            selectedIntegration={null}
+                            setSelectedIntegration={vi.fn()}
+                        />
+                    }
+                />
+                <Route path="/app-store/developer/*" element={<div>Your Apps page</div>} />
+            </Routes>
         </MemoryRouter>
     );
 

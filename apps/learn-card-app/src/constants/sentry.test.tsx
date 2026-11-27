@@ -81,7 +81,7 @@ vi.mock('@sentry/react', () => ({
     captureMessage: vi.fn(),
     addBreadcrumb: vi.fn(),
     feedbackIntegration: vi.fn(),
-    reactRouterV5BrowserTracingIntegration: vi.fn(),
+    reactRouterV6BrowserTracingIntegration: vi.fn(),
     replayIntegration: vi.fn(),
 }));
 
