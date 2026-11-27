@@ -202,7 +202,12 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                     <AppGrid>
                         <AppRow className="w-full flex items-center gap-3 max-w-[760px] mx-auto">
                             <AppCol size="12" className="flex items-center gap-3">
-                                <button type="button" onClick={saveAndClose} className="shrink-0">
+                                <button
+                                    type="button"
+                                    onClick={saveAndClose}
+                                    className="shrink-0"
+                                    aria-label="Back button"
+                                >
                                     <CaretLeft />
                                 </button>
 
