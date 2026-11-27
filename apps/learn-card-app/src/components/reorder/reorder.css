@@ -1,0 +1,66 @@
+/*
+ * App-owned reorder: ports of @ionic/core 8.7.2 ion-reorder-group and ion-reorder.
+ *
+ * Cascade, matching what Ionic did:
+ * - ion-reorder-group had no encapsulation. Stencil put its styles in the first <style> of the
+ *   document, so every later rule of the same specificity won (the items keep their Tailwind
+ *   `flex` while a list is active). They live in `@layer app-reorder`, which every unlayered
+ *   rule beats; index.scss still drops the selected item's shadow.
+ * - The class names stay `reorder-enabled`, `reorder-list-active` and `reorder-selected`.
+ *   `ion-reorder` becomes `div:where(.app-reorder)`, at the same specificity.
+ * - ion-reorder's default icon was in its shadow root. Its rules are unlayered with two classes
+ *   so the app's CSS (and icon.css's `.app-icon`) can't restyle it.
+ */
+
+@layer app-reorder {
+    /* ion-reorder-group and ion-reorder had no host display: inline, like any unknown element. */
+    div:where(.app-reorder-group),
+    div:where(.app-reorder) {
+        display: inline;
+    }
+
+    .reorder-list-active > * {
+        display: block;
+        transition: transform 300ms;
+        will-change: transform;
+    }
+
+    .reorder-enabled {
+        user-select: none;
+    }
+
+    .reorder-enabled div:where(.app-reorder) {
+        display: block;
+        cursor: grab;
+        pointer-events: all;
+        touch-action: none;
+    }
+
+    .reorder-selected,
+    .reorder-selected div:where(.app-reorder) {
+        cursor: grabbing;
+    }
+
+    .reorder-selected {
+        position: relative;
+        transition: none !important;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+        opacity: 0.8;
+        z-index: 100;
+    }
+}
+
+/* ion-reorder's shadow `.reorder-icon` (the default icon, shown without children). */
+.app-reorder > .app-reorder-icon {
+    display: block;
+}
+
+.app-reorder.ios > .app-reorder-icon {
+    font-size: 2.125rem;
+    opacity: 0.4;
+}
+
+.app-reorder.md > .app-reorder-icon {
+    font-size: 1.9375rem;
+    opacity: 0.3;
+}

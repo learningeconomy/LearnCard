@@ -1,7 +1,6 @@
 import React from 'react';
 
-import { IonReorder } from '@ionic/react';
-
+import { AppReorder } from '../../reorder';
 import TrashBin from '../../svgs/TrashBin';
 import VerticalArrowsIcon from '../../svgs/VerticalArrowsIcon';
 
@@ -24,9 +23,9 @@ const ResumePreviewCredentialActionRail: React.FC<ResumePreviewCredentialActionR
             >
                 <TrashBin className="h-[20px] w-[20px] text-grayscale-700" version="2" />
             </button>
-            <IonReorder>
+            <AppReorder>
                 <VerticalArrowsIcon className="h-[20px] w-[20px] text-grayscale-700" />
-            </IonReorder>
+            </AppReorder>
         </div>
     );
 };

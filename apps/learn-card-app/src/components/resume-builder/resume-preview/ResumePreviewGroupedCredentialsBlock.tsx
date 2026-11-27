@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { VC } from '@learncard/types';
 
-import { IonReorderGroup, ReorderEndCustomEvent } from '@ionic/react';
 import { AppIcon } from '../../icon';
+import { AppReorderGroup } from '../../reorder';
 import { chevronDownOutline, chevronUpOutline } from 'ionicons/icons';
 import ResumePreviewCredentialToTextBlock from './ResumePreviewCredentialToTextBlock';
 import ResumePreviewCredentialActionRail from './ResumePreviewCredentialActionRail';
@@ -153,10 +153,9 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
                     ))}
                 </div>
             ) : (
-                <IonReorderGroup
+                <AppReorderGroup
                     disabled={false}
-                    onIonReorderEnd={(e: ReorderEndCustomEvent) => {
-                        e.stopPropagation();
+                    onIonReorderEnd={e => {
                         const { from, to } = e.detail;
                         const reordered = [...entries];
                         const [moved] = reordered.splice(from, 1);
@@ -214,7 +213,7 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
                             </div>
                         );
                     })}
-                </IonReorderGroup>
+                </AppReorderGroup>
             )}
         </div>
     );

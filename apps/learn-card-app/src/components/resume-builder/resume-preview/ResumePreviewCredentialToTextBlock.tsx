@@ -3,9 +3,9 @@ import { add } from 'ionicons/icons';
 import moment from 'moment';
 import type { UnsignedVC, VC } from '@learncard/types';
 
-import { IonReorder, IonReorderGroup, ReorderEndCustomEvent } from '@ionic/react';
 import AppDatetime from '../../datetime/AppDatetime';
 import { AppIcon } from '../../icon';
+import { AppReorder, AppReorderGroup } from '../../reorder';
 import ResumeBuilderToggle from '../ResumeBuilderToggle';
 import { TrustedIcon } from 'learn-card-base/svgs/TrustedIcon';
 import VerticalArrowsIcon from '../../../components/svgs/VerticalArrowsIcon';
@@ -251,10 +251,9 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
                 {isEditing ? (
                     <>
                         <div data-pdf-screen-only>
-                            <IonReorderGroup
+                            <AppReorderGroup
                                 disabled={!isEditing}
-                                onIonReorderEnd={(e: ReorderEndCustomEvent) => {
-                                    e.stopPropagation();
+                                onIonReorderEnd={e => {
                                     const { from, to } = e.detail;
                                     const reordered = [...fields];
                                     const [moved] = reordered.splice(from, 1);
@@ -364,16 +363,16 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
                                                 field.type === 'metadata' &&
                                                 metadataFields.length > 1 && (
                                                     <div className="shrink-0 text-grayscale-700 bg-grayscale-100 rounded-[10px] leading-none h-[32px] w-[32px] flex items-center justify-center">
-                                                        <IonReorder>
+                                                        <AppReorder>
                                                             <VerticalArrowsIcon />
-                                                        </IonReorder>
+                                                        </AppReorder>
                                                     </div>
                                                 )
                                             )}
                                         </div>
                                     );
                                 })}
-                            </IonReorderGroup>
+                            </AppReorderGroup>
                         </div>
 
                         <div
