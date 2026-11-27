@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import moment from 'moment';
 
-import { IonDatetime } from '@ionic/react';
+import AppDatetime from '../../../../datetime/AppDatetime';
 import { useAppOverlayModal } from '../../../../overlays/useAppOverlayModal';
 import { AppCol, AppRow } from '../../../../layout';
 import { AppTextarea } from '../../../../controls/AppTextarea';
@@ -66,7 +66,7 @@ const BoostCMSAdvancedSettingsForm: React.FC<{
 
     const [presentDatePicker, dismissDatePicker] = useAppOverlayModal(
         <div className="w-full h-full transparent flex items-center justify-center">
-            <IonDatetime
+            <AppDatetime
                 onIonChange={e => {
                     handleStateChange('expirationDate', moment(e.detail.value).toISOString());
                 }}

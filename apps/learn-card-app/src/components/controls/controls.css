@@ -342,6 +342,33 @@
         opacity: 0.4;
     }
 
+    /* :host(.button-has-icon-only) and ::slotted(ion-icon[slot=icon-only]). */
+    .app-button.ios.app-button-has-icon-only {
+        --padding-top: 0;
+        --padding-bottom: var(--padding-top);
+        --padding-end: var(--padding-top);
+        --padding-start: var(--padding-end);
+        min-width: clamp(30px, 2.125em, 60px);
+        min-height: clamp(30px, 2.125em, 60px);
+    }
+
+    .app-button.ios > .app-button-native > .app-button-inner > .app-icon[slot='icon-only'] {
+        font-size: clamp(15.12px, 1.125em, 43.02px);
+    }
+
+    .app-button.md.app-button-has-icon-only {
+        --padding-top: 0;
+        --padding-bottom: var(--padding-top);
+        --padding-end: var(--padding-top);
+        --padding-start: var(--padding-end);
+        min-width: clamp(30px, 2.86em, 60px);
+        min-height: clamp(30px, 2.86em, 60px);
+    }
+
+    .app-button.md > .app-button-native > .app-button-inner > .app-icon[slot='icon-only'] {
+        font-size: clamp(15.104px, 1.6em, 43.008px);
+    }
+
     /* ---------------------------------------------------- ion-toolbar ::slotted(ion-buttons) */
     ion-toolbar > .app-buttons.ios {
         min-height: 38px;
@@ -833,6 +860,37 @@ ion-toolbar:not([color]) .app-button.app-button-solid:not(.app-color) > .app-but
     --background-activated: transparent;
     --background-focused: currentColor;
     --background-hover: transparent;
+}
+
+/* ion-buttons' `::slotted(*) .button-has-icon-only` / `::slotted(*) ion-icon[slot=icon-only]`. */
+.app-buttons.md .app-button.app-button-has-icon-only,
+.app-buttons.ios .app-button.app-button-has-icon-only {
+    --padding-top: 0;
+    --padding-bottom: 0;
+}
+
+.app-buttons.md .app-button.app-button-has-icon-only.app-button-clear {
+    --padding-top: 12px;
+    --padding-end: 12px;
+    --padding-bottom: 12px;
+    --padding-start: 12px;
+    --border-radius: 50%;
+    margin: 0;
+    width: 3rem;
+    height: 3rem;
+}
+
+.app-buttons.ios .app-icon[slot='icon-only'] {
+    padding: 0;
+    margin: 0;
+    font-size: 1.65em;
+    line-height: 0.67;
+}
+
+.app-buttons.md .app-icon[slot='icon-only'] {
+    padding: 0;
+    margin: 0;
+    font-size: 1.8em;
 }
 
 /* --------------------------------------------------------------- ion-checkbox shadow parts */

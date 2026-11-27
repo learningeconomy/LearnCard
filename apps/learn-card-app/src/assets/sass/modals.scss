@@ -283,8 +283,7 @@ div:where(.app-modal).center-modal.smart-resume-prompt-modal {
 // }
 
 // fix ionModal z-index
-ion-datetime {
-    --z-index: 100001 !important;
+.app-datetime {
     z-index: 100001 !important;
 }
 
@@ -314,5 +313,12 @@ ion-picker {
 
 ion-picker-column {
     --z-index: 100002 !important;
+    z-index: 100002 !important;
+}
+
+// The two rules above also reached ion-datetime's time popover, which Ionic presented outside the
+// datetime's shadow root; the columns stacking over the picker's fade hid it. Kept for parity.
+.app-datetime-popover .app-picker,
+.app-datetime-popover .app-picker-column {
     z-index: 100002 !important;
 }

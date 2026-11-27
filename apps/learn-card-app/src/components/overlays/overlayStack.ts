@@ -138,6 +138,32 @@ const getTopAppOverlay = (): OverlayEntry | undefined => {
     return top ? entries.get(top) : undefined;
 };
 
+/**
+ * ion-datetime's `closeParentOverlay`: dismisses the closest modal or popover around `el`, whether
+ * it is an Ionic one (`dismiss(undefined, role)`) or an app-owned one (the entry's `dismiss(role)`).
+ * Returns whether one was found.
+ */
+export const dismissClosestModalOrPopover = (el: Element, role: OverlayRole): boolean => {
+    let node: Element | null = el.closest(`ion-modal, ion-popover, [${APP_OVERLAY_ATTR}]`);
+    while (node) {
+        if (node.tagName === 'ION-MODAL' || node.tagName === 'ION-POPOVER') {
+            void (
+                node as HTMLElement & {
+                    dismiss: (data?: unknown, role?: string) => Promise<boolean>;
+                }
+            ).dismiss(undefined, role);
+            return true;
+        }
+        const entry = entries.get(node as HTMLElement);
+        if (entry && (entry.kind === 'modal' || entry.kind === 'popover')) {
+            entry.dismiss(role);
+            return true;
+        }
+        node = node.parentElement?.closest(`ion-modal, ion-popover, [${APP_OVERLAY_ATTR}]`) ?? null;
+    }
+    return false;
+};
+
 /** Dismisses every presented app overlay but toasts (helpers/uiHelpers `closeAll`, which skips toasts). */
 export const dismissAllAppOverlays = (): void => {
     for (const entry of Array.from(entries.values())) if (entry.kind !== 'toast') entry.dismiss();

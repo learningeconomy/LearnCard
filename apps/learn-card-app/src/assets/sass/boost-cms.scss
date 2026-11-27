@@ -407,23 +407,25 @@ div:where(.app-segment-button) {
     padding-top: calc(env(safe-area-inset-top) + 0px);
 }
 
-ion-datetime::part(calendar-day) {
-    font-family: 'Noto Sans';
-    font-size: large;
+// AppDatetime. Were `ion-datetime::part(...)` rules, which beat every rule inside the datetime's
+// shadow root; `!important` keeps that over the ported part rules.
+.app-datetime .calendar-day[part~='calendar-day'] {
+    font-family: 'Noto Sans' !important;
+    font-size: large !important;
 }
 
-ion-datetime::part(month-year-button) {
-    font-family: 'Noto Sans';
-    font-size: large;
-    font-weight: 500;
-    width: 100%;
+.app-datetime .calendar-month-year-toggle[part~='month-year-button'] {
+    font-family: 'Noto Sans' !important;
+    font-size: large !important;
+    font-weight: 500 !important;
+    width: 100% !important;
 }
 
 .calendar-month-year-toggle #toggle-wrapper {
     justify-content: space-between;
 }
 
-ion-datetime {
+.app-datetime {
     --background: rgb(245, 235, 247);
     --background-rgb: 245, 235, 247;
     --wheel-highlight-background: rgb(218, 216, 255);
@@ -433,16 +435,8 @@ ion-datetime {
     --title-font-size: 10px;
 }
 
-ion-datetime.datetime-header .datetime-header .datetime-title {
-    font-size: 10px !important;
-}
-
-ion-datetime.datetime-header .datetime-selected-date ion-datetime::part(wheel-item) {
-    color: rgb(192, 192, 192);
-}
-
-ion-datetime::part(wheel-item active) {
-    color: rgb(32, 30, 171);
+.app-datetime .app-picker-column-option[part~='wheel-item'][part~='active'] {
+    color: rgb(32, 30, 171) !important;
 }
 
 .boost-verifier-badge-display {

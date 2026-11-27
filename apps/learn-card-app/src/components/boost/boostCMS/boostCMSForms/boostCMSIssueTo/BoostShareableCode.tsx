@@ -10,7 +10,8 @@ import useDebounce from 'apps/learn-card-app/src/hooks/useDebounce';
 import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantConfig';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 
-import { IonSpinner, IonDatetime } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
+import AppDatetime from '../../../../datetime/AppDatetime';
 import { useAppOverlayModal } from '../../../../overlays/useAppOverlayModal';
 import { AppCol, AppGrid, AppRow } from '../../../../layout';
 import { AppInput } from '../../../../controls/AppInput';
@@ -99,7 +100,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
 
     const [presentDatePicker] = useAppOverlayModal(
         <div className="w-full h-full transparent flex items-center justify-center">
-            <IonDatetime
+            <AppDatetime
                 onIonChange={e => {
                     clearBoostLink();
                     setExpirationDate(moment(e.detail.value).toISOString());
@@ -559,7 +560,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                                             } else {
                                                 newModal(
                                                     <div className="w-full h-full transparent flex items-center justify-center">
-                                                        <IonDatetime
+                                                        <AppDatetime
                                                             onIonChange={e => {
                                                                 clearBoostLink();
                                                                 setExpirationDate(

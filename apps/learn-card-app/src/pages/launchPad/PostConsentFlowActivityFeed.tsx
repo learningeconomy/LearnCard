@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { ConsentFlowTerms, ConsentFlowContractDetails, LCNProfile } from '@learncard/types';
 import moment from 'moment';
 
-import { IonDatetime, IonHeader, IonSkeletonText, IonSpinner, IonToolbar } from '@ionic/react';
+import { IonHeader, IonSkeletonText, IonSpinner, IonToolbar } from '@ionic/react';
 import { AppCol, AppGrid, AppRow } from '../../components/layout';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import { useModal, useTermsTransactions } from 'learn-card-base';

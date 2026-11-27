@@ -218,3 +218,38 @@ describe('AppButtons', () => {
         expect((container.firstElementChild as HTMLElement).hasAttribute('slot')).toBe(false);
     });
 });
+
+describe('AppButton in AppDatetime', () => {
+    it('takes an id on the host and an aria-label on the native button', () => {
+        render(
+            <AppButton id="confirm-button" aria-label="Next month">
+                <span slot="icon-only" />
+            </AppButton>
+        );
+        const button = screen.getByRole('button', { name: 'Next month' });
+
+        expect(host(button).id).toBe('confirm-button');
+        expect(host(button).classList.contains('app-button-has-icon-only')).toBe(true);
+    });
+
+    it('color="inherit" reads the palette an ancestor sets, adding no palette entry of its own', () => {
+        render(<AppButton color="inherit">Done</AppButton>);
+        const classes = Array.from(host(screen.getByRole('button', { name: 'Done' })).classList);
+
+        expect(classes).toContain('app-color');
+        expect(classes.filter(c => c.startsWith('app-color-'))).toEqual([]);
+    });
+
+    it('AppButtons takes an explicit mode for its buttons', () => {
+        document.documentElement.setAttribute('mode', 'md');
+        render(
+            <AppButtons slot="buttons" mode="ios">
+                <AppButton>Done</AppButton>
+            </AppButtons>
+        );
+        const button = screen.getByRole('button', { name: 'Done' });
+
+        expect(host(button).parentElement?.classList.contains('ios')).toBe(true);
+        expect(host(button).classList.contains('app-button-clear')).toBe(true);
+    });
+});

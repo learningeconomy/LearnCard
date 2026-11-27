@@ -1,13 +1,5 @@
 import React, { useRef, useState } from 'react';
-import {
-    IonApp,
-    IonButton,
-    IonButtons,
-    IonDatetime,
-    IonHeader,
-    IonTitle,
-    IonToolbar,
-} from '@ionic/react';
+import { IonApp, IonHeader, IonTitle, IonToolbar } from '@ionic/react';
 import { AppCol, AppGrid, AppRow } from '../../src/components/layout';
 import { AppIcon } from '../../src/components/icon';
 import { AppCard, AppCardContent, AppText } from '../../src/components/widgets';
@@ -23,6 +15,7 @@ import { initialBoostCMSState, type BoostCMSState } from '../../src/components/b
 import DevCliBackButton from '../../src/pages/devCli/DevCliBackButton';
 import { AppButton, type AppButtonProps } from '../../src/components/controls/AppButton';
 import { AppButtons } from '../../src/components/controls/AppButtons';
+import AppDatetime from '../../src/components/datetime/AppDatetime';
 import { AppCheckbox } from '../../src/components/controls/AppCheckbox';
 import { AppRadio, AppRadioGroup } from '../../src/components/controls/AppRadio';
 import {
@@ -38,7 +31,7 @@ import {
  * `controls-1a`: every app call site that used IonButton / IonButtons / IonCheckbox / IonRadio /
  * IonRadioGroup (phase 4 batch 1a), rendered with fixed local data and no backend. Those call
  * sites now use the app-owned AppButton / AppButtons / AppCheckbox / AppRadioGroup / AppRadio;
- * only CreateAPITokenModal's IonDatetime `slot="buttons"` content stays Ionic.
+ * CreateAPITokenModal's date picker is AppDatetime with AppButtons as its `buttons`.
  *
  * Components that render standalone are the real ones. Pages whose mount effects need a wallet,
  * network or xterm are faithful excerpts: the controls, their props and classes, and their
@@ -216,7 +209,7 @@ const EmbedAppFullScreenToolbar: React.FC = () => (
 
 /**
  * src/pages/adminToolsPage/api-tokens/CreateAPITokenModal.tsx:85-110, rendered inline instead of in
- * a modal. value/min are fixed dates instead of `moment()`. IonDatetime still highlights the real
+ * a modal. value/min are fixed dates instead of `moment()`. AppDatetime still highlights the real
  * "today", so a spec capturing this block must also fix the clock (`page.clock.setFixedTime`).
  */
 const CreateAPITokenDatetime: React.FC = () => {
@@ -227,7 +220,7 @@ const CreateAPITokenDatetime: React.FC = () => {
 
     return (
         <>
-            <IonDatetime
+            <AppDatetime
                 onIonChange={e => {
                     const value = e.detail.value;
                     setExpirationDate(typeof value === 'string' ? value.slice(0, 10) : null);
@@ -239,16 +232,17 @@ const CreateAPITokenDatetime: React.FC = () => {
                 color={primaryColor}
                 max="2050-12-31"
                 min="2026-10-16"
-            >
-                <IonButtons slot="buttons">
-                    <IonButton color="primary" onClick={() => setClicks([...clicks, 'clear'])}>
-                        Clear
-                    </IonButton>
-                    <IonButton color="primary" onClick={() => setClicks([...clicks, 'done'])}>
-                        Done
-                    </IonButton>
-                </IonButtons>
-            </IonDatetime>
+                buttons={
+                    <AppButtons slot="buttons">
+                        <AppButton color="primary" onClick={() => setClicks([...clicks, 'clear'])}>
+                            Clear
+                        </AppButton>
+                        <AppButton color="primary" onClick={() => setClicks([...clicks, 'done'])}>
+                            Done
+                        </AppButton>
+                    </AppButtons>
+                }
+            />
             <Value testId="c1a-api-token-datetime-value" value={{ expirationDate, clicks }} />
         </>
     );

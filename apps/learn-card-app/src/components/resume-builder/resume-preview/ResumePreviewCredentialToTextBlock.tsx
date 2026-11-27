@@ -3,7 +3,8 @@ import { add } from 'ionicons/icons';
 import moment from 'moment';
 import type { UnsignedVC, VC } from '@learncard/types';
 
-import { IonDatetime, IonReorder, IonReorderGroup, ReorderEndCustomEvent } from '@ionic/react';
+import { IonReorder, IonReorderGroup, ReorderEndCustomEvent } from '@ionic/react';
+import AppDatetime from '../../datetime/AppDatetime';
 import { AppIcon } from '../../icon';
 import ResumeBuilderToggle from '../ResumeBuilderToggle';
 import { TrustedIcon } from 'learn-card-base/svgs/TrustedIcon';
@@ -108,7 +109,7 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
     const openInlineDatePicker = (mode: 'start' | 'end') => {
         newModal(
             <div className="w-full h-full transparent flex items-center justify-center">
-                <IonDatetime
+                <AppDatetime
                     onIonChange={e => {
                         if (e.detail.value) {
                             const formattedDate = moment(e.detail.value).format('YYYY-MM-DD');

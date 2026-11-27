@@ -1,7 +1,8 @@
 import React from 'react';
 import moment from 'moment';
 
-import { IonContent, IonDatetime, IonHeader, IonPage, IonToolbar } from '@ionic/react';
+import { IonContent, IonHeader, IonPage, IonToolbar } from '@ionic/react';
+import AppDatetime from '../../components/datetime/AppDatetime';
 import { useAppOverlayModal } from '../../components/overlays/useAppOverlayModal';
 import { AppCol, AppGrid, AppRow } from '../../components/layout';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
@@ -46,7 +47,7 @@ const ConsentFlowShareDurationModal: React.FC<{
 
     const [presentDatePicker] = useAppOverlayModal(
         <div className="w-full h-full transparent flex items-center justify-center">
-            <IonDatetime
+            <AppDatetime
                 onIonChange={e => {
                     handleStateChange('customDuration', moment(e.detail.value).toISOString());
                     handleStateChange('oneTimeShare', false);

@@ -3,7 +3,8 @@ import moment from 'moment';
 import { ConsentFlowTerm, CredentialRecord } from '@learncard/types';
 import { Updater } from 'use-immer';
 import { capitalizeFirstLetter } from '@learncard/helpers';
-import { IonContent, IonDatetime, IonHeader, IonPage, IonToolbar } from '@ionic/react';
+import { IonContent, IonHeader, IonPage, IonToolbar } from '@ionic/react';
+import AppDatetime from '../../components/datetime/AppDatetime';
 import { AppCol, AppGrid, AppRow } from '../../components/layout';
 import { AppToggle } from '../../components/controls/AppToggle';
 
@@ -57,7 +58,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
     const presentDatePicker = () => {
         newModal(
             <div className="w-full h-full transparent flex items-center justify-center">
-                <IonDatetime
+                <AppDatetime
                     onIonChange={e => {
                         setTerm({ ...term, shareUntil: moment(e.detail.value).toISOString() });
                         closeModal();

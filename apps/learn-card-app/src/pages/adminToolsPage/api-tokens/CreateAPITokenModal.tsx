@@ -4,10 +4,12 @@ import moment from 'moment';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('create-api-token-modal');
 
-import { IonDatetime, IonButtons, IonButton } from '@ionic/react';
 import { AppItem, AppLabel, AppList } from '../../../components/list';
 import { AppInput } from '../../../components/controls/AppInput';
 import { AppTextarea } from '../../../components/controls/AppTextarea';
+import { AppButton } from '../../../components/controls/AppButton';
+import { AppButtons } from '../../../components/controls/AppButtons';
+import AppDatetime, { type AppDatetimeHandle } from '../../../components/datetime/AppDatetime';
 import Calendar from '../../../components/svgs/Calendar';
 
 import {
@@ -62,7 +64,7 @@ const CreateAPITokenModal: React.FC<{
         { displayName: 'Custom', technicalName: '' },
     ];
 
-    const datetime = useRef<null | HTMLIonDatetimeElement>(null);
+    const datetime = useRef<AppDatetimeHandle>(null);
     const reset = () => {
         datetime.current?.reset();
     };
@@ -71,7 +73,7 @@ const CreateAPITokenModal: React.FC<{
     };
     const handleShowDatePicker = () => {
         newModal(
-            <IonDatetime
+            <AppDatetime
                 mode="ios"
                 ref={datetime}
                 onIonChange={e => {
@@ -88,23 +90,24 @@ const CreateAPITokenModal: React.FC<{
                 color={primaryColor}
                 max="2050-12-31"
                 min={moment().format('YYYY-MM-DD')}
-            >
-                {/* Stays Ionic: IonDatetime styles its slot="buttons" content by tag (::slotted(ion-buttons)). */}
-                <IonButtons slot="buttons">
-                    <IonButton color="primary" onClick={reset}>
-                        Clear
-                    </IonButton>
-                    <IonButton
-                        color="primary"
-                        onClick={() => {
-                            confirm();
-                            closeModal();
-                        }}
-                    >
-                        Done
-                    </IonButton>
-                </IonButtons>
-            </IonDatetime>,
+                buttons={
+                    <AppButtons slot="buttons" mode="ios">
+                        <AppButton color="primary" mode="ios" onClick={reset}>
+                            Clear
+                        </AppButton>
+                        <AppButton
+                            color="primary"
+                            mode="ios"
+                            onClick={() => {
+                                confirm();
+                                closeModal();
+                            }}
+                        >
+                            Done
+                        </AppButton>
+                    </AppButtons>
+                }
+            />,
             {
                 sectionClassName: 'max-w-[300px]!',
                 hideButton: true,

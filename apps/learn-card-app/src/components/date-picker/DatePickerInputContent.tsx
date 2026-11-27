@@ -5,7 +5,7 @@ import type { Locale } from 'date-fns';
 import { ar, enUS, es, fr } from 'date-fns/locale';
 import 'react-datepicker/dist/react-datepicker.css';
 import { Calendar } from 'lucide-react';
-import { IonDatetime } from '@ionic/react';
+import AppDatetime from '../datetime/AppDatetime';
 import { useModal, ModalTypes } from 'learn-card-base';
 import { SupportedLanguage, useLocale } from '../../i18n';
 import { formatDateForLocale } from './datePicker.helpers';
@@ -97,7 +97,7 @@ const DatePickerInput: React.FC<DatePickerInputProps> = ({
                         if (disabled) return;
                         newModal(
                             <div className="w-full h-full transparent flex items-center justify-center">
-                                <IonDatetime
+                                <AppDatetime
                                     aria-label={label}
                                     locale={locale}
                                     onIonChange={event => {

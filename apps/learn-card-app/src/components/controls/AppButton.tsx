@@ -7,9 +7,19 @@ import './controls.css';
 
 export type AppButtonColor = 'primary' | 'light' | 'medium';
 
+/**
+ * `inherit`: the `--app-color-*` palette entry an ancestor sets (AppDatetime's `color`), as an
+ * ion-button given the datetime's `color` inside ion-datetime.
+ */
+export type AppButtonColorProp = AppButtonColor | 'inherit';
+
 export type AppButtonProps = {
     /** Palette color (`--app-color-*`). Omitted: the primary look without color overrides. */
-    color?: AppButtonColor;
+    color?: AppButtonColorProp;
+    /** Host id (ion-button's `id`). */
+    id?: string;
+    /** Moved onto the native button, as ion-button's inherited aria attributes. */
+    'aria-label'?: string;
     /** Defaults to `clear` inside `AppButtons`, `solid` elsewhere (Ionic's rule). */
     fill?: 'solid' | 'outline' | 'clear';
     /** `block`: full width of the parent. */
@@ -30,6 +40,8 @@ export type AppButtonProps = {
  */
 export const AppButton: React.FC<AppButtonProps> = ({
     color,
+    id,
+    'aria-label': ariaLabel,
     fill,
     expand,
     disabled = false,
@@ -45,19 +57,27 @@ export const AppButton: React.FC<AppButtonProps> = ({
     const rippleRef = useRef<HTMLSpanElement>(null);
     const onPointerDown = useTapActivation(hostRef, rippleRef);
 
+    // ion-button's `button-has-icon-only`: an icon with `slot="icon-only"` among the children.
+    const hasIconOnly = React.Children.toArray(children).some(
+        child => React.isValidElement<{ slot?: string }>(child) && child.props.slot === 'icon-only'
+    );
+
     const classes = [
         'app-button',
         mode,
         `app-button-${fill ?? (inButtons ? 'clear' : 'solid')}`,
         expand && `app-button-${expand}`,
-        color && `app-color app-color-${color}`,
+        color && 'app-color',
+        color && color !== 'inherit' && `app-color-${color}`,
         disabled && 'app-button-disabled',
+        hasIconOnly && 'app-button-has-icon-only',
         className,
     ];
 
     return (
         <span
             ref={hostRef}
+            id={id}
             className={classes.filter(Boolean).join(' ')}
             aria-disabled={disabled ? 'true' : undefined}
             data-testid={testId}
@@ -66,6 +86,7 @@ export const AppButton: React.FC<AppButtonProps> = ({
                 type="button"
                 className="app-button-native"
                 disabled={disabled}
+                aria-label={ariaLabel}
                 onClick={onClick}
                 onPointerDown={onPointerDown}
             >

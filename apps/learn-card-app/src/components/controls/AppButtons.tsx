@@ -1,6 +1,6 @@
 import React, { createContext, useContext } from 'react';
 
-import { getIonMode } from '../app-shell/ionMode';
+import { getIonMode, type IonMode } from '../app-shell/ionMode';
 import './controls.css';
 
 /** True inside an `AppButtons` group: AppButton then defaults to `fill="clear"`, as in ion-buttons. */
@@ -9,8 +9,13 @@ const AppButtonsContext = createContext(false);
 export const useInAppButtons = (): boolean => useContext(AppButtonsContext);
 
 export type AppButtonsProps = {
-    /** Toolbar slot. `ion-toolbar` still places children by their `slot` attribute. */
-    slot?: 'start' | 'end';
+    /**
+     * Toolbar slot (`ion-toolbar` still places children by their `slot` attribute), or `buttons`
+     * for AppDatetime's `buttons` (ion-datetime's `slot="buttons"`).
+     */
+    slot?: 'start' | 'end' | 'buttons';
+    /** Platform look. Defaults to the document's Ionic mode; Ionic took the closest `mode`. */
+    mode?: IonMode;
     className?: string;
     children?: React.ReactNode;
 };
@@ -20,8 +25,13 @@ export type AppButtonsProps = {
  * it gets the toolbar's ion-buttons styling (ios 38px min-height, md start/end margins) and its
  * `AppButton` children get Ionic's in-buttons look (clear fill, toolbar color, compact padding).
  */
-export const AppButtons: React.FC<AppButtonsProps> = ({ slot, className, children }) => {
-    const mode = getIonMode();
+export const AppButtons: React.FC<AppButtonsProps> = ({
+    slot,
+    mode: modeProp,
+    className,
+    children,
+}) => {
+    const mode = modeProp ?? getIonMode();
 
     return (
         <AppButtonsContext.Provider value>

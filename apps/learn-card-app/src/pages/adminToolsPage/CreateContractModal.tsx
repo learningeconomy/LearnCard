@@ -9,7 +9,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import useAutosave from '../../hooks/useAutosave';
 import RecoveryPrompt from '../../components/common/RecoveryPrompt';
 
-import { IonDatetime, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
+import AppDatetime from '../../components/datetime/AppDatetime';
 import { AppLabel } from '../../components/list';
 import { AppInput } from '../../components/controls/AppInput';
 import { AppTextarea } from '../../components/controls/AppTextarea';
@@ -432,7 +433,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
     const presentExpiresAtDatePicker = () => {
         newModal(
             <div className="w-full h-full transparent flex items-center justify-center">
-                <IonDatetime
+                <AppDatetime
                     onIonChange={e => {
                         updateSlice('expiresAt', moment(e.detail.value).toISOString());
                         closeModal();
