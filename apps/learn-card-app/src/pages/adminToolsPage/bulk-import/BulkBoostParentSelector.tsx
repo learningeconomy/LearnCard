@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../../../components/feedback/AppSpinner';
 import BulkBoostParentSelectorModal from './BulkParentSelector/BulkParentSelectorModal';
 import X from 'apps/learn-card-app/src/components/svgs/X';
 
@@ -54,7 +54,7 @@ const BulkBoostParentSelector: React.FC<BulkBoostParentSelectorProps> = ({
                             <div className="w-[40px] h-[40px] rounded-full bg-white mr-2 overflow-hidden shrink-0">
                                 {isLoading ? (
                                     <div className="w-full flex items-center justify-center">
-                                        <IonSpinner
+                                        <AppSpinner
                                             name="crescent"
                                             color="grayscale-900"
                                             className="scale-[1] mt-1"

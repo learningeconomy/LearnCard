@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useLocation, useHistory } from 'react-router-dom';
-import { IonSpinner } from '@ionic/react';
 import { AppCol, AppGrid, AppRow } from '../../components/layout';
 import { AppIcon } from '../../components/icon';
 import { AppCard, AppCardContent, AppText } from '../../components/widgets';
@@ -15,6 +14,7 @@ import { AppButton } from '../../components/controls/AppButton';
 
 import { getLogger } from 'learn-card-base';
 import { AppContent, AppHeader, AppPage, AppTitle, AppToolbar } from '../../components/chrome';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 const log = getLogger('interactions-page');
 
 /**
@@ -147,7 +147,7 @@ const InteractionsPage: React.FC = () => {
                             style={{ height: '100%' }}
                         >
                             <AppCol size="auto" className="ion-text-center">
-                                <IonSpinner
+                                <AppSpinner
                                     name="crescent"
                                     style={{ width: '50px', height: '50px' }}
                                 />

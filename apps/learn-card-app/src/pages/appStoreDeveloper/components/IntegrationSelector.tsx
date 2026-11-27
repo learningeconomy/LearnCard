@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../../../components/feedback/AppSpinner';
 import type { LCNIntegration } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('integration-selector');
@@ -43,7 +43,7 @@ export const IntegrationSelector: React.FC<IntegrationSelectorProps> = ({
     if (isLoading) {
         return (
             <div className="flex justify-center py-8">
-                <IonSpinner name="crescent" />
+                <AppSpinner name="crescent" />
             </div>
         );
     }
@@ -117,7 +117,7 @@ export const IntegrationSelector: React.FC<IntegrationSelectorProps> = ({
                         className="px-4 py-2 bg-emerald-500 text-white rounded-lg font-medium hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                         {createMutation.isPending ? (
-                            <IonSpinner name="crescent" className="w-5 h-5" />
+                            <AppSpinner name="crescent" className="w-5 h-5" />
                         ) : (
                             m['developerPortal.components.integrationSelector.create']()
                         )}

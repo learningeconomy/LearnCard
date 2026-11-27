@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 import { useQuery } from '@tanstack/react-query';
 import { buildContractUpdatePreview, hasOpenNewOptionsWindow } from '@learncard/helpers';
 import {
@@ -177,7 +177,7 @@ const ContractUpdateReviewRoute: React.FC = () => {
                 isLoading ||
                 currentLCNUserLoading ||
                 statusQuery.isLoading ? (
-                    <IonSpinner name="crescent" />
+                    <AppSpinner name="crescent" />
                 ) : (
                     <p className="text-grayscale-700">
                         {mDynamic('consentUpdate.ui.noLongerAvailable')}

@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 
 import { m } from '../../paraglide/messages.js';
 
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 import { X } from 'lucide-react';
 import {
     ModalTypes,
@@ -157,7 +157,7 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({
                     <div className="flex flex-col gap-[10px] relative">
                         {loading && (
                             <div className="absolute inset-0 z-20 bg-white/70 rounded-[15px] flex items-center justify-center">
-                                <IonSpinner color="dark" name="crescent" />
+                                <AppSpinner color="dark" name="crescent" />
                             </div>
                         )}
                     </div>
@@ -192,7 +192,7 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({
 
                 {isLoading && visibleCards.length === 0 ? (
                     <div className="flex items-center justify-center py-[40px]">
-                        <IonSpinner color="dark" name="crescent" />
+                        <AppSpinner color="dark" name="crescent" />
                     </div>
                 ) : visibleCards.length > 0 ? (
                     <div className="flex flex-col gap-[15px]">

@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
-import { IonSpinner } from '@ionic/react';
 import { AppIcon } from '../../../components/icon';
 import { alertCircleOutline, arrowBackOutline } from 'ionicons/icons';
 import { useQuery } from '@tanstack/react-query';
@@ -26,6 +25,7 @@ import { getLaunchSettingsError, parseLaunchConfig } from './launchSettings';
 import { ListingStatusBanner } from './ListingStatusBanner';
 import { getListingMode, isListingLocked, withPendingChanges } from './listingLifecycle';
 import { AppContent, AppPage } from '../../../components/chrome';
+import { AppSpinner } from '../../../components/feedback/AppSpinner';
 
 const log = getLogger('edit-listing');
 
@@ -268,7 +268,7 @@ export const EditListingPage: React.FC = () => {
                 <AppStoreHeader title="Edit listing" />
                 <AppContent>
                     <div className="flex items-center justify-center h-full">
-                        <IonSpinner name="crescent" />
+                        <AppSpinner name="crescent" />
                     </div>
                 </AppContent>
             </AppPage>

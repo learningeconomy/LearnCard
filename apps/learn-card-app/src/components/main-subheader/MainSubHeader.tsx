@@ -3,7 +3,6 @@ import React from 'react';
 import * as m from '../../paraglide/messages.js';
 import { getSideMenuTranslationKey } from 'learn-card-base/components/sidemenu/sidemenuHelpers';
 
-import { IonSpinner } from '@ionic/react';
 import { AppCol, AppRow } from '../layout';
 
 import AiPassportPersonalizationContainer from '../../components/ai-passport/AiPassportPersonalizationContainer';
@@ -16,6 +15,7 @@ import useTheme from '../../theme/hooks/useTheme';
 import newCredsStore from 'learn-card-base/stores/newCredsStore';
 import { usePersonalizationQA } from '../ai-passport/usePersonalizationQA';
 import NewCredentialsPill from './NewCredentialsPill';
+import { AppSpinner } from '../feedback/AppSpinner';
 
 const formatCount = (count: number | string): string => {
     if (typeof count === 'string') return count;
@@ -164,7 +164,7 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
                 >
                     <span className="font-poppins text-[30px] leading-[100%] flex items-center">
                         {countLoading && (
-                            <IonSpinner
+                            <AppSpinner
                                 name="crescent"
                                 aria-label={m['common.loading']()}
                                 className="text-white w-[20px] h-[20px] mr-[5px]"

@@ -77,9 +77,6 @@ vi.mock('@capacitor-mlkit/barcode-scanning', () => ({
         stopScan: mocks.stopScan,
     },
 }));
-vi.mock('@ionic/react', () => ({
-    IonSpinner: () => null,
-}));
 vi.mock('learn-card-base', () => ({
     getLogger: () => ({ debug: vi.fn(), error: vi.fn(), warn: vi.fn() }),
     ModalTypes: { Center: 'center', FullScreen: 'fullscreen' },

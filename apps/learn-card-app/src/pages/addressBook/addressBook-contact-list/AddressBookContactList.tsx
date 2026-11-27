@@ -1,11 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 
-import { IonSpinner } from '@ionic/react';
 import { AppList } from '../../../components/list';
 import AddressBookContactItem from './AddressBookContactItem';
 
 import { LCNProfile } from '@learncard/types';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
+import { AppSpinner } from '../../../components/feedback/AppSpinner';
 
 type AddressBookContactListProps = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
@@ -137,7 +137,7 @@ export const AddressBookContactList: React.FC<AddressBookContactListProps> = ({
                 ))}
                 {isFetching && (
                     <div className="w-full flex items-center justify-center">
-                        <IonSpinner
+                        <AppSpinner
                             name="crescent"
                             color="grayscale-900"
                             className="scale-[2] mb-8 mt-6"

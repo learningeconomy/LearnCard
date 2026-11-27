@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { useImageUpload, UploadRes } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
-import { IonSpinner } from '@ionic/react';
 import { AppRow } from '../../../../layout';
 import { AppToggle } from '../../../../controls/AppToggle';
 
@@ -12,6 +11,7 @@ import EmptyImage from 'learn-card-base/assets/images/empty-image.png';
 import TrashBin from '../../../../svgs/TrashBin';
 
 import { BoostCMSState } from '../../../boost';
+import { AppSpinner } from '../../../../feedback/AppSpinner';
 
 const BoostIDCardCMSIssuerThumbnailForm: React.FC<{
     state: BoostCMSState;
@@ -87,7 +87,7 @@ const BoostIDCardCMSIssuerThumbnailForm: React.FC<{
                             )}
                             {imageUploadLoading && (
                                 <div className="absolute z-50 flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-xl min-w-[70px] min-h-[70px] user-image-upload-inprogress">
-                                    <IonSpinner
+                                    <AppSpinner
                                         name="crescent"
                                         color="dark"
                                         className="scale-[1.75]"

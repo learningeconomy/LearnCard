@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { IonSpinner } from '@ionic/react';
 import { useHistory } from 'react-router-dom';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('approve-account');
@@ -12,6 +11,7 @@ import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import { getTenantHeaders } from '../../config/bootstrapTenantConfig';
 import { AppButton } from '../../components/controls/AppButton';
 import { AppContent, AppPage } from '../../components/chrome';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 
 const ApproveAccount: React.FC = () => {
     const { textLogo, brandMarkLight } = useTenantBrandingAssets();
@@ -108,7 +108,7 @@ const ApproveAccount: React.FC = () => {
                     </div>
                     {loading && (
                         <div className="flex flex-col items-center justify-center gap-3">
-                            <IonSpinner color="light" />
+                            <AppSpinner color="light" />
                             <p className="font-semibold text-lg text-white">Approving…</p>
                         </div>
                     )}

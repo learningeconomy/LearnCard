@@ -1,8 +1,8 @@
 import React, { Suspense, useEffect } from 'react';
-import { IonSpinner } from '@ionic/react';
 
 import { ModalTypes, lazyWithRetry, useModal } from 'learn-card-base';
 import { AppContent, AppPage } from '../../../components/chrome';
+import { AppSpinner } from '../../../components/feedback/AppSpinner';
 
 // The skill-profile wizard statically reaches the framework editor and its emoji picker (~1 MB
 // with deps); loading it lazily keeps all of that out of the dashboard's cold-start chunk.
@@ -14,7 +14,7 @@ const SkillProfileModalFallback: React.FC = () => (
     <AppPage>
         <AppContent>
             <div className="font-poppins flex items-center justify-center min-h-[360px] p-8">
-                <IonSpinner name="crescent" className="text-grayscale-700" />
+                <AppSpinner name="crescent" className="text-grayscale-700" />
             </div>
         </AppContent>
     </AppPage>

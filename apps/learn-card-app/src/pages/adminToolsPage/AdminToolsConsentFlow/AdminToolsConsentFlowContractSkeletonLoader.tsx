@@ -1,6 +1,5 @@
 import React from 'react';
-
-import { IonSkeletonText } from '@ionic/react';
+import { AppSkeletonText } from '../../../components/feedback/AppSkeletonText';
 
 export const AdminToolsConsentFlowContractSkeletonLoader: React.FC = () => {
     return (
@@ -9,7 +8,7 @@ export const AdminToolsConsentFlowContractSkeletonLoader: React.FC = () => {
                 <div className="flex items-center justify-start w-full bg-white-100">
                     {/* Image placeholder */}
                     <div className="flex items-center justify-start rounded-lg w-[50px] h-[50px] mr-3 min-w-[50px] min-h-[50px]">
-                        <IonSkeletonText
+                        <AppSkeletonText
                             animated
                             style={{
                                 width: '50px',
@@ -22,7 +21,7 @@ export const AdminToolsConsentFlowContractSkeletonLoader: React.FC = () => {
                     <div className="right-side flex justify-between w-full">
                         {/* Text placeholders */}
                         <div className="flex flex-col items-start justify-center text-left flex-1">
-                            <IonSkeletonText
+                            <AppSkeletonText
                                 animated
                                 style={{
                                     width: '150px',
@@ -30,12 +29,12 @@ export const AdminToolsConsentFlowContractSkeletonLoader: React.FC = () => {
                                     marginBottom: '6px',
                                 }}
                             />
-                            <IonSkeletonText animated style={{ width: '100px', height: '12px' }} />
+                            <AppSkeletonText animated style={{ width: '100px', height: '12px' }} />
                         </div>
 
                         {/* Share button placeholder */}
                         <div className="flex items-center rounded-[10px] px-[10px] py-[5px]">
-                            <IonSkeletonText
+                            <AppSkeletonText
                                 animated
                                 style={{
                                     width: '24px',

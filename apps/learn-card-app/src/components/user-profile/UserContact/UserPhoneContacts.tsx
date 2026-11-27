@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 import Plus from '../../svgs/Plus';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../../feedback/AppSpinner';
 import TrashBin from 'learn-card-base/svgs/TrashBin';
 import VerifiedBadge from 'learn-card-base/svgs/VerifiedBadge';
 
@@ -126,7 +126,7 @@ export const UserPhoneContacts: React.FC = () => {
                         disabled={addContactMethodLoading}
                     >
                         {addContactMethodLoading ? (
-                            <IonSpinner name="crescent" color="light" aria-hidden="true" />
+                            <AppSpinner name="crescent" color="light" aria-hidden="true" />
                         ) : (
                             <span aria-hidden="true">
                                 <Plus className="text-white w-[25px] h-[25px] min-w-[25px] min-h-[25px]" />
@@ -186,7 +186,7 @@ export const UserPhoneContacts: React.FC = () => {
                                 className="bg-rose-500 rounded-full p-2"
                             >
                                 {isRemoveLoading ? (
-                                    <IonSpinner name="crescent" color="light" aria-hidden="true" />
+                                    <AppSpinner name="crescent" color="light" aria-hidden="true" />
                                 ) : (
                                     <span aria-hidden="true">
                                         <TrashBin className="text-white w-[25px] h-[25px] min-w-[25px] min-h-[25px]" />

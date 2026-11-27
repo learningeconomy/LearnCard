@@ -60,11 +60,6 @@ vi.mock('./ConsentFlowError', () => ({
 }));
 
 // Mock all the heavy dependencies
-vi.mock('@ionic/react', () => ({
-    IonSkeletonText: () => <div data-testid="skeleton" />,
-    IonSpinner: () => <div data-testid="spinner" />,
-}));
-
 vi.mock('react-router-dom', () => ({
     useHistory: vi.fn(),
     useLocation: vi.fn(),

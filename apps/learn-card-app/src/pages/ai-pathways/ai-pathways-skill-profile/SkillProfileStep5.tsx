@@ -8,7 +8,7 @@ import {
     ToastTypeEnum,
     useVerifiableData,
 } from 'learn-card-base';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../../../components/feedback/AppSpinner';
 
 import SkillSearchSelector from '../../../pages/skills/SkillSearchSelector';
 import { SelectedSkill } from '../../../pages/skills/skillTypes';
@@ -148,7 +148,7 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
         <div className="flex flex-col flex-1 min-h-0 gap-[20px] relative">
             {isUpdating && (
                 <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-30">
-                    <IonSpinner color="dark" name="crescent" />
+                    <AppSpinner color="dark" name="crescent" />
                 </div>
             )}
 

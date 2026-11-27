@@ -25,10 +25,6 @@ vi.mock('learn-card-base', () => ({
     }),
 }));
 
-vi.mock('@ionic/react', () => ({
-    IonSpinner: () => <div>Loading</div>,
-}));
-
 vi.mock('../../paraglide/messages.js', () => ({
     'common.share': () => 'Share',
     'shareLinks.sharing': () => 'Sharing',

@@ -6,7 +6,7 @@ import BrowseFrameworkPage from '../SkillFrameworks/BrowseFrameworkPage';
 import CreateFrameworkModal from '../SkillFrameworks/CreateFrameworkModal';
 import SkillsAdminPanelFramework from './SkillsAdminPanelFramework';
 import SelectFrameworkToManageModal from '../SkillFrameworks/SelectFrameworkToManageModal';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 
 import {
     useModal,
@@ -52,7 +52,7 @@ const SkillsAdminPanel: React.FC<SkillsAdminPanelProps> = () => {
         <section className="flex flex-col gap-[15px] w-full pb-[222px]">
             {isLoadingFrameworks && (
                 <div className="flex items-center justify-center pt-[111px]">
-                    <IonSpinner />
+                    <AppSpinner />
                 </div>
             )}
             {!isLoadingFrameworks && (

@@ -5,7 +5,6 @@ const log = getLogger('skills-hub-popover-button');
 import useTheme from '../../theme/hooks/useTheme';
 import { useModal, ModalTypes, useDeviceTypeByWidth, useWallet } from 'learn-card-base';
 
-import { IonSpinner } from '@ionic/react';
 import { AppPopover } from '../../components/overlays/AppPopover';
 import { Checkmark } from '@learncard/react';
 import SortIcon from 'learn-card-base/svgs/SortButton';
@@ -23,6 +22,7 @@ import {
 import { SetState } from 'packages/shared-types/dist';
 import { ColorSetEnum } from '../../theme/colors/index';
 import { ApiFrameworkInfo } from '../../helpers/skillFramework.helpers';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 
 // Helper to toggle a filter value in/out of the array
 const toggleFilter = (
@@ -233,7 +233,7 @@ export const SkillsHubPopOverButton: React.FC<SkillsHubPopOverButtonProps> = ({
                             })}
                             {frameworksLoading && (
                                 <div className="flex items-center justify-center">
-                                    <IonSpinner name="crescent" color="dark" />
+                                    <AppSpinner name="crescent" color="dark" />
                                 </div>
                             )}
                         </div>

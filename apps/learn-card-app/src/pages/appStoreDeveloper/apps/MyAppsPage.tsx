@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
-import { IonSpinner } from '@ionic/react';
 import { AppIcon } from '../../../components/icon';
 import {
     addOutline,
@@ -22,6 +21,7 @@ import { DEVELOPER_DOCS_URL, NewAppSheet } from './NewAppSheet';
 import { openExternalLink } from '../../../helpers/externalLinkHelpers';
 import { DeleteAppMenu } from './DeleteAppMenu';
 import { AppContent, AppPage } from '../../../components/chrome';
+import { AppSpinner } from '../../../components/feedback/AppSpinner';
 
 const PILL_CLASS: Record<ListingMode, string> = {
     'draft': 'bg-grayscale-100 text-grayscale-700',
@@ -159,7 +159,7 @@ const MyAppsPage: React.FC = () => {
 
                     {loading ? (
                         <div className="flex justify-center py-20">
-                            <IonSpinner name="crescent" />
+                            <AppSpinner name="crescent" />
                         </div>
                     ) : isError ? (
                         <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">

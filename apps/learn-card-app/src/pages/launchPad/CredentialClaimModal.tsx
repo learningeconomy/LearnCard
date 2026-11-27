@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 import { X, Check, Loader2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getLogger } from 'learn-card-base';
@@ -269,7 +269,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
                 <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-8">
                     <div className="flex flex-col items-center justify-center">
-                        <IonSpinner name="crescent" className="w-12 h-12 text-cyan-500" />
+                        <AppSpinner name="crescent" className="w-12 h-12 text-cyan-500" />
 
                         <p className="mt-4 text-gray-600 font-medium">
                             {m['claim.modal.loadingCredential']()}

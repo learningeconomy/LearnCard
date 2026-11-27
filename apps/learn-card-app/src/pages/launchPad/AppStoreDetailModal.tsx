@@ -4,7 +4,6 @@ import type { AppStoreListing, InstalledApp } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('app-store-detail-modal');
 
-import { IonSpinner } from '@ionic/react';
 import { AppToast } from '../../components/overlays/AppToast';
 import {
     useModal,
@@ -46,6 +45,7 @@ import DatePickerInput from '../../components/date-picker/DatePickerInput';
 import { checkAppInstallEligibility, AGE_RATING_TO_MIN_AGE } from '@learncard/helpers';
 import * as m from '../../paraglide/messages.js';
 import { AppContent, AppFooter, AppHeader, AppPage } from '../../components/chrome';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 
 // Extended type to include new fields (until types package is rebuilt)
 type ExtendedAppStoreListing = (AppStoreListing | InstalledApp) & {
@@ -1016,7 +1016,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                                 disabled
                                 className="py-[9px] px-[20px] rounded-[30px] bg-gray-100 text-gray-400 font-notoSans text-[17px] flex items-center justify-center flex-1"
                             >
-                                <IonSpinner name="dots" className="w-5 h-5" />
+                                <AppSpinner name="dots" className="w-5 h-5" />
                             </button>
                         ) : isInstalled || launchConfig.skipInstallation ? (
                             <>
@@ -1046,7 +1046,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                                 className={`bg-${primaryColor} py-[9px] px-[20px] rounded-[30px] text-white font-notoSans text-[17px] shadow-button-bottom disabled:opacity-50 flex items-center justify-center flex-1`}
                             >
                                 {isProcessing ? (
-                                    <IonSpinner name="dots" className="w-5 h-5" />
+                                    <AppSpinner name="dots" className="w-5 h-5" />
                                 ) : (
                                     m['launchpad.detail.install']()
                                 )}

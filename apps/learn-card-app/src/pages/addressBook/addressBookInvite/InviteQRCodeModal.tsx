@@ -1,5 +1,4 @@
 import React from 'react';
-import { IonSpinner } from '@ionic/react';
 import { QRCodeSVG } from 'qrcode.react';
 
 import ModalLayout from 'apps/learn-card-app/src/layout/ModalLayout';
@@ -8,6 +7,7 @@ import { ProfilePicture, useCurrentUser } from 'learn-card-base';
 import { useInviteLink } from '../../../hooks/useInviteLink';
 import * as m from '../../../paraglide/messages.js';
 import { AppPage } from '../../../components/chrome';
+import { AppSpinner } from '../../../components/feedback/AppSpinner';
 
 /**
  * QR rendering of the user's personal invite link.
@@ -57,7 +57,7 @@ const InviteQRCodeModal: React.FC<{ handleCloseModal: () => void }> = ({ handleC
                     >
                         {isLoading && (
                             <div className="flex items-center justify-center py-10">
-                                <IonSpinner color="black" />
+                                <AppSpinner color="black" />
                             </div>
                         )}
                         {isError && (

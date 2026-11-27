@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from 'react';
-import { IonSpinner } from '@ionic/react';
 import { AppIcon } from '../../../components/icon';
 import {
     flashOutline,
@@ -16,6 +15,7 @@ import type {
     WalletCategory,
     PersonalField,
 } from '@learncard/partner-connect-core';
+import { AppSpinner } from '../../../components/feedback/AppSpinner';
 
 interface ConsentDesignerCardProps {
     appName: string;
@@ -398,7 +398,7 @@ export const ConsentDesignerCard: React.FC<ConsentDesignerCardProps> = ({
                     >
                         {isEnabling ? (
                             <>
-                                <IonSpinner name="crescent" className="w-4 h-4" />
+                                <AppSpinner name="crescent" className="w-4 h-4" />
                                 Setting up...
                             </>
                         ) : (

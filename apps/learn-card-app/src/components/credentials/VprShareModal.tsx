@@ -9,7 +9,7 @@ import {
 } from 'learn-card-base';
 import { queryListOfCredentials } from 'learn-card-base/helpers/credentials/queries';
 import { filterMaybes } from '@learncard/helpers';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../feedback/AppSpinner';
 import { VerifiablePresentationRequest } from '../../hooks/post-message/useLearnCardPostMessage';
 import { VC } from '@learncard/types';
 
@@ -178,7 +178,7 @@ export const VprShareModal: React.FC<VprShareModalProps> = ({
             <div className="flex-1 overflow-auto">
                 {credentialsLoading ? (
                     <div className="flex flex-col items-center justify-center h-full">
-                        <IonSpinner name="crescent" className="w-12 h-12 text-blue-600" />
+                        <AppSpinner name="crescent" className="w-12 h-12 text-blue-600" />
                         <p className="mt-4 text-grayscale-600">Loading credentials...</p>
                     </div>
                 ) : allRecords.length === 0 ? (

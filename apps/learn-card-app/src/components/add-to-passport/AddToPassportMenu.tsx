@@ -1,6 +1,5 @@
 import React, { Suspense, lazy, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { IonSpinner } from '@ionic/react';
 import { getLogger, useModal, ModalTypes, QRCodeScannerStore } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
@@ -14,6 +13,7 @@ import useBuildMyLearnCardModal from '../../pages/dashboard/hooks/useBuildMyLear
 
 import * as m from '../../paraglide/messages.js';
 import { AppContent, AppPage } from '../chrome';
+import { AppSpinner } from '../feedback/AppSpinner';
 
 const log = getLogger('add-to-passport');
 
@@ -43,7 +43,7 @@ const PasteOrUploadClaimModalFallback: React.FC = () => (
     <AppPage>
         <AppContent>
             <div className="font-poppins flex items-center justify-center min-h-[360px] p-8">
-                <IonSpinner name="crescent" className="text-grayscale-700" />
+                <AppSpinner name="crescent" className="text-grayscale-700" />
             </div>
         </AppContent>
     </AppPage>

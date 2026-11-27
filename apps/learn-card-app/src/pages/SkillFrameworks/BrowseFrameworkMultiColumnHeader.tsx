@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-import { IonSpinner } from '@ionic/react';
 import { AppInput, type AppInputHandle } from '../../components/controls/AppInput';
 import X from 'learn-card-base/svgs/X';
 import Pencil from '../../components/svgs/Pencil';
@@ -13,6 +12,7 @@ import { SetState } from 'packages/shared-types/dist';
 import { ApiFrameworkInfo } from '../../helpers/skillFramework.helpers';
 import { SkillFrameworkNode, SkillFrameworkNodeWithSearchInfo } from '../../components/boost/boost';
 import * as m from '../../paraglide/messages.js';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 
 type BrowseFrameworkMultiColumnHeaderProps = {
     handleBack: () => void;
@@ -152,7 +152,7 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
                         >
                             {searchLoading && !isApproveFlow && (
                                 <div className="h-[100px] w-full flex items-center justify-center">
-                                    <IonSpinner color="dark" name="crescent" />
+                                    <AppSpinner color="dark" name="crescent" />
                                 </div>
                             )}
                             {(!searchLoading || isApproveFlow) && (

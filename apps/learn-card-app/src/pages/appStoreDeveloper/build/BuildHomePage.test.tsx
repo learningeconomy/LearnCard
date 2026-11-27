@@ -5,9 +5,6 @@ import { describe, expect, it, vi } from 'vitest';
 
 import BuildHomePage from './BuildHomePage';
 
-vi.mock('@ionic/react', () => ({
-    IonSpinner: () => <div>Loading</div>,
-}));
 vi.mock('../components/AppStoreHeader', () => ({ AppStoreHeader: () => null }));
 vi.mock('../../../i18n/mDynamic', () => ({ mDynamic: (key: string) => key }));
 vi.mock('../useDeveloperPortal', () => ({

@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useRef } from 'react';
-import { IonSpinner } from '@ionic/react';
 import { AppIcon } from '../../../components/icon';
 import { closeOutline } from 'ionicons/icons';
 import { useCredentialCollection } from 'learn-card-base';
@@ -7,6 +6,7 @@ import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import PassportCredentialCard from './PassportCredentialCard';
 import { groupByRelativeTime } from './activityFeed.helpers';
 import * as m from '../../../paraglide/messages.js';
+import { AppSpinner } from '../../../components/feedback/AppSpinner';
 
 export const AllCredentialsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const collection = useCredentialCollection();
@@ -102,7 +102,7 @@ export const AllCredentialsModal: React.FC<{ onClose: () => void }> = ({ onClose
                         aria-label={m['credentialCollection.loadingCredentials']()}
                         className="flex justify-center py-4"
                     >
-                        <IonSpinner name="crescent" />
+                        <AppSpinner name="crescent" />
                     </div>
                 )}
                 {isError && (

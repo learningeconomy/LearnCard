@@ -20,7 +20,6 @@ import ManageSkills from './ManageSkills';
 import SkillsFrameworkIcon from '../../components/svgs/SkillsFrameworkIcon';
 import CreateFrameworkModal from './CreateFrameworkModal';
 import SkillsAdminPanelFramework from '../skills/SkillsAdminPanelFramework';
-import { IonSpinner } from '@ionic/react';
 import { AppInput } from '../../components/controls/AppInput';
 import type { ApiFrameworkInfo } from '../../helpers/skillFramework.helpers';
 import { useGlobalSkillFrameworks } from '../../helpers/globalSkillFrameworks.helpers';
@@ -29,6 +28,7 @@ import {
     isOpenSaltFramework,
     isOpenSaltRef,
 } from '../../helpers/opensalt.helpers';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 
 type SelectFrameworkToManageModalProps = {
     onFrameworkSelectOverride?: (framework: ApiFrameworkInfo) => void;
@@ -260,7 +260,7 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
 
                 {isLoadingFrameworks && (
                     <div className="flex items-center justify-center py-[111px] text-grayscale-900">
-                        <IonSpinner />
+                        <AppSpinner />
                     </div>
                 )}
 
@@ -282,7 +282,7 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
                                 title="Sync framework"
                             >
                                 {syncingFrameworkId === framework.id ? (
-                                    <IonSpinner name="lines" className="w-[20px] h-[20px]" />
+                                    <AppSpinner name="lines" className="w-[20px] h-[20px]" />
                                 ) : (
                                     <RefreshIcon className="w-[20px] h-[20px]" />
                                 )}
@@ -302,7 +302,7 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
 
                         {isLoadingAvailableFrameworks && (
                             <div className="flex items-center justify-center py-[20px] text-grayscale-900">
-                                <IonSpinner />
+                                <AppSpinner />
                             </div>
                         )}
 

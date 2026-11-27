@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Redirect, useHistory, useLocation, useParams } from 'react-router-dom';
-import { IonSpinner } from '@ionic/react';
 import { AppIcon } from '../../../components/icon';
 import { alertCircleOutline, arrowBackOutline } from 'ionicons/icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -13,6 +12,7 @@ import { getListingMode, withPendingChanges } from '../submit/listingLifecycle';
 import { getAppStatusPath } from './myApps';
 import { DeleteAppMenu } from './DeleteAppMenu';
 import { AppContent, AppPage } from '../../../components/chrome';
+import { AppSpinner } from '../../../components/feedback/AppSpinner';
 
 const log = getLogger('app-status-page');
 
@@ -44,7 +44,7 @@ const AppStatusPage: React.FC = () => {
                 <AppStoreHeader title="Your app" />
                 <AppContent className="ion-padding">
                     <div className="flex justify-center items-center h-full">
-                        <IonSpinner name="crescent" />
+                        <AppSpinner name="crescent" />
                     </div>
                 </AppContent>
             </AppPage>

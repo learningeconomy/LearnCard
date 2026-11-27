@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import moment from 'moment';
 
-import { IonSpinner } from '@ionic/react';
 import { AppPopover } from '../overlays/AppPopover';
 import { AppItem, AppList } from '../list';
 import ResumeHistoryIcon from '../../assets/images/resume-history-icon.svg';
@@ -11,6 +10,7 @@ import useExistingResumes, { ExistingResume } from '../../hooks/useExistingResum
 import { getResumeDisplaySummary } from './resume-builder-history.helpers';
 
 import * as m from '../../paraglide/messages.js';
+import { AppSpinner } from '../feedback/AppSpinner';
 
 export const ResumeBuilderHistoryDropdownButton: React.FC<{
     activeResumeRecordId?: string | null;
@@ -123,7 +123,7 @@ export const ResumeBuilderHistoryDropdownButton: React.FC<{
 
                     {isLoading ? (
                         <div className="flex items-center justify-center py-8">
-                            <IonSpinner name="crescent" />
+                            <AppSpinner name="crescent" />
                         </div>
                     ) : sortedResumes.length === 0 ? (
                         <div className="px-3 py-8 text-center text-sm text-grayscale-600">
@@ -178,7 +178,7 @@ export const ResumeBuilderHistoryDropdownButton: React.FC<{
                                                             </p>
                                                         </div>
                                                         {isSelecting && (
-                                                            <IonSpinner
+                                                            <AppSpinner
                                                                 name="crescent"
                                                                 className="w-4 h-4 shrink-0"
                                                             />

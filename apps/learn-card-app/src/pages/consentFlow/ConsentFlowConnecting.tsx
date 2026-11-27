@@ -1,7 +1,7 @@
 import React from 'react';
 import Sparkles from '../../assets/images/purple-sparkles.gif';
 import { ConsentFlowContractDetails } from '@learncard/types';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 import { LaunchPadAppListItem } from 'learn-card-base';
 
 type ConsentFlowConnectingProps = {
@@ -35,7 +35,7 @@ const ConsentFlowConnecting: React.FC<ConsentFlowConnectingProps> = ({
                 />
 
                 <img src={Sparkles} alt="Sparkles" className="absolute h-[182px] w-[182px] z-20" />
-                <IonSpinner
+                <AppSpinner
                     name="crescent"
                     style={{
                         color: '#6366F1',

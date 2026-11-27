@@ -4,7 +4,6 @@ import { m } from '../../../paraglide/messages.js';
 
 import X from 'learn-card-base/svgs/X';
 import { AppInput } from '../../../components/controls/AppInput';
-import { IonSpinner } from '@ionic/react';
 import AiInsightsUserCard from '../AiInsightsUserCard';
 import ShareInsightsWithAnyoneController from './ShareInsightsWithAnyoneController';
 
@@ -19,6 +18,7 @@ import { AiInsightsUserCardMode } from '../ai-insights.helpers';
 
 import useTheme from '../../../theme/hooks/useTheme';
 import { IconSetEnum } from '../../../theme/icons';
+import { AppSpinner } from '../../../components/feedback/AppSpinner';
 
 export const ShareInsightsModal: React.FC = () => {
     const profileType = switchedProfileStore.use.profileType();
@@ -90,7 +90,7 @@ export const ShareInsightsModal: React.FC = () => {
                         <div className="w-full flex flex-col gap-2">
                             {showLoadingSpinner && (
                                 <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full mt-8">
-                                    <IonSpinner color="grayscale-900" />
+                                    <AppSpinner color="grayscale-900" />
                                     <p className="mt-2 font-bold text-lg">
                                         {m['aiInsights.loading']()}
                                     </p>

@@ -3,7 +3,6 @@ import { useHistory } from 'react-router';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('invite-page');
 
-import { IonSpinner } from '@ionic/react';
 import MainHeader from '../../components/main-header/MainHeader';
 
 import { useWallet, usePathQuery, useIsLoggedIn } from 'learn-card-base';
@@ -13,6 +12,7 @@ import { AddressBookContact } from '../addressBook/addressBookHelpers';
 import * as m from '../../paraglide/messages.js';
 import AddContactView, { AddContactViewMode } from '../addressBook/addContactView/AddContactView';
 import { AppContent, AppPage } from '../../components/chrome';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 
 const InvitePage: React.FC = () => {
     const isLoggedIn = useIsLoggedIn();
@@ -74,7 +74,7 @@ const InvitePage: React.FC = () => {
             <AppContent fullscreen>
                 {loading && (
                     <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
-                        <IonSpinner color="black" />
+                        <AppSpinner color="black" />
                         <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                     </section>
                 )}

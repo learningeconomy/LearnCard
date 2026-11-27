@@ -1,5 +1,5 @@
 import React from 'react';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 
 import * as m from '../../paraglide/messages.js';
 
@@ -69,7 +69,7 @@ const WalletPageListItem: React.FC<WalletPageListItemProps> = ({
         >
             {loading ? (
                 <div className="flex items-center gap-[5px]">
-                    <IonSpinner
+                    <AppSpinner
                         name="crescent"
                         role="status"
                         aria-label={m['common.loading']()}

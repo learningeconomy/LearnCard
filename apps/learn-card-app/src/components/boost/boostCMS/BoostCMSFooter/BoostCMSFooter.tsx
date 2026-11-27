@@ -1,7 +1,6 @@
 import React, { useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 
-import { IonSpinner } from '@ionic/react';
 import { AppCol, AppRow } from '../../../layout';
 
 import { BoostUserTypeEnum } from '../../boost-options/boostOptions';
@@ -11,6 +10,7 @@ import keyboardStore from 'learn-card-base/stores/keyboardStore';
 import { BoostCMSStepsEnum } from '../../boost';
 import { BoostCategoryOptionsEnum, boostCategoryMetadata } from 'learn-card-base';
 import { AppFooter, AppToolbar } from '../../../chrome';
+import { AppSpinner } from '../../../feedback/AppSpinner';
 
 const BoostCMSFooter: React.FC<{
     boostUserType: BoostUserTypeEnum;
@@ -57,7 +57,7 @@ const BoostCMSFooter: React.FC<{
                             >
                                 {isSaveLoading ? (
                                     <>
-                                        <IonSpinner
+                                        <AppSpinner
                                             name="crescent"
                                             color="dark"
                                             className="scale-[1] mr-1"
@@ -108,7 +108,7 @@ const BoostCMSFooter: React.FC<{
                                 </div>
                                 {isLoading ? (
                                     <>
-                                        <IonSpinner
+                                        <AppSpinner
                                             name="crescent"
                                             color="dark"
                                             className="scale-[1] mr-1"

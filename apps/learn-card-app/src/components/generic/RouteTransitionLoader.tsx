@@ -1,5 +1,5 @@
 import React from 'react';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../feedback/AppSpinner';
 
 import { useTheme } from '../../theme/hooks/useTheme';
 
@@ -21,7 +21,7 @@ const RouteTransitionLoader: React.FC = () => {
             className="fixed inset-0 flex items-center justify-center z-[1000]"
             style={{ backgroundColor: bgColor }}
         >
-            <IonSpinner name="crescent" style={{ color: spinnerColor, width: 36, height: 36 }} />
+            <AppSpinner name="crescent" style={{ color: spinnerColor, width: 36, height: 36 }} />
         </div>
     );
 };

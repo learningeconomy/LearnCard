@@ -14,13 +14,13 @@ const log = getLogger('self-assign-skills-modal');
 
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import SkillsCloseConfirmationModal from './SkillsCloseConfirmationModal';
-import { IonSpinner } from '@ionic/react';
 
 import SkillSearchSelector from './SkillSearchSelector';
 import { SelectedSkill } from './skillTypes';
 import * as m from '../../paraglide/messages.js';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 import { AppFooter } from '../../components/chrome';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- existing empty props type; replacing it changes the accepted props type
 type SelfAssignSkillsModalProps = {};
@@ -134,7 +134,7 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
 
             {isUpdating && (
                 <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-30">
-                    <IonSpinner color="dark" name="crescent" />
+                    <AppSpinner color="dark" name="crescent" />
                 </div>
             )}
 

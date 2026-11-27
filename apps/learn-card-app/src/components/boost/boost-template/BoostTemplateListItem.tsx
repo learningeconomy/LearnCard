@@ -4,7 +4,6 @@ import { useHistory } from 'react-router-dom';
 import useBoost from '../hooks/useBoost';
 import useManagedBoost from 'apps/learn-card-app/src/hooks/useManagedBoost';
 
-import { IonSkeletonText } from '@ionic/react';
 import { BoostIssuanceLoading } from '../boostLoader/BoostLoader';
 import CredentialGeneralPlus from '../../svgs/CredentialGeneralPlus';
 
@@ -13,6 +12,7 @@ import { useModal, ModalTypes, CredentialCategory, getCategoryMetadata } from 'l
 import { closeAll } from 'apps/learn-card-app/src/helpers/uiHelpers';
 import { getAchievementTypeDisplayText } from 'learn-card-base/helpers/credentialHelpers';
 import { VC, Boost } from '@learncard/types';
+import { AppSkeletonText } from '../../feedback/AppSkeletonText';
 
 type BoostTemplateListItemProps = {
     boost: Boost;
@@ -93,7 +93,7 @@ export const BoostTemplateListItem: React.FC<BoostTemplateListItemProps> = ({
                 onClick={innerOnClick}
                 className="flex items-center gap-[10px] w-full p-[10px] rounded-[15px] bg-white shadow-bottom-2-4"
             >
-                <IonSkeletonText
+                <AppSkeletonText
                     animated={true}
                     style={{
                         width: '40px',
@@ -104,11 +104,11 @@ export const BoostTemplateListItem: React.FC<BoostTemplateListItemProps> = ({
                     }}
                 />
                 <div className="flex flex-col font-poppins grow">
-                    <IonSkeletonText
+                    <AppSkeletonText
                         animated={true}
                         style={{ width: '90%', height: '22px', margin: '0' }}
                     />
-                    <IonSkeletonText
+                    <AppSkeletonText
                         animated={true}
                         style={{
                             width: '60%',
@@ -118,7 +118,7 @@ export const BoostTemplateListItem: React.FC<BoostTemplateListItemProps> = ({
                         }}
                     />
                 </div>
-                {/* <IonSkeletonText
+                {/* <AppSkeletonText
                     animated={true}
                     style={{
                         width: '40px',

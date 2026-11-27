@@ -20,7 +20,6 @@ import VerifiedBadgeIcon from 'learn-card-base/svgs/VerifiedBadgeIcon';
 import SlimCaretLeft from '../../components/svgs/SlimCaretLeft';
 import SlimCaretRight from '../../components/svgs/SlimCaretRight';
 import SkillTag from './SkillTag';
-import { IonSpinner } from '@ionic/react';
 import { AppInput } from '../../components/controls/AppInput';
 import { GenericErrorView } from 'learn-card-base/components/generic/GenericErrorBoundary';
 

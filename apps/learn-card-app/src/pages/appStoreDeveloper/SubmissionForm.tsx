@@ -1,6 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useHistory, useLocation, useParams } from 'react-router-dom';
-import { IonSpinner } from '@ionic/react';
 import { ArrowLeft, ArrowRight, Send, Loader2, AlertCircle, Save, FileEdit } from 'lucide-react';
 
 import * as m from '../../paraglide/messages.js';
@@ -24,6 +23,7 @@ import { getAppStatusPath } from './apps/myApps';
 import type { CapturedAppManifest } from '@learncard/partner-connect-core';
 import { EmbedIframeModal } from '../launchPad/EmbedIframeModal';
 import { AppContent, AppPage } from '../../components/chrome';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 
 const STEPS = [
     {
@@ -540,7 +540,7 @@ const SubmissionForm: React.FC = () => {
             <AppPage>
                 <AppContent className="ion-padding">
                     <div className="flex justify-center items-center h-full">
-                        <IonSpinner name="crescent" />
+                        <AppSpinner name="crescent" />
                     </div>
                 </AppContent>
             </AppPage>

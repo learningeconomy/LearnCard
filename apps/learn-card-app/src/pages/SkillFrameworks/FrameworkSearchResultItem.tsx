@@ -1,7 +1,7 @@
 import React from 'react';
 import { middleTruncate, useGetSkillPath } from 'learn-card-base';
 
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 import TierIcon from './TierIcon';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import SlimCaretRight from '../../components/svgs/SlimCaretRight';
@@ -75,7 +75,7 @@ const FrameworkSearchResultItem: React.FC<FrameworkSearchResultItemProps> = ({
                     version="outlined"
                 />
                 {pathLoading && (
-                    <IonSpinner
+                    <AppSpinner
                         color="dark"
                         name="crescent"
                         className="h-[12px] w-[12px] ml-[5px]"

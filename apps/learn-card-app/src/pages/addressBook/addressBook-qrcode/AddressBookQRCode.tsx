@@ -5,7 +5,6 @@ import { QRCodeSVG } from 'qrcode.react';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import { useWallet, useToast, ToastTypeEnum, useDeviceTypeByWidth } from 'learn-card-base';
 
-import { IonSpinner } from '@ionic/react';
 import { AppCol, AppRow } from '../../../components/layout';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
@@ -14,6 +13,7 @@ import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantCon
 
 import { shareOrCopy } from '../../../helpers/shareHelpers';
 import { AppPage } from '../../../components/chrome';
+import { AppSpinner } from '../../../components/feedback/AppSpinner';
 
 const AddressBookQRCode: React.FC<{
     handleCloseModal: () => void;
@@ -102,7 +102,7 @@ const AddressBookQRCode: React.FC<{
                             // Never render a QR for the empty string — it scans
                             // fine and leads nowhere.
                             <div className="flex items-center justify-center py-10">
-                                <IonSpinner color="black" />
+                                <AppSpinner color="black" />
                             </div>
                         )}
                     </div>

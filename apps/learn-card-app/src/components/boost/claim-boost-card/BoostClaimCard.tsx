@@ -5,7 +5,6 @@ import { getVCDisplayCardVariant } from '@learncard/react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('boost-claim-card');
 
-import { IonSpinner } from '@ionic/react';
 import { useAppAlert } from '../../overlays/useAppAlert';
 
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
@@ -62,6 +61,7 @@ import * as m from '../../../paraglide/messages.js';
 import { useDuplicateCredentialGuard } from '../../credentials/duplicate-credential/useDuplicateCredentialGuard';
 import type { DuplicateCredentialLookup } from '../../credentials/duplicate-credential/findDuplicateCredential';
 import { AppPage } from '../../chrome';
+import { AppSpinner } from '../../feedback/AppSpinner';
 
 type BoostClaimCardProps = {
     credential: VC | VP;
@@ -633,7 +633,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                                         <section className="flex overflow-hidden flex-col items-center justify-between relative max-w-[400px] h-full max-h-[600px] min-h-[600px] p-7 w-full rounded-3xl shadow-3xl bg-white vc-display-card-full-container">
                                             <div className="w-full grow h-full flex items-center justify-center bg-white">
                                                 <section className="loading-spinner-container flex flex-col items-center justify-center h-full w-full opacity-50 ">
-                                                    <IonSpinner
+                                                    <AppSpinner
                                                         role="status"
                                                         aria-label={m['common.loading']()}
                                                         color="dark"

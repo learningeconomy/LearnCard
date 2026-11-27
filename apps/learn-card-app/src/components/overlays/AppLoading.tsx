@@ -1,15 +1,15 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { IonSpinner } from '@ionic/react';
 
 import { getIonMode, type IonMode } from '../app-shell/ionMode';
+import { AppSpinner, type AppSpinnerName } from '../feedback/AppSpinner';
 import { playAnimation } from './overlayAnimation';
 import { getOverlayRoot, nextOverlayIndex, type OverlayDismissEvent } from './overlayStack';
 import { OVERLAY_HIDDEN_CLASS, useIsOpen, useOverlayLifecycle } from './useOverlayLifecycle';
 
 import './overlays.css';
 
-type SpinnerName = React.ComponentProps<typeof IonSpinner>['name'];
+type SpinnerName = AppSpinnerName;
 
 export type AppLoadingProps = {
     isOpen?: boolean;
@@ -39,9 +39,8 @@ const parts = (host: HTMLElement) => ({
 });
 
 /**
- * App-owned `ion-loading` (@ionic/core 8.7.2): a modal spinner + message over a backdrop. The
- * spinner is still `IonSpinner` (spinners are their own migration batch). Renders into `ion-app`
- * while presented.
+ * App-owned `ion-loading` (@ionic/core 8.7.2): a modal spinner (`AppSpinner`) + message over a
+ * backdrop. Renders into `ion-app` while presented.
  */
 export const AppLoading: React.FC<AppLoadingProps> = ({
     isOpen,
@@ -180,7 +179,7 @@ export const AppLoading: React.FC<AppLoadingProps> = ({
             <div className="app-loading-wrapper app-overlay-wrapper">
                 {spinnerName && (
                     <div className="app-loading-spinner">
-                        <IonSpinner name={spinnerName} aria-hidden="true" />
+                        <AppSpinner name={spinnerName} aria-hidden="true" />
                     </div>
                 )}
                 {message !== undefined && (

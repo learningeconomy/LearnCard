@@ -8,7 +8,6 @@
 // so we consume the token on load and show the result — no OTP step.
 
 import React, { useEffect, useRef, useState } from 'react';
-import { IonSpinner } from '@ionic/react';
 import { useParams } from 'react-router-dom';
 
 import { initLearnCard } from '@learncard/init';
@@ -20,6 +19,7 @@ import { getResolvedTenantConfig, getTenantHeaders } from '../../config/bootstra
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import { useTheme } from '../../theme/hooks/useTheme';
 import { AppContent, AppPage } from '../../components/chrome';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 
 type PageState = 'loading' | 'approved' | 'error';
 
@@ -112,7 +112,7 @@ const GuardianAccountApprovalPage: React.FC = () => {
 
                     {state === 'loading' && (
                         <div className="flex flex-col items-center gap-3">
-                            <IonSpinner color="light" />
+                            <AppSpinner color="light" />
                             <p className="font-semibold text-lg">Confirming approval…</p>
                         </div>
                     )}

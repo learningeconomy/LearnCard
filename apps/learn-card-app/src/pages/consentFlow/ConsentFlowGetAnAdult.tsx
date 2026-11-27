@@ -7,7 +7,7 @@ import {
     LaunchPadAppListItem,
 } from 'learn-card-base';
 
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import ConsentFlowFooter from './ConsentFlowFooter';
 import ConsentFlowHeader from './ConsentFlowHeader';
@@ -37,7 +37,7 @@ export const ConsentFlowGetAnAdultPrompt: React.FC<ConsentFlowGetAnAdultPromptPr
     if (!contractDetails) {
         return (
             <div className="w-full flex flex-col items-center justify-center min-h-[300px]">
-                <IonSpinner name="crescent" color="grayscale-900" className="scale-[2] mb-8 mt-6" />
+                <AppSpinner name="crescent" color="grayscale-900" className="scale-[2] mb-8 mt-6" />
                 <p className="font-poppins text-grayscale-900">{m['common.loading']()}</p>
             </div>
         );

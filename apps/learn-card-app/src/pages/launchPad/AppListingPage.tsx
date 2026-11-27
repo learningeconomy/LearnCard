@@ -6,7 +6,6 @@ import numeral from 'numeral';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('app-listing-page');
 
-import { IonSpinner } from '@ionic/react';
 import { AppToast } from '../../components/overlays/AppToast';
 import {
     useModal,
@@ -41,6 +40,7 @@ import GuardianConsentLaunchModal from './GuardianConsentLaunchModal';
 import AiTutorConnectedView from './AiTutorConnectedView';
 import { Settings, Eye, ArrowLeft } from 'lucide-react';
 import { AppContent, AppPage } from '../../components/chrome';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 
 // Extended type to include new fields
 type ExtendedAppStoreListing = AppStoreListing & {
@@ -632,7 +632,7 @@ const AppListingPage: React.FC = () => {
                 <AppContent fullscreen className="ion-padding">
                     <div className="min-h-screen flex items-center justify-center bg-linear-to-br/srgb from-indigo-50 via-white to-emerald-50">
                         <div className="flex flex-col items-center gap-4">
-                            <IonSpinner name="crescent" className="w-12 h-12 text-indigo-600" />
+                            <AppSpinner name="crescent" className="w-12 h-12 text-indigo-600" />
                             <p className="text-grayscale-600 font-medium">Loading app...</p>
                         </div>
                     </div>
@@ -758,7 +758,7 @@ const AppListingPage: React.FC = () => {
                                             disabled
                                             className="flex-1 sm:flex-none px-8 py-3 rounded-full bg-gray-100 text-gray-400 font-semibold"
                                         >
-                                            <IonSpinner name="dots" className="w-5 h-5" />
+                                            <AppSpinner name="dots" className="w-5 h-5" />
                                         </button>
                                     ) : isLoggedIn && isInstalled ? (
                                         <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -769,7 +769,7 @@ const AppListingPage: React.FC = () => {
                                                     className="flex-1 sm:flex-none px-8 py-3 bg-grayscale-900 text-white rounded-[20px] font-semibold hover:opacity-90 disabled:opacity-40"
                                                 >
                                                     {isProcessing ? (
-                                                        <IonSpinner name="dots" />
+                                                        <AppSpinner name="dots" />
                                                     ) : (
                                                         m['common.open']()
                                                     )}
@@ -791,7 +791,7 @@ const AppListingPage: React.FC = () => {
                                             className="flex-1 sm:flex-none px-8 py-3 bg-indigo-600 text-white rounded-full font-semibold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200 disabled:opacity-50 flex items-center justify-center gap-2"
                                         >
                                             {isProcessing ? (
-                                                <IonSpinner name="dots" className="w-5 h-5" />
+                                                <AppSpinner name="dots" className="w-5 h-5" />
                                             ) : (
                                                 <>
                                                     <svg

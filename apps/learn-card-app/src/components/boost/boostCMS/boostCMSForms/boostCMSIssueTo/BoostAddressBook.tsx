@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import moment from 'moment';
 
-import { IonSpinner } from '@ionic/react';
 import { useAppOverlayModal } from '../../../../overlays/useAppOverlayModal';
 import { AppCol, AppGrid, AppRow } from '../../../../layout';
 import { AppItem, AppList } from '../../../../list';
@@ -25,6 +24,7 @@ import BoostShareableCode from './BoostShareableCode';
 
 import { useBrandingConfig } from 'learn-card-base';
 import { AppContent, AppFooter, AppHeader, AppPage, AppToolbar } from '../../../../chrome';
+import { AppSpinner } from '../../../../feedback/AppSpinner';
 
 export enum BoostAddressBookEditMode {
     edit = 'edit',
@@ -278,7 +278,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                 <AppContent fullscreen>
                     {loading && (
                         <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full">
-                            <IonSpinner color="black" />
+                            <AppSpinner color="black" />
                             <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                         </section>
                     )}
@@ -311,7 +311,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
 
                     {isLoading && search?.length > 0 && (
                         <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
-                            <IonSpinner color="black" />
+                            <AppSpinner color="black" />
                             <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                         </section>
                     )}
@@ -471,7 +471,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                 {recipientsLoading && recipients?.length === 0 && (
                     <AppRow className="w-full flex flex-col items-center justify-center max-w-[600px] mt-8 rounded-[20px]">
                         <section className="loading-spinner-container flex items-center justify-center h-[80%] w-full ">
-                            <IonSpinner color="light" />
+                            <AppSpinner color="light" />
                         </section>
                     </AppRow>
                 )}

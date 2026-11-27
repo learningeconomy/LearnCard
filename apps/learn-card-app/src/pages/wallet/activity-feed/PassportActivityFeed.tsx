@@ -1,5 +1,5 @@
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../../../components/feedback/AppSpinner';
 import { useGetCurrentLCNUser } from 'learn-card-base';
 import Search from 'learn-card-base/svgs/Search';
 import SortButton from 'learn-card-base/svgs/SortButton';
@@ -182,7 +182,7 @@ export const PassportActivityFeed: React.FC = () => {
                     )}
                     {waiting && (
                         <div className="flex-1 flex items-center justify-center">
-                            <IonSpinner
+                            <AppSpinner
                                 name="lines"
                                 role="status"
                                 aria-label={m['common.loading']()}
@@ -216,7 +216,7 @@ export const PassportActivityFeed: React.FC = () => {
                     <div role="presentation" ref={sentinelRef} />
                     {isFetching && !waiting && (
                         <div className="flex justify-center py-4">
-                            <IonSpinner
+                            <AppSpinner
                                 name="lines"
                                 role="status"
                                 aria-label={m['common.loading']()}

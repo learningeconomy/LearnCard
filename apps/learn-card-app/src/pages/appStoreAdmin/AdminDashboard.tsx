@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { IonSpinner } from '@ionic/react';
 import { Filter, ShieldAlert } from 'lucide-react';
 
 import { useDeveloperPortal } from '../appStoreDeveloper/useDeveloperPortal';
@@ -13,6 +12,7 @@ import type {
 import { ListingSidebar, ListingDetail, type FilterStatus } from './components';
 import * as m from '../../paraglide/messages.js';
 import { AppContent, AppPage } from '../../components/chrome';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 
 const AdminDashboard: React.FC = () => {
     const {
@@ -79,7 +79,7 @@ const AdminDashboard: React.FC = () => {
             <AppPage>
                 <AppContent className="ion-padding">
                     <div className="flex justify-center items-center h-full">
-                        <IonSpinner name="crescent" />
+                        <AppSpinner name="crescent" />
                     </div>
                 </AppContent>
             </AppPage>

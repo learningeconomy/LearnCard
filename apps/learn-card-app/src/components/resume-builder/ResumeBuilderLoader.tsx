@@ -1,13 +1,13 @@
 import React from 'react';
 
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../feedback/AppSpinner';
 
 import * as m from '../../paraglide/messages.js';
 
 export const ResumeBuilderLoader: React.FC = () => {
     return (
         <div className="flex flex-col items-center justify-center w-full h-full ">
-            <IonSpinner
+            <AppSpinner
                 name="crescent"
                 color="indigo-600"
                 style={{ width: '50px', height: '50px' }}

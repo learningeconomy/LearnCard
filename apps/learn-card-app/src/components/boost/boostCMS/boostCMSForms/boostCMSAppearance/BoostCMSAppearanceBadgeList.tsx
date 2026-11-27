@@ -11,7 +11,6 @@ import {
 import { useLCAStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
-import { IonSpinner } from '@ionic/react';
 import { AppCol, AppGrid, AppRow } from '../../../../layout';
 import TransparentGrid from 'learn-card-base/assets/images/transparent-grid.png';
 import Camera from 'learn-card-base/svgs/Camera';
@@ -27,6 +26,7 @@ import Checkmark from 'learn-card-base/svgs/Checkmark';
 import { BoostCMSActiveAppearanceForm } from './BoostCMSAppearanceFormHeader';
 import { SetState } from 'packages/shared-types/dist';
 import * as m from '../../../../../paraglide/messages.js';
+import { AppSpinner } from '../../../../feedback/AppSpinner';
 
 export enum StylePackCategories {
     all = BoostCategoryOptionsEnum.all,
@@ -279,7 +279,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<BoostCMSAppearanceBadgeListPr
                         />
                         {imageUploadLoading && (
                             <div className="absolute z-50 flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-xl min-w-[70px] min-h-[70px] user-image-upload-inprogress">
-                                <IonSpinner name="crescent" color="dark" className="scale-[1.75]" />
+                                <AppSpinner name="crescent" color="dark" className="scale-[1.75]" />
                             </div>
                         )}
                         <button onClick={handleDeleteImageUploaded} className="trash-button">
@@ -297,7 +297,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<BoostCMSAppearanceBadgeListPr
                             alt="transparent grid"
                         />
                         <div className="absolute flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-xl min-w-[70px] min-h-[70px] user-image-upload-inprogress">
-                            <IonSpinner name="crescent" color="dark" className="scale-[1.75]" />
+                            <AppSpinner name="crescent" color="dark" className="scale-[1.75]" />
                         </div>
                     </div>
                 )}

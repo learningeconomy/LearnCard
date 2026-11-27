@@ -7,8 +7,6 @@ import moment from 'moment';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('claim-boost');
 
-import { IonSpinner } from '@ionic/react';
-
 // import MainHeader from '../../components/main-header/MainHeader';
 import BoostFooterLayout from '../../components/accessibility/AccessibleBoostFooterLayout';
 import AccessibleCredentialCard from '../../components/accessibility/AccessibleCredentialCard';
@@ -76,6 +74,7 @@ import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
 import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
 import * as m from '../../paraglide/messages.js';
 import { AppPage } from '../../components/chrome';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 
 class ClaimContextChangedError extends Error {
     constructor() {
@@ -942,7 +941,7 @@ const ClaimBoost: React.FC<{
                                         aria-live="polite"
                                         className="relative loading-spinner-container flex flex-col items-center justify-center h-full w-full"
                                     >
-                                        <IonSpinner aria-hidden="true" color="black" />
+                                        <AppSpinner aria-hidden="true" color="black" />
                                         <p className="mt-2 font-bold text-lg">
                                             {m['common.loading']()}
                                         </p>

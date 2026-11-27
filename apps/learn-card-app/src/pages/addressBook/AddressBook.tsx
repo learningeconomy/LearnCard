@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouteMatch } from 'react-router-dom';
-import { IonSpinner } from '@ionic/react';
 import { AppGrid, AppRow } from '../../components/layout';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('address-book');
@@ -34,6 +33,7 @@ import useHeaderScrollSync from '../../hooks/useHeaderScrollSync';
 import useDebounce from '../../hooks/useDebounce';
 import { IconSetEnum } from '../../theme/icons';
 import { AppContent, AppPage } from '../../components/chrome';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 
 const getActiveRouteTab = (url: string): AddressBookTabsEnum | undefined => {
     switch (url) {
@@ -219,7 +219,7 @@ const AddressBook: React.FC = () => {
                                 <GenericErrorBoundary>
                                     {showLoadingSpinner && (
                                         <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full my-4">
-                                            <IonSpinner color="black" />
+                                            <AppSpinner color="black" />
                                             <p className="mt-2 font-bold text-lg">
                                                 {m['common.loading']()}
                                             </p>

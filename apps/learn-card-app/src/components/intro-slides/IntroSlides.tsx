@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IonicSlides, IonSpinner } from '@ionic/react';
+import { IonicSlides } from '@ionic/react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import type { Swiper as SwiperInterface } from 'swiper/types';
 import { Keyboard, Navigation, Pagination, Scrollbar } from 'swiper/modules';
@@ -20,6 +20,7 @@ import 'swiper/css/pagination';
 import 'swiper/css/scrollbar';
 import '@ionic/react/css/ionic-swiper.css';
 import { AppContent, AppPage } from '../chrome';
+import { AppSpinner } from '../feedback/AppSpinner';
 
 const IntroSlides: React.FC = () => {
     const { getColorSet } = useTheme();
@@ -301,7 +302,7 @@ const LearnCardSlide4: React.FC<LearnCardSlideProps> = ({ handleNextSlide, handl
         <>
             <section className="font-medium font-rubik flex flex-col items-center justify-center base-gradient">
                 <img src={useTenantBrandingAssets().textLogo} alt="Logo" className="mt-4" />
-                <IonSpinner name="crescent" color="light" className="scale-[1.75] mt-8" />
+                <AppSpinner name="crescent" color="light" className="scale-[1.75] mt-8" />
             </section>
         </>
     );

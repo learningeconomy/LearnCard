@@ -4,8 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AppLoading } from './AppLoading';
 
-vi.mock('@ionic/react', () => ({
-    IonSpinner: ({ name }: { name: string }) => <span data-testid="spinner" data-name={name} />,
+vi.mock('../feedback/AppSpinner', () => ({
+    AppSpinner: ({ name }: { name: string }) => <span data-testid="spinner" data-name={name} />,
 }));
 
 let ionApp: HTMLElement;

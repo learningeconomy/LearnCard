@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { IonSpinner } from '@ionic/react';
 import { AppIcon } from '../../components/icon';
 import {
     addOutline,
@@ -15,6 +14,7 @@ import type { SchoolConnection } from '@learncard/lca-api-plugin';
 import SchoolConnectTileIcon from '../myApps/icons/SchoolConnectTileIcon';
 import classlinkLogo from 'learn-card-base/assets/images/classlink-logo.png';
 import * as m from '../../paraglide/messages.js';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 
 const ErrorBanner: React.FC<{ message: string }> = ({ message }) => (
     <div
@@ -103,7 +103,7 @@ export const SchoolConnectView: React.FC<SchoolConnectViewProps> = ({
     if (isLoading) {
         return (
             <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3">
-                <IonSpinner name="crescent" className="h-8 w-8" />
+                <AppSpinner name="crescent" className="h-8 w-8" />
             </div>
         );
     }
@@ -182,7 +182,7 @@ export const SchoolConnectView: React.FC<SchoolConnectViewProps> = ({
                             >
                                 {connecting ? (
                                     <span className="flex items-center gap-1.5">
-                                        <IonSpinner name="crescent" className="h-3 w-3" />
+                                        <AppSpinner name="crescent" className="h-3 w-3" />
                                         {m['schoolConnect.connecting']()}
                                     </span>
                                 ) : (
@@ -257,7 +257,7 @@ export const SchoolConnectView: React.FC<SchoolConnectViewProps> = ({
                         >
                             {connecting ? (
                                 <span className="flex items-center justify-center gap-2">
-                                    <IonSpinner name="crescent" className="h-4 w-4" />
+                                    <AppSpinner name="crescent" className="h-4 w-4" />
                                     {m['schoolConnect.connecting']()}
                                 </span>
                             ) : (
@@ -345,7 +345,7 @@ export const SchoolConnectView: React.FC<SchoolConnectViewProps> = ({
                         >
                             {connecting ? (
                                 <span className="flex items-center justify-center gap-2">
-                                    <IonSpinner name="crescent" className="h-4 w-4" />
+                                    <AppSpinner name="crescent" className="h-4 w-4" />
                                     {m['schoolConnect.connecting']()}
                                 </span>
                             ) : (

@@ -26,7 +26,6 @@ import SimpleAttachedNetworkDisplay from './SimpleAttachedNetworkDisplay';
 import FrameworkCreatedSuccessModal from './FrameworkCreatedSuccessModal';
 import SkillsFrameworkAdminSelector from './SkillsFrameworkAdminSelector';
 import SkillsFrameworkNetworkSelector from './SkillsFrameworkNetworkSelector';
-import { IonSpinner } from '@ionic/react';
 import { AppInput } from '../../components/controls/AppInput';
 import { AppTextarea } from '../../components/controls/AppTextarea';
 import * as m from '../../paraglide/messages.js';
@@ -35,6 +34,7 @@ import { SkillFramework } from '../../components/boost/boost';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import { ApiFrameworkInfo } from '../../helpers/skillFramework.helpers';
 import { AppFooter } from '../../components/chrome';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 
 type CreateFrameworkModalProps = {
     isEdit?: boolean;
@@ -318,7 +318,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
                         <div className="relative">
                             {isUploadingImage && (
                                 <div className="absolute top-0 left-0 z-10 bg-white/60  h-full w-full flex items-center justify-center">
-                                    <IonSpinner
+                                    <AppSpinner
                                         name="crescent"
                                         color="dark"
                                         className="scale-[1.75]"

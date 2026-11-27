@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useModal, useGetCurrentUserTroopIdsResolved, useGetMultipleBoosts } from 'learn-card-base';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 import SkillsFrameworkNetworkSelectorItem from './SkillsFrameworkNetworkSelectorItem';
 
 type SkillsFrameworkNetworkSelectorProps = {
@@ -99,7 +99,7 @@ const SkillsFrameworkNetworkSelector: React.FC<SkillsFrameworkNetworkSelectorPro
             <div className="grow p-[15px] min-h-[300px] max-h-[500px] overflow-y-auto">
                 {isLoading ? (
                     <div className="flex items-center justify-center h-full">
-                        <IonSpinner name="crescent" />
+                        <AppSpinner name="crescent" />
                     </div>
                 ) : networks.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center p-[20px]">

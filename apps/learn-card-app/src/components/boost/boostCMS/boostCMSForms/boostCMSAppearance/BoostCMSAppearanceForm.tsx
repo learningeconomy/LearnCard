@@ -15,7 +15,6 @@ import {
 } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
-import { IonSpinner } from '@ionic/react';
 import { AppGrid, AppRow } from '../../../../layout';
 import { CATEGORY_TO_SUBCATEGORY_LIST } from '../../../boost-options/boostOptions';
 
@@ -30,6 +29,7 @@ import BoostIDCardCMSAppearanceForm from '../../BoostIDCardCMS/BoostIDCardCMSFor
 import { BoostCMSState } from '../../../boost';
 import BoostIDCardCMSIssuerThumbnailForm from '../../BoostIDCardCMS/BoostIDCardCMSForms/BoostIDCardCMSIssuerThumbnailForm';
 import * as m from '../../../../../paraglide/messages.js';
+import { AppSpinner } from '../../../../feedback/AppSpinner';
 
 type BoostCMSAppearanceFormProps = {
     state: BoostCMSState;
@@ -259,7 +259,7 @@ const BoostCMSAppearanceForm: React.FC<BoostCMSAppearanceFormProps> = ({
                                 )}
                                 {imageUploadLoading && (
                                     <div className="absolute z-50 flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-xl min-w-[70px] min-h-[70px] user-image-upload-inprogress">
-                                        <IonSpinner
+                                        <AppSpinner
                                             name="crescent"
                                             color="dark"
                                             className="scale-[1.75]"

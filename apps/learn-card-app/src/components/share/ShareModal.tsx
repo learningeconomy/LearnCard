@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('share-modal');
 
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../feedback/AppSpinner';
 import LinkChain from 'learn-card-base/svgs/LinkChain';
 import Select from 'learn-card-base/components/generic/Select';
 import CopyStack from '../svgs/CopyStack';
@@ -189,7 +189,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ contractUri, profileId, overrid
                             disabled={loading}
                         >
                             {loading ? (
-                                <IonSpinner name="crescent" />
+                                <AppSpinner name="crescent" />
                             ) : (
                                 <>
                                     {m['share.generateInviteLink']()}

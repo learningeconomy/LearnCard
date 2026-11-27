@@ -66,10 +66,6 @@ vi.mock('../../../components/learncardID-CMS/learncard-cms.helpers', () => ({
     getLearnCardIDStyleDefaults: () => ({}),
 }));
 vi.mock('@learncard/react', () => ({ Checkmark: () => null }));
-vi.mock('@ionic/react', () => ({
-    IonSpinner: () => null,
-}));
-
 import AdminToolsCreateProfileSimple from './AdminToolsCreateProfileSimple';
 import * as m from '../../../paraglide/messages.js';
 

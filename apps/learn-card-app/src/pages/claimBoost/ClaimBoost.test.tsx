@@ -35,9 +35,6 @@ vi.mock('@capacitor/core', () => ({
     Capacitor: { isNativePlatform: () => false },
 }));
 vi.mock('@learncard/react', () => ({ getVCDisplayCardVariant: () => 'default' }));
-vi.mock('@ionic/react', () => ({
-    IonSpinner: () => <div role="status">Loading</div>,
-}));
 vi.mock('../../components/overlays/useAppAlert', () => ({ useAppAlert: () => [vi.fn(), vi.fn()] }));
 vi.mock('../../components/overlays/useAppOverlayModal', () => ({
     useAppOverlayModal: () => [vi.fn(), vi.fn()],

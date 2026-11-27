@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { IonSpinner } from '@ionic/react';
 import { AppIcon } from '../../../components/icon';
 import { alertCircleOutline } from 'ionicons/icons';
 
@@ -14,6 +13,7 @@ import {
     type ContactCredentialHistoryItem,
     useContactCredentialHistory,
 } from './useContactCredentialHistory';
+import { AppSpinner } from '../../../components/feedback/AppSpinner';
 
 type ContactCredentialHistoryModalProps = {
     contact: Pick<LCNProfile, 'profileId' | 'displayName'>;
@@ -121,7 +121,7 @@ const ContactCredentialHistoryModal: React.FC<ContactCredentialHistoryModalProps
             <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
                 {isLoading && (
                     <div className="flex h-full min-h-[280px] flex-col items-center justify-center gap-3 text-sm text-grayscale-600">
-                        <IonSpinner className="h-6 w-6" />
+                        <AppSpinner className="h-6 w-6" />
                         {m['contacts.credentialHistory.loading']()}
                     </div>
                 )}

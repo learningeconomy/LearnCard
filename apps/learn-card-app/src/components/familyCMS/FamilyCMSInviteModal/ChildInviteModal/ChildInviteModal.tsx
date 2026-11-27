@@ -2,7 +2,6 @@ import React, { useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
-import { IonSpinner } from '@ionic/react';
 import { AppInput } from '../../../controls/AppInput';
 import Pencil from '../../../svgs/Pencil';
 import LearnCardIconOutline from '../../../svgs/LearnCardIconOutline';
@@ -31,6 +30,7 @@ import { getLearnCardIDStyleDefaults } from '../../../learncardID-CMS/learncard-
 import keyboardStore from 'learn-card-base/stores/keyboardStore';
 import { m } from '../../../../paraglide/messages.js';
 import { AppContent, AppFooter, AppPage, AppToolbar } from '../../../chrome';
+import { AppSpinner } from '../../../feedback/AppSpinner';
 
 export enum ChildInviteModalViewModeEnum {
     create = 'create',
@@ -236,7 +236,7 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
                                 >
                                     {imageUploadLoading && (
                                         <div className="user-image-upload-inprogress absolute flex h-[70px] min-h-[70px] w-[70px] min-w-[70px] items-center justify-center overflow-hidden rounded-full border-2 border-solid border-white text-xl font-medium text-white">
-                                            <IonSpinner
+                                            <AppSpinner
                                                 name="crescent"
                                                 color="dark"
                                                 className="scale-[1.75]"

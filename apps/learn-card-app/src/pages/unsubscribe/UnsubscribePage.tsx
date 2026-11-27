@@ -1,11 +1,11 @@
 import { enterSharePrivacy } from '../../components/share-links/sharePrivacy';
 import React, { useEffect, useState } from 'react';
-import { IonSpinner } from '@ionic/react';
 import { useLocation } from 'react-router-dom';
 import { getAnonymousClient } from '@learncard/network-brain-client';
 import { networkStore } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
 import { AppContent, AppPage } from '../../components/chrome';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 
 const UnsubscribePage: React.FC = () => {
     const { search } = useLocation();
@@ -42,7 +42,7 @@ const UnsubscribePage: React.FC = () => {
                         </h1>
                         {state === 'loading' && (
                             <div role="status" className="text-grayscale-600">
-                                <IonSpinner aria-hidden="true" />
+                                <AppSpinner aria-hidden="true" />
                                 <p>{m['announcements.unsubscribing']()}</p>
                             </div>
                         )}

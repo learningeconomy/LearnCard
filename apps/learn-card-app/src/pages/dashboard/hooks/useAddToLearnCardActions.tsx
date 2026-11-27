@@ -1,13 +1,13 @@
 import React, { Suspense, lazy, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { useHistory } from 'react-router-dom';
-import { IonSpinner } from '@ionic/react';
 
 import { ModalTypes, QRCodeScannerStore, useModal, getLogger } from 'learn-card-base';
 
 import useBoostRecoveryCheck from '../../../hooks/useBoostRecoveryCheck';
 import * as m from '../../../paraglide/messages.js';
 import { AppContent, AppPage } from '../../../components/chrome';
+import { AppSpinner } from '../../../components/feedback/AppSpinner';
 
 const log = getLogger('dashboard');
 
@@ -20,7 +20,7 @@ const PasteOrUploadClaimModalFallback: React.FC = () => (
     <AppPage>
         <AppContent>
             <div className="font-poppins flex items-center justify-center min-h-[360px] p-8">
-                <IonSpinner
+                <AppSpinner
                     name="crescent"
                     role="status"
                     aria-label={m['common.loading']()}

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useModal, useWallet } from 'learn-card-base';
-import { IonSpinner } from '@ionic/react';
 import { AppInput } from '../../components/controls/AppInput';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { LCNProfile } from '@learncard/types';
@@ -9,6 +8,7 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('manage-framework-admins-modal');
 // import ScoutsTroopIcon from 'apps/learn-card-app/src/assets/icons/ScoutsTroopIcon';
 import TrashBin from 'learn-card-base/svgs/TrashBin';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 
 type ManageFrameworkAdminsModalProps = {
     frameworkId: string;
@@ -123,7 +123,7 @@ const ManageFrameworkAdminsModal: React.FC<ManageFrameworkAdminsModalProps> = ({
 
                     {isLoading ? (
                         <div className="flex items-center justify-center py-[40px]">
-                            <IonSpinner name="crescent" />
+                            <AppSpinner name="crescent" />
                         </div>
                     ) : isError ? (
                         <div className="text-center py-[40px]">

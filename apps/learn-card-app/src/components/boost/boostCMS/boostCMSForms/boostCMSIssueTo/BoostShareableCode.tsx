@@ -10,7 +10,6 @@ import useDebounce from 'apps/learn-card-app/src/hooks/useDebounce';
 import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantConfig';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 
-import { IonSpinner } from '@ionic/react';
 import AppDatetime from '../../../../datetime/AppDatetime';
 import { useAppOverlayModal } from '../../../../overlays/useAppOverlayModal';
 import { AppCol, AppGrid, AppRow } from '../../../../layout';
@@ -35,6 +34,7 @@ import BoostShareableQRCode from './BoostShareableQRCode';
 
 import useTheme from '../../../../../theme/hooks/useTheme';
 import * as m from '../../../../../paraglide/messages.js';
+import { AppSpinner } from '../../../../feedback/AppSpinner';
 
 type BoostShareableCodeProps = {
     state: BoostCMSState;
@@ -431,7 +431,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                     <>
                         {isPermissionsLoading && (
                             <AppRow className="flex items-center justify-center w-full bg-grayscale-100 rounded-[15px] p-4 mb-2">
-                                <IonSpinner name="crescent" color="dark" className="mr-2" />
+                                <AppSpinner name="crescent" color="dark" className="mr-2" />
                                 <p className="text-grayscale-700 font-medium text-sm m-0">
                                     Checking template permissions...
                                 </p>
@@ -480,7 +480,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                                                         {isLinkLoading ||
                                                         getCurrentClaimLink().length === 0 ? (
                                                             <>
-                                                                <IonSpinner
+                                                                <AppSpinner
                                                                     name="crescent"
                                                                     color="dark"
                                                                     className="scale-[1] mr-1"

@@ -4,8 +4,6 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { ConsentDesignerCard } from './ConsentDesignerCard';
 
-vi.mock('@ionic/react', () => ({ IonSpinner: () => <span /> }));
-
 describe('ConsentDesignerCard', () => {
     it('starts from suggested choices so enabling is one tap', async () => {
         const onEnable = vi.fn().mockResolvedValue(undefined);

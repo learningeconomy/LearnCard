@@ -26,7 +26,6 @@ import {
 } from 'learn-card-base';
 import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 
-import { IonSpinner } from '@ionic/react';
 import { AppInput } from '../../components/controls/AppInput';
 import Pencil from '../../components/svgs/Pencil';
 
@@ -40,6 +39,7 @@ import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack'
 import { useAddCredentialToWallet } from '../../components/boost/mutations';
 import { sendBoostCredential } from '../../components/boost/boostHelpers';
 import { LCNBoostStatusEnum } from '../../components/boost/boost';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- existing empty props type; replacing it changes the accepted props type
 type CreateManagedProfileModalProps = {};
@@ -214,7 +214,7 @@ const CreateManagedProfileModal: React.FC<CreateManagedProfileModalProps> = ({})
         <>
             {isLoading && (
                 <div className="absolute w-full h-full bg-white/50  z-9999 flex items-center justify-center backdrop-blur-[1px]">
-                    <IonSpinner color="dark" />
+                    <AppSpinner color="dark" />
                 </div>
             )}
 
@@ -230,7 +230,7 @@ const CreateManagedProfileModal: React.FC<CreateManagedProfileModalProps> = ({})
                     >
                         {imageUploading && (
                             <div className="user-image-upload-inprogress absolute flex h-[70px] min-h-[70px] w-[70px] min-w-[70px] items-center justify-center overflow-hidden rounded-full border-2 border-solid border-white text-xl font-medium text-whiteborder-white">
-                                <IonSpinner name="crescent" color="dark" className="scale-[1.75]" />
+                                <AppSpinner name="crescent" color="dark" className="scale-[1.75]" />
                             </div>
                         )}
                     </UserProfilePicture>

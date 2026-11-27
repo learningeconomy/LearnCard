@@ -11,7 +11,6 @@ import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credent
 import ProfilePicture from 'learn-card-base/components/profilePicture/ProfilePicture';
 import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarnedCard';
 
-import { IonSpinner } from '@ionic/react';
 import { useAppAlert } from '../overlays/useAppAlert';
 import { AppGrid } from '../layout';
 import { AppToggle } from '../controls/AppToggle';
@@ -29,6 +28,7 @@ type ShareCredentialsProps = {
 
 import { getLogger } from 'learn-card-base';
 import { AppContent, AppPage } from '../chrome';
+import { AppSpinner } from '../feedback/AppSpinner';
 const log = getLogger('share-boosts-bundle');
 
 const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
@@ -150,7 +150,7 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
                                     <div className="mt-[15px] text--[14px]">
                                         {credentialsLoading && (
                                             <div className="w-full h-full flex flex-col opacity-50 items-center justify-center mt-[40px]">
-                                                <IonSpinner />
+                                                <AppSpinner />
                                                 <p className="mt-[20px]">
                                                     Fetching your earned boosts...
                                                 </p>

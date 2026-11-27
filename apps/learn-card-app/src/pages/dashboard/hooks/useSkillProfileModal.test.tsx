@@ -9,9 +9,6 @@ vi.mock('learn-card-base', async () => {
     const { lazyWithRetry } = await import('learn-card-base/helpers/lazyWithRetry');
     return { ModalTypes: { Right: 'right' }, lazyWithRetry, useModal: () => modal };
 });
-vi.mock('@ionic/react', () => ({
-    IonSpinner: () => <span>loading wizard</span>,
-}));
 vi.mock('../components/SkillProfileModal', () => {
     loads.count += 1;
     return {
@@ -38,7 +35,7 @@ describe('useSkillProfileModal', () => {
         expect(options).toEqual({ hideButton: true, sectionClassName: 'max-w-[640px]!' });
 
         render(element);
-        expect(screen.getByText('loading wizard')).toBeTruthy();
+        expect(screen.getByRole('progressbar')).toBeTruthy();
         (await screen.findByText('wizard')).click();
         expect(modal.closeModal).toHaveBeenCalledOnce();
     });

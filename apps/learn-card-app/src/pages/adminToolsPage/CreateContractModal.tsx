@@ -9,7 +9,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import useAutosave from '../../hooks/useAutosave';
 import RecoveryPrompt from '../../components/common/RecoveryPrompt';
 
-import { IonSpinner } from '@ionic/react';
 import AppDatetime from '../../components/datetime/AppDatetime';
 import { AppLabel } from '../../components/list';
 import { AppInput } from '../../components/controls/AppInput';
@@ -50,6 +49,7 @@ import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack'
 import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 
 import useTheme from '../../theme/hooks/useTheme';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 
 export enum ContractType {
     classic = 'Classic', // regular ConsentFlow modal
@@ -491,7 +491,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
                                 />
                                 {imageUploading && (
                                     <div className="user-image-upload-inprogress absolute flex h-[70px] min-h-[70px] w-[70px] min-w-[70px] items-center justify-center overflow-hidden rounded-full border-2 border-solid border-white text-xl font-medium text-whiteborder-white">
-                                        <IonSpinner
+                                        <AppSpinner
                                             name="crescent"
                                             color="dark"
                                             className="scale-[1.75]"

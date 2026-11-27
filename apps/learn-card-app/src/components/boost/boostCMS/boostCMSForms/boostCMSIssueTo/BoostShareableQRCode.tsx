@@ -2,7 +2,6 @@ import React from 'react';
 import * as m from '../../../../../paraglide/messages.js';
 import { QRCodeSVG } from 'qrcode.react';
 
-import { IonSpinner } from '@ionic/react';
 import { AppRow } from '../../../../layout';
 import X from 'learn-card-base/svgs/X';
 import BoostCMSAppearanceController from '../boostCMSAppearance/BoostCMSAppearanceController';
@@ -12,6 +11,7 @@ import FamilyCrest from 'apps/learn-card-app/src/components/familyCMS/FamilyCres
 import { CATEGORY_TO_SUBCATEGORY_LIST } from '../../../boost-options/boostOptions';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import { BoostCMSState } from '../../../boost';
+import { AppSpinner } from '../../../../feedback/AppSpinner';
 
 type BoostShareableQRCodeProps = {
     state: BoostCMSState;
@@ -107,7 +107,7 @@ const BoostShareableQRCode: React.FC<BoostShareableQRCodeProps> = ({
                     </>
                 ) : (
                     <div className="flex flex-col items-center justify-center w-full px-10 py-8 gap-3">
-                        <IonSpinner name="crescent" color="dark" />
+                        <AppSpinner name="crescent" color="dark" />
 
                         <p className="font-poppins text-grayscale-500 text-sm text-center">
                             Generating claim link...

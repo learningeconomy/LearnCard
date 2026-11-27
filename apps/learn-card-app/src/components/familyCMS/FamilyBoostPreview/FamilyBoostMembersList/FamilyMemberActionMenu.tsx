@@ -1,7 +1,6 @@
 import type { ModalInstanceToken } from 'learn-card-base/components/modals/types/Modals';
 import React, { useEffect } from 'react';
 
-import { IonSkeletonText } from '@ionic/react';
 import { useAppOverlayModal } from '../../../overlays/useAppOverlayModal';
 
 import PeaceSign from '../../../svgs/PeaceSign';

@@ -2,7 +2,6 @@ import React from 'react';
 import { useLocation, useHistory } from 'react-router-dom';
 import * as m from '../../paraglide/messages.js';
 
-import { IonProgressBar } from '@ionic/react';
 import { AppCol, AppGrid, AppRow } from '../layout';
 import { AppMenuToggle } from '../app-shell/AppMenuToggle';
 import HeaderBranding from '../headerBranding/HeaderBranding';
@@ -26,6 +25,7 @@ import loadingStore from '../../stores/loadingStore';
 
 import useTheme from '../../theme/hooks/useTheme';
 import { AppHeader, AppToolbar } from '../chrome';
+import { AppProgressBar } from '../feedback/AppProgressBar';
 
 type MainHeaderProps = {
     category?: CredentialCategoryEnum;
@@ -110,7 +110,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
 
     return (
         <AppHeader className="learn-card-header ion-no-border relative">
-            <IonProgressBar
+            <AppProgressBar
                 type="indeterminate"
                 aria-label={m['common.loading']()}
                 aria-hidden={!isLoading}

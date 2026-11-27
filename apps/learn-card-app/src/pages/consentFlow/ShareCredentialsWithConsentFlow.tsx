@@ -6,7 +6,6 @@ import { useCurrentUser } from 'learn-card-base';
 import ConsentFlowShareCredentialCards from './ConsentFlowShareCredentialCards';
 import ProfilePicture from 'learn-card-base/components/profilePicture/ProfilePicture';
 
-import { IonSpinner } from '@ionic/react';
 import { AppCol, AppGrid, AppRow } from '../../components/layout';
 import CaretLeft from '../../components/svgs/CaretLeft';
 import { AppToggle } from '../../components/controls/AppToggle';
@@ -15,6 +14,7 @@ import { useConsentFlowCredentials } from './useConsentFlowCredentials';
 import { curriedStateSlice } from '@learncard/helpers';
 import * as m from '../../paraglide/messages.js';
 import { AppContent, AppHeader, AppPage, AppToolbar } from '../../components/chrome';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 
 const ShareCredentialsWithConsentFlow: React.FC<{
     handleCloseModal: () => void;
@@ -99,7 +99,7 @@ const ShareCredentialsWithConsentFlow: React.FC<{
                             <div className="mt-[15px] text--[14px]">
                                 {!anyDoneLoading && (
                                     <div className="w-full h-full flex flex-col opacity-50 items-center justify-center mt-[40px]">
-                                        <IonSpinner />
+                                        <AppSpinner />
                                         <p className="mt-[20px]">
                                             {m['consentFlow.fetchingCredentials']()}
                                         </p>

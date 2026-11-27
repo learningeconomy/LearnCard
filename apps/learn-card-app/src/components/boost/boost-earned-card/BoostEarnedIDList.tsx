@@ -5,7 +5,6 @@ import { useLoadingLine } from '../../../stores/loadingStore';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
 
-import { IonSpinner } from '@ionic/react';
 import { AppCol } from '../../layout';
 import BoostEarnedIDCard from './BoostEarnedIDCard';
 
@@ -20,6 +19,7 @@ import {
     SubheaderContentType,
 } from '../../main-subheader/MainSubHeader.types';
 import CategoryEmptyPlaceholder from '../../empty-placeholder/CategoryEmptyPlaceHolder';
+import { AppSpinner } from '../../feedback/AppSpinner';
 
 const BoostEarnedIDList: React.FC<{
     category: CredentialCategoryEnum;
@@ -160,7 +160,7 @@ const BoostEarnedIDList: React.FC<{
                                 {credentials}
                                 {credentialsFetching && (
                                     <div className="w-full flex items-center justify-center">
-                                        <IonSpinner
+                                        <AppSpinner
                                             name="crescent"
                                             color="grayscale-900"
                                             className="scale-[2] mb-8 mt-6"
@@ -181,7 +181,7 @@ const BoostEarnedIDList: React.FC<{
                             </div>
                             {credentialsFetching && (
                                 <div className="w-full flex items-center justify-center">
-                                    <IonSpinner
+                                    <AppSpinner
                                         name="crescent"
                                         color="grayscale-900"
                                         className="scale-[2] mb-8 mt-6"

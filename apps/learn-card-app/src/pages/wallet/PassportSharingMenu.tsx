@@ -1,6 +1,5 @@
 import React, { Suspense, useState } from 'react';
 
-import { IonSpinner } from '@ionic/react';
 import { AppPopover } from '../../components/overlays/AppPopover';
 import { AppIcon } from '../../components/icon';
 import { chevronDownOutline, eyeOutline, shareOutline } from 'ionicons/icons';
@@ -9,6 +8,7 @@ import { lazyWithRetry, ModalTypes, useDeviceTypeByWidth, useModal } from 'learn
 import * as m from '../../paraglide/messages.js';
 import { ShareCredentialsIllustration } from '../../components/share-links/ShareCredentialsIllustration';
 import { AppContent, AppPage } from '../../components/chrome';
+import { AppSpinner } from '../../components/feedback/AppSpinner';
 
 const ShareBoostsBundleModal = lazyWithRetry(
     () => import('../../components/creds-bundle/ShareBoostsBundleModal')
@@ -18,7 +18,7 @@ const SharedBundleModalFallback: React.FC = () => (
     <AppPage>
         <AppContent>
             <div className="font-poppins flex min-h-[360px] items-center justify-center p-8">
-                <IonSpinner name="crescent" className="text-grayscale-700" />
+                <AppSpinner name="crescent" className="text-grayscale-700" />
             </div>
         </AppContent>
     </AppPage>

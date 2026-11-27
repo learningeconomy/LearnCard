@@ -3,7 +3,7 @@ import { useHistory } from 'react-router-dom';
 
 import { m } from '../../../paraglide/messages.js';
 
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from '../../feedback/AppSpinner';
 import SlimCaretLeft from '../../svgs/SlimCaretLeft';
 import AiSessionsHeaderSkeleton from './AiSessionsHeaderSkeleton';
 import AiSessionsDesktopHeader from './AiSessionsDesktopHeader';
@@ -89,7 +89,7 @@ export const AiSessionsSubHeader: React.FC<{
         <div className="w-full flex items-center justify-between pt-[4px]">
             <h2 className="text-grayscale-500 font-semibold text-[25px] flex items-center">
                 {isLoading ? (
-                    <IonSpinner name="crescent" color="dark" className="scale-[1] mr-1" />
+                    <AppSpinner name="crescent" color="dark" className="scale-[1] mr-1" />
                 ) : (
                     sessionsCount
                 )}

@@ -5,7 +5,6 @@ import { useHistory } from 'react-router-dom';
 import { useLoadingLine } from '../../../stores/loadingStore';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
-import { IonSpinner } from '@ionic/react';
 import { AppCol, AppGrid, AppRow } from '../../layout';
 import BoostManagedCard from '../../../components/boost/boost-managed-card/BoostManagedCard';
 import BoostErrorsDisplay from '../../../components/boost/boostErrors/BoostErrorsDisplay';
@@ -23,6 +22,7 @@ import {
     credentialCategoryToSubheaderType,
     SubheaderContentType,
 } from '../../main-subheader/MainSubHeader.types';
+import { AppSpinner } from '../../feedback/AppSpinner';
 
 type BoostManagedListProps = {
     category: CredentialCategoryEnum;
@@ -175,7 +175,7 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
                         )}
                         {managedBoostsFetching && (
                             <div className="w-full flex items-center justify-center">
-                                <IonSpinner
+                                <AppSpinner
                                     name="crescent"
                                     color="grayscale-900"
                                     className="scale-[2] mb-8 mt-6"
