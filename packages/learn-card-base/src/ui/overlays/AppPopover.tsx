@@ -361,6 +361,7 @@ export const AppPopover: React.FC<AppPopoverProps> = ({
         .join(' ');
 
     return createPortal(
+        // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- the host only passes through the caller's bubbling-event handlers (e.g. stopPropagation), as listeners on ion-popover did; it is not a click target
         <div
             ref={hostRef}
             className={hostClasses}

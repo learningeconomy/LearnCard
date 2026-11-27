@@ -22,6 +22,9 @@ const SURFACE_LAYER = [
     'packages/learn-card-base/src/assets/styles/safe-area.scss',
     'packages/learn-card-base/src/components/modals/surfaces/',
     'packages/learn-card-base/src/dev/simulateInsets.ts',
+    // Ionic's core.css, vendored verbatim when @ionic/react was removed: it defines the
+    // --ion-safe-area-* primitives (from env(safe-area-inset-*)) that the rest of the layer reads.
+    'packages/learn-card-base/src/ui/global/core.css',
     'apps/learn-card-app/src/theme/variables.css',
     'apps/scouts/src/theme/variables.css',
     'scripts/check-safe-area.mjs',
