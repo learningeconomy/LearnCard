@@ -319,7 +319,11 @@ const reactRouterEntryCssOrder = (): Plugin => ({
 const documentBranding = () => {
     const tenantConfig = path.join(__dirname, 'public/tenant-config.json');
     const branding = existsSync(tenantConfig)
-        ? (JSON.parse(readFileSync(tenantConfig, 'utf8')) as { branding?: { name?: string; shortName?: string } }).branding
+        ? (
+              JSON.parse(readFileSync(tenantConfig, 'utf8')) as {
+                  branding?: { name?: string; shortName?: string };
+              }
+          ).branding
         : undefined;
     return documentBrandingFor(branding);
 };

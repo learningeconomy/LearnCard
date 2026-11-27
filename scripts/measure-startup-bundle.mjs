@@ -16,7 +16,9 @@ const scriptEntries = [...html.matchAll(/<script\b(?=[^>]*type="module")[^>]*src
 );
 const inlineEntries = [
     ...html.matchAll(/<script\b(?=[^>]*type="module")(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g),
-].flatMap(match => [...match[1].matchAll(/import\s*(?:[^'"()]*?from\s*)?\(?\s*"([^"]+)"/g)].map(m => m[1]));
+].flatMap(match =>
+    [...match[1].matchAll(/import\s*(?:[^'"()]*?from\s*)?\(?\s*"([^"]+)"/g)].map(m => m[1])
+);
 const entries = [...scriptEntries, ...inlineEntries].filter(src => src.startsWith('/assets/'));
 if (entries.length === 0) throw new Error('Missing application module entry');
 const assets = await readdir(resolve(root, 'assets'));
