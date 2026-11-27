@@ -3,7 +3,7 @@
  *
  * **Workflow order for tenant builds (enforced by `bun run lc native`):**
  *   1. `prepare-native-config.ts <tenant>` — populates public/ with tenant config + assets
- *   2. `vite build`                        — compiles web app with correct tenant data
+ *   2. `react-router build`                — compiles web app with correct tenant data
  *   3. `bunx cap sync`                     — copies fresh build/ into native projects
  *   4. `prepare-native-config.ts <tenant>` — re-patches native files that cap sync
  *                                             overwrites (capacitor.config.json, etc.)

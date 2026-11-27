@@ -52,17 +52,16 @@ describe('app stylesheet fonts', () => {
     });
 
     it('preloads only self-hosted faces the first screen renders', () => {
-        const html = read('../index.template.html');
-        const preloads = [...html.matchAll(/<link\b[^>]*>/g)]
-            .map(m => m[0])
-            .filter(tag => /\brel="preload"/.test(tag) && /\bas="font"/.test(tag))
-            .map(tag => tag.match(/\bhref="([^"]+)"/)?.[1] ?? '');
+        // root.tsx imports each preloaded face with ?url so Vite emits the same hashed file fonts.css uses.
+        const root = read('root.tsx');
+        const preloads = [...root.matchAll(/from '([^']+\.woff2)\?url'/g)].map(m => m[1]);
         expect(preloads).toHaveLength(3);
         for (const href of preloads) {
             expect(href).toMatch(
-                /^\/src\/assets\/fonts\/self-hosted\/poppins-latin-(400|500|700)-normal\.woff2$/
+                /^\.\/assets\/fonts\/self-hosted\/poppins-latin-(400|500|700)-normal\.woff2$/
             );
             expect(read('assets/fonts/self-hosted/fonts.css')).toContain(href.split('/').pop());
         }
+        expect(root).toMatch(/rel="preload"\s+as="font"\s+type="font\/woff2"/);
     });
 });

@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { buildSync } from 'esbuild';
-import { defineConfig, type UserConfigFn } from 'vite';
+import react from '@vitejs/plugin-react-swc';
+import { defineConfig, type PluginOption, type UserConfigFn } from 'vite';
 import appConfig from '../../vite.config.mts';
 
 // Exercise the real app pipeline and workspace source, without auth or a backend.
@@ -14,6 +15,18 @@ export default defineConfig(async environment => {
         platform: 'browser',
         minify: true,
     }).outputFiles[0].text;
+    const isPlugin = (plugin: PluginOption): plugin is { name: string } =>
+        Boolean(plugin) && typeof plugin === 'object' && 'name' in plugin;
+    // The fixtures are a plain Vite page: drop React Router's framework plugins (they own the
+    // document and the build), and keep Fast Refresh/JSX from the React plugin instead.
+    const appPlugins = (config.plugins?.flat() ?? []).filter(
+        plugin =>
+            !isPlugin(plugin) ||
+            (plugin.name !== 'unplugin-paraglide-js' && !plugin.name.startsWith('react-router'))
+    );
+    const hasReactPlugin = appPlugins.some(
+        plugin => isPlugin(plugin) && plugin.name.startsWith('vite:react')
+    );
     return {
         ...config,
         // The command compiles messages once before Vite. Recompiling the entire
@@ -42,15 +55,8 @@ export default defineConfig(async environment => {
                     }
                 },
             },
-            ...(config.plugins
-                ?.flat()
-                .filter(
-                    plugin =>
-                        !plugin ||
-                        typeof plugin !== 'object' ||
-                        !('name' in plugin) ||
-                        plugin.name !== 'unplugin-paraglide-js'
-                ) ?? []),
+            ...appPlugins,
+            ...(hasReactPlugin ? [] : react()),
             {
                 name: 'visual-browser-globals',
                 transformIndexHtml: () => [

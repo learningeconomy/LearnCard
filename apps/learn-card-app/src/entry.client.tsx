@@ -1,11 +1,13 @@
-// First: replace Capacitor's payload-logging bridge hooks before any plugin call.
+// First: the Node globals (Buffer, process, global) some dependencies read at module scope.
+import './browserGlobals';
+// Then replace Capacitor's payload-logging bridge hooks before any plugin call.
 import './nativeBridgeLogging';
 import './constants/sentry';
 import { LocaleProvider, resolveInitialLocale } from './i18n';
 import { loadLocaleMessages } from './i18n/localeMessages';
 import { setTenantDefaultLocaleCache, setTenantSupportedLanguagesCache } from './i18n/detectLocale';
-import { createRoot } from 'react-dom/client';
-import { Buffer } from 'buffer';
+import { startTransition } from 'react';
+import { hydrateRoot } from 'react-dom/client';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { Capacitor } from '@capacitor/core';
@@ -19,8 +21,8 @@ import { bootstrapTenantConfig } from './config/bootstrapTenantConfig';
 import { applyNativeViewportRestrictions } from './helpers/applyNativeViewportRestrictions';
 import { getLaunchDarklyProviderProps } from './constants/runtimeLaunchDarkly';
 import App from './App';
-import { createBrowserRouter } from 'react-router';
-import { RouterProvider } from 'react-router/dom';
+import { HydratedRouter } from 'react-router/dom';
+import { registerApp } from './routing/appRegistry';
 import { markStartupPhase } from './helpers/startupDiagnostics';
 import { prewarmDidKit } from 'learn-card-base/helpers/didkitPrewarm';
 import { startNativeSQLiteInit } from 'learn-card-base/hooks/useSQLiteStorage';
@@ -32,8 +34,7 @@ import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
 import { installInsetSimulator } from 'learn-card-base/dev/simulateInsets';
 import * as Sentry from '@sentry/browser';
 
-const browserGlobals = window as Window & { Buffer: typeof Buffer };
-browserGlobals.Buffer = Buffer;
+registerApp(App);
 
 applyNativeViewportRestrictions(Capacitor.isNativePlatform());
 
@@ -106,22 +107,21 @@ startNativeSQLiteInit();
     // render uses (no-op for the base locale and in dev). On failure, render with base strings.
     await loadLocaleMessages(resolveInitialLocale()).catch(() => undefined);
 
-    const container = document.getElementById('root');
-    if (container) {
-        const root = createRoot(container);
-        markStartupPhase('react');
-        root.render(
+    // Every HTML file (SPA fallback and prerendered paths) holds the root route's static
+    // HydrateFallback; hydrating swaps it for the app (src/root.tsx, src/routes/app.tsx).
+    markStartupPhase('react');
+    startTransition(() => {
+        hydrateRoot(
+            document,
             <TenantConfigProvider config={tenantConfig}>
                 <LocaleProvider>
                     <LDProvider {...getLaunchDarklyProviderProps()}>
-                        <RouterProvider
-                            router={createBrowserRouter([{ path: '*', element: <App /> }])}
-                        />
+                        <HydratedRouter />
                     </LDProvider>
                 </LocaleProvider>
             </TenantConfigProvider>
         );
-    }
+    });
 
     // Fonts the first screen does not use load after the first render is queued, off the critical path.
     loadDeferredFontStylesheets();

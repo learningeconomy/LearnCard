@@ -1,9 +1,10 @@
 import { readFile, writeFile } from 'node:fs/promises';
-import { extname, join } from 'node:path';
+import { join } from 'node:path';
 import { createServer, loadConfigFromFile } from 'vite';
 import type { Plugin } from 'vite';
 import { z } from 'zod';
 import { APP_ROOT } from './constants';
+import { documentBrandingFor } from '../../src/config/documentBranding';
 import { verificationBrandingPlugin } from './branding';
 import { readStackEndpoints } from './stack';
 import { processIdentity } from './process';
@@ -32,7 +33,6 @@ const start = async (): Promise<void> => {
     );
     const stack = await readStackEndpoints(directory);
     const tenant = await readFile(join(directory, 'tenant-config.json'), 'utf8');
-    const html = await readFile(join(directory, 'index.html'), 'utf8');
     const overlay: Plugin = {
         name: 'lc-verification-tenant',
         enforce: 'pre',
@@ -52,24 +52,10 @@ const start = async (): Promise<void> => {
                     );
                     return;
                 }
-                // Serve the production template through Vite's own transforms, without
-                // creating/replacing app/index.html (another stack or lc dev may own it).
-                if (
-                    (request.method === 'GET' || request.method === 'HEAD') &&
-                    !url.searchParams.has('html-proxy') &&
-                    (pathname === '/' ||
-                        pathname === '/index.html' ||
-                        (!extname(pathname) && request.headers.accept?.includes('text/html')))
-                ) {
-                    void server
-                        .transformIndexHtml('/index.html', html, request.url)
-                        .then(transformed => {
-                            response.setHeader('Content-Type', 'text/html; charset=utf-8');
-                            response.setHeader('Cache-Control', 'no-store');
-                            response.end(request.method === 'HEAD' ? undefined : transformed);
-                        }, next);
-                    return;
-                }
+                // React Router renders every document (src/root.tsx); no-store keeps a
+                // verifier from reusing a document another stack served on this port.
+                if (!pathname.includes('.') && request.headers.accept?.includes('text/html'))
+                    response.setHeader('Cache-Control', 'no-store');
                 next();
             });
         },
@@ -104,11 +90,15 @@ const start = async (): Promise<void> => {
         envFile: false,
         mode: 'development',
         cacheDir: join(directory, 'vite-cache'),
-        optimizeDeps: {
-            ...resolved.optimizeDeps,
-            // The checkout intentionally has no generated index.html. Scan the tracked
-            // template instead; /src imports still resolve against the real app root.
-            entries: [join(app, 'index.template.html')],
+        // This stack's tenant title, not the developer's public/tenant-config.json.
+        define: {
+            ...resolved.define,
+            __LC_DOCUMENT_BRANDING__: JSON.stringify(
+                documentBrandingFor(
+                    (JSON.parse(tenant) as { branding?: { name?: string; shortName?: string } })
+                        .branding
+                )
+            ),
         },
         plugins: [overlay, verificationBrandingPlugin(), ...(resolved.plugins ?? [])],
         server: {
