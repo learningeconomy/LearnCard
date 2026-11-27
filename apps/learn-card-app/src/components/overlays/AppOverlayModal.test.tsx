@@ -214,4 +214,31 @@ describe('useAppOverlayModal', () => {
         act(() => void api[1]());
         await waitFor(() => expect(host()).toBeNull());
     });
+
+    it('keeps a modal re-presented inside onDidDismiss mounted after the previous cleanup', async () => {
+        const onDidDismiss = vi.fn(() => {
+            api[0]({ cssClass: 'second-modal' });
+        });
+        render(
+            <>
+                <Caller label="again" />
+                <AppOverlayManager />
+            </>
+        );
+        act(() => api[0]({ cssClass: 'first-modal', onDidDismiss }));
+        await presented();
+        expect(host()).toHaveClass('first-modal');
+
+        fireEvent.click(await screen.findByText('again'));
+        await waitFor(() => expect(onDidDismiss).toHaveBeenCalledTimes(1));
+        await act(async () => {
+            await new Promise(r => setTimeout(r, 0));
+        });
+
+        const el = await presented();
+        expect(el).toHaveClass('second-modal');
+        expect(el).not.toHaveClass('first-modal');
+        expect(document.querySelectorAll('.app-modal')).toHaveLength(1);
+        expect(await screen.findByText('again')).toBeInTheDocument();
+    });
 });
