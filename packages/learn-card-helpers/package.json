@@ -44,6 +44,7 @@
     },
     "devDependencies": {
         "@esbuild-plugins/node-resolve": "^0.1.4",
+        "@types/luxon": "^3.7.6",
         "@types/node": "^18.7.19",
         "@types/react": "^18.0.0",
         "aqu": "0.4.3",
@@ -56,7 +57,7 @@
         "@sd-jwt/core": "^0.20.0",
         "@learncard/types": "workspace:*",
         "@trpc/server": "11.8.0",
-        "moment": "^2.29.4",
+        "luxon": "^3.7.2",
         "immer": "^10.0.3",
         "use-immer": "^0.9.0",
         "zod": "4.6.6"
