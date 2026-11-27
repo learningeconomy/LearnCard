@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 
-import { IonToolbar, IonFooter, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import { AppCol, AppRow } from '../../../layout';
 
 import { BoostUserTypeEnum } from '../../boost-options/boostOptions';
@@ -10,6 +10,7 @@ import * as m from '../../../../paraglide/messages.js';
 import keyboardStore from 'learn-card-base/stores/keyboardStore';
 import { BoostCMSStepsEnum } from '../../boost';
 import { BoostCategoryOptionsEnum, boostCategoryMetadata } from 'learn-card-base';
+import { AppFooter, AppToolbar } from '../../../chrome';
 
 const BoostCMSFooter: React.FC<{
     boostUserType: BoostUserTypeEnum;
@@ -32,7 +33,7 @@ const BoostCMSFooter: React.FC<{
     isSaveLoading,
     handleSubmit,
 }) => {
-    const bottomBarRef = useRef<HTMLIonFooterElement>(null);
+    const bottomBarRef = useRef<HTMLDivElement>(null);
     const { color, IconComponent } = boostCategoryMetadata[selectedVCType];
 
     keyboardStore.store.subscribe(({ isOpen }) => {
@@ -45,8 +46,8 @@ const BoostCMSFooter: React.FC<{
     });
 
     return (
-        <IonFooter ref={bottomBarRef}>
-            <IonToolbar color={color} className="ion-no-border pt-5">
+        <AppFooter ref={bottomBarRef}>
+            <AppToolbar color={color} className="ion-no-border pt-5">
                 <AppRow className="w-full flex items-center justify-center">
                     <div className="w-full max-w-[600px] flex items-center justify-center">
                         <AppCol size="12" className="w-full flex items-center">
@@ -125,8 +126,8 @@ const BoostCMSFooter: React.FC<{
                         </AppCol>
                     </div>
                 </AppRow>
-            </IonToolbar>
-        </IonFooter>
+            </AppToolbar>
+        </AppFooter>
     );
 };
 

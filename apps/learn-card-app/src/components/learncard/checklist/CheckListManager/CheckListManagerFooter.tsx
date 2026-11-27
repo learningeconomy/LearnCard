@@ -1,11 +1,10 @@
 import React from 'react';
 
-import { IonFooter } from '@ionic/react';
-
 import { useModal } from 'learn-card-base';
 
 import useTheme from '../../../../theme/hooks/useTheme';
 import * as m from '../../../../paraglide/messages.js';
+import { AppFooter } from '../../../chrome';
 
 const CheckListManagerFooter: React.FC<{ handleSave?: () => void; loading?: boolean }> = ({
     handleSave,
@@ -17,7 +16,7 @@ const CheckListManagerFooter: React.FC<{ handleSave?: () => void; loading?: bool
     const { closeModal } = useModal();
 
     return (
-        <IonFooter
+        <AppFooter
             mode="ios"
             className="lc-content-owns-bottom w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 left-0 bg-white/60"
             style={{
@@ -56,7 +55,7 @@ const CheckListManagerFooter: React.FC<{ handleSave?: () => void; loading?: bool
                     )}
                 </div>
             </div>
-        </IonFooter>
+        </AppFooter>
     );
 };
 

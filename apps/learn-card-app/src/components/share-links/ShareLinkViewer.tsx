@@ -6,7 +6,7 @@ import LearnCardTextLogo from '../svgs/LearnCardTextLogo';
 import { ShareCredentialsIllustration } from './ShareCredentialsIllustration';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useLocation, useHistory } from 'react-router-dom';
-import { IonPage, IonHeader, IonToolbar, IonContent } from '@ionic/react';
+import { IonPage, IonContent } from '@ionic/react';
 import { AppIcon } from '../icon';
 import {
     checkmarkOutline,
@@ -47,6 +47,7 @@ import {
     hasProtectedResumePdf,
     downloadProtectedResumePdf,
 } from '../../helpers/resume-publishing/protectedPdf';
+import { AppHeader, AppToolbar } from '../chrome';
 
 type Ready = {
     payload: SharePayload;
@@ -607,8 +608,8 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
     }[state];
     return (
         <IonPage className="sentry-block ph-no-capture font-poppins" data-html2canvas-ignore>
-            <IonHeader className="ion-no-border border-b border-grayscale-200">
-                <IonToolbar style={{ '--background': 'white' }}>
+            <AppHeader className="ion-no-border border-b border-grayscale-200">
+                <AppToolbar style={{ '--background': 'white' }}>
                     <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between gap-4 text-xs font-medium text-grayscale-600">
                         <a
                             href="/login"
@@ -642,8 +643,8 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                             </a>
                         </div>
                     </div>
-                </IonToolbar>
-            </IonHeader>
+                </AppToolbar>
+            </AppHeader>
             <IonContent>
                 <main className="bg-grayscale-100 text-grayscale-900 min-h-full">
                     <div className="max-w-3xl mx-auto px-5 py-8 md:py-14 space-y-v3-5">

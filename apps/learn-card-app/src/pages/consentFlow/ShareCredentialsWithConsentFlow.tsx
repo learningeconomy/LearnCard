@@ -6,7 +6,7 @@ import { useCurrentUser } from 'learn-card-base';
 import ConsentFlowShareCredentialCards from './ConsentFlowShareCredentialCards';
 import ProfilePicture from 'learn-card-base/components/profilePicture/ProfilePicture';
 
-import { IonContent, IonPage, IonToolbar, IonHeader, IonSpinner } from '@ionic/react';
+import { IonContent, IonPage, IonSpinner } from '@ionic/react';
 import { AppCol, AppGrid, AppRow } from '../../components/layout';
 import CaretLeft from '../../components/svgs/CaretLeft';
 import { AppToggle } from '../../components/controls/AppToggle';
@@ -14,6 +14,7 @@ import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 import { useConsentFlowCredentials } from './useConsentFlowCredentials';
 import { curriedStateSlice } from '@learncard/helpers';
 import * as m from '../../paraglide/messages.js';
+import { AppHeader, AppToolbar } from '../../components/chrome';
 
 const ShareCredentialsWithConsentFlow: React.FC<{
     handleCloseModal: () => void;
@@ -39,8 +40,8 @@ const ShareCredentialsWithConsentFlow: React.FC<{
 
     return (
         <IonPage>
-            <IonHeader className="ion-no-border">
-                <IonToolbar className="ion-no-border" color="light">
+            <AppHeader className="ion-no-border">
+                <AppToolbar className="ion-no-border" color="light">
                     <AppGrid className="white">
                         <AppRow className="w-full flex flex-col items-center justify-center">
                             <AppRow className="w-full max-w-[600px] flex items-center justify-between">
@@ -71,8 +72,8 @@ const ShareCredentialsWithConsentFlow: React.FC<{
                             </AppRow>
                         </AppRow>
                     </AppGrid>
-                </IonToolbar>
-            </IonHeader>
+                </AppToolbar>
+            </AppHeader>
             <IonContent>
                 <AppGrid className="flex items-center justify-center p-[20px] pb-[100px] max-w-[700px]">
                     <section className="w-full">

@@ -1,7 +1,7 @@
 import React from 'react';
 import moment from 'moment';
 
-import { IonContent, IonHeader, IonPage, IonToolbar } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
 import AppDatetime from '../../components/datetime/AppDatetime';
 import { useAppOverlayModal } from '../../components/overlays/useAppOverlayModal';
 import { AppCol, AppGrid, AppRow } from '../../components/layout';
@@ -11,6 +11,7 @@ import { RadioButton } from 'learn-card-base';
 
 import useTheme from '../../theme/hooks/useTheme';
 import * as m from '../../paraglide/messages.js';
+import { AppHeader, AppToolbar } from '../../components/chrome';
 
 const defaultDate = moment().add(6, 'months').toISOString(); // sets the shareable expiration date 6 months from today
 
@@ -71,8 +72,8 @@ const ConsentFlowShareDurationModal: React.FC<{
     return (
         <IonPage>
             <IonContent fullscreen>
-                <IonHeader className="ion-no-border mt-[25px]">
-                    <IonToolbar className="ion-no-border" color="white">
+                <AppHeader className="ion-no-border mt-[25px]">
+                    <AppToolbar className="ion-no-border" color="white">
                         <AppGrid>
                             <AppRow className="w-full flex flex-col items-center justify-center">
                                 <AppRow className="w-full max-w-[600px] flex items-center justify-between">
@@ -91,8 +92,8 @@ const ConsentFlowShareDurationModal: React.FC<{
                                 </AppRow>
                             </AppRow>
                         </AppGrid>
-                    </IonToolbar>
-                </IonHeader>
+                    </AppToolbar>
+                </AppHeader>
                 <AppGrid className="flex items-center justify-center flex-col w-full px-4 pb-14">
                     <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] rounded-[20px]">
                         <div

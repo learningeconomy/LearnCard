@@ -9,7 +9,6 @@ import { TransP } from '../../../i18n/TransP';
 import RequestInsightsSkeletonLoader from './RequestInsightsSkeletonLoader';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 import ConnectIcon from 'learn-card-base/svgs/ConnectIcon';
-import { IonFooter } from '@ionic/react';
 import { AppIcon } from '../../../components/icon';
 import X from 'learn-card-base/svgs/X';
 
@@ -32,6 +31,7 @@ import { getAppBaseUrl } from '../../../config/bootstrapTenantConfig';
 import { useGetAiInsightsServicesContract } from '../learner-insights/learner-insights.helpers';
 import { RequestInsightStatusEnum } from './request-insights.helpers';
 import { person } from 'ionicons/icons';
+import { AppFooter } from '../../../components/chrome';
 
 export const RequestInsightsFromUserModal: React.FC<{
     profile: LCNProfile;
@@ -140,7 +140,7 @@ export const RequestInsightsFromUserModal: React.FC<{
                 </div>
             </div>
 
-            <IonFooter
+            <AppFooter
                 mode="ios"
                 className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 bg-grayscale-50/60 max-h-[100px]!"
             >
@@ -171,7 +171,7 @@ export const RequestInsightsFromUserModal: React.FC<{
                         </button>
                     </div>
                 </div>
-            </IonFooter>
+            </AppFooter>
         </div>
     );
 };

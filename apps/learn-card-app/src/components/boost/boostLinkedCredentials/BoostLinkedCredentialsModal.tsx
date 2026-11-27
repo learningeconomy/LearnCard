@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-import { IonFooter } from '@ionic/react';
 import { AppCol, AppGrid, AppRow } from '../../layout';
 import { AppInput } from '../../controls/AppInput';
 import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
@@ -30,6 +29,7 @@ import keyboardStore from 'learn-card-base/stores/keyboardStore';
 import { Capacitor } from '@capacitor/core';
 import * as m from '../../../paraglide/messages.js';
 import { TransP } from '../../../i18n/TransP';
+import { AppFooter } from '../../chrome';
 
 export const BoostLinkedCredentialsModal: React.FC<{
     credential: VC;
@@ -46,7 +46,7 @@ export const BoostLinkedCredentialsModal: React.FC<{
     defaultImg,
     displayType,
 }) => {
-    const bottomBarRef = useRef<HTMLIonFooterElement>(null);
+    const bottomBarRef = useRef<HTMLDivElement>(null);
     const { closeModal } = useModal();
     const { initWallet } = useWallet();
 
@@ -255,7 +255,7 @@ export const BoostLinkedCredentialsModal: React.FC<{
                 </AppCol>
             </div>
 
-            <IonFooter
+            <AppFooter
                 ref={bottomBarRef}
                 mode="ios"
                 className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 bg-white/60 max-h-[100px]! z-9999"
@@ -270,7 +270,7 @@ export const BoostLinkedCredentialsModal: React.FC<{
                         </button>
                     </div>
                 </div>
-            </IonFooter>
+            </AppFooter>
         </section>
     );
 };

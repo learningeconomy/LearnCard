@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import moment from 'moment';
 
-import { IonSpinner, IonContent, IonPage, IonHeader, IonToolbar, IonFooter } from '@ionic/react';
+import { IonSpinner, IonContent, IonPage } from '@ionic/react';
 import { useAppOverlayModal } from '../../../../overlays/useAppOverlayModal';
 import { AppCol, AppGrid, AppRow } from '../../../../layout';
 import { AppItem, AppList } from '../../../../list';
@@ -24,6 +24,7 @@ import { LCNProfile, BoostRecipientInfo } from '@learncard/types';
 import BoostShareableCode from './BoostShareableCode';
 
 import { useBrandingConfig } from 'learn-card-base';
+import { AppFooter, AppHeader, AppToolbar } from '../../../../chrome';
 
 export enum BoostAddressBookEditMode {
     edit = 'edit',
@@ -233,8 +234,8 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
     if (viewMode === BoostAddressBookViewMode.full) {
         return (
             <IonPage className="bg-white">
-                <IonHeader className="learn-card-header ion-no-border bg-white w-full">
-                    <IonToolbar color="white" className="ion-no-border w-full">
+                <AppHeader className="learn-card-header ion-no-border bg-white w-full">
+                    <AppToolbar color="white" className="ion-no-border w-full">
                         <AppGrid className="bg-white">
                             <AppRow className="w-full flex items-center justify-center bg-white">
                                 <AppRow className="flex flex-col w-full max-w-[600px]">
@@ -272,8 +273,8 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                 </AppRow>
                             </AppRow>
                         </AppGrid>
-                    </IonToolbar>
-                </IonHeader>
+                    </AppToolbar>
+                </AppHeader>
                 <IonContent fullscreen>
                     {loading && (
                         <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full">
@@ -333,8 +334,8 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                             </section>
                         )}
                 </IonContent>
-                <IonFooter className="bg-white">
-                    <IonToolbar className="w-full ion-no-border bg-white pt-5">
+                <AppFooter className="bg-white">
+                    <AppToolbar className="w-full ion-no-border bg-white pt-5">
                         <AppRow className="w-full flex items-center justify-center">
                             <div className="w-full max-w-[600px] flex items-center justify-center">
                                 <AppCol
@@ -350,8 +351,8 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                 </AppCol>
                             </div>
                         </AppRow>
-                    </IonToolbar>
-                </IonFooter>
+                    </AppToolbar>
+                </AppFooter>
             </IonPage>
         );
     }

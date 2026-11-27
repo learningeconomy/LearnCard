@@ -1,12 +1,13 @@
 import React from 'react';
 
-import { IonContent, IonToolbar, IonFooter, IonHeader, IonPage } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
 import { useAppOverlayModal } from '../overlays/useAppOverlayModal';
 import { AppCol, AppRow } from '../layout';
 import { AppItem, AppList } from '../list';
 import X from 'learn-card-base/svgs/X';
 import DeleteUserConfirmationPrompt from './DeleteUserConfirmationPrompt';
 import * as m from '../../paraglide/messages.js';
+import { AppFooter, AppHeader, AppToolbar } from '../chrome';
 
 const UserOptions: React.FC<{
     handleCloseModal: () => void;
@@ -60,7 +61,7 @@ const UserOptions: React.FC<{
 
     return (
         <IonPage id="user-options-modal">
-            <IonHeader className="ion-no-border">
+            <AppHeader className="ion-no-border">
                 <AppRow className="w-full bg-white">
                     <AppCol className="w-full flex items-center justify-end">
                         {showCloseButton && (
@@ -70,8 +71,8 @@ const UserOptions: React.FC<{
                         )}
                     </AppCol>
                 </AppRow>
-                {title && <IonToolbar>{title}</IonToolbar>}
-            </IonHeader>
+                {title && <AppToolbar>{title}</AppToolbar>}
+            </AppHeader>
             <IonContent>
                 <AppList lines="none">
                     {userOptions.map(link => (
@@ -109,9 +110,9 @@ const UserOptions: React.FC<{
                 </AppList>
             </IonContent>
             {footer && (
-                <IonFooter className={fixedFooterStyles}>
-                    <IonToolbar>{footer}</IonToolbar>
-                </IonFooter>
+                <AppFooter className={fixedFooterStyles}>
+                    <AppToolbar>{footer}</AppToolbar>
+                </AppFooter>
             )}
         </IonPage>
     );

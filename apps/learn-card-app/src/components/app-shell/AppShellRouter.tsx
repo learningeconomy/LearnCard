@@ -101,7 +101,7 @@ export const AppShellRouter: React.FC<AppShellRouterProps> = ({ history, childre
     return <Router history={history}>{children}</Router>;
 };
 
-/** Back action with `IonBackButton defaultHref` semantics, for app-owned back buttons. */
+/** Back action with IonReactRouter's `IonBackButton defaultHref` semantics (AppBackButton). */
 export const useAppGoBack = (defaultHref: string): (() => void) => {
     const history = useHistory();
     return useCallback(() => getInAppHistory(history).goBack(defaultHref), [history, defaultHref]);

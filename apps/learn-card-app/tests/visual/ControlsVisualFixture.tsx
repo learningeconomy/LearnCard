@@ -12,7 +12,7 @@ import { getInfoFromContractKey } from '../../src/helpers/contract.helpers';
 import MultiTextInput from '../../src/pages/hidden/MultiTextInput';
 import BoostCMSMemberPrivacyOptions from '../../src/components/boost/boostCMS/boostCMSForms/boostCMSMemberPrivacyOptions/BoostCMSMemberPrivacyOptions';
 import { initialBoostCMSState, type BoostCMSState } from '../../src/components/boost/boost';
-import DevCliBackButton from '../../src/pages/devCli/DevCliBackButton';
+import { AppBackButton } from '../../src/components/chrome';
 import { AppButton, type AppButtonProps } from '../../src/components/controls/AppButton';
 import { AppButtons } from '../../src/components/controls/AppButtons';
 import AppDatetime from '../../src/components/datetime/AppDatetime';
@@ -96,7 +96,7 @@ const DevCliToolbar: React.FC = () => (
         <IonHeader className="cli-header">
             <IonToolbar className="cli-toolbar">
                 <AppButtons slot="start">
-                    <DevCliBackButton defaultHref="/launchpad" className="cli-back-btn" />
+                    <AppBackButton defaultHref="/launchpad" className="cli-back-btn" />
                 </AppButtons>
 
                 <IonTitle className="cli-title">LearnCard CLI</IonTitle>
@@ -142,11 +142,11 @@ const DevCliToolbar: React.FC = () => (
                 --color-focused: #fe8019;
             }
 
-            .cli-back-btn::part(native) {
+            .cli-back-btn > .app-back-button-native {
                 color: #a89984;
             }
 
-            .cli-back-btn::part(native):hover {
+            .cli-back-btn > .app-back-button-native:hover {
                 color: #ebdbb2;
             }
 

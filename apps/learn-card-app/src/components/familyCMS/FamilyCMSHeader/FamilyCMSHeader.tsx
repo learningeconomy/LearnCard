@@ -1,17 +1,17 @@
 import React from 'react';
 
-import { IonHeader, IonToolbar } from '@ionic/react';
 import { AppRow } from '../../layout';
 import { FamilyCMSEditorModeEnum } from '../familyCMSState';
 
 import FamilyIcon from 'learn-card-base/svgs/FamilyIcon';
 import { m } from '../../../paraglide/messages.js';
+import { AppHeader } from '../../chrome';
 
 export const FamilyCMSHeader: React.FC<{ editorMode?: FamilyCMSEditorModeEnum }> = ({
     editorMode,
 }) => {
     return (
-        <IonHeader className="bg-white">
+        <AppHeader className="bg-white">
             <AppRow className="w-full flex items-center justify-center">
                 <div className="w-full flex flex-col items-start justify-center max-w-[600px] ion-padding">
                     <h2 className="flex items-center justify-center font-normal text-[22px] font-poppins text-grayscale-900">
@@ -24,7 +24,7 @@ export const FamilyCMSHeader: React.FC<{ editorMode?: FamilyCMSEditorModeEnum }>
                     </h2>
                 </div>
             </AppRow>
-        </IonHeader>
+        </AppHeader>
     );
 };
 

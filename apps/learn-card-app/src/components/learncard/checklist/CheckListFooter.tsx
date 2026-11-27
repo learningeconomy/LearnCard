@@ -1,16 +1,15 @@
 import React from 'react';
 
-import { IonFooter } from '@ionic/react';
-
 import { useModal } from 'learn-card-base';
 import * as m from '../../../paraglide/messages.js';
+import { AppFooter } from '../../chrome';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type, no-empty-pattern -- existing empty props type; replacing it changes the accepted props type; dropping the empty destructure removes the implicit non-null argument check
 const CheckListFooter: React.FC<{}> = ({}) => {
     const { closeModal } = useModal();
 
     return (
-        <IonFooter
+        <AppFooter
             mode="ios"
             className="lc-content-owns-bottom w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 left-0 bg-white/60"
             style={{
@@ -30,7 +29,7 @@ const CheckListFooter: React.FC<{}> = ({}) => {
                     </button>
                 </div>
             </div>
-        </IonFooter>
+        </AppFooter>
     );
 };
 

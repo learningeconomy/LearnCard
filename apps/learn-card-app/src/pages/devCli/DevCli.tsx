@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { IonPage, IonContent, IonHeader, IonToolbar, IonTitle } from '@ionic/react';
+import { IonPage, IonContent } from '@ionic/react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
@@ -15,8 +15,8 @@ import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url
 import CommandSidebar, { COMMANDS } from './CommandSidebar';
 import ChainBuilder, { Chain, ChainStep } from './ChainBuilder';
 import TutorialComponent from './Tutorial';
-import DevCliBackButton from './DevCliBackButton';
 import { AppButtons } from '../../components/controls/AppButtons';
+import { AppBackButton, AppHeader, AppTitle, AppToolbar } from '../../components/chrome';
 
 const WELCOME_MESSAGE = `
 Welcome to the LearnCard Browser CLI!
@@ -722,13 +722,13 @@ const DevCli: React.FC = () => {
 
     return (
         <IonPage className="cli-page">
-            <IonHeader className="cli-header">
-                <IonToolbar className="cli-toolbar">
+            <AppHeader className="cli-header">
+                <AppToolbar className="cli-toolbar">
                     <AppButtons slot="start">
-                        <DevCliBackButton defaultHref="/launchpad" className="cli-back-btn" />
+                        <AppBackButton defaultHref="/launchpad" className="cli-back-btn" />
                     </AppButtons>
 
-                    <IonTitle className="cli-title">LearnCard CLI</IonTitle>
+                    <AppTitle className="cli-title">LearnCard CLI</AppTitle>
 
                     <AppButtons slot="end">
                         <button
@@ -739,8 +739,8 @@ const DevCli: React.FC = () => {
                             📖 Tutorial
                         </button>
                     </AppButtons>
-                </IonToolbar>
-            </IonHeader>
+                </AppToolbar>
+            </AppHeader>
 
             <IonContent className="ion-no-padding">
                 <div className="cli-container">
@@ -885,11 +885,11 @@ const DevCli: React.FC = () => {
                         --color-focused: #fe8019;
                     }
 
-                    .cli-back-btn::part(native) {
+                    .cli-back-btn > .app-back-button-native {
                         color: #a89984;
                     }
 
-                    .cli-back-btn::part(native):hover {
+                    .cli-back-btn > .app-back-button-native:hover {
                         color: #ebdbb2;
                     }
 

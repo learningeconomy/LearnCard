@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { IonPage, IonToolbar, IonHeader, IonContent } from '@ionic/react';
+import { IonPage, IonContent } from '@ionic/react';
 import { AppCol, AppGrid, AppRow } from '../layout';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 
@@ -8,6 +8,7 @@ import { AppToggle } from '../controls/AppToggle';
 
 import { boostVCTypeOptions } from '../boost/boost-options/boostOptions';
 import { ProfilePicture } from 'learn-card-base';
+import { AppHeader, AppToolbar } from '../chrome';
 
 const MyDataSettings: React.FC<{
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
@@ -16,8 +17,8 @@ const MyDataSettings: React.FC<{
 }> = ({ selectedItem, handleGoBack }) => {
     return (
         <IonPage className="bg-grayscale-900">
-            <IonHeader className="ion-no-border mt-[25px]">
-                <IonToolbar className="ion-no-border" color="grayscale-900">
+            <AppHeader className="ion-no-border mt-[25px]">
+                <AppToolbar className="ion-no-border" color="grayscale-900">
                     <AppGrid className="bg-grayscale-900">
                         <AppRow className="w-full flex flex-col items-center justify-center">
                             <AppRow className="w-full max-w-[600px] flex items-center justify-between">
@@ -45,8 +46,8 @@ const MyDataSettings: React.FC<{
                             </AppRow>
                         </AppRow>
                     </AppGrid>
-                </IonToolbar>
-            </IonHeader>
+                </AppToolbar>
+            </AppHeader>
             <IonContent fullscreen color="grayscale-900">
                 <AppGrid className="flex items-center justify-center flex-col w-full px-4 pb-14">
                     <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">

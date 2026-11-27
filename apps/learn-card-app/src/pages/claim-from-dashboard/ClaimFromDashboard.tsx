@@ -4,7 +4,7 @@ import { useHistory, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
 import { VC, UnsignedVP } from '@learncard/types';
 import { getVCDisplayCardVariant } from '@learncard/react';
-import { IonContent, IonPage, IonFooter, IonToolbar } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
 import { useAppOverlayModal } from '../../components/overlays/useAppOverlayModal';
 import { AppLoading } from '../../components/overlays/AppLoading';
 import { AppRow } from '../../components/layout';
@@ -56,6 +56,7 @@ import useTheme from '../../theme/hooks/useTheme';
 import { useClaimSuccessToast } from '../../feedback/useClaimSuccessToast';
 import { useDuplicateCredentialGuard } from '../../components/credentials/duplicate-credential/useDuplicateCredentialGuard';
 import * as m from '../../paraglide/messages.js';
+import { AppFooter, AppToolbar } from '../../components/chrome';
 
 export type FromDashboardMetadata = {
     credentialName: string;
@@ -535,11 +536,11 @@ const ClaimFromDashboard: React.FC = () => {
                     )}
                 </div>
             </IonContent>
-            <IonFooter
+            <AppFooter
                 mode="ios"
                 className="w-full flex justify-center items-center p-[15px] ion-no-border absolute bottom-0"
             >
-                <IonToolbar color="transparent" mode="ios">
+                <AppToolbar color="transparent" mode="ios">
                     <AppRow className="relative z-10 w-full flex flex-nowrap justify-center items-center gap-4">
                         <button
                             onClick={() => {
@@ -592,8 +593,8 @@ const ClaimFromDashboard: React.FC = () => {
                             )}
                         </button>
                     </AppRow>
-                </IonToolbar>
-            </IonFooter>
+                </AppToolbar>
+            </AppFooter>
         </IonPage>
     );
 };

@@ -41,8 +41,6 @@ vi.mock('react-router-dom', () => ({
 }));
 vi.mock('@ionic/react', () => ({
     IonPage: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    IonHeader: ({ children }: { children: React.ReactNode }) => <header>{children}</header>,
-    IonToolbar: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     IonContent: ({ children }: { children: React.ReactNode }) => <main>{children}</main>,
 }));
 vi.mock('./ShareCredentialsIllustration', () => ({ ShareCredentialsIllustration: () => null }));

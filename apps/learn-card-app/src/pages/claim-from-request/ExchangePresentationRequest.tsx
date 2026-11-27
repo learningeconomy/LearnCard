@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { IonContent, IonPage, IonHeader, IonToolbar, IonTitle, IonSpinner } from '@ionic/react';
+import { IonContent, IonPage, IonSpinner } from '@ionic/react';
 import { useWallet } from 'learn-card-base';
 import { VC, VP } from '@learncard/types';
 import { useGetCredentialList } from 'learn-card-base';

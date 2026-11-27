@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useModal } from 'learn-card-base';
-import { IonFooter } from '@ionic/react';
 import { AppInput } from '../../components/controls/AppInput';
 import {
     FrameworkNodeRole,
@@ -15,6 +14,7 @@ import * as m from '../../paraglide/messages.js';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
 import Pencil from 'apps/learn-card-app/src/components/svgs/Pencil';
+import { AppFooter } from '../../components/chrome';
 
 type SkillPreviewProps = {
     framework: SkillFramework;
@@ -274,7 +274,7 @@ const SkillPreview: React.FC<SkillPreviewProps> = ({
                 />
             </section>
 
-            <IonFooter
+            <AppFooter
                 mode="ios"
                 className="w-full flex justify-center items-center  backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white/80 border-solid border border-white"
             >
@@ -303,7 +303,7 @@ const SkillPreview: React.FC<SkillPreviewProps> = ({
                         {successButtonText}
                     </button>
                 </div>
-            </IonFooter>
+            </AppFooter>
         </div>
     );
 };

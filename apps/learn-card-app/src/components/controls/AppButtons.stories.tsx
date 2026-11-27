@@ -1,18 +1,18 @@
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { IonHeader, IonTitle, IonToolbar } from '@ionic/react';
 
 import { AppButton } from './AppButton';
 import { AppButtons } from './AppButtons';
+import { AppHeader, AppTitle, AppToolbar } from '../chrome';
 
 /**
- * AppButtons in an IonToolbar, as in EmbedAppFullScreen: a clear chevron AppButton in the start
+ * AppButtons in an AppToolbar, as in EmbedAppFullScreen: a clear chevron AppButton in the start
  * slot and arbitrary content in the end slot. The toolbar look follows the document mode (md in
  * a desktop browser); the preview has no mode switcher.
  */
 const ToolbarPreview: React.FC = () => (
-    <IonHeader>
-        <IonToolbar>
+    <AppHeader>
+        <AppToolbar>
             <AppButtons slot="start">
                 <AppButton onClick={() => undefined}>
                     <svg
@@ -31,12 +31,12 @@ const ToolbarPreview: React.FC = () => (
                     </svg>
                 </AppButton>
             </AppButtons>
-            <IonTitle>Toolbar title</IonTitle>
+            <AppTitle>Toolbar title</AppTitle>
             <AppButtons slot="end" className="mr-[10px]">
                 <span className="inline-block h-[36px] w-[36px] rounded-full bg-grayscale-200" />
             </AppButtons>
-        </IonToolbar>
-    </IonHeader>
+        </AppToolbar>
+    </AppHeader>
 );
 
 const meta: Meta<typeof ToolbarPreview> = {

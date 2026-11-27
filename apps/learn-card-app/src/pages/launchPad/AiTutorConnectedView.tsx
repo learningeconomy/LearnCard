@@ -3,7 +3,7 @@ import type { AppStoreListing, InstalledApp } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('ai-tutor-connected-view');
 
-import { IonSpinner, IonFooter } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import { Sparkles, History, Send, ChevronLeft, Settings } from 'lucide-react';
 
 import {
@@ -21,6 +21,7 @@ import { AiFeatureGate } from '../../components/ai-feature-gate/AiFeatureGate';
 import useAppStore from './useAppStore';
 import { useConsentFlowByUri } from '../consentFlow/useConsentFlow';
 import ConsentFlowPrivacyAndData from '../consentFlow/ConsentFlowPrivacyAndData';
+import { AppFooter } from '../../components/chrome';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyCredential = any;
@@ -426,7 +427,7 @@ const AiTutorConnectedView: React.FC<AiTutorConnectedViewProps> = ({ listing, la
                 </div>
 
                 {/* Footer */}
-                <IonFooter
+                <AppFooter
                     mode="ios"
                     className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 bg-white/60 max-h-[100px]!"
                 >
@@ -448,7 +449,7 @@ const AiTutorConnectedView: React.FC<AiTutorConnectedViewProps> = ({ listing, la
                             </button>
                         </div>
                     </div>
-                </IonFooter>
+                </AppFooter>
             </div>
         </AiFeatureGate>
     );

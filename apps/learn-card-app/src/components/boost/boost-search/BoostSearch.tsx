@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { IonContent, IonToolbar, IonHeader, IonPage, IonFooter, IonSpinner } from '@ionic/react';
+import { IonContent, IonPage, IonSpinner } from '@ionic/react';
 import { AppCol, AppGrid, AppRow } from '../../layout';
 import { AppInput } from '../../controls/AppInput';
 
@@ -20,6 +20,7 @@ import { useBrandingConfig } from 'learn-card-base';
 import Lottie from '../../lottie/LazyLottie';
 const Pulpo = '/lotties/cuteopulpo.json';
 import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
+import { AppFooter, AppHeader, AppToolbar } from '../../chrome';
 
 type BoostSearchProps = {
     handleCloseModal: () => void;
@@ -99,8 +100,8 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
 
     return (
         <IonPage className="bg-white">
-            <IonHeader className="learn-card-header ion-no-border my-[0px]">
-                <IonToolbar className="ion-no-border bg-white " color="white">
+            <AppHeader className="learn-card-header ion-no-border my-[0px]">
+                <AppToolbar className="ion-no-border bg-white " color="white">
                     <AppGrid className="bg-white">
                         <AppRow className="w-full flex items-center justify-center pt-[20px]">
                             <AppRow className="flex flex-col w-full max-w-[600px]">
@@ -134,8 +135,8 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
                             </AppRow>
                         </AppRow>
                     </AppGrid>
-                </IonToolbar>
-            </IonHeader>
+                </AppToolbar>
+            </AppHeader>
             <IonContent>
                 {loading && !searchLoading && (
                     <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
@@ -213,8 +214,8 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
                         </section>
                     )}
             </IonContent>
-            <IonFooter className="ion-no-border pb-[15px] bg-white" color="white">
-                <IonToolbar color="white" className="ion-no-border pt-5 bg-white">
+            <AppFooter className="ion-no-border pb-[15px] bg-white">
+                <AppToolbar color="white" className="ion-no-border pt-5 bg-white">
                     <AppRow className="w-full flex items-center justify-center">
                         <div className="w-full max-w-[600px] flex items-center justify-center px-4">
                             <AppCol size="12" className="w-full flex items-center justify-between">
@@ -227,8 +228,8 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
                             </AppCol>
                         </div>
                     </AppRow>
-                </IonToolbar>
-            </IonFooter>
+                </AppToolbar>
+            </AppFooter>
         </IonPage>
     );
 };

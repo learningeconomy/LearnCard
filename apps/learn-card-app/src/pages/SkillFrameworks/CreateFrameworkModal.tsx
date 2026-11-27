@@ -26,7 +26,7 @@ import SimpleAttachedNetworkDisplay from './SimpleAttachedNetworkDisplay';
 import FrameworkCreatedSuccessModal from './FrameworkCreatedSuccessModal';
 import SkillsFrameworkAdminSelector from './SkillsFrameworkAdminSelector';
 import SkillsFrameworkNetworkSelector from './SkillsFrameworkNetworkSelector';
-import { IonFooter, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import { AppInput } from '../../components/controls/AppInput';
 import { AppTextarea } from '../../components/controls/AppTextarea';
 import * as m from '../../paraglide/messages.js';
@@ -34,6 +34,7 @@ import * as m from '../../paraglide/messages.js';
 import { SkillFramework } from '../../components/boost/boost';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import { ApiFrameworkInfo } from '../../helpers/skillFramework.helpers';
+import { AppFooter } from '../../components/chrome';
 
 type CreateFrameworkModalProps = {
     isEdit?: boolean;
@@ -385,7 +386,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
                 </div>
             </section>
 
-            <IonFooter
+            <AppFooter
                 mode="ios"
                 className="w-full flex justify-center items-center  backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white/80 border-solid border border-white"
             >
@@ -422,7 +423,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
                         )}
                     </button>
                 </div>
-            </IonFooter>
+            </AppFooter>
         </div>
     );
 };

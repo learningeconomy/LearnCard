@@ -1,11 +1,11 @@
 import type { ConsentFlowContractRequestStatus } from '@learncard/types';
 import React from 'react';
 
-import { IonHeader, IonToolbar } from '@ionic/react';
 import AiInsightsUserCard from '../../ai-insights/AiInsightsUserCard';
 
 import { AiInsightsUserCardMode } from '../../ai-insights/ai-insights.helpers';
 import { LCNProfile } from '@learncard/types';
+import { AppHeader, AppToolbar } from '../../../components/chrome';
 
 type LearnerInsightsPreviewHeaderProps = {
     profile: LCNProfile;
@@ -19,8 +19,8 @@ const LearnerInsightsPreviewHeader: React.FC<LearnerInsightsPreviewHeaderProps> 
     status,
 }) => {
     return (
-        <IonHeader color="light" className="rounded-b-[30px] overflow-hidden shadow-md ">
-            <IonToolbar color="light" className="">
+        <AppHeader className="rounded-b-[30px] overflow-hidden shadow-md ">
+            <AppToolbar color="light" className="">
                 <div className="flex flex-col gap-2 px-2">
                     <AiInsightsUserCard
                         profile={profile}
@@ -32,8 +32,8 @@ const LearnerInsightsPreviewHeader: React.FC<LearnerInsightsPreviewHeaderProps> 
                         showOptions
                     />
                 </div>
-            </IonToolbar>
-        </IonHeader>
+            </AppToolbar>
+        </AppHeader>
     );
 };
 

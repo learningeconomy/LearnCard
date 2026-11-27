@@ -30,6 +30,7 @@ import { OverlaysVisualFixture } from './OverlaysVisualFixture';
 import { ModalsVisualFixture } from './ModalsVisualFixture';
 import { DatetimeVisualFixture } from './DatetimeVisualFixture';
 import { ReorderVisualFixture } from './ReorderVisualFixture';
+import { ChromeVisualFixture } from './ChromeVisualFixture';
 
 export const additionalStates = [
     'credential',
@@ -56,6 +57,7 @@ export const additionalStates = [
     'modals-1',
     'datetime-1',
     'reorder-1',
+    'chrome-1',
 ] as const;
 
 const listings: AppStoreListing[] = [
@@ -180,6 +182,7 @@ export const PageFixture: React.FC<{ state: string }> = ({ state }) => {
     if (state === 'modals-1') return <ModalsVisualFixture />;
     if (state === 'datetime-1') return <DatetimeVisualFixture />;
     if (state === 'reorder-1') return <ReorderVisualFixture />;
+    if (state === 'chrome-1') return <ChromeVisualFixture />;
     if (state === 'apps') return <LaunchPad />;
     if (state === 'my-apps-signed-in') return <SignedInLaunchpadFixture />;
     if (state === 'my-apps') return <MyAppsLanding />;

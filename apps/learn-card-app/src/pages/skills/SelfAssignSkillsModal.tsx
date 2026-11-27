@@ -14,12 +14,13 @@ const log = getLogger('self-assign-skills-modal');
 
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import SkillsCloseConfirmationModal from './SkillsCloseConfirmationModal';
-import { IonFooter, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 
 import SkillSearchSelector from './SkillSearchSelector';
 import { SelectedSkill } from './skillTypes';
 import * as m from '../../paraglide/messages.js';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
+import { AppFooter } from '../../components/chrome';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- existing empty props type; replacing it changes the accepted props type
 type SelfAssignSkillsModalProps = {};
@@ -145,7 +146,7 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                 />
             </section>
 
-            <IonFooter
+            <AppFooter
                 mode="ios"
                 className="w-full flex justify-center items-center  backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white/80 border-solid border border-white"
             >
@@ -165,7 +166,7 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                         {m['common.save']()}
                     </button>
                 </div>
-            </IonFooter>
+            </AppFooter>
         </div>
     );
 };

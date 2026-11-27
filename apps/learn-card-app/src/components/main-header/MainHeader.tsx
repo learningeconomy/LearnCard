@@ -2,7 +2,7 @@ import React from 'react';
 import { useLocation, useHistory } from 'react-router-dom';
 import * as m from '../../paraglide/messages.js';
 
-import { IonHeader, IonProgressBar, IonToolbar } from '@ionic/react';
+import { IonProgressBar } from '@ionic/react';
 import { AppCol, AppGrid, AppRow } from '../layout';
 import { AppMenuToggle } from '../app-shell/AppMenuToggle';
 import HeaderBranding from '../headerBranding/HeaderBranding';
@@ -25,6 +25,7 @@ import { CredentialCategoryEnum, useIsLoggedIn } from 'learn-card-base';
 import loadingStore from '../../stores/loadingStore';
 
 import useTheme from '../../theme/hooks/useTheme';
+import { AppHeader, AppToolbar } from '../chrome';
 
 type MainHeaderProps = {
     category?: CredentialCategoryEnum;
@@ -108,7 +109,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
     );
 
     return (
-        <IonHeader className="learn-card-header ion-no-border relative">
+        <AppHeader className="learn-card-header ion-no-border relative">
             <IonProgressBar
                 type="indeterminate"
                 aria-label={m['common.loading']()}
@@ -117,7 +118,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
                     isLoading ? 'opacity-100' : 'opacity-0'
                 }`}
             />
-            <IonToolbar
+            <AppToolbar
                 className="ion-no-border"
                 color={statusBarColor}
                 // A page can override the toolbar background via a `--background`
@@ -171,14 +172,14 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
                     {subheader}
                     {children}
                 </AppGrid>
-            </IonToolbar>
+            </AppToolbar>
             <div
                 role="presentation"
                 className={`${
                     curvedBg ? 'header-mask' : 'absolute bottom-0 left-0'
                 } ${backgroundPrimaryColor} pointer-events-none`}
             ></div>
-        </IonHeader>
+        </AppHeader>
     );
 };
 

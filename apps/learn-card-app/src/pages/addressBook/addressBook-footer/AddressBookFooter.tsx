@@ -8,19 +8,19 @@ import keyboardStore from 'learn-card-base/stores/keyboardStore';
 import User from '../../../components/svgs/User';
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
 import AddressBookContactOptions from '../addressBook-contact-options/AddressBookContactOptions';
-import { IonFooter, IonToolbar } from '@ionic/react';
 import { useAppOverlayModal } from '../../../components/overlays/useAppOverlayModal';
 import { AppCol, AppGrid, AppRow } from '../../../components/layout';
 
 import { useIsCurrentUserLCNUser } from 'learn-card-base';
 import useLCNGatedAction from 'apps/learn-card-app/src/components/network-prompts/hooks/useLCNGatedAction';
+import { AppFooter, AppToolbar } from '../../../components/chrome';
 
 export const AddressBookFooter: React.FC<{
     showSearch?: boolean;
     handleShowSearch?: () => void;
 }> = ({ showSearch, handleShowSearch }) => {
     const history = useHistory();
-    const bottomBarRef = useRef<HTMLIonFooterElement>(null);
+    const bottomBarRef = useRef<HTMLDivElement>(null);
 
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
     const { gate } = useLCNGatedAction();
@@ -41,8 +41,8 @@ export const AddressBookFooter: React.FC<{
     });
 
     return (
-        <IonFooter className="learn-card-header ion-no-border" ref={bottomBarRef}>
-            <IonToolbar className="ion-no-border" color="light">
+        <AppFooter className="learn-card-header ion-no-border" ref={bottomBarRef}>
+            <AppToolbar className="ion-no-border" color="light">
                 <AppGrid className="bg-white">
                     <AppRow className="w-full mt-4 flex items-center justify-center">
                         <AppCol className="flex items-center justify-between max-w-[600px]">
@@ -79,8 +79,8 @@ export const AddressBookFooter: React.FC<{
                         </AppCol>
                     </AppRow>
                 </AppGrid>
-            </IonToolbar>
-        </IonFooter>
+            </AppToolbar>
+        </AppFooter>
     );
 };
 

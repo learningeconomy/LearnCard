@@ -1,12 +1,13 @@
 import React from 'react';
 
-import { IonContent, IonToolbar, IonHeader, IonPage } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
 import { AppCol, AppGrid, AppRow } from '../../../../layout';
 import X from 'learn-card-base/svgs/X';
 import { BoostCMSState } from '../../../boost';
 
 import BoostCMSAppearanceBadgeList from './BoostCMSAppearanceBadgeList';
 import * as m from '../../../../../paraglide/messages.js';
+import { AppHeader, AppToolbar } from '../../../../chrome';
 
 const BoostCMSAppearanceBadgeSelector: React.FC<{
     state: BoostCMSState;
@@ -17,7 +18,7 @@ const BoostCMSAppearanceBadgeSelector: React.FC<{
 }> = ({ state, setState, handleCloseModal, showCloseButton = true, title }) => {
     return (
         <IonPage id="user-options-modal">
-            <IonHeader className="ion-no-border bg-white pt-5">
+            <AppHeader className="ion-no-border bg-white pt-5">
                 <AppRow className="w-full bg-white">
                     <AppCol className="w-full flex items-center justify-end">
                         {showCloseButton && (
@@ -27,8 +28,8 @@ const BoostCMSAppearanceBadgeSelector: React.FC<{
                         )}
                     </AppCol>
                 </AppRow>
-                {title && <IonToolbar color="#fffff">{title}</IonToolbar>}
-            </IonHeader>
+                {title && <AppToolbar color="#fffff">{title}</AppToolbar>}
+            </AppHeader>
             <IonContent color="grayscale-100">
                 <AppGrid className="ion-padding">
                     <BoostCMSAppearanceBadgeList

@@ -10,7 +10,7 @@ export const useInAppButtons = (): boolean => useContext(AppButtonsContext);
 
 export type AppButtonsProps = {
     /**
-     * Toolbar slot (`ion-toolbar` still places children by their `slot` attribute), or `buttons`
+     * Toolbar slot (`AppToolbar` places its children by their `slot` prop), or `buttons`
      * for AppDatetime's `buttons` (ion-datetime's `slot="buttons"`).
      */
     slot?: 'start' | 'end' | 'buttons';
@@ -21,7 +21,7 @@ export type AppButtonsProps = {
 };
 
 /**
- * App-owned replacement for `IonButtons`: a flex row of toolbar buttons. Inside an `IonToolbar`
+ * App-owned replacement for `IonButtons`: a flex row of toolbar buttons. Inside an `AppToolbar`
  * it gets the toolbar's ion-buttons styling (ios 38px min-height, md start/end margins) and its
  * `AppButton` children get Ionic's in-buttons look (clear fill, toolbar color, compact padding).
  */

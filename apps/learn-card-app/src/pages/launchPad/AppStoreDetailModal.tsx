@@ -4,7 +4,7 @@ import type { AppStoreListing, InstalledApp } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('app-store-detail-modal');
 
-import { IonPage, IonContent, IonSpinner, IonFooter, IonHeader } from '@ionic/react';
+import { IonPage, IonContent, IonSpinner } from '@ionic/react';
 import { AppToast } from '../../components/overlays/AppToast';
 import {
     useModal,
@@ -45,6 +45,7 @@ import { useGuardianGate } from '../../hooks/useGuardianGate';
 import DatePickerInput from '../../components/date-picker/DatePickerInput';
 import { checkAppInstallEligibility, AGE_RATING_TO_MIN_AGE } from '@learncard/helpers';
 import * as m from '../../paraglide/messages.js';
+import { AppFooter, AppHeader } from '../../components/chrome';
 
 // Extended type to include new fields (until types package is rebuilt)
 type ExtendedAppStoreListing = (AppStoreListing | InstalledApp) & {
@@ -749,7 +750,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
     return (
         <IonPage className="h-full w-full">
             {/* Header */}
-            <IonHeader mode="ios" className="ion-no-border">
+            <AppHeader mode="ios" className="ion-no-border">
                 <div className="ion-padding shadow-header bg-white">
                     <div className="flex items-center gap-3 ion-padding mt-[var(--ion-safe-area-top,0px)]">
                         <div className="h-[65px] w-[65px] shrink-0">
@@ -840,7 +841,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                         </div>
                     )}
                 </div>
-            </IonHeader>
+            </AppHeader>
 
             <IonContent
                 fullscreen
@@ -997,7 +998,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             </IonContent>
 
             {/* Footer */}
-            <IonFooter
+            <AppFooter
                 mode="ios"
                 className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 bg-white/60 max-h-[100px]!"
             >
@@ -1053,7 +1054,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                         )}
                     </div>
                 </div>
-            </IonFooter>
+            </AppFooter>
 
             <AppToast
                 isOpen={showCopiedToast}

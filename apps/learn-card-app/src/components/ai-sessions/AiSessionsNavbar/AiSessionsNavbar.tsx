@@ -3,7 +3,6 @@ import { useHistory, useLocation } from 'react-router-dom';
 
 import { m } from '../../../paraglide/messages.js';
 
-import { IonFooter } from '@ionic/react';
 import { AppMenuToggle } from '../../app-shell/AppMenuToggle';
 import BurgerIcon from '../../../components/svgs/Burger';
 import BlueMagicWand from 'learn-card-base/svgs/BlueMagicWand';
@@ -24,6 +23,7 @@ import {
 
 import { Capacitor } from '@capacitor/core';
 import keyboardStore from 'learn-card-base/stores/keyboardStore';
+import { AppFooter } from '../../chrome';
 
 const AiSessionsNavbar: React.FC = () => {
     const history = useHistory();
@@ -33,7 +33,7 @@ const AiSessionsNavbar: React.FC = () => {
     const { newModal } = useModal();
     const { isMobile } = useDeviceTypeByWidth();
     const { data } = useGetUnreadUserNotifications();
-    const bottomBarRef = useRef<HTMLIonFooterElement>(null);
+    const bottomBarRef = useRef<HTMLDivElement>(null);
 
     keyboardStore.store.subscribe(({ isOpen }) => {
         if (isOpen && Capacitor.isNativePlatform() && bottomBarRef.current) {
@@ -62,7 +62,7 @@ const AiSessionsNavbar: React.FC = () => {
     let bottomPosition = 20 + safeArea.bottom;
     if (Capacitor.isNativePlatform()) bottomPosition = safeArea.bottom > 0 ? safeArea.bottom : 20;
     return (
-        <IonFooter
+        <AppFooter
             ref={bottomBarRef}
             className={`relative w-full flex items-center justify-center z-9999 px-4`}
         >
@@ -117,7 +117,7 @@ const AiSessionsNavbar: React.FC = () => {
                     </button>
                 </div>
             </nav>
-        </IonFooter>
+        </AppFooter>
     );
 };
 

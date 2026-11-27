@@ -1,5 +1,4 @@
 import React from 'react';
-import { IonFooter } from '@ionic/react';
 import { AppRow } from '../../components/layout';
 
 import SadCloud from '../../components/svgs/SadCloud';
@@ -9,6 +8,7 @@ import ConsentFlowErrorFooter from './ConsentFlowErrorFooter';
 import { useHistory } from 'react-router-dom';
 import { useModal } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
+import { AppFooter } from '../../components/chrome';
 
 type ConsentFlowErrorProps = {
     errorType: number;
@@ -62,14 +62,14 @@ const ConsentFlowError: React.FC<ConsentFlowErrorProps> = ({ errorType, uri }) =
             <p className="font-poppins font-normal text-[17px] text-grayscale-900 text-center leading-[130%] tracking-[-0.25px] w-[295px]">
                 {message}
             </p>
-            <IonFooter
+            <AppFooter
                 mode="ios"
                 className="flex justify-center items-center ion-no-border absolute bottom-0"
             >
                 <AppRow className="relative z-10 w-full flex justify-center items-center gap-8">
                     <ConsentFlowErrorFooter hideRetry={hideRetry} buttonAction={handleRetry} />
                 </AppRow>
-            </IonFooter>
+            </AppFooter>
         </div>
     );
 };

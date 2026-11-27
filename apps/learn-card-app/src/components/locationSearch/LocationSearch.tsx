@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 import useGoogle from 'react-google-autocomplete/lib/usePlacesAutocompleteService';
 
-import { IonContent, IonHeader, IonPage, IonToolbar } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
 import { AppCol, AppGrid, AppRow } from '../layout';
 import { AppInput } from '../controls/AppInput';
 import GoogleLogo from 'learn-card-base/assets/images/google-logo.png';
@@ -12,6 +12,7 @@ import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinne
 import { useObservabilityConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import { AddressSpec, formatLocationObject } from './location.helpers';
+import { AppHeader, AppToolbar } from '../chrome';
 
 const LocationSearch: React.FC<{
     showCloseButton?: boolean;
@@ -52,8 +53,8 @@ const LocationSearch: React.FC<{
 
     return (
         <IonPage className="bg-white">
-            <IonHeader className="learn-card-header ion-no-border my-[0px]">
-                <IonToolbar className="ion-no-border bg-white " color="white">
+            <AppHeader className="learn-card-header ion-no-border my-[0px]">
+                <AppToolbar className="ion-no-border bg-white " color="white">
                     <AppGrid className="bg-white">
                         <AppRow className="w-full flex items-center justify-center">
                             <AppRow className="flex flex-col w-full max-w-[600px]">
@@ -81,8 +82,8 @@ const LocationSearch: React.FC<{
                             </AppRow>
                         </AppRow>
                     </AppGrid>
-                </IonToolbar>
-            </IonHeader>
+                </AppToolbar>
+            </AppHeader>
             <IonContent fullscreen>
                 <section className="relative flex flex-col items-center justify-center w-full">
                     <ul className="flex flex-col items-start justify-center w-full max-w-[600px]">

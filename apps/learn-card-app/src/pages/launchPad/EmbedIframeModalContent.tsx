@@ -15,7 +15,7 @@ import {
 } from 'learn-card-base';
 import { Network } from '@capacitor/network';
 import { AppEmbedOfflineState } from './AppEmbedOfflineState';
-import { IonPage, IonContent, IonHeader, IonToolbar } from '@ionic/react';
+import { IonPage, IonContent } from '@ionic/react';
 import { AppToast } from '../../components/overlays/AppToast';
 
 import { useLearnCardPostMessage } from '../../hooks/post-message/useLearnCardPostMessage';
@@ -26,6 +26,7 @@ import { AppCredentialDashboard } from './AppCredentialDashboard';
 import { useAppNotificationToast } from '../../hooks/useAppNotificationToast';
 import { toSafeFrameUrl } from './frameUrl';
 import { buildEmbedUrlWithPath } from './buildEmbedUrlWithPath';
+import { AppHeader, AppToolbar } from '../../components/chrome';
 
 interface LaunchConfig {
     url?: string;
@@ -258,8 +259,8 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
 
     return (
         <IonPage className="h-full w-full">
-            <IonHeader>
-                <IonToolbar color="light">
+            <AppHeader>
+                <AppToolbar color="light">
                     <div className="flex items-center justify-between px-3 py-4 bg-white border-b">
                         <h2 className="text-xl font-semibold">{appName}</h2>
                         <div className="flex items-center gap-2">
@@ -300,8 +301,8 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
                             </button>
                         </div>
                     </div>
-                </IonToolbar>
-            </IonHeader>
+                </AppToolbar>
+            </AppHeader>
             <IonContent fullscreen>{innerContent}</IonContent>
         </IonPage>
     );

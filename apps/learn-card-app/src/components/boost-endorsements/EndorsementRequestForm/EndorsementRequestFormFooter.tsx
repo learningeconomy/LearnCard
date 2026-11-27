@@ -1,9 +1,8 @@
 import React from 'react';
 
-import { IonFooter } from '@ionic/react';
-
 import { ModalTypes, useModal } from 'learn-card-base';
 import * as m from '../../../paraglide/messages.js';
+import { AppFooter } from '../../chrome';
 
 const EndorsementRequestFormFooter: React.FC<{
     className?: string;
@@ -17,7 +16,7 @@ const EndorsementRequestFormFooter: React.FC<{
     });
 
     return (
-        <IonFooter
+        <AppFooter
             mode="ios"
             className={`lc-content-owns-bottom w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 left-0 bg-white/60 ${className}`}
             style={{
@@ -54,7 +53,7 @@ const EndorsementRequestFormFooter: React.FC<{
                     )}
                 </div>
             </div>
-        </IonFooter>
+        </AppFooter>
     );
 };
 

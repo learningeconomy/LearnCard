@@ -2204,6 +2204,19 @@ http://ionicframework.com/docs/theming/ */
     --app-safe-area-right: 0px;
 }
 
+/* Page chrome (components/chrome): AppHeader, AppFooter and AppToolbar pad by the insets in effect
+   where they render, as ion-header / ion-footer / ion-toolbar read the Ionic inputs there. The
+   `:root` tokens above can't see local resets (learn-card-base surfaces, AppCard, AppOverlayModal),
+   so the tokens are re-derived on each element. */
+.app-header,
+[data-app-footer],
+.app-toolbar {
+    --app-safe-area-top: var(--ion-safe-area-top, 0px);
+    --app-safe-area-bottom: var(--ion-safe-area-bottom, 0px);
+    --app-safe-area-left: var(--ion-safe-area-left, 0px);
+    --app-safe-area-right: var(--ion-safe-area-right, 0px);
+}
+
 /* AppOverlayModal (components/overlays): ion-modal 8.7.2 zeroed the safe-area insets on its host
    once it is a centered dialog (768x600 and up), as a `:host` rule (hence the layer). Both the
    Ionic inputs and the `--app-safe-area-*` tokens computed from them at :root are reset. */

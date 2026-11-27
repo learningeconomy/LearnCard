@@ -6,7 +6,7 @@ import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('boost-address-book-contact-options');
 
-import { IonToolbar, IonFooter, IonHeader, IonContent, IonPage } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
 import { useAppOverlayModal } from '../../../../overlays/useAppOverlayModal';
 import { AppCol, AppGrid, AppRow } from '../../../../layout';
 import X from 'learn-card-base/svgs/X';
@@ -34,6 +34,7 @@ import { BoostUserTypeEnum } from 'learn-card-base';
 import { LCNProfile } from '@learncard/types';
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
 import * as m from '../../../../../paraglide/messages.js';
+import { AppFooter, AppHeader, AppToolbar } from '../../../../chrome';
 
 type BoostAddressBookContactOptionsProps = {
     state: BoostCMSState;
@@ -289,7 +290,7 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
     // useAppOverlayModal version
     return (
         <IonPage id="user-options-modal">
-            <IonHeader className="ion-no-border bg-white pt-5">
+            <AppHeader className="ion-no-border bg-white pt-5">
                 <AppRow className="w-full bg-white">
                     <AppCol className="w-full flex items-center justify-end">
                         {showCloseButton && (
@@ -299,8 +300,8 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                         )}
                     </AppCol>
                 </AppRow>
-                {title && <IonToolbar color="#fffff">{title}</IonToolbar>}
-            </IonHeader>
+                {title && <AppToolbar color="#fffff">{title}</AppToolbar>}
+            </AppHeader>
             <IonContent>
                 <AppGrid className="ion-padding">
                     <AppRow className="w-full flex items-center justify-center mt-8">
@@ -394,9 +395,9 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                 </AppGrid>
             </IonContent>
             {footer && (
-                <IonFooter className={fixedFooterStyles}>
-                    <IonToolbar>{footer}</IonToolbar>
-                </IonFooter>
+                <AppFooter className={fixedFooterStyles}>
+                    <AppToolbar>{footer}</AppToolbar>
+                </AppFooter>
             )}
         </IonPage>
     );
@@ -404,7 +405,7 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
     // useModal version
     return (
         <section id="user-options-modal" className="h-[500px]">
-            <IonHeader className="ion-no-border bg-white pt-5">
+            <AppHeader className="ion-no-border bg-white pt-5">
                 <AppRow className="w-full bg-white">
                     <AppCol className="w-full flex items-center justify-end">
                         {showCloseButton && (
@@ -414,8 +415,8 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                         )}
                     </AppCol>
                 </AppRow>
-                {title && <IonToolbar color="#fffff">{title}</IonToolbar>}
-            </IonHeader>
+                {title && <AppToolbar color="#fffff">{title}</AppToolbar>}
+            </AppHeader>
             <AppGrid className="ion-padding">
                 <AppRow className="w-full flex items-center justify-center mt-8">
                     {/* desktop */}
@@ -493,9 +494,9 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                 </div>
             </AppGrid>
             {footer && (
-                <IonFooter className={fixedFooterStyles}>
-                    <IonToolbar>{footer}</IonToolbar>
-                </IonFooter>
+                <AppFooter className={fixedFooterStyles}>
+                    <AppToolbar>{footer}</AppToolbar>
+                </AppFooter>
             )}
         </section>
     );

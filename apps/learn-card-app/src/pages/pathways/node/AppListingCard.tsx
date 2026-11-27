@@ -124,7 +124,7 @@ const AppListingCard: React.FC<AppListingCardProps> = ({
     // IonPage renders at `opacity: 0` without a router context —
     // what the user sees as "background blurs but nothing appears."
     // `hideButton: true` because AppStoreDetailModal has its own
-    // close affordance in the IonHeader — we don't want two X buttons.
+    // close affordance in the AppHeader — we don't want two X buttons.
     const handleInstall = () => {
         onSuppressHost?.();
 

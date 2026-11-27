@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import queryString from 'query-string';
 
-import { IonContent, IonHeader, IonPage, IonSpinner, IonToolbar } from '@ionic/react';
+import { IonContent, IonPage, IonSpinner } from '@ionic/react';
 import { useAppOverlayModal } from '../../components/overlays/useAppOverlayModal';
 import { useLocation } from 'react-router-dom';
 import { VC, VerificationItem, VP } from '@learncard/types';
@@ -33,6 +33,7 @@ import {
 } from './shared-resume.helpers';
 import { resumeBuilderStore } from '../../stores/resumeBuilderStore';
 import * as m from '../../paraglide/messages.js';
+import { AppHeader, AppToolbar } from '../../components/chrome';
 
 const getQueryParam = (value: string | string[] | null): string => {
     if (Array.isArray(value)) return value[0] ?? '';
@@ -218,8 +219,8 @@ const VerifySharedResume: React.FC = () => {
 
     return (
         <IonPage>
-            <IonHeader color="light">
-                <IonToolbar className="flex">
+            <AppHeader>
+                <AppToolbar className="flex">
                     <div className="flex justify-between items-center pl-[16px] pr-[16px] py-3 w-full">
                         <HeaderBranding
                             branding={BrandingEnum.learncard}
@@ -251,8 +252,8 @@ const VerifySharedResume: React.FC = () => {
                             </a>
                         </div>
                     </div>
-                </IonToolbar>
-            </IonHeader>
+                </AppToolbar>
+            </AppHeader>
 
             <IonContent fullscreen className="bg-grayscale-100">
                 <div className="min-h-full bg-[radial-gradient(circle_at_top,rgba(99,102,241,0.16),transparent_35%),linear-gradient(180deg,#F8FAFC_0%,#EEF2FF_100%)]">

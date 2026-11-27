@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
-import { IonPage, IonContent, IonHeader, IonToolbar, IonTitle } from '@ionic/react';
+import { IonPage, IonContent } from '@ionic/react';
 
 import { getLogger, useIsOffline, connectivityStore } from 'learn-card-base';
 import { Network } from '@capacitor/network';
@@ -16,6 +16,7 @@ import { AppCredentialDashboard } from './AppCredentialDashboard';
 import { useAppNotificationToast } from '../../hooks/useAppNotificationToast';
 import { AppButton } from '../../components/controls/AppButton';
 import { AppButtons } from '../../components/controls/AppButtons';
+import { AppHeader, AppTitle, AppToolbar } from '../../components/chrome';
 
 interface EmbedAppParams {
     appId: string;
@@ -164,8 +165,8 @@ export const EmbedAppFullScreen: React.FC = () => {
         buildEmbedUrlWithPath(embedUrl, initialPath, window.location.origin) ?? undefined;
     return (
         <IonPage>
-            <IonHeader>
-                <IonToolbar>
+            <AppHeader>
+                <AppToolbar>
                     <AppButtons slot="start">
                         <AppButton onClick={() => history.goBack()}>
                             <svg
@@ -184,7 +185,7 @@ export const EmbedAppFullScreen: React.FC = () => {
                             </svg>
                         </AppButton>
                     </AppButtons>
-                    <IonTitle>{appName}</IonTitle>
+                    <AppTitle>{appName}</AppTitle>
                     <AppButtons className="mr-[10px]" slot="end">
                         <AppCredentialDashboard
                             appId={appId}
@@ -193,8 +194,8 @@ export const EmbedAppFullScreen: React.FC = () => {
                             onNavigateAction={handleTapNotificationAction}
                         />
                     </AppButtons>
-                </IonToolbar>
-            </IonHeader>
+                </AppToolbar>
+            </AppHeader>
             <IonContent fullscreen>
                 <div className="relative w-full h-full">
                     {isOffline || hasLoadFailed ? (

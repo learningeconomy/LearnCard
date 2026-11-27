@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('family-guardian-issue-to-list');
 
-import { IonContent, IonFooter, IonHeader, IonPage, IonToolbar } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
 import { useAppAlert } from '../../../overlays/useAppAlert';
 import { AppCol, AppGrid, AppRow } from '../../../layout';
 import Plus from 'learn-card-base/svgs/Plus';
@@ -16,6 +16,7 @@ import { updateAdminList, useWallet } from 'learn-card-base';
 
 import useTheme from '../../../../theme/hooks/useTheme';
 import { m } from '../../../../paraglide/messages.js';
+import { AppFooter, AppHeader, AppToolbar } from '../../../chrome';
 
 const FamilyGuardianIssueToList: React.FC<{
     state: ShortBoostState;
@@ -84,7 +85,7 @@ const FamilyGuardianIssueToList: React.FC<{
 
     return (
         <IonPage>
-            <IonHeader className="ion-no-border bg-white pt-4 border-b-solid border-b-grayscale-100 border-b-2 pb-4 vc-preview-modal-safe-area">
+            <AppHeader className="ion-no-border bg-white pt-4 border-b-solid border-b-grayscale-100 border-b-2 pb-4 vc-preview-modal-safe-area">
                 <AppCol className="w-full flex items-center justify-center">
                     <div className="boost-issue-container w-full flex items-center justify-between mx-[20px] max-w-[600px]">
                         <p className="boost-issue-to-text font-poppins text-2xl text-grayscale-900">
@@ -95,7 +96,7 @@ const FamilyGuardianIssueToList: React.FC<{
                         </div>
                     </div>
                 </AppCol>
-            </IonHeader>
+            </AppHeader>
             <IonContent fullscreen>
                 <AppGrid className="pl-4 bg-white pt-0">
                     <AppCol className="pt-0 w-full flex items-center justify-center">
@@ -103,8 +104,8 @@ const FamilyGuardianIssueToList: React.FC<{
                     </AppCol>
                 </AppGrid>
             </IonContent>
-            <IonFooter>
-                <IonToolbar color="light" className="ion-no-border">
+            <AppFooter>
+                <AppToolbar color="light" className="ion-no-border">
                     <AppRow className="w-full flex items-center justify-center px-4">
                         <div className="boost-issue-container w-full flex items-center justify-center max-w-[600px]">
                             <button
@@ -125,8 +126,8 @@ const FamilyGuardianIssueToList: React.FC<{
                             </button>
                         </div>
                     </AppRow>
-                </IonToolbar>
-            </IonFooter>
+                </AppToolbar>
+            </AppFooter>
         </IonPage>
     );
 };

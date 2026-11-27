@@ -2,13 +2,13 @@ import React from 'react';
 import * as m from '../../paraglide/messages.js';
 
 import X from 'learn-card-base/svgs/X';
-import { IonFooter } from '@ionic/react';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
 import NewAiSessionIcon from 'learn-card-base/svgs/NewAiSessionIcon';
 
 import { useDeviceTypeByWidth, useModal } from 'learn-card-base';
 
 import { useTheme } from '../../theme/hooks/useTheme';
+import { AppFooter } from '../chrome';
 
 export const AiAssessmentPreviewFooter: React.FC<{
     handleStartAssessment?: () => void;
@@ -25,7 +25,7 @@ export const AiAssessmentPreviewFooter: React.FC<{
 
     if (isCompleted && !isFront) {
         return (
-            <IonFooter
+            <AppFooter
                 mode="ios"
                 className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 left-0 absolute bottom-0 bg-white/60 max-h-[100px]!"
             >
@@ -41,13 +41,13 @@ export const AiAssessmentPreviewFooter: React.FC<{
                         </button>
                     </div>
                 </div>
-            </IonFooter>
+            </AppFooter>
         );
     }
 
     if (!isCompleted && isDesktop) {
         return (
-            <IonFooter
+            <AppFooter
                 mode="ios"
                 className="w-full flex justify-center items-center ion-no-border bg-transparent! py-4 left-0 absolute bottom-0 bg-white max-h-[100px]! pb-[50px]"
             >
@@ -70,12 +70,12 @@ export const AiAssessmentPreviewFooter: React.FC<{
                         </button> */}
                     </div>
                 </div>
-            </IonFooter>
+            </AppFooter>
         );
     }
 
     return (
-        <IonFooter
+        <AppFooter
             mode="ios"
             className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 left-0 absolute bottom-0 bg-white/60 max-h-[100px]!"
         >
@@ -130,7 +130,7 @@ export const AiAssessmentPreviewFooter: React.FC<{
                     )}
                 </div>
             </div>
-        </IonFooter>
+        </AppFooter>
     );
 };
 

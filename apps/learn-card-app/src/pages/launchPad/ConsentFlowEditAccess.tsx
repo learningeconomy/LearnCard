@@ -2,7 +2,6 @@ import React from 'react';
 import { Updater, useImmer } from 'use-immer';
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 
-import { IonToolbar, IonHeader } from '@ionic/react';
 import { AppCol, AppGrid, AppRow } from '../../components/layout';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import BrokenLink from '../../components/svgs/BrokenLink';
@@ -24,6 +23,7 @@ import {
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { getPersonalEntry, isSupportedPersonalField } from '../../helpers/consentPersonalFields';
 import * as m from '../../paraglide/messages.js';
+import { AppHeader, AppToolbar } from '../../components/chrome';
 
 export enum ConsentFlowEditAccessViewModes {
     editAccess = 'edit-access',
@@ -175,8 +175,8 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
 
     return (
         <section className="bg-grayscale-900 pt-[15px] min-h-full">
-            <IonHeader className="ion-no-border">
-                <IonToolbar className="ion-no-border" color="grayscale-900">
+            <AppHeader className="ion-no-border">
+                <AppToolbar className="ion-no-border" color="grayscale-900">
                     <AppGrid className="bg-grayscale-900">
                         <AppRow className="w-full flex flex-col items-center justify-center">
                             <AppRow className="w-full max-w-[600px] flex items-center justify-between">
@@ -212,8 +212,8 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                             </AppRow>
                         </AppRow>
                     </AppGrid>
-                </IonToolbar>
-            </IonHeader>
+                </AppToolbar>
+            </AppHeader>
             <AppGrid className="flex items-center justify-center flex-col w-full px-4 pb-14 gap-5">
                 {contractDetails?.reasonForAccessing && (
                     <AppRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">

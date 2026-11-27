@@ -2,7 +2,6 @@ import React from 'react';
 
 import { m } from '../../../paraglide/messages.js';
 
-import { IonFooter } from '@ionic/react';
 import TwoUsersIcon from 'learn-card-base/svgs/TwoUsers';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 import ShareInsightsWithUser from '../share-insights/ShareInsightsWithUser';
@@ -21,6 +20,7 @@ import { useGetAiInsightsServicesContract } from '../learner-insights/learner-in
 
 import { LCNProfile } from '@learncard/types';
 import { getProfileIdFromLCNDidWeb } from 'learn-card-base/helpers/credentialHelpers';
+import { AppFooter } from '../../../components/chrome';
 
 export const AiInsightsParentConsent: React.FC<{
     targetProfile: LCNProfile;
@@ -124,7 +124,7 @@ export const AiInsightsParentConsent: React.FC<{
                 </div>
             </div>
 
-            <IonFooter
+            <AppFooter
                 mode="ios"
                 className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 bg-grayscale-50/60 max-h-[100px]!"
             >
@@ -138,7 +138,7 @@ export const AiInsightsParentConsent: React.FC<{
                         </button>
                     </div>
                 </div>
-            </IonFooter>
+            </AppFooter>
         </div>
     );
 };

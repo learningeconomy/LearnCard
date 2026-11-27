@@ -1,10 +1,9 @@
 import React from 'react';
 import { useModal } from 'learn-card-base';
 
-import { IonFooter } from '@ionic/react';
-
 import useTheme from '../../theme/hooks/useTheme';
 import * as m from '../../paraglide/messages.js';
+import { AppFooter } from '../../components/chrome';
 
 type ConsentFlowErrorFooterProps = {
     hideRetry?: boolean;
@@ -21,7 +20,7 @@ const ConsentFlowErrorFooter: React.FC<ConsentFlowErrorFooterProps> = ({
     const primaryColor = colors?.defaults?.primaryColor;
 
     return (
-        <IonFooter
+        <AppFooter
             mode="ios"
             className="w-full bg-white/60 border-white border-t-1px  border-t sticky bottom-0 p-[20px] backdrop-blur-[10px] h-[85px]"
         >
@@ -51,7 +50,7 @@ const ConsentFlowErrorFooter: React.FC<ConsentFlowErrorFooterProps> = ({
                     </button>
                 )}
             </div>
-        </IonFooter>
+        </AppFooter>
     );
 };
 

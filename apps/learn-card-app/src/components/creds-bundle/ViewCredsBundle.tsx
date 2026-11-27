@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { IonContent, IonPage, IonHeader, IonToolbar } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
 import { useAppAlert } from '../overlays/useAppAlert';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('view-creds-bundle');
@@ -14,6 +14,7 @@ import { Browser } from '@capacitor/browser';
 
 import { AppButton } from '../controls/AppButton';
 import ShareBoostsBundle from './ShareBoostsBundle';
+import { AppHeader, AppToolbar } from '../chrome';
 
 const ViewCredsBundle: React.FC = () => {
     const { uri, seed } = useParams<{ uri: string; seed: string }>();
@@ -123,8 +124,8 @@ const ViewCredsBundle: React.FC = () => {
 
     return (
         <IonPage className="metaversity-primary-blue">
-            <IonHeader translucent={true}>
-                <IonToolbar className="flex">
+            <AppHeader translucent={true}>
+                <AppToolbar className="flex">
                     <div className="flex justify-between items-center">
                         <div>
                             <a
@@ -147,8 +148,8 @@ const ViewCredsBundle: React.FC = () => {
                             Learn More
                         </AppButton>
                     </div>
-                </IonToolbar>
-            </IonHeader>
+                </AppToolbar>
+            </AppHeader>
             <IonContent
                 fullscreen
                 color="metaversity-primary-blue"

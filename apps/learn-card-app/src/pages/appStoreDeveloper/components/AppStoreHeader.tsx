@@ -1,12 +1,12 @@
 import React from 'react';
 import * as m from '../../../paraglide/messages.js';
 import { useHistory, useLocation } from 'react-router-dom';
-import { IonHeader, IonToolbar } from '@ionic/react';
 import { Shield, Code2, Hammer } from 'lucide-react';
 
 import { AccountSwitcher } from './AccountSwitcher';
 import { useDeveloperPortal } from '../useDeveloperPortal';
 import { useDeveloperPortalContext } from '../DeveloperPortalContext';
+import { AppHeader, AppToolbar } from '../../../components/chrome';
 
 interface AppStoreHeaderProps {
     title?: string;
@@ -49,8 +49,8 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title, rightCont
     };
 
     return (
-        <IonHeader className="ion-no-border overflow-visible!">
-            <IonToolbar className="shadow-none! border-b border-gray-200 overflow-visible! [&>.toolbar-container]:overflow-visible!">
+        <AppHeader className="ion-no-border overflow-visible!">
+            <AppToolbar className="shadow-none! border-b border-gray-200 overflow-visible! [&>.toolbar-container]:overflow-visible!">
                 <div className="flex items-center justify-between px-2 sm:px-4 py-2 overflow-visible">
                     <button
                         onClick={() => history.push('/launchpad')}
@@ -147,8 +147,8 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title, rightCont
                         <AccountSwitcher />
                     </div>
                 </div>
-            </IonToolbar>
-        </IonHeader>
+            </AppToolbar>
+        </AppHeader>
     );
 };
 

@@ -1,11 +1,12 @@
 import React from 'react';
 
-import { IonContent, IonToolbar, IonHeader, IonPage } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
 import { AppCol, AppGrid, AppRow } from '../layout';
 import { ACHIEVEMENT_CATEGORIES } from '../../../../../packages/learn-card-base/src/components/IssueVC/constants';
 import X from 'learn-card-base/svgs/X';
 
 import useTheme from '../../theme/hooks/useTheme';
+import { AppHeader, AppToolbar } from '../chrome';
 
 const SubHeaderActionMenu: React.FC<{
     handleCloseModal: () => void;
@@ -29,7 +30,7 @@ const SubHeaderActionMenu: React.FC<{
 
     return (
         <IonPage>
-            {/* <IonHeader className="ion-no-border bg-white pt-5">
+            {/* <AppHeader className="ion-no-border bg-white pt-5">
                 <AppRow className="w-full bg-white">
                     <AppCol className="w-full flex items-center justify-end">
                         {showCloseButton && (
@@ -39,8 +40,8 @@ const SubHeaderActionMenu: React.FC<{
                         )}
                     </AppCol>
                 </AppRow>
-                {title && <IonToolbar color="#fffff">{title}</IonToolbar>}
-            </IonHeader> */}
+                {title && <AppToolbar color="#fffff">{title}</AppToolbar>}
+            </AppHeader> */}
             <IonContent>
                 <AppGrid className="ion-padding">
                     <AppCol className="w-full flex items-center justify-center mt-8">

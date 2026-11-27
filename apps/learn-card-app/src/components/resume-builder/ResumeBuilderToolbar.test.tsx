@@ -4,8 +4,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ResumeBuilderToolbar } from './ResumeBuilderToolbar';
 
 vi.mock('@ionic/react', () => ({
-    IonHeader: ({ children }: React.PropsWithChildren) => <header>{children}</header>,
-    IonToolbar: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
     IonSpinner: () => <span />,
 }));
 

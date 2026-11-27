@@ -26,9 +26,7 @@ vi.mock('learn-card-base/svgs/Checkmark', () => ({ default: () => null }));
 vi.mock('learn-card-base/svgs/LockSimple', () => ({ default: () => null }));
 vi.mock('learn-card-base/svgs/IDSleeve', () => ({ default: () => null }));
 vi.mock('learn-card-base/svgs/NewAiSessionIcon', () => ({ default: () => null }));
-vi.mock('@ionic/react', () => ({
-    IonFooter: ({ children }: { children: React.ReactNode }) => <footer>{children}</footer>,
-}));
+vi.mock('@ionic/react', () => ({}));
 vi.mock('../../../theme/hooks/useTheme', () => ({
     default: () => ({ colors: { defaults: { primaryColor: 'indigo-500' } } }),
 }));

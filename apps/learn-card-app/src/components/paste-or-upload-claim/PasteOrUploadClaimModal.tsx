@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { IonFooter, IonHeader, IonToolbar } from '@ionic/react';
 import QrScanner from 'qr-scanner';
 
 import { useToast, ToastTypeEnum, useModal, ModalTypes } from 'learn-card-base';
@@ -12,6 +11,7 @@ import AddContactView, {
     AddContactViewMode,
 } from '../../pages/addressBook/addContactView/AddContactView';
 import * as m from '../../paraglide/messages.js';
+import { AppFooter, AppHeader, AppToolbar } from '../chrome';
 
 const unrecognizedCopyFor = (reason: UnrecognizedReason, source: ClaimInputSource): string => {
     const isQrImage = source === 'image_upload';
@@ -273,8 +273,8 @@ export const PasteOrUploadClaimModal: React.FC<{ mode?: PasteOrUploadClaimMode }
 
     return (
         <div className="h-full relative bg-grayscale-100">
-            <IonHeader color="light" className="rounded-b-[30px] overflow-hidden shadow-md ">
-                <IonToolbar color="light" className="text-white px-4 py-4!">
+            <AppHeader className="rounded-b-[30px] overflow-hidden shadow-md ">
+                <AppToolbar color="light" className="text-white px-4 py-4!">
                     <div className="flex items-center justify-normal p-2">
                         <div className="flex items-center">
                             <div className="bg-white rounded-[15px] p-2 w-[60px] h-[60px] flex items-center justify-center mr-2 shrink-0">
@@ -293,8 +293,8 @@ export const PasteOrUploadClaimModal: React.FC<{ mode?: PasteOrUploadClaimMode }
                             </div>
                         </div>
                     </div>
-                </IonToolbar>
-            </IonHeader>
+                </AppToolbar>
+            </AppHeader>
 
             <section className="h-full bg-grayscale-100 ion-padding overflow-y-scroll pb-[200px]">
                 {websiteUrl && (
@@ -421,7 +421,7 @@ export const PasteOrUploadClaimModal: React.FC<{ mode?: PasteOrUploadClaimMode }
                 )}
             </section>
 
-            <IonFooter
+            <AppFooter
                 mode="ios"
                 className="lc-content-owns-bottom w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 left-0 bg-white/60"
                 style={{
@@ -443,7 +443,7 @@ export const PasteOrUploadClaimModal: React.FC<{ mode?: PasteOrUploadClaimMode }
                         </button>
                     </div>
                 </div>
-            </IonFooter>
+            </AppFooter>
         </div>
     );
 };

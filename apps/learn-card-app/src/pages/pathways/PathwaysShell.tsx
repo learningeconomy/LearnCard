@@ -68,7 +68,7 @@ const PathwaysShell: React.FC = () => {
                     Tenant chrome — LearnCard wordmark + profile /
                     notifications / QR-scanner buttons + back arrow.
                     Rendered as a sibling of `IonContent` (the proper
-                    Ionic placement for an `IonHeader`-based component)
+                    Ionic placement for an `AppHeader`-based component)
                     so `IonContent`'s height resolves to "page minus
                     header minus tab bar" automatically. Previously
                     this was nested inside `IonContent`, which meant

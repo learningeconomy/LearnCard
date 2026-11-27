@@ -2,13 +2,13 @@ import React, { useState, useLayoutEffect } from 'react';
 import { useModal } from 'learn-card-base';
 import { createPortal } from 'react-dom';
 
-import { IonToolbar, IonHeader } from '@ionic/react';
 import X from '../../../../svgs/X';
 import CreateMediaAttachmentForm from './CreateMediaAttachmentForm';
 
 import { BoostCMSState, BoostCMSAppearanceDisplayTypeEnum } from '../../../boost';
 import { getTopmostCancelPortal } from './boostCMSMedia.helpers';
 import * as m from '../../../../../paraglide/messages.js';
+import { AppHeader, AppToolbar } from '../../../../chrome';
 
 type BoostCMSMediaOptionsProps = {
     state: BoostCMSState;
@@ -45,9 +45,9 @@ const BoostCMSMediaOptions: React.FC<BoostCMSMediaOptionsProps> = ({
                 id="user-options-modal"
                 className="max-w-[500px] flex flex-col items-center justify-center"
             >
-                <IonHeader className="ion-no-border bg-white pt-5">
+                <AppHeader className="ion-no-border bg-white pt-5">
                     <div className="relative">
-                        {title && <IonToolbar color="#fffff">{title}</IonToolbar>}
+                        {title && <AppToolbar color="#fffff">{title}</AppToolbar>}
                         {/*
                          * // ! Hotfix: inline X close button rendered directly in the header.
                          *
@@ -70,7 +70,7 @@ const BoostCMSMediaOptions: React.FC<BoostCMSMediaOptionsProps> = ({
                             </button>
                         )}
                     </div>
-                </IonHeader>
+                </AppHeader>
 
                 <CreateMediaAttachmentForm
                     initialState={state}

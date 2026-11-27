@@ -27,7 +27,6 @@ vi.mock('swiper/modules', () => ({ Navigation: {} }));
 
 vi.mock('@ionic/react', () => ({
     IonContent: ({ children }: React.PropsWithChildren) => <main>{children}</main>,
-    IonFooter: ({ children }: React.PropsWithChildren) => <footer>{children}</footer>,
     IonPage: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
 }));
 

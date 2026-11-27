@@ -3,7 +3,7 @@ import moment from 'moment';
 import { ConsentFlowTerm, CredentialRecord } from '@learncard/types';
 import { Updater } from 'use-immer';
 import { capitalizeFirstLetter } from '@learncard/helpers';
-import { IonContent, IonHeader, IonPage, IonToolbar } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
 import AppDatetime from '../../components/datetime/AppDatetime';
 import { AppCol, AppGrid, AppRow } from '../../components/layout';
 import { AppToggle } from '../../components/controls/AppToggle';
@@ -27,6 +27,7 @@ import { CredentialMetadata } from 'learn-card-base/types/credential-records';
 
 import useTheme from '../../theme/hooks/useTheme';
 import * as m from '../../paraglide/messages.js';
+import { AppHeader, AppToolbar } from '../../components/chrome';
 
 type ConsentFlowReadSharingModalProps = {
     term: ConsentFlowTerm;
@@ -196,8 +197,8 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
 
     return (
         <IonPage className="bg-grayscale-100 text-grayscale-900 pt-5">
-            <IonHeader className="ion-no-border flex items-center px-5 gap-3">
-                <IonToolbar className="ion-no-border flex items-center gap-3" color="grayscale-100">
+            <AppHeader className="ion-no-border flex items-center px-5 gap-3">
+                <AppToolbar className="ion-no-border flex items-center gap-3" color="grayscale-100">
                     <AppGrid>
                         <AppRow className="w-full flex items-center gap-3 max-w-[760px] mx-auto">
                             <AppCol size="12" className="flex items-center gap-3">
@@ -213,8 +214,8 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                             </AppCol>
                         </AppRow>
                     </AppGrid>
-                </IonToolbar>
-            </IonHeader>
+                </AppToolbar>
+            </AppHeader>
 
             <IonContent className="transparent-modal-backdrop" color="transparent">
                 <AppGrid className="p-0 h-full w-full flex flex-col items-center gap-3">

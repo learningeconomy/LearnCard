@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('ai-passport-personalization-container-footer');
 
-import { IonFooter } from '@ionic/react';
-
 import { useModal, useWallet } from 'learn-card-base';
 
 import { PersonalizedAnswersState } from './personalizedQuestions.helpers';
@@ -13,6 +11,7 @@ import {
     transformPersonalizedAnswersForVC,
 } from './personalizedQuestionCredential.helpers';
 import * as m from '../../paraglide/messages.js';
+import { AppFooter } from '../chrome';
 
 const LearnCardFooter: React.FC<{ personalizedAnswers: PersonalizedAnswersState; uri: string }> = ({
     personalizedAnswers,
@@ -53,7 +52,7 @@ const LearnCardFooter: React.FC<{ personalizedAnswers: PersonalizedAnswersState;
     };
 
     return (
-        <IonFooter
+        <AppFooter
             mode="ios"
             className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 bg-white/60 max-h-[100px]!"
         >
@@ -75,7 +74,7 @@ const LearnCardFooter: React.FC<{ personalizedAnswers: PersonalizedAnswersState;
                     </button>
                 </div>
             </div>
-        </IonFooter>
+        </AppFooter>
     );
 };
 

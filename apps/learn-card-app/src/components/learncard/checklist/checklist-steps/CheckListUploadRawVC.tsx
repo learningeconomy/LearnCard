@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('check-list-upload-raw-v-c');
 
-import { IonHeader, IonToolbar } from '@ionic/react';
 import { AppTextarea } from '../../../controls/AppTextarea';
 import X from 'learn-card-base/svgs/X';
 import Plus from 'learn-card-base/svgs/Plus';
@@ -27,6 +26,7 @@ import { useUploadFile } from '../../../../hooks/useUploadFile';
 import { useUploadVcFromText } from '../../../../hooks/useUploadVcFromText';
 import useTheme from '../../../../theme/hooks/useTheme';
 import * as m from '../../../../paraglide/messages.js';
+import { AppHeader, AppToolbar } from '../../../chrome';
 
 export type RawVCFileType = {
     id: string;
@@ -219,8 +219,8 @@ export const CheckListUploadRawVC: React.FC = () => {
 
     return (
         <div className="h-full relative bg-grayscale-100">
-            <IonHeader color="light" className="rounded-b-[30px] overflow-hidden shadow-md ">
-                <IonToolbar color="light" className="text-white px-4 py-4!">
+            <AppHeader className="rounded-b-[30px] overflow-hidden shadow-md ">
+                <AppToolbar color="light" className="text-white px-4 py-4!">
                     <div className="flex items-center justify-normal p-2">
                         <div className="flex items-center gap-[10px]">
                             <BulkImportWithPlusIcon className="w-[65px] h-[65px]" />
@@ -229,8 +229,8 @@ export const CheckListUploadRawVC: React.FC = () => {
                             </h5>
                         </div>
                     </div>
-                </IonToolbar>
-            </IonHeader>
+                </AppToolbar>
+            </AppHeader>
             <section className="h-full bg-grayscale-100 ion-padding overflow-y-scroll pb-[200px]">
                 {(isSaving || checklistStore.get.isParsing().rawVC) && (
                     <ChecklistLoader fileType={UploadTypesEnum.RawVC} />

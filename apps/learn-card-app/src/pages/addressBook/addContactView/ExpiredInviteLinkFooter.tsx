@@ -1,7 +1,7 @@
 import React from 'react';
 import { useDeviceTypeByWidth, useModal } from 'learn-card-base';
-import { IonFooter } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
+import { AppFooter } from '../../../components/chrome';
 
 type ExpiredInviteLinkFooterProps = {
     buttonText?: string;
@@ -22,7 +22,7 @@ const ExpiredInviteLinkFooter: React.FC<ExpiredInviteLinkFooterProps> = ({
     const { isDesktop } = useDeviceTypeByWidth();
 
     return (
-        <IonFooter
+        <AppFooter
             mode="ios"
             className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 bg-white/60 max-h-[100px]! safe-area-bottom"
         >
@@ -53,7 +53,7 @@ const ExpiredInviteLinkFooter: React.FC<ExpiredInviteLinkFooterProps> = ({
                     </button>
                 </div>
             </div>
-        </IonFooter>
+        </AppFooter>
     );
 };
 

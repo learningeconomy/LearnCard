@@ -1,11 +1,10 @@
 import React from 'react';
 import * as m from '../../../paraglide/messages.js';
 
-import { IonFooter, IonToolbar } from '@ionic/react';
-
 import { useModal } from 'learn-card-base';
 
 import { LearnCardRolesEnum, OnboardingStepsEnum } from '../onboarding.helpers';
+import { AppFooter, AppToolbar } from '../../chrome';
 
 export const OnboardingFooter: React.FC<{
     step?: OnboardingStepsEnum;
@@ -83,8 +82,8 @@ export const OnboardingFooter: React.FC<{
     }
 
     return (
-        <IonFooter className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] ion-padding bg-white/60">
-            <IonToolbar color="transparent">
+        <AppFooter className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] ion-padding bg-white/60">
+            <AppToolbar color="transparent">
                 <div className="w-full flex items-center justify-center">
                     <div className="w-full flex flex-col items-center justify-between max-w-[600px]">
                         <div className="w-full flex items-center justify-center">
@@ -129,8 +128,8 @@ export const OnboardingFooter: React.FC<{
                         )}
                     </div>
                 </div>
-            </IonToolbar>
-        </IonFooter>
+            </AppToolbar>
+        </AppFooter>
     );
 };
 

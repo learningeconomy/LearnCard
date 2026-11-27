@@ -5,7 +5,7 @@ import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { getVCDisplayCardVariant } from '@learncard/react';
 import BoostFooterLayout from '../accessibility/AccessibleBoostFooterLayout';
-import { IonContent, IonPage, IonHeader, IonToolbar } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
 import { useAppAlert } from '../overlays/useAppAlert';
 import { useAppOverlayModal } from '../overlays/useAppOverlayModal';
 import SharedBoostVerificationBlock, {
@@ -48,6 +48,7 @@ import * as m from '../../paraglide/messages.js';
 const websiteLink = `${getAppBaseUrl()}/login`;
 
 import { getLogger } from 'learn-card-base';
+import { AppHeader, AppToolbar } from '../chrome';
 const log = getLogger('view-shared-boost');
 
 const ViewSharedBoost: React.FC<{
@@ -280,8 +281,8 @@ const ViewSharedBoost: React.FC<{
     return (
         <IonPage>
             {!isLoggedIn && (
-                <IonHeader color="light">
-                    <IonToolbar className="flex">
+                <AppHeader>
+                    <AppToolbar className="flex">
                         <div className="flex justify-between items-center pl-[10px] pr-[10px] py-3 w-full relative">
                             <button
                                 type="button"
@@ -312,8 +313,8 @@ const ViewSharedBoost: React.FC<{
                                 </button>
                             </div>
                         </div>
-                    </IonToolbar>
-                </IonHeader>
+                    </AppToolbar>
+                </AppHeader>
             )}
             {isLoggedIn && <MainHeader showSideMenuButton />}
             <BoostFooterLayout

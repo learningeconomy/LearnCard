@@ -6,7 +6,6 @@ import { TransP } from '../../../i18n/TransP';
 import AiInsightsParentConsent from '../ai-insights-parent-consent/AiInsightsParentConsent';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 import ConnectIcon from 'learn-card-base/svgs/ConnectIcon';
-import { IonFooter } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
 
 import {
@@ -24,6 +23,7 @@ import {
 
 import { LCNProfile } from '@learncard/types';
 import { getAppBaseUrl } from '../../../config/bootstrapTenantConfig';
+import { AppFooter } from '../../../components/chrome';
 
 export const ShareInsightsWithUser: React.FC<{
     targetProfile: LCNProfile | string;
@@ -133,7 +133,7 @@ export const ShareInsightsWithUser: React.FC<{
                 </div>
             </div>
 
-            <IonFooter
+            <AppFooter
                 mode="ios"
                 className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 bg-grayscale-50/60 max-h-[100px]!"
             >
@@ -163,7 +163,7 @@ export const ShareInsightsWithUser: React.FC<{
                         </button>
                     </div>
                 </div>
-            </IonFooter>
+            </AppFooter>
         </div>
     );
 };

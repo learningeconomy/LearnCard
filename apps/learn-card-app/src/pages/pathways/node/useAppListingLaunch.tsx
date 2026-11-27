@@ -179,7 +179,7 @@ export const useAppListingLaunch = (
                     // points for this same modal. NOT FullScreen:
                     // `#full-screen-modal` adds `padding-top:
                     // env(safe-area-inset-top)`, which double-stacks with the
-                    // inset EmbedIframeModal's own IonHeader handles (oversized
+                    // inset EmbedIframeModal's own AppHeader handles (oversized
                     // top margin on native). NOT the default Center: it
                     // collapses the IonPage via Ionic's `.ion-page-invisible`.
                     // `hideButton: true` — the modal has its own close X.

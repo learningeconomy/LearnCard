@@ -1,11 +1,11 @@
 import React from 'react';
 
-import { IonFooter } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
 import { EndorsmentThumbWithCircle } from 'learn-card-base/svgs/EndorsementThumb';
 
 import { useModal } from 'learn-card-base';
 import * as m from '../../../paraglide/messages.js';
+import { AppFooter } from '../../chrome';
 
 const EndorsementRequestModalFooter: React.FC<{
     isDisabled?: boolean;
@@ -20,7 +20,7 @@ const EndorsementRequestModalFooter: React.FC<{
     else iconStyles = 'text-teal-400';
 
     return (
-        <IonFooter
+        <AppFooter
             mode="ios"
             className={`lc-content-owns-bottom w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 left-0 bg-white/60 ${className}`}
             style={{
@@ -49,7 +49,7 @@ const EndorsementRequestModalFooter: React.FC<{
                     </button>
                 </div>
             </div>
-        </IonFooter>
+        </AppFooter>
     );
 };
 

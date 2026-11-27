@@ -1,9 +1,8 @@
 import React from 'react';
 
-import { IonFooter } from '@ionic/react';
-
 import { useModal } from 'learn-card-base';
 import * as m from '../../../paraglide/messages.js';
+import { AppFooter } from '../../../components/chrome';
 
 const AdminToolsModalFooter: React.FC<{
     isDisabled?: boolean;
@@ -16,7 +15,7 @@ const AdminToolsModalFooter: React.FC<{
     const { closeModal } = useModal();
 
     return (
-        <IonFooter
+        <AppFooter
             mode="ios"
             className={`lc-content-owns-bottom w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 left-0 bg-white/60 ${className}`}
             style={{
@@ -47,7 +46,7 @@ const AdminToolsModalFooter: React.FC<{
                     )}
                 </div>
             </div>
-        </IonFooter>
+        </AppFooter>
     );
 };
 

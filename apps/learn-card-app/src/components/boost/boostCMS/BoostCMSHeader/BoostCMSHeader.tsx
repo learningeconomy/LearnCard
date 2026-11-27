@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 
-import { IonHeader, IonToolbar } from '@ionic/react';
 import { AppCol, AppRow } from '../../../layout';
 
 import { BoostUserTypeEnum } from '../../boost-options/boostOptions';
@@ -11,6 +10,7 @@ import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import useTheme from '../../../../theme/hooks/useTheme';
 import * as m from '../../../../paraglide/messages.js';
 import { localizeCategoryTitle } from '../../../../i18n/categoryTitle';
+import { AppHeader, AppToolbar } from '../../../chrome';
 
 type BoostCMSHeaderProps = {
     boostUserType: BoostUserTypeEnum | string | null;
@@ -81,8 +81,8 @@ const BoostCMSHeader: React.FC<BoostCMSHeaderProps> = ({
     };
 
     return (
-        <IonHeader className="shadow-none">
-            <IonToolbar color="grayscale-800" className="ion-no-border px-2">
+        <AppHeader className="shadow-none">
+            <AppToolbar color="grayscale-800" className="ion-no-border px-2">
                 <AppRow className="flex items-center justify-center w-full py-[10px]">
                     <div className="w-full max-w-[600px] flex items-center justify-between">
                         <AppCol className="w-full flex justify-start items-center">
@@ -128,8 +128,8 @@ const BoostCMSHeader: React.FC<BoostCMSHeaderProps> = ({
                         </div>
                     </div>
                 </AppRow>
-            </IonToolbar>
-        </IonHeader>
+            </AppToolbar>
+        </AppHeader>
     );
 };
 

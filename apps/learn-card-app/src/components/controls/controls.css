@@ -369,17 +369,17 @@
         font-size: clamp(15.104px, 1.6em, 43.008px);
     }
 
-    /* ---------------------------------------------------- ion-toolbar ::slotted(ion-buttons) */
-    ion-toolbar > .app-buttons.ios {
+    /* --------------------------------------------- ion-toolbar ::slotted(ion-buttons), AppToolbar */
+    div:where(.app-toolbar-container) > .app-buttons.ios {
         min-height: 38px;
     }
 
     /* `.buttons-first-slot` / `.buttons-last-slot` (md). Preflight's margin reset still wins. */
-    ion-toolbar > .app-buttons.md[slot='start'] {
+    div:where(.app-toolbar-container) > .app-buttons.md[slot='start'] {
         margin-inline-start: 4px;
     }
 
-    ion-toolbar > .app-buttons.md[slot='end'] {
+    div:where(.app-toolbar-container) > .app-buttons.md[slot='end'] {
         margin-inline-end: 4px;
     }
 
@@ -565,7 +565,7 @@
     box-shadow: var(--box-shadow);
     contain: layout style;
     cursor: pointer;
-    /* Inherited: ion-header[translucent] sets --opacity: .8 on ios toolbars. */
+    /* Inherited: a translucent iOS AppHeader sets --opacity: .8 on its toolbars. */
     opacity: var(--opacity);
     overflow: var(--overflow);
     z-index: 0;
@@ -660,15 +660,19 @@
  * var(--ion-toolbar-color / --ion-toolbar-background, <fallback>); the app sets neither, so the
  * fallbacks are used directly.
  */
-ion-toolbar:not([color]) .app-button:not(.app-color) > .app-button-native {
+div:where(.app-toolbar):not(.ion-color) .app-button:not(.app-color) > .app-button-native {
     color: var(--color);
 }
 
-ion-toolbar:not([color]) .app-button.app-button-outline:not(.app-color) > .app-button-native {
+div:where(.app-toolbar):not(.ion-color)
+    .app-button.app-button-outline:not(.app-color)
+    > .app-button-native {
     border-color: var(--color, var(--border-color));
 }
 
-ion-toolbar:not([color]) .app-button.app-button-solid:not(.app-color) > .app-button-native {
+div:where(.app-toolbar):not(.ion-color)
+    .app-button.app-button-solid:not(.app-color)
+    > .app-button-native {
     background: var(--background);
     color: var(--color);
 }
@@ -728,7 +732,7 @@ ion-toolbar:not([color]) .app-button.app-button-solid:not(.app-color) > .app-but
         background: var(--app-color-tint);
     }
 
-    ion-toolbar:not([color])
+    div:where(.app-toolbar):not(.ion-color)
         .app-button.ios.app-button-solid:not(.app-color):not([data-activated])
         > .app-button-native:hover::after {
         background: #fff;

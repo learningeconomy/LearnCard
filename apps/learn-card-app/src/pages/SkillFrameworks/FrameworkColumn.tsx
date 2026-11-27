@@ -25,7 +25,7 @@ import FrameworkSkillsCount from './FrameworkSkillsCount';
 import FrameworkOptionsModal from './FrameworkOptionsModal';
 import * as m from '../../paraglide/messages.js';
 import FrameworkSearchResults from './FrameworkSearchResults';
-import { IonFooter, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import { AppInput, type AppInputHandle } from '../../components/controls/AppInput';
 
 import {
@@ -40,6 +40,7 @@ import {
     convertApiSkillNodesToSkillFrameworkNodes,
 } from '../../helpers/skillFramework.helpers';
 import { SetState } from 'packages/shared-types/dist';
+import { AppFooter } from '../../components/chrome';
 
 type FrameworkColumnProps = {
     nodes: SkillFrameworkNode[];
@@ -608,7 +609,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
             </div>
 
             {isSingleColumnView && (
-                <IonFooter
+                <AppFooter
                     mode="ios"
                     className="w-full flex justify-center items-center  backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white/80 border-solid border border-white"
                 >
@@ -698,7 +699,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                             </button>
                         )}
                     </div>
-                </IonFooter>
+                </AppFooter>
             )}
         </section>
     );

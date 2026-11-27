@@ -1,13 +1,13 @@
 import React from 'react';
 
 import X from 'learn-card-base/svgs/X';
-import { IonHeader, IonToolbar } from '@ionic/react';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 import ProfilePicture, {
     UserProfilePicture,
 } from 'learn-card-base/components/profilePicture/ProfilePicture';
 
 import { useCurrentUser, useModal, useDeviceTypeByWidth } from 'learn-card-base';
+import { AppHeader, AppToolbar } from '../chrome';
 
 export const QrCodeUserCardHeader: React.FC<{
     showCompact: boolean;
@@ -56,8 +56,8 @@ export const QrCodeUserCardHeader: React.FC<{
     }
 
     return (
-        <IonToolbar className="w-full sticky top-0" color="light">
-            <IonHeader className="w-full flex items-center justify-between px-2 py-2">
+        <AppToolbar className="w-full sticky top-0" color="light">
+            <AppHeader className="w-full flex items-center justify-between px-2 py-2">
                 <div className="flex items-center">
                     {showBackButton && (
                         <button
@@ -88,8 +88,8 @@ export const QrCodeUserCardHeader: React.FC<{
                 >
                     <X className="text-grayscale-900 h-[45px] w-[45px]" />
                 </button>
-            </IonHeader>
-        </IonToolbar>
+            </AppHeader>
+        </AppToolbar>
     );
 };
 

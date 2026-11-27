@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
-import { IonContent, IonFooter, IonPage, IonSpinner, IonToolbar } from '@ionic/react';
+import { IonContent, IonPage, IonSpinner } from '@ionic/react';
 import { AppInput } from '../../../controls/AppInput';
 import Pencil from '../../../svgs/Pencil';
 import LearnCardIconOutline from '../../../svgs/LearnCardIconOutline';
@@ -30,6 +30,7 @@ import { getLearnCardIDStyleDefaults } from '../../../learncardID-CMS/learncard-
 
 import keyboardStore from 'learn-card-base/stores/keyboardStore';
 import { m } from '../../../../paraglide/messages.js';
+import { AppFooter, AppToolbar } from '../../../chrome';
 
 export enum ChildInviteModalViewModeEnum {
     create = 'create',
@@ -70,7 +71,7 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
 }) => {
     const { newModal, closeModal } = useModal();
     const { isMobile } = useDeviceTypeByWidth();
-    const bottomBarRef = useRef<HTMLIonFooterElement>(null);
+    const bottomBarRef = useRef<HTMLDivElement>(null);
     const brandingConfig = useBrandingConfig();
     const isInEditMode = ChildInviteModalViewModeEnum.edit === viewMode;
 
@@ -387,12 +388,12 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
                     )} */}
                 </div>
             </IonContent>
-            <IonFooter
+            <AppFooter
                 ref={bottomBarRef}
                 mode="ios"
                 className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-[15px] absolute bottom-0 bg-white/60 max-h-[85px]!"
             >
-                <IonToolbar mode="ios">
+                <AppToolbar mode="ios">
                     <div className="w-full flex items-center justify-center">
                         <div className="w-full flex items-center justify-between max-w-[600px] ion-padding">
                             <button
@@ -428,8 +429,8 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
                             )}
                         </div>
                     </div>
-                </IonToolbar>
-            </IonFooter>
+                </AppToolbar>
+            </AppFooter>
         </IonPage>
     );
 };

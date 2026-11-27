@@ -12,7 +12,6 @@ import AlignmentToggle from './AlignmentToggle';
 import SkillBreadcrumbText from './SkillBreadcrumbText';
 import SkillsFrameworkIcon from 'apps/learn-card-app/src/components/svgs/SkillsFrameworkIcon';
 import ConfirmAlignmentDeletionModal from './ConfirmAlignmentDeletionModal';
-import { IonFooter } from '@ionic/react';
 import { AppInput } from '../../components/controls/AppInput';
 import { AppTextarea } from '../../components/controls/AppTextarea';
 
@@ -21,6 +20,7 @@ import {
     SkillFramework,
     SkillFrameworkNode,
 } from 'apps/learn-card-app/src/components/boost/boost';
+import { AppFooter } from '../../components/chrome';
 
 type EditAlignmentModalProps = {
     framework: SkillFramework;
@@ -372,7 +372,7 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
     ) : (
         <div className="h-full w-full relative overflow-y-auto bg-grayscale-200">
             <div className="h-full overflow-y-auto pb-[150px] pt-[60px] px-[20px] ">{content}</div>
-            <IonFooter
+            <AppFooter
                 mode="ios"
                 className="w-full flex justify-center items-center  backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white/80 border-solid border border-white"
             >
@@ -393,7 +393,7 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
                         </button>
                     )}
                 </div>
-            </IonFooter>
+            </AppFooter>
         </div>
     );
 };

@@ -2,7 +2,6 @@ import React from 'react';
 
 import { BoostCategoryOptionsEnum, isCustomBoostType, useModal } from 'learn-card-base';
 
-import { IonToolbar } from '@ionic/react';
 import { AppCol, AppRow } from '../../../../layout';
 
 import X from 'learn-card-base/svgs/X';

@@ -233,6 +233,30 @@ html.ios div:where(.app-modal).modal-sheet ion-header ion-toolbar:last-of-type {
     padding-bottom: 6px;
 }
 
+/* The same rules for the app-owned chrome (components/chrome), at the same specificity. */
+html.ios div:where(.app-modal) div:where(.app-toolbar) {
+    padding-right: calc(var(--app-safe-area-right) + 8px);
+    padding-left: calc(var(--app-safe-area-left) + 8px);
+}
+
+html.ios
+    div:where(.app-modal).modal-sheet
+    div:where(.app-header)
+    div:where(.app-toolbar):nth-child(1 of :where(.app-toolbar)),
+html.ios
+    div:where(.app-modal)
+    div:where([data-app-footer])
+    div:where(.app-toolbar):nth-child(1 of :where(.app-toolbar)) {
+    padding-top: 6px;
+}
+
+html.ios
+    div:where(.app-modal).modal-sheet
+    div:where(.app-header)
+    div:where(.app-toolbar):nth-last-child(1 of :where(.app-toolbar)) {
+    padding-bottom: 6px;
+}
+
 /* A default modal over another (either kind) drops its own backdrop and shadow. */
 div:where(.app-modal).modal-default.show-modal ~ div:where(.app-modal).modal-default,
 ion-modal.modal-default.show-modal ~ div:where(.app-modal).modal-default,
