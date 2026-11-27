@@ -4,7 +4,7 @@ import { execSync } from 'child_process';
 import { createRequire } from 'module';
 import { readdirSync, readFileSync, existsSync } from 'fs';
 
-import { defineConfig, loadEnv, type Plugin } from 'vite';
+import { defineConfig, loadEnv, type ConfigEnv, type Plugin, type UserConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
 import { reactRouter } from '@react-router/dev/vite';
 import svgr from 'vite-plugin-svgr';
@@ -340,7 +340,15 @@ const paraglideBaseLocale = (
     }
 ).baseLocale;
 
-export default defineConfig(async ({ mode, command, isPreview }) => {
+/**
+ * The app's Vite config. `frameworkMode` adds React Router's framework plugins, which own the
+ * document and the build; without it the React plugin alone compiles the source, for plain Vite
+ * pages such as the visual-regression fixtures (tests/visual/vite.config.mts).
+ */
+export const learnCardViteConfig = async (
+    { mode, command }: ConfigEnv,
+    { frameworkMode }: { frameworkMode: boolean }
+): Promise<UserConfig> => {
     const loadedEnvironment = loadEnv(mode, __dirname, '');
     const environment = parseLearnCardAppEnvironment(
         { ...loadedEnvironment, ...process.env, MODE: mode },
@@ -373,11 +381,6 @@ export default defineConfig(async ({ mode, command, isPreview }) => {
     // docker-builds leave it off so consumers get the optimized prebuilt workspace dist.
     const useSourceConditions = useDockerSourceMode || command === 'serve';
 
-    // React Router framework mode builds and serves the app (react-router.config.ts). `vite
-    // preview` serves the finished static build/ directly, except for the preview server React
-    // Router starts itself to prerender, which needs the plugin.
-    const frameworkMode = !isPreview || process.env.IS_RR_BUILD_REQUEST === 'yes';
-
     return {
         plugins: [
             devCacheRevalidation,
@@ -387,10 +390,11 @@ export default defineConfig(async ({ mode, command, isPreview }) => {
             tailwindcss(),
             registryProxyDevServer(),
             i18nImportGuard(),
-            chunkPrefetchList(),
-            reactRouterEntryCssOrder(),
             paraglideBarrelWithoutSideEffects(),
-            ...(frameworkMode ? reactRouter() : [react()]),
+            // The prefetch list and stylesheet order are for the documents React Router writes.
+            ...(frameworkMode
+                ? [chunkPrefetchList(), reactRouterEntryCssOrder(), ...reactRouter()]
+                : [react()]),
             svgr(),
             tsconfigPaths({ root: '../../' }),
             paraglideVitePlugin({
@@ -550,4 +554,13 @@ export default defineConfig(async ({ mode, command, isPreview }) => {
             },
         },
     };
-});
+};
+
+// React Router framework mode builds and serves the app (react-router.config.ts). `vite preview`
+// serves the finished static build/ directly, except for the preview server React Router starts
+// itself to prerender, which needs the plugin.
+export default defineConfig(environment =>
+    learnCardViteConfig(environment, {
+        frameworkMode: !environment.isPreview || process.env.IS_RR_BUILD_REQUEST === 'yes',
+    })
+);
