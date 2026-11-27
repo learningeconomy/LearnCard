@@ -1,6 +1,6 @@
 import React from 'react';
 import { UserProfilePicture } from '../profilePicture/ProfilePicture';
-import { IonSpinner } from '@ionic/react';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
 
 type BoostRecipientsProps = {
     recipients: any[];
@@ -32,7 +32,7 @@ const BoostRecipients: React.FC<BoostRecipientsProps> = ({
 
     return (
         <section className={`boost-recipients-container flex ${customContainerClass}`}>
-            {recipientsLoading && <IonSpinner />}
+            {recipientsLoading && <AppSpinner />}
             {recipients?.slice(0, 3)?.map((recipient, index) => {
                 const _recipient = recipient.hasOwnProperty('to') ? recipient?.to : recipient;
 

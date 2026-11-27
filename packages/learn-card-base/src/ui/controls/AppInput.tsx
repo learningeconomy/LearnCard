@@ -91,6 +91,10 @@ export type AppInputProps = {
     style?: React.CSSProperties | AppInputStyle;
     /** Moved onto the native input, as ion-input's `inheritAriaAttributes` did. */
     'aria-label'?: string;
+    /** Moved onto the native element and wins over the helper / error id, as ion-input's inherited ARIA did. */
+    'aria-describedby'?: string;
+    /** Moved onto the native element and wins over the error state, as ion-input's inherited ARIA did. */
+    'aria-invalid'?: React.AriaAttributes['aria-invalid'];
     /** Moved onto the native input, as ion-input's `inheritAttributes` did. */
     title?: string;
     'data-testid'?: string;
@@ -178,6 +182,8 @@ export const AppInput: React.FC<AppInputProps> = props => {
         className,
         style,
         'aria-label': ariaLabel,
+        'aria-describedby': ariaDescribedBy,
+        'aria-invalid': ariaInvalid,
         title,
         'data-testid': testId,
         end,
@@ -356,9 +362,9 @@ export const AppInput: React.FC<AppInputProps> = props => {
                         enterKeyHint={enterkeyhint}
                         inputMode={inputmode}
                         aria-label={ariaLabel}
-                        aria-describedby={hintTextId}
+                        aria-describedby={ariaDescribedBy ?? hintTextId}
                         // Ionic rendered `aria-invalid=""` (read as false); the error state is now exposed.
-                        aria-invalid={isInvalid || undefined}
+                        aria-invalid={ariaInvalid ?? (isInvalid || undefined)}
                         title={title}
                         onChange={handleChange}
                         onFocus={handleFocus}

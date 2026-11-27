@@ -46,6 +46,10 @@ export type AppPopoverProps = {
     onDidPresent?: () => void;
     onWillDismiss?: (event: OverlayDismissEvent) => void;
     onDidDismiss?: (event: OverlayDismissEvent) => void;
+    /** Host handlers, as on ion-popover (React events still bubble to the popover's React parents). */
+    onClick?: React.MouseEventHandler<HTMLDivElement>;
+    onPointerDown?: React.PointerEventHandler<HTMLDivElement>;
+    onTouchStart?: React.TouchEventHandler<HTMLDivElement>;
     children?: React.ReactNode;
 };
 
@@ -270,6 +274,9 @@ export const AppPopover: React.FC<AppPopoverProps> = ({
     onDidPresent,
     onWillDismiss,
     onDidDismiss,
+    onClick,
+    onPointerDown,
+    onTouchStart,
     children,
 }) => {
     const mode = modeProp ?? getIonMode();
@@ -316,16 +323,16 @@ export const AppPopover: React.FC<AppPopoverProps> = ({
             return undefined;
         }
         triggerEl.current = el;
-        const onClick = (ev: MouseEvent) => {
+        const onTriggerClick = (ev: MouseEvent) => {
             presentOptions.current = { event: ev };
             void present().then(() => {
                 presentOptions.current = null;
             });
         };
-        el.addEventListener('click', onClick);
+        el.addEventListener('click', onTriggerClick);
         el.setAttribute('data-app-popover-trigger', 'true');
         return () => {
-            el.removeEventListener('click', onClick);
+            el.removeEventListener('click', onTriggerClick);
             el.removeAttribute('data-app-popover-trigger');
             if (triggerEl.current === el) triggerEl.current = null;
         };
@@ -361,6 +368,9 @@ export const AppPopover: React.FC<AppPopoverProps> = ({
             aria-modal="true"
             tabIndex={-1}
             style={{ ...style, zIndex: 20000 + overlayIndex }}
+            onClick={onClick}
+            onPointerDown={onPointerDown}
+            onTouchStart={onTouchStart}
         >
             {/* ion-backdrop: a click (capture) is swallowed and, when tappable, dismisses. */}
             {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- Escape is the keyboard dismiss (overlayStack); the backdrop is aria-hidden like ion-backdrop */}

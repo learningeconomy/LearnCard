@@ -3,11 +3,13 @@ import { useLocation, useHistory } from 'react-router-dom';
 
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
 
-import { IonRow, IonCol, IonSegment, IonSegmentButton, IonLabel } from '@ionic/react';
 import ListItemsIcon from 'learn-card-base/svgs/ListItemsIcon';
 import GridIcon from 'learn-card-base/svgs/GridIcon';
 import Search from 'learn-card-base/svgs/Search';
 import X from 'learn-card-base/svgs/X';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
+import { AppLabel } from 'learn-card-base/ui/list';
+import { AppSegment, AppSegmentButton } from 'learn-card-base/ui/widgets';
 
 export enum CredentialListTabEnum {
     Earned = 'earned',
@@ -97,10 +99,10 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
     if (showEarnedAndManaged !== undefined) showEarnedManaged = showEarnedAndManaged; // override the show earned and managed behavior
 
     return (
-        <IonRow
+        <AppRow
             className={`relative pt-[5px] px-[5px] flex gap-[10px] w-full items-center justify-center max-w-[700px] mx-auto ${containerClassName}`}
         >
-            <IonCol className="flex items-center justify-center w-fit p-0 shrink">
+            <AppCol className="flex items-center justify-center w-fit p-0 shrink">
                 {!hideSearch && (
                     <div
                         className={`flex shrink-0 min-h-[40px] mr-[3px]  ${
@@ -154,9 +156,9 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                     </div>
                 )}
                 {showEarnedManaged && (
-                    <IonSegment
-                        onIonChange={e => {
-                            const value = e.detail.value as CredentialListTabEnum;
+                    <AppSegment
+                        onValueChange={nextValue => {
+                            const value = nextValue as CredentialListTabEnum;
                             if (Object.values(CredentialListTabEnum).includes(value)) {
                                 handleOnChange(value);
                             }
@@ -168,12 +170,11 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                             !showManaged ? 'max-w-[150px]' : ''
                         } ${className} bg-white/25 `}
                     >
-                        <IonSegmentButton
-                            mode="ios"
+                        <AppSegmentButton
                             value={CredentialListTabEnum.Earned}
                             className="py-[12px] flex-1 rounded-full h-fit"
                         >
-                            <IonLabel
+                            <AppLabel
                                 className={`font-[700] text-center font-poppins text-[14px] h-[17px] flex items-center ${
                                     activeTab === CredentialListTabEnum.Earned
                                         ? activeLabelClassName
@@ -181,15 +182,14 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                                 }`}
                             >
                                 {earnedLabel}
-                            </IonLabel>
-                        </IonSegmentButton>
+                            </AppLabel>
+                        </AppSegmentButton>
                         {showManaged && (
-                            <IonSegmentButton
-                                mode="ios"
+                            <AppSegmentButton
                                 value={CredentialListTabEnum.Managed}
                                 className="py-[12px] flex-1 h-fit rounded-full"
                             >
-                                <IonLabel
+                                <AppLabel
                                     className={`font-[700] text-center font-poppins text-[14px] h-[17px] flex items-center ${
                                         activeTab === CredentialListTabEnum.Managed
                                             ? activeLabelClassName
@@ -197,10 +197,10 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                                     }`}
                                 >
                                     {managedLabel}
-                                </IonLabel>
-                            </IonSegmentButton>
+                                </AppLabel>
+                            </AppSegmentButton>
                         )}
-                    </IonSegment>
+                    </AppSegment>
                 )}
                 {showListViewToggle && setViewMode && (
                     <div
@@ -248,8 +248,8 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                         </button>
                     </div>
                 )}
-            </IonCol>
-        </IonRow>
+            </AppCol>
+        </AppRow>
     );
 };
 

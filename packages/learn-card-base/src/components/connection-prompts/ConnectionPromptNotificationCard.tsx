@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { IonIcon } from '@ionic/react';
 import type {
     LCNConnectionPromptActionResult,
     LCNConnectionPromptActionStatus,
@@ -17,6 +16,7 @@ import {
 import { useUpdateNotification } from '../../react-query/mutations/notifications';
 import { UserProfilePicture } from '../profilePicture/ProfilePicture';
 import type { ConnectionPromptCopy } from './ConnectionPromptModal';
+import { AppIcon } from 'learn-card-base/ui/icon';
 
 const log = getLogger('connection-prompt-notification-card');
 
@@ -187,7 +187,7 @@ export const ConnectionPromptNotificationCard: React.FC<ConnectionPromptNotifica
                         role="alert"
                         className="mt-3 w-full p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5 text-start"
                     >
-                        <IonIcon
+                        <AppIcon
                             icon={alertCircleOutline}
                             className="text-red-400 text-lg mt-0.5 shrink-0"
                         />

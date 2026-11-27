@@ -114,6 +114,28 @@ describe('AppTextarea', () => {
         expect(textarea().value).toBe('abc');
     });
 
+    it('trails onValueInput by `debounce` ms with the last value, as ion-textarea did', () => {
+        vi.useFakeTimers();
+        try {
+            const onValueInput = vi.fn();
+            render(<AppTextarea debounce={300} onValueInput={onValueInput} />);
+            fireEvent.change(textarea(), { target: { value: 'a' } });
+            fireEvent.change(textarea(), { target: { value: 'ab' } });
+            expect(onValueInput).not.toHaveBeenCalled();
+            vi.advanceTimersByTime(300);
+            expect(onValueInput).toHaveBeenCalledTimes(1);
+            expect(onValueInput.mock.calls[0][0]).toBe('ab');
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('lets aria-describedby and aria-invalid from the caller reach the textarea', () => {
+        render(<AppTextarea aria-label="Bio" aria-describedby="bio-error" aria-invalid />);
+        expect(textarea()).toHaveAttribute('aria-describedby', 'bio-error');
+        expect(textarea()).toHaveAttribute('aria-invalid', 'true');
+    });
+
     it('fires onValueChange on blur only when the value differs from the value at focus', () => {
         const calls: string[] = [];
         render(

@@ -43,6 +43,10 @@ export type AppTextareaProps = {
     style?: AppTextareaStyle;
     /** Moved onto the native textarea, as ion-textarea's `inheritAriaAttributes` did. */
     'aria-label'?: string;
+    /** Moved onto the native element and wins over the helper / error id, as ion-textarea's inherited ARIA did. */
+    'aria-describedby'?: string;
+    /** Moved onto the native element and wins over the error state, as ion-textarea's inherited ARIA did. */
+    'aria-invalid'?: React.AriaAttributes['aria-invalid'];
     /** Moved onto the native textarea, as ion-textarea's `inheritAttributes` did. */
     title?: string;
     'data-testid'?: string;
@@ -51,6 +55,8 @@ export type AppTextareaProps = {
      * `<label>` (so it is part of the label text, and the label is its containing block).
      */
     end?: React.ReactNode;
+    /** Delay, in ms, before `onValueInput` fires; trailing, like ion-textarea's `debounce`. */
+    debounce?: number;
     /** Every user edit, like `ionInput` (`detail.value`, `detail.event`). Never fired for `value` prop updates. */
     onValueInput?: (value: string, event: React.ChangeEvent<HTMLTextAreaElement>) => void;
     /** On blur, when the value differs from the value at focus, like `ionChange`. */
@@ -96,9 +102,12 @@ export const AppTextarea: React.FC<AppTextareaProps> = props => {
         className,
         style,
         'aria-label': ariaLabel,
+        'aria-describedby': ariaDescribedBy,
+        'aria-invalid': ariaInvalid,
         title,
         'data-testid': testId,
         end,
+        debounce,
         onValueInput,
         onValueChange,
         onFocus,
@@ -114,10 +123,19 @@ export const AppTextarea: React.FC<AppTextareaProps> = props => {
     // discrete event, so by the time blur runs this render's `value` is the current one.
     const focusedValueRef = useRef<string | undefined>(undefined);
 
+    const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
     const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>): void => {
         const next = event.target.value || '';
         setValue(next);
-        onValueInput?.(next, event);
+        if (!onValueInput) return;
+        // ion-textarea's `debounceEvent` wrapper around `ionInput`.
+        if (debounce === undefined) {
+            onValueInput(next, event);
+            return;
+        }
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = setTimeout(() => onValueInput(next, event), debounce);
     };
 
     const handleFocus = (event: React.FocusEvent<HTMLTextAreaElement>): void => {
@@ -178,6 +196,8 @@ export const AppTextarea: React.FC<AppTextareaProps> = props => {
                             enterKeyHint={enterkeyhint}
                             inputMode={inputmode}
                             aria-label={ariaLabel}
+                            aria-describedby={ariaDescribedBy}
+                            aria-invalid={ariaInvalid}
                             title={title}
                             onChange={handleChange}
                             onFocus={handleFocus}

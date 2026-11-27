@@ -208,6 +208,21 @@ describe('AppPopover', () => {
         await waitFor(() => expect(screen.queryByText('Sort options')).toBeNull());
     });
 
+    it('runs host handlers before clicks bubble to its React parents', async () => {
+        const parentClick = vi.fn();
+        const stop = (e: React.SyntheticEvent) => e.stopPropagation();
+        render(
+            // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- test parent that records bubbled clicks
+            <div onClick={parentClick}>
+                <AppPopover isOpen onClick={stop}>
+                    <button type="button">Inside</button>
+                </AppPopover>
+            </div>
+        );
+        fireEvent.click(await screen.findByRole('button', { name: 'Inside' }));
+        expect(parentClick).not.toHaveBeenCalled();
+    });
+
     it('uses the ios look and center alignment in ios mode', async () => {
         document.documentElement.setAttribute('mode', 'ios');
         render(

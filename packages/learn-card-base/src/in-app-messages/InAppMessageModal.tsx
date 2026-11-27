@@ -1,11 +1,11 @@
 import React from 'react';
-import { IonIcon } from '@ionic/react';
 import { closeOutline } from 'learn-card-base/icons/ionicons';
 import { motion, useReducedMotion, Variants } from 'framer-motion';
 import { MessageMedia } from './MessageMedia';
 import { MessageActions } from './MessageActions';
 import { useT } from '../i18n';
 import type { MessagePresentationProps } from './presentationTypes';
+import { AppIcon } from 'learn-card-base/ui/icon';
 
 export type InAppMessageModalProps = MessagePresentationProps;
 
@@ -69,7 +69,7 @@ export const InAppMessageModal: React.FC<InAppMessageModalProps> = ({
                         className="absolute top-4 right-4 p-2 bg-white/60 backdrop-blur-sm border border-white/60 text-grayscale-400 hover:text-grayscale-900 transition-colors rounded-full hover:bg-white/80 z-10"
                         aria-label={t('common.close')}
                     >
-                        <IonIcon icon={closeOutline} className="text-xl block" />
+                        <AppIcon icon={closeOutline} className="text-xl block" />
                     </button>
                 )}
 

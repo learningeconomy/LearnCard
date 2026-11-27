@@ -1,10 +1,10 @@
 import { useMutation } from '@tanstack/react-query';
 import type { ContactMethodType } from '@learncard/types';
 import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
-import { useIonAlert } from '@ionic/react';
 import { getCurrentUserPrivateKey } from 'learn-card-base/helpers/privateKeyHelpers';
 
 import { getLogger } from '../../logging/logger';
+import { useAppAlert } from 'learn-card-base/ui/overlays';
 const log = getLogger('firebase');
 
 export const useSendLoginVerificationCode = (opts?: { showAlert?: boolean }) => {
@@ -12,7 +12,7 @@ export const useSendLoginVerificationCode = (opts?: { showAlert?: boolean }) => 
     const showAlert = opts?.showAlert ?? true;
 
     const { presentToast } = useToast();
-    const [presentAlert] = useIonAlert();
+    const [presentAlert] = useAppAlert();
 
     return useMutation<
         { success: boolean; message?: string },
@@ -67,7 +67,7 @@ export const useDeleteMyClassLinkData = () => {
 
 export const useVerifyContactMethodWithProofOfLogin = () => {
     const { initWallet } = useWallet();
-    const [presentAlert] = useIonAlert();
+    const [presentAlert] = useAppAlert();
     const { mutateAsync: getProofOfLoginVp } = useGetProofOfLoginVp();
 
     return useMutation<
@@ -111,7 +111,7 @@ export const useVerifyContactMethodWithProofOfLogin = () => {
 
 export const useGetProofOfLoginVp = (opts?: { showAlert?: boolean }) => {
     const { initWallet } = useWallet();
-    const [presentAlert] = useIonAlert();
+    const [presentAlert] = useAppAlert();
     const showAlert = opts?.showAlert ?? false;
 
     return useMutation<{ success: boolean; vp?: string; error?: string }, Error, { token: string }>(
@@ -158,7 +158,7 @@ export const useGetProofOfLoginVp = (opts?: { showAlert?: boolean }) => {
 
 export const useVerifyLoginVerificationCode = (opts?: { showAlert?: boolean }) => {
     const { initWallet } = useWallet();
-    const [presentAlert] = useIonAlert();
+    const [presentAlert] = useAppAlert();
     const showAlert = opts?.showAlert ?? true;
 
     return useMutation<
@@ -200,7 +200,7 @@ export const useVerifyLoginVerificationCode = (opts?: { showAlert?: boolean }) =
 
 export const useVerifyNetworkHandoffToken = () => {
     const { initWallet } = useWallet();
-    const [presentAlert] = useIonAlert();
+    const [presentAlert] = useAppAlert();
 
     return useMutation<
         {

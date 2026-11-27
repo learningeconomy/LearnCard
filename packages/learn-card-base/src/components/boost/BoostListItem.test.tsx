@@ -6,11 +6,6 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { VC } from '@learncard/types';
 
-vi.mock('@ionic/react', () => ({
-    IonRow: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-        <div {...props}>{children}</div>
-    ),
-}));
 vi.mock('@learncard/react', () => ({
     isDid: () => false,
     formatDidDisplayName: (did: string) => did,

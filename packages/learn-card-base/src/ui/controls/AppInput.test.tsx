@@ -268,4 +268,18 @@ describe('AppInput', () => {
             screen.getByRole('button', { name: 'pick' }).closest('.app-input-native-wrapper')
         ).not.toBeNull();
     });
+
+    it('lets aria-describedby and aria-invalid from the caller win, as ion-input inherited ARIA did', () => {
+        render(
+            <AppInput
+                aria-label="Email"
+                aria-describedby="email-error"
+                aria-invalid
+                helperText="We never share it"
+            />
+        );
+        const input = screen.getByRole('textbox', { name: 'Email' });
+        expect(input).toHaveAttribute('aria-describedby', 'email-error');
+        expect(input).toHaveAttribute('aria-invalid', 'true');
+    });
 });

@@ -1,6 +1,7 @@
 import React from 'react';
-import { IonCol, IonContent, IonGrid, IonHeader, IonPage, IonRow } from '@ionic/react';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+import { AppContent, AppHeader, AppPage } from 'learn-card-base/ui/chrome';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 
 export const ClaimBoostLoggedOutPrompt: React.FC<{
     handleCloseModal: () => void;
@@ -9,20 +10,20 @@ export const ClaimBoostLoggedOutPrompt: React.FC<{
     const brandingConfig = useBrandingConfig();
 
     return (
-        <IonPage>
-            <IonHeader className="ion-no-border ion-no-padding bg-white">
-                <IonRow className="flex flex-col pt-[50px]">
-                    <IonCol className="w-full flex items-center justify-center">
+        <AppPage>
+            <AppHeader className="ion-no-border ion-no-padding bg-white">
+                <AppRow className="flex flex-col pt-[50px]">
+                    <AppCol className="w-full flex items-center justify-center">
                         <h6 className="tracking-[12px] text-base font-bold text-black">
                             {brandingConfig?.name}
                         </h6>
-                    </IonCol>
-                </IonRow>
-            </IonHeader>
-            <IonContent>
-                <IonGrid className="relative flex flex-col items-center justify-center h-full w-full">
-                    <IonRow className="flex flex-col items-center justify-center">
-                        <IonCol className="w-full flex flex-col items-center justify-center">
+                    </AppCol>
+                </AppRow>
+            </AppHeader>
+            <AppContent>
+                <AppGrid className="relative flex flex-col items-center justify-center h-full w-full">
+                    <AppRow className="flex flex-col items-center justify-center">
+                        <AppCol className="w-full flex flex-col items-center justify-center">
                             <h6 className="font-semi-bold text-grayscale-900 font-mouse font-medium text-xl mb-[25px]">
                                 One more step!
                             </h6>
@@ -47,11 +48,11 @@ export const ClaimBoostLoggedOutPrompt: React.FC<{
                             >
                                 Close
                             </button>
-                        </IonCol>
-                    </IonRow>
-                </IonGrid>
-            </IonContent>
-        </IonPage>
+                        </AppCol>
+                    </AppRow>
+                </AppGrid>
+            </AppContent>
+        </AppPage>
     );
 };
 

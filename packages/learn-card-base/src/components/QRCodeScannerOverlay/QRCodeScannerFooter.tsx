@@ -1,8 +1,8 @@
 import React from 'react';
-import { IonIcon } from '@ionic/react';
 import { closeOutline } from 'learn-card-base/icons/ionicons';
 
 import QRCodeScannerStore from 'learn-card-base/stores/QRCodeScannerStore';
+import { AppIcon } from 'learn-card-base/ui/icon';
 
 export interface QRCodeScannerCloseButtonProps {
     ariaLabel?: string;
@@ -20,7 +20,7 @@ export const QRCodeScannerCloseButton: React.FC<QRCodeScannerCloseButtonProps> =
             onClick={() => QRCodeScannerStore.set.closeScanner()}
             aria-label={ariaLabel}
         >
-            <IonIcon icon={closeOutline} className="text-2xl" aria-hidden="true" />
+            <AppIcon icon={closeOutline} className="text-2xl" aria-hidden="true" />
         </button>
     );
 };

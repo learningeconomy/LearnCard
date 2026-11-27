@@ -2,7 +2,7 @@ import React from 'react';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { AppCard, AppCardContent } from './AppCard';
+import { AppCard, AppCardContent, AppCardHeader, AppCardSubtitle, AppCardTitle } from './AppCard';
 import { AppRippleEffect } from './AppRippleEffect';
 import { AppText } from './AppText';
 import { AppAvatar, AppThumbnail } from './AppThumbnail';
@@ -110,5 +110,22 @@ describe('AppCard and AppCardContent', () => {
             'app-card-content app-card-content-md'
         );
         expect(screen.getByText('Body')).toBeTruthy();
+    });
+
+    it('expose the header title and subtitle as headings, as ion-card-title / -subtitle did', () => {
+        render(
+            <AppCard>
+                <AppCardHeader data-testid="header">
+                    <AppCardTitle>Signed in</AppCardTitle>
+                    <AppCardSubtitle>DID Auth</AppCardSubtitle>
+                </AppCardHeader>
+            </AppCard>
+        );
+
+        expect(screen.getByTestId('header').className).toBe('app-card-header app-card-header-md');
+        expect(screen.getByRole('heading', { level: 2, name: 'Signed in' }).className).toBe(
+            'app-card-title app-card-title-md'
+        );
+        expect(screen.getByRole('heading', { level: 3, name: 'DID Auth' })).toBeTruthy();
     });
 });

@@ -53,4 +53,38 @@ export const AppCardContent: React.FC<AppCardContentProps> = ({
     );
 };
 
+type AppCardPartProps = React.HTMLAttributes<HTMLDivElement> & {
+    /** Platform look. Defaults to the document's Ionic mode (`ios` on iOS, `md` elsewhere). */
+    mode?: IonMode;
+    ref?: React.Ref<HTMLDivElement>;
+};
+
+const partClassName = (part: string, mode: IonMode, className?: string): string =>
+    [`app-card-${part}`, `app-card-${part}-${mode}`, className].filter(Boolean).join(' ');
+
+/** App-owned replacement for `IonCardHeader`: a padded column for a card title and subtitle. */
+export const AppCardHeader: React.FC<AppCardPartProps> = ({ mode, className, ...rest }) => (
+    <div className={partClassName('header', mode ?? getIonMode(), className)} {...rest} />
+);
+
+/** App-owned replacement for `IonCardTitle`: a level-2 heading, as ion-card-title is. */
+export const AppCardTitle: React.FC<AppCardPartProps> = ({ mode, className, ...rest }) => (
+    <div
+        role="heading"
+        aria-level={2}
+        className={partClassName('title', mode ?? getIonMode(), className)}
+        {...rest}
+    />
+);
+
+/** App-owned replacement for `IonCardSubtitle`: a level-3 heading, as ion-card-subtitle is. */
+export const AppCardSubtitle: React.FC<AppCardPartProps> = ({ mode, className, ...rest }) => (
+    <div
+        role="heading"
+        aria-level={3}
+        className={partClassName('subtitle', mode ?? getIonMode(), className)}
+        {...rest}
+    />
+);
+
 export default AppCard;

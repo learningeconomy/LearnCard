@@ -1,5 +1,5 @@
 import React from 'react';
-import { IonTextarea } from '@ionic/react';
+import { AppTextarea } from 'learn-card-base/ui/controls/AppTextarea';
 
 type TextAreaProps = {
     value: string | null | undefined;
@@ -64,7 +64,7 @@ const TextArea: React.FC<TextAreaProps> = ({
             <div
                 className={`relative flex items-center rounded-[10px] bg-grayscale-100 focus-within:ring-2 focus-within:ring-emerald-500 ${className}`}
             >
-                <IonTextarea
+                <AppTextarea
                     id={inputId}
                     aria-label={ariaLabel ?? label ?? placeholder}
                     aria-invalid={error ? true : undefined}
@@ -77,9 +77,9 @@ const TextArea: React.FC<TextAreaProps> = ({
                     rows={rows}
                     autoGrow={autoGrow}
                     autocapitalize={autocapitalize}
-                    onIonInput={e => onChange(e.detail.value)}
-                    onIonFocus={onFocus}
-                    onIonBlur={onBlur}
+                    onValueInput={value => onChange(value)}
+                    onFocus={onFocus}
+                    onBlur={onBlur}
                     className={`text-grayscale-900 font-poppins text-[14px] leading-[130%] w-full px-[15px]! ${inputClassName}`}
                 />
             </div>

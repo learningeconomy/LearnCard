@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
 
-import { IonPopover } from '@ionic/react';
 import BecomeTrustedIssuerForm from './LazyBecomeTrustedIssuerForm';
 
 import useModal from '../modals/useModal';
 
 import { ModalTypes } from '../modals/types/Modals';
 import { VERIFIER_STATES, VerifierState } from './credentialVerificationTypes';
+import { AppPopover } from 'learn-card-base/ui/overlays';
 
 type CredentialIssuerPopoverProps = {
     enabled: boolean;
@@ -183,7 +183,6 @@ const CredentialIssuerPopover: React.FC<CredentialIssuerPopoverProps> = ({
     const popoverTriggerProps = triggerId
         ? {
               trigger: triggerId,
-              triggerAction: 'click' as const,
               reference: 'trigger' as const,
           }
         : {
@@ -194,7 +193,7 @@ const CredentialIssuerPopover: React.FC<CredentialIssuerPopoverProps> = ({
           };
 
     return (
-        <IonPopover
+        <AppPopover
             {...popoverTriggerProps}
             side="bottom"
             alignment="center"
@@ -224,7 +223,7 @@ const CredentialIssuerPopover: React.FC<CredentialIssuerPopoverProps> = ({
                     </button>
                 </div>
             </div>
-        </IonPopover>
+        </AppPopover>
     );
 };
 

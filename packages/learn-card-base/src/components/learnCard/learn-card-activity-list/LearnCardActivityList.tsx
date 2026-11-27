@@ -1,7 +1,5 @@
 import React from 'react';
 
-import { IonItem, IonList, IonRow, IonCol } from '@ionic/react';
-
 import RightArrow from 'learn-card-base/svgs/RightArrow';
 
 import {
@@ -9,6 +7,8 @@ import {
     ActivityTransactionStatusEnum,
     LearnCardActivityTransaction,
 } from 'learn-card-base';
+import { AppCol, AppRow } from 'learn-card-base/ui/layout';
+import { AppItem, AppList } from 'learn-card-base/ui/list';
 
 export const LearnCardActivityItem: React.FC<LearnCardActivityTransaction> = ({
     issuerName,
@@ -39,7 +39,7 @@ export const LearnCardActivityItem: React.FC<LearnCardActivityTransaction> = ({
     }
 
     return (
-        <IonItem lines="none" className="w-full">
+        <AppItem lines="none" className="w-full">
             <div className="w-full flex py-5 border-b-gray-100 border-b-2">
                 <div className="flex items-center justify-start w-[60%]">
                     <div className="rounded-full bg-grayscale-900 mr-2 overflow-hidden h-[30px] w-[30px] flex items-center justify-center">
@@ -63,14 +63,14 @@ export const LearnCardActivityItem: React.FC<LearnCardActivityTransaction> = ({
                     {transactionAmount} <RightArrow className="h-7 text-grayscale-600" />{' '}
                 </div>
             </div>
-        </IonItem>
+        </AppItem>
     );
 };
 
-export const LearnCardActivityList = React.forwardRef<HTMLIonRowElement>((_props, ref) => (
-    <IonRow className="flex items-center justify-center w-full" ref={ref}>
-        <IonCol className="w-full flex items-center justify-center overflow-hidden max-w-[600px]">
-            <IonList className="w-[90%] rounded-[20px] border-solid border-2 border-cyan-700 ">
+export const LearnCardActivityList = React.forwardRef<HTMLDivElement>((_props, ref) => (
+    <AppRow className="flex items-center justify-center w-full" ref={ref}>
+        <AppCol className="w-full flex items-center justify-center overflow-hidden max-w-[600px]">
+            <AppList className="w-[90%] rounded-[20px] border-solid border-2 border-cyan-700 ">
                 {MOCK_ACTIVITIES.map((activity, index) => (
                     <LearnCardActivityItem
                         key={index}
@@ -81,9 +81,10 @@ export const LearnCardActivityList = React.forwardRef<HTMLIonRowElement>((_props
                         amount={activity?.amount}
                     />
                 ))}
-            </IonList>
-        </IonCol>
-    </IonRow>
+            </AppList>
+        </AppCol>
+    </AppRow>
 ));
+LearnCardActivityList.displayName = 'LearnCardActivityList';
 
 export default LearnCardActivityList;

@@ -15,7 +15,7 @@ import * as m from '../../paraglide/messages.js';
 
 const LearnCardPage: React.FC = () => {
     const [isActivityHeaderFixed, setIsActivityHeaderFixed] = useState<boolean>(false);
-    const activityContainer = useRef<HTMLIonRowElement>(null);
+    const activityContainer = useRef<HTMLDivElement>(null);
 
     const activityHeader = (
         <IonRow className="w-full flex items-center justify-center">

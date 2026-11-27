@@ -1,11 +1,11 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { IonIcon } from '@ionic/react';
 import { closeOutline } from 'learn-card-base/icons/ionicons';
 import { useT } from '../i18n';
 import { useInAppMessageActions } from './useInAppMessageActions';
 import { parseIframeMessage } from './iframeBridge';
 import { canEmbedInAppMessageIframe } from './presentationSupport';
 import type { MessagePresentationProps } from './presentationTypes';
+import { AppIcon } from 'learn-card-base/ui/icon';
 
 const IframeAttempt: React.FC<MessagePresentationProps & { retry: () => void }> = ({
     message,
@@ -120,7 +120,7 @@ const IframeAttempt: React.FC<MessagePresentationProps & { retry: () => void }> 
                         className="p-2 rounded-[20px]"
                         onClick={() => onClose('dismissed')}
                     >
-                        <IonIcon icon={closeOutline} />
+                        <AppIcon icon={closeOutline} />
                     </button>
                 )}
             </header>

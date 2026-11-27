@@ -1048,9 +1048,6 @@
     "packages/learn-card-base/src/components/id/IdCardDetailsModal.tsx": {
         "d0695cdfd911595f4e2415c1d888f2682dbaf0d417a57f2b27f684fcb7af8c3b": 1
     },
-    "packages/learn-card-base/src/components/learnCard/learn-card-activity-list/LearnCardActivityList.tsx": {
-        "6072b7e744383dd6e9520c40acb86239c5c51c3a38463f4a929c0f9cb74c209a": 1
-    },
     "packages/learn-card-base/src/components/learnCard/learn-card/LearnCard.tsx": {
         "6e30980131fb74a082312e54681b7727177ef4dd475d5e23104cb1bcdb5cce9f": 1
     },
@@ -1144,8 +1141,8 @@
         "9411b8e59ce9e65a5d15e93737e5bd817193b6f770cd918d4f8d11e3c11351a6": 1
     },
     "packages/learn-card-base/src/components/sidemenu/SideMenu.tsx": {
-        "34d464bf096bcb50216018794d5fc3087de0c4b0e388697de22466aa44dda8e1": 1,
-        "356785529353f2ea8df2e588084a89b93ee2207510e5bfce8953d390734e0674": 1
+        "356785529353f2ea8df2e588084a89b93ee2207510e5bfce8953d390734e0674": 1,
+        "4dfb0370a35718e05d7cbfa03f6720ebcdf6cbff2b01a4f90ede0819d3ad28c4": 1
     },
     "packages/learn-card-base/src/components/sidemenu/sidemenuHelpers.ts": {
         "6bd1091e023d96d4a9e32459aceb6e19b12c5f0d6a878ac285727c2fd4259bf8": 1
@@ -1155,28 +1152,20 @@
         "a15f42013138cc4539fec7a689110dda34562d8e6210016a8a7c3cf2c563c195": 1
     },
     "packages/learn-card-base/src/components/vcmodal/VCDisplayCardWrapper.tsx": {
-        "003bc1faef7ab0186f163f5c745e654ae893f0a69db817981dce3f8e4973e334": 1,
         "15c65972b23255dce00261326d5b591e0b5c32e3150913790ce8c3e32c8c5c86": 1,
-        "24bbfc8098459419f09c42755f7e85f6229f86bd38fb0bd21e492abe77f1b4f8": 1,
-        "419218a273a72985b4f0ff3d174119187b81c23bfc14cbc0a286a2ae4c37d070": 1,
-        "606541f2129bd6f8779db6b6e7ffc15c5027e980bcb9f8aea6f9bba4b2998edd": 1,
         "78bc756dd0ed7bc79594a98bd1f5e01c414c0e2c3d6736cd6bfe4bc50bb815bd": 1,
-        "7e04fbc94560499dbbfca30c3bd9386c9011bae498b803cc461eae8d4100366b": 1,
-        "94fdc41ec39bea3e6f7d4ab43829e8e9f17da3c28791be174b4ef18f86182d4b": 1,
-        "95d9d7bb11d67b6b44c8ef0953dd9faf662a447acaef4220c294c849804d3296": 1,
-        "af684d5eff107684d614cd4d22692131020593a9dab49dcc8029cdd97960a804": 1,
-        "affd4a6e5d512a944f1efe1ec226f51ec5c544571c8b1a459dac01140d8988ee": 1,
-        "bf5ed7c87cdad3af2eeb63690a82854e3579ba9330d1cf356437074ffecac860": 1
+        "aae159f18f262dec3622e261ed4b572ecdf7d65049cda8e23e62f0c6c98aacb2": 1,
+        "af684d5eff107684d614cd4d22692131020593a9dab49dcc8029cdd97960a804": 1
     },
     "packages/learn-card-base/src/components/vcmodal/VCDisplayCardWrapper2.tsx": {
         "063137a75c216fee393ec0b866b678ddd491233f9142cb82ef269e787906d2d6": 1,
         "113f78f82cbb009ccbfeac2d014b586212c9013bae17670825570918c82fd4fb": 1
     },
     "packages/learn-card-base/src/components/vcmodal/VCModal.tsx": {
-        "1b1e6b0318552b96490e6d1484e40a261e457d2ef81c2ea844a22c252907b8bb": 1,
-        "6c5b21dbf68cf68fcfacba1c492975eea5f1d100afea314973b191478fbd94a2": 1,
+        "20cf720e447bfcb71827c1820074e13712ad9504612d855172c2c9f551a9bc63": 1,
+        "3e6eb99280e510c79adb6de2a2778bdf44cd98bfed775b5c8bea5f37e68efec3": 1,
         "6f34aaafa8132fbdf45168772f0b5108292b0e18fa71ab516f50639c5f8b56c7": 1,
-        "809904f5c02cef89d3b09320c698432c90a00a81c10b137b5f26143ee37c895f": 1
+        "70f14aab5ad8b97284486dee36ed4b32911db6f77d9d06ce5aa90575d0bc0f0d": 1
     },
     "packages/learn-card-base/src/components/vcmodal/hooks/useCredentialProfiles.ts": {
         "ee44bd4be4c34d8d9d98092b0db16c2628c246a9e1848c36708edcacb6453f2b": 1

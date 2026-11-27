@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { TrustedAppRegistryEntry, useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
-import { IonHeader, IonRow, IonCol, IonGrid, IonPage, IonToolbar } from '@ionic/react';
 import { getLogger } from '../../logging/logger';
+import { AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppCol, AppGrid, AppRow } from 'learn-card-base/ui/layout';
 const log = getLogger('trusted-app-request-modal');
 
 type TrustedAppRequestModalProps = {
@@ -50,20 +51,20 @@ export const TrustedAppRequestModal: React.FC<TrustedAppRequestModalProps> = ({
     };
 
     return (
-        <IonPage className="bg-white py-[30px]">
-            <IonHeader className="ion-no-border">
-                <IonToolbar color="#fffff">
-                    <IonRow className="flex flex-col pb-4">
-                        <IonCol className="w-full flex items-center justify-center">
+        <AppPage className="bg-white py-[30px]">
+            <AppHeader className="ion-no-border">
+                <AppToolbar color="#fffff">
+                    <AppRow className="flex flex-col pb-4">
+                        <AppCol className="w-full flex items-center justify-center">
                             <h6 className="tracking-[12px] text-base font-bold text-black">
                                 {brandingConfig?.name}
                             </h6>
-                        </IonCol>
-                    </IonRow>
-                </IonToolbar>
-            </IonHeader>
-            <IonGrid>
-                <IonRow className="flex items-center justify-center w-full">
+                        </AppCol>
+                    </AppRow>
+                </AppToolbar>
+            </AppHeader>
+            <AppGrid>
+                <AppRow className="flex items-center justify-center w-full">
                     <div className="flex flex-col items-center justify-center">
                         <div className="rounded-lg shadow-3xl overflow-hidden w-[60px] h-[60px] mr-3 min-w-[60px] min-h-[60px]">
                             <img
@@ -79,9 +80,9 @@ export const TrustedAppRequestModal: React.FC<TrustedAppRequestModalProps> = ({
                             </h1>
                         </div>
                     </div>
-                </IonRow>
-                <IonRow className="flex items-center justify-center w-full">
-                    <IonCol className="text-center">
+                </AppRow>
+                <AppRow className="flex items-center justify-center w-full">
+                    <AppCol className="text-center">
                         <p className="text-center text-sm font-semibold px-[16px] text-grayscale-800">
                             An application is requesting access to credentials stored in your
                             {brandingConfig?.name}.
@@ -103,10 +104,10 @@ export const TrustedAppRequestModal: React.FC<TrustedAppRequestModalProps> = ({
                             >
                                 Edit Access
                             </button> */}
-                    </IonCol>
-                </IonRow>
-                <IonRow className="w-full flex items-center justify-center mt-6">
-                    <IonCol className="flex items-center flex-col max-w-[90%] border-b border-grayscale-200">
+                    </AppCol>
+                </AppRow>
+                <AppRow className="w-full flex items-center justify-center mt-6">
+                    <AppCol className="flex items-center flex-col max-w-[90%] border-b border-grayscale-200">
                         <button
                             type="submit"
                             onClick={handleApproveConnection}
@@ -126,20 +127,20 @@ export const TrustedAppRequestModal: React.FC<TrustedAppRequestModalProps> = ({
                                 Don't Accept
                             </button>
                         </div>
-                    </IonCol>
-                </IonRow>
-                <IonRow className="flex items-center justify-center mt-4">
-                    <IonCol className="flex flex-col items-center justify-center text-center">
+                    </AppCol>
+                </AppRow>
+                <AppRow className="flex items-center justify-center mt-4">
+                    <AppCol className="flex flex-col items-center justify-center text-center">
                         <p className="text-center text-sm font-normal px-16 text-grayscale-600">
                             You own your own data.
                             <br />
                             All connections are encrypted.
                         </p>
                         <button className="text-indigo-500 font-bold">Learn More</button>
-                    </IonCol>
-                </IonRow>
-                <IonRow className="flex items-center justify-center">
-                    <IonCol className="flex items-center justify-center">
+                    </AppCol>
+                </AppRow>
+                <AppRow className="flex items-center justify-center">
+                    <AppCol className="flex items-center justify-center">
                         <button className="text-indigo-500 font-bold text-sm">
                             Privacy Policy
                         </button>
@@ -147,10 +148,10 @@ export const TrustedAppRequestModal: React.FC<TrustedAppRequestModalProps> = ({
                         <button className="text-indigo-500 font-bold text-sm">
                             Terms of Service
                         </button>
-                    </IonCol>
-                </IonRow>
-            </IonGrid>
-        </IonPage>
+                    </AppCol>
+                </AppRow>
+            </AppGrid>
+        </AppPage>
     );
 };
 

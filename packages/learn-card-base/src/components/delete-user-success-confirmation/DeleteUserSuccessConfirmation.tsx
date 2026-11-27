@@ -4,7 +4,7 @@ import Checkmark from 'learn-card-base/svgs/Checkmark';
 
 import { BrandingEnum } from '../headerBranding/headerBrandingHelpers';
 import type { TenantBrandingConfig } from '../../config/tenantConfig';
-import { IonHeader, IonToolbar } from '@ionic/react';
+import { AppHeader, AppToolbar } from 'learn-card-base/ui/chrome';
 
 type DeleteUserSuccessConfirmationProps = {
     branding: BrandingEnum;
@@ -34,8 +34,8 @@ export const DeleteUserSuccessConfirmation: React.FC<DeleteUserSuccessConfirmati
     }
 
     return (
-        <IonHeader>
-            <IonToolbar color={statusBarColor}>
+        <AppHeader>
+            <AppToolbar color={statusBarColor}>
                 <div className={`w-full ${brandingContainerStyles}`}>
                     <div className="flex flex-col items-center justify-center text-center w-full p-2">
                         <Checkmark className="h-[36px] w-[36px]" />
@@ -45,8 +45,8 @@ export const DeleteUserSuccessConfirmation: React.FC<DeleteUserSuccessConfirmati
                         </p>
                     </div>
                 </div>
-            </IonToolbar>
-        </IonHeader>
+            </AppToolbar>
+        </AppHeader>
     );
 };
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { IonInput } from '@ionic/react';
+import { AppInput } from 'learn-card-base/ui/controls/AppInput';
 
 type TextInputProps = {
     value: string | number | null | undefined;
@@ -87,7 +87,7 @@ const TextInput: React.FC<TextInputProps> = ({
                     </div>
                 )}
 
-                <IonInput
+                <AppInput
                     id={inputId}
                     aria-label={ariaLabel ?? label ?? placeholder}
                     aria-invalid={error ? true : undefined}
@@ -98,11 +98,11 @@ const TextInput: React.FC<TextInputProps> = ({
                     disabled={disabled}
                     debounce={debounce}
                     maxlength={maxLength}
-                    autoFocus={autoFocus}
+                    autofocus={autoFocus}
                     autocapitalize={autocapitalize}
-                    onIonInput={e => onChange(e.detail.value ?? '')}
-                    onIonFocus={onFocus}
-                    onIonBlur={onBlur}
+                    onValueInput={value => onChange(value ?? '')}
+                    onFocus={onFocus}
+                    onBlur={onBlur}
                     onKeyDown={onKeyDown}
                     className={`text-grayscale-900 font-poppins text-[14px] leading-[130%] w-full
                         ${hasPaddingLeftOverride ? '' : hasStartContent ? 'pl-[48px]!' : 'pl-[15px]!'}

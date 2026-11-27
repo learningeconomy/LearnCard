@@ -15,7 +15,7 @@ import { AppContent, AppPage } from 'learn-card-base/ui/chrome';
 
 const LearnCardWalletPage: React.FC = () => {
     const [isActivityHeaderFixed, setIsActivityHeaderFixed] = useState<boolean>(false);
-    const activityContainer = useRef<HTMLIonRowElement>(null);
+    const activityContainer = useRef<HTMLDivElement>(null);
 
     const activityHeader = (
         <AppRow className="w-full flex items-center justify-center">

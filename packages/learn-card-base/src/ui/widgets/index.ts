@@ -7,5 +7,5 @@ export { AppText } from './AppText';
 export type { AppTextProps, AppTextColor } from './AppText';
 export { AppThumbnail, AppAvatar } from './AppThumbnail';
 export type { AppThumbnailProps, AppAvatarProps } from './AppThumbnail';
-export { AppCard, AppCardContent } from './AppCard';
+export { AppCard, AppCardContent, AppCardHeader, AppCardTitle, AppCardSubtitle } from './AppCard';
 export type { AppCardProps, AppCardContentProps, AppCardColor } from './AppCard';

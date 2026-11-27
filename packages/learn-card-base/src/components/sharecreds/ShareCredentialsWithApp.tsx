@@ -14,28 +14,22 @@ import ProfilePicture from 'learn-card-base/components/profilePicture/ProfilePic
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import MiniGhost from 'learn-card-base/assets/images/emptystate-ghost.png';
 
-import {
-    IonContent,
-    IonPage,
-    IonToggle,
-    IonToolbar,
-    IonButtons,
-    IonHeader,
-    IonSpinner,
-    IonGrid,
-    useIonAlert,
-} from '@ionic/react';
-
 import { UnsignedVP } from '@learncard/types';
 import { getSharedCredentialsQueryKey } from 'learn-card-base/react-query/queries/vcQueries';
 import { getLogger } from '../../logging/logger';
+import { AppContent, AppHeader, AppPage, AppToolbar } from 'learn-card-base/ui/chrome';
+import { AppButtons } from 'learn-card-base/ui/controls/AppButtons';
+import { AppToggle } from 'learn-card-base/ui/controls/AppToggle';
+import { AppSpinner } from 'learn-card-base/ui/feedback/AppSpinner';
+import { AppGrid } from 'learn-card-base/ui/layout';
+import { useAppAlert } from 'learn-card-base/ui/overlays';
 const log = getLogger('share-credentials-with-app');
 
 const ShareCredentialsWithApp: React.FC = () => {
     const history = useHistory();
     const queryClient = useQueryClient();
     const currentUser = useCurrentUser();
-    const [presentAlert] = useIonAlert();
+    const [presentAlert] = useAppAlert();
     const { initWallet } = useWallet();
     const { profileId } = useParams<{ profileId: string; skipReload?: boolean }>();
     const { data: trustedAppRegistry } = useTrustedAppsRegistry();
@@ -112,21 +106,21 @@ const ShareCredentialsWithApp: React.FC = () => {
     };
 
     return (
-        <IonPage>
-            <IonHeader className="ion-no-border ion-fixed bg-white">
-                <IonToolbar className="ion-no-border" color="white">
-                    <IonButtons slot="start">
+        <AppPage>
+            <AppHeader className="ion-no-border ion-fixed bg-white">
+                <AppToolbar className="ion-no-border" color="white">
+                    <AppButtons slot="start">
                         <button
                             className="text-grayscale-600 bg-transparent"
                             onClick={() => history.push('/launchpad')}
                         >
                             <LeftArrow className="w-10 h-auto text-grayscale-600" />
                         </button>
-                    </IonButtons>
-                </IonToolbar>
-            </IonHeader>
-            <IonContent>
-                <IonGrid className="flex items-center justify-center p-[20px] pb-[100px] max-w-[700px]">
+                    </AppButtons>
+                </AppToolbar>
+            </AppHeader>
+            <AppContent>
+                <AppGrid className="flex items-center justify-center p-[20px] pb-[100px] max-w-[700px]">
                     <section className="w-full">
                         <div className="flex flex-col gap-[15px] text-grayscale-900">
                             <h1 className="text-[17px] font-medium leading-[21px]">
@@ -159,7 +153,7 @@ const ShareCredentialsWithApp: React.FC = () => {
                             <div className="mt-[15px] text--[14px]">
                                 {credentialsLoading && (
                                     <div className="w-full h-full flex flex-col opacity-50 items-center justify-center mt-[40px]">
-                                        <IonSpinner />
+                                        <AppSpinner />
                                         <p className="mt-[20px]">Fetching your credentials...</p>
                                     </div>
                                 )}
@@ -197,8 +191,7 @@ const ShareCredentialsWithApp: React.FC = () => {
                                     <span className="mr-[10px] text-[14px] font-semibold">
                                         Share all credentials
                                     </span>
-                                    <IonToggle
-                                        slot="end"
+                                    <AppToggle
                                         checked={allSelected}
                                         onClick={() => handleToggleSelectAll()}
                                     />
@@ -208,7 +201,7 @@ const ShareCredentialsWithApp: React.FC = () => {
                             <ShareCredentialCards />
                         </section>
                     </section>
-                </IonGrid>
+                </AppGrid>
                 {!credentialsLoading && (
                     <section className="fixed-bottom-container fixed w-full bottom-[0px] px-[20px] py-[10px] z-[3] h-fit bg-grayscale-50 flex flex items-start justify-center">
                         <button
@@ -223,8 +216,8 @@ const ShareCredentialsWithApp: React.FC = () => {
                         </button>
                     </section>
                 )}
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 
