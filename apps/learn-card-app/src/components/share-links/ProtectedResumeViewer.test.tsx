@@ -36,10 +36,13 @@ vi.mock('learn-card-base/helpers/share-links', () => ({
 }));
 vi.mock('react-router', async () => {
     const { navigateFromHistory } = await import('learn-card-base/test-utils/navigateFromHistory');
+    // React Router's data-router navigate is stable across renders; ShareLinkViewer's load effect
+    // depends on it, so a new function per render would restart the load forever.
+    const navigate = navigateFromHistory(mocks.history);
     return {
         useParams: () => ({ id: 'id' }),
         useLocation: () => ({ hash: '#PRIVATE', pathname: '/share/id' }),
-        useNavigate: () => navigateFromHistory(mocks.history),
+        useNavigate: () => navigate,
     };
 });
 vi.mock('./ShareCredentialsIllustration', () => ({ ShareCredentialsIllustration: () => null }));
