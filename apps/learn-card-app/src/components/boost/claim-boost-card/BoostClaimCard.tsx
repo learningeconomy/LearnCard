@@ -5,7 +5,8 @@ import { getVCDisplayCardVariant } from '@learncard/react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('boost-claim-card');
 
-import { IonSpinner, useIonAlert, IonPage } from '@ionic/react';
+import { IonSpinner, IonPage } from '@ionic/react';
+import { useAppAlert } from '../../overlays/useAppAlert';
 
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import RenderMethodDisplay from '../../render-method/RenderMethodDisplay';
@@ -139,7 +140,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     } = useAcceptCredentialMutation();
     const { addVCtoWallet } = useWallet();
 
-    const [presentAlert, dismissAlert] = useIonAlert();
+    const [presentAlert, dismissAlert] = useAppAlert();
     const { presentToast } = useToast();
     const { isCheckingDuplicate, requestDuplicateResolution, duplicateCredentialPrompt } =
         useDuplicateCredentialGuard();

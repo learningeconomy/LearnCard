@@ -14,7 +14,8 @@ import {
     ToastTypeEnum,
 } from 'learn-card-base';
 
-import { IonPage, useIonModal } from '@ionic/react';
+import { IonPage } from '@ionic/react';
+import { useAppOverlayModal } from '../../../overlays/useAppOverlayModal';
 import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantConfig';
 import CopyStack from 'apps/learn-card-app/src/components/svgs/CopyStack';
 import BoostShareableQRCode from '../../../boost/boostCMS/boostCMSForms/boostCMSIssueTo/BoostShareableQRCode';
@@ -232,7 +233,7 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
         },
     };
 
-    const [presentClaimQRCode, dismissClaimQRCode] = useIonModal(BoostShareableQRCode, {
+    const [presentClaimQRCode, dismissClaimQRCode] = useAppOverlayModal(BoostShareableQRCode, {
         state: shareableCodeState,
         handleCloseModal: () => dismissClaimQRCode(),
         showCloseButton: true,
@@ -240,7 +241,7 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
         text: 'Scan Code to Join Family',
     });
 
-    const [presentIssueTo, dismissIssueTo] = useIonModal(FamilyGuardianIssueToList, {
+    const [presentIssueTo, dismissIssueTo] = useAppOverlayModal(FamilyGuardianIssueToList, {
         state: state,
         setState: setState,
         handleCloseModal: () => dismissIssueTo(),
@@ -250,7 +251,7 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
         boostUri: boostUri,
     });
 
-    const [presentSearchContacts, dismissSearchContacts] = useIonModal(BoostSearch, {
+    const [presentSearchContacts, dismissSearchContacts] = useAppOverlayModal(BoostSearch, {
         state: state,
         setState: setState,
         handleCloseModal: () => {

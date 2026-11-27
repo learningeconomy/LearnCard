@@ -4,7 +4,8 @@ import { Share } from '@capacitor/share';
 import { Clipboard } from '@capacitor/clipboard';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 
-import { IonPage, useIonModal } from '@ionic/react';
+import { IonPage } from '@ionic/react';
+import { useAppOverlayModal } from '../../../components/overlays/useAppOverlayModal';
 import Camera from 'learn-card-base/svgs/Camera';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import AddressBookQRCode from '../addressBook-qrcode/AddressBookQRCode';
@@ -47,7 +48,7 @@ const AddressBookContactOptions: React.FC<{
         }
     }, [walletDid]);
 
-    const [presentCenterModal, dismissCenterModal] = useIonModal(AddressBookQRCode, {
+    const [presentCenterModal, dismissCenterModal] = useAppOverlayModal(AddressBookQRCode, {
         handleCloseModal: () => dismissCenterModal(),
     });
 
@@ -56,7 +57,7 @@ const AddressBookContactOptions: React.FC<{
         QRCodeScannerStore.set.showScanner(true);
     };
 
-    const [presentScannerPromptModal, dismissScannerPromptModal] = useIonModal(
+    const [presentScannerPromptModal, dismissScannerPromptModal] = useAppOverlayModal(
         ScannerPermissionsPrompt,
         {
             handleCloseModal: () => dismissScannerPromptModal(),

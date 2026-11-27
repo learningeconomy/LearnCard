@@ -1,6 +1,7 @@
 import React from 'react';
 
-import { IonContent, IonToolbar, IonFooter, IonHeader, IonPage, useIonModal } from '@ionic/react';
+import { IonContent, IonToolbar, IonFooter, IonHeader, IonPage } from '@ionic/react';
+import { useAppOverlayModal } from '../overlays/useAppOverlayModal';
 import { AppCol, AppRow } from '../layout';
 import { AppItem, AppList } from '../list';
 import X from 'learn-card-base/svgs/X';
@@ -22,19 +23,25 @@ const UserOptions: React.FC<{
     showFixedFooter = false,
     footer,
 }) => {
-    const [presentCenterModal, dismissCenterModal] = useIonModal(DeleteUserConfirmationPrompt, {
-        handleCloseModal: () => dismissCenterModal(),
-        showCloseButton: true,
-        showFixedFooter: false,
-        handleLogout: () => onLogout(),
-    });
+    const [presentCenterModal, dismissCenterModal] = useAppOverlayModal(
+        DeleteUserConfirmationPrompt,
+        {
+            handleCloseModal: () => dismissCenterModal(),
+            showCloseButton: true,
+            showFixedFooter: false,
+            handleLogout: () => onLogout(),
+        }
+    );
 
-    const [presentSheetModal, dismissSheetModal] = useIonModal(DeleteUserConfirmationPrompt, {
-        handleCloseModal: () => dismissSheetModal(),
-        showCloseButton: false,
-        showFixedFooter: true,
-        handleLogout: () => onLogout(),
-    });
+    const [presentSheetModal, dismissSheetModal] = useAppOverlayModal(
+        DeleteUserConfirmationPrompt,
+        {
+            handleCloseModal: () => dismissSheetModal(),
+            showCloseButton: false,
+            showFixedFooter: true,
+            handleLogout: () => onLogout(),
+        }
+    );
 
     const userOptions = [
         {

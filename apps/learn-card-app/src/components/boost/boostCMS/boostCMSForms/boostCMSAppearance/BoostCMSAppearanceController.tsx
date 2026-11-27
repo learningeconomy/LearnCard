@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 
-import { useIonModal } from '@ionic/react';
+import { useAppOverlayModal } from '../../../../overlays/useAppOverlayModal';
 import {
     BoostUserTypeEnum,
     CATEGORY_TO_SUBCATEGORY_LIST,
@@ -87,19 +87,22 @@ const BoostCMSAppearanceController: React.FC<BoostCMSAppearanceControllerProps> 
                 options => options?.type === state?.basicInfo?.achievementType
             )?.title ?? '';
     }
-    const [presentCenterModal, dismissCenterModal] = useIonModal(BoostCMSAppearanceFormModal, {
-        state: state,
-        setState: setState,
-        handleCloseModal: () => dismissCenterModal(),
-        boostUserType: boostUserType,
-        customTypes: customTypes,
-        setCustomTypes: setCustomTypes,
-        showCloseButton: true,
-        disabled: disabled,
-        handleCategoryAndTypeChange: handleCategoryAndTypeChange,
-    });
+    const [presentCenterModal, dismissCenterModal] = useAppOverlayModal(
+        BoostCMSAppearanceFormModal,
+        {
+            state: state,
+            setState: setState,
+            handleCloseModal: () => dismissCenterModal(),
+            boostUserType: boostUserType,
+            customTypes: customTypes,
+            setCustomTypes: setCustomTypes,
+            showCloseButton: true,
+            disabled: disabled,
+            handleCategoryAndTypeChange: handleCategoryAndTypeChange,
+        }
+    );
 
-    const [presentSheetModal, dismissSheetModal] = useIonModal(BoostCMSAppearanceFormModal, {
+    const [presentSheetModal, dismissSheetModal] = useAppOverlayModal(BoostCMSAppearanceFormModal, {
         state: state,
         setState: setState,
         handleCloseModal: () => dismissSheetModal(),

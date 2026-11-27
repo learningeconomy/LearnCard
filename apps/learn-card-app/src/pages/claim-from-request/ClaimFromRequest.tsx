@@ -4,7 +4,8 @@ import { useHistory, useLocation } from 'react-router-dom';
 import { formatCredentialDate } from 'learn-card-base/helpers/credentialHelpers';
 import queryString from 'query-string';
 import { VC, VP } from '@learncard/types';
-import { IonContent, IonPage, useIonModal } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
+import { useAppOverlayModal } from '../../components/overlays/useAppOverlayModal';
 
 import { getLogger } from 'learn-card-base';
 const log = getLogger('claim-from-request');
@@ -621,7 +622,7 @@ const ClaimFromRequest: React.FC = () => {
         history.push('/');
     };
 
-    const [presentModal, dismissModal] = useIonModal(ClaimBoostLoggedOutPrompt, {
+    const [presentModal, dismissModal] = useAppOverlayModal(ClaimBoostLoggedOutPrompt, {
         handleCloseModal: () => dismissModal(),
         handleRedirectTo: handleRedirectTo,
     });

@@ -3,7 +3,8 @@ import { VC } from '@learncard/types';
 import { deriveAlignmentsFromVC } from '../alignmentHelpers';
 import { useHistory, useLocation } from 'react-router-dom';
 
-import { IonContent, IonPage, useIonModal } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
+import { useAppOverlayModal } from '../../overlays/useAppOverlayModal';
 import { AppCol, AppGrid, AppRow } from '../../layout';
 import BoostCMSHeader from './BoostCMSHeader/BoostCMSHeader';
 import BoostAddressBook, {
@@ -615,7 +616,7 @@ const UpdateBoostCMS: React.FC = () => {
         );
     }
 
-    const [presentModal, dissmissModal] = useIonModal(BoostPreview, {
+    const [presentModal, dissmissModal] = useAppOverlayModal(BoostPreview, {
         credential: getBoostCredentialPreview(state),
         categoryType: state?.basicInfo?.type,
         handleCloseModal: () => {

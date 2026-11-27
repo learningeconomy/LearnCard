@@ -206,7 +206,8 @@
 
 /* ------------------------------------------------------------------------ ion-backdrop */
 .app-popover > .app-backdrop,
-.app-loading > .app-backdrop {
+.app-loading > .app-backdrop,
+.app-alert > .app-backdrop {
     left: 0;
     right: 0;
     top: 0;
@@ -229,12 +230,14 @@
 }
 
 .app-popover > .app-backdrop.app-backdrop-hide,
-.app-loading > .app-backdrop.app-backdrop-hide {
+.app-loading > .app-backdrop.app-backdrop-hide,
+.app-alert > .app-backdrop.app-backdrop-hide {
     background: transparent;
 }
 
 .app-popover > .app-backdrop.app-backdrop-no-tappable,
-.app-loading > .app-backdrop.app-backdrop-no-tappable {
+.app-loading > .app-backdrop.app-backdrop-no-tappable,
+.app-alert > .app-backdrop.app-backdrop-no-tappable {
     cursor: auto;
 }
 

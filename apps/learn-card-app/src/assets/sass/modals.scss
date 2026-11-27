@@ -37,16 +37,21 @@
     --background: transparent;
 }
 
-ion-modal.generic-modal {
+// App modals (AppOverlayModal) share these classes: `div:where(.app-modal).x` keeps ion-modal's
+// (0,1,1) specificity, and `> .app-modal-wrapper` is the former `::part(content)`.
+ion-modal.generic-modal,
+div:where(.app-modal).generic-modal {
     background: rgba(0, 0, 0, 0.1) !important;
 }
 
-ion-modal.center-modal {
+ion-modal.center-modal,
+div:where(.app-modal).center-modal {
     --max-height: 500px;
     --max-width: 500px;
     --height: auto;
 
-    &::part(content) {
+    &::part(content),
+    & > .app-modal-wrapper {
         border-radius: 24px; // modal border radius
     }
 }
@@ -62,8 +67,10 @@ ion-modal.center-modal {
     box-sizing: border-box;
 }
 
-ion-modal.mobile-modal {
-    &::part(content) {
+ion-modal.mobile-modal,
+div:where(.app-modal).mobile-modal {
+    &::part(content),
+    & > .app-modal-wrapper {
         border-top-right-radius: 24px;
         border-top-left-radius: 24px;
     }
@@ -95,51 +102,60 @@ ion-modal.mobile-modal {
     --height: auto;
 }
 
-ion-modal.user-profile-modal {
+ion-modal.user-profile-modal,
+div:where(.app-modal).user-profile-modal {
     background: rgba(0, 0, 0, 0.1) !important;
     --max-height: 700px;
 }
 
-ion-modal.delete-user-modal {
+ion-modal.delete-user-modal,
+div:where(.app-modal).delete-user-modal {
     --max-height: 650px;
     --max-width: 500px;
     --height: auto;
 }
 
-ion-modal.add-contact-modal {
+ion-modal.add-contact-modal,
+div:where(.app-modal).add-contact-modal {
     --max-height: 425px;
     --max-width: 325px;
     --height: auto;
     background: rgba(0, 0, 0, 0.1) !important;
 
-    &::part(content) {
+    &::part(content),
+    & > .app-modal-wrapper {
         border-radius: 24px; // modal border radius
     }
 }
 
-ion-modal.boost-confirmation-prompt {
+ion-modal.boost-confirmation-prompt,
+div:where(.app-modal).boost-confirmation-prompt {
     --max-height: 475px;
     --max-width: 325px;
     --height: auto;
     background: rgba(0, 0, 0, 0.1) !important;
 
-    &::part(content) {
+    &::part(content),
+    & > .app-modal-wrapper {
         border-radius: 24px; // modal border radius
     }
 }
 
-ion-modal.boost-logged-out-confirmation-prompt {
+ion-modal.boost-logged-out-confirmation-prompt,
+div:where(.app-modal).boost-logged-out-confirmation-prompt {
     --max-height: 375px;
     --max-width: 325px;
     --height: auto;
     background: rgba(0, 0, 0, 0.1) !important;
 
-    &::part(content) {
+    &::part(content),
+    & > .app-modal-wrapper {
         border-radius: 24px; // modal border radius
     }
 }
 
-ion-modal.user-qrcode-modal {
+ion-modal.user-qrcode-modal,
+div:where(.app-modal).user-qrcode-modal {
     background: rgba(0, 0, 0, 0.1) !important;
     --max-height: 725px;
 }
@@ -154,7 +170,8 @@ ion-modal.user-qrcode-modal {
     }
 }
 
-ion-modal.network-accept-modal {
+ion-modal.network-accept-modal,
+div:where(.app-modal).network-accept-modal {
     background: rgba(0, 0, 0, 0.1) !important;
     --max-height: 750px;
     --max-width: 500px;
@@ -163,21 +180,24 @@ ion-modal.network-accept-modal {
     --height: auto;
 }
 
-ion-modal.network-reject-modal {
+ion-modal.network-reject-modal,
+div:where(.app-modal).network-reject-modal {
     background: rgba(0, 0, 0, 0.1) !important;
     --max-height: 550px;
     --max-width: 500px;
     --height: auto;
 }
 
-ion-modal.push-notification-prompt-modal {
+ion-modal.push-notification-prompt-modal,
+div:where(.app-modal).push-notification-prompt-modal {
     background: rgba(0, 0, 0, 0.1) !important;
     --max-height: 550px;
     --max-width: 500px;
     --height: auto;
 }
 
-ion-modal.location-search-modal {
+ion-modal.location-search-modal,
+div:where(.app-modal).location-search-modal {
     background: rgba(0, 0, 0, 0.1) !important;
     --max-height: 550px;
     --max-width: 600px;
@@ -186,7 +206,8 @@ ion-modal.location-search-modal {
     width: 100%;
     --height: auto;
 
-    &::part(content) {
+    &::part(content),
+    & > .app-modal-wrapper {
         border-radius: 24px; // modal border radius
     }
 }
@@ -215,8 +236,10 @@ ion-modal.location-search-modal {
     }
 }
 
-ion-modal.center-modal.smart-resume-prompt-modal {
-    & > .ion-page {
+ion-modal.center-modal.smart-resume-prompt-modal,
+div:where(.app-modal).center-modal.smart-resume-prompt-modal {
+    & > .ion-page,
+    & > .app-modal-wrapper > .ion-page {
         height: 700px;
         margin-top: auto;
         margin-bottom: auto;

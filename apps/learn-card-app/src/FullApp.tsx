@@ -12,6 +12,7 @@ import {
     CONNECTIVITY_PROBE_PATH,
 } from 'learn-card-base';
 import { IonApp } from '@ionic/react';
+import { AppOverlayManager } from './components/overlays/AppOverlayManager';
 import { LoadingPageDumb } from './pages/loadingPage/LoadingPage';
 
 import AppRouter from './AppRouter';
@@ -286,6 +287,10 @@ const FullApp: React.FC = () => {
                                                 <DevDebugPanel />
                                             </Suspense>
                                         )}
+                                        {/* Renders useAppOverlayModal content (IonApp's
+                                            overlay manager rendered useIonModal content
+                                            here, outside the routes' contexts). */}
+                                        <AppOverlayManager />
                                     </IonApp>
                                 </ModalsProvider>
                             </ExternalAuthServiceProvider>

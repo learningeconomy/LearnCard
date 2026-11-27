@@ -6,7 +6,8 @@ import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('boost-address-book-contact-options');
 
-import { IonToolbar, IonFooter, IonHeader, IonContent, IonPage, useIonModal } from '@ionic/react';
+import { IonToolbar, IonFooter, IonHeader, IonContent, IonPage } from '@ionic/react';
+import { useAppOverlayModal } from '../../../../overlays/useAppOverlayModal';
 import { AppCol, AppGrid, AppRow } from '../../../../layout';
 import X from 'learn-card-base/svgs/X';
 import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantConfig';
@@ -90,7 +91,7 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
         }
     }, [walletDid]);
 
-    const [presentCenterModal, dismissCenterModal] = useIonModal(AddressBookQRCode, {
+    const [presentCenterModal, dismissCenterModal] = useAppOverlayModal(AddressBookQRCode, {
         handleCloseModal: () => dismissCenterModal(),
         showCloseButton: true,
         title: (
@@ -106,7 +107,7 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
         collectionPropName,
     });
 
-    const [presentSheetModal, dismissSheetModal] = useIonModal(AddressBookQRCode, {
+    const [presentSheetModal, dismissSheetModal] = useAppOverlayModal(AddressBookQRCode, {
         handleCloseModal: () => dismissSheetModal(),
         showCloseButton: false,
         title: (
@@ -122,7 +123,7 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
         collectionPropName,
     });
 
-    const [presentAddressBook, dismissAddressbook] = useIonModal(BoostAddressBook, {
+    const [presentAddressBook, dismissAddressbook] = useAppOverlayModal(BoostAddressBook, {
         state: state,
         setState: setState,
         viewMode: BoostAddressBookViewMode.full,
@@ -150,7 +151,7 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
     };
 
     // TODO can't test this one bc Native
-    const [presentScannerPromptModal, dismissScannerPromptModal] = useIonModal(
+    const [presentScannerPromptModal, dismissScannerPromptModal] = useAppOverlayModal(
         ScannerPermissionsPrompt,
         {
             handleCloseModal: () => dismissScannerPromptModal(),
@@ -285,7 +286,7 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
         // );
     };
 
-    // useIonModal version
+    // useAppOverlayModal version
     return (
         <IonPage id="user-options-modal">
             <IonHeader className="ion-no-border bg-white pt-5">

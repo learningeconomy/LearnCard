@@ -20,13 +20,11 @@ const mocks = vi.hoisted(() => {
     return {
         callbacks: [] as Array<(result: { barcode: { rawValue: string } }) => void>,
         listenerRemovers: [] as Mock[],
-        route: vi.fn(
-            async (_value: string): Promise<Record<string, unknown>> => ({
-                kind: 'routed',
-                surface: 'lcw-https',
-                path: '/',
-            })
-        ),
+        route: vi.fn(async (_value: string): Promise<Record<string, unknown>> => ({
+            kind: 'routed',
+            surface: 'lcw-https',
+            path: '/',
+        })),
         startScan: vi.fn(async (): Promise<void> => undefined),
         stopScan: vi.fn(async (): Promise<void> => undefined),
         presentToast: vi.fn(),
@@ -80,7 +78,6 @@ vi.mock('@capacitor-mlkit/barcode-scanning', () => ({
     },
 }));
 vi.mock('@ionic/react', () => ({
-    IonModal: ({ children }: React.PropsWithChildren) => <>{children}</>,
     IonContent: ({ children }: React.PropsWithChildren) => <>{children}</>,
     IonPage: ({ children }: React.PropsWithChildren) => <>{children}</>,
     IonSpinner: () => null,

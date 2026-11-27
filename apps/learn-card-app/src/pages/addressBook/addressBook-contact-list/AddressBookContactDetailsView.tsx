@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Clipboard } from '@capacitor/clipboard';
-import { IonSpinner, useIonAlert } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
+import { useAppAlert } from '../../../components/overlays/useAppAlert';
 import { AppIcon } from '../../../components/icon';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import type { Swiper as SwiperInstance } from 'swiper';
@@ -192,7 +193,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
 }) => {
     const { newModal, closeModal } = useModal();
     const { presentToast } = useToast();
-    const [presentAlert, dismissAlert] = useIonAlert();
+    const [presentAlert, dismissAlert] = useAppAlert();
     const { gate } = useLCNGatedAction();
     const overflowRef = useRef<HTMLDivElement>(null);
     const credentialSwiperRef = useRef<SwiperInstance | null>(null);

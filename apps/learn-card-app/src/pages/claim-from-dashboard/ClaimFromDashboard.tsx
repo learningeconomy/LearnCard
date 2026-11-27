@@ -4,7 +4,8 @@ import { useHistory, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
 import { VC, UnsignedVP } from '@learncard/types';
 import { getVCDisplayCardVariant } from '@learncard/react';
-import { IonContent, IonPage, IonFooter, IonToolbar, useIonModal } from '@ionic/react';
+import { IonContent, IonPage, IonFooter, IonToolbar } from '@ionic/react';
+import { useAppOverlayModal } from '../../components/overlays/useAppOverlayModal';
 import { AppLoading } from '../../components/overlays/AppLoading';
 import { AppRow } from '../../components/layout';
 
@@ -272,18 +273,21 @@ const ClaimFromDashboard: React.FC = () => {
         history.push('/');
     };
 
-    const [presentModal, dismissModal] = useIonModal(ClaimBoostLoggedOutPrompt, {
+    const [presentModal, dismissModal] = useAppOverlayModal(ClaimBoostLoggedOutPrompt, {
         handleCloseModal: () => dismissModal(),
         handleRedirectTo: handleRedirectTo,
     });
 
-    const [presentNewDataSourceModal, dismissNewDataSourceModal] = useIonModal(NewDataSource, {
-        handleCloseModal: () => {
-            history.replace('/home');
-            dismissNewDataSourceModal();
-        },
-        entryId: credential?.id,
-    });
+    const [presentNewDataSourceModal, dismissNewDataSourceModal] = useAppOverlayModal(
+        NewDataSource,
+        {
+            handleCloseModal: () => {
+                history.replace('/home');
+                dismissNewDataSourceModal();
+            },
+            entryId: credential?.id,
+        }
+    );
 
     useEffect(() => {
         (async () => {

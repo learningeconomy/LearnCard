@@ -27,6 +27,7 @@ import { IconsVisualFixture } from './IconsVisualFixture';
 import { GridVisualFixture } from './GridVisualFixture';
 import { WidgetsVisualFixture } from './WidgetsVisualFixture';
 import { OverlaysVisualFixture } from './OverlaysVisualFixture';
+import { ModalsVisualFixture } from './ModalsVisualFixture';
 
 export const additionalStates = [
     'credential',
@@ -50,6 +51,7 @@ export const additionalStates = [
     'grid-1',
     'widgets-1',
     'overlays-1',
+    'modals-1',
 ] as const;
 
 const listings: AppStoreListing[] = [
@@ -171,6 +173,7 @@ export const PageFixture: React.FC<{ state: string }> = ({ state }) => {
     if (state === 'grid-1') return <GridVisualFixture />;
     if (state === 'widgets-1') return <WidgetsVisualFixture />;
     if (state === 'overlays-1') return <OverlaysVisualFixture />;
+    if (state === 'modals-1') return <ModalsVisualFixture />;
     if (state === 'apps') return <LaunchPad />;
     if (state === 'my-apps-signed-in') return <SignedInLaunchpadFixture />;
     if (state === 'my-apps') return <MyAppsLanding />;

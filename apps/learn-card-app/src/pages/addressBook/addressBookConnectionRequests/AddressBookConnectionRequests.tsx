@@ -5,7 +5,8 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('address-book-connection-requests');
 
 import * as m from '../../../paraglide/messages.js';
-import { IonSpinner, useIonModal } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
+import { useAppOverlayModal } from '../../../components/overlays/useAppOverlayModal';
 
 import AddressBookContactList from '../addressBook-contact-list/AddressBookContactList';
 
@@ -117,7 +118,7 @@ const AddressBookConnectionRequests: React.FC<{
         dismissModal?.();
     };
 
-    const [presentModal, dismissModal] = useIonModal(ConnectModal, {
+    const [presentModal, dismissModal] = useAppOverlayModal(ConnectModal, {
         profileId: _profileId,
         handleCancel: () => dismissModal(),
         updateCacheOnSuccessCallback: updateCacheOnSuccessCallback,

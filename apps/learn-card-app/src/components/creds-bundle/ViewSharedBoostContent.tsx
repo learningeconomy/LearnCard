@@ -5,7 +5,9 @@ import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { getVCDisplayCardVariant } from '@learncard/react';
 import BoostFooterLayout from '../accessibility/AccessibleBoostFooterLayout';
-import { IonContent, IonPage, useIonAlert, IonHeader, IonToolbar, useIonModal } from '@ionic/react';
+import { IonContent, IonPage, IonHeader, IonToolbar } from '@ionic/react';
+import { useAppAlert } from '../overlays/useAppAlert';
+import { useAppOverlayModal } from '../overlays/useAppOverlayModal';
 import SharedBoostVerificationBlock, {
     SharedBoostVerificationBlockViewMode,
 } from './SharedBoostVerificationBlock';
@@ -78,7 +80,7 @@ const ViewSharedBoost: React.FC<{
     const pin = credentialInfo?.pin || _pin;
     const endorsementCredentialId = credentialInfo?.credentialId;
 
-    const [presentAlert] = useIonAlert();
+    const [presentAlert] = useAppAlert();
 
     const [boost, setBoost] = useState<VC[] | undefined>();
     const [category, setCategory] = useState<string>('');
@@ -215,7 +217,7 @@ const ViewSharedBoost: React.FC<{
         }
     }, [pin, seed, uri, endorsementCredentialId, tryRefetch]);
 
-    const [presentModal, dismissModal] = useIonModal(SharedBoostVerificationBlock, {
+    const [presentModal, dismissModal] = useAppOverlayModal(SharedBoostVerificationBlock, {
         handleCloseModal: () => dismissModal(),
         mode: SharedBoostVerificationBlockViewMode.modal,
         verificationItems: verificationItems,

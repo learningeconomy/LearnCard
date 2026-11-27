@@ -8,7 +8,8 @@ import keyboardStore from 'learn-card-base/stores/keyboardStore';
 import User from '../../../components/svgs/User';
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
 import AddressBookContactOptions from '../addressBook-contact-options/AddressBookContactOptions';
-import { IonFooter, IonToolbar, useIonModal } from '@ionic/react';
+import { IonFooter, IonToolbar } from '@ionic/react';
+import { useAppOverlayModal } from '../../../components/overlays/useAppOverlayModal';
 import { AppCol, AppGrid, AppRow } from '../../../components/layout';
 
 import { useIsCurrentUserLCNUser } from 'learn-card-base';
@@ -33,7 +34,7 @@ export const AddressBookFooter: React.FC<{
         }
     });
 
-    const [presentCenterModal, dismissCenterModal] = useIonModal(AddressBookContactOptions, {
+    const [presentCenterModal, dismissCenterModal] = useAppOverlayModal(AddressBookContactOptions, {
         handleCloseModal: () => dismissCenterModal(),
         showSearch,
         handleShowSearch,

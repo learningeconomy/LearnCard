@@ -6,7 +6,7 @@ import { useJoinLCNetworkModal } from '../../../components/network-prompts/hooks
 import { getLogger } from 'learn-card-base';
 const log = getLogger('address-book-contact-item');
 
-import { useIonAlert } from '@ionic/react';
+import { useAppAlert } from '../../../components/overlays/useAppAlert';
 import { AppItem } from '../../../components/list';
 
 import Plus from 'learn-card-base/svgs/Plus';
@@ -92,7 +92,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
     });
 
     const { presentToast } = useToast();
-    const [presentAlert, dismissAlert] = useIonAlert();
+    const [presentAlert, dismissAlert] = useAppAlert();
 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;

@@ -1,7 +1,7 @@
 import * as m from '../../paraglide/messages.js';
 import React from 'react';
 
-import { IonFooter, IonToolbar, useIonModal } from '@ionic/react';
+import { IonFooter, IonToolbar } from '@ionic/react';
 import X from '../svgs/X';
 import LearnCardIDPreview from './LearnCardIDPreview';
 

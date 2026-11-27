@@ -1,13 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-    IonContent,
-    IonToolbar,
-    IonHeader,
-    IonPage,
-    IonFooter,
-    IonSpinner,
-    useIonModal,
-} from '@ionic/react';
+import { IonContent, IonToolbar, IonHeader, IonPage, IonFooter, IonSpinner } from '@ionic/react';
 import { AppCol, AppGrid, AppRow } from '../../layout';
 import { AppInput } from '../../controls/AppInput';
 

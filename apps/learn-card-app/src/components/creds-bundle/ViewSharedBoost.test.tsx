@@ -40,8 +40,10 @@ vi.mock('@ionic/react', () => ({
     IonHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     IonPage: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     IonToolbar: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    useIonAlert: () => [mocks.presentAlert],
-    useIonModal: () => [vi.fn(), vi.fn()],
+}));
+vi.mock('../overlays/useAppAlert', () => ({ useAppAlert: () => [mocks.presentAlert] }));
+vi.mock('../overlays/useAppOverlayModal', () => ({
+    useAppOverlayModal: () => [vi.fn(), vi.fn()],
 }));
 vi.mock('learn-card-base', () => ({
     BrandingEnum: { learncard: 'learncard' },

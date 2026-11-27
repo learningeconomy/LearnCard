@@ -1,5 +1,4 @@
 import React from 'react';
-import { useIonModal } from '@ionic/react';
 
 import Pencil from 'apps/learn-card-app/src/components/svgs/Pencil';
 import TrashBin from 'learn-card-base/svgs/TrashBin';

@@ -338,7 +338,7 @@ export const AppMenu: React.FC<AppMenuProps> = ({
         let lastTouch = 0;
 
         const canStart = (x: number): boolean => {
-            if (document.querySelector('ion-modal.show-modal')) return false;
+            if (document.querySelector('ion-modal.show-modal, .app-modal.show-modal')) return false;
             if (!swipeRef.current || isAnimatingRef.current || !activeRef.current) return false;
             if (isOpenRef.current) return true;
             return isRtl() ? x >= window.innerWidth - maxEdgeStart : x <= maxEdgeStart;

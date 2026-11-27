@@ -1,7 +1,7 @@
 import React from 'react';
 import { useHistory } from 'react-router-dom';
 
-import { useIonModal } from '@ionic/react';
+import { useAppOverlayModal } from '../../../components/overlays/useAppOverlayModal';
 import { AppCol, AppGrid, AppRow } from '../../../components/layout';
 
 import { AddressBookTabsEnum } from '../addressBookHelpers';
@@ -52,7 +52,7 @@ export const AddressBookHeader: React.FC<{
         headerTitle = connectionCount === 1 ? m['contacts.contact']() : m['contacts.title']();
     }
 
-    const [presentCenterModal, dismissCenterModal] = useIonModal(AddressBookContactOptions, {
+    const [presentCenterModal, dismissCenterModal] = useAppOverlayModal(AddressBookContactOptions, {
         handleCloseModal: () => dismissCenterModal(),
         showSearch,
         handleShowSearch,

@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('react-router-dom', () => ({ useLocation: () => ({}) }));
-vi.mock('@ionic/react', () => ({ useIonAlert: () => [vi.fn()] }));
+vi.mock('../../overlays/useAppAlert', () => ({ useAppAlert: () => [vi.fn()] }));
 vi.mock('learn-card-base', () => ({
     getLogger: () => ({ info: vi.fn(), warn: vi.fn() }),
     useGetCredentialWithEdits: mocks.useGetCredentialWithEdits,

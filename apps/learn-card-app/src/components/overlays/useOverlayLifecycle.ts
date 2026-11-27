@@ -19,6 +19,8 @@ export type OverlayLifecycleOptions = {
     kind: OverlayKind;
     backdropDismiss: boolean;
     trap: OverlayEntry['trap'];
+    /** Where a `shadow` trap finds focusable elements, read at present (default: the host). */
+    trapRoot?: (host: HTMLElement) => HTMLElement | null | undefined;
     /** Ionic's `keyboardClose`: focus the overlay once presented and blur a focused text field. */
     keyboardClose: boolean;
     /** `false` plays no enter / leave animation (Ionic's `animated`). */
@@ -29,6 +31,8 @@ export type OverlayLifecycleOptions = {
     onPresented?: () => void;
     /** At the start of a dismiss, before `onWillDismiss` (e.g. clearing timers). */
     onDismissStart?: () => void;
+    /** Return `false` to refuse a dismiss with this role (e.g. while a sheet gesture dismisses). */
+    canDismiss?: (role?: OverlayRole) => boolean;
     onWillPresent?: () => void;
     onDidPresent?: () => void;
     onWillDismiss?: (event: OverlayDismissEvent) => void;
@@ -74,6 +78,7 @@ export const useOverlayLifecycle = (options: OverlayLifecycleOptions) => {
                 const host = hostRef.current;
                 if (!s.presented || !s.entry || !host) return false;
                 const opts = optionsRef.current;
+                if (opts.canDismiss && !opts.canDismiss(role)) return false;
                 s.presented = false;
                 opts.onDismissStart?.();
                 willDismissOverlay(s.entry);
@@ -120,6 +125,7 @@ export const useOverlayLifecycle = (options: OverlayLifecycleOptions) => {
                     kind: opts.kind,
                     backdropDismiss: opts.backdropDismiss,
                     trap: opts.trap,
+                    trapRoot: opts.trapRoot?.(host) ?? undefined,
                     dismiss: role => void dismiss(role),
                 };
                 s.entry = entry;

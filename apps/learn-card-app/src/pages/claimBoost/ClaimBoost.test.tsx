@@ -38,8 +38,10 @@ vi.mock('@learncard/react', () => ({ getVCDisplayCardVariant: () => 'default' })
 vi.mock('@ionic/react', () => ({
     IonPage: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
     IonSpinner: () => <div role="status">Loading</div>,
-    useIonAlert: () => [vi.fn(), vi.fn()],
-    useIonModal: () => [vi.fn(), vi.fn()],
+}));
+vi.mock('../../components/overlays/useAppAlert', () => ({ useAppAlert: () => [vi.fn(), vi.fn()] }));
+vi.mock('../../components/overlays/useAppOverlayModal', () => ({
+    useAppOverlayModal: () => [vi.fn(), vi.fn()],
 }));
 vi.mock('learn-card-base', () => ({
     CredentialCategoryEnum: { achievement: 'Achievement', family: 'Family' },

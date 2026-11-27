@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { IonContent, IonPage, useIonAlert, IonHeader, IonToolbar } from '@ionic/react';
+import { IonContent, IonPage, IonHeader, IonToolbar } from '@ionic/react';
+import { useAppAlert } from '../overlays/useAppAlert';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('view-creds-bundle');
 
@@ -22,7 +23,7 @@ const ViewCredsBundle: React.FC = () => {
     const [errMsg, setErrMsg] = useState<string | undefined | null>();
     const [username, setUsername] = useState();
     const [loading, setLoading] = useState<boolean>(true);
-    const [presentAlert] = useIonAlert();
+    const [presentAlert] = useAppAlert();
 
     const [credentials, setCredentials] = useState<VC[] | undefined>();
 

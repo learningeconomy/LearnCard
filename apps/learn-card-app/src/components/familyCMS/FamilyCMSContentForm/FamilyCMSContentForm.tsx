@@ -1,7 +1,6 @@
 import React, { useEffect, Suspense, useState } from 'react';
 import type { EmojiClickData } from 'emoji-picker-react';
 
-import { useIonModal } from '@ionic/react';
 import { AppInput } from '../../controls/AppInput';
 import { AppTextarea } from '../../controls/AppTextarea';
 import { AppToggle } from '../../controls/AppToggle';

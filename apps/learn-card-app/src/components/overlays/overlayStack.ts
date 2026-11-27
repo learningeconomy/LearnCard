@@ -1,6 +1,7 @@
 /**
- * The overlay stack shared by the app-owned overlays (AppPopover, AppLoading, AppToast) and the
- * Ionic overlays still in use (ion-modal, ion-alert, ...). Ports the parts of @ionic/core 8.7.2
+ * The overlay stack shared by the app-owned overlays (AppPopover, AppLoading, AppToast,
+ * AppOverlayModal, AppAlert) and the Ionic overlays still in use (learn-card-base's ion-modal,
+ * ...). Ports the parts of @ionic/core 8.7.2
  * `utils/overlays.ts` the app relied on, and keeps both kinds behaving as one stack:
  *
  * - Ordering: Ionic appends a presented overlay to `ion-app` (or `body`) and app overlays portal
@@ -14,9 +15,13 @@
  * - Escape and the hardware back button go to the top-most overlay of either kind, as Ionic's
  *   `getPresentedOverlay()` did: Escape is swallowed while an app overlay is on top (dismissing it
  *   when `backdropDismiss`), and the back button registers just above Ionic's overlay priority.
+ * - z-index: Ionic numbers its overlays from its own private counter (modal / alert / popover:
+ *   20000 + index). An app modal or alert takes the next z-index above every presented overlay in
+ *   its tier, and an Ionic overlay presented later is raised above the app overlays in its tier,
+ *   so presentation order is stacking order for both kinds.
  */
 
-export type OverlayKind = 'popover' | 'loading' | 'toast';
+export type OverlayKind = 'popover' | 'loading' | 'toast' | 'modal' | 'alert';
 
 export type OverlayRole = 'backdrop' | 'timeout' | 'cancel' | string;
 
@@ -36,6 +41,11 @@ export type OverlayEntry = {
      * the tab sentinels, is moved). Toasts never trap.
      */
     trap: 'shadow' | 'scoped' | 'none';
+    /**
+     * Where the `shadow` trap looks for focusable elements (default: `el`). ion-modal's trap only
+     * saw its light DOM (the content), not the drag handle in its shadow root.
+     */
+    trapRoot?: HTMLElement;
     dismiss: (role?: OverlayRole) => void;
     /** Last element focused inside the overlay (Ionic's `lastFocus`). */
     lastFocus?: Element | null;
@@ -62,6 +72,47 @@ export const nextOverlayIndex = (): number => ++lastOverlayIndex;
 /** `ion-app`, or `body` when there is none: where Ionic (and the app overlays) mount overlays. */
 export const getOverlayRoot = (): HTMLElement => document.querySelector('ion-app') ?? document.body;
 
+/** Ionic's z-index tiers are 20000 wide (modal / alert / popover 20000, loading 40000, toast 60000). */
+const Z_TIER = 20000;
+const zIndexOf = (el: Element): number => Number(getComputedStyle(el).zIndex) || 0;
+const tierOf = (z: number): number => Math.floor(z / Z_TIER) * Z_TIER;
+
+/**
+ * The z-index for an app overlay presenting now in the tier starting at `base`: above every
+ * presented overlay (Ionic or app) in that tier, so the newest overlay is on top.
+ */
+export const nextStackZIndex = (base: number, self?: HTMLElement): number => {
+    let z = base + nextOverlayIndex();
+    for (const el of getPresentedOverlays()) {
+        if (el === self) continue;
+        const other = zIndexOf(el);
+        if (tierOf(other) === base && other >= z) z = other + 1;
+    }
+    return z;
+};
+
+/** An Ionic overlay presenting after an app overlay of its tier must stack above it. */
+const raiseIonicOverlay = (ev: Event): void => {
+    const el = ev.target as HTMLElement | null;
+    if (!el || !(el instanceof HTMLElement) || el.hasAttribute(APP_OVERLAY_ATTR)) return;
+    const z = zIndexOf(el);
+    let max = -1;
+    for (const entry of Array.from(entries.values())) {
+        const other = zIndexOf(entry.el);
+        if (tierOf(other) === tierOf(z) && other > max) max = other;
+    }
+    if (max >= z) el.style.zIndex = String(max + 1);
+};
+
+const IONIC_WILL_PRESENT_EVENTS = [
+    'ionModalWillPresent',
+    'ionAlertWillPresent',
+    'ionPopoverWillPresent',
+    'ionActionSheetWillPresent',
+    'ionLoadingWillPresent',
+    'ionToastWillPresent',
+];
+
 const isIonicPresented = (el: Element): boolean =>
     ((el as HTMLElement & { overlayIndex?: number }).overlayIndex ?? 0) > 0 &&
     !el.classList.contains('overlay-hidden');
@@ -87,7 +138,7 @@ const getTopAppOverlay = (): OverlayEntry | undefined => {
     return top ? entries.get(top) : undefined;
 };
 
-/** Dismisses every presented app popover / loading (helpers/uiHelpers `closeAll`, which skips toasts). */
+/** Dismisses every presented app overlay but toasts (helpers/uiHelpers `closeAll`, which skips toasts). */
 export const dismissAllAppOverlays = (): void => {
     for (const entry of Array.from(entries.values())) if (entry.kind !== 'toast') entry.dismiss();
 };
@@ -227,6 +278,10 @@ const lastNonToastIndex = (overlays: HTMLElement[]): number => {
     return -1;
 };
 
+/** Ionic skips its trap for an overlay with the `ion-disable-focus-trap` class (`focusTrap: false`). */
+const trapsFocus = (entry: OverlayEntry): boolean =>
+    entry.trap !== 'none' && !entry.el.classList.contains(FOCUS_TRAP_DISABLE_CLASS);
+
 const focusIn = (target: Element | null | undefined, fallback: HTMLElement): void => {
     const shadowTarget = (target as HTMLElement | null)?.shadowRoot?.querySelector<HTMLElement>(
         FOCUSABLE
@@ -251,17 +306,18 @@ const onFocus = (ev: FocusEvent): void => {
     const index = lastNonToastIndex(overlays);
     const entry = index >= 0 ? entries.get(overlays[index]) : undefined;
     const target = ev.target as Element | null;
-    if (!entry || !target || !(target instanceof Element) || entry.trap === 'none') return;
+    if (!entry || !target || !(target instanceof Element) || !trapsFocus(entry)) return;
     const { el } = entry;
     if (entry.trap === 'shadow') {
+        const root = entry.trapRoot ?? el;
         if (el.contains(target)) {
             entry.lastFocus = target;
         } else if (isToast(target)) {
             focusIn(entry.lastFocus, el);
         } else {
             const lastFocus = entry.lastFocus;
-            focusFirstDescendant(el, el);
-            if (lastFocus === document.activeElement) focusLastDescendant(el, el);
+            focusFirstDescendant(root, el);
+            if (lastFocus === document.activeElement) focusLastDescendant(root, el);
             entry.lastFocus = document.activeElement;
         }
         return;
@@ -296,12 +352,15 @@ const wrapTabAtEnd = (ev: KeyboardEvent): void => {
     const overlays = getPresentedOverlays();
     const index = lastNonToastIndex(overlays);
     const entry = index >= 0 ? entries.get(overlays[index]) : undefined;
-    if (!entry || entry.trap !== 'shadow') return;
-    const all = entry.el.querySelectorAll<HTMLElement>(FOCUSABLE);
+    if (!entry || entry.trap !== 'shadow' || !trapsFocus(entry)) return;
+    // ion-modal's trap had the same gap and left it open: Tab from its last control leaves the page.
+    if (entry.kind === 'modal') return;
+    const root = entry.trapRoot ?? entry.el;
+    const all = root.querySelectorAll<HTMLElement>(FOCUSABLE);
     const last = all.length > 0 ? all[all.length - 1] : entry.el;
     if (document.activeElement !== last) return;
     ev.preventDefault();
-    focusFirstDescendant(entry.el, entry.el);
+    focusFirstDescendant(root, entry.el);
     entry.lastFocus = document.activeElement;
 };
 
@@ -341,7 +400,11 @@ const ensureListeners = (): void => {
     document.addEventListener('ionBackButton', onBackButton);
 };
 
-if (typeof document !== 'undefined') document.addEventListener('keydown', onKeyDown);
+if (typeof document !== 'undefined') {
+    document.addEventListener('keydown', onKeyDown);
+    for (const name of IONIC_WILL_PRESENT_EVENTS)
+        document.addEventListener(name, raiseIonicOverlay);
+}
 
 /** Test helper: forget every registered overlay. */
 export const resetOverlayStackForTests = (): void => {

@@ -3,7 +3,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('family-guardian-issue-to-list');
 
-import { IonContent, IonFooter, IonHeader, IonPage, IonToolbar, useIonAlert } from '@ionic/react';
+import { IonContent, IonFooter, IonHeader, IonPage, IonToolbar } from '@ionic/react';
+import { useAppAlert } from '../../../overlays/useAppAlert';
 import { AppCol, AppGrid, AppRow } from '../../../layout';
 import Plus from 'learn-card-base/svgs/Plus';
 import BoostAddressBookContactItem from '../../../boost/boostCMS/boostCMSForms/boostCMSIssueTo/BoostAddressBookContactItem';
@@ -27,7 +28,7 @@ const FamilyGuardianIssueToList: React.FC<{
     const primaryColor = colors?.defaults?.primaryColor;
 
     const queryClient = useQueryClient();
-    const [presentAlert] = useIonAlert();
+    const [presentAlert] = useAppAlert();
     const { initWallet } = useWallet();
     const [isLoading, setIsLoading] = useState<boolean>(false);
 

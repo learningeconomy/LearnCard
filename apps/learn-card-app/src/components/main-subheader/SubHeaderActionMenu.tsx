@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { IonContent, IonToolbar, IonHeader, IonPage, IonModal, useIonModal } from '@ionic/react';
+import { IonContent, IonToolbar, IonHeader, IonPage } from '@ionic/react';
 import { AppCol, AppGrid, AppRow } from '../layout';
 import { ACHIEVEMENT_CATEGORIES } from '../../../../../packages/learn-card-base/src/components/IssueVC/constants';
 import X from 'learn-card-base/svgs/X';

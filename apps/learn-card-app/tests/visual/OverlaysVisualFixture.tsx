@@ -1,10 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { IonApp, useIonModal } from '@ionic/react';
+import { IonApp } from '@ionic/react';
 
 import { AppLoading } from '../../src/components/overlays/AppLoading';
+import { AppOverlayManager } from '../../src/components/overlays/AppOverlayManager';
 import { AppPopover } from '../../src/components/overlays/AppPopover';
 import { AppToast } from '../../src/components/overlays/AppToast';
 import { useAppToast } from '../../src/components/overlays/useAppToast';
+import { useAppOverlayModal } from '../../src/components/overlays/useAppOverlayModal';
 
 import type { SourceMappedField } from 'learn-card-base/helpers/credentials/clr/renderer';
 import ClrSourceInfo from '../../src/components/clr-transcript/ClrSourceInfo';
@@ -14,8 +16,8 @@ import { AppItem, AppList } from '../../src/components/list';
  * `overlays-1`: the app's AppPopover, AppLoading, AppToast and useAppToast call sites (formerly
  * IonPopover, IonLoading, IonToast and useIonToast; section titles keep those names) as excerpts
  * (same props, classes and inline styles), plus the real ClrSourceInfo. A real IonApp hosts them,
- * with `#ion-view-container-root` as the view container overlays mark `aria-hidden`. An Ionic
- * modal (useIonModal, which stays on Ionic) checks stacking, Escape and focus with overlays
+ * with `#ion-view-container-root` as the view container overlays mark `aria-hidden`. A modal
+ * (useAppOverlayModal, formerly useIonModal) checks stacking, Escape and focus with overlays
  * opened over it. Every scenario reports its open state and dismiss events in `ro-*` readouts.
  */
 type Report = (key: string, value: string) => void;
@@ -436,7 +438,7 @@ const Loading: React.FC<{
     );
 };
 
-/** Content of an Ionic modal (useIonModal stays on Ionic): overlays opened over a modal. */
+/** Modal content (useAppOverlayModal): overlays opened over a modal. */
 const ModalBody: React.FC<{ report: Report; onClose: () => void }> = ({ report, onClose }) => {
     const pop = useOverlayLog('modal-pop', report);
     const [event, setEvent] = useState<Event | undefined>(undefined);
@@ -494,7 +496,7 @@ const ModalBody: React.FC<{ report: Report; onClose: () => void }> = ({ report, 
     );
 };
 
-/** Inside IonApp, so useIonModal reaches IonApp's overlay context. */
+/** Inside IonApp, next to the AppOverlayManager that renders the modal. */
 const FixtureBody: React.FC = () => {
     const [readouts, setReadouts] = useState<Record<string, string>>({});
     const report = useCallback<Report>(
@@ -502,7 +504,7 @@ const FixtureBody: React.FC = () => {
         []
     );
     const [modalDid, setModalDid] = useState(0);
-    const [presentModal, dismissModal] = useIonModal(ModalBody, {
+    const [presentModal, dismissModal] = useAppOverlayModal(ModalBody, {
         report,
         onClose: () => dismissModal(),
     });
@@ -601,5 +603,6 @@ const FixtureBody: React.FC = () => {
 export const OverlaysVisualFixture: React.FC = () => (
     <IonApp>
         <FixtureBody />
+        <AppOverlayManager />
     </IonApp>
 );

@@ -5,7 +5,7 @@ import { getLogger } from 'learn-card-base';
 import * as m from '../../../../paraglide/messages.js';
 const log = getLogger('short-boost-user-options');
 
-import { useIonAlert } from '@ionic/react';
+import { useAppAlert } from '../../../overlays/useAppAlert';
 import ShortBoostSomeoneScreen from './ShortBoostSomeoneScreen';
 import BoostShareableCode from '../../boostCMS/boostCMSForms/boostCMSIssueTo/BoostShareableCode';
 import BoostSearch from '../../boost-search/BoostSearch';
@@ -75,7 +75,7 @@ const ShortBoostUserOptions: React.FC<{
     showBoostContext = false,
 }) => {
     const { closeAllModals, newModal, closeModal } = useModal();
-    const [presentAlert] = useIonAlert();
+    const [presentAlert] = useAppAlert();
     const sectionPortal = document.getElementById('section-cancel-portal');
 
     const { track } = useAnalytics();

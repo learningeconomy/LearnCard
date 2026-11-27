@@ -1,7 +1,7 @@
 import React from 'react';
 import { VC } from '@learncard/types';
 
-import { useIonModal } from '@ionic/react';
+import { useAppOverlayModal } from '../../overlays/useAppOverlayModal';
 
 import FamilyCrest from '../FamilyCrest/FamilyCrest';
 import VerifiedBadge from 'learn-card-base/svgs/VerifiedBadge';
@@ -46,7 +46,7 @@ export const FamilyCard: React.FC<FamilyCardProps> = ({ showSkeleton, credential
 
     const hasParentSwitchedProfiles = switchedProfileStore?.get?.isSwitchedProfile();
 
-    const [presentFamilyPreview, dismissFamilyPreview] = useIonModal(FamilyBoostPreview, {
+    const [presentFamilyPreview, dismissFamilyPreview] = useAppOverlayModal(FamilyBoostPreview, {
         handleCloseModal: () => dismissFamilyPreview(),
         credential: credential,
         boostUri: boostUri,

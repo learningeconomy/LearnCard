@@ -1,5 +1,5 @@
 import React from 'react';
-import { useIonModal } from '@ionic/react';
+import { useAppOverlayModal } from '../../../components/overlays/useAppOverlayModal';
 
 import { AnalyticsEvents, useAnalytics } from '@analytics';
 
@@ -23,7 +23,7 @@ const ContactsInviteEmptyState: React.FC = () => {
     const brandingConfig = useBrandingConfig();
     const brand = brandingConfig?.name ?? 'LearnCard';
 
-    const [presentQrModal, dismissQrModal] = useIonModal(InviteQRCodeModal, {
+    const [presentQrModal, dismissQrModal] = useAppOverlayModal(InviteQRCodeModal, {
         handleCloseModal: () => dismissQrModal(),
     });
 

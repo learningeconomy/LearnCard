@@ -1,15 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import moment from 'moment';
 
-import {
-    useIonModal,
-    IonSpinner,
-    IonContent,
-    IonPage,
-    IonHeader,
-    IonToolbar,
-    IonFooter,
-} from '@ionic/react';
+import { IonSpinner, IonContent, IonPage, IonHeader, IonToolbar, IonFooter } from '@ionic/react';
+import { useAppOverlayModal } from '../../../../overlays/useAppOverlayModal';
 import { AppCol, AppGrid, AppRow } from '../../../../layout';
 import { AppItem, AppList } from '../../../../list';
 import { AppInput } from '../../../../controls/AppInput';
@@ -138,44 +131,50 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
         }
     }, [state]);
 
-    const [presentCenterModal, dismissCenterModal] = useIonModal(BoostAddressBookContactOptions, {
-        state: state,
-        setState: setState,
-        setIssueMode,
-        handleCloseModal: () => dismissCenterModal(),
-        showCloseButton: true,
-        title: (
-            <p className="font-poppins flex items-center font-medium justify-center text-xl w-full h-full text-grayscale-900">
-                {m['boost.shortBoost.selectRecipient']()}
-            </p>
-        ),
-        search,
-        setSearch,
-        searchResults,
-        isLoading,
-        collectionPropName,
-    });
+    const [presentCenterModal, dismissCenterModal] = useAppOverlayModal(
+        BoostAddressBookContactOptions,
+        {
+            state: state,
+            setState: setState,
+            setIssueMode,
+            handleCloseModal: () => dismissCenterModal(),
+            showCloseButton: true,
+            title: (
+                <p className="font-poppins flex items-center font-medium justify-center text-xl w-full h-full text-grayscale-900">
+                    {m['boost.shortBoost.selectRecipient']()}
+                </p>
+            ),
+            search,
+            setSearch,
+            searchResults,
+            isLoading,
+            collectionPropName,
+        }
+    );
 
-    const [presentSheetModal, dismissSheetModal] = useIonModal(BoostAddressBookContactOptions, {
-        state: state,
-        setState: setState,
-        setIssueMode,
-        handleCloseModal: () => dismissSheetModal(),
-        showCloseButton: false,
-        title: (
-            <p className="font-poppins font-medium flex items-center justify-center text-xl w-full h-full text-grayscale-900">
-                {m['boost.cms.issueTo.whoToBoost']()}
-            </p>
-        ),
-        search,
-        setSearch,
-        searchResults,
-        isLoading,
-        collectionPropName,
-    });
+    const [presentSheetModal, dismissSheetModal] = useAppOverlayModal(
+        BoostAddressBookContactOptions,
+        {
+            state: state,
+            setState: setState,
+            setIssueMode,
+            handleCloseModal: () => dismissSheetModal(),
+            showCloseButton: false,
+            title: (
+                <p className="font-poppins font-medium flex items-center justify-center text-xl w-full h-full text-grayscale-900">
+                    {m['boost.cms.issueTo.whoToBoost']()}
+                </p>
+            ),
+            search,
+            setSearch,
+            searchResults,
+            isLoading,
+            collectionPropName,
+        }
+    );
 
     // modal call for directly accessing the addressbook
-    const [presentAddressBook, dismissAddressbook] = useIonModal(BoostAddressBook, {
+    const [presentAddressBook, dismissAddressbook] = useAppOverlayModal(BoostAddressBook, {
         state: state,
         setState: setState,
         viewMode: BoostAddressBookViewMode.full,

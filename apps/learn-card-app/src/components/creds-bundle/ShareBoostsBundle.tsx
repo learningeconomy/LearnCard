@@ -11,7 +11,8 @@ import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credent
 import ProfilePicture from 'learn-card-base/components/profilePicture/ProfilePicture';
 import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarnedCard';
 
-import { IonContent, IonPage, IonSpinner, useIonAlert } from '@ionic/react';
+import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { useAppAlert } from '../overlays/useAppAlert';
 import { AppGrid } from '../layout';
 import { AppToggle } from '../controls/AppToggle';
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -36,7 +37,7 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
     readOnly,
 }) => {
     const currentUser = useCurrentUser();
-    const [presentAlert] = useIonAlert();
+    const [presentAlert] = useAppAlert();
 
     const [isSharing, setIsSharing] = useState(false);
 

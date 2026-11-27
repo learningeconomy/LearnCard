@@ -10,7 +10,8 @@ import useDebounce from 'apps/learn-card-app/src/hooks/useDebounce';
 import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantConfig';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 
-import { useIonModal, IonSpinner, IonDatetime } from '@ionic/react';
+import { IonSpinner, IonDatetime } from '@ionic/react';
+import { useAppOverlayModal } from '../../../../overlays/useAppOverlayModal';
 import { AppCol, AppGrid, AppRow } from '../../../../layout';
 import { AppInput } from '../../../../controls/AppInput';
 import { AppToggle } from '../../../../controls/AppToggle';
@@ -96,7 +97,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
-    const [presentDatePicker] = useIonModal(
+    const [presentDatePicker] = useAppOverlayModal(
         <div className="w-full h-full transparent flex items-center justify-center">
             <IonDatetime
                 onIonChange={e => {

@@ -2204,6 +2204,24 @@ http://ionicframework.com/docs/theming/ */
     --app-safe-area-right: 0px;
 }
 
+/* AppOverlayModal (components/overlays): ion-modal 8.7.2 zeroed the safe-area insets on its host
+   once it is a centered dialog (768x600 and up), as a `:host` rule (hence the layer). Both the
+   Ionic inputs and the `--app-safe-area-*` tokens computed from them at :root are reset. */
+@layer app-overlays-host {
+    @media only screen and (min-width: 768px) and (min-height: 600px) {
+        .app-modal {
+            --ion-safe-area-top: 0px;
+            --ion-safe-area-bottom: 0px;
+            --ion-safe-area-right: 0px;
+            --ion-safe-area-left: 0px;
+            --app-safe-area-top: 0px;
+            --app-safe-area-bottom: 0px;
+            --app-safe-area-right: 0px;
+            --app-safe-area-left: 0px;
+        }
+    }
+}
+
 ion-input,
 ion-textarea {
     --highlight-color-focused: none !important;

@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
-import { IonContent, IonFooter, IonPage, IonSpinner, IonToolbar, useIonModal } from '@ionic/react';
+import { IonContent, IonFooter, IonPage, IonSpinner, IonToolbar } from '@ionic/react';
 import { AppInput } from '../../../controls/AppInput';
 import Pencil from '../../../svgs/Pencil';
 import LearnCardIconOutline from '../../../svgs/LearnCardIconOutline';

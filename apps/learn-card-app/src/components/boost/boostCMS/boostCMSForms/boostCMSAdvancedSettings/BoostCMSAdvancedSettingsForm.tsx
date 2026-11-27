@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import moment from 'moment';
 
-import { IonDatetime, useIonModal } from '@ionic/react';
+import { IonDatetime } from '@ionic/react';
+import { useAppOverlayModal } from '../../../../overlays/useAppOverlayModal';
 import { AppCol, AppRow } from '../../../../layout';
 import { AppTextarea } from '../../../../controls/AppTextarea';
 import { AppToggle } from '../../../../controls/AppToggle';
@@ -63,7 +64,7 @@ const BoostCMSAdvancedSettingsForm: React.FC<{
         });
     };
 
-    const [presentDatePicker, dismissDatePicker] = useIonModal(
+    const [presentDatePicker, dismissDatePicker] = useAppOverlayModal(
         <div className="w-full h-full transparent flex items-center justify-center">
             <IonDatetime
                 onIonChange={e => {
@@ -86,13 +87,13 @@ const BoostCMSAdvancedSettingsForm: React.FC<{
         </div>
     );
 
-    const [presentCenterModal, dismissCenterModal] = useIonModal(LocationSearch, {
+    const [presentCenterModal, dismissCenterModal] = useAppOverlayModal(LocationSearch, {
         showCloseButton: true,
         handleLocationStateChange: handleAddressStateChange,
         handleCloseModal: () => dismissCenterModal(),
     });
 
-    const [presentSheetModal, dismissSheetModal] = useIonModal(LocationSearch, {
+    const [presentSheetModal, dismissSheetModal] = useAppOverlayModal(LocationSearch, {
         handleLocationStateChange: handleAddressStateChange,
         handleCloseModal: () => dismissSheetModal(),
     });

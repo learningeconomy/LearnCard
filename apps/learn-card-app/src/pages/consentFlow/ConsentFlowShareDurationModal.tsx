@@ -1,7 +1,8 @@
 import React from 'react';
 import moment from 'moment';
 
-import { IonContent, IonDatetime, IonHeader, IonPage, IonToolbar, useIonModal } from '@ionic/react';
+import { IonContent, IonDatetime, IonHeader, IonPage, IonToolbar } from '@ionic/react';
+import { useAppOverlayModal } from '../../components/overlays/useAppOverlayModal';
 import { AppCol, AppGrid, AppRow } from '../../components/layout';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import Calendar from '../../components/svgs/Calendar';
@@ -43,7 +44,7 @@ const ConsentFlowShareDurationModal: React.FC<{
         });
     };
 
-    const [presentDatePicker] = useIonModal(
+    const [presentDatePicker] = useAppOverlayModal(
         <div className="w-full h-full transparent flex items-center justify-center">
             <IonDatetime
                 onIonChange={e => {

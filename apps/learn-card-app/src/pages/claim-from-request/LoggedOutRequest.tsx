@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { buildInboxClaimRedirect } from './inboxClaimGate';
-import { useIonModal } from '@ionic/react';
 import ClaimBoostLoggedOutPrompt from 'learn-card-base/components/boost/claimBoostLoggedOutPrompt/ClaimBoostLoggedOutPrompt';
 import { redirectStore } from 'learn-card-base';
 import { useHistory } from 'react-router-dom';
