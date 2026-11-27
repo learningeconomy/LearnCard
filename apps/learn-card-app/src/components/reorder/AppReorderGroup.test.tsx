@@ -54,7 +54,14 @@ const List: React.FC<
             }}
         >
             {rows.map(row => (
-                <div key={row} data-row onClick={onRowClick}>
+                <div
+                    key={row}
+                    data-row
+                    role="button"
+                    tabIndex={0}
+                    onClick={onRowClick}
+                    onKeyDown={() => {}}
+                >
                     <span>{row}</span>
                     <AppReorder>
                         <svg data-testid={`grip-${row}`} />
