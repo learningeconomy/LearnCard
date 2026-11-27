@@ -10,7 +10,54 @@ public struct CredentialDetails: Codable, Hashable, Sendable {
     public var activityStartDate: Date?
     public var activityEndDate: Date?
     public var validUntil: Date?
+    public var transcript: CredentialTranscript?
     public init() {}
+}
+
+/// A display-only projection of the original CLR credential.
+public struct CredentialTranscript: Codable, Hashable, Sendable {
+    public var kind: String
+    public var learner: String?
+    public var partial: Bool?
+    public var groups: [CredentialTranscriptGroup]
+    public init(kind: String, learner: String? = nil, partial: Bool? = nil, groups: [CredentialTranscriptGroup]) {
+        self.kind = kind; self.learner = learner; self.partial = partial; self.groups = groups
+    }
+}
+
+public struct CredentialTranscriptGroup: Codable, Hashable, Sendable {
+    public var kind: String
+    public var term: String?
+    public var records: [CredentialTranscriptRecord]
+    public init(kind: String, term: String? = nil, records: [CredentialTranscriptRecord]) {
+        self.kind = kind; self.term = term; self.records = records
+    }
+}
+
+public struct CredentialTranscriptRecord: Codable, Hashable, Sendable {
+    public var name: String
+    public var code: String?
+    public var credits: CredentialTranscriptCredits?
+    public var results: [CredentialTranscriptResult]
+    public init(name: String, code: String? = nil, credits: CredentialTranscriptCredits? = nil, results: [CredentialTranscriptResult] = []) {
+        self.name = name; self.code = code; self.credits = credits; self.results = results
+    }
+}
+
+public struct CredentialTranscriptCredits: Codable, Hashable, Sendable {
+    public var amount: Double
+    public var unit: String?
+    public var kind: String
+    public init(amount: Double, unit: String? = nil, kind: String) { self.amount = amount; self.unit = unit; self.kind = kind }
+}
+
+public struct CredentialTranscriptResult: Codable, Hashable, Sendable {
+    public var label: String?
+    public var value: String?
+    public var status: String?
+    public init(label: String? = nil, value: String? = nil, status: String? = nil) {
+        self.label = label; self.value = value; self.status = status
+    }
 }
 
 public struct CredentialNarrative: Codable, Hashable, Sendable {

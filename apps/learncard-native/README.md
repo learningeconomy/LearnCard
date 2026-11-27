@@ -79,6 +79,8 @@ learncard-native/
 
 SwiftUI talks to `CredentialService`: `LiveCredentialService` uses the account SDK host, while `DemoCredentialService` powers sample mode. The original signed credential is retained separately from the display model. Changing its presentation never mutates or reissues its contents.
 
+Credential review in Inbox and credential detail in Passport show structured records for a Comprehensive Learner Record (CLR). Courses are grouped by supplied term and can show course codes, credits and results when the credential includes them. The existing verification and sharing controls still apply to the original credential. A transcript file saved as a private document copy remains a separate type of record.
+
 Adding Swift source files requires no project update because the project uses Xcode synchronized source groups. If project settings change, update `scripts/generate-project.py`, then run:
 
 ```bash

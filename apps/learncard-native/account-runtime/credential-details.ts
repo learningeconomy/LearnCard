@@ -1,4 +1,11 @@
 import { z } from 'zod';
+import { normalizeClrCredential } from '../../../packages/learn-card-base/src/helpers/credentials/clr/normalize';
+import {
+    groupClrRecords,
+    inferClrLayout,
+} from '../../../packages/learn-card-base/src/helpers/credentials/clr/layout';
+import { getClrLearnerName } from '../../../packages/learn-card-base/src/helpers/credentials/clr/selectors';
+import type { ClrNormalizedRecord } from '../../../packages/learn-card-base/src/helpers/credentials/clr/types';
 
 const object = (value: unknown): Record<string, unknown> =>
     value && typeof value === 'object' && !Array.isArray(value)
@@ -46,6 +53,78 @@ const narrative = (value: unknown, name = ''): Narrative | undefined => {
         url: webURL(entry.id) || webURL(entry.url) || webURL(value),
     };
     return result.text || result.url || text(entry.name) ? result : undefined;
+};
+
+type TranscriptRecord = {
+    name: string;
+    code?: string;
+    credits?: { amount: number; unit?: string; kind: 'earned' | 'available' };
+    results: { label?: string; value?: string; status?: string }[];
+};
+type TranscriptGroup = {
+    kind: 'courses' | 'programs' | 'other';
+    term?: string;
+    records: TranscriptRecord[];
+};
+
+/** Adapt the web CLR normalizer without changing the original signed credential. */
+const transcriptForDisplay = (raw: Record<string, unknown>) => {
+    if (!items(raw.type).includes('ClrCredential')) return undefined;
+    const model = normalizeClrCredential(raw);
+    const layout = inferClrLayout(model).kind;
+    const groups: TranscriptGroup[] = [];
+    const adaptRecord = (record: ClrNormalizedRecord): TranscriptRecord | undefined => {
+        const name = record.name?.value || record.credentialName?.value;
+        if (!name) return undefined;
+        const credit = record.creditsEarned ?? record.creditsAvailable;
+        const earned = record.creditsEarned !== undefined;
+        return {
+            name,
+            code: record.humanCode?.value,
+            credits: credit && {
+                amount: credit.value,
+                unit: earned ? record.creditsEarnedUnit?.value : record.creditsAvailableUnit?.value,
+                kind: earned ? 'earned' : 'available',
+            },
+            results: record.results.flatMap(result => {
+                const label = result.resultDescription?.name?.value;
+                const value = result.value?.value;
+                const status = result.status?.value;
+                return label || value !== undefined || status
+                    ? [{ label, value: value === undefined ? undefined : String(value), status }]
+                    : [];
+            }),
+        };
+    };
+    // Partition canonical occurrences rather than using an ID lookup: a CLR can
+    // legitimately contain multiple records with the same credential ID.
+    for (const section of groupClrRecords(
+        model.records,
+        layout === 'military' ? 'general' : layout
+    )) {
+        const kind =
+            section.kind === 'courses' || section.kind === 'programs' ? section.kind : 'other';
+        for (const record of section.records) {
+            const adapted = adaptRecord(record);
+            if (!adapted) continue;
+            const term = kind === 'courses' ? record.term?.value : undefined;
+            let group = groups.find(item => item.kind === kind && item.term === term);
+            if (!group) groups.push((group = { kind, term, records: [] }));
+            group.records.push(adapted);
+        }
+    }
+    return {
+        kind: layout === 'academic' ? ('academic' as const) : ('general' as const),
+        learner: getClrLearnerName(
+            model.collection.subjectIdentifiers.filter(
+                identifier =>
+                    identifier.identityType?.value === 'name' ||
+                    identifier.identifierType?.value === 'name'
+            )
+        )?.value,
+        partial: model.collection.partial || undefined,
+        groups,
+    };
 };
 
 /** Read-only display projection. Original credentials and proofs must never be rewritten for display. */
@@ -121,6 +200,7 @@ export const credentialDetailsForDisplay = (input: unknown) => {
         });
     });
     return {
+        transcript: transcriptForDisplay(raw),
         criteria,
         alignments,
         evidence,
