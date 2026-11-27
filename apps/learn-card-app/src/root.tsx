@@ -19,7 +19,9 @@ const FIRST_SCREEN_FONTS = [poppins400, poppins500, poppins700];
 export function Layout({ children }: { children: React.ReactNode }) {
     const branding = __LC_DOCUMENT_BRANDING__;
     return (
-        <html lang="en">
+        // The app shell (learn-card-base appPlatform) adds platform classes to <html> before
+        // hydrateRoot runs, so the className can't match the static HTML.
+        <html lang="en" suppressHydrationWarning>
             <head>
                 <meta charSet="utf-8" />
                 <base href="/" />
