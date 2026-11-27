@@ -37,9 +37,16 @@ export const useAppOverlayModal = (
 ] => {
     const [overlayId] = useState(() => `app-modal-${++lastModalId}`);
     const [options, setOptions] = useState<AppOverlayModalOptions | null>(null);
-    const state = useRef<{ open: boolean; handle: AppOverlayModalHandle | null; root?: Root }>({
+    const state = useRef<{
+        open: boolean;
+        handle: AppOverlayModalHandle | null;
+        root?: Root;
+        generation: number;
+        cleanupTimer?: ReturnType<typeof setTimeout>;
+    }>({
         open: false,
         handle: null,
+        generation: 0,
     });
 
     useEffect(() => {
@@ -49,19 +56,26 @@ export const useAppOverlayModal = (
             ? component
             : createElement(component, componentProps);
         const onDidDismiss: AppOverlayModalProps['onDidDismiss'] = event => {
-            options.onDidDismiss?.(event);
+            const dismissedGeneration = s.generation;
+            // Clear `open` first so a `present()` inside `onDidDismiss` is accepted.
             s.open = false;
             s.handle = null;
+            options.onDidDismiss?.(event);
             // After AppOverlayModal's own dismiss bookkeeping, as Ionic removed it after the event.
-            setTimeout(() => {
+            // Skip cleanup if a newer present() already owns this overlay id.
+            s.cleanupTimer = setTimeout(() => {
+                s.cleanupTimer = undefined;
+                if (s.generation !== dismissedGeneration) return;
                 setOptions(current => (current === options ? null : current));
                 removeManagedOverlay(overlayId);
                 s.root?.unmount();
                 s.root = undefined;
             }, 0);
         };
+        // A new generation remounts so `isOpen` can present again after a dismiss.
         const node = (
             <AppOverlayModal
+                key={s.generation}
                 {...options}
                 ref={handle => {
                     if (handle) s.handle = handle;
@@ -81,8 +95,14 @@ export const useAppOverlayModal = (
     }, [component, componentProps, options, overlayId]);
 
     const present = useCallback((presentOptions: AppOverlayModalOptions = {}) => {
-        if (state.current.open) return;
-        state.current.open = true;
+        const s = state.current;
+        if (s.open) return;
+        if (s.cleanupTimer !== undefined) {
+            clearTimeout(s.cleanupTimer);
+            s.cleanupTimer = undefined;
+        }
+        s.generation += 1;
+        s.open = true;
         setOptions(presentOptions);
     }, []);
 

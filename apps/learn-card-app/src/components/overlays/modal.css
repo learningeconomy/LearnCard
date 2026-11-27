@@ -11,8 +11,8 @@
  *   and they reset Tailwind's preflight (`box-sizing`, `border`, button padding) to the UA
  *   defaults they had in the shadow root.
  * - core.css's `ion-modal …` rules keep their specificity (`div:where(.app-modal)` = one element).
- * - Safe-area insets are the surface-layer `--app-safe-area-*` tokens. ion-modal's centered-dialog
- *   reset (`--ion-safe-area-*: 0px` at 768x600 and up) is in theme/variables.css.
+ * - Safe-area insets are the surface-layer `--app-safe-area-*` tokens. The centered-dialog
+ *   inset reset (zero insets at 768x600 and up, formerly Ionic's host token) is in theme/variables.css.
  */
 
 @layer app-overlays-host {
