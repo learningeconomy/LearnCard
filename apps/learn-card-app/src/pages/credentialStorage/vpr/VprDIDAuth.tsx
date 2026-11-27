@@ -5,8 +5,8 @@ const log = getLogger('vpr-d-i-d-auth');
 
 import { useCurrentUser, chapiStore, redirectStore } from 'learn-card-base';
 
-import { IonPage, IonContent } from '@ionic/react';
 import { AppCol, AppRow } from '../../../components/layout';
+import { AppContent, AppPage } from '../../../components/chrome';
 
 const VprDIDAuth: React.FC = ({ event, currentUser }) => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -60,8 +60,8 @@ const VprDIDAuth: React.FC = ({ event, currentUser }) => {
     };
 
     return (
-        <IonPage>
-            <IonContent fullscreen>
+        <AppPage>
+            <AppContent fullscreen>
                 <AppRow className="w-full flex items-center justify-center h-full">
                     <AppCol className="w-full flex flex-col items-center justify-center text-center">
                         <h2 className="mt-6 font-bold">
@@ -87,8 +87,8 @@ const VprDIDAuth: React.FC = ({ event, currentUser }) => {
                         </div>
                     </AppCol>
                 </AppRow>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

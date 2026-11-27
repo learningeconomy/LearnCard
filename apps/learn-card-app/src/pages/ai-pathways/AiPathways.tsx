@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 
-import { IonContent, IonPage } from '@ionic/react';
 import { ErrorBoundary } from 'react-error-boundary';
 import MainHeader from '../../components/main-header/MainHeader';
 import MySkillProfile from './ai-pathways-skill-profile/MySkillProfile';
@@ -17,6 +16,7 @@ import GrowSkillsPathwaysHome from './GrowSkillsPathwaysHome';
 import { useSkillProfileCompletion } from './ai-pathways-skill-profile/SkillProfileProgressBar';
 import { useGrowSkillsContent } from './useGrowSkillsContent';
 import AiPathwayCareers from './ai-pathway-careers/AiPathwayCareers';
+import { AppContent, AppPage } from '../../components/chrome';
 
 const AiPathways: React.FC = () => {
     const { getThemedCategoryColors } = useTheme();
@@ -36,9 +36,9 @@ const AiPathways: React.FC = () => {
     const { backgroundSecondaryColor } = colors;
 
     return (
-        <IonPage className={`bg-${backgroundSecondaryColor}`}>
+        <AppPage className={`bg-${backgroundSecondaryColor}`}>
             <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
-                <IonContent fullscreen color={backgroundSecondaryColor}>
+                <AppContent fullscreen color={backgroundSecondaryColor}>
                     <MainHeader
                         category={CredentialCategoryEnum.aiPathway}
                         showBackButton
@@ -79,9 +79,9 @@ const AiPathways: React.FC = () => {
                             />
                         </div>
                     </AiFeatureGate>
-                </IonContent>
+                </AppContent>
             </ErrorBoundary>
-        </IonPage>
+        </AppPage>
     );
 };
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
-import { IonPage, IonContent, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import { AppIcon } from '../../../components/icon';
 import {
     alertCircleOutline,
@@ -203,6 +203,7 @@ const PERSONAL_FIELD_LABELS: Record<string, string> = {
 
 import { ManifestDiffPanel } from '../dashboards/components/ManifestDiffPanel';
 import type { AppManifestDiff, AppStoreListing } from '@learncard/types';
+import { AppContent, AppPage } from '../../../components/chrome';
 
 const AUTOSAVE_DELAY_MS = 800;
 
@@ -1338,9 +1339,9 @@ const SubmitManifest: React.FC = () => {
 
     if (error) {
         return (
-            <IonPage>
+            <AppPage>
                 <AppStoreHeader title="Publish your app" />
-                <IonContent className="ion-padding">
+                <AppContent className="ion-padding">
                     <div className="max-w-2xl mx-auto mt-12">
                         <div className="p-6 bg-red-50 border border-red-100 rounded-2xl flex flex-col items-center text-center gap-4">
                             <AppIcon icon={alertCircleOutline} className="w-12 h-12 text-red-500" />
@@ -1358,30 +1359,30 @@ const SubmitManifest: React.FC = () => {
                             </button>
                         </div>
                     </div>
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         );
     }
 
     if (!manifest || isLoadingIntegrations) {
         return (
-            <IonPage>
+            <AppPage>
                 <AppStoreHeader title="Publish your app" />
-                <IonContent className="ion-padding">
+                <AppContent className="ion-padding">
                     <div className="flex justify-center items-center h-full">
                         <IonSpinner name="crescent" />
                     </div>
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         );
     }
 
     if (reuseCandidate) {
         const name = reuseCandidate.listing.display_name;
         return (
-            <IonPage>
+            <AppPage>
                 <AppStoreHeader />
-                <IonContent>
+                <AppContent>
                     <section className="m-6 mx-auto max-w-md rounded-[20px] bg-white p-8 font-poppins space-y-v3-5">
                         <AppIcon
                             icon={alertCircleOutline}
@@ -1429,21 +1430,21 @@ const SubmitManifest: React.FC = () => {
                             Publish as a new app
                         </button>
                     </section>
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         );
     }
 
     if (isRestoring) {
         return (
-            <IonPage>
+            <AppPage>
                 <AppStoreHeader title="Publish your app" />
-                <IonContent className="ion-padding">
+                <AppContent className="ion-padding">
                     <div className="flex justify-center items-center h-full">
                         <IonSpinner name="crescent" />
                     </div>
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         );
     }
 
@@ -1461,9 +1462,9 @@ const SubmitManifest: React.FC = () => {
         };
 
         return (
-            <IonPage>
+            <AppPage>
                 <AppStoreHeader title="Your app" />
-                <IonContent>
+                <AppContent>
                     <div className={isDesktop ? 'p-6' : 'ion-padding'}>
                         {formError && (
                             <div className="max-w-[560px] mx-auto mt-4 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
@@ -1499,8 +1500,8 @@ const SubmitManifest: React.FC = () => {
                             }
                         />
                     </div>
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         );
     }
 
@@ -2386,9 +2387,9 @@ const SubmitManifest: React.FC = () => {
     );
 
     return (
-        <IonPage>
+        <AppPage>
             <AppStoreHeader title="Publish your app" />
-            <IonContent>
+            <AppContent>
                 <div className="flex min-h-full">
                     <div className={`flex-1 ${isDesktop ? 'p-6' : 'ion-padding'}`}>
                         {leftPaneContent}
@@ -2399,7 +2400,7 @@ const SubmitManifest: React.FC = () => {
                         </div>
                     )}
                 </div>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };

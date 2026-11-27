@@ -475,16 +475,20 @@
 }
 
 /*
- * <IonContent fullscreen> under AppTabs: add the tab bar back into ion-content's bottom offset
- * (see useFullscreenContentOffset in AppTabs.tsx). Mirrors ion-content's own .inner-scroll /
- * #background-content rules with `--offset-bottom + --app-tab-bar-offset`.
+ * <AppContent fullscreen> (and learn-card-base's <IonContent fullscreen>) under AppTabs: add the
+ * tab bar back into the content's bottom offset (see useFullscreenContentOffset in AppTabs.tsx).
+ * Mirrors the content's own scroll area / background rules with
+ * `--offset-bottom + --app-tab-bar-offset`.
  */
 .app-tabs-inner ion-content.app-tabs-fullscreen-content::part(background),
-.app-tabs-inner ion-content.app-tabs-fullscreen-content::part(scroll) {
+.app-tabs-inner ion-content.app-tabs-fullscreen-content::part(scroll),
+.app-tabs-inner .app-content.app-tabs-fullscreen-content > .app-content-background,
+.app-tabs-inner .app-content.app-tabs-fullscreen-content > .app-content-scroll {
     bottom: calc((var(--offset-bottom) + var(--app-tab-bar-offset, 0px)) * -1);
 }
 
-.app-tabs-inner ion-content.app-tabs-fullscreen-content::part(scroll) {
+.app-tabs-inner ion-content.app-tabs-fullscreen-content::part(scroll),
+.app-tabs-inner .app-content.app-tabs-fullscreen-content > .app-content-scroll {
     padding-bottom: calc(
         var(--padding-bottom) + var(--keyboard-offset) + var(--offset-bottom) +
             var(--app-tab-bar-offset, 0px)

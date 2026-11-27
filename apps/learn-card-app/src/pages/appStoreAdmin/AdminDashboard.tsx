@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IonPage, IonContent, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import { Filter, ShieldAlert } from 'lucide-react';
 
 import { useDeveloperPortal } from '../appStoreDeveloper/useDeveloperPortal';
@@ -12,6 +12,7 @@ import type {
 
 import { ListingSidebar, ListingDetail, type FilterStatus } from './components';
 import * as m from '../../paraglide/messages.js';
+import { AppContent, AppPage } from '../../components/chrome';
 
 const AdminDashboard: React.FC = () => {
     const {
@@ -75,22 +76,22 @@ const AdminDashboard: React.FC = () => {
     // Loading state
     if (isCheckingAdmin) {
         return (
-            <IonPage>
-                <IonContent className="ion-padding">
+            <AppPage>
+                <AppContent className="ion-padding">
                     <div className="flex justify-center items-center h-full">
                         <IonSpinner name="crescent" />
                     </div>
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         );
     }
 
     // Access denied state
     if (!isAdmin) {
         return (
-            <IonPage>
+            <AppPage>
                 <AppStoreHeader title={m['appStoreAdmin.dashboard.title']()} />
-                <IonContent className="ion-padding">
+                <AppContent className="ion-padding">
                     <div className="max-w-md mx-auto text-center py-12">
                         <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <ShieldAlert className="w-8 h-8 text-red-500" />
@@ -102,15 +103,15 @@ const AdminDashboard: React.FC = () => {
                             {m['appStoreAdmin.dashboard.noPermissions']()}
                         </p>
                     </div>
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         );
     }
 
     return (
-        <IonPage>
+        <AppPage>
             <AppStoreHeader title={m['appStoreAdmin.dashboard.title']()} />
-            <IonContent>
+            <AppContent>
                 <div className="flex h-full">
                     {/* Sidebar */}
                     <ListingSidebar
@@ -160,8 +161,8 @@ const AdminDashboard: React.FC = () => {
                         )}
                     </div>
                 </div>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

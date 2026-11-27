@@ -8,7 +8,6 @@ import {
     boostCategoryMetadata,
     BoostCategoryOptionsEnum,
 } from 'learn-card-base';
-import { IonContent, IonPage } from '@ionic/react';
 import { AppCol, AppGrid, AppRow } from '../../layout';
 
 import {
@@ -134,6 +133,7 @@ interface BoostCMSProps {
 }
 
 import { getLogger } from 'learn-card-base';
+import { AppContent, AppPage } from '../../chrome';
 const log = getLogger('boost-cms');
 
 const BoostCMS: React.FC<BoostCMSProps> = ({
@@ -1094,7 +1094,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
     }
 
     return (
-        <IonPage>
+        <AppPage>
             {(isLoading ||
                 isSaveLoading ||
                 isPublishLoading ||
@@ -1114,7 +1114,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                 issueToLength={issueToLength}
             />
 
-            <IonContent fullscreen color="grayscale-800">
+            <AppContent fullscreen color="grayscale-800">
                 <AppGrid className="flex items-center justify-center flex-col w-full px-4">
                     {activeBoostCMSStep}
                 </AppGrid>
@@ -1127,8 +1127,8 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                         </AppCol>
                     </AppRow>
                 )}
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

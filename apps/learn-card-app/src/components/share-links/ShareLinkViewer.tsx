@@ -6,7 +6,6 @@ import LearnCardTextLogo from '../svgs/LearnCardTextLogo';
 import { ShareCredentialsIllustration } from './ShareCredentialsIllustration';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useLocation, useHistory } from 'react-router-dom';
-import { IonPage, IonContent } from '@ionic/react';
 import { AppIcon } from '../icon';
 import {
     checkmarkOutline,
@@ -47,7 +46,7 @@ import {
     hasProtectedResumePdf,
     downloadProtectedResumePdf,
 } from '../../helpers/resume-publishing/protectedPdf';
-import { AppHeader, AppToolbar } from '../chrome';
+import { AppContent, AppHeader, AppPage, AppToolbar } from '../chrome';
 
 type Ready = {
     payload: SharePayload;
@@ -607,7 +606,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
         ready: ['', ''],
     }[state];
     return (
-        <IonPage className="sentry-block ph-no-capture font-poppins" data-html2canvas-ignore>
+        <AppPage className="sentry-block ph-no-capture font-poppins" data-html2canvas-ignore>
             <AppHeader className="ion-no-border border-b border-grayscale-200">
                 <AppToolbar style={{ '--background': 'white' }}>
                     <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between gap-4 text-xs font-medium text-grayscale-600">
@@ -645,7 +644,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                     </div>
                 </AppToolbar>
             </AppHeader>
-            <IonContent>
+            <AppContent>
                 <main className="bg-grayscale-100 text-grayscale-900 min-h-full">
                     <div className="max-w-3xl mx-auto px-5 py-8 md:py-14 space-y-v3-5">
                         {state !== 'ready' || !ready ? (
@@ -1002,8 +1001,8 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                         )}
                     </div>
                 </main>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 
@@ -1018,8 +1017,8 @@ const ShareLinkViewer = () => {
     // viewer that would be discarded when that wallet supplies its identity.
     if (isLoggedIn && !wallet) {
         return (
-            <IonPage className="sentry-block ph-no-capture font-poppins">
-                <IonContent>
+            <AppPage className="sentry-block ph-no-capture font-poppins">
+                <AppContent>
                     <main className="min-h-full bg-grayscale-100 px-5 py-14 text-center">
                         <section role="status" className="mx-auto max-w-3xl space-y-4">
                             <h1 className="text-xl font-semibold text-grayscale-900">
@@ -1030,8 +1029,8 @@ const ShareLinkViewer = () => {
                             </p>
                         </section>
                     </main>
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         );
     }
     const account = isLoggedIn ? `${wallet?.id.did() ?? ''}:${switchedDid ?? ''}` : 'anonymous';

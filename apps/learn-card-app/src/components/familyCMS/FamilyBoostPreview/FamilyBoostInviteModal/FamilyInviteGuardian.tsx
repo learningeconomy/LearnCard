@@ -14,7 +14,6 @@ import {
     ToastTypeEnum,
 } from 'learn-card-base';
 
-import { IonPage } from '@ionic/react';
 import { useAppOverlayModal } from '../../../overlays/useAppOverlayModal';
 import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantConfig';
 import CopyStack from 'apps/learn-card-app/src/components/svgs/CopyStack';
@@ -34,6 +33,7 @@ import { Capacitor } from '@capacitor/core';
 import { Share } from '@capacitor/share';
 import { BoostCMSIssueTo, ShortBoostState } from '../../../boost/boost';
 import * as m from '../../../../paraglide/messages.js';
+import { AppPage } from '../../../chrome';
 
 type FamilyInviteGuardianProps = {
     boostUri: string;
@@ -267,7 +267,7 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
     }, []);
 
     return (
-        <IonPage>
+        <AppPage>
             <ModalLayout handleOnClick={handleCloseModal} containerClass="pt-6!">
                 <div className="w-full">
                     <FamilyCrest
@@ -379,7 +379,7 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
                     </div>
                 </div>
             </ModalLayout>
-        </IonPage>
+        </AppPage>
     );
 };
 

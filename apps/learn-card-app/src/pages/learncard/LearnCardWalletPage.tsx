@@ -1,6 +1,5 @@
 import React, { useRef, useState } from 'react';
 import * as m from '../../paraglide/messages.js';
-import { IonContent, IonPage } from '@ionic/react';
 import { AppCol, AppRow } from '../../components/layout';
 
 import {
@@ -12,6 +11,7 @@ import {
 
 import UserF from '../../assets/images/f-user.png';
 import MainHeader from '../../components/main-header/MainHeader';
+import { AppContent, AppPage } from '../../components/chrome';
 
 const LearnCardWalletPage: React.FC = () => {
     const [isActivityHeaderFixed, setIsActivityHeaderFixed] = useState<boolean>(false);
@@ -29,11 +29,11 @@ const LearnCardWalletPage: React.FC = () => {
     );
 
     return (
-        <IonPage className="bg-white">
+        <AppPage className="bg-white">
             <MainHeader customClassName="bg-white">
                 {isActivityHeaderFixed && activityHeader}
             </MainHeader>
-            <IonContent
+            <AppContent
                 fullscreen
                 scrollEvents={true}
                 onIonScroll={event => {
@@ -47,14 +47,14 @@ const LearnCardWalletPage: React.FC = () => {
                         setIsActivityHeaderFixed(false);
                     }
                 }}
-                class="learn-card-card-content"
+                className="learn-card-card-content"
                 color="cyan-100"
             >
                 <LearnCard userImage={UserF} />
                 {activityHeader}
                 <LearnCardActivityList ref={activityContainer} />
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

@@ -1,12 +1,11 @@
 import React from 'react';
 
-import { IonPage } from '@ionic/react';
 import LearnCardIDCMSLayout from './LearnCardIDCMSLayout';
 import IDSleeve from 'learn-card-base/svgs/IDSleeve';
 import LearnCardID from './LearnCardID';
 
 import { FamilyChildAccount, FamilyCMSAppearance } from '../familyCMS/familyCMSState';
-import { AppFooter, AppToolbar } from '../chrome';
+import { AppFooter, AppPage, AppToolbar } from '../chrome';
 
 export const LearnCardIDPreview: React.FC<{
     user: FamilyChildAccount;
@@ -14,7 +13,7 @@ export const LearnCardIDPreview: React.FC<{
     handleCloseModal: () => void;
 }> = ({ user, learnCardID, handleCloseModal }) => {
     return (
-        <IonPage>
+        <AppPage>
             <LearnCardIDCMSLayout
                 learnCardID={learnCardID}
                 containerClassName="justify-center!"
@@ -55,7 +54,7 @@ export const LearnCardIDPreview: React.FC<{
                     </div>
                 </AppToolbar>
             </AppFooter>
-        </IonPage>
+        </AppPage>
     );
 };
 

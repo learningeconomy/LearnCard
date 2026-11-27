@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Clipboard } from '@capacitor/clipboard';
 
-import { IonPage, IonContent } from '@ionic/react';
 import { useIsLoggedIn, useToast, ToastTypeEnum, useModal, ModalTypes } from 'learn-card-base';
 
 import X from '../svgs/X';
@@ -14,7 +13,7 @@ import SharedBoostVerificationItem from './SharedBoostVerificationItem';
 import { VC, VerificationItem, VerificationStatusEnum } from '@learncard/types';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import * as m from '../../paraglide/messages.js';
-import { AppHeader, AppToolbar } from '../chrome';
+import { AppContent, AppHeader, AppPage, AppToolbar } from '../chrome';
 
 export const getColorForVerificationStatus = (
     status: (typeof VerificationStatusEnum)[keyof typeof VerificationStatusEnum]
@@ -140,7 +139,7 @@ const SharedBoostVerificationBlock: React.FC<{
 
     if (mode === SharedBoostVerificationBlockViewMode.modal) {
         return (
-            <IonPage color="grayscale-100">
+            <AppPage color="grayscale-100">
                 <AppHeader className="w-full">
                     <AppToolbar className="w-full">
                         <div className="w-full flex items-center justify-center pt-4 px-4">
@@ -169,7 +168,7 @@ const SharedBoostVerificationBlock: React.FC<{
                         </div>
                     </AppToolbar>
                 </AppHeader>
-                <IonContent color="grayscale-100">
+                <AppContent color="grayscale-100">
                     <div className={containerStyles}>
                         <div className={innerContainerStyles}>
                             <div className="w-full ion-padding bg-white rounded-[12px] pt-6 pb-8 shadow-bottom">
@@ -222,8 +221,8 @@ const SharedBoostVerificationBlock: React.FC<{
                             </div>
                         </div>
                     </div>
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         );
     }
 

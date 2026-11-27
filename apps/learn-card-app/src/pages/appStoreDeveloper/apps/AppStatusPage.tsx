@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Redirect, useHistory, useLocation, useParams } from 'react-router-dom';
-import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import { AppIcon } from '../../../components/icon';
 import { alertCircleOutline, arrowBackOutline } from 'ionicons/icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -12,6 +12,7 @@ import { AppStatusView } from '../submit/AppStatusView';
 import { getListingMode, withPendingChanges } from '../submit/listingLifecycle';
 import { getAppStatusPath } from './myApps';
 import { DeleteAppMenu } from './DeleteAppMenu';
+import { AppContent, AppPage } from '../../../components/chrome';
 
 const log = getLogger('app-status-page');
 
@@ -39,22 +40,22 @@ const AppStatusPage: React.FC = () => {
 
     if (isLoading) {
         return (
-            <IonPage>
+            <AppPage>
                 <AppStoreHeader title="Your app" />
-                <IonContent className="ion-padding">
+                <AppContent className="ion-padding">
                     <div className="flex justify-center items-center h-full">
                         <IonSpinner name="crescent" />
                     </div>
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         );
     }
 
     if (!data) {
         return (
-            <IonPage>
+            <AppPage>
                 <AppStoreHeader title="Your app" />
-                <IonContent>
+                <AppContent>
                     <div className="max-w-md mx-auto mt-16 p-6 text-center font-poppins">
                         <h1 className="text-xl font-semibold text-grayscale-900 mb-2">
                             We couldn't find this app
@@ -70,8 +71,8 @@ const AppStatusPage: React.FC = () => {
                             Back to Your Apps
                         </button>
                     </div>
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         );
     }
 
@@ -117,9 +118,9 @@ const AppStatusPage: React.FC = () => {
     };
 
     return (
-        <IonPage>
+        <AppPage>
             <AppStoreHeader title="Your app" />
-            <IonContent>
+            <AppContent>
                 <div className="px-4 sm:px-6 pt-6">
                     <div className="max-w-[560px] mx-auto">
                         <div className="flex items-center justify-between gap-2">
@@ -167,8 +168,8 @@ const AppStatusPage: React.FC = () => {
                         }
                     />
                 </div>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

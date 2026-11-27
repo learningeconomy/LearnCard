@@ -5,7 +5,7 @@ import { getVCDisplayCardVariant } from '@learncard/react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('boost-claim-card');
 
-import { IonSpinner, IonPage } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import { useAppAlert } from '../../overlays/useAppAlert';
 
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
@@ -61,6 +61,7 @@ import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreview
 import * as m from '../../../paraglide/messages.js';
 import { useDuplicateCredentialGuard } from '../../credentials/duplicate-credential/useDuplicateCredentialGuard';
 import type { DuplicateCredentialLookup } from '../../credentials/duplicate-credential/findDuplicateCredential';
+import { AppPage } from '../../chrome';
 
 type BoostClaimCardProps = {
     credential: VC | VP;
@@ -562,7 +563,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     }
 
     return (
-        <IonPage className="flex items-center justify-center boost-cms-preview">
+        <AppPage className="flex items-center justify-center boost-cms-preview">
             <h1 className="sr-only">
                 {getCredentialName(credential as VC) || m['claim.modal.credentialFallback']()}
             </h1>
@@ -657,7 +658,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                     )}
                 </div>
             </BoostFooterLayout>
-        </IonPage>
+        </AppPage>
     );
 };
 

@@ -1,7 +1,6 @@
 import React from 'react';
 import moment from 'moment';
 
-import { IonContent, IonPage } from '@ionic/react';
 import AppDatetime from '../../components/datetime/AppDatetime';
 import { useAppOverlayModal } from '../../components/overlays/useAppOverlayModal';
 import { AppCol, AppGrid, AppRow } from '../../components/layout';
@@ -11,7 +10,7 @@ import { RadioButton } from 'learn-card-base';
 
 import useTheme from '../../theme/hooks/useTheme';
 import * as m from '../../paraglide/messages.js';
-import { AppHeader, AppToolbar } from '../../components/chrome';
+import { AppContent, AppHeader, AppPage, AppToolbar } from '../../components/chrome';
 
 const defaultDate = moment().add(6, 'months').toISOString(); // sets the shareable expiration date 6 months from today
 
@@ -70,8 +69,8 @@ const ConsentFlowShareDurationModal: React.FC<{
     );
 
     return (
-        <IonPage>
-            <IonContent fullscreen>
+        <AppPage>
+            <AppContent fullscreen>
                 <AppHeader className="ion-no-border mt-[25px]">
                     <AppToolbar className="ion-no-border" color="white">
                         <AppGrid>
@@ -177,8 +176,8 @@ const ConsentFlowShareDurationModal: React.FC<{
                         </div>
                     </AppRow>
                 </AppGrid>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

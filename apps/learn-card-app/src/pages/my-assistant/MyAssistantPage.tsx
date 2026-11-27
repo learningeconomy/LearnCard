@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { IonContent, IonPage } from '@ionic/react';
 import { AppPopover } from '../../components/overlays/AppPopover';
 import { AppIcon } from '../../components/icon';
 import { alertCircleOutline, chevronDownOutline, filterOutline } from 'ionicons/icons';
@@ -41,6 +40,7 @@ import {
     saveAssistantAvatarConfig,
     type AssistantAvatarConfig,
 } from './assistantAvatarOptions';
+import { AppContent, AppPage } from '../../components/chrome';
 
 const AssistantCardsSkeleton: React.FC = () => (
     <div className="space-y-v3-3">
@@ -560,9 +560,9 @@ const MyAssistantPageContent: React.FC = () => {
 };
 
 const MyAssistantPage: React.FC = () => (
-    <IonPage className="bg-grayscale-100">
+    <AppPage className="bg-grayscale-100">
         <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
-            <IonContent
+            <AppContent
                 fullscreen
                 className="bg-grayscale-100"
                 style={{ '--background': '#EFF0F5' } as React.CSSProperties}
@@ -575,9 +575,9 @@ const MyAssistantPage: React.FC = () => (
                 <AiFeatureGate>
                     <MyAssistantPageContent />
                 </AiFeatureGate>
-            </IonContent>
+            </AppContent>
         </ErrorBoundary>
-    </IonPage>
+    </AppPage>
 );
 
 export default MyAssistantPage;

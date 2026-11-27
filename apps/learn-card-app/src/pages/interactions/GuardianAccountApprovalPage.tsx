@@ -8,7 +8,7 @@
 // so we consume the token on load and show the result — no OTP step.
 
 import React, { useEffect, useRef, useState } from 'react';
-import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import { useParams } from 'react-router-dom';
 
 import { initLearnCard } from '@learncard/init';
@@ -19,6 +19,7 @@ import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { getResolvedTenantConfig, getTenantHeaders } from '../../config/bootstrapTenantConfig';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import { useTheme } from '../../theme/hooks/useTheme';
+import { AppContent, AppPage } from '../../components/chrome';
 
 type PageState = 'loading' | 'approved' | 'error';
 
@@ -86,8 +87,8 @@ const GuardianAccountApprovalPage: React.FC = () => {
     }, [token]);
 
     return (
-        <IonPage>
-            <IonContent
+        <AppPage>
+            <AppContent
                 fullscreen
                 className="flex flex-col grow"
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
@@ -139,8 +140,8 @@ const GuardianAccountApprovalPage: React.FC = () => {
                         </>
                     )}
                 </div>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

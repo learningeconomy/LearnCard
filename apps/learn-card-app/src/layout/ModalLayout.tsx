@@ -2,10 +2,10 @@ import React, { useRef } from 'react';
 
 import { useScreenWidth } from 'learn-card-base';
 
-import { IonContent } from '@ionic/react';
 import { AppCol, AppRow } from '../components/layout';
 
 import keyboardStore from 'learn-card-base/stores/keyboardStore';
+import { AppContent } from '../components/chrome';
 
 const ModalLayoutActionButton: React.FC<{ handleOnClick: () => void; buttonText?: string }> = ({
     handleOnClick,
@@ -48,7 +48,7 @@ const ModalLayout: React.FC<{
 
     if (allowScroll) {
         return (
-            <IonContent className="ion-padding transparent-modal-backdrop flex items-center justify-center">
+            <AppContent className="ion-padding transparent-modal-backdrop flex items-center justify-center">
                 <AppRow className="flex h-full flex-col items-center justify-center">
                     <AppCol
                         size="12"
@@ -66,12 +66,12 @@ const ModalLayout: React.FC<{
                         />
                     </AppCol>
                 </AppRow>
-            </IonContent>
+            </AppContent>
         );
     }
 
     return (
-        <IonContent className="ion-padding transparent-modal-backdrop flex items-center justify-center">
+        <AppContent className="ion-padding transparent-modal-backdrop flex items-center justify-center">
             <AppRow className="flex h-full flex-col items-center justify-center">
                 <AppCol
                     size="12"
@@ -89,7 +89,7 @@ const ModalLayout: React.FC<{
                     />
                 </AppCol>
             </AppRow>
-        </IonContent>
+        </AppContent>
     );
 };
 

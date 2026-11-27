@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import queryString from 'query-string';
 
-import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import { useAppOverlayModal } from '../../components/overlays/useAppOverlayModal';
 import { useLocation } from 'react-router-dom';
 import { VC, VerificationItem, VP } from '@learncard/types';
@@ -33,7 +33,7 @@ import {
 } from './shared-resume.helpers';
 import { resumeBuilderStore } from '../../stores/resumeBuilderStore';
 import * as m from '../../paraglide/messages.js';
-import { AppHeader, AppToolbar } from '../../components/chrome';
+import { AppContent, AppHeader, AppPage, AppToolbar } from '../../components/chrome';
 
 const getQueryParam = (value: string | string[] | null): string => {
     if (Array.isArray(value)) return value[0] ?? '';
@@ -218,7 +218,7 @@ const VerifySharedResume: React.FC = () => {
     }, [pin, rawUri, seed]);
 
     return (
-        <IonPage>
+        <AppPage>
             <AppHeader>
                 <AppToolbar className="flex">
                     <div className="flex justify-between items-center pl-[16px] pr-[16px] py-3 w-full">
@@ -255,7 +255,7 @@ const VerifySharedResume: React.FC = () => {
                 </AppToolbar>
             </AppHeader>
 
-            <IonContent fullscreen className="bg-grayscale-100">
+            <AppContent fullscreen className="bg-grayscale-100">
                 <div className="min-h-full bg-[radial-gradient(circle_at_top,rgba(99,102,241,0.16),transparent_35%),linear-gradient(180deg,#F8FAFC_0%,#EEF2FF_100%)]">
                     <div className="mx-auto max-w-[1180px] px-4 py-6 sm:px-6 lg:px-8">
                         {loading ? (
@@ -298,8 +298,8 @@ const VerifySharedResume: React.FC = () => {
                         )}
                     </div>
                 </div>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

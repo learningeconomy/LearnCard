@@ -8,7 +8,6 @@ import useJoinLCNetworkModal from '../network-prompts/hooks/useJoinLCNetworkModa
 import { useQueryClient } from '@tanstack/react-query';
 import { useAddCredentialToWallet } from '../boost/mutations';
 
-import { IonPage } from '@ionic/react';
 import FamilyCMSHeader from './FamilyCMSHeader/FamilyCMSHeader';
 import FamilyCrest from './FamilyCrest/FamilyCrest';
 import FamilyCMSContentForm from './FamilyCMSContentForm/FamilyCMSContentForm';
@@ -77,6 +76,7 @@ type FamilyCMSProps = {
 };
 
 import { getLogger } from 'learn-card-base';
+import { AppPage } from '../chrome';
 const log = getLogger('family-cms');
 
 export const FamilyCMS: React.FC<FamilyCMSProps> = ({
@@ -523,7 +523,7 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
     const familyMotto = state?.basicInfo?.description ?? '';
 
     return (
-        <IonPage>
+        <AppPage>
             {(isLoading || isSaveLoading || isPublishLoading) && (
                 <BoostLoader text={m['common.loading']()} darkBackground />
             )}
@@ -572,7 +572,7 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
                 handleCloseModal={handleCloseModal}
                 editorMode={editorMode}
             />
-        </IonPage>
+        </AppPage>
     );
 };
 

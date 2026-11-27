@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { IonPage, IonContent } from '@ionic/react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
@@ -16,7 +15,14 @@ import CommandSidebar, { COMMANDS } from './CommandSidebar';
 import ChainBuilder, { Chain, ChainStep } from './ChainBuilder';
 import TutorialComponent from './Tutorial';
 import { AppButtons } from '../../components/controls/AppButtons';
-import { AppBackButton, AppHeader, AppTitle, AppToolbar } from '../../components/chrome';
+import {
+    AppBackButton,
+    AppContent,
+    AppHeader,
+    AppPage,
+    AppTitle,
+    AppToolbar,
+} from '../../components/chrome';
 
 const WELCOME_MESSAGE = `
 Welcome to the LearnCard Browser CLI!
@@ -721,7 +727,7 @@ const DevCli: React.FC = () => {
     );
 
     return (
-        <IonPage className="cli-page">
+        <AppPage className="cli-page">
             <AppHeader className="cli-header">
                 <AppToolbar className="cli-toolbar">
                     <AppButtons slot="start">
@@ -742,7 +748,7 @@ const DevCli: React.FC = () => {
                 </AppToolbar>
             </AppHeader>
 
-            <IonContent className="ion-no-padding">
+            <AppContent className="ion-no-padding">
                 <div className="cli-container">
                     <CommandSidebar
                         onInsertCommand={handleInsertCommand}
@@ -2558,8 +2564,8 @@ const DevCli: React.FC = () => {
                         background: rgba(251, 73, 52, 0.1);
                     }
                 `}</style>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

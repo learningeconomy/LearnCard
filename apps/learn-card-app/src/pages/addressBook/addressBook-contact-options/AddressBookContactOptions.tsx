@@ -4,7 +4,6 @@ import { Share } from '@capacitor/share';
 import { Clipboard } from '@capacitor/clipboard';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 
-import { IonPage } from '@ionic/react';
 import { useAppOverlayModal } from '../../../components/overlays/useAppOverlayModal';
 import Camera from 'learn-card-base/svgs/Camera';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
@@ -20,6 +19,7 @@ import { QRCodeScannerStore } from 'learn-card-base';
 import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
 import { useInviteAction } from '../addressBookInvite/useInviteAction';
 import * as m from '../../../paraglide/messages.js';
+import { AppPage } from '../../../components/chrome';
 
 const AddressBookContactOptions: React.FC<{
     handleCloseModal: () => void;
@@ -187,7 +187,7 @@ const AddressBookContactOptions: React.FC<{
     });
 
     return (
-        <IonPage id="user-options-modal">
+        <AppPage id="user-options-modal">
             <ModalLayout handleOnClick={handleCloseModal} allowScroll>
                 <div className="flex w-full flex-col items-center justify-center mb-4">
                     <div className="flex w-full items-center justify-center">
@@ -212,7 +212,7 @@ const AddressBookContactOptions: React.FC<{
                     })}
                 </ul>
             </ModalLayout>
-        </IonPage>
+        </AppPage>
     );
 };
 

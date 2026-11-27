@@ -17,11 +17,6 @@ const refreshHost = vi.hoisted(() => ({ forceRefresh: vi.fn() }));
 const locateHost = vi.hoisted(() => ({ locate: vi.fn() }));
 const loggerHost = vi.hoisted(() => ({ error: vi.fn() }));
 
-vi.mock('@ionic/react', () => ({
-    IonPage: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-    IonContent: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-}));
-
 vi.mock('learn-card-base', () => ({
     getLogger: () => ({ error: loggerHost.error }),
     useWallet: () => ({ initWallet: async () => walletHost.wallet }),

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
-import { IonContentCustomEvent, ScrollDetail } from '@ionic/core';
 
+import type { AppContentScrollEvent } from '../components/chrome/AppContent';
 import headerScrollStore from '../stores/headerScrollStore';
 import { useViewWillEnter } from '../components/app-shell/AppOutlet';
 
@@ -8,15 +8,15 @@ import { useViewWillEnter } from '../components/app-shell/AppOutlet';
 const SCROLL_THRESHOLD = 24;
 
 /**
- * Syncs an `IonContent`'s scroll position into `headerScrollStore` so the
+ * Syncs an `AppContent`'s scroll position into `headerScrollStore` so the
  * condensed header title (see `HeaderBranding`) swaps in once the page is
  * scrolled past the threshold, and resets the store when the page unmounts.
  *
- * Returns the `onIonScroll` handler — spread `scrollEvents` on the IonContent:
+ * Returns the `onIonScroll` handler — set `scrollEvents` on the AppContent:
  *
  * ```tsx
  * const onHeaderScroll = useHeaderScrollSync();
- * <IonContent scrollEvents onIonScroll={onHeaderScroll}>…</IonContent>
+ * <AppContent scrollEvents onIonScroll={onHeaderScroll}>…</AppContent>
  * ```
  */
 export const useHeaderScrollSync = () => {
@@ -28,7 +28,7 @@ export const useHeaderScrollSync = () => {
     useViewWillEnter(() => headerScrollStore.set.scrolled(false));
     useEffect(() => () => headerScrollStore.set.scrolled(false), []);
 
-    return (event: IonContentCustomEvent<ScrollDetail>) => {
+    return (event: AppContentScrollEvent) => {
         const next = event.detail.scrollTop > SCROLL_THRESHOLD;
         if (headerScrollStore.get.scrolled() !== next) {
             headerScrollStore.set.scrolled(next);

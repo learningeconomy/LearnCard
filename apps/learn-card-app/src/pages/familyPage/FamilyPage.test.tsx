@@ -15,11 +15,6 @@ vi.mock('react-error-boundary', () => ({
     ErrorBoundary: ({ children }: React.PropsWithChildren) => <>{children}</>,
 }));
 
-vi.mock('@ionic/react', () => ({
-    IonContent: ({ children }: React.PropsWithChildren) => <main>{children}</main>,
-    IonPage: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-}));
-
 vi.mock('learn-card-base/stores/credentialSearchStore', () => ({
     default: { set: { reset: vi.fn() } },
 }));

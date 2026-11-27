@@ -10,7 +10,6 @@ import SpilledCup from 'learn-card-base/svgs/SpilledCup';
 import SlimCaretLeft from '../../../svgs/SlimCaretLeft';
 import BoostDetailsSideBar from './BoostDetailsSideBar';
 import SlimCaretRight from '../../../svgs/SlimCaretRight';
-import { IonContent, IonPage } from '@ionic/react';
 import MediaCollapseButton from './helpers/MediaCollapseButton';
 import BoostFooterLayout from '../../../accessibility/AccessibleBoostFooterLayout';
 
@@ -32,6 +31,7 @@ import { getAttachmentSource } from 'learn-card-base/helpers/attachment.helpers'
 import { getFilestackPreviewUrl } from 'learn-card-base/filestack/images/images.helpers';
 import { resolvePdfDocumentResource } from '../../../../pages/ids/view-id/IdDetails/helpers/pdfDocumentResource.helpers';
 import * as m from '../../../../paraglide/messages.js';
+import { AppContent, AppPage } from '../../../chrome';
 
 export const BoostMediaPreview: React.FC<{
     credential: VC;
@@ -314,15 +314,15 @@ export const BoostMediaPreview: React.FC<{
         : undefined;
 
     return (
-        <IonPage className="grayscale-800 h-full">
+        <AppPage className="grayscale-800 h-full">
             <h1 className="sr-only">
                 {getCredentialName(credential) || m['claim.modal.credentialFallback']()}
             </h1>
             <BoostFooterLayout contentOwnsScroll footerClassName="z-50" footerProps={footerProps}>
                 {isMobile ? (
-                    <IonContent fullscreen className="h-full">
+                    <AppContent fullscreen className="h-full">
                         {mediaContent}
-                    </IonContent>
+                    </AppContent>
                 ) : (
                     <section className="grayscale-800 h-full flex flex-row overflow-hidden">
                         <div className="flex-1 h-full overflow-hidden relative">{mediaContent}</div>
@@ -347,7 +347,7 @@ export const BoostMediaPreview: React.FC<{
                     <MediaCollapseButton onClick={() => setIsFullScreen(false)} />
                 )}
             </BoostFooterLayout>
-        </IonPage>
+        </AppPage>
     );
 };
 

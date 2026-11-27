@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import queryString from 'query-string';
 import { useLocation } from 'react-router-dom';
 
-import { IonPage } from '@ionic/react';
 import { AppLoading } from '../../components/overlays/AppLoading';
 import ConsentFlowSyncButton from '../../pages/consentFlow/ConsentFlowSyncButton';
 
@@ -15,6 +14,7 @@ import { useRegistryEntryState } from '../../hooks/useRegistryEntryState';
 
 import useTheme from '../../theme/hooks/useTheme';
 import * as m from '../../paraglide/messages.js';
+import { AppPage } from '../../components/chrome';
 
 export type NewDataSourceProps = {
     handleCloseModal: () => void;
@@ -46,7 +46,7 @@ const NewDataSource: React.FC<NewDataSourceProps> = ({ handleCloseModal, entryId
     const primaryColor = colors?.defaults?.primaryColor;
 
     return (
-        <IonPage className="p-[30px] pb-[20px] flex flex-col items-center justify-center gap-[10px]">
+        <AppPage className="p-[30px] pb-[20px] flex flex-col items-center justify-center gap-[10px]">
             <AppLoading isOpen={!newEntry} mode="ios" message="Fetching Data Source" />
             {Boolean(newEntry) && (
                 <>
@@ -109,7 +109,7 @@ const NewDataSource: React.FC<NewDataSourceProps> = ({ handleCloseModal, entryId
                     </section>
                 </>
             )}
-        </IonPage>
+        </AppPage>
     );
 };
 

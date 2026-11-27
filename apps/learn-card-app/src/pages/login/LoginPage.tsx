@@ -46,7 +46,6 @@ import { useSignInAdapter } from 'learn-card-base';
 import { readKeycloakReauth } from '../../auth/keycloakReauth';
 import { getConfigCapabilities } from 'learn-card-base/config/authConfig';
 
-import { IonContent, IonPage } from '@ionic/react';
 import { AppGrid, AppRow } from '../../components/layout';
 import EmailForm from './forms/EmailForm';
 import PhoneForm from './forms/PhoneForm';
@@ -73,6 +72,7 @@ import {
     LAST_LOGIN_METHOD_KEY,
     getOrCreateSignupFlow,
 } from '@analytics';
+import { AppContent, AppPage } from '../../components/chrome';
 
 export const LoginContent: React.FC = () => {
     const adapter = useSignInAdapter();
@@ -391,8 +391,8 @@ export const LoginContent: React.FC = () => {
     // only on the tick AFTER React has already painted this component,
     // flashing the login form between the boot loader and the app. Bridge
     // that gap with a loader-colored overlay instead. Intentionally NOT
-    // LoginLoadingPage (an IonPage): nesting a page inside this route
-    // triggers Ionic's page transition twice — same reasoning as
+    // LoginLoadingPage (a full page): nesting a page inside this route
+    // triggered Ionic's page transition twice when it was an IonPage — same reasoning as
     // RouteTransitionLoader. needs_setup is excluded so the form stays
     // visible under the onboarding modal.
     const redirectPending =
@@ -784,11 +784,11 @@ const LoginPage: React.FC<{ alternateBgComponent?: React.ReactNode }> = ({
     }, [isMobile, isDesktop, isSuccessEndorsementModalOpen]);
 
     return (
-        <IonPage className="flex flex-col h-full" style={{ backgroundColor: loginBgColor }}>
+        <AppPage className="flex flex-col h-full" style={{ backgroundColor: loginBgColor }}>
             {showConfirmation && (
                 <DeleteUserSuccessConfirmation branding={BrandingEnum.learncard} />
             )}
-            <IonContent
+            <AppContent
                 fullscreen
                 className="flex flex-col grow"
                 style={{ '--background': loginBgColor } as React.CSSProperties}
@@ -829,8 +829,8 @@ const LoginPage: React.FC<{ alternateBgComponent?: React.ReactNode }> = ({
                             </>
                         )}
                 </AppGrid>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

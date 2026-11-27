@@ -1,6 +1,6 @@
 import React, { Suspense, lazy, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('add-to-learn-card-menu');
 
@@ -23,13 +23,13 @@ const importPasteOrUploadClaimModal = () =>
 const LazyPasteOrUploadClaimModal = lazy(importPasteOrUploadClaimModal);
 
 const PasteOrUploadClaimModalFallback: React.FC = () => (
-    <IonPage>
-        <IonContent>
+    <AppPage>
+        <AppContent>
             <div className="font-poppins flex items-center justify-center min-h-[360px] p-8">
                 <IonSpinner name="crescent" className="text-grayscale-700" />
             </div>
-        </IonContent>
-    </IonPage>
+        </AppContent>
+    </AppPage>
 );
 import NewAiSessionContainer from '../new-ai-session/LazyNewAiSessionContainer';
 import NewAiSessionIcon from 'learn-card-base/svgs/NewAiSessionIcon';
@@ -47,6 +47,7 @@ import {
     useDeviceTypeByWidth,
 } from 'learn-card-base';
 import { chatBotStore } from '../../stores/chatBotStore';
+import { AppContent, AppPage } from '../chrome';
 
 export enum AddToLearnCardMenuEnum {
     boostSomeone = 'boostSomeone',

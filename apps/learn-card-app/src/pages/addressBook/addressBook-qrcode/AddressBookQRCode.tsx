@@ -5,7 +5,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import { useWallet, useToast, ToastTypeEnum, useDeviceTypeByWidth } from 'learn-card-base';
 
-import { IonPage, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import { AppCol, AppRow } from '../../../components/layout';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
@@ -13,6 +13,7 @@ import ModalLayout from 'apps/learn-card-app/src/layout/ModalLayout';
 import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantConfig';
 
 import { shareOrCopy } from '../../../helpers/shareHelpers';
+import { AppPage } from '../../../components/chrome';
 
 const AddressBookQRCode: React.FC<{
     handleCloseModal: () => void;
@@ -64,7 +65,7 @@ const AddressBookQRCode: React.FC<{
     };
 
     return (
-        <IonPage>
+        <AppPage>
             <ModalLayout handleOnClick={handleCloseModal} allowScroll>
                 <div className="flex w-full flex-col items-center justify-center">
                     <div className="flex flex-col w-full items-center justify-center">
@@ -123,7 +124,7 @@ const AddressBookQRCode: React.FC<{
                     </button>
                 </AppCol>
             </ModalLayout>
-        </IonPage>
+        </AppPage>
     );
 };
 

@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
-import { IonContent, IonPage } from '@ionic/react';
 import { AppIcon } from '../../../components/icon';
 import { alertCircleOutline, checkmarkCircle, rocketOutline } from 'ionicons/icons';
 
@@ -12,6 +11,7 @@ import type { CapturedAppManifest } from '@learncard/partner-connect-core';
 import useTheme from '../../../theme/hooks/useTheme';
 import { PUBLISH_RESUME_KEY } from './publishResume';
 import { describeManifest } from './appCapabilities';
+import { AppContent, AppPage } from '../../../components/chrome';
 
 const STEPS = ['Create account', 'Review', 'Publish'] as const;
 
@@ -63,8 +63,8 @@ const PublishSignInGate: React.FC = () => {
     };
 
     return (
-        <IonPage>
-            <IonContent style={{ '--background': backgroundColor } as React.CSSProperties}>
+        <AppPage>
+            <AppContent style={{ '--background': backgroundColor } as React.CSSProperties}>
                 <div className="min-h-full w-full flex items-center justify-center p-4 py-10">
                     <div className="w-full max-w-[480px] bg-white rounded-[20px] shadow-2xl font-poppins p-8 animate-fade-in-up">
                         {manifest ? (
@@ -176,8 +176,8 @@ const PublishSignInGate: React.FC = () => {
                         )}
                     </div>
                 </div>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

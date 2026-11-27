@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 
 import X from '../../../svgs/X';
 import OpenSyllabusMetaData from './OpenSyllabusMetaData';
-import { IonPage } from '@ionic/react';
 
 import BoostSideMenuMediaDetails from './BoostSideMenuMediaDetails';
 import BoostDisplayStyleSelector from './BoostDisplayStyleSelector';
@@ -33,6 +32,7 @@ import { CredentialCategoryEnum, useModal, DisplayTypeEnum } from 'learn-card-ba
 import { VC, UnsignedVC, VerificationItem } from '@learncard/types';
 import moment from 'moment';
 import * as m from '../../../../paraglide/messages.js';
+import { AppPage } from '../../../chrome';
 
 type BoostDetailsSideMenuProps = {
     credential: VC;
@@ -255,7 +255,7 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
     };
 
     return (
-        <IonPage className="max-w-full bg-white/80! backdrop-blur-xs! overflow-y-auto!">
+        <AppPage className="max-w-full bg-white/80! backdrop-blur-xs! overflow-y-auto!">
             <h1 className="sr-only">{title || 'Credential details'}</h1>
             <BoostFooterLayout
                 footerProps={isMobile ? { handleBack: handleClose } : undefined}
@@ -285,7 +285,7 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
                     </section>
                 </div>
             </BoostFooterLayout>
-        </IonPage>
+        </AppPage>
     );
 };
 

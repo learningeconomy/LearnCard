@@ -5,10 +5,10 @@
  * Why this exists as a distinct component (rather than just passing
  * `LearnCardAiChatBot` directly to `newModal`):
  *
- *   1. **IonPage wrapper.** The chatbot's root is a plain `<div>`;
+ *   1. **AppPage wrapper.** The chatbot's root is a plain `<div>`;
  *      mounting that straight into a `useModal` slot lands it inside
  *      a Center (600px × 75vh) container which clips the chat surface
- *      and breaks scrolling. Wrapping in `<IonPage className="h-full
+ *      and breaks scrolling. Wrapping in `<AppPage className="h-full
  *      w-full">` gives the chatbot the full-height context it needs
  *      — same fix `EmbedIframeModal` and `AiTutorConnectedView` apply.
  *
@@ -33,9 +33,9 @@
  */
 
 import React from 'react';
-import { IonPage } from '@ionic/react';
 
 import { LearnCardAiChatBot } from '../../../components/new-ai-session/LearnCardAiChatBot/LearnCardAiChatBot';
+import { AppPage } from '../../../components/chrome';
 
 export interface PathwayAiSessionModalProps {
     /** Topic boost URI — the tutor seeds its initial plan from this. */
@@ -65,7 +65,7 @@ const PathwayAiSessionModal: React.FC<PathwayAiSessionModalProps> = ({
     const showAuthorChip = !!seedPrompt && seedPrompt.trim().length > 0;
 
     return (
-        <IonPage className="h-full w-full bg-white">
+        <AppPage className="h-full w-full bg-white">
             {showAuthorChip && (
                 // Small, unobtrusive chip above the chat surface so
                 // the learner sees author intent before the plan
@@ -110,7 +110,7 @@ const PathwayAiSessionModal: React.FC<PathwayAiSessionModalProps> = ({
                 initialTopicUri={topicUri}
                 initialPathwayUri={pathwayUri}
             />
-        </IonPage>
+        </AppPage>
     );
 };
 

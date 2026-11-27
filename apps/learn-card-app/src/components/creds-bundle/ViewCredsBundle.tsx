@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { IonContent, IonPage } from '@ionic/react';
 import { useAppAlert } from '../overlays/useAppAlert';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('view-creds-bundle');
@@ -14,7 +13,7 @@ import { Browser } from '@capacitor/browser';
 
 import { AppButton } from '../controls/AppButton';
 import ShareBoostsBundle from './ShareBoostsBundle';
-import { AppHeader, AppToolbar } from '../chrome';
+import { AppContent, AppHeader, AppPage, AppToolbar } from '../chrome';
 
 const ViewCredsBundle: React.FC = () => {
     const { uri, seed } = useParams<{ uri: string; seed: string }>();
@@ -123,7 +122,7 @@ const ViewCredsBundle: React.FC = () => {
     };
 
     return (
-        <IonPage className="metaversity-primary-blue">
+        <AppPage className="metaversity-primary-blue">
             <AppHeader translucent={true}>
                 <AppToolbar className="flex">
                     <div className="flex justify-between items-center">
@@ -150,14 +149,14 @@ const ViewCredsBundle: React.FC = () => {
                     </div>
                 </AppToolbar>
             </AppHeader>
-            <IonContent
+            <AppContent
                 fullscreen
                 color="metaversity-primary-blue"
                 className="metaversity-dark-blue"
             >
                 {credentials && <ShareBoostsBundle initialCredentials={credentials} readOnly />}
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

@@ -1,13 +1,12 @@
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { IonContent, IonPage } from '@ionic/react';
 import { createMemoryHistory } from 'history';
 
 import { AppShellRouter } from '../app-shell/AppShellRouter';
 import type { IonMode } from '../app-shell/ionMode';
 import { AppButton } from '../controls/AppButton';
 import { AppButtons } from '../controls/AppButtons';
-import { AppBackButton, AppFooter, AppHeader, AppTitle, AppToolbar } from '.';
+import { AppBackButton, AppContent, AppFooter, AppHeader, AppPage, AppTitle, AppToolbar } from '.';
 
 type PreviewProps = {
     mode: IonMode;
@@ -18,14 +17,14 @@ type PreviewProps = {
 const ROWS = Array.from({ length: 30 }, (_, index) => `Row ${index + 1}`);
 
 /**
- * A full page: header (back button, title, end button), scrolling IonContent and a footer.
+ * A full page: header (back button, title, end button), scrolling AppContent and a footer.
  * `translucent` blurs the content under the iOS header. The page sits in a 390x700 frame, so the
  * header and footer pin to the frame like they do to the screen.
  */
 const PagePreview: React.FC<PreviewProps> = ({ mode, translucent, noBorder }) => (
     <AppShellRouter history={createMemoryHistory({ initialEntries: ['/page'] })}>
         <div className="relative h-[700px] w-[390px] overflow-hidden border border-grayscale-200">
-            <IonPage>
+            <AppPage>
                 <AppHeader
                     mode={mode}
                     translucent={translucent}
@@ -41,13 +40,13 @@ const PagePreview: React.FC<PreviewProps> = ({ mode, translucent, noBorder }) =>
                         </AppButtons>
                     </AppToolbar>
                 </AppHeader>
-                <IonContent fullscreen={translucent}>
+                <AppContent fullscreen={translucent}>
                     {ROWS.map(row => (
                         <p key={row} className="border-b border-grayscale-100 px-4 py-3">
                             {row}
                         </p>
                     ))}
-                </IonContent>
+                </AppContent>
                 <AppFooter mode={mode} className={noBorder ? 'ion-no-border' : undefined}>
                     <AppToolbar mode={mode}>
                         <div className="flex justify-center p-2">
@@ -55,7 +54,7 @@ const PagePreview: React.FC<PreviewProps> = ({ mode, translucent, noBorder }) =>
                         </div>
                     </AppToolbar>
                 </AppFooter>
-            </IonPage>
+            </AppPage>
         </div>
     </AppShellRouter>
 );

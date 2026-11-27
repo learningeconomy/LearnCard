@@ -3,7 +3,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('family-guardian-issue-to-list');
 
-import { IonContent, IonPage } from '@ionic/react';
 import { useAppAlert } from '../../../overlays/useAppAlert';
 import { AppCol, AppGrid, AppRow } from '../../../layout';
 import Plus from 'learn-card-base/svgs/Plus';
@@ -16,7 +15,7 @@ import { updateAdminList, useWallet } from 'learn-card-base';
 
 import useTheme from '../../../../theme/hooks/useTheme';
 import { m } from '../../../../paraglide/messages.js';
-import { AppFooter, AppHeader, AppToolbar } from '../../../chrome';
+import { AppContent, AppFooter, AppHeader, AppPage, AppToolbar } from '../../../chrome';
 
 const FamilyGuardianIssueToList: React.FC<{
     state: ShortBoostState;
@@ -84,7 +83,7 @@ const FamilyGuardianIssueToList: React.FC<{
     };
 
     return (
-        <IonPage>
+        <AppPage>
             <AppHeader className="ion-no-border bg-white pt-4 border-b-solid border-b-grayscale-100 border-b-2 pb-4 vc-preview-modal-safe-area">
                 <AppCol className="w-full flex items-center justify-center">
                     <div className="boost-issue-container w-full flex items-center justify-between mx-[20px] max-w-[600px]">
@@ -97,13 +96,13 @@ const FamilyGuardianIssueToList: React.FC<{
                     </div>
                 </AppCol>
             </AppHeader>
-            <IonContent fullscreen>
+            <AppContent fullscreen>
                 <AppGrid className="pl-4 bg-white pt-0">
                     <AppCol className="pt-0 w-full flex items-center justify-center">
                         {renderIssuedTo}
                     </AppCol>
                 </AppGrid>
-            </IonContent>
+            </AppContent>
             <AppFooter>
                 <AppToolbar color="light" className="ion-no-border">
                     <AppRow className="w-full flex items-center justify-center px-4">
@@ -128,7 +127,7 @@ const FamilyGuardianIssueToList: React.FC<{
                     </AppRow>
                 </AppToolbar>
             </AppFooter>
-        </IonPage>
+        </AppPage>
     );
 };
 

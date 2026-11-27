@@ -6,7 +6,7 @@ import { useCurrentUser } from 'learn-card-base';
 import ConsentFlowShareCredentialCards from './ConsentFlowShareCredentialCards';
 import ProfilePicture from 'learn-card-base/components/profilePicture/ProfilePicture';
 
-import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import { AppCol, AppGrid, AppRow } from '../../components/layout';
 import CaretLeft from '../../components/svgs/CaretLeft';
 import { AppToggle } from '../../components/controls/AppToggle';
@@ -14,7 +14,7 @@ import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 import { useConsentFlowCredentials } from './useConsentFlowCredentials';
 import { curriedStateSlice } from '@learncard/helpers';
 import * as m from '../../paraglide/messages.js';
-import { AppHeader, AppToolbar } from '../../components/chrome';
+import { AppContent, AppHeader, AppPage, AppToolbar } from '../../components/chrome';
 
 const ShareCredentialsWithConsentFlow: React.FC<{
     handleCloseModal: () => void;
@@ -39,7 +39,7 @@ const ShareCredentialsWithConsentFlow: React.FC<{
         walletCredentials;
 
     return (
-        <IonPage>
+        <AppPage>
             <AppHeader className="ion-no-border">
                 <AppToolbar className="ion-no-border" color="light">
                     <AppGrid className="white">
@@ -74,7 +74,7 @@ const ShareCredentialsWithConsentFlow: React.FC<{
                     </AppGrid>
                 </AppToolbar>
             </AppHeader>
-            <IonContent>
+            <AppContent>
                 <AppGrid className="flex items-center justify-center p-[20px] pb-[100px] max-w-[700px]">
                     <section className="w-full">
                         <section className="">
@@ -176,8 +176,8 @@ const ShareCredentialsWithConsentFlow: React.FC<{
                         </section>
                     </section>
                 </AppGrid>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

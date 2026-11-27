@@ -15,7 +15,7 @@ import {
 import { getLogger } from 'learn-card-base';
 const log = getLogger('browse-framework-page');
 
-import { IonPage, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import ManageSkills from './ManageSkills';
 import FrameworkColumn from './FrameworkColumn';
 import ViewAlignmentInfo from './ViewAlignmentInfo';
@@ -43,6 +43,7 @@ import {
     SkillFrameworkNodeWithSearchInfo,
 } from '../../components/boost/boost';
 import { SetState } from 'packages/shared-types/dist';
+import { AppPage } from '../../components/chrome';
 
 type BrowseFrameworkPageProps = {
     frameworkInfo: ApiFrameworkInfo;
@@ -1121,7 +1122,7 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
     const useShortText = pageWidth < 989;
 
     return (
-        <IonPage ref={pageRef} className="bg-white text-grayscale-900">
+        <AppPage ref={pageRef} className="bg-white text-grayscale-900">
             {maxColumns > 1 && (
                 <BrowseFrameworkMultiColumnHeader
                     handleBack={handleBack}
@@ -1190,7 +1191,7 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
                     )}
                 </div>
             )}
-        </IonPage>
+        </AppPage>
     );
 };
 

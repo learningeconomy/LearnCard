@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useHistory, useLocation, useParams } from 'react-router-dom';
-import { IonPage, IonContent, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import { ArrowLeft, ArrowRight, Send, Loader2, AlertCircle, Save, FileEdit } from 'lucide-react';
 
 import * as m from '../../paraglide/messages.js';
@@ -23,6 +23,7 @@ import { LaunchTypeValidator } from '@learncard/types';
 import { getAppStatusPath } from './apps/myApps';
 import type { CapturedAppManifest } from '@learncard/partner-connect-core';
 import { EmbedIframeModal } from '../launchPad/EmbedIframeModal';
+import { AppContent, AppPage } from '../../components/chrome';
 
 const STEPS = [
     {
@@ -454,7 +455,8 @@ const SubmissionForm: React.FC = () => {
 
         if (formData.launch_type === 'EMBEDDED_IFRAME' && parsedConfig.url) {
             // ModalTypes.Right + hideButton, matching useAppListingLaunch: the default
-            // Center type collapses EmbedIframeModal's IonPage via `.ion-page-invisible`.
+            // Center type clips EmbedIframeModal's page (IonPage also collapsed it via
+            // `.ion-page-invisible`).
             newModal(
                 <EmbedIframeModal
                     embedUrl={parsedConfig.url}
@@ -535,22 +537,22 @@ const SubmissionForm: React.FC = () => {
     // Only show loading if we're fetching (no listing from state and still loading)
     if (isEditMode && !listingFromState && isLoadingListing)
         return (
-            <IonPage>
-                <IonContent className="ion-padding">
+            <AppPage>
+                <AppContent className="ion-padding">
                     <div className="flex justify-center items-center h-full">
                         <IonSpinner name="crescent" />
                     </div>
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         );
 
     if (isDraftSaved)
         return (
-            <IonPage>
+            <AppPage>
                 <AppStoreHeader
                     title={isEditMode ? m['arabicFixes.editApp']() : m['arabicFixes.createApp']()}
                 />
-                <IonContent className="ion-padding">
+                <AppContent className="ion-padding">
                     <div className="max-w-lg mx-auto text-center py-12">
                         <div
                             className={`w-16 h-16 mx-auto mb-5 rounded-full flex items-center justify-center ${
@@ -586,15 +588,15 @@ const SubmissionForm: React.FC = () => {
                             {m['developerPortal.submissionForm.viewMyListings']()}
                         </button>
                     </div>
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         );
 
     if (isSubmitted)
         return (
-            <IonPage>
+            <AppPage>
                 <AppStoreHeader title={m['developerPortal.submissionForm.submissionReceived']()} />
-                <IonContent className="ion-padding">
+                <AppContent className="ion-padding">
                     <div className="max-w-lg mx-auto text-center py-12">
                         <div className="w-16 h-16 mx-auto mb-5 bg-emerald-100 rounded-full flex items-center justify-center">
                             <Send className="w-8 h-8 text-emerald-600" />
@@ -626,16 +628,16 @@ const SubmissionForm: React.FC = () => {
                             </button>
                         </div>
                     </div>
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         );
 
     return (
-        <IonPage>
+        <AppPage>
             <AppStoreHeader
                 title={isEditMode ? m['arabicFixes.editApp']() : m['arabicFixes.createNewApp']()}
             />
-            <IonContent className="ion-padding">
+            <AppContent className="ion-padding">
                 <div className="max-w-2xl mx-auto pb-8">
                     <button
                         onClick={handleBackToDashboard}
@@ -789,7 +791,7 @@ const SubmissionForm: React.FC = () => {
                         </div>
                     </div>
                 </div>
-            </IonContent>
+            </AppContent>
 
             <ExitConfirmDialog
                 isOpen={showExitDialog}
@@ -805,7 +807,7 @@ const SubmissionForm: React.FC = () => {
                 onPreviewWithoutSaving={handlePreviewWithoutSaving}
                 onCancel={() => setShowPreviewDialog(false)}
             />
-        </IonPage>
+        </AppPage>
     );
 };
 

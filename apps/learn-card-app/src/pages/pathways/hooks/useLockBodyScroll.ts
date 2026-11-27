@@ -1,26 +1,25 @@
 import { useEffect } from 'react';
 
+import { CONTENT_SELECTOR } from '../../../components/chrome/AppContent';
+
 export const useLockBodyScroll = (locked: boolean = true): void => {
     useEffect(() => {
         if (!locked) return;
 
         const { body, documentElement: html } = document;
 
-        // The actual scroll container in Ionic + Capacitor isn't `<body>` —
-        // it's the inner-scroll element inside `<ion-content>`. Setting
-        // `body { overflow: hidden }` is a no-op for the page-level scroll
-        // we need to suppress on iOS, so we also drive Ionic's documented
-        // `--overflow` CSS var to `hidden` for the duration of the lock.
-        const ionContents = Array.from(
-            document.querySelectorAll<HTMLElement>('ion-content'),
-        );
+        // The actual scroll container in the app isn't `<body>` — it's the
+        // scroll area inside each `AppContent` (or learn-card-base's
+        // `<ion-content>`). Setting `body { overflow: hidden }` is a no-op for
+        // the page-level scroll we need to suppress on iOS, so we also drive
+        // the content's `--overflow` CSS var to `hidden` for the duration of
+        // the lock.
+        const ionContents = Array.from(document.querySelectorAll<HTMLElement>(CONTENT_SELECTOR));
 
         const previousBodyOverflow = body.style.overflow;
         const previousHtmlOverflow = html.style.overflow;
         const previousBodyOverscroll = body.style.overscrollBehavior;
-        const previousIonOverflow = ionContents.map(el =>
-            el.style.getPropertyValue('--overflow'),
-        );
+        const previousIonOverflow = ionContents.map(el => el.style.getPropertyValue('--overflow'));
 
         body.style.overflow = 'hidden';
         html.style.overflow = 'hidden';

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import moment from 'moment';
 
-import { IonSpinner, IonContent, IonPage } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import { useAppOverlayModal } from '../../../../overlays/useAppOverlayModal';
 import { AppCol, AppGrid, AppRow } from '../../../../layout';
 import { AppItem, AppList } from '../../../../list';
@@ -24,7 +24,7 @@ import { LCNProfile, BoostRecipientInfo } from '@learncard/types';
 import BoostShareableCode from './BoostShareableCode';
 
 import { useBrandingConfig } from 'learn-card-base';
-import { AppFooter, AppHeader, AppToolbar } from '../../../../chrome';
+import { AppContent, AppFooter, AppHeader, AppPage, AppToolbar } from '../../../../chrome';
 
 export enum BoostAddressBookEditMode {
     edit = 'edit',
@@ -233,7 +233,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
 
     if (viewMode === BoostAddressBookViewMode.full) {
         return (
-            <IonPage className="bg-white">
+            <AppPage className="bg-white">
                 <AppHeader className="learn-card-header ion-no-border bg-white w-full">
                     <AppToolbar color="white" className="ion-no-border w-full">
                         <AppGrid className="bg-white">
@@ -275,7 +275,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                         </AppGrid>
                     </AppToolbar>
                 </AppHeader>
-                <IonContent fullscreen>
+                <AppContent fullscreen>
                     {loading && (
                         <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full">
                             <IonSpinner color="black" />
@@ -333,7 +333,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                 <strong>{m['boost.cms.issueTo.noSearchResults']()}</strong>
                             </section>
                         )}
-                </IonContent>
+                </AppContent>
                 <AppFooter className="bg-white">
                     <AppToolbar className="w-full ion-no-border bg-white pt-5">
                         <AppRow className="w-full flex items-center justify-center">
@@ -353,7 +353,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                         </AppRow>
                     </AppToolbar>
                 </AppFooter>
-            </IonPage>
+            </AppPage>
         );
     }
 

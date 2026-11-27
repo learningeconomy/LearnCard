@@ -3,7 +3,6 @@ import { VC } from '@learncard/types';
 import { deriveAlignmentsFromVC } from '../alignmentHelpers';
 import { useHistory, useLocation } from 'react-router-dom';
 
-import { IonContent, IonPage } from '@ionic/react';
 import { useAppOverlayModal } from '../../overlays/useAppOverlayModal';
 import { AppCol, AppGrid, AppRow } from '../../layout';
 import BoostCMSHeader from './BoostCMSHeader/BoostCMSHeader';
@@ -84,6 +83,7 @@ import BoostFrameworkSkillSelector from './boostCMSForms/boostCMSSkills/BoostFra
 import * as m from '../../../paraglide/messages.js';
 
 import { getLogger } from 'learn-card-base';
+import { AppContent, AppPage } from '../../chrome';
 const log = getLogger('update-boost-cms');
 
 const UpdateBoostCMS: React.FC = () => {
@@ -812,7 +812,7 @@ const UpdateBoostCMS: React.FC = () => {
     }
 
     return (
-        <IonPage>
+        <AppPage>
             {(isBoostLoading || isLoading || isSaveLoading || isPublishLoading) && (
                 <BoostLoader text={loadingText} darkBackground />
             )}
@@ -829,7 +829,7 @@ const UpdateBoostCMS: React.FC = () => {
                 isLoading={isLoading}
             />
 
-            <IonContent fullscreen color="grayscale-800">
+            <AppContent fullscreen color="grayscale-800">
                 <AppGrid className="flex items-center justify-center flex-col w-full px-4">
                     {activeBoostCMSStep}
                 </AppGrid>
@@ -843,8 +843,8 @@ const UpdateBoostCMS: React.FC = () => {
                         </AppCol>
                     </AppRow>
                 )}
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

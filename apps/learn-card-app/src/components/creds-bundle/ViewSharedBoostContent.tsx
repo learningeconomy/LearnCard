@@ -5,7 +5,6 @@ import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { getVCDisplayCardVariant } from '@learncard/react';
 import BoostFooterLayout from '../accessibility/AccessibleBoostFooterLayout';
-import { IonContent, IonPage } from '@ionic/react';
 import { useAppAlert } from '../overlays/useAppAlert';
 import { useAppOverlayModal } from '../overlays/useAppOverlayModal';
 import SharedBoostVerificationBlock, {
@@ -48,7 +47,7 @@ import * as m from '../../paraglide/messages.js';
 const websiteLink = `${getAppBaseUrl()}/login`;
 
 import { getLogger } from 'learn-card-base';
-import { AppHeader, AppToolbar } from '../chrome';
+import { AppContent, AppHeader, AppPage, AppToolbar } from '../chrome';
 const log = getLogger('view-shared-boost');
 
 const ViewSharedBoost: React.FC<{
@@ -279,7 +278,7 @@ const ViewSharedBoost: React.FC<{
     }
 
     return (
-        <IonPage>
+        <AppPage>
             {!isLoggedIn && (
                 <AppHeader>
                     <AppToolbar className="flex">
@@ -324,7 +323,7 @@ const ViewSharedBoost: React.FC<{
                     handleBack: isFront ? undefined : () => setIsFront(true),
                 }}
             >
-                <IonContent fullscreen className="share-page h-full">
+                <AppContent fullscreen className="share-page h-full">
                     {/* verification block */}
                     {boost && wallet && !loading && (
                         <SharedBoostVerificationBlock
@@ -395,9 +394,9 @@ const ViewSharedBoost: React.FC<{
                             )}
                         </section>
                     )}
-                </IonContent>
+                </AppContent>
             </BoostFooterLayout>
-        </IonPage>
+        </AppPage>
     );
 };
 

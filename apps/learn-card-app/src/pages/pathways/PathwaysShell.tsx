@@ -9,7 +9,6 @@
 import React, { Suspense } from 'react';
 import * as m from '../../paraglide/messages.js';
 
-import { IonContent, IonPage } from '@ionic/react';
 import { Redirect, Route, Switch, useRouteMatch } from 'react-router-dom';
 import { ErrorBoundary } from 'react-error-boundary';
 import { lazyWithRetry } from 'learn-card-base';
@@ -22,6 +21,7 @@ import PathwaysHeader from './PathwaysHeader';
 import { pathwayStore } from '../../stores/pathways';
 import { useCostSnapshot } from './hooks/useCostSnapshot';
 import { installPathwaysDevGlobals } from './dev/pathwaysDevGlobals';
+import { AppContent, AppPage } from '../../components/chrome';
 
 // Attach `window.__pathwaysDev` once on first import. No-op in production
 // builds (guarded by `import.meta.env.DEV` inside the installer), idempotent
@@ -62,16 +62,16 @@ const PathwaysShell: React.FC = () => {
     useCostSnapshot();
 
     return (
-        <IonPage>
+        <AppPage>
             <ErrorBoundary fallback={<PathwaysErrorFallback />}>
                 {/*
                     Tenant chrome — LearnCard wordmark + profile /
                     notifications / QR-scanner buttons + back arrow.
-                    Rendered as a sibling of `IonContent` (the proper
-                    Ionic placement for an `AppHeader`-based component)
-                    so `IonContent`'s height resolves to "page minus
+                    Rendered as a sibling of `AppContent` (the proper
+                    placement for an `AppHeader`-based component)
+                    so `AppContent`'s height resolves to "page minus
                     header minus tab bar" automatically. Previously
-                    this was nested inside `IonContent`, which meant
+                    this was nested inside `AppContent`, which meant
                     `min-h-full` on the inner wrapper grew past the
                     visible viewport on iOS and forced a page-level
                     scroll that dragged the sticky `PathwaysHeader`
@@ -80,9 +80,9 @@ const PathwaysShell: React.FC = () => {
                 */}
                 <MainHeader showBackButton hidePlusBtn />
 
-                <IonContent fullscreen>
+                <AppContent fullscreen>
                     {/*
-                        Flex column inside `IonContent` — the body
+                        Flex column inside `AppContent` — the body
                         gets the exact remaining space below the
                         sub-header / mode header without any magic-
                         number `calc(100dvh - X)` math. Modes inside
@@ -230,9 +230,9 @@ const PathwaysShell: React.FC = () => {
                         subscription on every shell render.
                     */}
                     <CompletionRoot />
-                </IonContent>
+                </AppContent>
             </ErrorBoundary>
-        </IonPage>
+        </AppPage>
     );
 };
 

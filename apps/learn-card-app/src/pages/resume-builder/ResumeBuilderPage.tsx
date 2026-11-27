@@ -1,17 +1,17 @@
 import React from 'react';
 
-import { IonPage } from '@ionic/react';
 import ResumeBuilder from '../../components/resume-builder/ResumeBuilder';
 
 import { useExistingResumes } from '../../hooks/useExistingResumes';
+import { AppPage } from '../../components/chrome';
 
 const ResumeBuilderPage: React.FC = () => {
     useExistingResumes();
 
     return (
-        <IonPage>
+        <AppPage>
             <ResumeBuilder />
-        </IonPage>
+        </AppPage>
     );
 };
 

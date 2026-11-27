@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { IonContent, IonPage } from '@ionic/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useWallet } from 'learn-card-base';
 import { currentUserStore } from 'learn-card-base/stores/currentUserStore';
@@ -8,6 +7,7 @@ import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import type { CampaignApi } from './types';
 import { CampaignRoutes, CampaignNotFound } from './CampaignRoutes';
 import { Busy, Notice, buttonClass } from './ui';
+import { AppContent, AppPage } from '../../components/chrome';
 
 const CampaignSession: React.FC = () => {
     const { initWallet } = useWallet();
@@ -67,15 +67,15 @@ const CampaignsPage: React.FC = () => {
     const network = networkStore.use.networkUrl();
     const key = `${user?.uid}:${wallet?.id.did()}:${switchedDid}:${network}`;
     return (
-        <IonPage>
-            <IonContent>
+        <AppPage>
+            <AppContent>
                 <main className="font-poppins text-grayscale-900 bg-grayscale-10 min-h-full px-4 py-6 sm:px-8 sm:py-10">
                     <div className="max-w-7xl mx-auto">
                         {user ? <CampaignSession key={key} /> : <CampaignNotFound />}
                     </div>
                 </main>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 export default CampaignsPage;

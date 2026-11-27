@@ -7,7 +7,7 @@ import moment from 'moment';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('claim-boost');
 
-import { IonPage, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 
 // import MainHeader from '../../components/main-header/MainHeader';
 import BoostFooterLayout from '../../components/accessibility/AccessibleBoostFooterLayout';
@@ -75,6 +75,7 @@ import {
 import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
 import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
 import * as m from '../../paraglide/messages.js';
+import { AppPage } from '../../components/chrome';
 
 class ClaimContextChangedError extends Error {
     constructor() {
@@ -872,7 +873,7 @@ const ClaimBoost: React.FC<{
     };
 
     return (
-        <IonPage className="claim-boost-a11y-surface">
+        <AppPage className="claim-boost-a11y-surface">
             <h1 className="sr-only">
                 {getCredentialName((renderMethodSource ?? {}) as VC) ||
                     m['claim.modal.credentialFallback']()}
@@ -1008,7 +1009,7 @@ const ClaimBoost: React.FC<{
                     )}
                 </div>
             </BoostFooterLayout>
-        </IonPage>
+        </AppPage>
     );
 };
 

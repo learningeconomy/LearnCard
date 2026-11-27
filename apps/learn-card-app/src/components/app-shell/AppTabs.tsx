@@ -10,6 +10,7 @@ import { useHistory, useLocation } from 'react-router-dom';
 
 import { getIonMode } from './ionMode';
 import './app-shell.css';
+import { AppContent } from '../chrome';
 
 type TabEntry = { originalHref: string; currentHref: string };
 
@@ -58,11 +59,15 @@ const syncActiveTab = (memory: TabMemory, route: RouteLocation): void => {
     if (activeTab) memory.selectedTab = activeTab;
 };
 
-/** Set on fullscreen `ion-content`s under `AppTabs`; app-shell.css extends them under the tab bar. */
+/**
+ * Set on fullscreen contents under `AppTabs` (AppContent adds it itself; learn-card-base's
+ * `ion-content`s get it here); app-shell.css extends them under the tab bar.
+ */
 export const FULLSCREEN_CONTENT_CLASS = 'app-tabs-fullscreen-content';
 
 /**
- * Keeps `<IonContent fullscreen>` scrolling under the tab bar, as it did inside `ion-tabs`.
+ * Keeps `<AppContent fullscreen>` / `<IonContent fullscreen>` scrolling under the tab bar, as
+ * IonContent did inside `ion-tabs`.
  *
  * ion-content measures its fullscreen offsets against `closest('ion-tabs')` first and only then
  * against the nearest `.ion-page`. Under ion-tabs its bottom offset therefore included the tab

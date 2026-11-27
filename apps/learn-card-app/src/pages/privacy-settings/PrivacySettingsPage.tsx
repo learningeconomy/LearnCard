@@ -2,7 +2,6 @@ import { AnnouncementPreferences } from './AnnouncementPreferences';
 import { useVerifierHistoryEligibility } from '../../helpers/verifier-history/useEligibility';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 
-import { IonContent, IonPage } from '@ionic/react';
 import { useViewWillEnter } from '../../components/app-shell/AppOutlet';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useHistory } from 'react-router-dom';
@@ -45,6 +44,7 @@ import type {
     ProfileVisibilityValue,
     SavedCredentialCollection,
 } from './DataSharingCenter.types';
+import { AppContent, AppPage } from '../../components/chrome';
 
 type PrivacySettingsProfile = {
     profileVisibility?: ProfileVisibilityValue;
@@ -324,8 +324,8 @@ const PrivacySettingsPage: React.FC = () => {
     ]);
 
     return (
-        <IonPage>
-            <IonContent>
+        <AppPage>
+            <AppContent>
                 <DataSharingCenterView
                     vm={vm}
                     announcements={
@@ -346,8 +346,8 @@ const PrivacySettingsPage: React.FC = () => {
                         />
                     }
                 />
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

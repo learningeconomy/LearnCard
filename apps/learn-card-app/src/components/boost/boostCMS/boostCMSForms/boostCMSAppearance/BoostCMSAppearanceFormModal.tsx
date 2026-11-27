@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 
 import { BoostCategoryOptionsEnum, useModal } from 'learn-card-base';
 
-import { IonPage, IonContent } from '@ionic/react';
 import { AppGrid } from '../../../../layout';
 import { BoostUserTypeEnum } from '../../../boost-options/boostOptions';
 

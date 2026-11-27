@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
-import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import { AppInput } from '../../../controls/AppInput';
 import Pencil from '../../../svgs/Pencil';
 import LearnCardIconOutline from '../../../svgs/LearnCardIconOutline';
@@ -30,7 +30,7 @@ import { getLearnCardIDStyleDefaults } from '../../../learncardID-CMS/learncard-
 
 import keyboardStore from 'learn-card-base/stores/keyboardStore';
 import { m } from '../../../../paraglide/messages.js';
-import { AppFooter, AppToolbar } from '../../../chrome';
+import { AppContent, AppFooter, AppPage, AppToolbar } from '../../../chrome';
 
 export enum ChildInviteModalViewModeEnum {
     create = 'create',
@@ -214,8 +214,8 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
     };
 
     return (
-        <IonPage>
-            <IonContent fullscreen color="grayscale-200">
+        <AppPage>
+            <AppContent fullscreen color="grayscale-200">
                 <div className="w-full flex flex-col items-center justify-center ion-padding mt-[var(--ion-safe-area-top,0px)]">
                     <div className="flex flex-col items-center justify-center w-full max-w-[400px] shadow-xs rounded-[15px] bg-white px-4 pt-6 pb-10">
                         <div>
@@ -387,7 +387,7 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
                         </div>
                     )} */}
                 </div>
-            </IonContent>
+            </AppContent>
             <AppFooter
                 ref={bottomBarRef}
                 mode="ios"
@@ -431,7 +431,7 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
                     </div>
                 </AppToolbar>
             </AppFooter>
-        </IonPage>
+        </AppPage>
     );
 };
 

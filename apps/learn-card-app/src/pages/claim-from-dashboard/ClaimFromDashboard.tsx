@@ -4,7 +4,6 @@ import { useHistory, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
 import { VC, UnsignedVP } from '@learncard/types';
 import { getVCDisplayCardVariant } from '@learncard/react';
-import { IonContent, IonPage } from '@ionic/react';
 import { useAppOverlayModal } from '../../components/overlays/useAppOverlayModal';
 import { AppLoading } from '../../components/overlays/AppLoading';
 import { AppRow } from '../../components/layout';
@@ -56,7 +55,7 @@ import useTheme from '../../theme/hooks/useTheme';
 import { useClaimSuccessToast } from '../../feedback/useClaimSuccessToast';
 import { useDuplicateCredentialGuard } from '../../components/credentials/duplicate-credential/useDuplicateCredentialGuard';
 import * as m from '../../paraglide/messages.js';
-import { AppFooter, AppToolbar } from '../../components/chrome';
+import { AppContent, AppFooter, AppPage, AppToolbar } from '../../components/chrome';
 
 export type FromDashboardMetadata = {
     credentialName: string;
@@ -488,7 +487,7 @@ const ClaimFromDashboard: React.FC = () => {
     const credBackground = credential?.display?.backgroundImage ?? undefined;
 
     return (
-        <IonPage>
+        <AppPage>
             {duplicateCredentialPrompt}
             <AppLoading
                 mode="ios"
@@ -496,7 +495,7 @@ const ClaimFromDashboard: React.FC = () => {
                 isOpen={loading || claimingCredential || isCheckingDuplicate}
                 cssClass="[--background:none]"
             />
-            <IonContent fullscreen color="grayscale-100">
+            <AppContent fullscreen color="grayscale-100">
                 <div
                     className={`pb-[100px] vc-preview-modal-safe-area h-full overflow-y-auto ${previewHorizontalPaddingClass}`}
                     style={{
@@ -535,7 +534,7 @@ const ClaimFromDashboard: React.FC = () => {
                         </section>
                     )}
                 </div>
-            </IonContent>
+            </AppContent>
             <AppFooter
                 mode="ios"
                 className="w-full flex justify-center items-center p-[15px] ion-no-border absolute bottom-0"
@@ -595,7 +594,7 @@ const ClaimFromDashboard: React.FC = () => {
                     </AppRow>
                 </AppToolbar>
             </AppFooter>
-        </IonPage>
+        </AppPage>
     );
 };
 

@@ -1,7 +1,7 @@
 import React from 'react';
-import { IonContent, IonPage } from '@ionic/react';
 import { Gift } from 'lucide-react';
 import * as m from '../../paraglide/messages.js';
+import { AppContent, AppPage } from '../../components/chrome';
 
 interface ExchangeInitiateProps {
     onStart: () => void;
@@ -9,8 +9,8 @@ interface ExchangeInitiateProps {
 
 const ExchangeInitiate: React.FC<ExchangeInitiateProps> = ({ onStart }) => {
     return (
-        <IonPage>
-            <IonContent fullscreen>
+        <AppPage>
+            <AppContent fullscreen>
                 <div className="min-h-full bg-grayscale-100 flex items-center justify-center p-4 font-poppins">
                     <div className="bg-white rounded-[20px] shadow-xl max-w-md w-full overflow-hidden safe-area-top-margin animate-fade-in-up">
                         {/* Header with icon */}
@@ -48,8 +48,8 @@ const ExchangeInitiate: React.FC<ExchangeInitiateProps> = ({ onStart }) => {
                         </div>
                     </div>
                 </div>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

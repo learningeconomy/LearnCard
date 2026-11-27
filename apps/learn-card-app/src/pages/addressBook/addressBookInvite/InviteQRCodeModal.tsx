@@ -1,5 +1,5 @@
 import React from 'react';
-import { IonPage, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import { QRCodeSVG } from 'qrcode.react';
 
 import ModalLayout from 'apps/learn-card-app/src/layout/ModalLayout';
@@ -7,6 +7,7 @@ import { ProfilePicture, useCurrentUser } from 'learn-card-base';
 
 import { useInviteLink } from '../../../hooks/useInviteLink';
 import * as m from '../../../paraglide/messages.js';
+import { AppPage } from '../../../components/chrome';
 
 /**
  * QR rendering of the user's personal invite link.
@@ -19,7 +20,7 @@ const InviteQRCodeModal: React.FC<{ handleCloseModal: () => void }> = ({ handleC
     const { data: invite, isLoading, isError } = useInviteLink({ enabled: true });
 
     return (
-        <IonPage>
+        <AppPage>
             <ModalLayout handleOnClick={handleCloseModal} allowScroll>
                 <div className="flex w-full flex-col items-center justify-center">
                     <h1 className="m-0 p-0 font-poppins text-[24px] font-semibold text-grayscale-800">
@@ -75,7 +76,7 @@ const InviteQRCodeModal: React.FC<{ handleCloseModal: () => void }> = ({ handleC
                     </div>
                 </div>
             </ModalLayout>
-        </IonPage>
+        </AppPage>
     );
 };
 

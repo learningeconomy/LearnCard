@@ -3,7 +3,7 @@ import { useHistory } from 'react-router-dom';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('loading-page');
 
-import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import { AppCol, AppRow } from '../../components/layout';
 
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
@@ -18,6 +18,7 @@ import {
     useCurrentUser,
     useIsLoggedIn,
 } from 'learn-card-base';
+import { AppContent, AppPage } from '../../components/chrome';
 
 const LoadingPage: React.FC = () => {
     const { textLogo } = useTenantBrandingAssets();
@@ -25,8 +26,8 @@ const LoadingPage: React.FC = () => {
     const loaderColor = theme.colors.defaults.loaders?.[0] ?? '#8B5CF6';
 
     return (
-        <IonPage>
-            <IonContent fullscreen className="flex items-center justify-center">
+        <AppPage>
+            <AppContent fullscreen className="flex items-center justify-center">
                 <AppRow
                     className="h-full w-full flex items-center justify-center"
                     style={{ backgroundColor: loaderColor }}
@@ -39,8 +40,8 @@ const LoadingPage: React.FC = () => {
                         />
                     </AppCol>
                 </AppRow>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 
@@ -52,8 +53,8 @@ export const LoadingPageDumb: React.FC = () => {
     const loaderColor = theme.colors.defaults.loaders?.[0] ?? '#8B5CF6';
 
     return (
-        <IonPage>
-            <IonContent fullscreen className="flex items-center justify-center">
+        <AppPage>
+            <AppContent fullscreen className="flex items-center justify-center">
                 <AppRow
                     className="h-full w-full flex items-center justify-center"
                     style={{ backgroundColor: loaderColor }}
@@ -66,8 +67,8 @@ export const LoadingPageDumb: React.FC = () => {
                         />
                     </AppCol>
                 </AppRow>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

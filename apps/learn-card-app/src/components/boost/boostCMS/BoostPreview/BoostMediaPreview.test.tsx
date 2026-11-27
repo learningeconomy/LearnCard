@@ -25,11 +25,6 @@ vi.mock('swiper/react', () => ({
 
 vi.mock('swiper/modules', () => ({ Navigation: {} }));
 
-vi.mock('@ionic/react', () => ({
-    IonContent: ({ children }: React.PropsWithChildren) => <main>{children}</main>,
-    IonPage: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-}));
-
 vi.mock('learn-card-base', () => ({
     BoostCategoryOptionsEnum: { accomplishment: 'accomplishment' },
     DisplayTypeEnum: { Media: 'media' },

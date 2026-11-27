@@ -7,7 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import authStore from 'learn-card-base/stores/authStore';
 
-import { IonPage, IonSkeletonText, IonSpinner } from '@ionic/react';
+import { IonSkeletonText, IonSpinner } from '@ionic/react';
 import { AppCol, AppRow } from '../../components/layout';
 import FullScreenGameFlow from './GameFlow/FullScreenGameFlow';
 import ConsentFlowCredFrontDoor from './ConsentFlowCredFrontDoor';
@@ -45,6 +45,7 @@ import {
     ACCOUNT_CREATED_AT_KEY,
     SESSION_START_KEY,
 } from '@analytics';
+import { AppPage } from '../../components/chrome';
 
 enum Step {
     landing,
@@ -229,7 +230,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
 
     if (isPending) {
         return (
-            <IonPage className="bg-emerald-700 p-[30px] flex items-center justify-center">
+            <AppPage className="bg-emerald-700 p-[30px] flex items-center justify-center">
                 <div className="w-full flex flex-col items-center justify-center min-h-[300px]">
                     <IonSpinner
                         name="crescent"
@@ -238,7 +239,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                     />
                     <p className="font-poppins text-grayscale-900">{m['common.loading']()}</p>
                 </div>
-            </IonPage>
+            </AppPage>
         );
     }
 
@@ -256,7 +257,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
     }
 
     return (
-        <IonPage className="bg-emerald-700 p-[30px]">
+        <AppPage className="bg-emerald-700 p-[30px]">
             <div className="flex flex-col gap-[15px] items-center px-[40px] pb-[30px] pt-[40px] bg-white shadow-bottom rounded-[24px] m-auto max-w-[400px]">
                 {isPending && !error ? (
                     <IonSkeletonText animated className="h-[60px] w-[60px] rounded-[10px]" />
@@ -418,7 +419,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                     </AppRow>
                 </div>
             </div>
-        </IonPage>
+        </AppPage>
     );
 };
 

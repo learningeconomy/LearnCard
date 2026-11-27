@@ -4,7 +4,6 @@ import { useHistory, useLocation } from 'react-router-dom';
 import { formatCredentialDate } from 'learn-card-base/helpers/credentialHelpers';
 import queryString from 'query-string';
 import { VC, VP } from '@learncard/types';
-import { IonContent, IonPage } from '@ionic/react';
 import { useAppOverlayModal } from '../../components/overlays/useAppOverlayModal';
 
 import { getLogger } from 'learn-card-base';
@@ -76,6 +75,7 @@ import {
     shouldCompleteCredentialClaimLocally,
 } from './claimRequest.helpers';
 import { canParticipateInExchange, deriveInboxClaimProfileState } from './inboxClaimGate';
+import { AppContent, AppPage } from '../../components/chrome';
 
 export type RequestMetadata = {
     credentialName: string;
@@ -955,19 +955,19 @@ const ClaimFromRequest: React.FC = () => {
     // confirmed absence and preserves the claim link through it.
     if (isInboxClaim && inboxProfileState !== 'present') {
         return (
-            <IonPage>
-                <IonContent>
+            <AppPage>
+                <AppContent>
                     <InboxClaimProfileGate vc_request_url={vc_request_url} />
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         );
     }
 
     return (
-        <IonPage>
+        <AppPage>
             {duplicateCredentialPrompt}
-            <IonContent>{renderExchangeStep()}</IonContent>
-        </IonPage>
+            <AppContent>{renderExchangeStep()}</AppContent>
+        </AppPage>
     );
 };
 

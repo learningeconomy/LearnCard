@@ -11,7 +11,7 @@ import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credent
 import ProfilePicture from 'learn-card-base/components/profilePicture/ProfilePicture';
 import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarnedCard';
 
-import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import { useAppAlert } from '../overlays/useAppAlert';
 import { AppGrid } from '../layout';
 import { AppToggle } from '../controls/AppToggle';
@@ -28,6 +28,7 @@ type ShareCredentialsProps = {
 };
 
 import { getLogger } from 'learn-card-base';
+import { AppContent, AppPage } from '../chrome';
 const log = getLogger('share-boosts-bundle');
 
 const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
@@ -108,8 +109,8 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
     };
 
     return (
-        <IonPage>
-            <IonContent>
+        <AppPage>
+            <AppContent>
                 <AppGrid className="flex items-center justify-center p-[20px] pb-[100px] max-w-[700px]">
                     <section className="w-full">
                         <div className="flex flex-col gap-[15px] text-grayscale-900">
@@ -282,8 +283,8 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
                         </button>
                     </section>
                 )}
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

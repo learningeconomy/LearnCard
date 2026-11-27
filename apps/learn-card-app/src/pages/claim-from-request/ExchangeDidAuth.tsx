@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { IonContent, IonPage } from '@ionic/react';
 import { VP } from '@learncard/types';
 import { useWallet, useIsLoggedIn } from 'learn-card-base';
 import { useHistory } from 'react-router-dom';
@@ -7,6 +6,7 @@ import { VCAPIRequestStrategy } from './ClaimFromRequest';
 import { Gift, Shield, CheckCircle, Info } from 'lucide-react';
 import { getLogger } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
+import { AppContent, AppPage } from '../../components/chrome';
 const log = getLogger('exchange-did-auth');
 
 interface ExchangeDidAuthProps {
@@ -71,8 +71,8 @@ const ExchangeDidAuth: React.FC<ExchangeDidAuthProps> = ({
     };
 
     return (
-        <IonPage>
-            <IonContent fullscreen>
+        <AppPage>
+            <AppContent fullscreen>
                 <div className="min-h-full bg-grayscale-100 flex items-center justify-center p-4 font-poppins">
                     <div className="bg-white rounded-[20px] shadow-xl max-w-md w-full overflow-hidden safe-area-top-margin animate-fade-in-up">
                         {/* Header with icon */}
@@ -191,8 +191,8 @@ const ExchangeDidAuth: React.FC<ExchangeDidAuthProps> = ({
                         </div>
                     </div>
                 </div>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

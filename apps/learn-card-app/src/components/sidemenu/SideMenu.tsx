@@ -15,7 +15,6 @@ import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import LearnCardTextLogo from '../svgs/LearnCardTextLogo';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import SideMenuSecondaryLinks from './SideMenuSecondaryLinks';
-import { IonContent } from '@ionic/react';
 import { AppMenu } from '../app-shell/AppMenu';
 import { AppMenuToggle } from '../app-shell/AppMenuToggle';
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
@@ -39,6 +38,7 @@ import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
 import useBoostRecoveryCheck from '../../hooks/useBoostRecoveryCheck';
 
 import * as m from '../../paraglide/messages.js';
+import { AppContent } from '../chrome';
 
 const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
     branding = BrandingEnum.learncard,
@@ -110,7 +110,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
 
     return (
         <AppMenu contentId="main" swipeGesture menuId="appSideMenu" disabled={false}>
-            <IonContent
+            <AppContent
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                 style={{ ['--background' as any]: '#ffffff' }}
                 className="lc-side-menu-content"
@@ -224,7 +224,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                         </div>
                     </div>
                 </GenericErrorBoundary>
-            </IonContent>
+            </AppContent>
         </AppMenu>
     );
 };

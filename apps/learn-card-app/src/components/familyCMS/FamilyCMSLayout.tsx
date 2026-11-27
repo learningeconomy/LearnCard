@@ -1,7 +1,7 @@
 import React from 'react';
 
-import { IonContent } from '@ionic/react';
 import { FamilyCMSState } from './familyCMSState';
+import { AppContent } from '../chrome';
 
 type AllowedWallpaperStylesType = {
     backgroundSize?: string;
@@ -57,7 +57,7 @@ export const FamilyCMSLayout: React.FC<{
     }
 
     return (
-        <IonContent fullscreen color="grayscale-800">
+        <AppContent fullscreen color="grayscale-800">
             <div
                 className="w-full flex flex-col items-center justify-start ion-padding overflow-y-scroll h-full"
                 style={{
@@ -66,7 +66,7 @@ export const FamilyCMSLayout: React.FC<{
             >
                 <div className="w-full max-w-[400px] pb-[100px]">{children}</div>
             </div>
-        </IonContent>
+        </AppContent>
     );
 };
 

@@ -1,5 +1,4 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { IonPage, IonContent } from '@ionic/react';
 import { AppToast } from '../../../components/overlays/AppToast';
 import { X, Maximize2, Play, AlertCircle } from 'lucide-react';
 import { getLogger } from 'learn-card-base';
@@ -22,6 +21,7 @@ import type {
     ExtendedAppStoreListing,
 } from '../types';
 import { LAUNCH_TYPE_INFO } from '../types';
+import { AppContent, AppPage } from '../../../components/chrome';
 
 // LaunchConfig type compatible with useLearnCardMessageHandlers
 interface LaunchConfig {
@@ -189,8 +189,8 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
 
     if (!isEmbeddable) {
         return (
-            <IonPage className="h-full w-full">
-                <IonContent fullscreen>
+            <AppPage className="h-full w-full">
+                <AppContent fullscreen>
                     <div className="w-full h-full flex flex-col bg-gray-100">
                         {/* Header */}
                         <div className="flex items-center justify-between p-4 bg-white border-b">
@@ -273,14 +273,14 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                             </div>
                         </div>
                     </div>
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         );
     }
 
     return (
-        <IonPage className="h-full w-full">
-            <IonContent fullscreen>
+        <AppPage className="h-full w-full">
+            <AppContent fullscreen>
                 <div className="w-full h-full flex flex-col bg-gray-100">
                     {/* Header */}
                     <div className="flex items-center justify-between p-4 bg-white border-b">
@@ -368,7 +368,7 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                         </div>
                     </div>
                 </div>
-            </IonContent>
+            </AppContent>
 
             <AppToast
                 isOpen={showErrorToast}
@@ -387,7 +387,7 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                     onDismiss={handleDismissClaimModal}
                 />
             )}
-        </IonPage>
+        </AppPage>
     );
 };
 

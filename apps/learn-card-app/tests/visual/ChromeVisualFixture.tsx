@@ -1,9 +1,10 @@
 import React, { useEffect, useLayoutEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { IonApp, IonContent, IonPage } from '@ionic/react';
+import { IonApp } from '@ionic/react';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
 
 import { BackButton, Footer, Header, Title, Toolbar } from './chromeShim';
+import { AppContent, AppPage } from '../../src/components/chrome';
 import { AppButton } from '../../src/components/controls/AppButton';
 import { AppButtons } from '../../src/components/controls/AppButtons';
 import { AppOverlayManager } from '../../src/components/overlays/AppOverlayManager';
@@ -112,7 +113,7 @@ const DEVCLI_CSS = `
 type Body = React.FC<{ onClose: () => void }>;
 
 const ModalBody: Body = ({ onClose }) => (
-    <IonPage>
+    <AppPage>
         <Header className="ion-no-border">
             <Toolbar>
                 <Title>Modal title</Title>
@@ -123,15 +124,15 @@ const ModalBody: Body = ({ onClose }) => (
                 </AppButtons>
             </Toolbar>
         </Header>
-        <IonContent>
+        <AppContent>
             <Rows n={12} label="Modal row" />
-        </IonContent>
+        </AppContent>
         <Footer>
             <Toolbar color="light">
                 <div className="px-4 text-sm">Footer toolbar</div>
             </Toolbar>
         </Footer>
-    </IonPage>
+    </AppPage>
 );
 
 const UserOptionsBody: Body = ({ onClose }) => (
@@ -174,8 +175,8 @@ const ModalCase: React.FC<{ id: string }> = ({ id }) => {
     const spec = MODALS[id];
     const [present, dismiss] = useAppOverlayModal(spec.body, { onClose: () => dismiss() });
     return (
-        <IonPage>
-            <IonContent>
+        <AppPage>
+            <AppContent>
                 <div className="p-4">
                     <button
                         type="button"
@@ -187,8 +188,8 @@ const ModalCase: React.FC<{ id: string }> = ({ id }) => {
                     </button>
                 </div>
                 <Rows n={10} label="Under" />
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 
@@ -196,35 +197,35 @@ const PageCase: React.FC<{ id: string }> = ({ id }) => {
     switch (id) {
         case 's-page':
             return (
-                <IonPage>
+                <AppPage>
                     <StdHeader />
-                    <IonContent data-testid="content">
+                    <AppContent data-testid="content">
                         <Rows />
-                    </IonContent>
+                    </AppContent>
                     <StdFooter />
-                </IonPage>
+                </AppPage>
             );
         case 's-noborder':
             return (
-                <IonPage>
+                <AppPage>
                     <Header className="ion-no-border">
                         <Toolbar color="light">
                             <Title>No border, light</Title>
                         </Toolbar>
                     </Header>
-                    <IonContent data-testid="content">
+                    <AppContent data-testid="content">
                         <Rows n={8} />
-                    </IonContent>
+                    </AppContent>
                     <Footer className="ion-no-border">
                         <Toolbar color="grayscale-800">
                             <div className="px-4 py-2">Dark footer toolbar</div>
                         </Toolbar>
                     </Footer>
-                </IonPage>
+                </AppPage>
             );
         case 's-multi':
             return (
-                <IonPage>
+                <AppPage>
                     <Header>
                         <Toolbar>
                             <Title>First toolbar</Title>
@@ -239,9 +240,9 @@ const PageCase: React.FC<{ id: string }> = ({ id }) => {
                             </div>
                         </Toolbar>
                     </Header>
-                    <IonContent data-testid="content">
+                    <AppContent data-testid="content">
                         <Rows n={8} />
-                    </IonContent>
+                    </AppContent>
                     <Footer>
                         <Toolbar>
                             <div className="px-4">Footer one</div>
@@ -250,23 +251,23 @@ const PageCase: React.FC<{ id: string }> = ({ id }) => {
                             <div className="px-4">Footer two</div>
                         </Toolbar>
                     </Footer>
-                </IonPage>
+                </AppPage>
             );
         case 's-translucent':
             return (
-                <IonPage>
+                <AppPage>
                     <StdHeader translucent />
-                    <IonContent fullscreen data-testid="content">
+                    <AppContent fullscreen data-testid="content">
                         <div className="h-[120px] bg-[linear-gradient(90deg,#f97316,#2563eb)]" />
                         <Rows />
-                    </IonContent>
+                    </AppContent>
                     <StdFooter translucent />
-                </IonPage>
+                </AppPage>
             );
         case 's-colors':
             return (
-                <IonPage>
-                    <IonContent data-testid="content">
+                <AppPage>
+                    <AppContent data-testid="content">
                         <div className="flex flex-col gap-2 bg-[#ddeeff] p-2">
                             {COLORS.map(c => (
                                 <Toolbar key={c} color={c}>
@@ -295,18 +296,18 @@ const PageCase: React.FC<{ id: string }> = ({ id }) => {
                                 <Title size="small">Small title</Title>
                             </Toolbar>
                         </div>
-                    </IonContent>
-                </IonPage>
+                    </AppContent>
+                </AppPage>
             );
         case 's-tailwind':
             return (
-                <IonPage>
+                <AppPage>
                     <Header color="light" className="rounded-b-[30px] overflow-hidden shadow-md">
                         <Toolbar color="light" className="text-white px-4 py-4!">
                             <div className="p-2 text-grayscale-900">Rounded header (CheckList)</div>
                         </Toolbar>
                     </Header>
-                    <IonContent data-testid="content">
+                    <AppContent data-testid="content">
                         <Header className="ion-no-border mt-[25px]">
                             <Toolbar className="ion-no-border" color="grayscale-900">
                                 <div className="px-4 text-white">
@@ -341,12 +342,12 @@ const PageCase: React.FC<{ id: string }> = ({ id }) => {
                             </Toolbar>
                         </Footer>
                         <Rows n={6} />
-                    </IonContent>
-                </IonPage>
+                    </AppContent>
+                </AppPage>
             );
         case 's-devcli':
             return (
-                <IonPage className="cli-page">
+                <AppPage className="cli-page">
                     <style>{DEVCLI_CSS}</style>
                     <Header className="cli-header">
                         <Toolbar className="cli-toolbar">
@@ -361,14 +362,14 @@ const PageCase: React.FC<{ id: string }> = ({ id }) => {
                             </AppButtons>
                         </Toolbar>
                     </Header>
-                    <IonContent className="ion-no-padding">
+                    <AppContent className="ion-no-padding">
                         <Rows n={6} label="$" />
-                    </IonContent>
-                </IonPage>
+                    </AppContent>
+                </AppPage>
             );
         case 'r-boostcms':
             return (
-                <IonPage>
+                <AppPage>
                     <BoostCMSHeader
                         boostUserType={BoostUserTypeEnum.someone}
                         selectedVCType={BoostCategoryOptionsEnum.achievement}
@@ -381,9 +382,9 @@ const PageCase: React.FC<{ id: string }> = ({ id }) => {
                         isLoading={false}
                         issueToLength={0}
                     />
-                    <IonContent>
+                    <AppContent>
                         <Rows n={10} />
-                    </IonContent>
+                    </AppContent>
                     <BoostCMSFooter
                         boostUserType={BoostUserTypeEnum.someone}
                         selectedVCType={BoostCategoryOptionsEnum.achievement}
@@ -395,51 +396,51 @@ const PageCase: React.FC<{ id: string }> = ({ id }) => {
                         isSaveLoading={false}
                         handleSubmit={noop}
                     />
-                </IonPage>
+                </AppPage>
             );
         case 'r-checklist':
             return (
-                <IonPage>
+                <AppPage>
                     <CheckListManagerHeader />
-                    <IonContent>
+                    <AppContent>
                         <Rows n={10} />
-                    </IonContent>
-                </IonPage>
+                    </AppContent>
+                </AppPage>
             );
         case 'r-footers':
             return (
-                <IonPage>
-                    <IonContent>
+                <AppPage>
+                    <AppContent>
                         <Rows n={4} />
-                    </IonContent>
+                    </AppContent>
                     <FamilyCMSFooter
                         handleCreateFamily={noop}
                         handleEditFamily={noop}
                         handleCloseModal={noop}
                     />
-                </IonPage>
+                </AppPage>
             );
         case 'r-learncard-footer':
             return (
-                <IonPage>
-                    <IonContent>
+                <AppPage>
+                    <AppContent>
                         <Rows n={10} />
-                    </IonContent>
+                    </AppContent>
                     <LearnCardFooter buttonText="Share" buttonAction={noop} />
-                </IonPage>
+                </AppPage>
             );
         case 'r-onboarding':
             return (
-                <IonPage>
-                    <IonContent>
+                <AppPage>
+                    <AppContent>
                         <Rows n={10} />
-                    </IonContent>
+                    </AppContent>
                     <OnboardingFooter text="Continue" onClick={noop} showBackButton onBack={noop} />
-                </IonPage>
+                </AppPage>
             );
         case 'r-useroptions':
             return (
-                <IonPage>
+                <AppPage>
                     <UserOptionsModal
                         handleCloseModal={noop}
                         handleLogout={noop}
@@ -447,7 +448,7 @@ const PageCase: React.FC<{ id: string }> = ({ id }) => {
                         title="Options"
                         footer={<div className="p-2 text-center">Fixed footer</div>}
                     />
-                </IonPage>
+                </AppPage>
             );
         case 'r-network-error':
             return (
@@ -455,7 +456,7 @@ const PageCase: React.FC<{ id: string }> = ({ id }) => {
             );
         case 'r-resume':
             return (
-                <IonPage>
+                <AppPage>
                     <ResumeBuilderToolbar
                         loadingAction={null}
                         historyControl={<span>History</span>}
@@ -464,33 +465,33 @@ const PageCase: React.FC<{ id: string }> = ({ id }) => {
                         onDownload={noop}
                         onPublish={noop}
                     />
-                    <IonContent>
+                    <AppContent>
                         <Rows n={10} />
-                    </IonContent>
-                </IonPage>
+                    </AppContent>
+                </AppPage>
             );
         case 'r-appstore':
             return (
-                <IonPage>
+                <AppPage>
                     <DeveloperPortalProvider>
                         <AppStoreHeader
                             title="Developer portal"
                             rightContent={<button type="button">Right</button>}
                         />
                     </DeveloperPortalProvider>
-                    <IonContent>
+                    <AppContent>
                         <Rows n={10} />
-                    </IonContent>
-                </IonPage>
+                    </AppContent>
+                </AppPage>
             );
         case 'r-endorsement':
             return (
-                <IonPage>
-                    <IonContent>
+                <AppPage>
+                    <AppContent>
                         <Rows n={6} />
-                    </IonContent>
+                    </AppContent>
                     <EndorsementFormFooter handleEndorsementSubmit={noop} showDeclineButton />
-                </IonPage>
+                </AppPage>
             );
         default:
             return MODALS[id] ? <ModalCase id={id} /> : <div>Unknown case {id}</div>;

@@ -23,9 +23,7 @@ vi.mock('@learncard/react', () => ({
     getVCDisplayCardVariant: () => 'default',
 }));
 vi.mock('@ionic/react', () => ({
-    IonContent: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
     IonLoading: () => null,
-    IonPage: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
 }));
 vi.mock('learn-card-base', () => ({
     BoostPageViewMode: { Card: 'card' },

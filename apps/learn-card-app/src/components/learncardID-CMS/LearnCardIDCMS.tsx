@@ -1,7 +1,6 @@
 import * as m from '../../paraglide/messages.js';
 import React, { useEffect, useState } from 'react';
 
-import { IonPage } from '@ionic/react';
 import { AppToggle } from '../controls/AppToggle';
 import LearnCardIDCMSLayout from './LearnCardIDCMSLayout';
 import LearnCardIDCMSFooter from './LearCardIDCMSFooter';
@@ -22,6 +21,7 @@ import {
     getLearnCardIDBackgroundColor,
     getLearnCardIDStyleDefaults,
 } from './learncard-cms.helpers';
+import { AppPage } from '../chrome';
 
 // different editor modes the CMS can be opened in
 export enum LearnCardIdCMSEditorModeEnum {
@@ -86,7 +86,7 @@ export const LearnCardIDCMS: React.FC<{
     };
 
     return (
-        <IonPage>
+        <AppPage>
             <LearnCardIDCMSLayout
                 learnCardID={_learnCardID}
                 layoutClassName="max-w-[375px]! mt-[var(--ion-safe-area-top,0px)]"
@@ -290,7 +290,7 @@ export const LearnCardIDCMS: React.FC<{
                 handleSave={handleSave}
                 handleCloseModal={handleCloseModal}
             />
-        </IonPage>
+        </AppPage>
     );
 };
 

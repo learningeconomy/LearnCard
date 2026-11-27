@@ -1,12 +1,13 @@
 import React, { Suspense, lazy, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { useHistory } from 'react-router-dom';
-import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 
 import { ModalTypes, QRCodeScannerStore, useModal, getLogger } from 'learn-card-base';
 
 import useBoostRecoveryCheck from '../../../hooks/useBoostRecoveryCheck';
 import * as m from '../../../paraglide/messages.js';
+import { AppContent, AppPage } from '../../../components/chrome';
 
 const log = getLogger('dashboard');
 
@@ -16,8 +17,8 @@ const importPasteOrUploadClaimModal = () =>
 const LazyPasteOrUploadClaimModal = lazy(importPasteOrUploadClaimModal);
 
 const PasteOrUploadClaimModalFallback: React.FC = () => (
-    <IonPage>
-        <IonContent>
+    <AppPage>
+        <AppContent>
             <div className="font-poppins flex items-center justify-center min-h-[360px] p-8">
                 <IonSpinner
                     name="crescent"
@@ -26,8 +27,8 @@ const PasteOrUploadClaimModalFallback: React.FC = () => (
                     className="text-grayscale-700"
                 />
             </div>
-        </IonContent>
-    </IonPage>
+        </AppContent>
+    </AppPage>
 );
 
 type AddToLearnCardActions = {

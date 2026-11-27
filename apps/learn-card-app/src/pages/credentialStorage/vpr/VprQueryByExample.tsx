@@ -25,8 +25,6 @@ import { getUniqueId } from 'learn-card-base/helpers/credentials/ids';
 
 import { chapiStore, redirectStore } from 'learn-card-base';
 
-import { IonPage, IonContent } from '@ionic/react';
-
 import { queryListOfCredentials } from 'learn-card-base/helpers/credentials/queries';
 import { filterMaybes } from '@learncard/helpers';
 import type { CredentialRequestEvent } from '@learncard/chapi-plugin';
@@ -35,6 +33,7 @@ import type {
     CredentialDisclosureSubmit,
 } from '../../../helpers/verifier-history/disclosure';
 import * as m from '../../../paraglide/messages.js';
+import { AppContent, AppPage } from '../../../components/chrome';
 
 export type VprQueryByExampleProps = {
     event?: CredentialRequestEvent;
@@ -217,8 +216,8 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
     }, [allCredentialsFinishedLoading, hasSuggested, credentialQuery, eligibleCredentials]);
 
     return (
-        <IonPage>
-            <IonContent fullscreen>
+        <AppPage>
+            <AppContent fullscreen>
                 <section
                     className="sentry-block ph-no-capture flex min-h-full flex-col bg-white font-poppins text-grayscale-900"
                     data-html2canvas-ignore
@@ -296,8 +295,8 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
                         </div>
                     </footer>
                 </section>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

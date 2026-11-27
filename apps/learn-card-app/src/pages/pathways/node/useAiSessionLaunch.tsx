@@ -77,7 +77,7 @@ export interface UseAiSessionLaunchOptions {
  */
 export const useAiSessionLaunch = (
     resolved: ResolvedAiSession | null,
-    opts: UseAiSessionLaunchOptions = {},
+    opts: UseAiSessionLaunchOptions = {}
 ): UseAiSessionLaunchResult => {
     const { newModal } = useModal();
 
@@ -89,8 +89,8 @@ export const useAiSessionLaunch = (
         // Right slide on desktop (the chat reads well in a narrow
         // column), FullScreen on mobile. Same contract as
         // `AiTutorConnectedView` and `EmbedIframeModal`: the modal
-        // body renders its own IonPage so the full-height layout
-        // behaves correctly inside Ionic's modal stack.
+        // body renders its own AppPage so the full-height layout
+        // behaves correctly inside the modal stack.
         //
         // `hideButton: true` because the chatbot's FinishSessionButton
         // is the canonical close affordance — stacking a second X
@@ -103,7 +103,7 @@ export const useAiSessionLaunch = (
                 topicTitle={topicTitle}
             />,
             { hideButton: true },
-            { desktop: ModalTypes.Right, mobile: ModalTypes.FullScreen },
+            { desktop: ModalTypes.Right, mobile: ModalTypes.FullScreen }
         );
     }, [resolved, topicTitle, newModal]);
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IonContent, IonPage, IonicSlides, IonSpinner } from '@ionic/react';
+import { IonicSlides, IonSpinner } from '@ionic/react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import type { Swiper as SwiperInterface } from 'swiper/types';
 import { Keyboard, Navigation, Pagination, Scrollbar } from 'swiper/modules';
@@ -19,6 +19,7 @@ import 'swiper/css/keyboard';
 import 'swiper/css/pagination';
 import 'swiper/css/scrollbar';
 import '@ionic/react/css/ionic-swiper.css';
+import { AppContent, AppPage } from '../chrome';
 
 const IntroSlides: React.FC = () => {
     const { getColorSet } = useTheme();
@@ -89,8 +90,8 @@ const IntroSlides: React.FC = () => {
     return (
         <>
             <style>{paginationStyles}</style>
-            <IonPage>
-                <IonContent fullscreen>
+            <AppPage>
+                <AppContent fullscreen>
                     <div style={{ position: 'relative', height: '100%' }}>
                         <Swiper
                             modules={[Keyboard, Pagination, Scrollbar, IonicSlides, Navigation]}
@@ -134,8 +135,8 @@ const IntroSlides: React.FC = () => {
                         </Swiper>
                     </div>
                     <div className="swiper-pagination intro-slides-pagination"></div>
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         </>
     );
 };

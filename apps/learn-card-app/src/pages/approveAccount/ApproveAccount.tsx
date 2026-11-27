@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import { useHistory } from 'react-router-dom';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('approve-account');
@@ -11,6 +11,7 @@ import { usePathQuery } from 'learn-card-base';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import { getTenantHeaders } from '../../config/bootstrapTenantConfig';
 import { AppButton } from '../../components/controls/AppButton';
+import { AppContent, AppPage } from '../../components/chrome';
 
 const ApproveAccount: React.FC = () => {
     const { textLogo, brandMarkLight } = useTenantBrandingAssets();
@@ -90,8 +91,8 @@ const ApproveAccount: React.FC = () => {
     const handleGoLogin = () => history.replace('/login');
 
     return (
-        <IonPage color="emerald-700">
-            <IonContent
+        <AppPage color="emerald-700">
+            <AppContent
                 fullscreen
                 color="emerald-700"
                 className="flex flex-col grow bg-emerald-700"
@@ -140,8 +141,8 @@ const ApproveAccount: React.FC = () => {
                         </p>
                     )} */}
                 </div>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

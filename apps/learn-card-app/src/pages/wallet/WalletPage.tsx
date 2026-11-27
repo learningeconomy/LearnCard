@@ -25,7 +25,6 @@ import {
 
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 import CapGoUpdateModal from '../../components/capGoUpdateModal/CapGoUpdateModal';
-import { IonPage, IonContent } from '@ionic/react';
 import { AppCol, AppRow } from '../../components/layout';
 import WalletPageViewModeSelector from './WalletPageViewModeSelector';
 import MainHeader from '../../components/main-header/MainHeader';
@@ -48,6 +47,7 @@ import { useTheme } from '../../theme/hooks/useTheme';
 import { chatBotStore } from '../../stores/chatBotStore';
 import { prefetchRoutes, ROUTE_PRELOAD } from '../../Routes';
 import useHeaderScrollSync from '../../hooks/useHeaderScrollSync';
+import { AppContent, AppPage } from '../../components/chrome';
 
 const WalletPage: React.FC = () => {
     const flags = useFlags();
@@ -159,7 +159,7 @@ const WalletPage: React.FC = () => {
     const isList = viewMode === PassportPageViewMode.list;
 
     return (
-        <IonPage
+        <AppPage
             className="bg-grayscale-100"
             style={passportBgColor ? { backgroundColor: passportBgColor } : undefined}
         >
@@ -189,7 +189,7 @@ const WalletPage: React.FC = () => {
                 </div>
             )}
             <GenericErrorBoundary>
-                <IonContent
+                <AppContent
                     fullscreen
                     color="grayscale-100"
                     scrollEvents
@@ -278,9 +278,9 @@ const WalletPage: React.FC = () => {
                             <PassportActivityFeed />
                         </div>
                     </div>
-                </IonContent>
+                </AppContent>
             </GenericErrorBoundary>
-        </IonPage>
+        </AppPage>
     );
 };
 

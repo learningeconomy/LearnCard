@@ -1,6 +1,6 @@
 import React from 'react';
 import { useHistory } from 'react-router-dom';
-import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import { AppIcon } from '../../../components/icon';
 import {
     appsOutline,
@@ -23,6 +23,7 @@ import { USE_CASES } from '../guides/types';
 import type { UseCaseId } from '../guides/types';
 import { FEATURED_GUIDE, GUIDE_ORDER, summarizeProjects } from './buildHome';
 import type { ProjectState, ProjectSummary } from './buildHome';
+import { AppContent, AppPage } from '../../../components/chrome';
 
 const GUIDE_ICONS: Record<string, string> = {
     'award': ribbonOutline,
@@ -142,9 +143,9 @@ const BuildHomePage: React.FC = () => {
     const appCount = apps?.length ?? 0;
 
     return (
-        <IonPage>
+        <AppPage>
             <AppStoreHeader title="Build" />
-            <IonContent>
+            <AppContent>
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 font-poppins animate-fade-in-up">
                     <h1 className="text-2xl font-semibold text-grayscale-900">
                         What do you want to build?
@@ -225,8 +226,8 @@ const BuildHomePage: React.FC = () => {
                         )}
                     </div>
                 </div>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

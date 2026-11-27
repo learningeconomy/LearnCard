@@ -36,7 +36,6 @@ vi.mock('@capacitor/core', () => ({
 }));
 vi.mock('@learncard/react', () => ({ getVCDisplayCardVariant: () => 'default' }));
 vi.mock('@ionic/react', () => ({
-    IonPage: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
     IonSpinner: () => <div role="status">Loading</div>,
 }));
 vi.mock('../../components/overlays/useAppAlert', () => ({ useAppAlert: () => [vi.fn(), vi.fn()] }));

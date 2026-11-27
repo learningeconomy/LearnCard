@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
-import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import { AppIcon } from '../../../components/icon';
 import {
     addOutline,
@@ -21,6 +21,7 @@ import { LAUNCH_TYPE_LABELS } from '../submit/launchSettings';
 import { DEVELOPER_DOCS_URL, NewAppSheet } from './NewAppSheet';
 import { openExternalLink } from '../../../helpers/externalLinkHelpers';
 import { DeleteAppMenu } from './DeleteAppMenu';
+import { AppContent, AppPage } from '../../../components/chrome';
 
 const PILL_CLASS: Record<ListingMode, string> = {
     'draft': 'bg-grayscale-100 text-grayscale-700',
@@ -133,9 +134,9 @@ const MyAppsPage: React.FC = () => {
     const loading = isLoadingIntegrations || isLoading;
 
     return (
-        <IonPage>
+        <AppPage>
             <AppStoreHeader title="Your Apps" />
-            <IonContent>
+            <AppContent>
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 font-poppins">
                     <div className="mb-8 flex items-start justify-between gap-4">
                         <div>
@@ -225,8 +226,8 @@ const MyAppsPage: React.FC = () => {
                         />
                     )}
                 </div>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

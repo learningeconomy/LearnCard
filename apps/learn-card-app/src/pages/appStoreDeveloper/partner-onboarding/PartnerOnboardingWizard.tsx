@@ -1,6 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
-import { IonPage, IonContent } from '@ionic/react';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('partner-onboarding-wizard');
@@ -54,6 +53,7 @@ import {
     isIntegrationActive,
     PartnerOnboardingGuideState,
 } from './utils/integrationStatus';
+import { AppContent, AppPage } from '../../../components/chrome';
 
 const STEP_ICONS = [Building2, Shield, Palette, FileStack, Plug, GitMerge, TestTube2, Rocket];
 
@@ -585,14 +585,14 @@ const PartnerOnboardingWizard: React.FC = () => {
     );
 
     return (
-        <IonPage>
+        <AppPage>
             <AppStoreHeader
                 title={m['developerPortal.onboarding.wizard.title']()}
                 rightContent={headerContent}
             />
 
-            <IonContent>{wizardContent}</IonContent>
-        </IonPage>
+            <AppContent>{wizardContent}</AppContent>
+        </AppPage>
     );
 };
 

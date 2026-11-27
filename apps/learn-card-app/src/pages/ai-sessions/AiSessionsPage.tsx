@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { IonContent, IonPage } from '@ionic/react';
 import { VC } from '@learncard/types';
 import { useHistory, useLocation } from 'react-router-dom';
 
@@ -41,6 +40,7 @@ import {
 import * as m from '../../paraglide/messages.js';
 
 import useTheme from '../../theme/hooks/useTheme';
+import { AppContent, AppPage } from '../../components/chrome';
 
 type ViewMode = 'topics' | 'sessions' | 'topicDetail';
 type TopicGroup = {
@@ -311,9 +311,9 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
     }, [topicUri]);
 
     return (
-        <IonPage className={`bg-${backgroundSecondaryColor}`}>
+        <AppPage className={`bg-${backgroundSecondaryColor}`}>
             <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
-                <IonContent fullscreen color={backgroundSecondaryColor}>
+                <AppContent fullscreen color={backgroundSecondaryColor}>
                     <MainHeader
                         category={CredentialCategoryEnum.aiTopic}
                         subheaderType={SubheaderTypeEnum.AiSessions}
@@ -547,9 +547,9 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
                             </div>
                         </div>
                     </AiFeatureGate>
-                </IonContent>
+                </AppContent>
             </ErrorBoundary>
-        </IonPage>
+        </AppPage>
     );
 };
 

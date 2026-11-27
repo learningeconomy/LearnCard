@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
-import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import { AppIcon } from '../../../components/icon';
 import { alertCircleOutline, arrowBackOutline } from 'ionicons/icons';
 import { useQuery } from '@tanstack/react-query';
@@ -25,6 +25,7 @@ import type { LaunchSettings } from './LaunchSettingsSection';
 import { getLaunchSettingsError, parseLaunchConfig } from './launchSettings';
 import { ListingStatusBanner } from './ListingStatusBanner';
 import { getListingMode, isListingLocked, withPendingChanges } from './listingLifecycle';
+import { AppContent, AppPage } from '../../../components/chrome';
 
 const log = getLogger('edit-listing');
 
@@ -263,22 +264,22 @@ export const EditListingPage: React.FC = () => {
 
     if (isLoading) {
         return (
-            <IonPage>
+            <AppPage>
                 <AppStoreHeader title="Edit listing" />
-                <IonContent>
+                <AppContent>
                     <div className="flex items-center justify-center h-full">
                         <IonSpinner name="crescent" />
                     </div>
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         );
     }
 
     if (!listing) {
         return (
-            <IonPage>
+            <AppPage>
                 <AppStoreHeader title="Edit listing" />
-                <IonContent>
+                <AppContent>
                     <div className="max-w-md mx-auto mt-16 p-6 text-center font-poppins">
                         <h1 className="text-xl font-semibold text-grayscale-900 mb-2">
                             We couldn't find this listing
@@ -291,8 +292,8 @@ export const EditListingPage: React.FC = () => {
                             Back to Your Apps
                         </button>
                     </div>
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         );
     }
 
@@ -311,9 +312,9 @@ export const EditListingPage: React.FC = () => {
     );
 
     return (
-        <IonPage>
+        <AppPage>
             <AppStoreHeader title="Edit listing" />
-            <IonContent>
+            <AppContent>
                 <div className="flex min-h-full font-poppins">
                     <div className={`flex-1 ${isDesktop ? 'p-6' : 'ion-padding'}`}>
                         <div className="max-w-xl mx-auto w-full">
@@ -496,8 +497,8 @@ export const EditListingPage: React.FC = () => {
                         </div>
                     )}
                 </div>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import { AppCol, AppGrid, AppRow } from '../../layout';
 import { AppInput } from '../../controls/AppInput';
 
@@ -20,7 +20,7 @@ import { useBrandingConfig } from 'learn-card-base';
 import Lottie from '../../lottie/LazyLottie';
 const Pulpo = '/lotties/cuteopulpo.json';
 import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
-import { AppFooter, AppHeader, AppToolbar } from '../../chrome';
+import { AppContent, AppFooter, AppHeader, AppPage, AppToolbar } from '../../chrome';
 
 type BoostSearchProps = {
     handleCloseModal: () => void;
@@ -99,7 +99,7 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
             : connections?.length;
 
     return (
-        <IonPage className="bg-white">
+        <AppPage className="bg-white">
             <AppHeader className="learn-card-header ion-no-border my-[0px]">
                 <AppToolbar className="ion-no-border bg-white " color="white">
                     <AppGrid className="bg-white">
@@ -137,7 +137,7 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
                     </AppGrid>
                 </AppToolbar>
             </AppHeader>
-            <IonContent>
+            <AppContent>
                 {loading && !searchLoading && (
                     <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
                         <div className="max-w-[150px]">
@@ -213,7 +213,7 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
                             <strong>No search results</strong>
                         </section>
                     )}
-            </IonContent>
+            </AppContent>
             <AppFooter className="ion-no-border pb-[15px] bg-white">
                 <AppToolbar color="white" className="ion-no-border pt-5 bg-white">
                     <AppRow className="w-full flex items-center justify-center">
@@ -230,7 +230,7 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
                     </AppRow>
                 </AppToolbar>
             </AppFooter>
-        </IonPage>
+        </AppPage>
     );
 };
 

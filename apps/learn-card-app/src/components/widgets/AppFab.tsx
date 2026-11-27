@@ -14,7 +14,7 @@ export type AppFabProps = React.HTMLAttributes<HTMLDivElement> & {
 
 /**
  * App-owned replacement for `IonFab`: an absolutely positioned container (z-index 999) for an
- * `AppFabButton`. Pass `slot="fixed"` as a direct child of `IonContent` to keep it out of the
+ * `AppFabButton`. Pass `slot="fixed"` as a direct child of `AppContent` to keep it out of the
  * scrolling area, as with Ionic.
  */
 export const AppFab: React.FC<AppFabProps> = ({ vertical, horizontal, className, ...rest }) => {

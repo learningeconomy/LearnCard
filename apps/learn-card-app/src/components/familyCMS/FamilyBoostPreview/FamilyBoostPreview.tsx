@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 
-import { IonContent, IonPage } from '@ionic/react';
 import FamilyBoostFooter from './FamilyBoostFooter/FamilyBoostFooter';
 import FamilyBoostPreviewFrontFace from './FamilyBoostPreviewFrontFace';
 import FamilyBoostPreviewBackFace from './FamilyBoostPreviewBackFace';
@@ -8,6 +7,7 @@ import ShareBoostLink from '../../boost/boost-options-menu/ShareBoostLink';
 
 import { VC } from '@learncard/types';
 import { ModalTypes, useModal, BoostCategoryOptionsEnum } from 'learn-card-base';
+import { AppContent, AppPage } from '../../chrome';
 
 export const FamilyPreview: React.FC<{
     credential: VC;
@@ -74,8 +74,8 @@ export const FamilyPreview: React.FC<{
     }
 
     return (
-        <IonPage>
-            <IonContent fullscreen color="grayscale-800">
+        <AppPage>
+            <AppContent fullscreen color="grayscale-800">
                 <div
                     className="w-full flex flex-col items-center justify-start ion-padding overflow-y-scroll h-full"
                     style={{
@@ -91,7 +91,7 @@ export const FamilyPreview: React.FC<{
                         <FamilyBoostPreviewBackFace credential={credential} />
                     )}
                 </div>
-            </IonContent>
+            </AppContent>
             <FamilyBoostFooter
                 credential={credential}
                 boostUri={boostUri}
@@ -100,7 +100,7 @@ export const FamilyPreview: React.FC<{
                 handleCloseModal={handleCloseModal}
                 handleShareBoostLink={presentShareBoostLink}
             />
-        </IonPage>
+        </AppPage>
     );
 };
 

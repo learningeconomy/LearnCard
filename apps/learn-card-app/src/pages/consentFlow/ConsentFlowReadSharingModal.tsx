@@ -3,7 +3,6 @@ import moment from 'moment';
 import { ConsentFlowTerm, CredentialRecord } from '@learncard/types';
 import { Updater } from 'use-immer';
 import { capitalizeFirstLetter } from '@learncard/helpers';
-import { IonContent, IonPage } from '@ionic/react';
 import AppDatetime from '../../components/datetime/AppDatetime';
 import { AppCol, AppGrid, AppRow } from '../../components/layout';
 import { AppToggle } from '../../components/controls/AppToggle';
@@ -27,7 +26,7 @@ import { CredentialMetadata } from 'learn-card-base/types/credential-records';
 
 import useTheme from '../../theme/hooks/useTheme';
 import * as m from '../../paraglide/messages.js';
-import { AppHeader, AppToolbar } from '../../components/chrome';
+import { AppContent, AppHeader, AppPage, AppToolbar } from '../../components/chrome';
 
 type ConsentFlowReadSharingModalProps = {
     term: ConsentFlowTerm;
@@ -196,7 +195,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
     };
 
     return (
-        <IonPage className="bg-grayscale-100 text-grayscale-900 pt-5">
+        <AppPage className="bg-grayscale-100 text-grayscale-900 pt-5">
             <AppHeader className="ion-no-border flex items-center px-5 gap-3">
                 <AppToolbar className="ion-no-border flex items-center gap-3" color="grayscale-100">
                     <AppGrid>
@@ -217,7 +216,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                 </AppToolbar>
             </AppHeader>
 
-            <IonContent className="transparent-modal-backdrop" color="transparent">
+            <AppContent className="transparent-modal-backdrop" color="transparent">
                 <AppGrid className="p-0 h-full w-full flex flex-col items-center gap-3">
                     <AppRow className="px-5 pb-5 w-full max-w-[800px]">
                         <AppCol
@@ -427,8 +426,8 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                         </AppRow>
                     )}
                 </AppGrid>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

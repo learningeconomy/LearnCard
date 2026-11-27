@@ -6,7 +6,6 @@ import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('boost-address-book-contact-options');
 
-import { IonContent, IonPage } from '@ionic/react';
 import { useAppOverlayModal } from '../../../../overlays/useAppOverlayModal';
 import { AppCol, AppGrid, AppRow } from '../../../../layout';
 import X from 'learn-card-base/svgs/X';
@@ -34,7 +33,7 @@ import { BoostUserTypeEnum } from 'learn-card-base';
 import { LCNProfile } from '@learncard/types';
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
 import * as m from '../../../../../paraglide/messages.js';
-import { AppFooter, AppHeader, AppToolbar } from '../../../../chrome';
+import { AppContent, AppFooter, AppHeader, AppPage, AppToolbar } from '../../../../chrome';
 
 type BoostAddressBookContactOptionsProps = {
     state: BoostCMSState;
@@ -289,7 +288,7 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
 
     // useAppOverlayModal version
     return (
-        <IonPage id="user-options-modal">
+        <AppPage id="user-options-modal">
             <AppHeader className="ion-no-border bg-white pt-5">
                 <AppRow className="w-full bg-white">
                     <AppCol className="w-full flex items-center justify-end">
@@ -302,7 +301,7 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                 </AppRow>
                 {title && <AppToolbar color="#fffff">{title}</AppToolbar>}
             </AppHeader>
-            <IonContent>
+            <AppContent>
                 <AppGrid className="ion-padding">
                     <AppRow className="w-full flex items-center justify-center mt-8">
                         <button
@@ -393,13 +392,13 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                         </button>
                     </div>
                 </AppGrid>
-            </IonContent>
+            </AppContent>
             {footer && (
                 <AppFooter className={fixedFooterStyles}>
                     <AppToolbar>{footer}</AppToolbar>
                 </AppFooter>
             )}
-        </IonPage>
+        </AppPage>
     );
 
     // useModal version

@@ -1,10 +1,11 @@
 import { enterSharePrivacy } from '../../components/share-links/sharePrivacy';
 import React, { useEffect, useState } from 'react';
-import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import { useLocation } from 'react-router-dom';
 import { getAnonymousClient } from '@learncard/network-brain-client';
 import { networkStore } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
+import { AppContent, AppPage } from '../../components/chrome';
 
 const UnsubscribePage: React.FC = () => {
     const { search } = useLocation();
@@ -32,8 +33,8 @@ const UnsubscribePage: React.FC = () => {
         };
     }, [token, attempt]);
     return (
-        <IonPage>
-            <IonContent>
+        <AppPage>
+            <AppContent>
                 <main className="min-h-full flex items-center justify-center bg-grayscale-100 p-6 font-poppins">
                     <section className="w-full max-w-md rounded-[20px] bg-white p-8 text-center space-y-5">
                         <h1 className="text-xl font-semibold text-grayscale-900">
@@ -69,8 +70,8 @@ const UnsubscribePage: React.FC = () => {
                         )}
                     </section>
                 </main>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 export default UnsubscribePage;

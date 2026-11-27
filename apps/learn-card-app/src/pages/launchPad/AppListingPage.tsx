@@ -6,7 +6,7 @@ import numeral from 'numeral';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('app-listing-page');
 
-import { IonPage, IonContent, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import { AppToast } from '../../components/overlays/AppToast';
 import {
     useModal,
@@ -40,6 +40,7 @@ import ConsentFlowPrivacyAndData from '../consentFlow/ConsentFlowPrivacyAndData'
 import GuardianConsentLaunchModal from './GuardianConsentLaunchModal';
 import AiTutorConnectedView from './AiTutorConnectedView';
 import { Settings, Eye, ArrowLeft } from 'lucide-react';
+import { AppContent, AppPage } from '../../components/chrome';
 
 // Extended type to include new fields
 type ExtendedAppStoreListing = AppStoreListing & {
@@ -627,24 +628,24 @@ const AppListingPage: React.FC = () => {
     // Loading state
     if (isLoadingListing) {
         return (
-            <IonPage>
-                <IonContent fullscreen className="ion-padding">
+            <AppPage>
+                <AppContent fullscreen className="ion-padding">
                     <div className="min-h-screen flex items-center justify-center bg-linear-to-br/srgb from-indigo-50 via-white to-emerald-50">
                         <div className="flex flex-col items-center gap-4">
                             <IonSpinner name="crescent" className="w-12 h-12 text-indigo-600" />
                             <p className="text-grayscale-600 font-medium">Loading app...</p>
                         </div>
                     </div>
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         );
     }
 
     // Error / Not found state
     if (error || !listing) {
         return (
-            <IonPage>
-                <IonContent fullscreen>
+            <AppPage>
+                <AppContent fullscreen>
                     <div className="min-h-screen flex items-center justify-center bg-linear-to-br/srgb from-red-50 via-white to-gray-50">
                         <div className="text-center p-8 max-w-md">
                             <div className="w-20 h-20 mx-auto mb-6 bg-red-100 rounded-full flex items-center justify-center">
@@ -679,14 +680,14 @@ const AppListingPage: React.FC = () => {
                             </button>
                         </div>
                     </div>
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         );
     }
 
     return (
-        <IonPage>
-            <IonContent fullscreen>
+        <AppPage>
+            <AppContent fullscreen>
                 {/* Preview Mode Banner */}
                 {isPreviewMode && (
                     <div className="sticky top-0 z-50 bg-amber-500 text-white px-4 py-2 flex items-center justify-between shadow-md">
@@ -1088,8 +1089,8 @@ const AppListingPage: React.FC = () => {
                         </div>
                     </div>
                 )}
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

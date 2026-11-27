@@ -10,7 +10,10 @@ type IonContentElement = HTMLElement & {
     getScrollElement: () => Promise<HTMLElement>;
 };
 
-/** Ionic's `findIonContent` + `getScrollElement`: the page's scroll element, or null. */
+/**
+ * Ionic's `findIonContent` + `getScrollElement`: the page's scroll element, or null. AppContent's
+ * scroll area carries `.ion-content-scroll-host`, so it is found first.
+ */
 const findScrollElement = async (el: HTMLElement): Promise<HTMLElement | null> => {
     const page = el.closest<HTMLElement>('ion-app, ion-page, .ion-page, page-inner');
     if (!page) return null;
@@ -56,7 +59,7 @@ export const attachScrollFade = (
         if (disposed) return;
         if (!found) {
             console.error(
-                'AppHeader/AppFooter collapse="fade" needs an IonContent or .ion-content-scroll-host in the same page.'
+                'AppHeader/AppFooter collapse="fade" needs an AppContent, IonContent or .ion-content-scroll-host in the same page.'
             );
             return;
         }

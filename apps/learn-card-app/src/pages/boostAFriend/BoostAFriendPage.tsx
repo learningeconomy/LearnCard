@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { useHistory } from 'react-router';
-import { IonPage, IonContent } from '@ionic/react';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Media } from '@capacitor-community/media';
@@ -42,6 +41,7 @@ import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarne
 import { BoostCategoryOptionsEnum, BoostPageViewMode } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
 import { useLocale } from '../../i18n';
+import { AppContent, AppPage } from '../../components/chrome';
 
 type Step = 'pick' | 'personalize' | 'send' | 'celebrate';
 
@@ -358,8 +358,8 @@ const BoostAFriendPage: React.FC = () => {
     );
 
     return (
-        <IonPage className="bg-white">
-            <IonContent scrollY={false}>
+        <AppPage className="bg-white">
+            <AppContent scrollY={false}>
                 <div className="h-full font-poppins relative">
                     <div className="absolute inset-0 pointer-events-none overflow-hidden">
                         <div
@@ -648,8 +648,8 @@ const BoostAFriendPage: React.FC = () => {
                         )}
                     </div>
                 </div>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouteMatch } from 'react-router-dom';
-import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import { AppGrid, AppRow } from '../../components/layout';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('address-book');
@@ -33,6 +33,7 @@ import useTheme from '../../theme/hooks/useTheme';
 import useHeaderScrollSync from '../../hooks/useHeaderScrollSync';
 import useDebounce from '../../hooks/useDebounce';
 import { IconSetEnum } from '../../theme/icons';
+import { AppContent, AppPage } from '../../components/chrome';
 
 const getActiveRouteTab = (url: string): AddressBookTabsEnum | undefined => {
     switch (url) {
@@ -175,14 +176,14 @@ const AddressBook: React.FC = () => {
     const onHeaderScroll = useHeaderScrollSync();
 
     return (
-        <IonPage className="bg-grayscale-100">
+        <AppPage className="bg-grayscale-100">
             <MainHeader
                 customClassName="bg-linear-to-b/srgb from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-grayscale-100 md:border-none md:bg-none md:backdrop-blur-none"
                 branding={BrandingEnum.learncard}
                 customHeaderClass="px-0"
             />
 
-            <IonContent
+            <AppContent
                 fullscreen
                 style={{ '--background': '#EFF0F5' }}
                 scrollEvents
@@ -281,8 +282,8 @@ const AddressBook: React.FC = () => {
                         </AppGrid>
                     </div>
                 </GenericErrorBoundary>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

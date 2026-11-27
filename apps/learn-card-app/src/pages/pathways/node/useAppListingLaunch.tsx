@@ -181,7 +181,7 @@ export const useAppListingLaunch = (
                     // env(safe-area-inset-top)`, which double-stacks with the
                     // inset EmbedIframeModal's own AppHeader handles (oversized
                     // top margin on native). NOT the default Center: it
-                    // collapses the IonPage via Ionic's `.ion-page-invisible`.
+                    // clips the page (and collapsed IonPage via `.ion-page-invisible`).
                     // `hideButton: true` — the modal has its own close X.
                     newModal(
                         <EmbedIframeModal
@@ -202,7 +202,7 @@ export const useAppListingLaunch = (
 
                 case 'ai-tutor': {
                     // Right slide on desktop (chat UI reads well in a
-                    // narrow column), FullScreen on mobile. Same IonPage
+                    // narrow column), FullScreen on mobile. Same AppPage
                     // full-height-container requirement as above.
                     newModal(
                         <AiTutorConnectedView

@@ -1,6 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
-import { IonPage, IonContent } from '@ionic/react';
 
 import { getLogger, useIsOffline, connectivityStore } from 'learn-card-base';
 import { Network } from '@capacitor/network';
@@ -16,7 +15,7 @@ import { AppCredentialDashboard } from './AppCredentialDashboard';
 import { useAppNotificationToast } from '../../hooks/useAppNotificationToast';
 import { AppButton } from '../../components/controls/AppButton';
 import { AppButtons } from '../../components/controls/AppButtons';
-import { AppHeader, AppTitle, AppToolbar } from '../../components/chrome';
+import { AppContent, AppHeader, AppPage, AppTitle, AppToolbar } from '../../components/chrome';
 
 interface EmbedAppParams {
     appId: string;
@@ -164,7 +163,7 @@ export const EmbedAppFullScreen: React.FC = () => {
     const embedUrlWithOverride =
         buildEmbedUrlWithPath(embedUrl, initialPath, window.location.origin) ?? undefined;
     return (
-        <IonPage>
+        <AppPage>
             <AppHeader>
                 <AppToolbar>
                     <AppButtons slot="start">
@@ -196,7 +195,7 @@ export const EmbedAppFullScreen: React.FC = () => {
                     </AppButtons>
                 </AppToolbar>
             </AppHeader>
-            <IonContent fullscreen>
+            <AppContent fullscreen>
                 <div className="relative w-full h-full">
                     {isOffline || hasLoadFailed ? (
                         <AppEmbedOfflineState appName={appName} onRetry={handleRetry} />
@@ -241,7 +240,7 @@ export const EmbedAppFullScreen: React.FC = () => {
                         </>
                     )}
                 </div>
-            </IonContent>
+            </AppContent>
 
             {pendingCredential && (
                 <CredentialClaimModal
@@ -253,7 +252,7 @@ export const EmbedAppFullScreen: React.FC = () => {
             )}
 
             {ToastOverlay}
-        </IonPage>
+        </AppPage>
     );
 };
 

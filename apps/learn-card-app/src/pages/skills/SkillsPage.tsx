@@ -5,7 +5,6 @@ import useTheme from '../../theme/hooks/useTheme';
 import useAlignments from '../../hooks/useAlignments';
 import { useLoadingLine } from '../../stores/loadingStore';
 
-import { IonContent, IonPage } from '@ionic/react';
 import Plus from 'learn-card-base/svgs/Plus';
 import MainHeader from '../../components/main-header/MainHeader';
 import SkillsMyHub from './SkillsMyHub';
@@ -30,6 +29,7 @@ import AiFeatureLinks from '../../components/ai-feature-links/AiFeatureLinks';
 
 import { LearnCardRolesEnum } from '../../components/onboarding/onboarding.helpers';
 import { m } from '../../paraglide/messages.js';
+import { AppContent, AppPage } from '../../components/chrome';
 
 enum TabEnum {
     MY_HUB = 'my-hub',
@@ -98,7 +98,7 @@ const SkillsPage: React.FC = () => {
     const isHub = selectedTab === TabEnum.MY_HUB;
 
     return (
-        <IonPage className={`bg-${backgroundSecondaryColor}`}>
+        <AppPage className={`bg-${backgroundSecondaryColor}`}>
             <GenericErrorBoundary category={CredentialCategoryEnum.skill}>
                 <MainHeader
                     category={CredentialCategoryEnum.skill}
@@ -116,7 +116,7 @@ const SkillsPage: React.FC = () => {
                         </button>
                     }
                 />
-                <IonContent fullscreen className="skills-page" color={backgroundSecondaryColor}>
+                <AppContent fullscreen className="skills-page" color={backgroundSecondaryColor}>
                     <div className="flex relative justify-center items-center w-full pb-[30px]">
                         <div className="w-full max-w-[600px] flex items-center justify-center flex-wrap text-center ion-padding mt-[30px] px-[20px]">
                             {showAdminPanel && (
@@ -169,9 +169,9 @@ const SkillsPage: React.FC = () => {
                             )}
                         </div>
                     </div>
-                </IonContent>
+                </AppContent>
             </GenericErrorBoundary>
-        </IonPage>
+        </AppPage>
     );
 };
 

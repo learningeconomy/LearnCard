@@ -1,7 +1,8 @@
 import React, { Suspense, useEffect } from 'react';
-import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 
 import { ModalTypes, lazyWithRetry, useModal } from 'learn-card-base';
+import { AppContent, AppPage } from '../../../components/chrome';
 
 // The skill-profile wizard statically reaches the framework editor and its emoji picker (~1 MB
 // with deps); loading it lazily keeps all of that out of the dashboard's cold-start chunk.
@@ -10,13 +11,13 @@ const SkillProfileModal = lazyWithRetry(() => import('../components/SkillProfile
 const IDLE_PRELOAD_DELAY_MS = 3000;
 
 const SkillProfileModalFallback: React.FC = () => (
-    <IonPage>
-        <IonContent>
+    <AppPage>
+        <AppContent>
             <div className="font-poppins flex items-center justify-center min-h-[360px] p-8">
                 <IonSpinner name="crescent" className="text-grayscale-700" />
             </div>
-        </IonContent>
-    </IonPage>
+        </AppContent>
+    </AppPage>
 );
 
 export const useSkillProfileModal = () => {

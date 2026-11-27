@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useImperativeHandle, useRef } from 'reac
 import { Capacitor } from '@capacitor/core';
 
 import { getIonMode, type IonMode } from '../app-shell/ionMode';
+import { CONTENT_SELECTOR, getContentScrollElement } from '../chrome/AppContent';
 import './reorder.css';
 
 /** `ionReorderMove` detail. `from` is the index the item was over before this move, as in Ionic. */
@@ -107,14 +108,15 @@ const isScrollable = (el: Element): boolean =>
     /(auto|scroll|overlay)/.test(getComputedStyle(el).overflowY);
 
 /**
- * The element auto-scroll drives: the closest ion-content's scroll element (or an
- * `.ion-content-scroll-host`), as in Ionic, else the closest ancestor that scrolls vertically.
+ * The element auto-scroll drives: the closest content's scroll element (AppContent, ion-content
+ * or an `.ion-content-scroll-host`), as in Ionic, else the closest ancestor that scrolls
+ * vertically.
  */
 const findScrollElement = (el: HTMLElement): HTMLElement | undefined => {
-    const content = el.closest<HTMLElement>('ion-content, .ion-content-scroll-host');
+    const content = el.closest<HTMLElement>(`${CONTENT_SELECTOR}, .ion-content-scroll-host`);
     if (content) {
-        if (content.tagName !== 'ION-CONTENT') return content;
-        return content.shadowRoot?.querySelector<HTMLElement>('.inner-scroll') ?? undefined;
+        if (!content.matches(CONTENT_SELECTOR)) return content;
+        return getContentScrollElement(content) ?? undefined;
     }
     for (let node = el.parentElement; node && node !== document.body; node = node.parentElement) {
         if (isScrollable(node)) return node;

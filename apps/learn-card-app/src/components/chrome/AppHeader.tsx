@@ -8,7 +8,7 @@ import './chrome.css';
 export type AppHeaderProps = React.HTMLAttributes<HTMLDivElement> & {
     /**
      * iOS only: blur the content scrolling under the header and make its toolbars 80% opaque.
-     * Pair it with `fullscreen` on the page's IonContent so the content runs under the header.
+     * Pair it with `fullscreen` on the page's AppContent so the content runs under the header.
      */
     translucent?: boolean;
     /** iOS only: `fade` hides the toolbar backgrounds until the content scrolls. */

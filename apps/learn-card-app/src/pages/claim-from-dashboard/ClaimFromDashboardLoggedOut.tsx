@@ -1,6 +1,5 @@
 import React from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
-import { IonPage } from '@ionic/react';
 import { AppCol, AppRow } from '../../components/layout';
 
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
@@ -12,6 +11,7 @@ import { FromDashboardMetadata } from './ClaimFromDashboard';
 
 import useTheme from '../../theme/hooks/useTheme';
 import * as m from '../../paraglide/messages.js';
+import { AppPage } from '../../components/chrome';
 
 export type ClaimFromDashboardLoggedOutProps = {
     metadata: FromDashboardMetadata | undefined;
@@ -37,7 +37,7 @@ const ClaimFromDashboardLoggedOut: React.FC<ClaimFromDashboardLoggedOutProps> = 
         : m['claim.received.subtitle']();
 
     return (
-        <IonPage className="bg-emerald-700 p-[30px]">
+        <AppPage className="bg-emerald-700 p-[30px]">
             <div className="flex flex-col gap-[10px] items-center px-[20px] py-[30px] bg-white shadow-bottom rounded-[24px] m-auto max-w-[350px]">
                 <h3 className="text-5xl">🎉</h3>
 
@@ -96,7 +96,7 @@ const ClaimFromDashboardLoggedOut: React.FC<ClaimFromDashboardLoggedOutProps> = 
                     </AppRow>
                 </div>
             </div>
-        </IonPage>
+        </AppPage>
     );
 };
 

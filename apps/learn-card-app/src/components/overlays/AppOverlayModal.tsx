@@ -312,6 +312,7 @@ export const AppOverlayModal = forwardRef<AppOverlayModalHandle, AppOverlayModal
 
         // ion-content marks itself `role="main"` unless it is inside ion-menu / ion-popover /
         // ion-modal (`closest()` at connect); inside this modal it was never the main landmark.
+        // (AppContent checks for `.app-modal-wrapper` itself; this covers learn-card-base's.)
         useLayoutEffect(() => {
             const wrapper = wrapperRef.current;
             if (!mounted || !wrapper) return undefined;

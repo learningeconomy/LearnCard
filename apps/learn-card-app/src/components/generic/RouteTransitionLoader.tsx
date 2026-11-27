@@ -4,8 +4,8 @@ import { IonSpinner } from '@ionic/react';
 import { useTheme } from '../../theme/hooks/useTheme';
 
 /**
- * Inline route-transition placeholder. Intentionally NOT wrapped in
- * IonPage/IonContent — those would trigger Ionic's page-transition animation
+ * Inline route-transition placeholder. Intentionally NOT wrapped in a page
+ * shell — as IonPage/IonContent it triggered Ionic's page-transition animation
  * twice (once for this loader, once for the real destination page) and cause a
  * visible white flash between the two transitions. A plain absolutely-
  * positioned div paints instantly with the tenant background color and is

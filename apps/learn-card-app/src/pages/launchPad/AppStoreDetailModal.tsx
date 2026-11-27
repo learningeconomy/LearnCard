@@ -4,7 +4,7 @@ import type { AppStoreListing, InstalledApp } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('app-store-detail-modal');
 
-import { IonPage, IonContent, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import { AppToast } from '../../components/overlays/AppToast';
 import {
     useModal,
@@ -45,7 +45,7 @@ import { useGuardianGate } from '../../hooks/useGuardianGate';
 import DatePickerInput from '../../components/date-picker/DatePickerInput';
 import { checkAppInstallEligibility, AGE_RATING_TO_MIN_AGE } from '@learncard/helpers';
 import * as m from '../../paraglide/messages.js';
-import { AppFooter, AppHeader } from '../../components/chrome';
+import { AppContent, AppFooter, AppHeader, AppPage } from '../../components/chrome';
 
 // Extended type to include new fields (until types package is rebuilt)
 type ExtendedAppStoreListing = (AppStoreListing | InstalledApp) & {
@@ -748,7 +748,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
         launchType === 'AI_TUTOR';
 
     return (
-        <IonPage className="h-full w-full">
+        <AppPage className="h-full w-full">
             {/* Header */}
             <AppHeader mode="ios" className="ion-no-border">
                 <div className="ion-padding shadow-header bg-white">
@@ -843,7 +843,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                 </div>
             </AppHeader>
 
-            <IonContent
+            <AppContent
                 fullscreen
                 className="ion-padding"
                 style={
@@ -995,7 +995,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                         />
                     )}
                 </div>
-            </IonContent>
+            </AppContent>
 
             {/* Footer */}
             <AppFooter
@@ -1064,7 +1064,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                 position="bottom"
                 color="success"
             />
-        </IonPage>
+        </AppPage>
     );
 };
 

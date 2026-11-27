@@ -6,7 +6,7 @@
         // Soft right-edge shadow per the Figma Side Nav.
         --box-shadow: 1px 0 6px rgba(0, 0, 0, 0.12);
 
-        & > .app-menu-inner > ion-content {
+        & > .app-menu-inner > .app-content {
             --background: #ffffff;
         }
     }
@@ -110,12 +110,12 @@
 // The selected row is already conveyed by its background highlight; the default
 // outline drew an unwanted box around the focused/just-clicked item.
 .lc-side-menu-content {
-    &::part(scroll) {
+    & > .app-content-scroll {
         -ms-overflow-style: none;
         scrollbar-width: none;
     }
 
-    &::part(scroll)::-webkit-scrollbar {
+    & > .app-content-scroll::-webkit-scrollbar {
         display: none;
         width: 0;
         height: 0;

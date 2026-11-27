@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { IonContent, IonPage } from '@ionic/react';
 import { AppIcon } from '../../components/icon';
 import { alertCircleOutline, checkmarkCircleOutline, documentTextOutline } from 'ionicons/icons';
 import type { VC } from '@learncard/types';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import { getCredentialName, getIssuerName } from 'learn-card-base/helpers/credentialHelpers';
 import * as m from '../../paraglide/messages.js';
+import { AppContent, AppPage } from '../../components/chrome';
 
 export type CredentialReceiveScreenProps = {
     credentials: VC[];
@@ -39,8 +39,8 @@ export const CredentialReceiveScreen = ({
     const [expanded, setExpanded] = useState<number[]>([]);
     const errorText = error ? m[`chapi.receive.error.${error}`]() : undefined;
     return (
-        <IonPage>
-            <IonContent fullscreen className="font-poppins [--background:#EFF0F5]">
+        <AppPage>
+            <AppContent fullscreen className="font-poppins [--background:#EFF0F5]">
                 <main className="mx-auto w-full max-w-[640px] px-4 py-6 sm:py-10">
                     <div className="bg-white rounded-[20px] border border-grayscale-200 overflow-hidden shadow-xs">
                         <header className="p-6 border-b border-grayscale-200">
@@ -211,7 +211,7 @@ export const CredentialReceiveScreen = ({
                             )}
                     </div>
                 </main>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };

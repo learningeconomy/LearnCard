@@ -78,8 +78,6 @@ vi.mock('@capacitor-mlkit/barcode-scanning', () => ({
     },
 }));
 vi.mock('@ionic/react', () => ({
-    IonContent: ({ children }: React.PropsWithChildren) => <>{children}</>,
-    IonPage: ({ children }: React.PropsWithChildren) => <>{children}</>,
     IonSpinner: () => null,
 }));
 vi.mock('learn-card-base', () => ({

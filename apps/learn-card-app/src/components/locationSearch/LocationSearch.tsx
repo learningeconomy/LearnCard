@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 
 import useGoogle from 'react-google-autocomplete/lib/usePlacesAutocompleteService';
 
-import { IonContent, IonPage } from '@ionic/react';
 import { AppCol, AppGrid, AppRow } from '../layout';
 import { AppInput } from '../controls/AppInput';
 import GoogleLogo from 'learn-card-base/assets/images/google-logo.png';
@@ -12,7 +11,7 @@ import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinne
 import { useObservabilityConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import { AddressSpec, formatLocationObject } from './location.helpers';
-import { AppHeader, AppToolbar } from '../chrome';
+import { AppContent, AppHeader, AppPage, AppToolbar } from '../chrome';
 
 const LocationSearch: React.FC<{
     showCloseButton?: boolean;
@@ -52,7 +51,7 @@ const LocationSearch: React.FC<{
             placePredictions.length === 0);
 
     return (
-        <IonPage className="bg-white">
+        <AppPage className="bg-white">
             <AppHeader className="learn-card-header ion-no-border my-[0px]">
                 <AppToolbar className="ion-no-border bg-white " color="white">
                     <AppGrid className="bg-white">
@@ -84,7 +83,7 @@ const LocationSearch: React.FC<{
                     </AppGrid>
                 </AppToolbar>
             </AppHeader>
-            <IonContent fullscreen>
+            <AppContent fullscreen>
                 <section className="relative flex flex-col items-center justify-center w-full">
                     <ul className="flex flex-col items-start justify-center w-full max-w-[600px]">
                         {isPlacePredictionsLoading && (
@@ -124,8 +123,8 @@ const LocationSearch: React.FC<{
                 <div className="absolute bottom-[5px] right-[15px] flex items-center justify-center text-grayscale-500">
                     powered by <img src={GoogleLogo} className="ml-1 h-[20px]" />
                 </div>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

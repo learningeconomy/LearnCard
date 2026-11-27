@@ -8,6 +8,8 @@
  * to the snapped breakpoint (500ms, Ionic's iOS modal easing; Ionic used that builder in both
  * modes). Snapping to 0 dismisses the modal with role `gesture`.
  */
+
+import { CONTENT_SELECTOR, getContentScrollElement, setContentScrollY } from '../chrome/AppContent';
 const DURATION = 500;
 const EASING = 'cubic-bezier(0.32,0.72,0,1)';
 const THRESHOLD = 10;
@@ -30,19 +32,17 @@ export const getBackdropValueForSheet = (x: number, backdropBreakpoint: number):
 
 const clamp = (min: number, n: number, max: number): number => Math.max(min, Math.min(n, max));
 
-type IonContentElement = HTMLElement & { scrollY?: boolean };
-
-const findClosestIonContent = (el: EventTarget | null): IonContentElement | null =>
+/** The closest content (AppContent, learn-card-base's ion-content) or custom scroll host. */
+const findClosestContent = (el: EventTarget | null): HTMLElement | null =>
     el instanceof Element
-        ? el.closest<IonContentElement>('ion-content, .ion-content-scroll-host')
+        ? el.closest<HTMLElement>(`${CONTENT_SELECTOR}, .ion-content-scroll-host`)
         : null;
 
 /** At the top breakpoint a swipe on the content only starts when it is scrolled to its top. */
 const canSwipeOnContent = (contentEl: HTMLElement): boolean => {
-    const scrollEl =
-        contentEl.tagName === 'ION-CONTENT'
-            ? (contentEl.shadowRoot?.querySelector<HTMLElement>('.inner-scroll') ?? contentEl)
-            : contentEl;
+    const scrollEl = contentEl.matches(CONTENT_SELECTOR)
+        ? (getContentScrollElement(contentEl) ?? contentEl)
+        : contentEl;
     return !contentEl.querySelector('ion-refresher') && scrollEl.scrollTop === 0;
 };
 
@@ -87,7 +87,7 @@ type Detail = {
 
 export const createSheetGesture = (options: SheetGestureOptions): SheetController => {
     const { host, wrapper, backdrop, sliding, breakpoints, backdropBreakpoint } = options;
-    const contentEl = host.querySelector<IonContentElement>('ion-content');
+    const contentEl = host.querySelector<HTMLElement>(CONTENT_SELECTOR);
     const height = wrapper.clientHeight;
     const maxBreakpoint = breakpoints[breakpoints.length - 1];
     let currentBreakpoint = options.initialBreakpoint;
@@ -142,7 +142,7 @@ export const createSheetGesture = (options: SheetGestureOptions): SheetControlle
 
     progressStart(1 - currentBreakpoint);
     setBackdropBlocking();
-    if (contentEl && currentBreakpoint !== maxBreakpoint) contentEl.scrollY = false;
+    if (contentEl && currentBreakpoint !== maxBreakpoint) setContentScrollY(contentEl, false);
 
     const moveTo = (snapToBreakpoint: number, breakpointOffset: number): Promise<void> => {
         const shouldRemainOpen = snapToBreakpoint !== 0;
@@ -162,7 +162,7 @@ export const createSheetGesture = (options: SheetGestureOptions): SheetControlle
             },
         ]);
         enabled = false;
-        if (contentEl && snapToBreakpoint === maxBreakpoint) contentEl.scrollY = true;
+        if (contentEl && snapToBreakpoint === maxBreakpoint) setContentScrollY(contentEl, true);
         const duration = options.animated() ? DURATION : 0;
         for (const a of all) {
             a.effect?.updateTiming({ easing: EASING, duration });
@@ -200,19 +200,19 @@ export const createSheetGesture = (options: SheetGestureOptions): SheetControlle
     let lastTouch = 0;
 
     const canStart = (detail: Detail): boolean => {
-        const target = findClosestIonContent(detail.event.target);
+        const target = findClosestContent(detail.event.target);
         if (target && currentBreakpoint === 1) return canSwipeOnContent(target);
         return true;
     };
 
     const onStart = (detail: Detail): void => {
-        if (detail.deltaY > 0 && contentEl) contentEl.scrollY = false;
+        if (detail.deltaY > 0 && contentEl) setContentScrollY(contentEl, false);
         requestAnimationFrame(() => host.focus());
         progressStart(1 - currentBreakpoint);
     };
 
     const onMove = (detail: Detail): void => {
-        if (detail.deltaY > 0 && contentEl) contentEl.scrollY = false;
+        if (detail.deltaY > 0 && contentEl) setContentScrollY(contentEl, false);
         const step = 1 - currentBreakpoint + detail.deltaY / height;
         offset = clamp(0.0001, step, 0.9999);
         progressStep(offset);

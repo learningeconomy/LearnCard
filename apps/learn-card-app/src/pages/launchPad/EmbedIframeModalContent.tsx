@@ -15,7 +15,6 @@ import {
 } from 'learn-card-base';
 import { Network } from '@capacitor/network';
 import { AppEmbedOfflineState } from './AppEmbedOfflineState';
-import { IonPage, IonContent } from '@ionic/react';
 import { AppToast } from '../../components/overlays/AppToast';
 
 import { useLearnCardPostMessage } from '../../hooks/post-message/useLearnCardPostMessage';
@@ -26,7 +25,7 @@ import { AppCredentialDashboard } from './AppCredentialDashboard';
 import { useAppNotificationToast } from '../../hooks/useAppNotificationToast';
 import { toSafeFrameUrl } from './frameUrl';
 import { buildEmbedUrlWithPath } from './buildEmbedUrlWithPath';
-import { AppHeader, AppToolbar } from '../../components/chrome';
+import { AppContent, AppHeader, AppPage, AppToolbar } from '../../components/chrome';
 
 interface LaunchConfig {
     url?: string;
@@ -258,7 +257,7 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
     }
 
     return (
-        <IonPage className="h-full w-full">
+        <AppPage className="h-full w-full">
             <AppHeader>
                 <AppToolbar color="light">
                     <div className="flex items-center justify-between px-3 py-4 bg-white border-b">
@@ -303,8 +302,8 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
                     </div>
                 </AppToolbar>
             </AppHeader>
-            <IonContent fullscreen>{innerContent}</IonContent>
-        </IonPage>
+            <AppContent fullscreen>{innerContent}</AppContent>
+        </AppPage>
     );
 };
 

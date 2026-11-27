@@ -10,8 +10,6 @@ vi.mock('learn-card-base', async () => {
     return { ModalTypes: { Right: 'right' }, lazyWithRetry, useModal: () => modal };
 });
 vi.mock('@ionic/react', () => ({
-    IonPage: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    IonContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     IonSpinner: () => <span>loading wizard</span>,
 }));
 vi.mock('../components/SkillProfileModal', () => {

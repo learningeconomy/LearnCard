@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useLocation, useHistory } from 'react-router-dom';
-import { IonPage, IonContent, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import { AppCol, AppGrid, AppRow } from '../../components/layout';
 import { AppIcon } from '../../components/icon';
 import { AppCard, AppCardContent, AppText } from '../../components/widgets';
@@ -14,7 +14,7 @@ import { getAppBaseUrl, getLCNApiUrl } from '../../config/bootstrapTenantConfig'
 import { AppButton } from '../../components/controls/AppButton';
 
 import { getLogger } from 'learn-card-base';
-import { AppHeader, AppTitle, AppToolbar } from '../../components/chrome';
+import { AppContent, AppHeader, AppPage, AppTitle, AppToolbar } from '../../components/chrome';
 const log = getLogger('interactions-page');
 
 /**
@@ -134,13 +134,13 @@ const InteractionsPage: React.FC = () => {
 
     if (loading) {
         return (
-            <IonPage>
+            <AppPage>
                 <AppHeader>
                     <AppToolbar>
                         <AppTitle>Interaction</AppTitle>
                     </AppToolbar>
                 </AppHeader>
-                <IonContent fullscreen className="ion-padding">
+                <AppContent fullscreen className="ion-padding">
                     <AppGrid style={{ height: '100%' }}>
                         <AppRow
                             className="ion-justify-content-center ion-align-items-center"
@@ -159,20 +159,20 @@ const InteractionsPage: React.FC = () => {
                             </AppCol>
                         </AppRow>
                     </AppGrid>
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         );
     }
 
     if (error) {
         return (
-            <IonPage>
+            <AppPage>
                 <AppHeader>
                     <AppToolbar>
                         <AppTitle>Interaction Error</AppTitle>
                     </AppToolbar>
                 </AppHeader>
-                <IonContent fullscreen className="ion-padding">
+                <AppContent fullscreen className="ion-padding">
                     <AppGrid style={{ height: '100%' }}>
                         <AppRow
                             className="ion-justify-content-center ion-align-items-center"
@@ -221,21 +221,21 @@ const InteractionsPage: React.FC = () => {
                             </AppCol>
                         </AppRow>
                     </AppGrid>
-                </IonContent>
-            </IonPage>
+                </AppContent>
+            </AppPage>
         );
     }
 
     // This state should ideally not be reached if redirection is working,
     // but as a fallback or if redirection is slightly delayed:
     return (
-        <IonPage>
+        <AppPage>
             <AppHeader>
                 <AppToolbar>
                     <AppTitle>Interaction</AppTitle>
                 </AppToolbar>
             </AppHeader>
-            <IonContent fullscreen className="ion-padding">
+            <AppContent fullscreen className="ion-padding">
                 <AppGrid style={{ height: '100%' }}>
                     <AppRow
                         className="ion-justify-content-center ion-align-items-center"
@@ -255,8 +255,8 @@ const InteractionsPage: React.FC = () => {
                         </AppCol>
                     </AppRow>
                 </AppGrid>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

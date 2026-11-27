@@ -1,9 +1,8 @@
 import React from 'react';
 
-import { IonPage, IonContent } from '@ionic/react';
-
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
+import { AppContent, AppPage } from '../../components/chrome';
 
 interface LegalPageLayoutProps {
     title: string;
@@ -16,8 +15,8 @@ const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({ title, lastUpdated, c
     const assets = useTenantBrandingAssets();
 
     return (
-        <IonPage>
-            <IonContent
+        <AppPage>
+            <AppContent
                 fullscreen
                 className="font-poppins"
                 style={{ '--background': '#ffffff' } as React.CSSProperties}
@@ -63,8 +62,8 @@ const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({ title, lastUpdated, c
                         </p>
                     </footer>
                 </div>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

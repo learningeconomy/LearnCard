@@ -5,12 +5,12 @@ import { shuffle } from 'lodash-es';
 import * as m from '../../../paraglide/messages.js';
 import { useLocale } from '../../../i18n';
 
-import { IonContent, IonPage } from '@ionic/react';
 import { AppRow } from '../../../components/layout';
 import { useTenantBrandingAssets } from '../../../config/brandingAssets';
 
 import themeStore from '../../../theme/store/themeStore';
 import { getThemeLoaderColors, resolveThemeId } from '../../../theme/helpers/themeIds';
+import { AppContent, AppPage } from '../../../components/chrome';
 
 export const LoginLoadingPage: React.FC = () => {
     const locale = useLocale();
@@ -49,8 +49,8 @@ export const LoginLoadingPage: React.FC = () => {
     }, [colors, interval]);
 
     return (
-        <IonPage>
-            <IonContent fullscreen className="flex items-center justify-center">
+        <AppPage>
+            <AppContent fullscreen className="flex items-center justify-center">
                 <AppRow
                     className="h-full w-full transition-colors duration-1000 ease-in-out flex items-center justify-center text-white text-2xl"
                     style={{ backgroundColor: colors[currentColorIndex] }}
@@ -74,8 +74,8 @@ export const LoginLoadingPage: React.FC = () => {
                         </div>
                     </div>
                 </AppRow>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

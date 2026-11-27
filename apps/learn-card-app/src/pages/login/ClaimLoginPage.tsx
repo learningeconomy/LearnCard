@@ -6,7 +6,6 @@ import {
     useDeviceTypeByWidth,
 } from 'learn-card-base';
 
-import { IonContent, IonPage } from '@ionic/react';
 import { AppGrid } from '../../components/layout';
 
 import {
@@ -21,6 +20,7 @@ import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBr
 import DesktopLoginBackground from './DesktopLoginBackground';
 import { LoginContent } from './LoginPage';
 import LoginWelcomePanel from './LoginWelcomePanel';
+import { AppContent, AppPage } from '../../components/chrome';
 
 const ClaimLoginPage: React.FC<{
     alternateBgComponent?: React.ReactNode;
@@ -33,11 +33,11 @@ const ClaimLoginPage: React.FC<{
     const showConfirmation = confirmationStore.use.showConfirmation();
     const { isDesktop } = useDeviceTypeByWidth();
     return (
-        <IonPage className="flex flex-col h-full" style={{ backgroundColor: loginBgColor }}>
+        <AppPage className="flex flex-col h-full" style={{ backgroundColor: loginBgColor }}>
             {showConfirmation && (
                 <DeleteUserSuccessConfirmation branding={BrandingEnum.learncard} />
             )}
-            <IonContent
+            <AppContent
                 fullscreen
                 className="flex flex-col grow"
                 style={{ '--background': loginBgColor } as React.CSSProperties}
@@ -63,8 +63,8 @@ const ClaimLoginPage: React.FC<{
                         </>
                     )}
                 </AppGrid>
-            </IonContent>
-        </IonPage>
+            </AppContent>
+        </AppPage>
     );
 };
 

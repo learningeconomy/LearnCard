@@ -224,7 +224,7 @@ const DeveloperSignInPage: React.FC = () => {
         ? m['login.developerSignIn.switching']()
         : m['login.developerSignIn.signingIn']();
 
-    // Rendered outside IonContent, so this page owns its main landmark.
+    // Rendered outside AppContent, so this page owns its main landmark.
     return (
         <main
             className="min-h-screen w-full flex items-center justify-center p-4"
