@@ -44,6 +44,9 @@ struct CredentialDetailView: View {
                     }.padding(20).frame(maxWidth: .infinity, alignment: .leading)
                         .background(Palette.surface, in: RoundedRectangle(cornerRadius: 22))
                 }
+                if let transcript = credential.details?.transcript {
+                    CredentialTranscriptSection(transcript: transcript)
+                }
                 VStack(alignment: .leading, spacing: 14) {
                     Text(NativeText.text("credential.details.information")).font(.headline).foregroundStyle(Palette.ink)
                     metadata(NativeText.text("credential.issuerLabel"), value: credential.issuer, identifier: "from")
