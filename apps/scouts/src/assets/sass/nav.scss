@@ -53,7 +53,7 @@
     font-weight: 700;
     font-size: 12px;
 
-    & > svg {
+    & > .app-tab-button-native > .app-tab-button-inner > svg {
         fill: currentColor;
     }
 }
@@ -63,13 +63,13 @@
     font-weight: 700;
     font-size: 12px;
 
-    & > div {
+    & > .app-tab-button-native > .app-tab-button-inner > div {
         height: 85px;
         width: 85px;
     }
 
     &.tab-selected {
-        & > div {
+        & > .app-tab-button-native > .app-tab-button-inner > div {
             background-color: #ff5655;
         }
         .flames {
@@ -77,7 +77,7 @@
         }
     }
 
-    & > div {
+    & > .app-tab-button-native > .app-tab-button-inner > div {
         color: currentColor;
 
         & > p {
@@ -98,7 +98,7 @@
 
     &.tab-selected {
         color: #622599;
-        & > svg {
+        & > .app-tab-button-native > .app-tab-button-inner > svg {
             .mountain {
                 fill: #ff8dff;
             }
@@ -118,13 +118,13 @@
     font-family: 'Noto Sans', 'Montserrat', 'Noto Sans', sans-serif;
     color: #353e64;
 
-    & > svg {
+    & > .app-tab-button-native > .app-tab-button-inner > svg {
         fill: currentColor;
     }
 
     &.tab-selected {
         color: #0094b4;
-        & > svg {
+        & > .app-tab-button-native > .app-tab-button-inner > svg {
             .inside-star {
                 fill: #82e6de;
             }
@@ -140,7 +140,7 @@
     --color-focused: #05b65d;
     --color-selected: #05b65d;
 
-    & > svg {
+    & > .app-tab-button-native > .app-tab-button-inner > svg {
         fill: currentColor;
     }
 
