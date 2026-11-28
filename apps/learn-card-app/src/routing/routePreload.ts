@@ -9,6 +9,28 @@ const AI_GATED_PATHS = new Set([
     '/ai/sessions',
 ]);
 
+type RouteManifest = {
+    routes: Record<string, { path?: string; module: string; clientLoaderModule?: string }>;
+};
+
+/**
+ * Loads the React Router route modules for a path (src/routes/pages/*), which the router otherwise
+ * fetches when navigation starts, one round trip before the clientLoader can run. Importing the
+ * manifest's URLs gives the router the same module instances when it asks for them.
+ */
+const warmRouteModules = (path: string): void => {
+    const { __reactRouterManifest: manifest } = window as Window & {
+        __reactRouterManifest?: RouteManifest;
+    };
+    if (!manifest) return;
+    for (const route of Object.values(manifest.routes)) {
+        if (route.path !== path) continue;
+        for (const url of [route.clientLoaderModule, route.module]) {
+            if (url) void import(/* @vite-ignore */ url).catch(() => undefined);
+        }
+    }
+};
+
 /** Routes reachable from the wallet, side menu and mobile nav, warmed ahead of navigation. */
 const WARM_ROUTES: Record<string, PageKey> = {
     '/dashboard': 'dashboard',
@@ -56,7 +78,13 @@ const WARM_ROUTES: Record<string, PageKey> = {
  * callers use them to warm a destination early.
  */
 export const ROUTE_PRELOAD: Record<string, () => Promise<void>> = Object.fromEntries(
-    Object.entries(WARM_ROUTES).map(([path, page]) => [path, PAGES[page].preload])
+    Object.entries(WARM_ROUTES).map(([path, page]) => [
+        path,
+        () => {
+            warmRouteModules(path);
+            return PAGES[page].preload();
+        },
+    ])
 );
 
 interface PrefetchOptions {

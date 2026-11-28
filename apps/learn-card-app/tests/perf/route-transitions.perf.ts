@@ -16,12 +16,14 @@ import { TEST_USER_PROFILE_ID } from '../constants';
  * Conditions (the same for every build): 4x CPU slowdown and 150 ms added latency on page assets
  * (Chromium network emulation), and 150 ms added to every mocked backend response.
  */
+// `ready` is text the destination shows once its content (and, where it has any, its data) is in.
 const ROUTES: Array<{ path: string; ready: string }> = JSON.parse(
     process.env.PERF_ROUTES ??
         JSON.stringify([
-            { path: '/launchpad', ready: 'h1, h2' },
-            { path: '/notifications', ready: 'h1, h2' },
-            { path: '/contacts', ready: 'h1, h2' },
+            // The More Apps grid's empty state renders after the installed/featured/curated queries.
+            { path: '/launchpad', ready: 'No apps to show yet.' },
+            { path: '/notifications', ready: 'Alerts' },
+            { path: '/contacts', ready: 'My Contact Card' },
         ])
 );
 const SAMPLES = Number(process.env.PERF_SAMPLES ?? 5);
@@ -67,6 +69,10 @@ const timeNavigation = (page: Page, path: string, ready: string) =>
         ({ path, ready }) =>
             new Promise<number>((resolve, reject) => {
                 const router = (window as unknown as RouterWindow).__reactRouterDataRouter;
+                if ((document.body.textContent ?? '').includes(ready)) {
+                    reject(new Error(`"${ready}" is already on the page before ${path}`));
+                    return;
+                }
                 const start = performance.now();
                 const deadline = start + 60_000;
                 void router.navigate(path);
@@ -74,7 +80,7 @@ const timeNavigation = (page: Page, path: string, ready: string) =>
                     const done =
                         location.pathname === path &&
                         router.state.navigation.state === 'idle' &&
-                        document.querySelector(ready) !== null;
+                        (document.body.textContent ?? '').includes(ready);
                     if (done) resolve(performance.now() - start);
                     else if (performance.now() > deadline) reject(new Error(`timeout ${path}`));
                     else requestAnimationFrame(check);
