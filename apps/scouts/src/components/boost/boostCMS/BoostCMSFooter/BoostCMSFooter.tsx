@@ -33,7 +33,7 @@ const BoostCMSFooter: React.FC<{
     isSaveLoading,
     handleSubmit,
 }) => {
-    const bottomBarRef = useRef<HTMLDivElement>(undefined);
+    const bottomBarRef = useRef<HTMLIonFooterElement>(null);
     const { color, IconComponent } =
         boostCategoryOptions[selectedVCType as BoostCategoryOptionsEnum];
 
