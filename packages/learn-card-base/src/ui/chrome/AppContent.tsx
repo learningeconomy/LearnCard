@@ -137,7 +137,9 @@ const isRtl = (dir: string | undefined): boolean =>
 /** The box fullscreen offsets are measured against: tabs, else the page, else the parent. */
 const getPageElement = (el: HTMLElement): HTMLElement | null =>
     el.closest<HTMLElement>('ion-tabs') ??
-    el.closest<HTMLElement>('.app-root, ion-page, .ion-page, page-inner, .popover-content') ??
+    el.closest<HTMLElement>(
+        '.app-root, ion-page, .ion-page, page-inner, .popover-content, .app-popover-content'
+    ) ??
     el.parentElement;
 
 const newDetail = (): AppContentScrollDetail => ({
@@ -304,9 +306,12 @@ export const AppContent: React.FC<AppContentProps> = ({
         const el = hostRef.current;
         if (!el) return;
         setContext({
-            // AppOverlayModal stands in for ion-modal (`.app-modal-wrapper`).
-            isMain: el.closest('ion-menu, ion-popover, ion-modal, .app-modal-wrapper') === null,
-            inPopover: el.closest('ion-popover') !== null,
+            // AppOverlayModal, AppMenu, and AppPopover stand in for their Ionic counterparts.
+            isMain:
+                el.closest(
+                    'ion-menu, .app-menu, ion-popover, .app-popover, ion-modal, .app-modal-wrapper'
+                ) === null,
+            inPopover: el.closest('ion-popover, .app-popover') !== null,
             inTabs: el.closest('.app-tabs-inner') !== null,
         });
     }, []);

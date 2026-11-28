@@ -24,9 +24,11 @@
     /* --ion-background-color / --ion-text-color: unset, Ionic's fallbacks. */
     --app-overlay-background: #fff;
     --app-overlay-text-color: #000;
-    /* ion-toast color="success" / "danger" (variables.css --ion-color-success / -danger). */
+    /* Palette tokens read by overlays (AppAlert, AppLoading, AppToast) even without controls.css. */
+    --app-color-primary: #3880ff;
     --app-color-success: #2dd36f;
     --app-color-success-contrast: #ffffff;
+    --app-color-danger: #eb445a;
     --app-color-danger-contrast: #ffffff;
     /* --ion-font-family: Ionic core.css's per-mode --ion-default-font. */
     --app-platform-font: 'Roboto', 'Helvetica Neue', sans-serif;
@@ -270,6 +272,10 @@
     z-index: 10;
 }
 
+.app-popover .app-popover-viewport:has(> .app-content) {
+    overflow: hidden;
+}
+
 /* md */
 .app-popover.md .app-popover-content {
     border-radius: 4px;
@@ -367,7 +373,7 @@
     z-index: 10;
 }
 
-.app-loading .app-loading-spinner > ion-spinner {
+.app-loading .app-loading-spinner > :is(ion-spinner, .app-spinner) {
     color: var(--spinner-color);
 }
 

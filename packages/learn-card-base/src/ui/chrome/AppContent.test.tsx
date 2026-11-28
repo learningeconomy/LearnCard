@@ -51,17 +51,26 @@ describe('AppContent', () => {
         expect(scroll).toContainElement(screen.getByText('Body'));
     });
 
-    it('is not a landmark inside a modal or menu', () => {
+    it('is not a landmark inside a modal, menu, or popover, and sizes inside a popover', () => {
         render(
             <>
                 <div className="app-modal-wrapper">
                     <AppContent data-testid="modal" />
+                </div>
+                <div className="app-menu">
+                    <AppContent data-testid="app-menu" />
+                </div>
+                <div className="app-popover">
+                    <AppContent data-testid="app-popover" />
                 </div>
                 {React.createElement('ion-menu', null, <AppContent data-testid="menu" />)}
             </>
         );
 
         expect(screen.getByTestId('modal')).not.toHaveAttribute('role');
+        expect(screen.getByTestId('app-menu')).not.toHaveAttribute('role');
+        expect(screen.getByTestId('app-popover')).not.toHaveAttribute('role');
+        expect(screen.getByTestId('app-popover')).toHaveClass('app-content-sizing');
         expect(screen.getByTestId('menu')).not.toHaveAttribute('role');
         expect(screen.queryByRole('main')).toBeNull();
     });

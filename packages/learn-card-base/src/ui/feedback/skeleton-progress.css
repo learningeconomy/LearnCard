@@ -34,7 +34,7 @@
     }
 
     /* :host(.in-media): Ionic's hostContext('ion-avatar' | 'ion-thumbnail') */
-    :is(ion-avatar, ion-thumbnail) .app-skeleton-text {
+    :is(ion-avatar, ion-thumbnail, .app-avatar, .app-thumbnail) .app-skeleton-text {
         margin-left: 0;
         margin-right: 0;
         margin-top: 0;

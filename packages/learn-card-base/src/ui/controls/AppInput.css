@@ -191,6 +191,10 @@ div.app-input-disabled:where(.app-input.md) {
     box-shadow: none;
 }
 
+.app-input input::-webkit-date-and-time-value {
+    text-align: start;
+}
+
 /* ---------------------------------------------------------------- clear button and end content */
 .app-input .app-input-clear {
     margin: auto;

@@ -173,8 +173,8 @@ div:where([data-app-footer]).app-footer-toolbar-padding
     }
 
     /* ------------------------------------------------------------- ion-toolbar ::slotted */
-    .app-toolbar-container > ion-progress-bar,
-    .app-toolbar-content > ion-progress-bar {
+    .app-toolbar-container > :is(ion-progress-bar, .app-progress-bar),
+    .app-toolbar-content > :is(ion-progress-bar, .app-progress-bar) {
         left: 0;
         right: 0;
         bottom: 0;

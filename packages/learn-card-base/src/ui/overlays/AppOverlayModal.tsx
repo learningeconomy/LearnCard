@@ -74,14 +74,20 @@ export type AppOverlayModalHandle = {
     getCurrentBreakpoint: () => number | undefined;
 };
 
-/** Removes `role="main"` from every ion-content under `root`, now and as content renders. */
+/** Removes `role="main"` from every content element under `root`, now and as content renders. */
 const unmarkMainContent = (root: HTMLElement): (() => void) => {
     const unmark = (el: Element): void => {
-        if (el.tagName === 'ION-CONTENT' && el.getAttribute('role') === 'main') {
+        if (
+            (el.tagName === 'ION-CONTENT' || el.classList.contains('app-content')) &&
+            el.getAttribute('role') === 'main'
+        ) {
             el.removeAttribute('role');
         }
     };
-    const sweep = (): void => root.querySelectorAll('ion-content[role="main"]').forEach(unmark);
+    const sweep = (): void =>
+        root
+            .querySelectorAll('ion-content[role="main"], .app-content[role="main"]')
+            .forEach(unmark);
     sweep();
     if (typeof MutationObserver === 'undefined') return () => undefined;
     const observer = new MutationObserver(records => {
